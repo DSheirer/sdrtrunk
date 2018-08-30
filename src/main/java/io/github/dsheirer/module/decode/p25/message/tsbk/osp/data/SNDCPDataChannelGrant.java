@@ -20,11 +20,11 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.osp.data;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
-public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierReceiver
+public class SNDCPDataChannelGrant extends SNDCPData implements FrequencyBandReceiver
 {
     public static final int[] TRANSMIT_IDENTIFIER = {88, 89, 90, 91};
     public static final int[] TRANSMIT_NUMBER = {92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103};
@@ -33,8 +33,8 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierReceiv
     public static final int[] TARGET_ADDRESS = {120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133,
         134, 135, 136, 137, 138, 139, 140, 141, 142, 143};
 
-    private IBandIdentifier mIdentifierUpdateTransmit;
-    private IBandIdentifier mIdentifierUpdateReceive;
+    private IFrequencyBand mIdentifierUpdateTransmit;
+    private IFrequencyBand mIdentifierUpdateReceive;
 
     public SNDCPDataChannelGrant(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
@@ -114,7 +114,7 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierReceiv
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public void setIdentifierMessage(int identifier, IFrequencyBand message)
     {
         if(identifier == getTransmitChannelIdentifier())
         {
@@ -132,7 +132,7 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierReceiv
     }
 
     @Override
-    public int[] getIdentifiers()
+    public int[] getFrequencyBandIdentifiers()
     {
         int[] identifiers = new int[2];
 

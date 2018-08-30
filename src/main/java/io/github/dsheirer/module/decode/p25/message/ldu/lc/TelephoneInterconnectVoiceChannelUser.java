@@ -1,93 +1,82 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.ldu.lc;
 
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25AnyTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 public class TelephoneInterconnectVoiceChannelUser extends LDU1Message
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( TelephoneInterconnectVoiceChannelUser.class );
-	
-    /* Service Options */
-    public static final int EMERGENCY_FLAG = 376;
-    public static final int ENCRYPTED_CHANNEL_FLAG = 377;
-    public static final int DUPLEX_MODE = 382;
-    public static final int SESSION_MODE = 383;
-    public static final int[] CALL_TIMER = { 548,549,550,551,556,557,558,559,
-    	560,561,566,567,568,569,570,571 };
-	public static final int[] ADDRESS = { 720,721,722,723,724,725,730,731,732,
-		733,734,735,740,741,742,743,744,745,750,751,752,753,754,755 };
+    public static final int[] SERVICE_OPTIONS = {376, 377, 382, 383, 384, 385, 386, 387};
+    public static final int[] CALL_TIMER = {548, 549, 550, 551, 556, 557, 558, 559,
+        560, 561, 566, 567, 568, 569, 570, 571};
+    public static final int[] ADDRESS = {720, 721, 722, 723, 724, 725, 730, 731, 732,
+        733, 734, 735, 740, 741, 742, 743, 744, 745, 750, 751, 752, 753, 754, 755};
 
-	public TelephoneInterconnectVoiceChannelUser( LDU1Message message )
-	{
-		super( message );
-	}
-	
+    private ServiceOptions mServiceOptions;
+    private IIdentifier mAddress;
+
+    public TelephoneInterconnectVoiceChannelUser(LDU1Message message)
+    {
+        super(message);
+    }
+
     @Override
-    public String getEventType()
+    public String getMessage()
     {
-        return LinkControlOpcode.TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER.getDescription();
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(getMessageStub());
+        sb.append(" ").append(getServiceOptions());
+        sb.append(" TIMER:" + getCallTimer() + " SECS");
+        sb.append(" ADDR:" + getAddress());
+
+        return sb.toString();
     }
 
-	@Override
-	public String getMessage()
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( getMessageStub() );
-		
-		if( isEmergency() )
-		{
-			sb.append( " EMERGENCY" );
-		}
-		if( isEncryptedChannel() )
-		{
-			sb.append( " ENCRYPTED CHANNEL" );
-		}
+    public ServiceOptions getServiceOptions()
+    {
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(mMessage.getInt(SERVICE_OPTIONS));
+        }
 
-		sb.append( " TIMER:" + getCallTimer() + " SECS" );
-		
-		sb.append( " ADDR:" + getAddress() );
-		
-		return sb.toString();
-	}
-
-    public boolean isEmergency()
-    {
-        return mMessage.get( EMERGENCY_FLAG );
-    }
-    
-    public boolean isEncryptedChannel()
-    {
-        return mMessage.get( ENCRYPTED_CHANNEL_FLAG );
-    }
-    
-    public DuplexMode getDuplexMode()
-    {
-        return mMessage.get( DUPLEX_MODE ) ? DuplexMode.FULL : DuplexMode.HALF;
+        return mServiceOptions;
     }
 
-    public SessionMode getSessionMode()
+    public IIdentifier getAddress()
     {
-        return mMessage.get( SESSION_MODE ) ? 
-                SessionMode.CIRCUIT : SessionMode.PACKET;
+        if(mAddress == null)
+        {
+            mAddress = APCO25AnyTalkgroup.create(mMessage.getInt(ADDRESS));
+        }
+
+        return mAddress;
     }
-    
-    public String getAddress()
-    {
-    	return mMessage.getHex( ADDRESS, 6 );
-    }
-    
+
     /**
      * Call timer in seconds
      */
     public int getCallTimer()
     {
-        int units = mMessage.getInt( CALL_TIMER );
-        
-        return (int)( units / 10 );
+        int units = mMessage.getInt(CALL_TIMER);
+
+        return (int)(units / 10);
     }
-    
+
 }

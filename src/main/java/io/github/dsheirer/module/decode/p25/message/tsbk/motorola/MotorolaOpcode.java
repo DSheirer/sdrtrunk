@@ -1,11 +1,26 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola;
 
 public enum MotorolaOpcode
 {
 	PATCH_GROUP_ADD( "ADD PATCH GROUP", "ADD PATCH SUPER GROUP", 0x00 ),
 	PATCH_GROUP_DELETE( "DELETE PATCH GROUP", "DELETE PATCH SUPER GROUP", 0x01 ),
-	PATCH_GROUP_CHANNEL_GRANT( "PATCH VOICE CHANNEL GRANT", "PATCH VOICE CHANNEL GRANT", 0x02 ),
-	PATCH_GROUP_CHANNEL_GRANT_UPDATE( "PATCH VOICE CHANNEL UPDATE", "PATCH VOICE CHANNEL GRANT UPDATE", 0x03 ),
+	PATCH_GROUP_CHANNEL_GRANT( "PATCH VOICE CHANNEL_NUMBER GRANT", "PATCH VOICE CHANNEL_NUMBER GRANT", 0x02 ),
+	PATCH_GROUP_CHANNEL_GRANT_UPDATE( "PATCH VOICE CHANNEL_NUMBER UPDATE", "PATCH VOICE CHANNEL_NUMBER GRANT UPDATE", 0x03 ),
 	OP04( "MOT OP04:UNKNOWN", "Opcode 0x04 Unknown", 0x04 ),
 	TRAFFIC_CHANNEL_ID( "TRAFFIC CHAN STATION ID", "TRAFFIC CHAN STATION ID", 0x05 ),
 	OP06( "MOT OP06:UNKNOWN    ", "Opcode 0x06 Unknown", 0x06 ),
@@ -16,7 +31,7 @@ public enum MotorolaOpcode
 	CONTROL_CHANNEL_ID( "CONTROL CHAN BASE STATION ID", "CONTROL CHAN BASE STATION ID", 0x0B ),
 	OP0C( "MOT OP0C:UNKNOWN    ", "Opcode 0x0C Unknown", 0x0C ),
 	OP0D( "MOT OP0D:UNKNOWN    ", "Opcode 0x0D Unknown", 0x0D ),
-	CCH_PLANNED_SHUTDOWN( "PLANNED CONTROL CHANNEL SHUTDOWN ", "PLANNED CONTROL CHANNEL SHUTDOWN", 0x0E ),
+	CCH_PLANNED_SHUTDOWN( "PLANNED CONTROL CHANNEL_NUMBER SHUTDOWN ", "PLANNED CONTROL CHANNEL_NUMBER SHUTDOWN", 0x0E ),
 	OP0F( "MOT OP0F:UNKNOWN    ", "Opcode 0x0F Unknown", 0x0F ),
 	OP10( "MOT OP10:UNKNOWN    ", "Opcode 0x10 Unknown", 0x10 ),
 	OP11( "MOT OP11:UNKNOWN    ", "Opcode 0x11 Unknown", 0x11 ),

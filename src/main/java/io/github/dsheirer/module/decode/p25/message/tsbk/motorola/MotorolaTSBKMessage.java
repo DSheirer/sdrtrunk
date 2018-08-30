@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola;
 
 import io.github.dsheirer.alias.AliasList;
@@ -7,35 +22,34 @@ import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 public class MotorolaTSBKMessage extends TSBKMessage
 {
-	public MotorolaTSBKMessage( BinaryMessage message, DataUnitID duid,
-            AliasList aliasList )
+    public MotorolaTSBKMessage(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
-	    super( message, duid, aliasList );
+        super(message, duid, aliasList);
     }
 
-	protected String getMessageStub()
-	{
-		StringBuilder sb = new StringBuilder();
+    protected String getMessageStub()
+    {
+        StringBuilder sb = new StringBuilder();
 
-		sb.append( "NAC:" );
-		sb.append( getNAC() ); /* NAC is the system id for TSBK messages */
-		sb.append( " " );
-		sb.append( getDUID().getLabel() );
+        sb.append("NAC:");
+        sb.append(getNAC()); /* NAC is the system id for TSBK messages */
+        sb.append(" ");
+        sb.append(getDUID().getLabel());
 
-		sb.append( " MOTOROLA " );
+        sb.append(" MOTOROLA ");
 
-		if( isEncrypted() )
-		{
-			sb.append( " ENCRYPTED " );
-		}
-		
-		sb.append( getMotorolaOpcode().getLabel() );
-		
-	    return sb.toString();
-	}
+        if(isEncrypted())
+        {
+            sb.append(" ENCRYPTED ");
+        }
 
-	public MotorolaOpcode getMotorolaOpcode()
-	{
-		return MotorolaOpcode.fromValue( mMessage.getInt( OPCODE ) );
-	}
+        sb.append(getMotorolaOpcode().getLabel());
+
+        return sb.toString();
+    }
+
+    public MotorolaOpcode getMotorolaOpcode()
+    {
+        return MotorolaOpcode.fromValue(mMessage.getInt(OPCODE));
+    }
 }

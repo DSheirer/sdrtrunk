@@ -1,43 +1,41 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tsbk;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 public abstract class ServiceMessage extends TSBKMessage
 {
-    /* Service Options */
-    public static final int EMERGENCY_FLAG = 80;
-    public static final int ENCRYPTED_CHANNEL_FLAG = 81;
-    public static final int DUPLEX_MODE = 82;
-    public static final int SESSION_MODE = 83;
-    
-    public ServiceMessage( BinaryMessage message, 
-    					   DataUnitID duid,
-    					   AliasList aliasList ) 
+    private ServiceOptions mServiceOptions;
+
+    public ServiceMessage(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
-        super( message, duid, aliasList );
+        super(message, duid, aliasList);
     }
 
-    public boolean isEmergency()
+    public ServiceOptions getServiceOptions()
     {
-        return mMessage.get( EMERGENCY_FLAG );
-    }
-    
-    public boolean isEncryptedChannel()
-    {
-        return mMessage.get( ENCRYPTED_CHANNEL_FLAG );
-    }
-    
-    public P25Message.DuplexMode getDuplexMode()
-    {
-        return mMessage.get( DUPLEX_MODE ) ? P25Message.DuplexMode.FULL : P25Message.DuplexMode.HALF;
-    }
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(mMessage.getInt(SERVICE_OPTIONS));
+        }
 
-    public P25Message.SessionMode getSessionMode()
-    {
-        return mMessage.get( SESSION_MODE ) ? 
-                P25Message.SessionMode.CIRCUIT : P25Message.SessionMode.PACKET;
+        return mServiceOptions;
     }
 }

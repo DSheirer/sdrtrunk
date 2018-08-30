@@ -21,15 +21,15 @@ package io.github.dsheirer.module.decode.p25.message.pdu.osp.control;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRCP25;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.P25NetworkCallsign;
 
-public class NetworkStatusBroadcastExtended extends PDUMessage implements IdentifierReceiver
+public class NetworkStatusBroadcastExtended extends PDUMessage implements FrequencyBandReceiver
 {
     public static final int[] LRA = {88, 89, 90, 91, 92, 93, 94, 95};
     public static final int[] SYSTEM_ID = {100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111};
@@ -43,8 +43,8 @@ public class NetworkStatusBroadcastExtended extends PDUMessage implements Identi
     public static final int[] MULTIPLE_BLOCK_CRC = {224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236,
         237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255};
 
-    private IBandIdentifier mTransmitIdentifierUpdate;
-    private IBandIdentifier mReceiveIdentifierUpdate;
+    private IFrequencyBand mTransmitIdentifierUpdate;
+    private IFrequencyBand mReceiveIdentifierUpdate;
 
     public NetworkStatusBroadcastExtended(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
@@ -156,7 +156,7 @@ public class NetworkStatusBroadcastExtended extends PDUMessage implements Identi
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public void setIdentifierMessage(int identifier, IFrequencyBand message)
     {
         if(identifier == getTransmitIdentifier())
         {
@@ -169,7 +169,8 @@ public class NetworkStatusBroadcastExtended extends PDUMessage implements Identi
         }
     }
 
-    public int[] getIdentifiers()
+    @Override
+    public int[] getFrequencyBandIdentifiers()
     {
         int[] idens = new int[2];
 

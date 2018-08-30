@@ -20,11 +20,11 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.osp.data;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
-public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData implements IdentifierReceiver
+public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData implements FrequencyBandReceiver
 {
     public static final int AUTONOMOUS_ACCESS_AVAILABLE_INDICATOR = 88;
     public static final int REQUESTED_ACCESS_AVAILABLE_INDICATOR = 89;
@@ -34,8 +34,8 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData implements I
     public static final int[] RECEIVE_NUMBER = {116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127};
     public static final int[] DATA_ACCESS_CONTROL = {128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143};
 
-    private IBandIdentifier mIdentifierUpdateTransmit;
-    private IBandIdentifier mIdentifierUpdateReceive;
+    private IFrequencyBand mIdentifierUpdateTransmit;
+    private IFrequencyBand mIdentifierUpdateReceive;
 
     public SNDCPDataChannelAnnouncementExplicit(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
@@ -128,7 +128,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData implements I
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public void setIdentifierMessage(int identifier, IFrequencyBand message)
     {
         if(identifier == getTransmitChannelIdentifier())
         {
@@ -146,7 +146,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData implements I
     }
 
     @Override
-    public int[] getIdentifiers()
+    public int[] getFrequencyBandIdentifiers()
     {
         int[] identifiers = new int[2];
 

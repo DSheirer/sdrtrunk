@@ -18,35 +18,33 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.ldu.lc;
 
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
-public class GroupVoiceChannelUpdateExplicit extends LDU1Message implements IdentifierReceiver
+import java.util.ArrayList;
+import java.util.List;
+
+public class GroupVoiceChannelUpdateExplicit extends LDU1Message implements FrequencyBandReceiver
 {
-    public static final int EMERGENCY_FLAG = 376;
-    public static final int ENCRYPTED_CHANNEL_FLAG = 377;
-    public static final int DUPLEX_MODE = 382;
-    public static final int SESSION_MODE = 383;
+    public static final int[] SERVICE_OPTIONS = {376, 377, 382, 383, 384, 385, 386, 387};
     public static final int[] GROUP_ADDRESS = {536, 537, 538, 539, 540, 541, 546, 547, 548, 549, 550, 551, 556, 557, 558, 559};
-    public static final int[] TRANSMIT_IDENTIFIER = {560, 561, 566, 567};
-    public static final int[] TRANSMIT_CHANNEL = {568, 569, 570, 571, 720, 721, 722, 723, 724, 725, 730, 731};
-    public static final int[] RECEIVE_IDENTIFIER = {732, 733, 734, 735};
-    public static final int[] RECEIVE_CHANNEL = {740, 741, 742, 743, 744, 745, 750, 751, 752, 753, 754, 755};
+    public static final int[] DOWNLINK_FREQUENCY_BAND = {560, 561, 566, 567};
+    public static final int[] DOWNLINK_CHANNEL_NUMBER = {568, 569, 570, 571, 720, 721, 722, 723, 724, 725, 730, 731};
+    public static final int[] UPLINK_FREQUENCY_BAND = {732, 733, 734, 735};
+    public static final int[] UPLINK_CHANNEL_NUMBER = {740, 741, 742, 743, 744, 745, 750, 751, 752, 753, 754, 755};
 
-    private IBandIdentifier mTransmitIdentifierUpdate;
-    private IBandIdentifier mReceiveIdentifierUpdate;
+    private IIdentifier mGroup;
+    private IAPCO25Channel mChannel;
+    private ServiceOptions mServiceOptions;
 
     public GroupVoiceChannelUpdateExplicit(LDU1Message message)
     {
         super(message);
-    }
-
-    @Override
-    public String getEventType()
-    {
-        return LinkControlOpcode.GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT.getDescription();
     }
 
     @Override
@@ -55,117 +53,49 @@ public class GroupVoiceChannelUpdateExplicit extends LDU1Message implements Iden
         StringBuilder sb = new StringBuilder();
 
         sb.append(getMessageStub());
-
-        if(isEmergency())
-        {
-            sb.append(" EMERGENCY");
-        }
-        if(isEncryptedChannel())
-        {
-            sb.append(" ENCRYPTED CHANNEL");
-        }
-
+        sb.append(" ").append(getServiceOptions());
+        sb.append(" ").append(getGroupAddress());
 
         return sb.toString();
     }
 
-    public boolean isEmergency()
+    public ServiceOptions getServiceOptions()
     {
-        return mMessage.get(EMERGENCY_FLAG);
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(mMessage.getInt(SERVICE_OPTIONS));
+        }
+
+        return mServiceOptions;
     }
 
-    public boolean isEncryptedChannel()
+    public IAPCO25Channel getChannel()
     {
-        return mMessage.get(ENCRYPTED_CHANNEL_FLAG);
+        if(mChannel == null)
+        {
+            mChannel = APCO25ExplicitChannel.create(mMessage.getInt(DOWNLINK_FREQUENCY_BAND),
+                mMessage.getInt(DOWNLINK_CHANNEL_NUMBER), mMessage.getInt(UPLINK_FREQUENCY_BAND),
+                mMessage.getInt(UPLINK_CHANNEL_NUMBER));
+        }
+
+        return mChannel;
     }
 
-    public DuplexMode getDuplexMode()
+    public IIdentifier getGroupAddress()
     {
-        return mMessage.get(DUPLEX_MODE) ? DuplexMode.FULL : DuplexMode.HALF;
-    }
+        if(mGroup == null)
+        {
+            mGroup = APCO25ToTalkgroup.createGroup(mMessage.getInt(GROUP_ADDRESS));
+        }
 
-    public SessionMode getSessionMode()
-    {
-        return mMessage.get(SESSION_MODE) ?
-            SessionMode.CIRCUIT : SessionMode.PACKET;
-    }
-
-    public int getTransmitChannelIdentifier()
-    {
-        return mMessage.getInt(TRANSMIT_IDENTIFIER);
-    }
-
-    public int getTransmitChannelNumber()
-    {
-        return mMessage.getInt(TRANSMIT_CHANNEL);
-    }
-
-    public String getTransmitChannel()
-    {
-        return getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber();
-    }
-
-    public int getReceiveChannelIdentifier()
-    {
-        return mMessage.getInt(RECEIVE_IDENTIFIER);
-    }
-
-    public int getReceiveChannelNumber()
-    {
-        return mMessage.getInt(RECEIVE_CHANNEL);
-    }
-
-    public String getReceiveChannel()
-    {
-        return getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber();
-    }
-
-    public String getGroupAddress()
-    {
-        return mMessage.getHex(GROUP_ADDRESS, 4);
+        return mGroup;
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        if(identifier == getTransmitChannelIdentifier())
-        {
-            mTransmitIdentifierUpdate = message;
-        }
-        if(identifier == getReceiveChannelIdentifier())
-        {
-            mReceiveIdentifierUpdate = message;
-        }
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[2];
-
-        identifiers[0] = getTransmitChannelIdentifier();
-        identifiers[1] = getReceiveChannelIdentifier();
-
-        return identifiers;
-    }
-
-    public long getDownlinkFrequency()
-    {
-        if(mTransmitIdentifierUpdate != null)
-        {
-            return mTransmitIdentifierUpdate.getDownlinkFrequency(getTransmitChannelNumber());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequency()
-    {
-        if(mReceiveIdentifierUpdate != null)
-        {
-            return mReceiveIdentifierUpdate.getUplinkFrequency(getReceiveChannelNumber());
-        }
-
-        return 0;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }

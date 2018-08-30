@@ -17,9 +17,10 @@ package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDUMessage;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -36,8 +37,7 @@ public class P25MessageProcessor implements Listener<Message>
     /* Map of up to 16 band identifiers per RFSS.  These identifier update
      * messages are inserted into any message that conveys channel information
      * so that the uplink/downlink frequencies can be calculated */
-    private HashMap<Integer, IBandIdentifier> mBandIdentifierMap =
-            new HashMap<Integer, IBandIdentifier>();
+    private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<Integer,IFrequencyBand>();
 
     private AliasList mAliasList;
 
@@ -57,28 +57,33 @@ public class P25MessageProcessor implements Listener<Message>
          */
         if(message.isValid())
         {
-            /* Insert band identifier update messages into channel-type messages */
-            if(message instanceof IdentifierReceiver)
+            /* Insert frequency band identifier update messages into channel-type messages */
+            if(message instanceof FrequencyBandReceiver)
             {
-                IdentifierReceiver receiver = (IdentifierReceiver) message;
+                FrequencyBandReceiver receiver = (FrequencyBandReceiver)message;
 
-                int[] identifiers = receiver.getIdentifiers();
+                List<IAPCO25Channel> channels = receiver.getChannels();
 
-                for(int identifier : identifiers)
+                for(IAPCO25Channel channel : channels)
                 {
-                    receiver.setIdentifierMessage(identifier,
-                            mBandIdentifierMap.get(identifier));
+                    int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
+
+                    for(int id : frequencyBandIdentifiers)
+                    {
+                        if(mFrequencyBandMap.containsKey(id))
+                        {
+                            channel.setFrequencyBand(mFrequencyBandMap.get(id));
+                        }
+                    }
                 }
             }
 
             /* Store band identifiers so that they can be injected into channel
              * type messages */
-            if(message instanceof IBandIdentifier)
+            if(message instanceof IFrequencyBand)
             {
-                IBandIdentifier bandIdentifier = (IBandIdentifier) message;
-
-                mBandIdentifierMap.put(bandIdentifier.getIdentifier(),
-                        bandIdentifier);
+                IFrequencyBand bandIdentifier = (IFrequencyBand)message;
+                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
             }
         }
 
@@ -94,11 +99,11 @@ public class P25MessageProcessor implements Listener<Message>
 
     public void dispose()
     {
-        mBandIdentifierMap.clear();
+        mFrequencyBandMap.clear();
         mMessageListener = null;
     }
 
-    public void setMessageListener(Listener<IMessage> listener)
+    public void setMessageListener(Listener<Message> listener)
     {
         mMessageListener = listener;
     }

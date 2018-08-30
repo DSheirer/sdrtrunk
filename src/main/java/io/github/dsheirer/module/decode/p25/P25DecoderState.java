@@ -34,7 +34,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.p25.message.IAdjacentSite;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
@@ -101,7 +101,7 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.AdjacentSta
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.AuthenticationCommand;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.DenyResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.GroupAffiliationResponse;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.IdentifierUpdate;
+import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.IdentifierUpdateFrequency;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.LocationRegistrationResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.ProtectionParameterUpdate;
@@ -147,7 +147,7 @@ public class P25DecoderState extends DecoderState
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25DecoderState.class);
     private static final DecimalFormat mFrequencyFormatter =
-            new DecimalFormat("0.000000");
+        new DecimalFormat("0.000000");
 
 
     private NetworkStatusBroadcast mNetworkStatus;
@@ -158,11 +158,11 @@ public class P25DecoderState extends DecoderState
     private SNDCPDataChannelAnnouncementExplicit mSNDCPDataChannel;
 
     private Set<SecondaryControlChannelBroadcast> mSecondaryControlChannels =
-            new TreeSet<>();
+        new TreeSet<>();
 
-    private Map<Integer, IdentifierUpdate> mBands = new HashMap<>();
-    private Map<String, Long> mRegistrations = new HashMap<>();
-    private Map<String, IAdjacentSite> mNeighborMap = new HashMap<>();
+    private Map<Integer,IdentifierUpdateFrequency> mBands = new HashMap<>();
+    private Map<String,Long> mRegistrations = new HashMap<>();
+    private Map<String,IAdjacentSite> mNeighborMap = new HashMap<>();
 
     private String mLastCommandEventID;
     private String mLastPageEventID;
@@ -186,7 +186,7 @@ public class P25DecoderState extends DecoderState
 
     private P25CallEvent mCurrentCallEvent;
     private List<String> mCallDetectTalkgroups = new ArrayList<>();
-    private Map<String, P25CallEvent> mChannelCallMap = new HashMap<>();
+    private Map<String,P25CallEvent> mChannelCallMap = new HashMap<>();
     private PatchGroupManager mPatchGroupManager;
 
     public P25DecoderState(AliasList aliasList,
@@ -201,12 +201,12 @@ public class P25DecoderState extends DecoderState
 
         mPatchGroupManager = new PatchGroupManager(aliasList, getCallEventBroadcaster());
         mSiteAttributeMonitor = new AliasedStringAttributeMonitor(Attribute.NETWORK_ID_2,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
         mFromTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
         mFromTalkgroupMonitor.addIllegalValue("000000");
         mToTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
         mToTalkgroupMonitor.addIllegalValue("0000");
         mToTalkgroupMonitor.addIllegalValue("000000");
     }
@@ -1523,7 +1523,7 @@ public class P25DecoderState extends DecoderState
                 case IDENTIFIER_UPDATE_NON_VUHF:
                 case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
                 case IDENTIFIER_UPDATE_TDMA:
-                    IdentifierUpdate iu = (IdentifierUpdate) tsbk;
+                    IdentifierUpdateFrequency iu = (IdentifierUpdateFrequency)tsbk;
 
                     if(!mBands.containsKey(iu.getIdentifier()))
                     {
@@ -1750,11 +1750,11 @@ public class P25DecoderState extends DecoderState
                         CallAlertExtended ca = (CallAlertExtended) pdu;
 
                         broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.PAGE)
-                                .aliasList(getAliasList())
-                                .from(ca.getWACN() + "-" + ca.getSystemID() + "-" +
-                                        ca.getSourceID())
-                                .to(ca.getTargetAddress())
-                                .build());
+                            .aliasList(getAliasList())
+                            .from(ca.getWACN() + "-" + ca.getSystemID() + "-" +
+                                ca.getSourceAddress())
+                            .to(ca.getTargetAddress())
+                            .build());
                     }
                     else
                     {
@@ -1792,17 +1792,17 @@ public class P25DecoderState extends DecoderState
                                 .contentEquals(mLastResponseEventID))
                         {
                             broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.RESPONSE)
-                                    .aliasList(getAliasList())
-                                    .details("AFFILIATION:" + gar.getResponse().name() +
-                                            " FOR GROUP:" + gar.getGroupWACN() + "-" +
-                                            gar.getGroupSystemID() + "-" +
-                                            gar.getGroupID() + " ANNOUNCEMENT GROUP:" +
-                                            gar.getAnnouncementGroupID())
-                                    .from(gar.getSourceWACN() + "-" +
-                                            gar.getSourceSystemID() + "-" +
-                                            gar.getSourceID())
-                                    .to(gar.getTargetAddress())
-                                    .build());
+                                .aliasList(getAliasList())
+                                .details("AFFILIATION:" + gar.getResponse().name() +
+                                    " FOR GROUP:" + gar.getGroupWACN() + "-" +
+                                    gar.getGroupSystemID() + "-" +
+                                    gar.getGroupAddress() + " ANNOUNCEMENT GROUP:" +
+                                    gar.getAnnouncementGroupAddress())
+                                .from(gar.getSourceWACN() + "-" +
+                                    gar.getSourceSystemID() + "-" +
+                                    gar.getSourceAddress())
+                                .to(gar.getTargetAddress())
+                                .build());
 
                             mLastResponseEventID = gar.getTargetAddress();
                         }
@@ -1897,6 +1897,11 @@ public class P25DecoderState extends DecoderState
                         }
 
                         broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.RESPONSE)
+                            .aliasList(getAliasList())
+                            .details(sb.toString())
+                            .from(raue.getSourceAddress())
+                            .to(raue.getTargetAddress())
+                            .build());
                                 .aliasList(getAliasList())
                                 .details(sb.toString())
                                 .from(raue.getSourceID())
@@ -1917,13 +1922,13 @@ public class P25DecoderState extends DecoderState
                                 .contentEquals(mLastQueryEventID))
                         {
                             broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.QUERY)
-                                    .aliasList(getAliasList())
-                                    .details("STATUS QUERY")
-                                    .from(sq.getSourceWACN() + "-" +
-                                            sq.getSourceSystemID() + "-" +
-                                            sq.getSourceID())
-                                    .to(sq.getTargetAddress())
-                                    .build());
+                                .aliasList(getAliasList())
+                                .details("STATUS QUERY")
+                                .from(sq.getSourceWACN() + "-" +
+                                    sq.getSourceSystemID() + "-" +
+                                    sq.getSourceAddress())
+                                .to(sq.getTargetAddress())
+                                .build());
 
                             mLastQueryEventID = sq.getToID();
                         }
@@ -2807,8 +2812,8 @@ public class P25DecoderState extends DecoderState
                 if(!mControlChannelShutdownLogged)
                 {
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.NOTIFICATION)
-                            .details("PLANNED CONTROL CHANNEL SHUTDOWN")
-                            .build());
+                        .details("PLANNED CONTROL CHANNEL_NUMBER SHUTDOWN")
+                        .build());
 
                     mControlChannelShutdownLogged = true;
                 }
@@ -3494,12 +3499,12 @@ public class P25DecoderState extends DecoderState
         sb.append(DIVIDER2).append("FREQUENCY BANDS:\n");
         for(Integer id : identifiers)
         {
-            IBandIdentifier band = mBands.get(id);
+            IFrequencyBand band = mBands.get(id);
             sb.append(band.toString()).append("\n");
 //            sb.append("  ").append(id);
 //            sb.append(" - BASE: " + mFrequencyFormatter.format(
 //                (double)band.getBaseFrequency() / 1E6d));
-//            sb.append(" CHANNEL SIZE: " + mFrequencyFormatter.format(
+//            sb.append(" CHANNEL_NUMBER SIZE: " + mFrequencyFormatter.format(
 //                (double)band.getChannelSpacing() / 1E6d));
 //            sb.append(" UPLINK OFFSET: " + mFrequencyFormatter.format(
 //                (double)band.getTransmitOffset() / 1E6D));
@@ -3519,9 +3524,9 @@ public class P25DecoderState extends DecoderState
                 sb.append("\n");
                 sb.append("NAC:").append(((P25Message) neighbor).getNAC());
                 sb.append("h SYSTEM:" + neighbor.getSystemID());
-                sb.append("h LRA:" + neighbor.getLRA());
+                sb.append("h LRA:" + neighbor.getLRAId());
 
-                String neighborID = neighbor.getRFSS() + "-" + neighbor.getSiteID();
+                String neighborID = neighbor.getRFSSId() + "-" + neighbor.getSiteID();
                 sb.append("h RFSS-SITE:" + neighborID);
 
                 sb.append("h ");

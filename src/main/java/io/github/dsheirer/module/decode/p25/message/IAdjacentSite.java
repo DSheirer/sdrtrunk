@@ -1,20 +1,24 @@
 package io.github.dsheirer.module.decode.p25.message;
 
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+
 /**
  * Interface for adjacent site (ie neighbor) messages
  */
 public interface IAdjacentSite
 {
-	public String getUniqueID();
-	public String getRFSS();
-	public String getSystemID();
-	public String getSiteID();
-	public String getLRA();
-	public String getSystemServiceClass();
-	
-	public String getDownlinkChannel();
-	public long getDownlinkFrequency();
-	
-	public String getUplinkChannel();
-	public long getUplinkFrequency();
+    String getUniqueID();
+
+    IIdentifier getRFSSId();
+
+    IIdentifier getSystemID();
+
+    IIdentifier getSiteID();
+
+    IIdentifier getLRAId();
+
+    String getSystemServiceClass();
+
+    IAPCO25Channel getChannel();
 }

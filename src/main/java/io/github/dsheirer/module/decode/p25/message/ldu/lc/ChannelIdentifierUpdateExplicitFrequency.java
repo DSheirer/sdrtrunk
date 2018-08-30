@@ -1,10 +1,9 @@
 package io.github.dsheirer.module.decode.p25.message.ldu.lc;
 
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
-public class ChannelIdentifierUpdateExplicit extends LDU1Message implements IBandIdentifier
+public class ChannelIdentifierUpdateExplicitFrequency extends LDU1Message implements IFrequencyBand
 {
 	public static final int[] IDENTIFIER = { 364,365,366,367 };
 	public static final int[] BANDWIDTH = { 372,373,374,375 };
@@ -16,17 +15,11 @@ public class ChannelIdentifierUpdateExplicit extends LDU1Message implements IBan
 		571,720,721,722,723,724,725,730,731,732,733,734,735,740,741,742,743,744,
 		745,750,751,752,753,754,755 };
 	
-	public ChannelIdentifierUpdateExplicit( LDU1Message source )
+	public ChannelIdentifierUpdateExplicitFrequency(LDU1Message source )
 	{
 		super( source );
 	}
 	
-    @Override
-    public String getEventType()
-    {
-        return LinkControlOpcode.CHANNEL_IDENTIFIER_UPDATE_EXPLICIT.getDescription();
-    }
-
 	@Override
 	public String getMessage()
 	{

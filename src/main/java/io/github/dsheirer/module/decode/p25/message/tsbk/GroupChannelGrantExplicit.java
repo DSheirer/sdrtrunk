@@ -20,20 +20,25 @@ package io.github.dsheirer.module.decode.p25.message.tsbk;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class GroupChannelGrantExplicit extends ChannelGrant
 {
-    public static final int[] TRANSMIT_IDENTIFIER = {96, 97, 98, 99};
-    public static final int[] TRANSMIT_NUMBER = {100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111};
-    public static final int[] RECEIVE_IDENTIFIER = {112, 113, 114, 115};
-    public static final int[] RECEIVE_NUMBER = {116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127};
-    public static final int[] GROUP_ADDRESS = {128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141,
-        142, 143};
+    public static final int[] DOWNLINK_FREQUENCY_BAND = {96, 97, 98, 99};
+    public static final int[] DOWNLINK_CHANNEL_NUMBER = {100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111};
+    public static final int[] UPLINK_FREQUENCY_BAND = {112, 113, 114, 115};
+    public static final int[] UPLINK_CHANNEL_NUMBER = {116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127};
+    public static final int[] GROUP_ADDRESS = {128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143};
 
-    private IBandIdentifier mTransmitIdentifierUpdate;
-    private IBandIdentifier mReceiveIdentifierUpdate;
+    private IAPCO25Channel mChannel;
+    private IIdentifier mGroupAddress;
 
     public GroupChannelGrantExplicit(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
@@ -43,12 +48,7 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
     @Override
     public boolean isTDMAChannel()
     {
-        if(mTransmitIdentifierUpdate != null)
-        {
-            return mTransmitIdentifierUpdate.isTDMA();
-        }
-
-        return false;
+        return getChannel().isTDMAChannel();
     }
 
     public String getMessage()
@@ -62,94 +62,40 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
             sb.append(" EMERGENCY");
         }
 
-        sb.append(" XMIT:");
-        sb.append(getTransmitChannelIdentifier() + "/" + getTransmitChannelNumber());
-
-        sb.append(" RCV:");
-        sb.append(getReceiveChannelIdentifier() + "/" + getReceiveChannelNumber());
-
+        sb.append(" CHAN:").append(getChannel());
         sb.append(" GRP:");
         sb.append(getGroupAddress());
 
         return sb.toString();
     }
 
-    public int getTransmitChannelIdentifier()
+    public IAPCO25Channel getChannel()
     {
-        return mMessage.getInt(TRANSMIT_IDENTIFIER);
+        if(mChannel == null)
+        {
+            mChannel = APCO25ExplicitChannel.create(mMessage.getInt(DOWNLINK_FREQUENCY_BAND),
+                mMessage.getInt(DOWNLINK_CHANNEL_NUMBER), mMessage.getInt(UPLINK_FREQUENCY_BAND),
+                mMessage.getInt(UPLINK_CHANNEL_NUMBER));
+        }
+
+        return mChannel;
     }
 
-    public int getTransmitChannelNumber()
+    public IIdentifier getGroupAddress()
     {
-        return mMessage.getInt(TRANSMIT_NUMBER);
-    }
+        if(mGroupAddress == null)
+        {
+            mGroupAddress = APCO25FromTalkgroup.createGroup(mMessage.getInt(GROUP_ADDRESS));
+        }
 
-    public String getTransmitChannel()
-    {
-        return getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber();
-    }
-
-    public int getReceiveChannelIdentifier()
-    {
-        return mMessage.getInt(RECEIVE_IDENTIFIER);
-    }
-
-    public int getReceiveChannelNumber()
-    {
-        return mMessage.getInt(RECEIVE_NUMBER);
-    }
-
-    public String getReceiveChannel()
-    {
-        return getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber();
-    }
-
-    public String getGroupAddress()
-    {
-        return mMessage.getHex(GROUP_ADDRESS, 4);
+        return mGroupAddress;
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        if(identifier == getTransmitChannelIdentifier())
-        {
-            mTransmitIdentifierUpdate = message;
-        }
-
-        if(identifier == getReceiveChannelIdentifier())
-        {
-            mReceiveIdentifierUpdate = message;
-        }
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[2];
-        identifiers[0] = getTransmitChannelIdentifier();
-        identifiers[1] = getReceiveChannelIdentifier();
-
-        return identifiers;
-    }
-
-    public long getDownlinkFrequency()
-    {
-        if(mTransmitIdentifierUpdate != null)
-        {
-            return mTransmitIdentifierUpdate.getDownlinkFrequency(getTransmitChannelNumber());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequency()
-    {
-        if(mReceiveIdentifierUpdate != null)
-        {
-            return mReceiveIdentifierUpdate.getUplinkFrequency(getReceiveChannelNumber());
-        }
-
-        return 0;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }

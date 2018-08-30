@@ -20,11 +20,15 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.motorola;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
-public class ControlChannelBaseStationIdentification extends MotorolaTSBKMessage implements IdentifierReceiver
+import java.util.ArrayList;
+import java.util.List;
+
+public class ControlChannelBaseStationIdentification extends MotorolaTSBKMessage implements FrequencyBandReceiver
 {
     public static final int[] CHARACTER_1 = {80, 81, 82, 83, 84, 85};
     public static final int[] CHARACTER_2 = {86, 87, 88, 89, 90, 91};
@@ -38,17 +42,11 @@ public class ControlChannelBaseStationIdentification extends MotorolaTSBKMessage
     public static final int[] IDENTIFIER = {128, 129, 130, 131};
     public static final int[] CHANNEL = {132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143};
 
-    private IBandIdentifier mIdentifierUpdate;
+    private IAPCO25Channel mChannel;
 
     public ControlChannelBaseStationIdentification(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
         super(message, duid, aliasList);
-    }
-
-    @Override
-    public String getEventType()
-    {
-        return MotorolaOpcode.CONTROL_CHANNEL_ID.getDescription();
     }
 
     public String getMessage()
@@ -57,13 +55,8 @@ public class ControlChannelBaseStationIdentification extends MotorolaTSBKMessage
 
         sb.append(getMessageStub());
 
-        sb.append(" CHAN:" + getIdentifier() + "-" + getChannel());
-
+        sb.append(" CHAN:" + getChannel());
         sb.append(" CWID:" + getCWID());
-
-        sb.append(" DN:" + getDownlinkFrequency());
-
-        sb.append(" UP:" + getUplinkFrequency());
 
         return sb.toString();
     }
@@ -97,49 +90,21 @@ public class ControlChannelBaseStationIdentification extends MotorolaTSBKMessage
         return null;
     }
 
-    public int getIdentifier()
+    public IAPCO25Channel getChannel()
     {
-        return mMessage.getInt(IDENTIFIER);
-    }
-
-    public int getChannel()
-    {
-        return mMessage.getInt(CHANNEL);
-    }
-
-    public long getUplinkFrequency()
-    {
-        if(mIdentifierUpdate != null)
+        if(mChannel == null)
         {
-            mIdentifierUpdate.getUplinkFrequency(getChannel());
+            mChannel = APCO25Channel.create(mMessage.getInt(IDENTIFIER), mMessage.getInt(CHANNEL));
         }
 
-        return 0;
-    }
-
-    public long getDownlinkFrequency()
-    {
-        if(mIdentifierUpdate != null)
-        {
-            mIdentifierUpdate.getDownlinkFrequency(getChannel());
-        }
-
-        return 0;
+        return mChannel;
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        mIdentifierUpdate = message;
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[1];
-
-        identifiers[0] = getIdentifier();
-
-        return identifiers;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }

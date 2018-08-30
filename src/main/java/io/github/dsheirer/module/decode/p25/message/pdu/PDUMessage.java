@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.bits.BinaryMessage;
@@ -141,29 +156,34 @@ public class PDUMessage extends P25Message
 
     public Vendor getVendor()
     {
-        return Vendor.fromValue(getMessage().getInt(VENDOR_ID));
+        return Vendor.fromValue(mMessage.getInt(VENDOR_ID));
     }
 
-    public String getLogicalLinkID()
+    public IIdentifier getLogicalLinkID()
     {
-        return getMessage().getHex(LOGICAL_LINK_ID, 6);
+        if(mLLID == null)
+        {
+            mLLID = APCO25LogicalLinkId.create(mMessage.getInt(LOGICAL_LINK_ID));
+        }
+
+        return mLLID;
     }
 
     public int getBlocksToFollowCount()
     {
-        return getMessage().getInt(BLOCKS_TO_FOLLOW);
+        return mMessage.getInt(BLOCKS_TO_FOLLOW);
     }
 
     public int getPadOctetCount()
     {
-        return getMessage().getInt(PAD_OCTET_COUNT);
+        return mMessage.getInt(PAD_OCTET_COUNT);
     }
 
     public Opcode getOpcode()
     {
         if(getFormat() == PDUFormat.ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL)
         {
-            return Opcode.fromValue(getMessage().getInt(OPCODE));
+            return Opcode.fromValue(mMessage.getInt(OPCODE));
         }
 
         return Opcode.UNKNOWN;
@@ -173,7 +193,7 @@ public class PDUMessage extends P25Message
     {
         if(getFormat() == PDUFormat.ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL)
         {
-            return VendorOpcode.fromValue(getMessage().getInt(OPCODE));
+            return VendorOpcode.fromValue(mMessage.getInt(OPCODE));
         }
 
         return VendorOpcode.UNKNOWN;
@@ -181,6 +201,6 @@ public class PDUMessage extends P25Message
 
     public int getDataHeaderOffset()
     {
-        return getMessage().getInt(DATA_HEADER_OFFSET);
+        return mMessage.getInt(DATA_HEADER_OFFSET);
     }
 }

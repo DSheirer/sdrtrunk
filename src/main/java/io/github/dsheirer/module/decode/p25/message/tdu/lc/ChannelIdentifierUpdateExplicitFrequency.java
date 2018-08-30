@@ -16,33 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.module.decode.p25.message.ldu.lc;
+package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
-public class ChannelIdentifierUpdate extends LDU1Message implements IBandIdentifier
+public class ChannelIdentifierUpdateExplicitFrequency extends TDULinkControlMessage implements IFrequencyBand
 {
-    public static final int[] IDENTIFIER = {364, 365, 366, 367};
-    public static final int[] BANDWIDTH = {372, 373, 374, 375, 376, 377, 382, 383, 384};
-    public static final int[] TRANSMIT_OFFSET = {385, 386, 387, 536, 537, 538, 539,
-        540, 541};
-    public static final int[] CHANNEL_SPACING = {546, 547, 548, 549, 550, 551, 556,
-        557, 558, 559};
-    public static final int[] BASE_FREQUENCY = {560, 561, 566, 567, 568, 569, 570,
-        571, 720, 721, 722, 723, 724, 725, 730, 731, 732, 733, 734, 735, 740, 741, 742, 743, 744,
-        745, 750, 751, 752, 753, 754, 755};
+    public static final int[] IDENTIFIER = {72, 73, 74, 75};
+    public static final int[] BANDWIDTH = {88, 89, 90, 91};
+    public static final int[] TRANSMIT_OFFSET = {92, 93, 94, 95, 96, 97, 98, 99, 112, 113, 114, 115, 116, 117};
+    public static final int[] CHANNEL_SPACING = {118, 119, 120, 121, 122, 123, 136, 137, 138, 139};
+    public static final int[] BASE_FREQUENCY = {140, 141, 142, 143, 144, 145, 146, 147, 160, 161, 162, 163, 164, 165,
+        166, 167, 168, 169, 170, 171, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195};
 
-    public ChannelIdentifierUpdate(LDU1Message message)
+    public ChannelIdentifierUpdateExplicitFrequency(TDULinkControlMessage source)
     {
-        super(message);
+        super(source);
     }
 
     @Override
     public String getEventType()
     {
-        return LinkControlOpcode.CHANNEL_IDENTIFIER_UPDATE.getDescription();
+        return LinkControlOpcode.CHANNEL_IDENTIFIER_UPDATE_EXPLICIT.getDescription();
     }
 
     @Override

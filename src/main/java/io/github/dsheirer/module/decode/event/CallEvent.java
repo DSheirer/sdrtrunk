@@ -168,7 +168,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
 
     public static String getCSVHeader()
     {
-        return "START_DATE,START_TIME,END_DATE,END_TIME,DECODER,EVENT,FROM,FROM_ALIAS,TO,TO_ALIAS,CHANNEL," +
+        return "START_DATE,START_TIME,END_DATE,END_TIME,DECODER,EVENT,FROM,FROM_ALIAS,TO,TO_ALIAS,CHANNEL_NUMBER," +
             "FREQUENCY,DETAILS";
     }
 

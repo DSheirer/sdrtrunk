@@ -18,35 +18,37 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.ldu.lc;
 
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
+import io.github.dsheirer.identifier.integer.node.APCO25Site;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
-public class SecondaryControlChannelBroadcast extends LDU1Message implements IdentifierReceiver
+import java.util.ArrayList;
+import java.util.List;
+
+public class SecondaryControlChannelBroadcast extends LDU1Message implements FrequencyBandReceiver
 {
     public static final int[] RFSS_ID = {364, 365, 366, 367, 372, 373, 374, 375};
     public static final int[] SITE_ID = {376, 377, 382, 383, 384, 385, 386, 387};
-    public static final int[] IDENTIFIER_A = {536, 537, 538, 539};
-    public static final int[] CHANNEL_A = {540, 541, 546, 547, 548, 549, 550, 551, 556, 557, 558, 559};
+    public static final int[] FREQUENCY_BAND_A = {536, 537, 538, 539};
+    public static final int[] CHANNEL_NUMBER_A = {540, 541, 546, 547, 548, 549, 550, 551, 556, 557, 558, 559};
     public static final int[] SYSTEM_SERVICE_CLASS_A = {560, 561, 566, 567, 568, 569, 570, 571};
-    public static final int[] IDENTIFIER_B = {720, 721, 722, 723};
-    public static final int[] CHANNEL_B = {724, 725, 730, 731, 732, 733, 734, 735, 740, 741, 742, 743};
+    public static final int[] FREQUENCY_BAND_B = {720, 721, 722, 723};
+    public static final int[] CHANNEL_NUMBER_B = {724, 725, 730, 731, 732, 733, 734, 735, 740, 741, 742, 743};
     public static final int[] SYSTEM_SERVICE_CLASS_B = {744, 745, 750, 751, 752, 753, 754, 755};
 
-    private IBandIdentifier mIdentifierProviderA;
-    private IBandIdentifier mIdentifierProviderB;
+    private IIdentifier mRFSS;
+    private IIdentifier mSite;
+    private IAPCO25Channel mChannelA;
+    private IAPCO25Channel mChannelB;
 
     public SecondaryControlChannelBroadcast(LDU1Message message)
     {
         super(message);
-    }
-
-    @Override
-    public String getEventType()
-    {
-        return LinkControlOpcode.SECONDARY_CONTROL_CHANNEL_BROADCAST.getDescription();
     }
 
     @Override
@@ -69,44 +71,44 @@ public class SecondaryControlChannelBroadcast extends LDU1Message implements Ide
         return sb.toString();
     }
 
-    public String getRFSubsystemID()
+    public IIdentifier getRFSubsystemID()
     {
-        return mMessage.getHex(RFSS_ID, 2);
+        if(mRFSS == null)
+        {
+            mRFSS = APCO25Rfss.create(mMessage.getInt(RFSS_ID));
+        }
+
+        return mRFSS;
     }
 
-    public String getSiteID()
+    public IIdentifier getSiteID()
     {
-        return mMessage.getHex(SITE_ID, 2);
+        if(mSite == null)
+        {
+            mSite = APCO25Site.create(mMessage.getInt(SITE_ID));
+        }
+
+        return mSite;
     }
 
-    public int getIdentifierA()
+    public IAPCO25Channel getChannelA()
     {
-        return mMessage.getInt(IDENTIFIER_A);
+        if(mChannelA == null)
+        {
+            mChannelA = APCO25Channel.create(mMessage.getInt(FREQUENCY_BAND_A), mMessage.getInt(CHANNEL_NUMBER_A));
+        }
+
+        return mChannelA;
     }
 
-    public int getChannelA()
+    public IAPCO25Channel getChannelB()
     {
-        return mMessage.getInt(CHANNEL_A);
-    }
+        if(mChannelB == null)
+        {
+            mChannelB = APCO25Channel.create(mMessage.getInt(FREQUENCY_BAND_B), mMessage.getInt(CHANNEL_NUMBER_B));
+        }
 
-    public String getChannelNumberA()
-    {
-        return getIdentifierA() + "-" + getChannelA();
-    }
-
-    public int getIdentifierB()
-    {
-        return mMessage.getInt(IDENTIFIER_B);
-    }
-
-    public int getChannelB()
-    {
-        return mMessage.getInt(CHANNEL_B);
-    }
-
-    public String getChannelNumberB()
-    {
-        return getIdentifierB() + "-" + getChannelB();
+        return mChannelB;
     }
 
     public int getSystemServiceClassA()
@@ -120,66 +122,11 @@ public class SecondaryControlChannelBroadcast extends LDU1Message implements Ide
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        if(identifier == getIdentifierA())
-        {
-            mIdentifierProviderA = message;
-        }
-        if(identifier == getIdentifierB())
-        {
-            mIdentifierProviderB = message;
-        }
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[2];
-
-        identifiers[0] = getIdentifierA();
-        identifiers[1] = getIdentifierB();
-
-        return identifiers;
-    }
-
-    public long getDownlinkFrequencyA()
-    {
-        if(mIdentifierProviderA != null)
-        {
-            return mIdentifierProviderA.getDownlinkFrequency(getChannelA());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequencyA()
-    {
-        if(mIdentifierProviderA != null)
-        {
-            return mIdentifierProviderA.getUplinkFrequency(getChannelA());
-        }
-
-        return 0;
-    }
-
-    public long getDownlinkFrequencyB()
-    {
-        if(mIdentifierProviderB != null)
-        {
-            return mIdentifierProviderB.getDownlinkFrequency(getChannelB());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequencyB()
-    {
-        if(mIdentifierProviderB != null)
-        {
-            return mIdentifierProviderB.getUplinkFrequency(getChannelB());
-        }
-
-        return 0;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannelA());
+        channels.add(getChannelB());
+        return channels;
     }
 }

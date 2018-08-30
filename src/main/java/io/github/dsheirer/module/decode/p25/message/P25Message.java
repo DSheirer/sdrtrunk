@@ -36,8 +36,8 @@ public abstract class P25Message extends Message
     }
 
     private CorrectedBinaryMessage mMessage;
-    private int mNAC;
     private boolean mValid = true;
+    private IIdentifier mNAC;
 
     /**
      * Constructs a P25 message.
@@ -72,11 +72,13 @@ public abstract class P25Message extends Message
         return mMessage;
     }
 
-    /**
-     * Network Access Code (NAC) transmitted in the Network Identifier (NID) message prefix.
-     */
-    public int getNAC()
+    public String getNAC()
     {
+        if(mNAC == null)
+        {
+            mNAC = APCO25Nac.create(mMessage.getInt(NAC));
+        }
+
         return mNAC;
     }
 

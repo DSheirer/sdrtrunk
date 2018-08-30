@@ -20,17 +20,21 @@ package io.github.dsheirer.module.decode.p25.message.tsbk;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
-public abstract class ChannelGrant extends ServiceMessage implements IdentifierReceiver
+import java.util.ArrayList;
+import java.util.List;
+
+public abstract class ChannelGrant extends ServiceMessage implements FrequencyBandReceiver
 {
     public static final int[] PRIORITY = {85, 86, 87};
-    public static final int[] CHANNEL_IDENTIFIER = {88, 89, 90, 91};
+    public static final int[] FREQUENCY_BAND = {88, 89, 90, 91};
     public static final int[] CHANNEL_NUMBER = {92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103};
 
-    private IBandIdentifier mIdentifierUpdate;
+    private IAPCO25Channel mChannel;
 
     public ChannelGrant(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
@@ -42,12 +46,7 @@ public abstract class ChannelGrant extends ServiceMessage implements IdentifierR
      */
     public boolean isTDMAChannel()
     {
-        if(mIdentifierUpdate != null)
-        {
-            return mIdentifierUpdate.isTDMA();
-        }
-
-        return false;
+        return getChannel().isTDMAChannel();
     }
 
     /**
@@ -58,53 +57,21 @@ public abstract class ChannelGrant extends ServiceMessage implements IdentifierR
         return mMessage.getInt(PRIORITY);
     }
 
-    public int getChannelIdentifier()
+    public IAPCO25Channel getChannel()
     {
-        return mMessage.getInt(CHANNEL_IDENTIFIER);
-    }
+        if(mChannel == null)
+        {
+            mChannel = APCO25Channel.create(mMessage.getInt(FREQUENCY_BAND), mMessage.getInt(CHANNEL_NUMBER));
+        }
 
-    public int getChannelNumber()
-    {
-        return mMessage.getInt(CHANNEL_NUMBER);
-    }
-
-    public String getChannel()
-    {
-        return getChannelIdentifier() + "-" + getChannelNumber();
+        return mChannel;
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        mIdentifierUpdate = message;
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[1];
-        identifiers[0] = getChannelIdentifier();
-
-        return identifiers;
-    }
-
-    public long getDownlinkFrequency()
-    {
-        if(mIdentifierUpdate != null)
-        {
-            return mIdentifierUpdate.getDownlinkFrequency(getChannelNumber());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequency()
-    {
-        if(mIdentifierUpdate != null)
-        {
-            return mIdentifierUpdate.getUplinkFrequency(getChannelNumber());
-        }
-
-        return 0;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }

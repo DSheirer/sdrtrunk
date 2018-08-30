@@ -1,85 +1,80 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 public class UnitToUnitVoiceChannelUser extends TDULinkControlMessage
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( UnitToUnitVoiceChannelUser.class );
-    /* Service Options */
-    public static final int EMERGENCY_FLAG = 92;
-    public static final int ENCRYPTED_CHANNEL_FLAG = 93;
-    public static final int DUPLEX_MODE = 94;
-    public static final int SESSION_MODE = 95;
-	public static final int[] TARGET_ADDRESS = { 112,113,114,115,116,117,118,
-		119,120,121,122,123,136,137,138,139,140,141,142,143,144,145,146,147 };
-	public static final int[] SOURCE_ADDRESS = { 160,161,162,163,164,165,166,
-		167,168,169,170,171,184,185,186,187,188,189,190,191,192,193,194,195 };
-	
-	public UnitToUnitVoiceChannelUser( TDULinkControlMessage source )
-	{
-		super( source );
-	}
-	
+    public static final int[] SERVICE_OPTIONS = {92, 93, 94, 95, 96, 97, 98, 99};
+    public static final int[] TARGET_ADDRESS = {112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147};
+    public static final int[] SOURCE_ADDRESS = {160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195};
+
+    private ServiceOptions mServiceOptions;
+    private IIdentifier mTargetAddress;
+    private IIdentifier mSourceAddress;
+
+    public UnitToUnitVoiceChannelUser(TDULinkControlMessage source)
+    {
+        super(source);
+    }
+
     @Override
-    public String getEventType()
+    public String getMessage()
     {
-        return LinkControlOpcode.UNIT_TO_UNIT_VOICE_CHANNEL_USER.getDescription();
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(getMessageStub());
+        sb.append(" ").append(getServiceOptions());
+        sb.append(" FROM:" + getSourceAddress());
+        sb.append(" TO:" + getTargetAddress());
+
+        return sb.toString();
     }
 
-	@Override
-	public String getMessage()
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( getMessageStub() );
-		
-		if( isEmergency() )
-		{
-			sb.append( " EMERGENCY" );
-		}
-		if( isEncryptedChannel() )
-		{
-			sb.append( " ENCRYPTED CHANNEL" );
-		}
+    public ServiceOptions getServiceOptions()
+    {
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(mMessage.getInt(SERVICE_OPTIONS));
+        }
 
-		sb.append( " FROM:" + getSourceAddress() );
-		
-		sb.append( " TO:" + getTargetAddress() );
-		
-		return sb.toString();
-	}
-
-    public boolean isEmergency()
-    {
-        return mMessage.get( EMERGENCY_FLAG );
-    }
-    
-    public boolean isEncryptedChannel()
-    {
-        return mMessage.get( ENCRYPTED_CHANNEL_FLAG );
-    }
-    
-    public DuplexMode getDuplexMode()
-    {
-        return mMessage.get( DUPLEX_MODE ) ? DuplexMode.FULL : DuplexMode.HALF;
+        return mServiceOptions;
     }
 
-    public SessionMode getSessionMode()
+    public IIdentifier getTargetAddress()
     {
-        return mMessage.get( SESSION_MODE ) ? 
-                SessionMode.CIRCUIT : SessionMode.PACKET;
+        if(mTargetAddress == null)
+        {
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(mMessage.getInt(TARGET_ADDRESS));
+        }
+
+        return mTargetAddress;
     }
-    
-    public String getTargetAddress()
+
+    public IIdentifier getSourceAddress()
     {
-    	return mMessage.getHex( TARGET_ADDRESS, 6 );
-    }
-    
-    public String getSourceAddress()
-    {
-    	return mMessage.getHex( SOURCE_ADDRESS, 6 );
+        if(mSourceAddress == null)
+        {
+            mSourceAddress = APCO25FromTalkgroup.createIndividual(mMessage.getInt(SOURCE_ADDRESS));
+        }
+
+        return mSourceAddress;
     }
 }

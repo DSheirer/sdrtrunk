@@ -18,32 +18,29 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.ldu.lc;
 
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
+import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 import io.github.dsheirer.module.decode.p25.reference.Service;
 
-public class NetworkStatusBroadcast extends LDU1Message implements IdentifierReceiver
+import java.util.ArrayList;
+import java.util.List;
+
+public class NetworkStatusBroadcast extends LDU1Message implements FrequencyBandReceiver
 {
-    public static final int[] NETWORK_ID = {376, 377, 382, 383, 384, 385, 386, 387, 536, 537, 538, 539, 540, 541, 546,
+    public static final int[] WACN_ID = {376, 377, 382, 383, 384, 385, 386, 387, 536, 537, 538, 539, 540, 541, 546,
         547, 548, 549, 550, 551};
     public static final int[] SYSTEM_ID = {556, 557, 558, 559, 560, 561, 566, 567, 568, 569, 570, 571};
-    public static final int[] IDENTIFIER = {720, 721, 722, 723};
-    public static final int[] CHANNEL = {724, 725, 730, 731, 732, 733, 734, 735, 740, 741, 742, 743};
+    public static final int[] FREQUENCY_BAND = {720, 721, 722, 723};
+    public static final int[] CHANNEL_NUMBER = {724, 725, 730, 731, 732, 733, 734, 735, 740, 741, 742, 743};
     public static final int[] SYSTEM_SERVICE_CLASS = {744, 745, 750, 751, 752, 753, 754, 755};
 
-    private IBandIdentifier mIdentifierUpdate;
+    private IAPCO25Channel mChannel;
 
     public NetworkStatusBroadcast(LDU1Message source)
     {
         super(source);
-    }
-
-    @Override
-    public String getEventType()
-    {
-        return LinkControlOpcode.NETWORK_STATUS_BROADCAST.getDescription();
     }
 
     @Override
@@ -53,7 +50,7 @@ public class NetworkStatusBroadcast extends LDU1Message implements IdentifierRec
 
         sb.append(getMessageStub());
 
-        sb.append(" NETWORK:" + getNetworkID());
+        sb.append(" WACN:" + getWACN());
         sb.append(" SYS:" + getSystem());
         sb.append(" CHAN:" + getChannel());
         sb.append(" " + Service.getServices(getSystemServiceClass()).toString());
@@ -61,29 +58,24 @@ public class NetworkStatusBroadcast extends LDU1Message implements IdentifierRec
         return sb.toString();
     }
 
-    public String getNetworkID()
+    public int getWACN()
     {
-        return mMessage.getHex(NETWORK_ID, 5);
+        return mMessage.getInt(WACN_ID);
     }
 
-    public String getSystem()
+    public int getSystem()
     {
-        return mMessage.getHex(SYSTEM_ID, 3);
+        return mMessage.getInt(SYSTEM_ID);
     }
 
-    public int getIdentifier()
+    public IAPCO25Channel getChannel()
     {
-        return mMessage.getInt(IDENTIFIER);
-    }
+        if(mChannel == null)
+        {
+            mChannel = APCO25Channel.create(mMessage.getInt(FREQUENCY_BAND), mMessage.getInt(CHANNEL_NUMBER));
+        }
 
-    public int getChannelNumber()
-    {
-        return mMessage.getInt(CHANNEL);
-    }
-
-    public String getChannel()
-    {
-        return getIdentifier() + "-" + getChannelNumber();
+        return mChannel;
     }
 
     public int getSystemServiceClass()
@@ -92,38 +84,10 @@ public class NetworkStatusBroadcast extends LDU1Message implements IdentifierRec
     }
 
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        mIdentifierUpdate = message;
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[1];
-
-        identifiers[0] = getIdentifier();
-
-        return identifiers;
-    }
-
-    public long getDownlinkFrequency()
-    {
-        if(mIdentifierUpdate != null)
-        {
-            return mIdentifierUpdate.getDownlinkFrequency(getChannelNumber());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequency()
-    {
-        if(mIdentifierUpdate != null)
-        {
-            return mIdentifierUpdate.getUplinkFrequency(getChannelNumber());
-        }
-
-        return 0;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }

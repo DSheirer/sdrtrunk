@@ -18,10 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
-public class ChannelIdentifierUpdate extends TDULinkControlMessage implements IBandIdentifier
+public class ChannelIdentifierUpdateFrequency extends TDULinkControlMessage implements IFrequencyBand
 {
     public static final int[] IDENTIFIER = {72, 73, 74, 75};
     public static final int[] BANDWIDTH = {88, 89, 90, 91, 92, 93, 94, 95, 96};
@@ -33,7 +33,7 @@ public class ChannelIdentifierUpdate extends TDULinkControlMessage implements IB
         147, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 184, 185, 186,
         187, 188, 189, 190, 191, 192, 193, 194, 195};
 
-    public ChannelIdentifierUpdate(TDULinkControlMessage source)
+    public ChannelIdentifierUpdateFrequency(TDULinkControlMessage source)
     {
         super(source);
     }

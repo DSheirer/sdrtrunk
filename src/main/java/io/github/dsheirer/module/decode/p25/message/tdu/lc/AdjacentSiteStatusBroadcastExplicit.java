@@ -18,26 +18,36 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.identifier.integer.node.APCO25Lra;
+import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
+import io.github.dsheirer.identifier.integer.node.APCO25Site;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.IAdjacentSite;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
-public class AdjacentSiteStatusBroadcastExplicit extends TDULinkControlMessage implements IdentifierReceiver, IAdjacentSite
+import java.util.ArrayList;
+import java.util.List;
+
+public class AdjacentSiteStatusBroadcastExplicit extends TDULinkControlMessage implements FrequencyBandReceiver, IAdjacentSite
 {
     public static final int[] LRA = {72, 73, 74, 75, 88, 89, 90, 91};
-    public static final int[] TRANSMIT_IDENTIFIER = {92, 93, 94, 95};
-    public static final int[] TRANSMIT_CHANNEL = {96, 97, 98, 99, 112, 113, 114, 115,
+    public static final int[] DOWNLINK_FREQUENCY_BAND = {92, 93, 94, 95};
+    public static final int[] DOWNLINK_CHANNEL_NUMBER = {96, 97, 98, 99, 112, 113, 114, 115,
         116, 117, 118, 119};
     public static final int[] RFSS_ID = {120, 121, 122, 123, 136, 137, 138, 139};
     public static final int[] SITE_ID = {140, 141, 142, 143, 144, 145, 146, 147};
 
-    public static final int[] RECEIVE_IDENTIFIER = {160, 161, 162, 163};
-    public static final int[] RECEIVE_CHANNEL = {164, 165, 166, 167, 168, 169, 170,
+    public static final int[] UPLINK_FREQUENCY_BAND = {160, 161, 162, 163};
+    public static final int[] UPLINK_CHANNEL_NUMBER = {164, 165, 166, 167, 168, 169, 170,
         171, 184, 185, 186, 187};
 
-    private IBandIdentifier mTransmitBand;
-    private IBandIdentifier mReceiveBand;
+    private IIdentifier mLRA;
+    private IIdentifier mRFSS;
+    private IIdentifier mSite;
+    private IAPCO25Channel mChannel;
 
     public AdjacentSiteStatusBroadcastExplicit(TDULinkControlMessage source)
     {
@@ -57,13 +67,11 @@ public class AdjacentSiteStatusBroadcastExplicit extends TDULinkControlMessage i
 
         sb.append(getMessageStub());
 
-        sb.append(" LRA:" + getLRA());
+        sb.append(" LRA:" + getLRAId());
 
-        sb.append(" SITE:" + getRFSS() + "-" + getSiteID());
+        sb.append(" SITE:" + getRFSSId() + "-" + getSiteID());
 
-        sb.append(" DNLINK:" + getDownlinkChannel());
-
-        sb.append(" UPLINK:" + getUplinkChannel());
+        sb.append(" CHAN:" + getChannel());
 
         return sb.toString();
     }
@@ -74,31 +82,59 @@ public class AdjacentSiteStatusBroadcastExplicit extends TDULinkControlMessage i
 
         sb.append(getSystemID());
         sb.append(":");
-        sb.append(getRFSS());
+        sb.append(getRFSSId());
         sb.append(":");
         sb.append(getSiteID());
 
         return sb.toString();
     }
 
-    public String getLRA()
+    @Override
+    public IIdentifier getSystemID()
     {
-        return mMessage.getHex(LRA, 2);
+        return null;
     }
 
-    public String getRFSS()
+    public IIdentifier getLRAId()
     {
-        return mMessage.getHex(RFSS_ID, 2);
+        if(mLRA == null)
+        {
+            mLRA = APCO25Lra.create(mMessage.getInt(LRA));
+        }
+
+        return mLRA;
     }
 
-    public String getSystemID()
+    public IIdentifier getRFSSId()
     {
-        return "***";
+        if(mRFSS == null)
+        {
+            mRFSS = APCO25Rfss.create(mMessage.getInt(RFSS_ID));
+        }
+
+        return mRFSS;
     }
 
-    public String getSiteID()
+    public IIdentifier getSiteID()
     {
-        return mMessage.getHex(SITE_ID, 2);
+        if(mSite == null)
+        {
+            mSite = APCO25Site.create(mMessage.getInt(SITE_ID));
+        }
+
+        return mSite;
+    }
+
+    public IAPCO25Channel getChannel()
+    {
+        if(mChannel == null)
+        {
+            mChannel = APCO25ExplicitChannel.create(mMessage.getInt(DOWNLINK_FREQUENCY_BAND),
+                mMessage.getInt(DOWNLINK_CHANNEL_NUMBER), mMessage.getInt(UPLINK_FREQUENCY_BAND),
+                mMessage.getInt(UPLINK_CHANNEL_NUMBER));
+        }
+
+        return mChannel;
     }
 
     @Override
@@ -107,78 +143,11 @@ public class AdjacentSiteStatusBroadcastExplicit extends TDULinkControlMessage i
         return "[]";
     }
 
-    public int getTransmitIdentifier()
-    {
-        return mMessage.getInt(TRANSMIT_IDENTIFIER);
-    }
-
-    public int getTransmitChannel()
-    {
-        return mMessage.getInt(TRANSMIT_CHANNEL);
-    }
-
-    public String getDownlinkChannel()
-    {
-        return getTransmitIdentifier() + "-" + getTransmitChannel();
-    }
-
-    public int getReceiveIdentifier()
-    {
-        return mMessage.getInt(RECEIVE_IDENTIFIER);
-    }
-
-    public int getReceiveChannel()
-    {
-        return mMessage.getInt(RECEIVE_CHANNEL);
-    }
-
-    public String getUplinkChannel()
-    {
-        return getReceiveIdentifier() + "-" + getReceiveChannel();
-    }
-
-    public long getDownlinkFrequency()
-    {
-        if(mTransmitBand != null)
-        {
-            return mTransmitBand.getDownlinkFrequency(getTransmitChannel());
-        }
-
-        return 0;
-    }
-
-    public long getUplinkFrequency()
-    {
-        if(mReceiveBand != null)
-        {
-            return mReceiveBand.getUplinkFrequency(getReceiveChannel());
-        }
-
-        return 0;
-    }
-
     @Override
-    public void setIdentifierMessage(int identifier, IBandIdentifier message)
+    public List<IAPCO25Channel> getChannels()
     {
-        if(identifier == getTransmitIdentifier())
-        {
-            mTransmitBand = message;
-        }
-
-        if(identifier == getReceiveIdentifier())
-        {
-            mReceiveBand = message;
-        }
-    }
-
-    @Override
-    public int[] getIdentifiers()
-    {
-        int[] identifiers = new int[2];
-
-        identifiers[0] = getTransmitIdentifier();
-        identifiers[1] = getReceiveIdentifier();
-
-        return identifiers;
+        List<IAPCO25Channel> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }
