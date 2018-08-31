@@ -760,26 +760,28 @@ public class FilterFactory
      * Polyphase M2 synthesizer sync filter.  Designed for multiple M2 oversampled channel inputs and
      * an M*channel count output.
      *
-     * @param channelBandwidth per channel
-     * @param channels count
+     * @param channelSampleRate per input channel
+     * @param channelBandwidth per input channel
+     * @param channels input count
      * @param tapsPerChannel minumum.  This may be increased to meet the band edge -6.02dB requirement
      * @return filter
      * @throws FilterDesignException
      */
-    public static float[] getSincM2Synthesizer(double channelBandwidth, int channels, int tapsPerChannel)
-        throws FilterDesignException
+    public static float[] getSincM2Synthesizer(double channelSampleRate, double channelBandwidth, int channels,
+                                               int tapsPerChannel) throws FilterDesignException
     {
         int filterLength = (channels * tapsPerChannel) - 1;
 
+        double cutoff = (channelBandwidth * 1.05) / (channelSampleRate * (double)channels);
+
         //Design the prototype synthesizer with 105% of the channel bandwidth produced by the channelizer.
-        float[] taps = FilterFactory.getKaiserSinc(filterLength, channelBandwidth * 1.05, 80.0);
+        float[] taps = FilterFactory.getKaiserSinc(filterLength, cutoff, 80.0);
 
         //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
         float[] extendedTaps = new float[taps.length + 1];
         System.arraycopy(taps, 0, extendedTaps, 1, taps.length);
 
-        //Adjust the overall gain of the filter to an objective of 1.0 divided by the number of channels
-        return normalize(extendedTaps, 1.0f);
+        return extendedTaps;
     }
 
     /**
@@ -918,17 +920,18 @@ public class FilterFactory
             mLog.debug("Filter Length: " + (extendedTaps.length));
             mLog.debug("Requested Cutoff Frequency:  " + (sampleRate * bandEdge));
             mLog.debug("Actual Cutoff Frequency:  " + (sampleRate * cutoffFrequency));
-            mLog.debug("Attenuation at 0.0 OBJECTIVE:  " + 0.0);
-            mLog.debug("Attenuation at 1.0 OBJECTIVE:  " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
-            mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00) + "\tFrequency: " + (sampleRate * bandEdge * 1.0));
-            mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25) + "\tFrequency: " + (sampleRate * bandEdge * 1.25));
-            mLog.debug("Attenuation at 1.50 Channels:  " + evaluate(taps, bandEdge * 1.50) + "\tFrequency: " + (sampleRate * bandEdge * 1.5));
-            mLog.debug("Attenuation at 1.75 Channels:  " + evaluate(taps, bandEdge * 1.75) + "\tFrequency: " + (sampleRate * bandEdge * 1.75));
-            mLog.debug("Attenuation at 2.00 Channels:  " + evaluate(taps, bandEdge * 2.00) + "\tFrequency: " + (sampleRate * bandEdge * 2.0));
+            mLog.debug("Attenuation at 0.25 Channels:  " + evaluate(taps, bandEdge * 0.25) + "\tFrequency: " + (sampleRate * bandEdge * 0.25) + "  [" + (bandEdge * 0.25) + "]");
+            mLog.debug("Attenuation at 0.50 Channels:  " + evaluate(taps, bandEdge * 0.50) + "\tFrequency: " + (sampleRate * bandEdge * 0.50) + "  [" + (bandEdge * 0.50) + "]");
+            mLog.debug("Attenuation at 0.75 Channels:  " + evaluate(taps, bandEdge * 0.75) + "\tFrequency: " + (sampleRate * bandEdge * 0.75) + "  [" + (bandEdge * 0.75) + "]");
+            mLog.debug("Attenuation        OBJECTIVE:  " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
+            mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00) + "\tFrequency: " + (sampleRate * bandEdge * 1.0) + "  [" + (bandEdge * 1.0) + "]");
+            mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25) + "\tFrequency: " + (sampleRate * bandEdge * 1.25) + "  [" + (bandEdge * 1.25) + "]");
+            mLog.debug("Attenuation at 1.50 Channels:  " + evaluate(taps, bandEdge * 1.50) + "\tFrequency: " + (sampleRate * bandEdge * 1.5) + "  [" + (bandEdge * 1.5) + "]");
+            mLog.debug("Attenuation at 1.75 Channels:  " + evaluate(taps, bandEdge * 1.75) + "\tFrequency: " + (sampleRate * bandEdge * 1.75) + "  [" + (bandEdge * 1.75) + "]");
+            mLog.debug("Attenuation at 2.00 Channels:  " + evaluate(taps, bandEdge * 2.00) + "\tFrequency: " + (sampleRate * bandEdge * 2.0) + "  [" + (bandEdge * 2.0) + "]");
         }
 
-        //Adjust the overall gain of the filter to an objective of 1.0 times the number of channels
-        return normalize(extendedTaps, 1.0f * (float)channels);
+        return extendedTaps;
     }
 
     /**

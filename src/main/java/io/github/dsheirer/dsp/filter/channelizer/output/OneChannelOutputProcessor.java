@@ -38,10 +38,11 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      *
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing a single channel index.
+     * @param gain value to apply.  Typically this is the same as the channelizer's channel count.
      */
-    public OneChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes)
+    public OneChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, double gain)
     {
-        super(1, sampleRate);
+        super(1, sampleRate, gain);
         setPolyphaseChannelIndices(channelIndexes);
     }
 
@@ -90,6 +91,8 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
                 {
                     getFrequencyCorrectionMixer().mixComplex(channelBuffer.getSamples());
                 }
+
+                channelBuffer.applyGain(getGain());
 
                 reusableComplexBufferAssembler.receive(channelBuffer);
             }

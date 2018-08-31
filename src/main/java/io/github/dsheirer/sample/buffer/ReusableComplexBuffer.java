@@ -56,4 +56,17 @@ public class ReusableComplexBuffer extends ReusableFloatBuffer
     {
         return getSamples().length / 2;
     }
+
+    /**
+     * Applies the gain value to the samples contained in this buffer
+     */
+    public void applyGain(double gain)
+    {
+        float[] samples = getSamples();
+
+        for(int x = 0; x < samples.length; x++)
+        {
+            samples[x] *= gain;
+        }
+    }
 }
