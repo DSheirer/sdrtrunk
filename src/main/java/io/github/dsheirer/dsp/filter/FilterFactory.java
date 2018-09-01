@@ -772,7 +772,7 @@ public class FilterFactory
     {
         int filterLength = (channels * tapsPerChannel) - 1;
 
-        double cutoff = (channelBandwidth * 1.05) / (channelSampleRate * (double)channels);
+        double cutoff = (channelBandwidth * 1.10) / (channelSampleRate * (double)channels);
 
         //Design the prototype synthesizer with 105% of the channel bandwidth produced by the channelizer.
         float[] taps = FilterFactory.getKaiserSinc(filterLength, cutoff, 80.0);
