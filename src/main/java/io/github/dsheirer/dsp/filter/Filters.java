@@ -1719,7 +1719,32 @@ public enum Filters
 		 0.011873357051047719f, 0.0f, -0.007901319195893647f, 0.0f,
 		 0.005055504379767936f, 0.0f, -0.003054430179754289f, 0.0f,
 		 0.001695637278417295f, 0.0f, -0.000998606272947510f 
-	} );
+	}),
+
+	/**
+	 *         FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+	 *             .sampleRate(100)
+	 *             .gridDensity(16)
+	 *             .oddLength(true)
+	 *             .passBandCutoff(21)
+	 *             .passBandAmplitude(1.0)
+	 *             .passBandRipple(0.01)
+	 *             .stopBandStart(29)
+	 *             .stopBandAmplitude(0.0)
+	 *             .stopBandRipple(0.01) //Approximately -85 dB suppression
+	 *             .build();
+ 	 */
+	HALF_BAND_FILTER_27T(new float[]
+	{
+		 0.007495115f, 0.0f, -0.011045938f, 0.0f,
+		 0.019129561f, 0.0f, -0.031747308f, 0.0f,
+		 0.053220540f, 0.0f, -0.099569574f, 0.0f,
+		 0.316083550f, 0.5f,  0.316083550f, 0.0f,
+		-0.099569574f, 0.0f,  0.053220540f, 0.0f,
+		-0.031747308f, 0.0f,  0.019129561f, 0.0f,
+		-0.011045938f, 0.0f,  0.007495115f
+
+	});
 	
 	float[] mCoefficients;
 	

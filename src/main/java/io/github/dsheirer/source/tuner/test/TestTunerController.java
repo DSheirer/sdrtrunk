@@ -144,5 +144,6 @@ public class TestTunerController extends TunerController
     public void setSampleRate(int sampleRate) throws SourceException
     {
         mSampleGenerator.setSampleRate(sampleRate);
+        mFrequencyController.setSampleRate(sampleRate);
     }
 }

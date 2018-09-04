@@ -148,6 +148,8 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         mTrafficChannelCallEvent = null;
 
         mSquelchLocked = false;
+
+        setState(State.TEARDOWN);
     }
 
     public void dispose()

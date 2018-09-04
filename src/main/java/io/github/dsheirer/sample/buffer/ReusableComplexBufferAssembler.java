@@ -67,6 +67,29 @@ public class ReusableComplexBufferAssembler
      * Adds the samples to this assembler.  As each buffer is assembled, it will be dispatched to the registered
      * listener.
      *
+     * @param inphase sample to assemble
+     * @param quadrature sample to assemble
+     */
+    public void receive(float inphase, float quadrature)
+    {
+        if(mBuffer.remaining() >= 2)
+        {
+            mBuffer.put(inphase);
+            mBuffer.put(quadrature);
+
+            mTimestampManager.increment(1);
+
+            if(!mBuffer.hasRemaining())
+            {
+                flush();
+            }
+        }
+    }
+
+    /**
+     * Adds the samples to this assembler.  As each buffer is assembled, it will be dispatched to the registered
+     * listener.
+     *
      * @param samples to assemble
      */
     public void receive(float[] samples)

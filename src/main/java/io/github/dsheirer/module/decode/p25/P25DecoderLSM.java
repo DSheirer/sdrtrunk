@@ -26,6 +26,8 @@ import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +35,8 @@ import java.util.Map;
 public class P25DecoderLSM extends P25Decoder
 {
     protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
+
+    private final static Logger mLog = LoggerFactory.getLogger(P25DecoderLSM.class);
 
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
@@ -135,6 +139,7 @@ public class P25DecoderLSM extends P25Decoder
                 break;
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                 //Reset the PLL if/when the tuner PPM changes so that we can re-lock
+                mLog.debug("******** Resetting costas loop for frequency correction change");
                 mCostasLoop.reset();
                 break;
         }
