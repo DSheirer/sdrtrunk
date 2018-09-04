@@ -66,7 +66,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * Sets the center frequency for the sample streaming being sent from the producer.
      * @param frequency in hertz
      */
-    protected abstract void setFrequency(long frequency);
+    public abstract void setFrequency(long frequency);
 
     /**
      * Sets the sample rate of the incoming sample stream from the producer
@@ -118,12 +118,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(getFrequency()));
-
-        if(mProducerSourceEventListener != null)
-        {
-            mProducerSourceEventListener.receive(SourceEvent.startSampleStreamRequest(this));
-        }
-
+        broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
         mScheduledIntervalProcessor.start();
     }
 
@@ -133,12 +128,8 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      */
     public void stop()
     {
-        if(mProducerSourceEventListener != null)
-        {
-            mProducerSourceEventListener.receive(SourceEvent.stopSampleStreamRequest(this));
-            mProducerSourceEventListener.receive(SourceEvent.sourceDisposeRequest(this));
-        }
-
+        broadcastProducerSourceEvent(SourceEvent.stopSampleStreamRequest(this));
+        broadcastProducerSourceEvent(SourceEvent.sourceDisposeRequest(this));
         mScheduledIntervalProcessor.stop();
     }
 
@@ -171,6 +162,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         switch(sourceEvent.getEvent())
         {
+            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:

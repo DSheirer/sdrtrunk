@@ -1241,7 +1241,7 @@ public abstract class RTL2832TunerController extends USBTunerController
         RATE_1_200MHZ(0x0600, 1200000, "1.200 MHz"),
         RATE_1_440MHZ(0x0500, 1440000, "1.440 MHz"),
         RATE_1_600MHZ(0x0480, 1600000, "1.600 MHz"),
-        RATE_1_800MHZ(0x0480, 1800000, "1.800 MHz"),
+        RATE_1_800MHZ(0x0400, 1800000, "1.800 MHz"),
         RATE_1_920MHZ(0x03C0, 1920000, "1.920 MHz"),
         RATE_2_048MHZ(0x0384, 2048000, "2.048 MHz"),
         RATE_2_304MHZ(0x0320, 2304000, "2.304 MHz"),

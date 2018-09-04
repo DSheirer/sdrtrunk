@@ -289,15 +289,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
                     }
                 case CHANNEL_COUNT:
                     int channelCount = tuner.getChannelSourceManager().getTunerChannelCount();
-
-                    if(channelCount > 0)
-                    {
-                        return channelCount + " (LOCKED)";
-                    }
-                    else
-                    {
-                        return "0";
-                    }
+                    return channelCount + " (" + (tuner.getTunerController().isLocked() ? "LOCKED)" : "UNLOCKED)");
                 case FREQUENCY_ERROR:
                     double ppm = tuner.getTunerController().getFrequencyCorrection();
                     return mFrequencyErrorPPMFormat.format(ppm);

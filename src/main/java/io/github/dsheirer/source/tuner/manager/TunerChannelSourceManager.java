@@ -49,13 +49,6 @@ public class TunerChannelSourceManager extends ChannelSourceManager
         mTunerController.addListener(mPolyphaseChannelManager);
     }
 
-    @Override
-    public TunerChannelSource getTestingSource(int index)
-    {
-        //TODO: remove this debug method
-        return mPolyphaseChannelManager.getTestChannel(index);
-    }
-
     /**
      * Indicates if the channel min/max frequencies are within the tunable frequency range of the tuner controller
      *

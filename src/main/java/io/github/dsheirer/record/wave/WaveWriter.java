@@ -151,7 +151,7 @@ public class WaveWriter implements AutoCloseable
 
             int suffix = 1;
 
-            while(Files.exists(renamedPath))
+            while(Files.exists(renamedPath) && suffix < 4)
             {
                 String renamedWithSuffix = mFile.getFileName().toString();
                 renamedWithSuffix = renamedWithSuffix.replace(".tmp", "_" + suffix + ".wav");
