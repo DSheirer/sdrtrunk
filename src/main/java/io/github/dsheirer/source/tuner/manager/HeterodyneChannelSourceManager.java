@@ -85,6 +85,10 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 //Add to the channel list and update the tuner center frequency as needed
                 mTunerChannels.add(tunerChannel);
                 updateTunerFrequency();
+
+                //Lock the tuner controller frequency and sample rate
+                mTunerController.setLocked(true);
+
                 broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
                 return tunerChannelSource;
@@ -138,6 +142,8 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 broadcastToChannels(tunerSourceEvent);
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
                 //no-op
                 break;
             default:
@@ -205,6 +211,12 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                         mChannelSources.remove(channelSource);
                         mTunerChannels.remove(channelSource.getTunerChannel());
                         channelSource.dispose();
+
+                        //Unlock the tuner controller if there are no more channels
+                        if(getTunerChannelCount() == 0)
+                        {
+                            mTunerController.setLocked(false);
+                        }
                         broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
                     }
                     break;
@@ -212,8 +224,12 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                     //Rebroadcast so that the tuner source can process this event
                     broadcast(sourceEvent);
                     break;
+                case NOTIFICATION_CHANNEL_COUNT_CHANGE:
+                    //Lock the tuner controller frequency & sample rate when we're processing channels
+                    break;
                 default:
                     mLog.info("Unrecognized Source Event received from channel: " + sourceEvent);
+                    break;
             }
         }
     }
