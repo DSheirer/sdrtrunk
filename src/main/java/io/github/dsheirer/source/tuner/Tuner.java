@@ -51,7 +51,7 @@ public abstract class Tuner implements ISourceEventProcessor
         //Register to receive frequency and sample rate change notifications
         mTunerController.addListener(this::process);
 
-//        mChannelSourceManager = new TunerChannelSourceManager(mTunerController);
+//        mChannelSourceManager = new PolyphaseChannelSourceManager(mTunerController);
         mChannelSourceManager = new HeterodyneChannelSourceManager(mTunerController);
 
         //Register to receive channel count change notifications
