@@ -281,7 +281,7 @@ public class SynthesizerViewer extends JFrame
         {
             try
             {
-                float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 12);
+                float[] taps = FilterFactory.getSincM2Synthesizer( 25000.0, 12500.0, 2, 12);
                 mSynthesizer = new TwoChannelSynthesizerM2(taps);
             }
             catch(FilterDesignException fde)

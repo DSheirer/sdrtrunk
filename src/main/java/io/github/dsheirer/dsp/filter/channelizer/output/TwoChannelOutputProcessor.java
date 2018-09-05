@@ -49,12 +49,13 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      *
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing two channel indices.
+     * @param gain to apply to output.  Typically this is equal to the channelizer's channel count.
      */
-    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float[] filter)
+    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float[] filter, double gain)
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels
-        super(2, sampleRate);
+        super(2, sampleRate, gain);
         setPolyphaseChannelIndices(channelIndexes);
         setSynthesisFilter(filter);
 
@@ -140,6 +141,8 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
             getFrequencyCorrectionMixer().mixComplex(synthesized.getSamples());
 
             ReusableComplexBuffer lowPassFiltered = mLowPassFilter.filter(synthesized);
+
+            lowPassFiltered.applyGain(getGain());
 
             reusableComplexBufferAssembler.receive(lowPassFiltered);
 
