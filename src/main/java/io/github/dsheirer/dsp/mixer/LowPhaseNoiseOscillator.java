@@ -18,6 +18,10 @@ package io.github.dsheirer.dsp.mixer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
+
 public class LowPhaseNoiseOscillator extends AbstractOscillator
 {
     private final static Logger mLog = LoggerFactory.getLogger(LowPhaseNoiseOscillator.class);
@@ -81,5 +85,55 @@ public class LowPhaseNoiseOscillator extends AbstractOscillator
 
         //Update the gain value for the next rotation
         mGain = THREE_HALVES - ((mPreviousInphase * mPreviousInphase) + (mPreviousQuadrature * mPreviousQuadrature));
+    }
+
+    public static long process(AbstractOscillator oscillator, int iterations, int sampleCount)
+    {
+        long start = System.nanoTime();
+
+        for(int x = 0; x < iterations; x++)
+        {
+            float[] samples = oscillator.generateComplex(sampleCount);
+        }
+
+        long duration = System.nanoTime() - start;
+
+        return duration;
+    }
+
+    public static void main(String[] args)
+    {
+        mLog.debug("Starting ...");
+        SimpleDateFormat sdf = new SimpleDateFormat("mm:ss.SSS");
+
+        AbstractOscillator lpno = new LowPhaseNoiseOscillator(100, 800);
+        AbstractOscillator regular = new Oscillator(100, 800);
+
+        int iterations = 10000;
+        int sampleCount = 1000000;
+
+        mLog.debug("Warm up - lpno");
+        process(lpno, iterations, sampleCount);
+        process(lpno, iterations, sampleCount);
+        process(lpno, iterations, sampleCount);
+
+        mLog.debug("Warm up - regular");
+        process(regular, iterations, sampleCount);
+        process(regular, iterations, sampleCount);
+        process(regular, iterations, sampleCount);
+
+        mLog.debug("Test - lpno");
+        process(lpno, iterations, sampleCount);
+        process(lpno, iterations, sampleCount);
+        long duration = process(lpno, iterations, sampleCount);
+        mLog.debug("Duration Low Phase Noise: " + sdf.format(new Date(TimeUnit.NANOSECONDS.toMillis(duration))));
+
+        mLog.debug("Test - regular");
+        process(regular, iterations, sampleCount);
+        process(regular, iterations, sampleCount);
+        duration = process(regular, iterations, sampleCount);
+        mLog.debug("Duration         Regular: " + sdf.format(new Date(TimeUnit.NANOSECONDS.toMillis(duration))));
+
+//        mLog.debug("                   Delta: " + sdf.format(new Date(TimeUnit.NANOSECONDS.toMillis(duration2 - duration))));
     }
 }

@@ -15,26 +15,28 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.channel;
 
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
+import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.mixer.IOscillator;
-import io.github.dsheirer.dsp.mixer.Oscillator;
+import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.source.tuner.Tuner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.source.SourceEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CICTunerChannelSource
+/**
+ * Complex sample source that provides a frequency-translated and decimated sample buffer stream.  Uses a
+ * CIC decimation filter that requires the decimation rate to be an integer multiple.  Sample buffer processing
+ * occurs on a scheduled runnable thread.
+ */
+public class CICTunerChannelSource extends TunerChannelSource implements Listener<ReusableComplexBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource.class);
+//    private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource.class);
 
     //Maximum number of filled buffers for the blocking queue
     private static final int BUFFER_MAX_CAPACITY = 300;
@@ -42,8 +44,11 @@ public class CICTunerChannelSource
     //Threshold for resetting buffer overflow condition
     private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
-    private static double CHANNEL_RATE = 48000.0;
-    private static int CHANNEL_PASS_FREQUENCY = 12000;
+    //Pass band cutoff frequency for the complex channel - target = 12.5 kHz channel
+    private static final int CHANNEL_PASS_FREQUENCY = 6000;
+
+    //Stop band frequency for the complex channel
+    private static final int CHANNEL_STOP_FREQUENCY = 6700;
 
     private OverflowableReusableBufferTransferQueue<ReusableComplexBuffer> mBuffer;
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("CICTunerChannelSource");
@@ -51,51 +56,66 @@ public class CICTunerChannelSource
     private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ReusableComplexBuffer> mListener;
     private List<ReusableComplexBuffer> mSampleBuffers = new ArrayList<>();
-    private long mTunerFrequency = 0;
-    private double mTunerSampleRate;
+    private double mChannelSampleRate;
     private long mChannelFrequencyCorrection = 0;
+    private long mTunerFrequency;
 
     /**
-     * Implements a heterodyne/decimate Digital Drop Channel (DDC) to decimate the IQ output from a tuner down to a
-     * fixed 48 kHz IQ channel rate.
+     * Constructs a frequency translating and CIC decimating channel source.
      *
-     * Note: this class can only be used once (started and stopped) and a new tuner channel source must be requested
-     * from the tuner once this object has been stopped.  This is because channels are managed dynamically and center
-     * tuned frequency may have changed since this source was obtained and thus the tuner might no longer be able to
-     * source this channel once it has been stopped.
-     *
-     * @param tunerChannel specifying the center frequency for the DDC
+     * @param producerSourceEventListener to receive sample stream start/stop requests
+     * @param tunerChannel that details the desired channel frequency and bandwidth
+     * @param sampleRate of the incoming sample stream
+     * @param decimation to use in the CIC decimation filter.
+     * @throws FilterDesignException if a final cleanup filter cannot be designed using the remez filter
+     *                               designer and the filter parameters.
      */
-    public CICTunerChannelSource(Tuner tuner, TunerChannel tunerChannel)
+    public CICTunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
+                                 double sampleRate, int decimation) throws FilterDesignException
     {
+        super(producerSourceEventListener, tunerChannel);
+
+        mDecimationFilter = new ComplexPrimeCICDecimate(sampleRate, decimation, CHANNEL_PASS_FREQUENCY, CHANNEL_STOP_FREQUENCY);
+
         mBuffer = new OverflowableReusableBufferTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
-//        mBuffer.setSourceOverflowListener(this);
+        //Setup the frequency mixer to the current source frequency
+        mChannelSampleRate = sampleRate / (double)decimation;
+        mTunerFrequency = tunerChannel.getFrequency();
+        long frequencyOffset = mTunerFrequency - getTunerChannel().getFrequency();
 
-        //Setup the frequency translator to the current source frequency
-        mTunerFrequency = tuner.getTunerController().getFrequency();
-        long frequencyOffset = mTunerFrequency - tunerChannel.getFrequency();
-        mFrequencyCorrectionMixer = new Oscillator(frequencyOffset, tuner.getTunerController().getSampleRate());
+        mFrequencyCorrectionMixer = new LowPhaseNoiseOscillator(frequencyOffset, sampleRate);
+    }
 
-        //Setup the decimation filter chain
-        setSampleRate(tuner.getTunerController().getSampleRate());
+    @Override
+    public void dispose()
+    {
+        //
     }
 
     /**
-     * Sets the center frequency for the incoming sample buffers
+     * Primary interface for receiving incoming complex sample buffers to be frequency translated and decimated.
+     */
+    @Override
+    public void receive(ReusableComplexBuffer buffer)
+    {
+        mBuffer.offer(buffer);
+    }
+
+    /**
+     * Sets/updates the center frequency for the sample streaming being sent from the producer.
+     *
      * @param frequency in hertz
      */
-    protected void setFrequency(long frequency)
+    @Override
+    public void setFrequency(long frequency)
     {
         mTunerFrequency = frequency;
-
-        //Reset frequency correction so that consumer components can adjust
-        setFrequencyCorrection(0);
-
         updateMixerFrequencyOffset();
     }
 
     /**
      * Current frequency correction being applied to the channel sample stream
+     *
      * @return correction in hertz
      */
     public long getFrequencyCorrection()
@@ -105,61 +125,14 @@ public class CICTunerChannelSource
 
     /**
      * Changes the frequency correction value and broadcasts the change to the registered downstream listener.
+     *
      * @param correction current frequency correction value.
      */
-    protected void setFrequencyCorrection(long correction)
+    public void setFrequencyCorrection(long correction)
     {
         mChannelFrequencyCorrection = correction;
-
         updateMixerFrequencyOffset();
-
-//        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
-    }
-
-    /**
-     * Primary input method for receiving complex sample buffers from the wideband source (ie tuner)
-     * @param buffer to receive and eventually process
-     */
-    public void receive(ReusableComplexBuffer buffer)
-    {
-        mBuffer.offer(buffer);
-    }
-
-    public void setListener(Listener<ReusableComplexBuffer> listener)
-    {
-        /* Save a pointer to the listener so that if we have to change the
-         * decimation filter, we can re-add the listener */
-        mListener = listener;
-
-        mDecimationFilter.setListener(listener);
-    }
-
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
-    {
-        mDecimationFilter.removeListener();
-    }
-
-    /**
-     * Updates the sample rate to the requested value and notifies any downstream components of the change
-     * @param sampleRate to set
-     */
-    protected void setSampleRate(double sampleRate)
-    {
-        if(mTunerSampleRate != sampleRate)
-        {
-            mFrequencyCorrectionMixer.setSampleRate(sampleRate);
-
-            /* Get new decimation filter */
-            mDecimationFilter = FilterFactory.getDecimationFilter((int)sampleRate, (int)CHANNEL_RATE, 1,
-                CHANNEL_PASS_FREQUENCY, 60, Window.WindowType.HAMMING);
-
-            /* re-add the original output listener */
-            mDecimationFilter.setListener(mListener);
-
-            mTunerSampleRate = sampleRate;
-
-//            broadcastConsumerSourceEvent(SourceEvent.channelSampleRateChange(getSampleRate()));
-        }
+        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
     }
 
     /**
@@ -168,46 +141,97 @@ public class CICTunerChannelSource
      */
     private void updateMixerFrequencyOffset()
     {
-//        long offset = mTunerFrequency - getTunerChannel().getFrequency() - mChannelFrequencyCorrection;
-//        mFrequencyCorrectionMixer.setFrequency(offset);
+        long offset = mTunerFrequency - getTunerChannel().getFrequency() - mChannelFrequencyCorrection;
+        mFrequencyCorrectionMixer.setFrequency(offset);
     }
 
+    /**
+     * Sets the sample rate of the incoming sample stream from the producer
+     *
+     * @param sampleRate in hertz
+     */
+    @Override
+    protected void setSampleRate(double sampleRate)
+    {
+        //Not implemented.  Sample rate changes are not permitted once sample stream starts
+    }
+
+    /**
+     * Sets the frequency correction for the outbound sample stream to the consumer
+     *
+     * @param correction in hertz
+     */
+    @Override
+    protected void setChannelFrequencyCorrection(long correction)
+    {
+        mChannelFrequencyCorrection = correction;
+        broadcastConsumerSourceEvent(SourceEvent.channelFrequencyCorrectionChange(correction));
+        updateMixerFrequencyOffset();
+    }
+
+    /**
+     * Frequency correction value currently being applied to the outbound sample stream
+     */
+    @Override
+    public long getChannelFrequencyCorrection()
+    {
+        return mChannelFrequencyCorrection;
+    }
+
+    /**
+     * Sets the listener to receive the complex buffer sample output from this channel
+     *
+     * @param complexBufferListener to receive complex buffers
+     */
+    @Override
+    public void setListener(Listener<ReusableComplexBuffer> complexBufferListener)
+    {
+        mDecimationFilter.setListener(complexBufferListener);
+    }
+
+    @Override
+    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    {
+        mDecimationFilter.removeListener();
+    }
+
+
+    @Override
     public double getSampleRate()
     {
-        return CHANNEL_RATE;
+        return mChannelSampleRate;
     }
 
+    /**
+     * Primary processing method that is invoked on a recurring basis to process any queued complex buffers.
+     *
+     * Mixes the target frequency to baseband and then passes the buffer to the CIC decimation filter
+     */
     protected void processSamples()
     {
-        mBuffer.drainTo(mSampleBuffers, 20);
+        mBuffer.drainTo(mSampleBuffers);
 
-        for(ReusableComplexBuffer buffer : mSampleBuffers)
+        for(ReusableComplexBuffer complexBuffer : mSampleBuffers)
         {
-            float[] samples = buffer.getSamples();
+            float[] samples = complexBuffer.getSamples();
 
-            ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
-            float[] translated = reusableComplexBuffer.getSamples();
+            ReusableComplexBuffer translatedComplexBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
+            float[] translatedSamples = translatedComplexBuffer.getSamples();
 
             /* Perform frequency translation */
             for(int x = 0; x < samples.length; x += 2)
             {
                 mFrequencyCorrectionMixer.rotate();
 
-                translated[x] = Complex.multiplyInphase(
-                    samples[x], samples[x + 1], mFrequencyCorrectionMixer.inphase(), mFrequencyCorrectionMixer.quadrature());
+                translatedSamples[x] = Complex.multiplyInphase(samples[x], samples[x + 1],
+                    mFrequencyCorrectionMixer.inphase(), mFrequencyCorrectionMixer.quadrature());
 
-                translated[x + 1] = Complex.multiplyQuadrature(
-                    samples[x], samples[x + 1], mFrequencyCorrectionMixer.inphase(), mFrequencyCorrectionMixer.quadrature());
+                translatedSamples[x + 1] = Complex.multiplyQuadrature(samples[x], samples[x + 1],
+                    mFrequencyCorrectionMixer.inphase(), mFrequencyCorrectionMixer.quadrature());
             }
 
-            final ComplexPrimeCICDecimate filter = mDecimationFilter;
-
-            if(filter != null)
-            {
-                filter.receive(reusableComplexBuffer);
-            }
-
-            buffer.decrementUserCount();
+            mDecimationFilter.receive(translatedComplexBuffer);
+            complexBuffer.decrementUserCount();
         }
 
         mSampleBuffers.clear();

@@ -21,7 +21,7 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
-import io.github.dsheirer.source.tuner.manager.TunerChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +51,9 @@ public abstract class Tuner implements ISourceEventProcessor
         //Register to receive frequency and sample rate change notifications
         mTunerController.addListener(this::process);
 
-        mChannelSourceManager = new TunerChannelSourceManager(mTunerController);
+//        mChannelSourceManager = new PolyphaseChannelSourceManager(mTunerController);
+        mChannelSourceManager = new HeterodyneChannelSourceManager(mTunerController);
+
         //Register to receive channel count change notifications
         mChannelSourceManager.addSourceEventListener(this::process);
 

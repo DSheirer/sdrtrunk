@@ -34,7 +34,6 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,36 +166,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             mLog.info("Can't provide DDC for " + tunerChannel.toString() + " due to channelizer frequency [" +
                 mChannelCalculator.getCenterFrequency() + "] and sample rate [" +
                 (mChannelCalculator.getChannelCount() * mChannelCalculator.getChannelBandwidth()) + "]");
-        }
-
-        return channelSource;
-    }
-
-    public TunerChannelSource getTestChannel(int index)
-    {
-        PolyphaseChannelSource channelSource = null;
-
-        try
-        {
-            List<Integer> polyphaseIndexes = new ArrayList<>();
-            polyphaseIndexes.add(index);
-
-            IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
-
-
-            if(outputProcessor != null)
-            {
-                long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
-
-                TunerChannel tunerChannel = new TunerChannel(centerFrequency, 12500);
-
-                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
-                    mChannelCalculator.getChannelSampleRate(), centerFrequency);
-            }
-        }
-        catch(IllegalArgumentException iae)
-        {
-            mLog.error("Couldn't get test channel with index:" + index, iae);
         }
 
         return channelSource;

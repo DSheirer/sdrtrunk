@@ -259,7 +259,8 @@ public class ChannelizerViewer extends JFrame
 
             for(int x = 0; x < mChannelCount; x++)
             {
-                TunerChannelSource source = mTestTuner.getChannelSourceManager().getTestingSource(x);
+                TunerChannel tunerChannel = new TunerChannel(100000000, 12500);
+                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSource(tunerChannel);
                 DiscreteChannelPanel channelPanel = new DiscreteChannelPanel(mSettingsManager, source, x);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 

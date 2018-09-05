@@ -21,6 +21,7 @@ import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.apache.commons.lang3.Validate;
 
+@Deprecated
 public class HalfBandFilter
 {
     private float[] mBuffer;

@@ -127,8 +127,8 @@ public abstract class AbstractOscillator implements IOscillator
 
         for(int x = 0; x < sampleCount; x++)
         {
-            samples[x] = inphase();
             rotate();
+            samples[x] = quadrature();
         }
 
         return samples;

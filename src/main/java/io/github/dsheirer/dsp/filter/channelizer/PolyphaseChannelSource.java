@@ -201,7 +201,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      * @param frequency in hertz
      */
     @Override
-    protected void setFrequency(long frequency)
+    public void setFrequency(long frequency)
     {
         mIndexCenterFrequency = frequency;
 
