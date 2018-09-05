@@ -22,7 +22,6 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter;
 
-import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
@@ -356,15 +355,6 @@ public class FilterFactory
         double frequency = ((double)stop - (double)pass) / sampleRate;
 
         return (int)(Math.round((double)attenuation / (22.0d * frequency)));
-    }
-
-    public static ComplexPrimeCICDecimate getDecimationFilter(int sampleRate, int decimatedRate, int order,
-                                                              int passFrequency, int attenuation, Window.WindowType windowType)
-    {
-        int decimationRate = (int)(sampleRate / decimatedRate);
-
-        return new ComplexPrimeCICDecimate(decimationRate, order,
-            passFrequency, attenuation, windowType);
     }
 
     /**
