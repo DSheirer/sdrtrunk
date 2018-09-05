@@ -41,9 +41,9 @@ import java.util.Map;
  * This filter currently supports a maximum decimation rate of 2801.  Higher decimation rates can be added by
  * adding additional prime factors to the PRIMES array.
  */
-public class ComplexPrimeCICDecimate2 implements Listener<ReusableComplexBuffer>
+public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
 {
-//    private final static Logger mLog = LoggerFactory.getLogger(ComplexPrimeCICDecimate2.class);
+//    private final static Logger mLog = LoggerFactory.getLogger(ComplexPrimeCICDecimate.class);
 
     /**
      * PRIME numbers to use for decimation stage sizing.  This list contains values that should
@@ -104,7 +104,7 @@ public class ComplexPrimeCICDecimate2 implements Listener<ReusableComplexBuffer>
      * @throws FilterDesignException if a final low-pass cleanup filter cannot be created for the output channel rate
      *                               and specified pass/stop frequencies.
      */
-    public ComplexPrimeCICDecimate2(double sampleRate, int decimation, int passFrequency, int stopFrequency)
+    public ComplexPrimeCICDecimate(double sampleRate, int decimation, int passFrequency, int stopFrequency)
         throws FilterDesignException
     {
         Validate.isTrue(decimation <= PRIMES[PRIMES.length - 1]);

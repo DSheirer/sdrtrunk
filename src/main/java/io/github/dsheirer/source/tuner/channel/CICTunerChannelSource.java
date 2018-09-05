@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.channel;
 
-import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate2;
+import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
@@ -34,9 +34,9 @@ import java.util.List;
  * CIC decimation filter that requires the decimation rate to be an integer multiple.  Sample buffer processing
  * occurs on a scheduled runnable thread.
  */
-public class CICTunerChannelSource2 extends TunerChannelSource implements Listener<ReusableComplexBuffer>
+public class CICTunerChannelSource extends TunerChannelSource implements Listener<ReusableComplexBuffer>
 {
-//    private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource2.class);
+//    private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource.class);
 
     //Maximum number of filled buffers for the blocking queue
     private static final int BUFFER_MAX_CAPACITY = 300;
@@ -53,7 +53,7 @@ public class CICTunerChannelSource2 extends TunerChannelSource implements Listen
     private OverflowableReusableBufferTransferQueue<ReusableComplexBuffer> mBuffer;
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("CICTunerChannelSource");
     private IOscillator mFrequencyCorrectionMixer;
-    private ComplexPrimeCICDecimate2 mDecimationFilter;
+    private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ReusableComplexBuffer> mListener;
     private List<ReusableComplexBuffer> mSampleBuffers = new ArrayList<>();
     private double mChannelSampleRate;
@@ -70,12 +70,12 @@ public class CICTunerChannelSource2 extends TunerChannelSource implements Listen
      * @throws FilterDesignException if a final cleanup filter cannot be designed using the remez filter
      *                               designer and the filter parameters.
      */
-    public CICTunerChannelSource2(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
-                                  double sampleRate, int decimation) throws FilterDesignException
+    public CICTunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
+                                 double sampleRate, int decimation) throws FilterDesignException
     {
         super(producerSourceEventListener, tunerChannel);
 
-        mDecimationFilter = new ComplexPrimeCICDecimate2(sampleRate, decimation, CHANNEL_PASS_FREQUENCY, CHANNEL_STOP_FREQUENCY);
+        mDecimationFilter = new ComplexPrimeCICDecimate(sampleRate, decimation, CHANNEL_PASS_FREQUENCY, CHANNEL_STOP_FREQUENCY);
 
         mBuffer = new OverflowableReusableBufferTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
         //Setup the frequency mixer to the current source frequency

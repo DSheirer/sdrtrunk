@@ -20,7 +20,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
-import io.github.dsheirer.source.tuner.channel.CICTunerChannelSource2;
+import io.github.dsheirer.source.tuner.channel.CICTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
     private final static int OBJECTIVE_CHANNEL_SAMPLE_RATE = 30000;
 
-    private List<CICTunerChannelSource2> mChannelSources = new CopyOnWriteArrayList<>();
+    private List<CICTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private SortedSet<TunerChannel> mTunerChannels = new TreeSet<>();
     private TunerController mTunerController;
     private ChannelSourceEventProcessor mChannelSourceEventProcessor = new ChannelSourceEventProcessor();
@@ -73,7 +73,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
             try
             {
                 //Attempt to create the channel source first, in case we get a filter design exception
-                CICTunerChannelSource2 tunerChannelSource = new CICTunerChannelSource2(mChannelSourceEventProcessor,
+                CICTunerChannelSource tunerChannelSource = new CICTunerChannelSource(mChannelSourceEventProcessor,
                     tunerChannel, mTunerController.getSampleRate(), decimation);
 
                 //Add to the list of channel sources so that it will receive the tuner frequency change
@@ -156,7 +156,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void broadcastToChannels(SourceEvent sourceEvent)
     {
-        for(CICTunerChannelSource2 channelSource: mChannelSources)
+        for(CICTunerChannelSource channelSource: mChannelSources)
         {
             try
             {
@@ -176,7 +176,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void updateTunerFrequency(long tunerFrequency)
     {
-        for(CICTunerChannelSource2 channelSource : mChannelSources)
+        for(CICTunerChannelSource channelSource : mChannelSources)
         {
             channelSource.setFrequency(tunerFrequency);
         }
@@ -193,21 +193,21 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
             switch(sourceEvent.getEvent())
             {
                 case REQUEST_START_SAMPLE_STREAM:
-                    if(sourceEvent.getSource() instanceof CICTunerChannelSource2)
+                    if(sourceEvent.getSource() instanceof CICTunerChannelSource)
                     {
-                        mTunerController.addBufferListener((CICTunerChannelSource2)sourceEvent.getSource());
+                        mTunerController.addBufferListener((CICTunerChannelSource)sourceEvent.getSource());
                     }
                     break;
                 case REQUEST_STOP_SAMPLE_STREAM:
-                    if(sourceEvent.getSource() instanceof CICTunerChannelSource2)
+                    if(sourceEvent.getSource() instanceof CICTunerChannelSource)
                     {
-                        mTunerController.removeBufferListener((CICTunerChannelSource2)sourceEvent.getSource());
+                        mTunerController.removeBufferListener((CICTunerChannelSource)sourceEvent.getSource());
                     }
                     break;
                 case REQUEST_SOURCE_DISPOSE:
-                    if(sourceEvent.getSource() instanceof CICTunerChannelSource2)
+                    if(sourceEvent.getSource() instanceof CICTunerChannelSource)
                     {
-                        CICTunerChannelSource2 channelSource = (CICTunerChannelSource2)sourceEvent.getSource();
+                        CICTunerChannelSource channelSource = (CICTunerChannelSource)sourceEvent.getSource();
                         mChannelSources.remove(channelSource);
                         mTunerChannels.remove(channelSource.getTunerChannel());
                         channelSource.dispose();
