@@ -416,14 +416,17 @@ public class USBTransferProcessor implements TransferCallback
 
                 while(transfer != null)
                 {
-                    if(mRunning.get() && mComplexBufferListener != null)
+                    if(mRunning.get())
                     {
                         ByteBuffer nativeBuffer = transfer.buffer();
 
                         ReusableComplexBuffer reusableComplexBuffer =
                             mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
 
-                        mComplexBufferListener.receive(reusableComplexBuffer);
+                        if(mComplexBufferListener != null)
+                        {
+                            mComplexBufferListener.receive(reusableComplexBuffer);
+                        }
                     }
 
                     transfer.buffer().rewind();

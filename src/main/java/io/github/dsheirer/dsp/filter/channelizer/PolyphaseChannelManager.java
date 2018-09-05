@@ -213,12 +213,14 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         switch(indexes.size())
         {
             case 1:
-                return new OneChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes);
+                return new OneChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes,
+                    mChannelCalculator.getChannelCount());
             case 2:
                 try
                 {
                     float[] filter = getOutputProcessorFilter(2);
-                    return new TwoChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes, filter);
+                    return new TwoChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes, filter,
+                        mChannelCalculator.getChannelCount());
                 }
                 catch(FilterDesignException fde)
                 {
@@ -504,8 +506,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         if(taps == null)
         {
-            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelBandwidth(), channels,
-                POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL);
+            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelSampleRate(),
+                mChannelCalculator.getChannelBandwidth(), channels, POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL);
 
             mOutputProcessorFilters.put(channels, taps);
         }

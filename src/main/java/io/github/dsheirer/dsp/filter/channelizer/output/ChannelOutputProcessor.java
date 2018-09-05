@@ -42,6 +42,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     private int mInputChannelCount;
     private IOscillator mFrequencyCorrectionMixer;
     private boolean mFrequencyCorrectionEnabled;
+    private double mGain = 1.0;
 
     /**
      * Base class for polyphase channelizer output channel processing.  Provides built-in frequency translation
@@ -51,15 +52,21 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * @param sampleRate of the output channel.  This is used to match the oscillator's sample rate to the output
      * channel sample rate for frequency translation/correction.
      */
-    public ChannelOutputProcessor(int inputChannelCount, double sampleRate)
+    public ChannelOutputProcessor(int inputChannelCount, double sampleRate, double gain)
     {
         mInputChannelCount = inputChannelCount;
+        mGain = gain;
 
 //TODO: swap this out and use the LowPhaseNoiseOscillator
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
         mMaxResultsToProcess = (int)(sampleRate / 10) * 2;  //process at 100 millis interval, twice the expected inflow rate
 
         mChannelResultsQueue = new OverflowableReusableBufferTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
+    }
+
+    protected double getGain()
+    {
+        return mGain;
     }
 
     @Override
