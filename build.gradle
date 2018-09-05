@@ -15,7 +15,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.4.0-alpha.2'
+version = '0.4.0-alpha.3'
 sourceCompatibility = 1.8
 
 sourceSets {
