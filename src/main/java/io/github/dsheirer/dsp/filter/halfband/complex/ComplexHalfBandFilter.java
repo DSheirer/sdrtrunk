@@ -15,92 +15,94 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.halfband.complex;
 
-import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter;
+import io.github.dsheirer.dsp.filter.Filters;
+import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter2;
+import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 
 public class ComplexHalfBandFilter
 {
-    private HalfBandFilter mIFilter;
-    private HalfBandFilter mQFilter;
-    private boolean mDecimate;
-    private boolean mDecimateFlag;
+    private ReusableComplexBufferQueue mBufferQueue = new ReusableComplexBufferQueue("ComplexHalfBandFilter");
 
-    /**
-     * @param coefficients
-     * @param gain
-     * @param decimate
-     */
-    public ComplexHalfBandFilter(float[] coefficients, float gain, boolean decimate)
+    private HalfBandFilter2 mIFilter;
+    private HalfBandFilter2 mQFilter;
+    private float mResidualISample;
+    private float mResidualQSample;
+    private boolean mHasResidual;
+    private int mOutputBufferLength;
+    private float[] mSamples;
+    private int mSamplesPointer;
+    private float[] mFilteredSamples;
+    private int mFilteredSamplesPointer;
+
+    public ComplexHalfBandFilter(float[] coefficients, float gain)
     {
-        mIFilter = new HalfBandFilter(coefficients, gain);
-        mQFilter = new HalfBandFilter(coefficients, gain);
-        mDecimate = decimate;
+        mIFilter = new HalfBandFilter2(coefficients, gain);
+        mQFilter = new HalfBandFilter2(coefficients, gain);
     }
 
-    public void dispose()
+    public ReusableComplexBuffer filter(ReusableComplexBuffer originalBuffer)
     {
-        mIFilter.dispose();
-        mQFilter.dispose();
+        mSamples = originalBuffer.getSamples();
+        mSamplesPointer = 0;
+
+        mOutputBufferLength = (mHasResidual ? (mSamples.length + 2) : mSamples.length) / 4 * 2;
+
+        ReusableComplexBuffer filteredBuffer = mBufferQueue.getBuffer(mOutputBufferLength);
+        mFilteredSamples = filteredBuffer.getSamples();
+        mFilteredSamplesPointer = 0;
+
+        if(mHasResidual)
+        {
+            mFilteredSamples[mFilteredSamplesPointer++] = mIFilter.filter(mResidualISample, mSamples[mSamplesPointer++]);
+            mFilteredSamples[mFilteredSamplesPointer++] = mQFilter.filter(mResidualQSample, mSamples[mSamplesPointer++]);
+            mHasResidual = false;
+        }
+
+        while(mSamplesPointer + 3 < mSamples.length)
+        {
+            mFilteredSamples[mFilteredSamplesPointer++] = mIFilter.filter(mSamples[mSamplesPointer], mSamples[mSamplesPointer + 2]);
+            mFilteredSamples[mFilteredSamplesPointer++] = mIFilter.filter(mSamples[mSamplesPointer + 1], mSamples[mSamplesPointer + 3]);
+            mSamplesPointer += 4;
+        }
+
+        if(mSamplesPointer < mSamples.length)
+        {
+            mHasResidual = true;
+            mResidualISample = mSamples[mSamplesPointer++];
+            mResidualQSample = mSamples[mSamplesPointer];
+        }
+
+        originalBuffer.decrementUserCount();
+        return filteredBuffer;
     }
 
-    public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
+    public static void main(String[] args)
     {
-        throw new IllegalStateException("This filter has to be updated to work with reusable buffers");
+        Oscillator oscillator = new Oscillator(1, 16);
+        ComplexHalfBandFilter filter = new ComplexHalfBandFilter(Filters.HALF_BAND_FILTER_27T.getCoefficients(), 1.0f);
 
-//        if(mDecimate)
-//        {
-//            float[] samples = buffer.getSamples();
-//
-//            int half = samples.length / 2;
-//
-//            float[] decimated;
-//
-//            if(half % 2 == 0 || mDecimateFlag)
-//            {
-//                decimated = new float[half];
-//            }
-//            else
-//            {
-//                /* If inbound buffer size is odd-length, then we have to
-//                 * adjust when the first operation is non-decimation, since
-//                 * that will produce an outbound buffer 1 sample larger */
-//                decimated = new float[half + 1];
-//            }
-//
-//            int decimatedPointer = 0;
-//
-//            for(int x = 0; x < samples.length; x += 2)
-//            {
-//                /* Insert the sample but don't filter */
-//                if(mDecimateFlag)
-//                {
-//                    mIFilter.insert(samples[x]);
-//                    mQFilter.insert(samples[x + 1]);
-//                }
-//                else
-//                {
-//                    decimated[decimatedPointer++] = mIFilter.filter(samples[x]);
-//                    decimated[decimatedPointer++] = mQFilter.filter(samples[x + 1]);
-//                }
-//
-//                /* Toggle the decimation flag for every sample */
-//                mDecimateFlag = !mDecimateFlag;
-//            }
-//
-//            //return buffer
-//        }
-//        else
-//        {
-//            /* Non Decimate - filter each of the values and return the buffer */
-//            float[] samples = buffer.getSamples();
-//
-//            for(int x = 0; x < samples.length; x += 2)
-//            {
-//                samples[x] = mIFilter.filter(samples[x]);
-//                samples[x + 1] = mQFilter.filter(samples[x + 1]);
-//            }
-//
-//            //return buffer
-//        }
+        ReusableComplexBufferQueue bufferQueue = new ReusableComplexBufferQueue("Test");
+
+        ReusableComplexBuffer complexBuffer = bufferQueue.getBuffer(8);
+        oscillator.generateComplex(complexBuffer);
+        ReusableComplexBuffer filteredBuffer = filter.filter(complexBuffer);
+        filteredBuffer.decrementUserCount();
+
+        ReusableComplexBuffer complexBuffer2 = bufferQueue.getBuffer(10);
+        oscillator.generateComplex(complexBuffer2);
+        ReusableComplexBuffer filteredBuffer2 = filter.filter(complexBuffer2);
+        filteredBuffer2.decrementUserCount();
+
+        ReusableComplexBuffer complexBuffer3 = bufferQueue.getBuffer(8);
+        oscillator.generateComplex(complexBuffer3);
+        ReusableComplexBuffer filteredBuffer3 = filter.filter(complexBuffer3);
+        filteredBuffer3.decrementUserCount();
+
+
+
+
+
     }
 }
