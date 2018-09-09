@@ -20,11 +20,13 @@ package io.github.dsheirer.dsp.psk.pll;
  */
 public enum PLLGain
 {
-    LEVEL_1(50.0, 0, 1),
-    LEVEL_2(75.0, 2, 4),
-    LEVEL_3(100.0, 5, 6),
-    LEVEL_4(125.0, 7, 8),
-    LEVEL_5(150.0, 9, 10);
+    //NOTE: static gain level of 200 produced the best results for releases prior to 0.3.4b2
+
+    LEVEL_1(150.0, 0, 1),
+    LEVEL_2(175.0, 2, 4),
+    LEVEL_3(200.0, 5, 6),
+    LEVEL_4(200.0, 7, 8),
+    LEVEL_5(200.0, 9, 10);
 
     private double mLoopBandwidth;
     private int mRangeStart;
