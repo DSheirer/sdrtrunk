@@ -376,7 +376,7 @@ public class ChannelizerViewer2 extends JFrame
             mComplexDecibelConverter.addListener(mSpectrumPanel);
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
-            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel);
+            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, null);
 
             if(mSource != null)
             {

@@ -19,6 +19,7 @@ import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelManager;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
@@ -390,8 +391,13 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      * @return allocated DDC tuner channel source, or null if the channel cannot be provided by this source manager
      */
     @Override
-    public TunerChannelSource getSource(TunerChannel tunerChannel)
+    public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
+        if(channelSpecification != null)
+        {
+            throw new IllegalArgumentException("Update polyphase source manager to support channel specifications");
+        }
+
         if(isTunable(tunerChannel))
         {
             //Get a new set of currently tuned channels

@@ -299,8 +299,8 @@ public class FIRFilterSpecification
         private int mOrder;
         private Boolean mOddLength;
         private int mGridDensity = 16;
-        private int mPassBandEndFrequency;
-        private int mStopBandStartFrequency;
+        private double mPassBandEndFrequency;
+        private double mStopBandStartFrequency;
         private double mPassBandRipple;
         private double mStopBandRipple;
         private double mPassBandAmplitude = 1.0;
@@ -342,13 +342,13 @@ public class FIRFilterSpecification
             return this;
         }
 
-        public LowPassBuilder passBandCutoff(int frequencyHz)
+        public LowPassBuilder passBandCutoff(double frequencyHz)
         {
             mPassBandEndFrequency = frequencyHz;
             return this;
         }
 
-        public LowPassBuilder stopBandStart(int frequencyHz)
+        public LowPassBuilder stopBandStart(double frequencyHz)
         {
             mStopBandStartFrequency = frequencyHz;
             return this;
@@ -905,7 +905,7 @@ public class FIRFilterSpecification
      * @param stopBandRipple stop band ripple in dB
      * @return estimated filter length
      */
-    public static int estimateFilterOrder(double sampleRate, int frequency1, int frequency2,
+    public static int estimateFilterOrder(double sampleRate, double frequency1, double frequency2,
                                           double passBandRipple, double stopBandRipple)
     {
         double df = Math.abs(frequency2 - frequency1) / sampleRate;
@@ -1013,13 +1013,13 @@ public class FIRFilterSpecification
          * @param amplitude of the frequency band relative to unity (0.0 - 1.0)
          * @param ripple of the frequency band specified as db ripple
          */
-        public FrequencyBand(double sampleRate, int start, int end, double amplitude, double ripple)
+        public FrequencyBand(double sampleRate, double start, double end, double amplitude, double ripple)
         {
-            this((double)start / sampleRate, (double)end / sampleRate,
+            this(start / sampleRate, end / sampleRate,
                 amplitude, ripple);
         }
 
-        public FrequencyBand(double sampleRate, int start, int end, double amplitude, double ripple, double weight)
+        public FrequencyBand(double sampleRate, double start, double end, double amplitude, double ripple, double weight)
         {
             this(sampleRate, start, end, amplitude, ripple);
             mWeight = weight;

@@ -260,7 +260,7 @@ public class ChannelizerViewer extends JFrame
             for(int x = 0; x < mChannelCount; x++)
             {
                 TunerChannel tunerChannel = new TunerChannel(100000000, 12500);
-                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSource(tunerChannel);
+                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSource(tunerChannel, null);
                 DiscreteChannelPanel channelPanel = new DiscreteChannelPanel(mSettingsManager, source, x);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 
@@ -362,7 +362,7 @@ public class ChannelizerViewer extends JFrame
             mComplexDecibelConverter.addListener(mSpectrumPanel);
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
-            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel);
+            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, null);
 
             if(mSource != null)
             {
@@ -556,7 +556,7 @@ public class ChannelizerViewer extends JFrame
             {
                 if(sourceCount < maxSourceCount)
                 {
-                    TunerChannelSource source = tuner.getChannelSourceManager().getSource(tunerChannel);
+                    TunerChannelSource source = tuner.getChannelSourceManager().getSource(tunerChannel, null);
 
                     if(source != null)
                     {
