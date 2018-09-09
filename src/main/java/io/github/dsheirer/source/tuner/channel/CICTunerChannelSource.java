@@ -44,12 +44,6 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
     //Threshold for resetting buffer overflow condition
     private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
-    //Pass band cutoff frequency for the complex channel - target = 12.5 kHz channel
-    private static final int CHANNEL_PASS_FREQUENCY = 6000;
-
-    //Stop band frequency for the complex channel
-    private static final int CHANNEL_STOP_FREQUENCY = 6700;
-
     private OverflowableReusableBufferTransferQueue<ReusableComplexBuffer> mBuffer;
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("CICTunerChannelSource");
     private IOscillator mFrequencyCorrectionMixer;
@@ -65,16 +59,19 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
      * @param producerSourceEventListener to receive sample stream start/stop requests
      * @param tunerChannel that details the desired channel frequency and bandwidth
      * @param sampleRate of the incoming sample stream
-     * @param decimation to use in the CIC decimation filter.
+     * @param channelSpecification for the requested channel.
      * @throws FilterDesignException if a final cleanup filter cannot be designed using the remez filter
      *                               designer and the filter parameters.
      */
     public CICTunerChannelSource(Listener<SourceEvent> producerSourceEventListener, TunerChannel tunerChannel,
-                                 double sampleRate, int decimation) throws FilterDesignException
+                 double sampleRate, ChannelSpecification channelSpecification) throws FilterDesignException
     {
         super(producerSourceEventListener, tunerChannel);
 
-        mDecimationFilter = new ComplexPrimeCICDecimate(sampleRate, decimation, CHANNEL_PASS_FREQUENCY, CHANNEL_STOP_FREQUENCY);
+        int decimation = (int)(sampleRate / channelSpecification.getMinimumSampleRate());
+
+        mDecimationFilter = new ComplexPrimeCICDecimate(sampleRate, decimation, channelSpecification.getPassFrequency(),
+            channelSpecification.getStopFrequency());
 
         mBuffer = new OverflowableReusableBufferTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
         //Setup the frequency mixer to the current source frequency

@@ -347,7 +347,6 @@ public class DecoderFactory
                 filters.add(new MPT1327MessageFilter());
                 break;
             case P25_PHASE1:
-            case P25_PHASE2:
                 filters.add(new P25MessageFilterSet());
                 break;
             case PASSPORT:

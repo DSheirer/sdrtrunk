@@ -21,6 +21,7 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -327,7 +328,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
      *
      * Returns null if no tuner can source the channel
      */
-    public Source getSource(SourceConfigTuner config, int bandwidth)
+    public Source getSource(SourceConfigTuner config, int bandwidth, ChannelSpecification channelSpecification)
     {
         TunerChannelSource retVal = null;
 
@@ -347,7 +348,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
             {
                 try
                 {
-                    retVal = tuner.getChannelSourceManager().getSource(tunerChannel);
+                    retVal = tuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
 
                     if(retVal != null)
                     {
@@ -370,7 +371,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 
             try
             {
-                retVal = tuner.getChannelSourceManager().getSource(tunerChannel);
+                retVal = tuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
             }
             catch(Exception e)
             {

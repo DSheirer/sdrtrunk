@@ -22,6 +22,7 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.CICTunerChannelSource;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
@@ -39,7 +40,6 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(HeterodyneChannelSourceManager.class);
 
-    private final static int OBJECTIVE_CHANNEL_SAMPLE_RATE = 25000;
     private final static int DELAY_BUFFER_DURATION_MILLISECONDS = 2000;
 
     private List<CICTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
@@ -67,17 +67,15 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     }
 
     @Override
-    public TunerChannelSource getSource(TunerChannel tunerChannel)
+    public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
         if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, mTunerChannels))
         {
-            int decimation = mTunerController.getBandwidth() / OBJECTIVE_CHANNEL_SAMPLE_RATE;
-
             try
             {
                 //Attempt to create the channel source first, in case we get a filter design exception
                 CICTunerChannelSource tunerChannelSource = new CICTunerChannelSource(mChannelSourceEventProcessor,
-                    tunerChannel, mTunerController.getSampleRate(), decimation);
+                    tunerChannel, mTunerController.getSampleRate(), channelSpecification);
 
                 //Add to the list of channel sources so that it will receive the tuner frequency change
                 mChannelSources.add(tunerChannelSource);
@@ -165,7 +163,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void broadcastToChannels(SourceEvent sourceEvent)
     {
-        for(CICTunerChannelSource channelSource: mChannelSources)
+        for(CICTunerChannelSource channelSource : mChannelSources)
         {
             try
             {

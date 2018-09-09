@@ -104,7 +104,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
      * @throws FilterDesignException if a final low-pass cleanup filter cannot be created for the output channel rate
      *                               and specified pass/stop frequencies.
      */
-    public ComplexPrimeCICDecimate(double sampleRate, int decimation, int passFrequency, int stopFrequency)
+    public ComplexPrimeCICDecimate(double sampleRate, int decimation, double passFrequency, double stopFrequency)
         throws FilterDesignException
     {
         Validate.isTrue(decimation <= PRIMES[PRIMES.length - 1]);
@@ -400,7 +400,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
         private ComplexFIRFilter2 mLowPassFilter;
         private Listener<ReusableComplexBuffer> mReusableComplexBufferListener;
 
-        public Output(double outputSampleRate, int passFrequency, int stopFrequency) throws FilterDesignException
+        public Output(double outputSampleRate, double passFrequency, double stopFrequency) throws FilterDesignException
         {
             mBufferAssembler = new ReusableComplexBufferAssembler(2400, outputSampleRate);
 
@@ -461,7 +461,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
          * @return a newly designed filter or a previously designed (cached) filter
          * @throws FilterDesignException
          */
-        private float[] getLowPassFilter(double sampleRate, int passFrequency, int stopFrequency) throws FilterDesignException
+        private float[] getLowPassFilter(double sampleRate, double passFrequency, double stopFrequency) throws FilterDesignException
         {
             //Use existing filter if we've already designed one
             if(sLowPassFilters.containsKey((int)sampleRate))

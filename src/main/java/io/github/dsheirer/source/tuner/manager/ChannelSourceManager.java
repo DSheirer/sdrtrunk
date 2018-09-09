@@ -19,6 +19,7 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 
@@ -50,9 +51,10 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      * resources allocated for the tuner channel source.
      *
      * @param tunerChannel for requested source
+     * @param channelSpecification for the requested channel
      * @return tuner channel source or null
      */
-    public abstract TunerChannelSource getSource(TunerChannel tunerChannel);
+    public abstract TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification);
 
     /**
      * Adds a listener to receive source events
