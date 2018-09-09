@@ -100,7 +100,7 @@ public class DQPSKGardnerSymbolEvaluator implements IPSKSymbolEvaluator<Dibit>
 
         //Since we've rotated the error symbol back to 0 radians, the quadrature value closely approximates the
         //arctan of the error angle relative to 0 radians and this provides our error value
-        mPhaseError = -mEvaluationSymbol.quadrature();
+        mPhaseError = normalize(-mEvaluationSymbol.quadrature(), 0.3f);
     }
 
     /**

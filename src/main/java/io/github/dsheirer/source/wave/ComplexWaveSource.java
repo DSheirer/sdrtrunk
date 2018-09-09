@@ -209,6 +209,11 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
 
             if(broadcast && mListener != null)
             {
+                if(samplesRead < 0)
+                {
+                    throw new IOException("End of file reached");
+                }
+
                 if(samplesRead < buffer.length)
                 {
                     buffer = Arrays.copyOf(buffer, samplesRead);

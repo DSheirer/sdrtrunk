@@ -56,9 +56,10 @@ public class SourceEvent
     /**
      * Private constructor.  Use the static constructor methods to create an event.
      */
-    private SourceEvent(Event event, Number value, String eventDescription)
+    private SourceEvent(Event event, Source source, Number value, String eventDescription)
     {
         mEvent = event;
+        mSource = source;
         mValue = value;
         mEventDescription = eventDescription;
     }
@@ -66,10 +67,17 @@ public class SourceEvent
     /**
      * Private constructor.  Use the static constructor methods to create an event.
      */
+    private SourceEvent(Event event, Number value, String eventDescription)
+    {
+        this(event, null, value, eventDescription);
+    }
+
+    /**
+     * Private constructor.  Use the static constructor methods to create an event.
+     */
     private SourceEvent(Event event, Number value)
     {
-        mEvent = event;
-        mValue = value;
+        this(event, value, null);
     }
 
     /**
@@ -77,8 +85,12 @@ public class SourceEvent
      */
     private SourceEvent(Event event, Source source)
     {
-        mEvent = event;
-        mSource = source;
+        this(event, source, 0);
+    }
+
+    private SourceEvent(Event event, Source source, Number value)
+    {
+        this(event, source, value, null);
     }
 
     /**
@@ -283,11 +295,22 @@ public class SourceEvent
     }
 
     /**
-     * Creates a new start sample stream request event
+     * Creates a new start sample stream request event.  This method uses the current system time in
+     * milliseconds as the requested sample start time.
      */
     public static SourceEvent startSampleStreamRequest(Source source)
     {
-        return new SourceEvent(Event.REQUEST_START_SAMPLE_STREAM, source);
+        return startSampleStreamRequest(source, System.currentTimeMillis());
+    }
+
+    /**
+     * Creates a new start sample stream request event and requests that samples (when available) for the
+     * specified timestamp be pre-loaded into the source.  The timestamp only applies for sources that incorporate
+     * a sample delay buffer.
+     */
+    public static SourceEvent startSampleStreamRequest(Source source, long timestamp)
+    {
+        return new SourceEvent(Event.REQUEST_START_SAMPLE_STREAM, source, timestamp);
     }
 
     /**
@@ -299,7 +322,7 @@ public class SourceEvent
     }
 
     /**
-     * Creates a new stop sample stream request event
+     * Creates a new stop sample stream notification event
      */
     public static SourceEvent stopSampleStreamNotification(Source source)
     {

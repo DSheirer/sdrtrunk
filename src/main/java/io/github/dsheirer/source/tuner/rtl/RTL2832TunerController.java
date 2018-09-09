@@ -95,6 +95,12 @@ public abstract class RTL2832TunerController extends USBTunerController
         mDeviceDescriptor = deviceDescriptor;
     }
 
+    @Override
+    public int getBufferSampleCount()
+    {
+        return getUSBTransferBufferSize(getSampleRate()) / 2; //2 bytes per complex sample
+    }
+
 
     public void init() throws SourceException
     {
@@ -987,15 +993,21 @@ public abstract class RTL2832TunerController extends USBTunerController
 
         if(mUSBTransferProcessor != null)
         {
-            if(sampleRate.getRate() > 300000)
-            {
-                mUSBTransferProcessor.setBufferSize(USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE);
-            }
-            else
-            {
-                mUSBTransferProcessor.setBufferSize(USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE);
-            }
+            mUSBTransferProcessor.setBufferSize(getUSBTransferBufferSize(sampleRate.getRate()));
         }
+    }
+
+    /**
+     * Determines the size of USB transfer buffers according to the sample rate
+     */
+    private int getUSBTransferBufferSize(double sampleRate)
+    {
+        if(sampleRate > 300000)
+        {
+            return USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE;
+        }
+
+        return USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE;
     }
 
     public void setSampleRateFrequencyCorrection(int ppm) throws SourceException

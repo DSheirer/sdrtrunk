@@ -26,6 +26,7 @@ import java.util.prefs.Preferences;
 
 public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
 {
+    private static final String PREFERENCE_RECENT_FILE = ".recent.file.";
     private Preferences mPreferences = Preferences.userNodeForPackage(RecentFilesMenu.class);
     private IFileSelectionListener mFileSelectionListener;
     private String mIdentifier;
@@ -111,7 +112,7 @@ public class RecentFilesMenu extends Menu implements EventHandler<ActionEvent>
      */
     private String getKey(int index)
     {
-        return mIdentifier + ".recent.file." + index;
+        return mIdentifier + PREFERENCE_RECENT_FILE + index;
     }
 
     /**

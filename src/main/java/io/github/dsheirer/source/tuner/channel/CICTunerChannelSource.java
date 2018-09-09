@@ -54,7 +54,6 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("CICTunerChannelSource");
     private IOscillator mFrequencyCorrectionMixer;
     private ComplexPrimeCICDecimate mDecimationFilter;
-    private Listener<ReusableComplexBuffer> mListener;
     private List<ReusableComplexBuffer> mSampleBuffers = new ArrayList<>();
     private double mChannelSampleRate;
     private long mChannelFrequencyCorrection = 0;

@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.prefs.Preferences;
 
 /**
  * Application for viewing and working with demodulators and recording files.
@@ -42,6 +43,9 @@ public class DemodulatorViewerFX extends Application
 {
     private final static Logger mLog = LoggerFactory.getLogger(DemodulatorViewerFX.class);
 
+    private static final String PREFERENCE_FILE_OPEN_DEFAULT_FOLDER = "default.folder";
+
+    private Preferences mPreferences = Preferences.userNodeForPackage(DemodulatorViewerFX.class);
     private Stage mStage;
     private MenuBar mMenuBar;
     private RecentFilesMenu mRecentFilesMenu;
@@ -117,9 +121,22 @@ public class DemodulatorViewerFX extends Application
                 {
                     FileChooser fileChooser = new FileChooser();
                     fileChooser.setTitle("Open an I/Q recording file");
+
+                    String directory = mPreferences.get(PREFERENCE_FILE_OPEN_DEFAULT_FOLDER, null);
+
+                    if(directory != null)
+                    {
+                        fileChooser.setInitialDirectory(new File(directory));
+                    }
+
                     File file = fileChooser.showOpenDialog(mStage);
-                    getViewerDesktop().load(file);
-                    getRecentFilesMenu().add(file);
+
+                    if(file != null)
+                    {
+                        getViewerDesktop().load(file);
+                        getRecentFilesMenu().add(file);
+                        mPreferences.put(PREFERENCE_FILE_OPEN_DEFAULT_FOLDER, file.getParent());
+                    }
                 }
             });
 

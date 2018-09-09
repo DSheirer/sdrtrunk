@@ -66,6 +66,12 @@ public class TestTunerController extends TunerController
     }
 
     @Override
+    public int getBufferSampleCount()
+    {
+        return SAMPLE_RATE / SPECTRAL_FRAME_RATE;
+    }
+
+    @Override
     public void dispose()
     {
         //no-op

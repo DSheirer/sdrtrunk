@@ -19,6 +19,7 @@ import io.github.dsheirer.gui.instrument.chart.ComplexSampleLineChart;
 import io.github.dsheirer.gui.instrument.chart.DoubleLineChart;
 import io.github.dsheirer.gui.instrument.chart.EyeDiagramChart;
 import io.github.dsheirer.gui.instrument.chart.PhaseLineChart;
+import io.github.dsheirer.gui.instrument.chart.SamplesPerSymbolChart;
 import io.github.dsheirer.gui.instrument.chart.SymbolChart;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -34,14 +35,14 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25Phase1LSMPane.class);
 
-    private HBox mSampleChartBox;
-    private ComplexSampleLineChart mSampleLineChart;
+    private HBox mTopChartBox;
+    private ComplexSampleLineChart mDifferentialDemodulatedSamplesChartBox;
     private EyeDiagramChart mEyeDiagramChart;
-    private HBox mDecoderChartBox;
-    private SymbolChart mSymbolChart;
+    private HBox mBottomChartBox;
+    private SymbolChart mSymbolConstellationChart;
     private PhaseLineChart mPLLPhaseErrorLineChart;
     private DoubleLineChart mPLLFrequencyLineChart;
-    private DoubleLineChart mSamplesPerSymbolLineChart;
+    private SamplesPerSymbolChart mSamplesPerSymbolLineChart;
     private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
     private P25DecoderLSMInstrumented mDecoder = new P25DecoderLSMInstrumented(null);
 
@@ -56,16 +57,16 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         addListener(getDecoder());
 
         getDecoder().setFilteredBufferListener(mFilteredBufferBroadcaster);
-        getDecoder().setComplexSymbolListener(getSymbolChart());
+        getDecoder().setComplexSymbolListener(getSymbolConstellationChart());
         getDecoder().setPLLPhaseErrorListener(getPLLPhaseErrorLineChart());
         getDecoder().setPLLFrequencyListener(getPLLFrequencyLineChart());
         getDecoder().setSymbolDecisionDataListener(getEyeDiagramChart());
         getDecoder().setSamplesPerSymbolListener(getSamplesPerSymbolLineChart());
-        mFilteredBufferBroadcaster.addListener(getSampleLineChart());
+        mFilteredBufferBroadcaster.addListener(getDifferentialDemodulatedSamplesChartBox());
 
-        HBox.setHgrow(getSampleChartBox(), Priority.ALWAYS);
-        HBox.setHgrow(getDecoderChartBox(), Priority.ALWAYS);
-        getChildren().addAll(getSampleChartBox(), getDecoderChartBox());
+        HBox.setHgrow(getTopChartBox(), Priority.ALWAYS);
+        HBox.setHgrow(getBottomChartBox(), Priority.ALWAYS);
+        getChildren().addAll(getTopChartBox(), getBottomChartBox());
 
         mDecoder.setMessageListener(new Listener<Message>()
         {
@@ -86,7 +87,8 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         mDecoder.setSampleRate(sampleRate);
         double samplesPerSymbol = sampleRate / 4800.0;
 
-        getSampleLineChart().setSamplesPerSymbol((int)samplesPerSymbol);
+        getDifferentialDemodulatedSamplesChartBox().setSamplesPerSymbol((int)samplesPerSymbol);
+        getSamplesPerSymbolLineChart().setSamplesPerSymbol(samplesPerSymbol);
     }
 
     private P25DecoderLSMInstrumented getDecoder()
@@ -94,69 +96,69 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         return mDecoder;
     }
 
-    private SymbolChart getSymbolChart()
+    private SymbolChart getSymbolConstellationChart()
     {
-        if(mSymbolChart == null)
+        if(mSymbolConstellationChart == null)
         {
-            mSymbolChart = new SymbolChart(10);
+            mSymbolConstellationChart = new SymbolChart(10);
         }
 
-        return mSymbolChart;
+        return mSymbolConstellationChart;
     }
 
-    private HBox getDecoderChartBox()
+    private HBox getBottomChartBox()
     {
-        if(mDecoderChartBox == null)
+        if(mBottomChartBox == null)
         {
-            mDecoderChartBox = new HBox();
-            mDecoderChartBox.setMaxHeight(Double.MAX_VALUE);
-            getSymbolChart().setMaxWidth(Double.MAX_VALUE);
+            mBottomChartBox = new HBox();
+            mBottomChartBox.setMaxHeight(Double.MAX_VALUE);
+            getSymbolConstellationChart().setMaxWidth(Double.MAX_VALUE);
             getPLLPhaseErrorLineChart().setMaxWidth(Double.MAX_VALUE);
             getPLLFrequencyLineChart().setMaxWidth(Double.MAX_VALUE);
-            HBox.setHgrow(getSymbolChart(), Priority.ALWAYS);
+            HBox.setHgrow(getSymbolConstellationChart(), Priority.ALWAYS);
             HBox.setHgrow(getPLLPhaseErrorLineChart(), Priority.ALWAYS);
             HBox.setHgrow(getPLLFrequencyLineChart(), Priority.ALWAYS);
-            mDecoderChartBox.getChildren().addAll(getSymbolChart(), getPLLPhaseErrorLineChart(),
+            mBottomChartBox.getChildren().addAll(getSymbolConstellationChart(), getPLLPhaseErrorLineChart(),
                 getPLLFrequencyLineChart());
         }
 
-        return mDecoderChartBox;
+        return mBottomChartBox;
     }
 
-    private HBox getSampleChartBox()
+    private HBox getTopChartBox()
     {
-        if(mSampleChartBox == null)
+        if(mTopChartBox == null)
         {
-            mSampleChartBox = new HBox();
-            mSampleChartBox.setMaxHeight(Double.MAX_VALUE);
-            getSampleLineChart().setMaxWidth(Double.MAX_VALUE);
+            mTopChartBox = new HBox();
+            mTopChartBox.setMaxHeight(Double.MAX_VALUE);
+            getDifferentialDemodulatedSamplesChartBox().setMaxWidth(Double.MAX_VALUE);
             getEyeDiagramChart().setMaxWidth(Double.MAX_VALUE);
             getSamplesPerSymbolLineChart().setMaxWidth(Double.MAX_VALUE);
-            HBox.setHgrow(getSampleLineChart(), Priority.ALWAYS);
+            HBox.setHgrow(getDifferentialDemodulatedSamplesChartBox(), Priority.ALWAYS);
             HBox.setHgrow(getEyeDiagramChart(), Priority.ALWAYS);
             HBox.setHgrow(getSamplesPerSymbolLineChart(), Priority.ALWAYS);
-            mSampleChartBox.getChildren().addAll(getSampleLineChart(), getEyeDiagramChart(),
+            mTopChartBox.getChildren().addAll(getDifferentialDemodulatedSamplesChartBox(), getEyeDiagramChart(),
                 getSamplesPerSymbolLineChart());
         }
 
-        return mSampleChartBox;
+        return mTopChartBox;
     }
 
-    private ComplexSampleLineChart getSampleLineChart()
+    private ComplexSampleLineChart getDifferentialDemodulatedSamplesChartBox()
     {
-        if(mSampleLineChart == null)
+        if(mDifferentialDemodulatedSamplesChartBox == null)
         {
-            mSampleLineChart = new ComplexSampleLineChart(100, 10);
+            mDifferentialDemodulatedSamplesChartBox = new ComplexSampleLineChart(100, 10);
         }
 
-        return mSampleLineChart;
+        return mDifferentialDemodulatedSamplesChartBox;
     }
 
     private EyeDiagramChart getEyeDiagramChart()
     {
         if(mEyeDiagramChart == null)
         {
-            mEyeDiagramChart = new EyeDiagramChart(10, "Middle: 3-4 / Symbol: 8-9");
+            mEyeDiagramChart = new EyeDiagramChart(10, "Symbol/Eye Diagram");
         }
 
         return mEyeDiagramChart;
@@ -182,11 +184,11 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         return mPLLFrequencyLineChart;
     }
 
-    private DoubleLineChart getSamplesPerSymbolLineChart()
+    private SamplesPerSymbolChart getSamplesPerSymbolLineChart()
     {
         if(mSamplesPerSymbolLineChart == null)
         {
-            mSamplesPerSymbolLineChart = new DoubleLineChart( "Sample Point", 4.5, 7.0, 0.1, 40);
+            mSamplesPerSymbolLineChart = new SamplesPerSymbolChart(40, 6.25);
         }
 
         return mSamplesPerSymbolLineChart;

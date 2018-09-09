@@ -95,10 +95,45 @@ public class DQPSKDecisionDirectedSymbolEvaluator implements IPSKSymbolEvaluator
 
         //Since we've rotated the error symbol back to 0 radians, the quadrature value closely approximates the
         //arctan of the error angle relative to 0 radians and this provides our error value
-        mPhaseError = -mEvaluationSymbol.quadrature();
+        float errorNormalized = normalize(mEvaluationSymbol.quadrature(), 0.3f);
+
+        mPhaseError = -errorNormalized;
 
         //Timing error is the same as phase error with the sign corrected according to the vector's angular rotation
-        mTimingError = mEvaluationSymbol.quadrature() * mTimingErrorPolarity;
+        mTimingError = errorNormalized * mTimingErrorPolarity;
+    }
+
+    /**
+     * Constrains value to the range of ( -maximum <> maximum )
+     */
+    private static float clip(float value, float maximum)
+    {
+        if(value > maximum)
+        {
+            return maximum;
+        }
+        else if(value < -maximum)
+        {
+            return -maximum;
+        }
+
+        return value;
+    }
+
+    /**
+     * Constrains timing error to +/- the maximum value and corrects any
+     * floating point invalid numbers
+     */
+    private float normalize(float error, float maximum)
+    {
+        if(Float.isNaN(error))
+        {
+            return 0.0f;
+        }
+        else
+        {
+            return clip(error, maximum);
+        }
     }
 
     /**
