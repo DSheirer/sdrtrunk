@@ -109,6 +109,12 @@ public class HackRFTunerController extends USBTunerController
         mDeviceDescriptor = descriptor;
     }
 
+    @Override
+    public int getBufferSampleCount()
+    {
+        return USB_TRANSFER_BUFFER_SIZE / 2;
+    }
+
     public void init() throws SourceException
     {
         mDeviceHandle = new DeviceHandle();

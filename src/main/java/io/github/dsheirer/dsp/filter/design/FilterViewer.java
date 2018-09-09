@@ -1,7 +1,7 @@
 package io.github.dsheirer.dsp.filter.design;
 
-import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -61,14 +61,15 @@ public class FilterViewer extends Application
 //            .passBandRipple(0.01)
 //            .build();
 
-        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
-            .sampleRate(8000)
-            .stopFrequency1(1000)
-            .passFrequencyBegin(1100)
-            .passFrequencyEnd(1900)
-            .stopFrequency2(2000)
-            .stopRipple(0.000001)
-            .passRipple(0.00001)
+        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+            .sampleRate(50000.0)
+            .gridDensity(16)
+            .passBandCutoff(6000)
+            .passBandAmplitude(1.0)
+            .passBandRipple(0.01)
+            .stopBandStart(6700)
+            .stopBandAmplitude(0.0)
+            .stopBandRipple(0.01)
             .build();
 
         float[] taps = null;
@@ -83,35 +84,23 @@ public class FilterViewer extends Application
 //            mLog.error("Error");
 //        }
 
-//        try
-//        {
-//            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-//
-//            if(designer.isValid())
-//            {
-//                taps = designer.getImpulseResponse();
-//            }
-//        }
-//        catch(FilterDesignException fde)
-//        {
-//            mLog.error("Filter design error", fde);
-//        }
-//
-//        if(taps == null)
-//        {
-//            throw new IllegalStateException("Couldn't design filter");
-//        }
-
         try
         {
-//            taps = FilterFactory.getSincM2Synthesizer(0.25, 2, 9);
-//            taps = FilterFactory.getSincM2Channelizer(12500.0, 2, 9, true);
-            taps = FilterFactory.getSincM2Synthesizer( 25000.0, 12500.0, 2, 9);
+            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
 
+            if(designer.isValid())
+            {
+                taps = designer.getImpulseResponse();
+            }
         }
-        catch(FilterDesignException e)
+        catch(FilterDesignException fde)
         {
-            e.printStackTrace();
+            mLog.error("Filter design error", fde);
+        }
+
+        if(taps == null)
+        {
+            throw new IllegalStateException("Couldn't design filter");
         }
 
         return taps;

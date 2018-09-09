@@ -48,6 +48,14 @@ public class ComplexMixer
     }
 
     /**
+     * Audio format used by the underlying mixer reader
+     */
+    public AudioFormat getAudioFormat()
+    {
+        return mMixerReader.getAudioFormat();
+    }
+
+    /**
      * Sets the buffer size in bytes per buffer for each read interval.
      * @param bufferSize in bytes
      */

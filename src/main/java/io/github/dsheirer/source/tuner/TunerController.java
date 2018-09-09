@@ -68,6 +68,21 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     public abstract void dispose();
 
     /**
+     * Number of samples contained in each complex buffer provided by this tuner.
+     *
+     * @return number of complex sample in each buffer.
+     */
+    public abstract int getBufferSampleCount();
+
+    /**
+     * Duration in milliseconds for each sample buffer provided by this tuner
+     */
+    public long getBufferDuration()
+    {
+        return (long)(1000.0 / (getSampleRate() / (double)getBufferSampleCount()));
+    }
+
+    /**
      * Implements the ISourceEventListener interface to receive requests from sample consumers
      */
     @Override

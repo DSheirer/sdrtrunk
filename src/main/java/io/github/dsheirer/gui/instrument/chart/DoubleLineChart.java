@@ -21,6 +21,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.ValueAxis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,24 @@ public class DoubleLineChart extends LineChart implements Listener<Double>
 
         setData(observableList);
         init(length);
+    }
+
+    /**
+     * Sets the minimum displayable value for the y axis
+     * @param min
+     */
+    public void setMin(double min)
+    {
+        ((ValueAxis)getYAxis()).setLowerBound(min);
+    }
+
+    /**
+     * Sets the maximum displayable value for the y axis
+     * @param max
+     */
+    public void setMax(double max)
+    {
+        ((ValueAxis)getYAxis()).setUpperBound(max);
     }
 
     private void init(int length)

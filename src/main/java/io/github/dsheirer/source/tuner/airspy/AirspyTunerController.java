@@ -107,6 +107,13 @@ public class AirspyTunerController extends USBTunerController
         mDevice = device;
     }
 
+    @Override
+    public int getBufferSampleCount()
+    {
+        //Each airspy complex sample is 4 bytes, so sample count is buffer size / 4
+        return USB_TRANSFER_BUFFER_SIZE / 4;
+    }
+
     public void init() throws SourceException
     {
         mDeviceHandle = new DeviceHandle();

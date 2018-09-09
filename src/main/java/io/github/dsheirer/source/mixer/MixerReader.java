@@ -73,6 +73,14 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     }
 
     /**
+     * Audio format used by this reader
+     */
+    public AudioFormat getAudioFormat()
+    {
+        return mAudioFormat;
+    }
+
+    /**
      * Sets the size of buffers to use.  This reader will read from target data line 20 times per second.
      * @param bytesPerBuffer to size for each buffer read.
      */
