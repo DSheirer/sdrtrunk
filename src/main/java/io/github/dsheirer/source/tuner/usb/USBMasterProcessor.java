@@ -81,7 +81,7 @@ public class USBMasterProcessor
         if(mRunning.compareAndSet(false, true))
         {
             //Set periodicity to an odd multiple to avoid contention with transfer buffer receivers
-            mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mProcessor, 0L, 5L, TimeUnit.MILLISECONDS);
+            mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mProcessor, 0L, 9L, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -98,6 +98,14 @@ public class USBMasterProcessor
                 mProcessorFuture = null;
             }
         }
+    }
+
+    /**
+     * Stops the libusb timeout processor and prepares for shutdown.
+     */
+    public void shutdown()
+    {
+        stop();
     }
 
     /**
