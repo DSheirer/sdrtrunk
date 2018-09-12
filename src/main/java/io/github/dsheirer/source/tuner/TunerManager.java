@@ -71,6 +71,10 @@ public class TunerManager
      */
     public void dispose()
     {
+        mLog.info("Shutting down LibUsb timeout processor ...");
+
+        LIBUSB_TRANSFER_PROCESSOR.shutdown();
+
         mLog.info("Shutting down LibUsb ...");
         try
         {
