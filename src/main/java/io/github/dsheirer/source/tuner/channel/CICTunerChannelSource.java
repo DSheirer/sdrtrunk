@@ -19,6 +19,7 @@ import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
@@ -74,12 +75,25 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
             channelSpecification.getStopFrequency());
 
         mBuffer = new OverflowableReusableBufferTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
+
         //Setup the frequency mixer to the current source frequency
         mChannelSampleRate = sampleRate / (double)decimation;
         mTunerFrequency = tunerChannel.getFrequency();
         long frequencyOffset = mTunerFrequency - getTunerChannel().getFrequency();
 
         mFrequencyCorrectionMixer = new LowPhaseNoiseOscillator(frequencyOffset, sampleRate);
+    }
+
+    /**
+     * Registers an overflow listener to be notified in the internal buffer is in an
+     * overflow state.
+     *
+     * @param listener to receiver updates to the source overflow state
+     */
+    @Override
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mBuffer.setOverflowListener(listener);
     }
 
     @Override
