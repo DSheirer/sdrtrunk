@@ -120,8 +120,6 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mForegroundColors.put(State.FADE, Color.DARK_GRAY);
         mBackgroundColors.put(State.IDLE, Color.WHITE);
         mForegroundColors.put(State.IDLE, Color.DARK_GRAY);
-        mBackgroundColors.put(State.OVERFLOW, Color.RED);
-        mForegroundColors.put(State.OVERFLOW, Color.YELLOW);
         mBackgroundColors.put(State.RESET, Color.PINK);
         mForegroundColors.put(State.RESET, Color.YELLOW);
         mBackgroundColors.put(State.TEARDOWN, Color.DARK_GRAY);

@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.channel.metadata;
@@ -23,7 +20,7 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
-import java.awt.*;
+import java.awt.EventQueue;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,7 +42,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     public static final int COLUMN_CONFIGURATION_NAME = 8;
     public static final int COLUMN_MESSAGE = 9;
 
-    private static final String[] COLUMNS = {"State", "Decoder", "Channel", "Frequency", "Primary From", "Primary To",
+    private static final String[] COLUMNS = {"Status", "Decoder", "Channel", "Frequency", "Primary From", "Primary To",
          "Secondary From", "Secondary To", "Channel Name", "Message"};
 
     private List<MutableMetadata> mChannelMetadata = new ArrayList();
@@ -166,7 +163,14 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
             switch(columnIndex)
             {
                 case COLUMN_STATE:
-                    return metadata.getState();
+                    if(metadata.isBufferOverflow())
+                    {
+                        return metadata.getState() + " *OVERFLOW*";
+                    }
+                    else
+                    {
+                        return metadata.getState();
+                    }
                 case COLUMN_DECODER:
                     if(metadata.hasPrimaryDecoderType())
                     {
