@@ -29,6 +29,7 @@ import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -58,4 +59,7 @@ public abstract class DecodeConfiguration extends Configuration
 
     @JsonIgnore
     public abstract DecoderType getDecoderType();
+
+    @JsonIgnore
+    public abstract ChannelSpecification getChannelSpecification();
 }

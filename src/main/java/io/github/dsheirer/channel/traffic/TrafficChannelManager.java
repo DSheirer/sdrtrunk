@@ -186,7 +186,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
             if(frequency > 0)
             {
                 Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(frequency,
-                    mDecodeConfiguration.getDecoderType().getChannelBandwidth()));
+                    mDecodeConfiguration.getChannelSpecification().getBandwidth()));
 
                 if(channel != null)
                 {

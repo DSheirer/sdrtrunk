@@ -17,10 +17,12 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.ltrstandard;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 public class DecodeConfigLTRStandard extends DecodeConfiguration
 {
@@ -46,5 +48,16 @@ public class DecodeConfigLTRStandard extends DecodeConfiguration
     public void setMessageDirection(MessageDirection direction)
     {
         mMessageDirection = direction;
+    }
+
+    /**
+     * Source channel specification for this decoder
+     */
+    @JsonIgnore
+    @Override
+    public ChannelSpecification getChannelSpecification()
+    {
+        return new ChannelSpecification(25000.0,
+            12500, 6000.0, 7000.0);
     }
 }

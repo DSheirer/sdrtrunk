@@ -17,14 +17,27 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.am;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 public class DecodeConfigAM extends DecodeConfiguration
 {
 	public DecodeConfigAM()
     {
+    }
+
+    /**
+     * Source channel specification for this decoder
+     */
+    @JsonIgnore
+    @Override
+    public ChannelSpecification getChannelSpecification()
+    {
+        return new ChannelSpecification(25000.0,
+            3000, 3000.0, 5000.0);
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")

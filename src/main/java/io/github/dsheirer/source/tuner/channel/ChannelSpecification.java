@@ -21,18 +21,21 @@ package io.github.dsheirer.source.tuner.channel;
 public class ChannelSpecification
 {
     private double mMinimumSampleRate;
+    private int mBandwidth;
     private double mPassFrequency;
     private double mStopFrequency;
 
     /**
      * Constructs a channel specification instance.
      * @param minimumSampleRate requested for the channel
+     * @param bandwidth
      * @param passFrequency for the pass band of the channel
      * @param stopFrequency for the stop band of teh channel
      */
-    public ChannelSpecification(double minimumSampleRate, double passFrequency, double stopFrequency)
+    public ChannelSpecification(double minimumSampleRate, int bandwidth, double passFrequency, double stopFrequency)
     {
         mMinimumSampleRate = minimumSampleRate;
+        mBandwidth = bandwidth;
         mPassFrequency = passFrequency;
         mStopFrequency = stopFrequency;
     }
@@ -43,6 +46,14 @@ public class ChannelSpecification
     public double getMinimumSampleRate()
     {
         return mMinimumSampleRate;
+    }
+
+    /**
+     * Bandwidth of the channel in Hertz
+     */
+    public int getBandwidth()
+    {
+        return mBandwidth;
     }
 
     /**

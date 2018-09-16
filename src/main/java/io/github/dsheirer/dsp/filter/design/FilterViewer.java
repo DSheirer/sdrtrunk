@@ -62,12 +62,12 @@ public class FilterViewer extends Application
 //            .build();
 
         FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(50000.0)
+            .sampleRate(25000.0)
             .gridDensity(16)
-            .passBandCutoff(6000)
+            .passBandCutoff(11800)
             .passBandAmplitude(1.0)
             .passBandRipple(0.01)
-            .stopBandStart(6700)
+            .stopBandStart(12400)
             .stopBandAmplitude(0.0)
             .stopBandRipple(0.01)
             .build();

@@ -74,8 +74,7 @@ public class SourceManager
         return mTunerModel;
     }
 
-    public Source getSource(SourceConfiguration config, int bandwidth, ChannelSpecification channelSpecification)
-        throws SourceException
+    public Source getSource(SourceConfiguration config, ChannelSpecification channelSpecification) throws SourceException
     {
         Source retVal = null;
 
@@ -85,10 +84,10 @@ public class SourceManager
                 retVal = mMixerManager.getSource(config);
                 break;
             case TUNER:
-                retVal = mTunerModel.getSource((SourceConfigTuner) config, bandwidth, channelSpecification);
+                retVal = mTunerModel.getSource((SourceConfigTuner) config, channelSpecification);
                 break;
             case RECORDING:
-                retVal = mRecordingSourceManager.getSource(config, bandwidth);
+                retVal = mRecordingSourceManager.getSource(config, channelSpecification);
             case NONE:
             default:
                 break;
