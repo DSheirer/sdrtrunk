@@ -26,11 +26,14 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceEventListenerToProcessorAdapter;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController.Tunable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.SortedSet;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
     IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>
@@ -360,5 +363,86 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     public void receive(ReusableComplexBuffer complexBuffer)
     {
         broadcast(complexBuffer);
+    }
+
+    /**
+     * Indicates if the current center frequency and bandwidth is correct to source the tuner channel
+     *
+     * @param tunerChannel to test
+     * @return true if the current center frequency and bandwidth is correct for the channel
+     */
+    public boolean isTunedFor(TunerChannel tunerChannel)
+    {
+        try
+        {
+            if(tunerChannel.getMinFrequency() < getMinTunedFrequency())
+            {
+                return false;
+            }
+
+            if(tunerChannel.getMaxFrequency() > getMaxTunedFrequency())
+            {
+                return false;
+            }
+
+            if(hasMiddleUnusableBandwidth())
+            {
+                long minAvoid = getFrequency() - getMiddleUnusableHalfBandwidth();
+                long maxAvoid = getFrequency() + getMiddleUnusableHalfBandwidth();
+
+                if(tunerChannel.overlaps(minAvoid, maxAvoid))
+                {
+                    return false;
+                }
+            }
+        }
+        catch(SourceException se)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Indicates if the current center frequency and bandwidth is correct to source the tuner channel set
+     *
+     * @param tunerChannels to test
+     * @return true if the current center frequency and bandwidth is correct for the channel set
+     */
+    public boolean isTunedFor(SortedSet<TunerChannel> tunerChannels)
+    {
+        try
+        {
+            if(tunerChannels.first().getMinFrequency() < getMinTunedFrequency())
+            {
+                return false;
+            }
+
+            if(tunerChannels.last().getMaxFrequency() > getMaxTunedFrequency())
+            {
+                return false;
+            }
+
+            if(hasMiddleUnusableBandwidth())
+            {
+                long minAvoid = getFrequency() - getMiddleUnusableHalfBandwidth();
+                long maxAvoid = getFrequency() + getMiddleUnusableHalfBandwidth();
+
+                for(TunerChannel tunerChannel: tunerChannels)
+                {
+                    if(tunerChannel.overlaps(minAvoid, maxAvoid))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        catch(SourceException se)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
