@@ -18,6 +18,8 @@ package io.github.dsheirer.channel.metadata;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
@@ -29,6 +31,8 @@ import java.util.Map;
 
 public class ChannelMetadataModel extends AbstractTableModel implements Listener<MutableMetadataChangeEvent>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataModel.class);
+
     private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.00000" );
 
     public static final int COLUMN_STATE = 0;
@@ -163,14 +167,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
             switch(columnIndex)
             {
                 case COLUMN_STATE:
-                    if(metadata.isBufferOverflow())
-                    {
-                        return metadata.getState() + " *OVERFLOW*";
-                    }
-                    else
-                    {
-                        return metadata.getState();
-                    }
+                    return metadata.getState();
                 case COLUMN_DECODER:
                     if(metadata.hasPrimaryDecoderType())
                     {
@@ -188,7 +185,11 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
 
                     return null;
                 case COLUMN_MESSAGE:
-                    if(metadata.hasMessageType() | metadata.hasMessage())
+                    if(metadata.isBufferOverflow())
+                    {
+                        return "**OVERFLOW**";
+                    }
+                    else if(metadata.hasMessageType() || metadata.hasMessage())
                     {
                         StringBuilder sb = new StringBuilder();
                         if(metadata.hasMessageType())
@@ -252,6 +253,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
                         case CHANNEL_STATE:
                             fireTableCellUpdated(rowIndex, COLUMN_STATE);
                             break;
+                        case BUFFER_OVERFLOW:
                         case MESSAGE:
                         case MESSAGE_TYPE:
                             fireTableCellUpdated(rowIndex, COLUMN_MESSAGE);

@@ -175,4 +175,10 @@ public enum State
     {
         return mDisplayValue;
     }
+
+    @Override
+    public String toString()
+    {
+        return mDisplayValue;
+    }
 }
