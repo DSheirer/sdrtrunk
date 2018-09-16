@@ -17,9 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.mpt1327;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 public class DecodeConfigMPT1327 extends DecodeConfiguration
 {
@@ -101,5 +103,16 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration
     public void setTrafficChannelPoolSize(int size)
     {
         mTrafficChannelPoolSize = size;
+    }
+
+    /**
+     * Source channel specification for this decoder
+     */
+    @JsonIgnore
+    @Override
+    public ChannelSpecification getChannelSpecification()
+    {
+        return new ChannelSpecification(25000.0,
+            12500, 6000.0, 7000.0);
     }
 }

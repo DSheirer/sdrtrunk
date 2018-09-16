@@ -340,13 +340,13 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
      *
      * Returns null if no tuner can source the channel
      */
-    public Source getSource(SourceConfigTuner config, int bandwidth, ChannelSpecification channelSpecification)
+    public Source getSource(SourceConfigTuner config, ChannelSpecification channelSpecification)
     {
         TunerChannelSource retVal = null;
 
         TunerChannel tunerChannel = config.getTunerChannel();
 
-        tunerChannel.setBandwidth(bandwidth);
+        tunerChannel.setBandwidth(channelSpecification.getBandwidth());
 
         Iterator<Tuner> it = mTuners.iterator();
 

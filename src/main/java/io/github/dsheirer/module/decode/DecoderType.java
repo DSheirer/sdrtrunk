@@ -15,8 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode;
 
-import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
-
 import java.util.ArrayList;
 import java.util.EnumSet;
 
@@ -26,36 +24,27 @@ import java.util.EnumSet;
 public enum DecoderType
 {
     //Primary Decoders
-    AM("AM", "AM", 10000, new ChannelSpecification(25000.0, 3000.0, 5000.0)),
-    LTR_STANDARD("LTR-Standard", "LTR", 12500, new ChannelSpecification(25000.0, 6000.0, 7000.0)),
-    LTR_NET("LTR-Net", "LTR-Net", 12500, new ChannelSpecification(25000.0, 6000.0, 7000.0)),
-    MPT1327("MPT1327", "MPT1327", 12500, new ChannelSpecification(25000.0, 6000.0, 7000.0)),
-    NBFM("NBFM", "NBFM", 12500, new ChannelSpecification(25000.0, 6000.0, 7000.0)),
-    PASSPORT("Passport", "Passport", 12500, new ChannelSpecification(25000.0, 6000.0, 7000.0)),
-    P25_PHASE1("P25 Phase I", "P25-1", 12500, new ChannelSpecification(50000.0, 6000.0, 7000.0)),
+    AM("AM", "AM"),
+    LTR_STANDARD("LTR-Standard", "LTR"),
+    LTR_NET("LTR-Net", "LTR-Net"),
+    MPT1327("MPT1327", "MPT1327"),
+    NBFM("NBFM", "NBFM"),
+    PASSPORT("Passport", "Passport"),
+    P25_PHASE1("P25 Phase I", "P25-1"),
 
     //Auxiliary Decoders
-    FLEETSYNC2("Fleetsync II", "Fleetsync2", 12500),
-    LJ_1200("LJ1200 173.075", "LJ1200", 12500),
-    MDC1200("MDC1200", "MDC1200", 12500),
-    TAIT_1200("Tait 1200", "Tait 1200", 12500);
+    FLEETSYNC2("Fleetsync II", "Fleetsync2"),
+    LJ_1200("LJ1200 173.075", "LJ1200"),
+    MDC1200("MDC1200", "MDC1200"),
+    TAIT_1200("Tait 1200", "Tait 1200");
 
     private String mDisplayString;
     private String mShortDisplayString;
-    private int mChannelBandwidth;
-    private ChannelSpecification mChannelSpecification;
 
-    DecoderType(String displayString, String shortDisplayString, int bandwidth, ChannelSpecification channelSpecification)
+    DecoderType(String displayString, String shortDisplayString)
     {
         mDisplayString = displayString;
         mShortDisplayString = shortDisplayString;
-        mChannelBandwidth = bandwidth;
-        mChannelSpecification = channelSpecification;
-    }
-
-    DecoderType(String displayString, String shortDisplayString, int bandwidth)
-    {
-        this(displayString, shortDisplayString, bandwidth, null);
     }
 
     /**
@@ -95,20 +84,6 @@ public enum DecoderType
     public String getShortDisplayString()
     {
         return mShortDisplayString;
-    }
-
-    public int getChannelBandwidth()
-    {
-        return mChannelBandwidth;
-    }
-
-    /**
-     * Channel specification for a channel for this decoder type.
-     * @return specification or null
-     */
-    public ChannelSpecification getChannelSpecification()
-    {
-        return mChannelSpecification;
     }
 
     @Override

@@ -489,14 +489,14 @@ public class Channel extends Configuration implements Listener<SourceEvent>
                 SourceConfigTuner config = (SourceConfigTuner)mSourceConfiguration;
 
                 mTunerChannel = new TunerChannel(config.getFrequency(),
-                    mDecodeConfiguration.getDecoderType().getChannelBandwidth());
+                    mDecodeConfiguration.getChannelSpecification().getBandwidth());
             }
             else if(mSourceConfiguration.getSourceType() == SourceType.RECORDING)
             {
                 SourceConfigRecording config = (SourceConfigRecording)mSourceConfiguration;
 
                 mTunerChannel = new TunerChannel(config.getFrequency(),
-                    mDecodeConfiguration.getDecoderType().getChannelBandwidth());
+                    mDecodeConfiguration.getChannelSpecification().getBandwidth());
             }
         }
 
