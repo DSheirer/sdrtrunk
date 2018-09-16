@@ -108,23 +108,26 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void updateTunerFrequency()
     {
-        long centerFrequency = CenterFrequencyCalculator.getCenterFrequency(mTunerController, getTunerChannels());
-
-        if(centerFrequency == CenterFrequencyCalculator.INVALID_FREQUENCY)
+        if(!mTunerController.isTunedFor(getTunerChannels()))
         {
-            mLog.error("Couldn't calculate center frequency for tuner and tuner channels");
-            return;
-        }
+            long centerFrequency = CenterFrequencyCalculator.getCenterFrequency(mTunerController, getTunerChannels());
 
-        if(centerFrequency != mTunerController.getFrequency())
-        {
-            try
+            if(centerFrequency == CenterFrequencyCalculator.INVALID_FREQUENCY)
             {
-                mTunerController.setFrequency(centerFrequency);
+                mLog.error("Couldn't calculate center frequency for tuner and tuner channels");
+                return;
             }
-            catch(SourceException se)
+
+            if(centerFrequency != mTunerController.getFrequency())
             {
-                mLog.error("Couldn't update tuner center frequency to " + centerFrequency, se);
+                try
+                {
+                    mTunerController.setFrequency(centerFrequency);
+                }
+                catch(SourceException se)
+                {
+                    mLog.error("Couldn't update tuner center frequency to " + centerFrequency, se);
+                }
             }
         }
     }

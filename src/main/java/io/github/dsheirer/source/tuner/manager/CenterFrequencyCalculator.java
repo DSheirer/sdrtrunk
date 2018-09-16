@@ -54,48 +54,57 @@ public class CenterFrequencyCalculator
             //Start by placing the highest frequency channel at the high end of the spectrum
             candidateFrequency = maxChannelFrequency - (tunerController.getUsableBandwidth() / 2);
 
-            //Iterate the channels and make sure that none of them overlap the center DC spike buffer, if one exists
-            if(tunerController.getMiddleUnusableHalfBandwidth() > 0)
+            if(maxChannelFrequency - minChannelFrequency <= tunerController.getUsableHalfBandwidth())
             {
-                boolean processingRequired = true;
-
-                while(isValidCandidateFrequency && processingRequired)
+                candidateFrequency = minChannelFrequency - tunerController.getMiddleUnusableHalfBandwidth();
+                isValidCandidateFrequency = true;
+            }
+            else
+            {
+                //Iterate the channels and make sure that none of them overlap the center DC spike buffer, if one exists
+                if(tunerController.getMiddleUnusableHalfBandwidth() > 0)
                 {
-                    processingRequired = false;
+                    boolean processingRequired = true;
 
-                    long minAvoid = candidateFrequency - tunerController.getMiddleUnusableHalfBandwidth();
-                    long maxAvoid = candidateFrequency + tunerController.getMiddleUnusableHalfBandwidth();
-
-                    //If any of the center channel(s) overlap the central DC spike avoid area, we'll iteratively
-                    //increase the tuned frequency causing the set of channels to move left in the tuned bandwidth until
-                    //we either find a good center tune frequency, or we walk the lowest frequency channel out of the
-                    //minimum tuned range, in which case we'll throw an exception indicating we don't have a solution.
-                    for(TunerChannel channel : channels)
+                    while(isValidCandidateFrequency && processingRequired)
                     {
-                        if(channel.overlaps(minAvoid, maxAvoid))
+                        processingRequired = false;
+
+                        long minAvoid = candidateFrequency - tunerController.getMiddleUnusableHalfBandwidth();
+                        long maxAvoid = candidateFrequency + tunerController.getMiddleUnusableHalfBandwidth();
+
+                        //If any of the center channel(s) overlap the central DC spike avoid area, we'll iteratively
+                        //increase the tuned frequency causing the set of channels to move left in the tuned bandwidth until
+                        //we either find a good center tune frequency, or we walk the lowest frequency channel out of the
+                        //minimum tuned range, in which case we'll throw an exception indicating we don't have a solution.
+                        for(TunerChannel channel : channels)
                         {
-                            //Calculate a tuned frequency adjustment that places this overlapping channel just to the
-                            //left of the central DC spike avoid zone
-                            long adjustment = channel.getMaxFrequency() - minAvoid + 1;
-
-                            //If the candidate frequency doesn't push the lowest channel out of bounds, make adjustment
-                            if(candidateFrequency + adjustment - (tunerController.getUsableBandwidth() / 2) <= minChannelFrequency)
+                            if(channel.overlaps(minAvoid, maxAvoid))
                             {
-                                candidateFrequency += adjustment;
-                                processingRequired = true;
-                            }
-                            //Otherwise, punt and indicate that we can't find a center frequency or add the channel
-                            else
-                            {
-                                isValidCandidateFrequency = false;
-                            }
+                                //Calculate a tuned frequency adjustment that places this overlapping channel just to the
+                                //left of the central DC spike avoid zone
+                                long adjustment = channel.getMaxFrequency() - minAvoid + 1;
 
-                            //break out of the for/each loop, so that we can start over again with all of the channels
-                            break;
+                                //If the candidate frequency doesn't push the lowest channel out of bounds, make adjustment
+                                if(candidateFrequency + adjustment - (tunerController.getUsableBandwidth() / 2) <= minChannelFrequency)
+                                {
+                                    candidateFrequency += adjustment;
+                                    processingRequired = true;
+                                }
+                                //Otherwise, punt and indicate that we can't find a center frequency or add the channel
+                                else
+                                {
+                                    isValidCandidateFrequency = false;
+                                }
+
+                                //break out of the for/each loop, so that we can start over again with all of the channels
+                                break;
+                            }
                         }
                     }
                 }
             }
+
         }
 
         if(isValidCandidateFrequency)
