@@ -34,7 +34,7 @@ public enum State
             @Override
             public boolean canChangeTo(State state)
             {
-                return state == CALL |
+                return state == CALL ||
                        state == CONTROL ||
                        state == DATA ||
                        state == ENCRYPTED ||
@@ -108,8 +108,7 @@ public enum State
             public boolean canChangeTo(State state)
             {
                 return state != FADE &&
-                       state != RESET &&
-                       state != OVERFLOW;
+                       state != RESET;
             }
         },
     /**
@@ -121,25 +120,10 @@ public enum State
             public boolean canChangeTo(State state)
             {
                 return state != TEARDOWN &&
-                       state != RESET &&
-                       state != OVERFLOW;
+                       state != RESET;
             }
         },
-    /**
-     * Indicates that the channel's sample buffer has overflowed and new buffer samples are no longer being
-     * delivered to the channel.  This state persists until the processing catches up and reduces the number
-     * of samples in the input buffer below a threshold value.  Transition to and from this state is exclusively
-     * managed by the Channel State and no other channel states can be processed from the channel decoders
-     * until the channel state is taken out of overflow.
-     */
-    OVERFLOW("OVERFLOW")
-        {
-            @Override
-            public boolean canChangeTo(State state)
-            {
-                return false;
-            }
-        },
+
     /**
      * Indicates that the channel has been reset and is ready to use for a new decoding session.
      */

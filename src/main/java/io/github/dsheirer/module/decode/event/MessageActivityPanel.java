@@ -30,10 +30,17 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSlider;
+import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -85,64 +92,6 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
             }
         });
     }
-
-    //    @Override
-//    public void channelChanged(ChannelEvent event)
-//    {
-//        boolean changed = false;
-//
-//        if(event.getEvent() == Event.NOTIFICATION_SELECTION_CHANGE &&
-//            event.getChannel().isSelected())
-//        {
-//            if(mDisplayedChannel == null || (mDisplayedChannel != null && mDisplayedChannel != event.getChannel()))
-//            {
-//                mDisplayedChannel = event.getChannel();
-//
-//                ProcessingChain chain = mChannelProcessingManager.getProcessingChain(mDisplayedChannel);
-//
-//                if(chain != null)
-//                {
-//                    mDisplayedModel = chain.getMessageActivityModel();
-//                }
-//                else
-//                {
-//                    mDisplayedModel = EMPTY_MODEL;
-//                }
-//
-//                mMessageTable.setModel(mDisplayedModel);
-//
-//                if(mDisplayedChannel != null)
-//                {
-//                    mManagementPanel.enableButtons();
-//                }
-//                else
-//                {
-//                    mManagementPanel.disableButtons();
-//                }
-//
-//                changed = true;
-//            }
-//        }
-//        else if(event.getEvent() == Event.NOTIFICATION_PROCESSING_STOP || event.getEvent() == Event.REQUEST_DISABLE)
-//        {
-//            if(mDisplayedChannel != null && mDisplayedChannel == event.getChannel())
-//            {
-//                mDisplayedChannel = null;
-//
-//                mMessageTable.setModel(EMPTY_MODEL);
-//
-//                mManagementPanel.disableButtons();
-//
-//                changed = true;
-//            }
-//        }
-//
-//        if(changed)
-//        {
-//            revalidate();
-//            repaint();
-//        }
-//    }
 
     public class MessageManagementPanel extends JPanel
     {

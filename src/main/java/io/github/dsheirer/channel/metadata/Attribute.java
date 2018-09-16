@@ -20,6 +20,7 @@ package io.github.dsheirer.channel.metadata;
 
 public enum Attribute
 {
+    BUFFER_OVERFLOW,
     CHANNEL_CONFIGURATION_NAME,
     CHANNEL_CONFIGURATION_SITE,
     CHANNEL_CONFIGURATION_SYSTEM,

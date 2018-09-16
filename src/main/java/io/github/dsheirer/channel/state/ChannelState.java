@@ -346,8 +346,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                     break;
             }
 
-            mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE,
-                mSourceOverflow ? State.OVERFLOW : mState));
+            mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
         }
     }
 
@@ -370,8 +369,19 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     {
         mSourceOverflow = overflow;
 
-        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE,
-            mSourceOverflow ? State.OVERFLOW : mState));
+        mMutableMetadata.receive(new AttributeChangeRequest<Boolean>(Attribute.BUFFER_OVERFLOW, mSourceOverflow));
+    }
+
+    /**
+     * Indicates if this channel's sample buffer is in overflow state, meaning that the inbound sample
+     * stream is not being processed fast enough and samples are being thrown away until the processing can
+     * catch up.
+     *
+     * @return true if the channel is in overflow state.
+     */
+    public boolean isOverflow()
+    {
+        return mSourceOverflow;
     }
 
     /**

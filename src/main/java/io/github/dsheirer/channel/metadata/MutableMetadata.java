@@ -80,6 +80,10 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
     {
         switch(request.getAttribute())
         {
+            case BUFFER_OVERFLOW:
+                mBufferOverflow = request.getBooleanValue();
+                broadcast(Attribute.BUFFER_OVERFLOW);
+                break;
             case CHANNEL_CONFIGURATION_SYSTEM:
                 mChannelConfigurationSystem = request.getStringValue();
                 broadcast(Attribute.CHANNEL_CONFIGURATION_SYSTEM);

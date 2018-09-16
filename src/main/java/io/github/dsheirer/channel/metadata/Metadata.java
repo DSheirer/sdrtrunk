@@ -41,6 +41,7 @@ public class Metadata
     protected boolean mUpdated;
     protected DecoderType mPrimaryDecoderType;
     protected boolean mSelected;
+    protected boolean mBufferOverflow;
     protected State mState = State.IDLE;
     protected String mChannelConfigurationSystem;
     protected String mChannelConfigurationSite;
@@ -171,6 +172,14 @@ public class Metadata
     public boolean isSelected()
     {
         return mSelected;
+    }
+
+    /**
+     * Indicates if the channel for this metadata is in a buffer overflow state.
+     */
+    public boolean isBufferOverflow()
+    {
+        return mBufferOverflow;
     }
 
     /**

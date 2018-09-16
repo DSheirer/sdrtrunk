@@ -116,6 +116,16 @@ public class AttributeChangeRequest<T>
         return null;
     }
 
+    public Boolean getBooleanValue()
+    {
+        if(mValue instanceof Boolean)
+        {
+            return (Boolean)mValue;
+        }
+
+        return false;
+    }
+
     /**
      * Returns the value as a DecoderType or null if the value is not a DecoderType instance.
      */
