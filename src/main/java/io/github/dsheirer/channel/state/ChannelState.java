@@ -135,21 +135,8 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     @Override
     public void stop()
     {
-        mMutableMetadata.resetAllAttributes();
-
-        mTrafficChannelEndListener = null;
-
-        if(mTrafficChannelCallEvent != null)
-        {
-            mTrafficChannelCallEvent.end();
-            broadcast(mTrafficChannelCallEvent);
-        }
-
-        mTrafficChannelCallEvent = null;
-
+        processTeardownState();
         mSquelchLocked = false;
-
-        setState(State.TEARDOWN);
     }
 
     public void dispose()
@@ -420,9 +407,13 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
         mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
 
-        if(mTrafficChannelEndListener != null)
+        if(mTrafficChannelEndListener != null && mTrafficChannelCallEvent != null)
         {
+            mTrafficChannelCallEvent.end();
+            broadcast(mTrafficChannelCallEvent);
             mTrafficChannelEndListener.callEnd(mTrafficChannelCallEvent.getChannel());
+            mTrafficChannelEndListener = null;
+            mTrafficChannelCallEvent = null;
         }
     }
 

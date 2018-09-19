@@ -300,6 +300,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
 
                 mScheduledFuture = null;
 
+                getHeartbeatManager().broadcast();
                 performDisposal();
             }
         }
