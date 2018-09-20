@@ -565,12 +565,6 @@ public class ProcessingChain implements IChannelEventListener
         {
             if(mSource != null)
             {
-                //Reset each of the modules
-                for(Module module : mModules)
-                {
-                    module.reset();
-                }
-
                 //Broadcast the source sample rate so that each of the modules can self-configure
                 mSourceEventBroadcaster.broadcast(SourceEvent.sampleRateChange(mSource.getSampleRate(), "Processing Chain Startup"));
 
@@ -651,6 +645,12 @@ public class ProcessingChain implements IChannelEventListener
             for(Module module : mModules)
             {
                 module.stop();
+            }
+
+            //Reset each of the modules
+            for(Module module : mModules)
+            {
+                module.reset();
             }
         }
     }
