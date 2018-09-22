@@ -350,9 +350,13 @@ public class Trellis_3_4_Rate
 		public void add( Con con )
 		{
 			Node current = getLastNode();
-			
-			Tribit input = INPUT_FROM_CONSTELLATION_MAP
-					.get( con )[ current.getState().getValue() ];
+
+			Tribit input = null;
+
+			if(current != null)
+			{
+				input = INPUT_FROM_CONSTELLATION_MAP.get( con )[ current.getState().getValue() ];
+			}
 
 			/* A non-null input tribit from the lookup table is valid, otherwise
 			 * create 8 alternate branches from the original path to explore 

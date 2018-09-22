@@ -286,8 +286,22 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         {
             if(!mStopped)
             {
-                getHeartbeatManager().broadcast();
-                processSamples();
+                try
+                {
+                    getHeartbeatManager().broadcast();
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error while sending heartbeat", t);
+                }
+                try
+                {
+                    processSamples();
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error while processing samples", t);
+                }
             }
 
             if(mStopped)
@@ -300,8 +314,15 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
 
                 mScheduledFuture = null;
 
-                getHeartbeatManager().broadcast();
-                performDisposal();
+                try
+                {
+                    getHeartbeatManager().broadcast();
+                    performDisposal();
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error during final shutdown processing of samples", t);
+                }
             }
         }
     }
