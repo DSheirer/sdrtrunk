@@ -18,7 +18,7 @@ package io.github.dsheirer.source.tuner.channel;
 import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.mixer.IOscillator;
-import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
+import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
@@ -81,7 +81,7 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
         mTunerFrequency = tunerChannel.getFrequency();
         long frequencyOffset = mTunerFrequency - getTunerChannel().getFrequency();
 
-        mFrequencyCorrectionMixer = new LowPhaseNoiseOscillator(frequencyOffset, sampleRate);
+        mFrequencyCorrectionMixer = new Oscillator(frequencyOffset, sampleRate);
     }
 
     /**
