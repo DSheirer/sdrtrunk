@@ -16,29 +16,18 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
-import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
-
-    private static Map<Integer,float[]> sLowPassFilterKernelMap = new HashMap<>();
+//    private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
     private TwoChannelSynthesizerM2 mSynthesizer;
     private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
-    private ComplexFIRFilter2 mLowPassFilter;
 
     private int mChannelOffset1;
     private int mChannelOffset2;
@@ -58,28 +47,11 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
         super(2, sampleRate, gain);
         setPolyphaseChannelIndices(channelIndexes);
         setSynthesisFilter(filter);
-
-        float[] lowPassFilter = sLowPassFilterKernelMap.get((int)sampleRate);
-
-        if(lowPassFilter == null)
-        {
-            try
-            {
-                lowPassFilter = getLowPassFilter(sampleRate);
-                sLowPassFilterKernelMap.put((int)sampleRate, lowPassFilter);
-            }
-            catch(FilterDesignException fde)
-            {
-                mLog.error("Couldn't design a low-pass filter for 2-channel synthesizer", fde);
-                throw new IllegalStateException("Cannot design low-pass filter for 2 channel synthesizer", fde);
-            }
-        }
-
-        mLowPassFilter = new ComplexFIRFilter2(lowPassFilter, 1.0f);
     }
 
     /**
      * Sets the frequency offset to apply to the incoming samples to mix the desired signal to baseband.
+     *
      * @param frequencyOffset in hertz
      */
     @Override
@@ -126,7 +98,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     public void process(List<ReusableChannelResultsBuffer> channelResultsBuffers,
                         ReusableComplexBufferAssembler reusableComplexBufferAssembler)
     {
-        for(ReusableChannelResultsBuffer buffer: channelResultsBuffers)
+        for(ReusableChannelResultsBuffer buffer : channelResultsBuffers)
         {
             ReusableComplexBuffer channel1 = buffer.getChannel(mChannelOffset1);
             ReusableComplexBuffer channel2 = buffer.getChannel(mChannelOffset2);
@@ -140,48 +112,11 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
             //Apply offset and frequency correction to center the signal of interest within the synthesized channel
             getFrequencyCorrectionMixer().mixComplex(synthesized.getSamples());
 
-            ReusableComplexBuffer lowPassFiltered = mLowPassFilter.filter(synthesized);
+            synthesized.applyGain(getGain());
 
-            lowPassFiltered.applyGain(getGain());
-
-            reusableComplexBufferAssembler.receive(lowPassFiltered);
+            reusableComplexBufferAssembler.receive(synthesized);
 
             buffer.decrementUserCount();
         }
-    }
-
-    /**
-     * Creates a low-pass filter kernel for the specified sample rate.
-     * @param sampleRate for the channel
-     * @return filter
-     * @throws FilterDesignException if the filter cannot be designed
-     */
-    private static float[] getLowPassFilter(double sampleRate) throws FilterDesignException
-    {
-        double cutoff = sampleRate / 4.0;
-        int passBandCutoff = (int)(cutoff * 0.92);
-        int stopBandStart = (int)(cutoff * 1.08);
-
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(sampleRate)
-            .gridDensity(16)
-            .oddLength(true)
-            .passBandCutoff((int)passBandCutoff)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .stopBandStart((int)stopBandStart)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.005) //Approximately 94 dB attenuation
-            .build();
-
-        RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-        if(designer.isValid())
-        {
-            return designer.getImpulseResponse();
-        }
-
-        throw new FilterDesignException("Couldn't design low-pass filter for sample rate: " + sampleRate +
-            " Pass End:" + passBandCutoff + " Stop Begin:" + stopBandStart);
     }
 }

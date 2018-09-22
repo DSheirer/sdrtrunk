@@ -63,7 +63,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
 
-    private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 12500;
+    private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 25000;
 
     //Sized at 152 buffers a second where max = 5 seconds and reset = 2 seconds worth of buffers
     private IFFTProcessor mIFFTProcessor = new IFFTProcessor((5 * 152), (2 * 152));

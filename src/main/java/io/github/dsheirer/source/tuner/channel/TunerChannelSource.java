@@ -294,6 +294,10 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
                 {
                     mLog.error("Error while sending heartbeat", t);
                 }
+            }
+
+            if(!mStopped)
+            {
                 try
                 {
                     processSamples();
