@@ -393,11 +393,6 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     @Override
     public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
-        if(channelSpecification != null)
-        {
-            throw new IllegalArgumentException("Update polyphase source manager to support channel specifications");
-        }
-
         if(isTunable(tunerChannel))
         {
             //Get a new set of currently tuned channels
@@ -422,7 +417,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
                     }
 
                     //If we're successful to here, allocate the channel
-                    return mPolyphaseChannelManager.getChannel(tunerChannel);
+                    return mPolyphaseChannelManager.getChannel(tunerChannel, channelSpecification);
                 }
                 catch(SourceException se)
                 {

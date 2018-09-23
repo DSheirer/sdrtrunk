@@ -16,15 +16,23 @@
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
+import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
+import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class PolyphaseChannelSource extends TunerChannelSource
 {
@@ -32,6 +40,11 @@ public class PolyphaseChannelSource extends TunerChannelSource
 
     private ReusableComplexBufferAssembler mReusableComplexBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
+    private IPolyphaseChannelOutputProcessor mReplacementPolyphaseChannelOutputProcessor;
+    private long mReplacementFrequency;
+    private ComplexFIRFilter2 mLowPassFilter;
+    private static Map<Integer,float[]> sLowPassFilters = new HashMap();
+
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
     private long mChannelFrequencyCorrection;
@@ -46,15 +59,22 @@ public class PolyphaseChannelSource extends TunerChannelSource
      * @param producerSourceEventListener to receive source event requests (e.g. start/stop sample stream)
      * @param channelSampleRate for the downstream sample output
      * @param centerFrequency of the incoming polyphase channel(s)
+     * @throws FilterDesignException if a channel low pass filter can't be designed to the channel specification
      */
     public PolyphaseChannelSource(TunerChannel tunerChannel, IPolyphaseChannelOutputProcessor outputProcessor,
                                   Listener<SourceEvent> producerSourceEventListener, double channelSampleRate,
-                                  long centerFrequency)
+                                  long centerFrequency, ChannelSpecification channelSpecification)
+        throws FilterDesignException
     {
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
         mReusableComplexBufferAssembler = new ReusableComplexBufferAssembler(2500, mChannelSampleRate);
+
+        float[] filterCoefficients = getLowPassFilter(channelSampleRate, channelSpecification.getPassFrequency(),
+            channelSpecification.getStopFrequency());
+        mLowPassFilter = new ComplexFIRFilter2(filterCoefficients, 1.0f);
+
         setFrequency(centerFrequency);
     }
 
@@ -93,14 +113,33 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor, long frequency)
     {
-        //Lock on the channel output processor to block the channel results processor thread from servicing the
-        //channel output processor's buffer while we change out the processors.
-        synchronized(mPolyphaseChannelOutputProcessor)
+        //If this is the first time, simply assign the output processor
+        if(mPolyphaseChannelOutputProcessor == null)
+        {
+            mPolyphaseChannelOutputProcessor = outputProcessor;
+        }
+        //Otherwise, we have to swap out the processor on the sample processing thread
+        else
+        {
+            mReplacementPolyphaseChannelOutputProcessor = outputProcessor;
+            mReplacementFrequency = frequency;
+        }
+    }
+
+    /**
+     * Updates the output processor to use the new output processor provided by the external
+     * polyphase channel manager.  This method should only be executed on the sample processing
+     * thread, within the processChannelResults() method.
+     */
+    private void swapOutputProcessor()
+    {
+        if(mReplacementPolyphaseChannelOutputProcessor != null)
         {
             IPolyphaseChannelOutputProcessor existingProcessor = mPolyphaseChannelOutputProcessor;
 
             //Swap out the processor so that incoming samples can accumulate in the new channel output processor
-            mPolyphaseChannelOutputProcessor = outputProcessor;
+            mPolyphaseChannelOutputProcessor = mReplacementPolyphaseChannelOutputProcessor;
+            mReplacementPolyphaseChannelOutputProcessor = null;
 
             //Remove the buffer overflow listener and clear any previous buffer overflow state
             existingProcessor.setSourceOverflowListener(null);
@@ -109,18 +148,9 @@ public class PolyphaseChannelSource extends TunerChannelSource
             //Register to receive buffer overflow notifications so we can push them up through the source chain
             mPolyphaseChannelOutputProcessor.setSourceOverflowListener(this);
 
-            //Fully process the residual channel results buffer of the previous channel output processor
-            if(existingProcessor != null)
-            {
-                existingProcessor.processChannelResults(mReusableComplexBufferAssembler);
-            }
-
-            //Finally, setup the frequency offset for the output processor and reset the frequency correction value
-            //to allow consumers to adjust and calculate a new frequency correction value, if needed.
-            mIndexCenterFrequency = frequency;
-            mChannelFrequencyCorrection = 0;
+            //Finally, setup the frequency offset for the output processor.
+            mIndexCenterFrequency = mReplacementFrequency;
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
-            broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
         }
     }
 
@@ -133,12 +163,13 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     public void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer)
     {
-        mReusableComplexBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
-
-        if(mPolyphaseChannelOutputProcessor != null)
+        if(mReplacementPolyphaseChannelOutputProcessor != null)
         {
-            mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
+            swapOutputProcessor();
         }
+
+        mReusableComplexBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
+        mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
     }
 
     /**
@@ -173,7 +204,6 @@ public class PolyphaseChannelSource extends TunerChannelSource
         if(mPolyphaseChannelOutputProcessor != null)
         {
             mPolyphaseChannelOutputProcessor.dispose();
-            mPolyphaseChannelOutputProcessor = null;
         }
     }
 
@@ -213,11 +243,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     protected void processSamples()
     {
-        //Lock on the output processor so that it can't be changed in the middle of processing
-        synchronized(mPolyphaseChannelOutputProcessor)
-        {
-            mPolyphaseChannelOutputProcessor.processChannelResults(mReusableComplexBufferAssembler);
-        }
+        mPolyphaseChannelOutputProcessor.processChannelResults(mReusableComplexBufferAssembler);
     }
 
     /**
@@ -236,10 +262,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     private void updateFrequencyOffset()
     {
-        synchronized(mPolyphaseChannelOutputProcessor)
-        {
-            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
-        }
+        mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
     }
 
     @Override
@@ -247,5 +270,43 @@ public class PolyphaseChannelSource extends TunerChannelSource
     {
         return "POLYPHASE [" + mPolyphaseChannelOutputProcessor.getInputChannelCount() + "] " +
             getTunerChannel().getFrequency();
+    }
+
+    /**
+     * Creates a low-pass filter to use as the final cleanup filter for the decimated output stream
+     *
+     * @param sampleRate for the final output channel rate
+     * @param passFrequency for half of the desired channel rate
+     * @param stopFrequency for the attenuated band
+     * @return a newly designed filter or a previously designed (cached) filter
+     * @throws FilterDesignException
+     */
+    private float[] getLowPassFilter(double sampleRate, double passFrequency, double stopFrequency) throws FilterDesignException
+    {
+        //Use existing filter if we've already designed one
+        if(sLowPassFilters.containsKey((int)sampleRate))
+        {
+            return sLowPassFilters.get((int)sampleRate);
+        }
+
+        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+            .sampleRate(sampleRate)
+            .gridDensity(16)
+            .passBandCutoff(passFrequency)
+            .passBandAmplitude(1.0)
+            .passBandRipple(0.01)
+            .stopBandStart(stopFrequency)
+            .stopBandAmplitude(0.0)
+            .stopBandRipple(0.01)
+            .build();
+
+        RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+
+        //This will throw an exception if the filter cannot be designed
+        float[] taps = designer.getImpulseResponse();
+
+        sLowPassFilters.put((int)sampleRate, taps);
+
+        return taps;
     }
 }

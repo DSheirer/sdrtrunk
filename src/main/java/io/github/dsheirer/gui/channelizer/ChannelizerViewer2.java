@@ -23,6 +23,7 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.Tuner;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
@@ -376,10 +377,11 @@ public class ChannelizerViewer2 extends JFrame
             mComplexDecibelConverter.addListener(mSpectrumPanel);
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
-            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, null);
+            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel, new ChannelSpecification(50000, 12500, 6000, 7000));
 
             if(mSource != null)
             {
+                mLog.debug("Channel: " + mSource.getTunerChannel() + " Rate:" + mSource.getSampleRate());
                 mSource.setListener(new Listener<ReusableComplexBuffer>()
                 {
                     @Override

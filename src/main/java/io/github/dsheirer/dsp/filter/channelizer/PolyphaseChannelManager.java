@@ -29,6 +29,7 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
+import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class PolyphaseChannelManager implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
-    private static final double MINIMUM_CHANNEL_BANDWIDTH = 12500.0;
+    private static final double MINIMUM_CHANNEL_BANDWIDTH = 25000.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
     private static final int POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL = 9;
     private static final int POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL = 9;
@@ -141,7 +142,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * @param tunerChannel specifying center frequency and bandwidth.
      * @return source or null.
      */
-    public TunerChannelSource getChannel(TunerChannel tunerChannel)
+    public TunerChannelSource getChannel(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
         PolyphaseChannelSource channelSource = null;
 
@@ -155,10 +156,17 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             {
                 long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
 
-                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
-                    mChannelCalculator.getChannelSampleRate(), centerFrequency);
+                try
+                {
+                    channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
+                        mChannelCalculator.getChannelSampleRate(), centerFrequency, channelSpecification);
 
-                mChannelSources.add(channelSource);
+                    mChannelSources.add(channelSource);
+                }
+                catch(FilterDesignException fde)
+                {
+                    mLog.debug("Couldn't design final output low pass filter for polyphase channel source");
+                }
             }
         }
         catch(IllegalArgumentException iae)

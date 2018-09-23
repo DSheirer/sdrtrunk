@@ -32,7 +32,7 @@ public class TestTunerController extends TunerController
 
     public static final long MINIMUM_FREQUENCY = 1l;
     public static final long MAXIMUM_FREQUENCY = 1000000000l;
-    public static final int SAMPLE_RATE = 50000;
+    public static final int SAMPLE_RATE = 10000000;
     public static final int DC_NOISE_BANDWIDTH = 0;
     public static final double USABLE_BANDWIDTH_PERCENTAGE = 1.00;
 
