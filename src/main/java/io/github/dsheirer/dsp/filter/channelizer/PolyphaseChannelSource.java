@@ -148,12 +148,6 @@ public class PolyphaseChannelSource extends TunerChannelSource
             //Register to receive buffer overflow notifications so we can push them up through the source chain
             mPolyphaseChannelOutputProcessor.setSourceOverflowListener(this);
 
-            //Fully process the residual channel results buffer of the previous channel output processor
-            if(existingProcessor != null)
-            {
-                existingProcessor.processChannelResults(mReusableComplexBufferAssembler);
-            }
-
             //Finally, setup the frequency offset for the output processor.
             mIndexCenterFrequency = mReplacementFrequency;
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
