@@ -40,7 +40,7 @@ public class MDC1200Pane extends AbstractAFSK1200Pane
             mDecoder.getMessageFramer().setSyncDetectListener(new ISyncDetectListener()
             {
                 @Override
-                public void syncDetected()
+                public void syncDetected(int bitErrors)
                 {
                     mLog.debug("Sync Detected!");
                 }

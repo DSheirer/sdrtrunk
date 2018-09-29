@@ -13,24 +13,27 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.dsp.symbol;
+package io.github.dsheirer.module.decode.p25;
+
+import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 /**
- * Listener interface to be notified each time a sync pattern has been detected and/or when the sync
- * has been lost.
+ * Listener interface to be notified each time a P25 sync pattern and data unit has been detected
+ * and the data unit is correct after error detection and correction and/or when the sync has been lost.
  */
-public interface ISyncDetectListener
+public interface IDataUnitDetectListener
 {
     /**
-     * Indicates that a sync pattern has been detected.
-     *
-     * @param bitErrors count for soft sync matching to indicate the number of bit positions
-     * of the sequence that didn't fully match the sync pattern
+     * Indicates that a P25 sync has been detected and a P25 data unit was successfully decoded.
+     * @param dataUnitID that was contained in the detected NID
+     * @param nac or Network Access Code that was contained in the detected NID
+     * @param discardedDibits prior to detecting the P25 sync pattern
+     * @param bitErrors detected and corrected from both the sync pattern and the NID.
      */
-    void syncDetected(int bitErrors);
+    void dataUnitDetected(DataUnitID dataUnitID, int nac, int bitErrors, long discardedDibits);
 
     /**
-     * Indicates that sync has been lost
+     * Indicates that sync has been lost on the dibit stream
      */
     void syncLost();
 }

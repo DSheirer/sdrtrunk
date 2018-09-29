@@ -66,8 +66,7 @@ public class P25MessageFramer implements Listener<Dibit>
     public static final int PDU3_END = 548;
     public static final int PDU3_DECODED_END = 448;
 
-    private SoftSyncDetector mPrimarySyncDetector = new SoftSyncDetector(
-        FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD);
+    private SoftSyncDetector mPrimarySyncDetector;
 
     private PLLPhaseInversionDetector mInversionDetector90CW;
     private PLLPhaseInversionDetector mInversionDetector90CCW;
@@ -94,23 +93,21 @@ public class P25MessageFramer implements Listener<Dibit>
         mAliasList = aliasList;
 
         //Assign the sync detect listener to the matcher with a sync loss threshold equal to the longest message length
-        mMatcher = new MultiSyncPatternMatcher(syncDetectListener, DataUnitID.LDU1.getMessageLength(), 48);
+        mMatcher = new MultiSyncPatternMatcher(syncDetectListener, DataUnitID.LOGICAL_LINK_DATA_UNIT_1.getMessageLength(), 48);
 
-        mPrimarySyncDetector.setListener(new ISyncDetectListener()
+        mPrimarySyncDetector = new SoftSyncDetector(FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD,
+            new ISyncDetectListener()
         {
             @Override
-            public void syncDetected()
+            public void syncDetected(int bitErrors)
             {
-                if(!mMessageAssembler.isActive())
-                {
-                    mMessageAssembler.setActive(true);
-                }
+
             }
 
             @Override
             public void syncLost()
             {
-                //no-op
+
             }
         });
 
@@ -300,14 +297,14 @@ public class P25MessageFramer implements Listener<Dibit>
                         mComplete = true;
                     }
                     break;
-                case HDU:
+                case HEADER_DATA_UNIT:
                     mComplete = true;
                     dispatch(new HDUMessage(mMessage.copy(), mDUID, mAliasList));
 
                     /* We're in a call now, lower the sync match threshold */
                     mPrimarySyncDetector.setThreshold(SYNC_IN_CALL_THRESHOLD);
                     break;
-                case LDU1:
+                case LOGICAL_LINK_DATA_UNIT_1:
                     mComplete = true;
 
                     LDU1Message ldu1 = new LDU1Message(mMessage.copy(),
@@ -319,14 +316,14 @@ public class P25MessageFramer implements Listener<Dibit>
                     /* We're in a call now, lower the sync match threshold */
                     mPrimarySyncDetector.setThreshold(SYNC_IN_CALL_THRESHOLD);
                     break;
-                case LDU2:
+                case LOGICAL_LINK_DATA_UNIT_2:
                     mComplete = true;
                     dispatch(new LDU2Message(mMessage.copy(), mDUID, mAliasList));
 
                     /* We're in a call now, lower the sync match threshold */
                     mPrimarySyncDetector.setThreshold(SYNC_IN_CALL_THRESHOLD);
                     break;
-                case PDU0:
+                case PACKET_HEADER_DATA_UNIT:
 
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, PDU0_BEGIN, PDU0_END);
@@ -346,11 +343,11 @@ public class P25MessageFramer implements Listener<Dibit>
 
                             if(confirmed)
                             {
-                                setDUID(DataUnitID.PDUC);
+                                setDUID(DataUnitID.PACKET_DATA_UNIT_CONFIRMED);
                             }
                             else
                             {
-                                setDUID(DataUnitID.PDU1);
+                                setDUID(DataUnitID.PACKET_DATA_UNIT_1);
                             }
 
                             mMessage.setPointer(PDU1_BEGIN);
@@ -369,7 +366,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
 
                     break;
-                case PDU1:
+                case PACKET_DATA_UNIT_1:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, PDU1_BEGIN, PDU1_END);
 
@@ -382,7 +379,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             mMessage.setSize(PDU2_BEGIN);
 
                             PDUMessage pduMessage1 = PDUMessageFactory.getMessage(
-                                mMessage.copy(), DataUnitID.PDU1, mAliasList);
+                                mMessage.copy(), DataUnitID.PACKET_DATA_UNIT_1, mAliasList);
 
                             dispatch(pduMessage1);
 
@@ -390,7 +387,7 @@ public class P25MessageFramer implements Listener<Dibit>
                         }
                         else
                         {
-                            setDUID(DataUnitID.PDU2);
+                            setDUID(DataUnitID.PACKET_DATA_UNIT_2);
 
                             mMessage.setPointer(PDU2_BEGIN);
                         }
@@ -400,7 +397,7 @@ public class P25MessageFramer implements Listener<Dibit>
                         mComplete = true;
                     }
                     break;
-                case PDU2:
+                case PACKET_DATA_UNIT_2:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, PDU2_BEGIN, PDU2_END);
 
@@ -413,7 +410,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             mMessage.setSize(PDU3_BEGIN);
 
                             PDUMessage pduMessage2 = PDUMessageFactory.getMessage(
-                                mMessage.copy(), DataUnitID.PDU2, mAliasList);
+                                mMessage.copy(), DataUnitID.PACKET_DATA_UNIT_2, mAliasList);
 
                             dispatch(pduMessage2);
 
@@ -421,7 +418,7 @@ public class P25MessageFramer implements Listener<Dibit>
                         }
                         else
                         {
-                            setDUID(DataUnitID.PDU3);
+                            setDUID(DataUnitID.PACKET_DATA_UNIT_3);
 
                             mMessage.setPointer(PDU3_BEGIN);
                         }
@@ -434,7 +431,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
-                case PDU3:
+                case PACKET_DATA_UNIT_3:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, PDU3_BEGIN, PDU3_END);
 
@@ -444,14 +441,14 @@ public class P25MessageFramer implements Listener<Dibit>
                     {
                         mMessage.setSize(PDU3_DECODED_END);
 
-                        PDUMessage pduMessage3 = PDUMessageFactory.getMessage(mMessage.copy(), DataUnitID.PDU3, mAliasList);
+                        PDUMessage pduMessage3 = PDUMessageFactory.getMessage(mMessage.copy(), DataUnitID.PACKET_DATA_UNIT_3, mAliasList);
 
                         dispatch(pduMessage3);
                     }
 
                     mComplete = true;
                     break;
-                case PDUC:
+                case PACKET_DATA_UNIT_CONFIRMED:
                     /* De-interleave the latest block*/
                     P25Interleave.deinterleaveData(mMessage,
                         mMessage.size() - 196, mMessage.size());
@@ -502,14 +499,14 @@ public class P25MessageFramer implements Listener<Dibit>
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
-                case TDU:
+                case TERMINATOR_DATA_UNIT:
                     dispatch(new TDUMessage(mMessage.copy(), mDUID, mAliasList));
                     mComplete = true;
 
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
-                case TDULC:
+                case TERMINATOR_DATA_UNIT_LINK_CONTROL:
                     TDULinkControlMessage tdulc = new TDULinkControlMessage(
                         mMessage.copy(), mDUID, mAliasList);
 
@@ -522,7 +519,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
-                case TSBK1:
+                case TRUNKING_SIGNALING_BLOCK:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, TSBK_BEGIN, TSBK_END);
 
@@ -540,7 +537,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             tsbkBuffer1.setSize(TSBK_DECODED_END);
 
                             TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer1, DataUnitID.TSBK1, mAliasList);
+                                tsbkBuffer1, DataUnitID.TRUNKING_SIGNALING_BLOCK, mAliasList);
 
                             if(tsbkMessage1.isLastBlock())
                             {
@@ -548,7 +545,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             }
                             else
                             {
-                                setDUID(DataUnitID.TSBK2);
+                                setDUID(DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
                                 mMessage.setPointer(TSBK_BEGIN);
                             }
 
@@ -567,7 +564,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
-                case TSBK2:
+                case TRUNKING_SIGNALING_BLOCK_2:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, TSBK_BEGIN, TSBK_END);
 
@@ -584,7 +581,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             tsbkBuffer2.setSize(TSBK_DECODED_END);
 
                             TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer2, DataUnitID.TSBK2, mAliasList);
+                                tsbkBuffer2, DataUnitID.TRUNKING_SIGNALING_BLOCK_2, mAliasList);
 
                             if(tsbkMessage2.isLastBlock())
                             {
@@ -592,7 +589,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             }
                             else
                             {
-                                setDUID(DataUnitID.TSBK3);
+                                setDUID(DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
                                 mMessage.setPointer(TSBK_BEGIN);
                             }
 
@@ -608,7 +605,7 @@ public class P25MessageFramer implements Listener<Dibit>
                         mComplete = true;
                     }
                     break;
-                case TSBK3:
+                case TRUNKING_SIGNALING_BLOCK_3:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, TSBK_BEGIN, TSBK_END);
 
@@ -625,7 +622,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             tsbkBuffer3.setSize(TSBK_DECODED_END);
 
                             TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer3, DataUnitID.TSBK3, mAliasList);
+                                tsbkBuffer3, DataUnitID.TRUNKING_SIGNALING_BLOCK_3, mAliasList);
 
                             dispatch(tsbkMessage3);
                         }
@@ -711,7 +708,7 @@ public class P25MessageFramer implements Listener<Dibit>
             setListener(new ISyncDetectListener()
             {
                 @Override
-                public void syncDetected()
+                public void syncDetected(int bitErrors)
                 {
                     mPhaseLockedLoop.correctInversion(mPllCorrection);
 

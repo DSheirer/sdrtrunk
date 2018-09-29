@@ -99,7 +99,7 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
             /* Notify any sync detect listener(s) */
             if(mSyncDetectListener != null)
             {
-                mSyncDetectListener.syncDetected();
+                mSyncDetectListener.syncDetected(0);
             }
         }
     }

@@ -24,7 +24,7 @@ public class PDUConfirmedMessage extends PDUMessage
 	
 	public PDUConfirmedMessage( BinaryMessage message, AliasList aliasList )
     {
-	    super( message, DataUnitID.PDUC, aliasList );
+	    super( message, DataUnitID.PACKET_DATA_UNIT_CONFIRMED, aliasList );
 
 	    checkCRC();
     }
@@ -37,7 +37,7 @@ public class PDUConfirmedMessage extends PDUMessage
 	 */
 	protected PDUConfirmedMessage( PDUConfirmedMessage message )
 	{
-		super( message.getSourceMessage(), DataUnitID.PDUC, message.getAliasList() );
+		super( message.getSourceMessage(), DataUnitID.PACKET_DATA_UNIT_CONFIRMED, message.getAliasList() );
 		mCRC = message.getCRCResults();
 	}
 	

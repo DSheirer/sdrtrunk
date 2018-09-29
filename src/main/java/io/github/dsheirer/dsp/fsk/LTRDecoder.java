@@ -129,9 +129,9 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
      * synchronization has been achieved.
      */
     @Override
-    public void syncDetected()
+    public void syncDetected(int bitErrors)
     {
-        mSynchronizationMonitor.syncDetected();
+        mSynchronizationMonitor.syncDetected(bitErrors);
     }
 
     @Override

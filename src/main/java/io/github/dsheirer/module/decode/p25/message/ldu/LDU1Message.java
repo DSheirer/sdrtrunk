@@ -74,7 +74,7 @@ public class LDU1Message extends LDUMessage
      */
     protected LDU1Message(LDU1Message message)
     {
-        super(message.getSourceMessage(), DataUnitID.LDU1, message.getAliasList());
+        super(message.getSourceMessage(), DataUnitID.LOGICAL_LINK_DATA_UNIT_1, message.getAliasList());
 
         mCRC = message.mCRC;
     }

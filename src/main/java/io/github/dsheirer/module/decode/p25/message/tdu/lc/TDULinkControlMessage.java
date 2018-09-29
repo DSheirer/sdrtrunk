@@ -72,7 +72,7 @@ public class TDULinkControlMessage extends P25Message
 	 */
 	protected TDULinkControlMessage( TDULinkControlMessage message )
 	{
-		super( message.getSourceMessage(), DataUnitID.TDULC, message.getAliasList() );
+		super( message.getSourceMessage(), DataUnitID.TERMINATOR_DATA_UNIT_LINK_CONTROL, message.getAliasList() );
 
 		mCRC = message.getCRC();
 	}

@@ -62,4 +62,14 @@ public class CorrectedBinaryMessage extends BinaryMessage
     {
         mCorrectedBitCount = count;
     }
+
+    /**
+     * Increases the current corrected bit count by the argument value.
+     * @param additionalCount to add to the current corrected bit count
+     */
+    public void incrementCorrectedBitCount(int additionalCount)
+    {
+        mCorrectedBitCount += additionalCount;
+    }
+
 }

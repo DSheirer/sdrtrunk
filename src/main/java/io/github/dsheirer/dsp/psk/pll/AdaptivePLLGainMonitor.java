@@ -53,7 +53,7 @@ public class AdaptivePLLGainMonitor implements ISyncDetectListener, IFrequencyEr
      * Sync detection event.  Updates the running sync count and updates the PLL gain level.
      */
     @Override
-    public void syncDetected()
+    public void syncDetected(int bitErrors)
     {
         mSyncCount++;
         update();

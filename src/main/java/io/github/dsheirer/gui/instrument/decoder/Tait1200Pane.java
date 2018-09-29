@@ -40,7 +40,7 @@ public class Tait1200Pane extends AbstractAFSK1200Pane
             mDecoder.getANIMessageFramer().setSyncDetectListener(new ISyncDetectListener()
             {
                 @Override
-                public void syncDetected()
+                public void syncDetected(int bitErrors)
                 {
                     mLog.debug("ANI Sync Detected!");
                 }
@@ -54,7 +54,7 @@ public class Tait1200Pane extends AbstractAFSK1200Pane
             mDecoder.getGPSMessageFramer().setSyncDetectListener(new ISyncDetectListener()
             {
                 @Override
-                public void syncDetected()
+                public void syncDetected(int bitErrors)
                 {
                     mLog.debug("GPS Sync Detected!");
                 }
