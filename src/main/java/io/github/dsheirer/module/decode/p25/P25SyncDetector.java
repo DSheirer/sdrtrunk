@@ -28,7 +28,7 @@ import io.github.dsheirer.sample.Listener;
 public class P25SyncDetector implements Listener<Dibit>
 {
     /* Determines the threshold for sync pattern soft matching */
-    private static final int SYNC_MATCH_THRESHOLD = 2;
+    private static final int SYNC_MATCH_THRESHOLD = 4;
 
     /* Costas Loop phase lock error correction values.  A phase lock error of
      * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An

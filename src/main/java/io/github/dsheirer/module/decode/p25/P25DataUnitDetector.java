@@ -36,8 +36,9 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     private DibitDelayBuffer mSyncDelayBuffer = new DibitDelayBuffer(DATA_UNIT_DIBIT_LENGTH - SYNC_DIBIT_LENGTH);
     private IDataUnitDetectListener mDataUnitDetectListener;
     private boolean mInitialSyncTestProcessed = false;
-    private long mDibitsProcessed = 0;
+    private int mDibitsProcessed = 0;
     private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
+    private DataUnitID mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
     private int mNIDDetectionCount;
 
     public P25DataUnitDetector(IDataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
@@ -58,22 +59,25 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     @Override
     public void syncDetected(int bitErrors)
     {
-        mLog.debug("Sync detected with [" + bitErrors + "] bit errors - dibits processed [" + mDibitsProcessed + "]");
+//        mLog.debug("Sync detected with [" + bitErrors + "] bit errors - dibits processed [" + mDibitsProcessed + "]");
 //        mLog.debug("  Sync: 010101010111010111110101111111110111011111111111");
 //        mDataUnitBuffer.log();
 //        mSyncDelayBuffer.log();
         mInitialSyncTestProcessed = true;
-        test(bitErrors);
+        checkForNid(bitErrors);
     }
 
     @Override
     public void syncLost()
     {
-//        mLog.debug("Sync Lost!");
+        dispatchSyncLoss(0);
+    }
 
+    private void dispatchSyncLoss(int bitsProcessed)
+    {
         if(mDataUnitDetectListener != null)
         {
-            mDataUnitDetectListener.syncLost();
+            mDataUnitDetectListener.syncLost(bitsProcessed);
         }
     }
 
@@ -82,6 +86,13 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     {
         mDibitsProcessed++;
 
+        //Broadcast a sync loss every 2400 dibits/4800 bits ... or 2x per second for phase 1
+        if(mDibitsProcessed > 4864)
+        {
+            dispatchSyncLoss(9600);
+            mDibitsProcessed -= 4800;
+        }
+
         mDataUnitBuffer.put(dibit);
 
         //Feed the sync detect with a 32 dibit delay from the data unit buffer so that if/when
@@ -89,18 +100,20 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
         //and the NID dibits and we can test for a valid NID
         mSyncDetector.receive(mSyncDelayBuffer.getAndPut(dibit));
 
+        //If the sync detector doesn't fire and we've processed enough dibits for a sync/nid sequence
+        //immediately following a valid message, then test for a NID anyway ... maybe the sync was corrupted
         if(!mInitialSyncTestProcessed && mDibitsProcessed == DATA_UNIT_DIBIT_LENGTH)
         {
-            mLog.debug("************ Dibits Processed: " + mDibitsProcessed);
             mInitialSyncTestProcessed = true;
-            test(mSyncDetector.getPrimarySyncMatchErrorCount());
+            checkForNid(mSyncDetector.getPrimarySyncMatchErrorCount());
         }
     }
 
     /**
-     * Tests the contents of the data unit buffer for a valid NID when a sync pattern is detected
+     * Chects/tests the contents of the data unit buffer for a valid NID when a sync pattern is detected
+     * or when commanded following a valid message sequence
      */
-    private void test(int bitErrorCount)
+    private void checkForNid(int bitErrorCount)
     {
         if(bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS)
         {
@@ -113,12 +126,8 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
 //            logNID(nid, false);
             int[] correctedNid = new int[63];
 
-            if(mNIDDecoder.decode(nid, correctedNid))
-            {
-                //When true, NID decoder has indicated that there are unrecoverable errors
-                mLog.debug("Testing ... NID not detected.");
-            }
-            else
+            //If decoder indicates there are no unrecoverable errors ....
+            if(!mNIDDecoder.decode(nid, correctedNid))
             {
                 mNIDDetectionCount++;
 
@@ -126,14 +135,37 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
 
                 int nidBitErrorCount = getBitErrorCount(nid, correctedNid);
 
-                mLog.debug("Test Successful.  Sync Error Count: " + bitErrorCount + " NID Error Count: " + nidBitErrorCount);
+//                mLog.debug("Test Successful.  Sync Error Count: " + bitErrorCount + " NID Error Count: " + nidBitErrorCount);
 
                 if(mDataUnitDetectListener != null)
                 {
-                    mDataUnitDetectListener.dataUnitDetected(getDataUnitID(correctedNid), getNAC(correctedNid), (bitErrorCount + nidBitErrorCount), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH));
+                    mPreviousDataUnitId = getDataUnitID(correctedNid);
+
+                    mDataUnitDetectListener.dataUnitDetected(mPreviousDataUnitId, getNAC(correctedNid),
+                        (bitErrorCount + nidBitErrorCount), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), correctedNid);
                 }
 
                 reset();
+            }
+            else if(mPreviousDataUnitId == DataUnitID.LOGICAL_LINK_DATA_UNIT_1)
+            {
+                //We have a good sync match, but the NID didn't pass error control and we're in the middle
+                //of voice call, so treat this message as voice message, but set the previous duid to
+                //terminator so we can end if there isn't a subsequent voice message
+                mDataUnitDetectListener.dataUnitDetected(DataUnitID.LOGICAL_LINK_DATA_UNIT_2, -1,
+                    (bitErrorCount + 64), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), new int[63]);
+
+                mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
+            }
+            else if(mPreviousDataUnitId == DataUnitID.LOGICAL_LINK_DATA_UNIT_2)
+            {
+                //We have a good sync match, but the NID didn't pass error control and we're in the middle
+                //of voice call, so treat this message as voice message, but set the previous duid to
+                //terminator so we can end if there isn't a subsequent voice message
+                mDataUnitDetectListener.dataUnitDetected(DataUnitID.LOGICAL_LINK_DATA_UNIT_1, -1,
+                    (bitErrorCount + 64), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), new int[63]);
+
+                mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
             }
         }
     }

@@ -55,18 +55,21 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     private String mRecordingIdentifier;
     private BinaryWriter mBinaryWriter = new BinaryWriter();
     private int mBytesRecordedCounter;
+    private int mBitRate;
 
     /**
      * Constructs a binary recorder.
      *
      * @param baseRecordingPath where the recording should be created
      * @param recordingIdentifier to include in the recording file name.
+     * @param bitRate to include as a value in the recording file name
      */
-    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier)
+    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier, int bitRate)
     {
         mBaseRecordingPath = baseRecordingPath;
         mRecordingIdentifier = recordingIdentifier;
         mBufferProcessor.setListener(mBinaryWriter);
+        mBitRate = bitRate;
     }
 
     public void start()
@@ -117,6 +120,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
         StringBuilder sb = new StringBuilder();
         sb.append(TimeStamp.getTimeStamp("_"));
         sb.append("_");
+        sb.append(mBitRate).append("BPS_");
         sb.append(mRecordingIdentifier.trim());
         sb.append(".bits");
 

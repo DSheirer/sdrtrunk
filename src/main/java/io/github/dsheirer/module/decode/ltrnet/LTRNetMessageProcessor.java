@@ -118,7 +118,7 @@ public class LTRNetMessageProcessor implements Listener<BinaryMessage>
 							/* Check that the stored message is not older than
 							 * 5 seconds */
 							if( System.currentTimeMillis() - 
-									mESNLowMessage.getTimeReceived() < 5000 )
+									mESNLowMessage.getTimestamp() < 5000 )
 							{
 								((LTRNetISWMessage)message).setAuxiliaryMessage( mESNLowMessage );
 							}
@@ -135,7 +135,7 @@ public class LTRNetMessageProcessor implements Listener<BinaryMessage>
 						if( mESNHighMessage != null )
 						{
 							/* Check that the stored message is not older than 5 seconds */
-							if( System.currentTimeMillis() - mESNHighMessage.getTimeReceived() < 5000 )
+							if( System.currentTimeMillis() - mESNHighMessage.getTimestamp() < 5000 )
 							{
 								((LTRNetISWMessage)message).setAuxiliaryMessage( mESNHighMessage );
 							}

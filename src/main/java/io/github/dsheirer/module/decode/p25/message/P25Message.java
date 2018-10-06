@@ -46,13 +46,18 @@ public class P25Message extends Message
 
     protected CRC[] mCRC;
 
-    public P25Message(BinaryMessage message, DataUnitID duid, AliasList aliasList)
+    public P25Message(BinaryMessage message, DataUnitID duid, AliasList aliasList, long timestamp)
     {
-        super();
+        super(timestamp);
 
         mMessage = message;
         mDUID = duid;
         mAliasList = aliasList;
+    }
+
+    public P25Message(BinaryMessage message, DataUnitID duid, AliasList aliasList)
+    {
+        this(message, duid, aliasList, System.currentTimeMillis());
     }
 
     public CRC[] getCRCResults()

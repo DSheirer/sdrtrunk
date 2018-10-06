@@ -519,7 +519,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
-                case TRUNKING_SIGNALING_BLOCK:
+                case TRUNKING_SIGNALING_BLOCK_1:
                     /* Remove interleaving */
                     P25Interleave.deinterleaveData(mMessage, TSBK_BEGIN, TSBK_END);
 
@@ -537,7 +537,7 @@ public class P25MessageFramer implements Listener<Dibit>
                             tsbkBuffer1.setSize(TSBK_DECODED_END);
 
                             TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer1, DataUnitID.TRUNKING_SIGNALING_BLOCK, mAliasList);
+                                tsbkBuffer1, DataUnitID.TRUNKING_SIGNALING_BLOCK_1, mAliasList);
 
                             if(tsbkMessage1.isLastBlock())
                             {

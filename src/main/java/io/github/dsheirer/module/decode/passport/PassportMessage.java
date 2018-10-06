@@ -581,7 +581,7 @@ public class PassportMessage extends Message
     {
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append( mSDF.format( mTimeReceived ) );
+		sb.append( mSDF.format(getTimestamp()) );
 		sb.append( " " );
 		sb.append( getMessage() );
 		pad( sb, 100 );

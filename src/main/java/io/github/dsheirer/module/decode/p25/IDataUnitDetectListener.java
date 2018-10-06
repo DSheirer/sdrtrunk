@@ -29,11 +29,14 @@ public interface IDataUnitDetectListener
      * @param nac or Network Access Code that was contained in the detected NID
      * @param discardedDibits prior to detecting the P25 sync pattern
      * @param bitErrors detected and corrected from both the sync pattern and the NID.
+     * @param correctedNid bits corrected by the BCH error correction code (temporary until message parsers are updated
      */
-    void dataUnitDetected(DataUnitID dataUnitID, int nac, int bitErrors, long discardedDibits);
+    void dataUnitDetected(DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid);
 
     /**
      * Indicates that sync has been lost on the dibit stream
+     *
+     * @param bitsProcessed since the last sync detect
      */
-    void syncLost();
+    void syncLost(int bitsProcessed);
 }

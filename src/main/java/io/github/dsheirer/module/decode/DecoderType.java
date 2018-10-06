@@ -24,27 +24,29 @@ import java.util.EnumSet;
 public enum DecoderType
 {
     //Primary Decoders
-    AM("AM", "AM"),
-    LTR_STANDARD("LTR-Standard", "LTR"),
-    LTR_NET("LTR-Net", "LTR-Net"),
-    MPT1327("MPT1327", "MPT1327"),
-    NBFM("NBFM", "NBFM"),
-    PASSPORT("Passport", "Passport"),
-    P25_PHASE1("P25 Phase I", "P25-1"),
+    AM("AM", "AM", 0),
+    LTR_STANDARD("LTR-Standard", "LTR", 300),
+    LTR_NET("LTR-Net", "LTR-Net", 300),
+    MPT1327("MPT1327", "MPT1327", 1200),
+    NBFM("NBFM", "NBFM", 0),
+    PASSPORT("Passport", "Passport", 300),
+    P25_PHASE1("P25 Phase I", "P25-1", 9600),
 
     //Auxiliary Decoders
-    FLEETSYNC2("Fleetsync II", "Fleetsync2"),
-    LJ_1200("LJ1200 173.075", "LJ1200"),
-    MDC1200("MDC1200", "MDC1200"),
-    TAIT_1200("Tait 1200", "Tait 1200");
+    FLEETSYNC2("Fleetsync II", "Fleetsync2", 1200),
+    LJ_1200("LJ1200 173.075", "LJ1200", 1200),
+    MDC1200("MDC1200", "MDC1200", 1200),
+    TAIT_1200("Tait 1200", "Tait 1200", 1200);
 
     private String mDisplayString;
     private String mShortDisplayString;
+    private int mBitRate;
 
-    DecoderType(String displayString, String shortDisplayString)
+    DecoderType(String displayString, String shortDisplayString, int bitRate)
     {
         mDisplayString = displayString;
         mShortDisplayString = shortDisplayString;
+        mBitRate = bitRate;
     }
 
     /**
@@ -90,5 +92,10 @@ public enum DecoderType
     public String toString()
     {
         return mDisplayString;
+    }
+
+    public int getBitRate()
+    {
+        return mBitRate;
     }
 }

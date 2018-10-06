@@ -22,7 +22,7 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
-import java.awt.*;
+import java.awt.EventQueue;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
@@ -176,7 +176,7 @@ public class MessageActivityModel extends AbstractTableModel
 			switch( columnIndex )
 			{
 				case TIME:
-					return mSDFTime.format( new Date( message.getTimeReceived() ) );
+					return mSDFTime.format( new Date( message.getTimestamp() ) );
 				case PROTOCOL:
 					return message.getProtocol();
 				case ERROR_STATUS:

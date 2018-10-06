@@ -853,7 +853,7 @@ public class FleetsyncMessage extends Message
 
 			Alias alias = mAliasList.getFleetsyncAlias( getFromID() ); 
 			
-			return new Plottable( mTimeReceived, position, getFromID(), alias );
+			return new Plottable(getTimestamp(), position, getFromID(), alias );
 		}
 		else
 		{

@@ -317,7 +317,7 @@ public class ChannelProcessingManager implements ChannelEventListener
                     channel.getChannelType() == Channel.ChannelType.STANDARD))
                 {
                     processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString()));
+                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
                 }
 
                 /* Add traffic channel decoded bit stream recorder */
@@ -325,7 +325,7 @@ public class ChannelProcessingManager implements ChannelEventListener
                     channel.getChannelType() == Channel.ChannelType.TRAFFIC)
                 {
                     processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString()));
+                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
                 }
             }
         }
