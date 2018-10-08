@@ -337,9 +337,9 @@ public class CRCP25
      * Error detection and correction of single-bit errors for CCITT 16-bit
      * CRC protected 80-bit messages.
      */
-    public static void correctCCITT80(CorrectedBinaryMessage message, int messageStart, int crcStart)
+    public static int correctCCITT80(CorrectedBinaryMessage message, int messageStart, int crcStart)
     {
-        int calculated = 0; //Starting value
+        int calculated = 0xFFFF; //Starting value
 
         /* Iterate the set bits and XOR running checksum with lookup value */
         for(int i = message.nextSetBit(messageStart); i >= messageStart && i < crcStart; i = message.nextSetBit(i + 1))
@@ -353,7 +353,7 @@ public class CRCP25
 
         if(residual == 0 || residual == 0xFFFF)
         {
-            return;
+            return 0;
         }
         else
         {
@@ -363,12 +363,14 @@ public class CRCP25
             {
                 message.flip(errorLocation + messageStart);
                 message.incrementCorrectedBitCount(1);
-                return;
+                return 1;
             }
         }
 
         //Message has at least 2 bit errors - ie uncorrectable
         message.incrementCorrectedBitCount(2);
+
+        return 2;
     }
 
     /**

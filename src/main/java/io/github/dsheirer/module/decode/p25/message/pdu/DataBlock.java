@@ -17,46 +17,30 @@ package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IBitErrorProvider;
-import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
-public class PDUDataBlock implements IBitErrorProvider
+/**
+ * Packet Data Unit data block.
+ */
+public abstract class DataBlock implements IBitErrorProvider
 {
-    private long mTimestamp;
-    private DataUnitID mDataUnitID;
-    private CorrectedBinaryMessage mCorrectedBinaryMessage;
+    /**
+     * Decoded binary message payload.
+     */
+    public abstract CorrectedBinaryMessage getMessage();
 
-    public PDUDataBlock(DataUnitID dataUnitID, CorrectedBinaryMessage correctedBinaryMessage, long timestamp)
-    {
-        mDataUnitID = dataUnitID;
-        mCorrectedBinaryMessage = correctedBinaryMessage;
-        mTimestamp = timestamp;
-    }
-
-    public DataUnitID getDataUnitID()
-    {
-        return mDataUnitID;
-    }
-
-    public CorrectedBinaryMessage getMessage()
-    {
-        return mCorrectedBinaryMessage;
-    }
-
-    public long getTimestamp()
-    {
-        return mTimestamp;
-    }
-
+    /**
+     * Number of bits that were processed for this data block (196).
+     */
     @Override
     public int getBitsProcessedCount()
     {
-        //Interleaved message length of a PDU packet is 196 bits
+        //Interleaved message length of a PDU packet is 196 bits + 6 status bits
         return 196;
     }
 
+    /**
+     * Number of bit errors detected during the decoding process
+     */
     @Override
-    public int getBitErrorsCount()
-    {
-        return mCorrectedBinaryMessage.getCorrectedBitCount();
-    }
+    public abstract int getBitErrorsCount();
 }

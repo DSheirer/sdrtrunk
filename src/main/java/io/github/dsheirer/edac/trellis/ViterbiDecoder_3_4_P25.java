@@ -23,18 +23,18 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 import java.util.List;
 
-public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
+public class ViterbiDecoder_3_4_P25 extends ViterbiDecoder
 {
     /**
-     * Viterbi decoder for Digital Mobile Radio (DMR) 3/4 rate Trellis Coded Modulation (TCM) encoded messages.
+     * Viterbi decoder for P25 3/4 rate Trellis Coded Modulation (TCM) encoded messages.
      */
-    public ViterbiDecoder_3_4_DMR()
+    public ViterbiDecoder_3_4_P25()
     {
-        super(3,4);
+        super(3, 4);
     }
 
     /**
-     * Decodes a 3/4 rate trellis coded modulation (TCM) encoded DMR binary message containing 196 bits that have
+     * Decodes a 3/4 rate trellis coded modulation (TCM) encoded P25 binary message containing 196 bits that have
      * already been deinterleaved.
      *
      * @param encodedMessage to decode that has already been deinterleaved.
@@ -94,7 +94,7 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     }
 
     /**
-     * Extracts (49) four-bit symbols (196 bits / 4) from the deinterleaved DMR binary message
+     * Extracts (49) four-bit symbols (196 bits / 4) from the deinterleaved P25 binary message
      *
      * @param encodedMessage that deinterleaved and contains 196-bits of 3/4 TCM encoding
      * @return symbols
@@ -104,7 +104,7 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
         //Ensure we have an integral number of transmitted symbols (nibbles) in the message
         if(encodedMessage.size() % getOutputBitLength() != 0)
         {
-            throw new  IllegalArgumentException("Encoded message must contain an integral number of 4-bit symbols -" +
+            throw new IllegalArgumentException("Encoded message must contain an integral number of 4-bit symbols -" +
                 " message size: " + encodedMessage.size());
         }
 
@@ -124,7 +124,8 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     }
 
     /**
-     * Creates a DMR node
+     * Creates a P25 node
+     *
      * @param inputValue for the specific trellis node
      * @param transmittedOutputValue the actual transmitted output value
      * @return created node
@@ -132,11 +133,11 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     @Override
     protected Node createNode(int inputValue, int transmittedOutputValue)
     {
-        return new DMR_3_4_Node(inputValue, transmittedOutputValue);
+        return new P25_3_4_Node(inputValue, transmittedOutputValue);
     }
 
     /**
-     * Creates a DMR flushing node.  DMR uses an input value of zero to flush the final output value out of the
+     * Creates a P25 flushing node.  P25 uses an input value of zero to flush the final output value out of the
      * encoder.
      *
      * @param transmittedOutputValue the actual transmitted output value
@@ -145,15 +146,15 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     @Override
     protected Node createFlushingNode(int transmittedOutputValue)
     {
-        return new DMR_3_4_Node(0, transmittedOutputValue);
+        return new P25_3_4_Node(0, transmittedOutputValue);
     }
 
     /**
-     * Creates a DMR starting node.  DMR uses a starting input value of zero for the initial node.
+     * Creates a P25 starting node.  P25 uses a starting input value of zero for the initial node.
      */
     @Override
     protected Node createStartingNode()
     {
-        return new DMR_3_4_Node(0,0);
+        return new P25_3_4_Node(0, 0);
     }
 }

@@ -23,17 +23,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
+@Deprecated //Use Viterbi_1_2_P25 instead
 public class Trellis_1_2_Rate
 {
     public final static int MAX_ERROR_THRESHOLD = 7;
 
-    private final static Logger mLog =
-        LoggerFactory.getLogger(Trellis_1_2_Rate.class);
+    private final static Logger mLog = LoggerFactory.getLogger(Trellis_1_2_Rate.class);
 
-    private ArrayList<ConstellationNode> mConstellationNodes =
-        new ArrayList<ConstellationNode>();
+    private List<ConstellationNode> mConstellationNodes = new ArrayList<ConstellationNode>();
 
     private static final int[][] CONSTELLATION_COSTS =
         {{0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4},

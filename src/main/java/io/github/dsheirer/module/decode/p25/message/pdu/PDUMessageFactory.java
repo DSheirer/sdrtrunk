@@ -18,10 +18,11 @@ package io.github.dsheirer.module.decode.p25.message.pdu;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.P25Interleave;
-import io.github.dsheirer.module.decode.p25.Trellis_1_2_Rate;
 import io.github.dsheirer.module.decode.p25.Trellis_3_4_Rate;
-import io.github.dsheirer.module.decode.p25.message.P25Message;
+import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeader;
+import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeaderFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.osp.control.AdjacentStatusBroadcastExtended;
 import io.github.dsheirer.module.decode.p25.message.pdu.osp.control.CallAlertExtended;
 import io.github.dsheirer.module.decode.p25.message.pdu.osp.control.GroupAffiliationQueryExtended;
@@ -56,52 +57,53 @@ public class PDUMessageFactory
     private final static Logger mLog = LoggerFactory.getLogger(PDUMessageFactory.class);
 
     public static final int PDU0_BEGIN = 64;
-    public static final int PDU0_CRC_BEGIN = 144;
     public static final int PDU0_END = 260;
-    public static final int PDU1_BEGIN = 160;
-    public static final int PDU1_END = 356;
-    public static final int PDU2_BEGIN = 256;
-    public static final int PDU2_END = 452;
-    public static final int PDU3_BEGIN = 352;
-    public static final int PDU3_END = 548;
-    public static final int PDU3_DECODED_END = 448;
 
-    private static Trellis_1_2_Rate HALF_RATE_DECODER = new Trellis_1_2_Rate();
+    private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
     private static Trellis_3_4_Rate mThreeQuarterRate = new Trellis_3_4_Rate();
 
-    public static P25Message create(DataUnitID dataUnitID, int nac, long timestamp,
-                                    CorrectedBinaryMessage correctedBinaryMessage)
+    public static PacketSequence createPacketSequence(int nac, long timestamp, CorrectedBinaryMessage correctedBinaryMessage)
     {
-        switch(dataUnitID)
+        //Get deinterleaved header chunk
+        BitSet interleaved = correctedBinaryMessage.get(PDU0_BEGIN, PDU0_END);
+        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+
+        //Decode 1/2 rate trellis encoded PDU header
+        CorrectedBinaryMessage viterbiDecoded = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
+        mLog.debug("Header Viterbi Corrected Errors: [" + viterbiDecoded.getCorrectedBitCount() + "]");
+
+        if(viterbiDecoded != null)
         {
-            case PACKET_HEADER_DATA_UNIT:
-                //Get deinterleaved header chunk
-                BitSet interleaved = correctedBinaryMessage.get(PDU0_BEGIN, PDU0_END);
-                CorrectedBinaryMessage deinterleavedHeader = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+            PDUHeader header = PDUHeaderFactory.getPDUHeader(viterbiDecoded);
+            mLog.debug("Header CCITT   Corrected Errors: [" + header.getBitErrorsCount() + "]");
 
-                /* Remove trellis encoding - abort processing if we have an
-                 * unsuccessful decode due to excessive errors */
-                CorrectedBinaryMessage decodedHeader = HALF_RATE_DECODER.decodeNew(deinterleavedHeader, 0, 196);
-
-                if(decodedHeader != null)
-                {
-                    PDUHeader pduHeader = new PDUHeader(decodedHeader);
-
-                    PDUMessage2 pduMessage = new PDUMessage2(correctedBinaryMessage, timestamp, nac, pduHeader);
-
-                    int blocksToFollow = pduMessage.getHeader().getBlocksToFollowCount();
-
-                    mLog.debug("PDU Header - blocks to follow: " + blocksToFollow + " Valid:" + pduHeader.isValid());
-
-                    return pduMessage;
-                }
-
-                break;
-            default:
-                break;
+            return new PacketSequence(header, timestamp, nac);
         }
 
-        return new PDUMessage(correctedBinaryMessage, DataUnitID.HEADER_DATA_UNIT, null);
+        return null;
+    }
+
+    /**
+     * Creates a packet sequence message from the packet sequence.
+     *
+     * @param packetSequence
+     * @return
+     */
+    public static PacketSequenceMessage create(PacketSequence packetSequence)
+    {
+        return new PacketSequenceMessage(packetSequence);
+    }
+
+    public static DataBlock createConfirmedDataBlock(CorrectedBinaryMessage interleaved)
+    {
+        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+        return new ConfirmedDataBlock(deinterleaved);
+    }
+
+    public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved)
+    {
+        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+        return new UnconfirmedDataBlock(deinterleaved);
     }
 
     public static PDUMessage getMessage(BinaryMessage message, DataUnitID duid, AliasList aliasList)

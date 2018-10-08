@@ -40,10 +40,13 @@ public enum DataUnitID
     PACKET_HEADER_DATA_UNIT(12, 196 + 64, false, "PDU0 "),
 
     //TODO: update the message length for these PDUs
-    PACKET_DATA_UNIT_1(12, 356, false, "PDU1 "),
-    PACKET_DATA_UNIT_2(12, 452, false, "PDU2 "),
-    PACKET_DATA_UNIT_3(12, 548, false, "PDU3 "),
-    PACKET_DATA_UNIT_CONFIRMED(12, 356, false, "PDUC"),
+    PACKET_DATA_UNIT(-1, 196, false, "PDU"),
+    PACKET_DATA_UNIT_1(12, 196, false, "PDU1 "),
+    PACKET_DATA_UNIT_2(12, 196, false, "PDU2 "),
+    PACKET_DATA_UNIT_3(12, 196, false, "PDU3 "),
+    PACKET_DATA_UNIT_CONFIRMED(12, 196, false, "PDUC"),
+
+    TRAILING_NULLS(-1, -1, false, "NULLS"),
 
     UNKNOWN_13(13, -1, false, "UNKN13"),
     UNKNOWN_14(14, -1, false, "UNKN14"),

@@ -18,18 +18,16 @@
  ******************************************************************************/
 package io.github.dsheirer.edac.trellis;
 
-public class DMRNode extends Node
+public class P25_3_4_Node extends Node
 {
     //Hamming error values indicating the number of bits set in each indexed value, 0-15
     public static final int[] HAMMING_ERROR_COUNT = new int[]{0,1,1,2,1,2,2,3,1,2,2,3,2,3,3,4};
 
     /**
-     * Transmitted quad-bit value, derived from ETSI TS 102-361-1, Table B.7 Trellis encoder state transition table
-     *
-     * Note: the B.7 table contains constellation point ID numbers that have to be converted into actual bit values
-     * where the bits represent the dibit pair for the constellation point.
+     * Trellis encoder state transition table.  Note: this table is converted from the ICD state
+     * transition table where the table symbol is converted to the transmitted bit value.
      */
-    public static final int[][] DMR_TRANSITION_MATRIX = new int[][]
+    public static final int[][] TRANSITION_MATRIX = new int[][]
     {
         {2,13,14,1,7,8,11,4},
         {14,1,7,8,11,4,2,13},
@@ -42,12 +40,12 @@ public class DMRNode extends Node
     };
 
     /**
-     * Trellis Coded Modulation (TCM) 3/4-rate trellis node for decoding DMR
+     * Trellis Coded Modulation (TCM) 3/4-rate trellis node for decoding P25
      *
      * @param inputValue for the trellis time instant
      * @param transmittedOutputValue the actual four-bit output value that was transmitted.
      */
-    public DMRNode(int inputValue, int transmittedOutputValue)
+    public P25_3_4_Node(int inputValue, int transmittedOutputValue)
     {
         super(inputValue, transmittedOutputValue);
     }
@@ -81,6 +79,6 @@ public class DMRNode extends Node
     @Override
     public int getOutputValue(Node precedingNode)
     {
-        return DMR_TRANSITION_MATRIX[precedingNode.getInputValue()][getInputValue()];
+        return TRANSITION_MATRIX[precedingNode.getInputValue()][getInputValue()];
     }
 }

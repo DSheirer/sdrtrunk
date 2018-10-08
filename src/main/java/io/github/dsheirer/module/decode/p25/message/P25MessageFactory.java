@@ -19,7 +19,6 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.lc.LDULCMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULCMessageFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -52,8 +51,6 @@ public class P25MessageFactory
                 return LDULCMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
             case LOGICAL_LINK_DATA_UNIT_2:
                 return new LDU2Message(correctedBinaryMessage, dataUnitID, null);
-            case PACKET_HEADER_DATA_UNIT:
-                return PDUMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
             case TERMINATOR_DATA_UNIT:
                 return new TDUMessage(correctedBinaryMessage, dataUnitID, null);
             case TERMINATOR_DATA_UNIT_LINK_CONTROL:

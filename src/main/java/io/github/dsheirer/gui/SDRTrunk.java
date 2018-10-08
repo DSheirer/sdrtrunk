@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.gui;
 
 import com.jidesoft.swing.JideSplitPane;

@@ -64,7 +64,7 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
 //        mDataUnitBuffer.log();
 //        mSyncDelayBuffer.log();
         mInitialSyncTestProcessed = true;
-        checkForNid(bitErrors);
+        checkForNid(bitErrors, false);
     }
 
     @Override
@@ -86,7 +86,7 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     {
         mDibitsProcessed++;
 
-        //Broadcast a sync loss every 2400 dibits/4800 bits ... or 2x per second for phase 1
+        //Broadcast a sync loss every 4800 dibits/9600 bits ... or 1x per second for phase 1
         if(mDibitsProcessed > 4864)
         {
             dispatchSyncLoss(9600);
@@ -105,7 +105,7 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
         if(!mInitialSyncTestProcessed && mDibitsProcessed == DATA_UNIT_DIBIT_LENGTH)
         {
             mInitialSyncTestProcessed = true;
-            checkForNid(mSyncDetector.getPrimarySyncMatchErrorCount());
+            checkForNid(mSyncDetector.getPrimarySyncMatchErrorCount(), true);
         }
     }
 
@@ -113,17 +113,23 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
      * Chects/tests the contents of the data unit buffer for a valid NID when a sync pattern is detected
      * or when commanded following a valid message sequence
      */
-    private void checkForNid(int bitErrorCount)
+    private void checkForNid(int bitErrorCount, boolean isForNoSync)
     {
         if(bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS)
         {
             if(bitErrorCount > 0)
             {
-                mLog.debug("******************************************************* Sync Error Count:" + bitErrorCount);
+                mLog.debug("[" + isForNoSync + "] ******************************************************* Sync Error Count:" + bitErrorCount);
+            }
+
+            if(!isForNoSync)
+            {
+                mLog.debug("  Sync: 010101010111010111110101111111110111011111111111");
+                mDataUnitBuffer.log();
+                mSyncDelayBuffer.log();
             }
 
             int[] nid = mSyncDelayBuffer.getNID();
-//            logNID(nid, false);
             int[] correctedNid = new int[63];
 
             //If decoder indicates there are no unrecoverable errors ....
@@ -131,11 +137,7 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
             {
                 mNIDDetectionCount++;
 
-//                logNID(correctedNid, true);
-
                 int nidBitErrorCount = getBitErrorCount(nid, correctedNid);
-
-//                mLog.debug("Test Successful.  Sync Error Count: " + bitErrorCount + " NID Error Count: " + nidBitErrorCount);
 
                 if(mDataUnitDetectListener != null)
                 {
@@ -144,8 +146,6 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
                     mDataUnitDetectListener.dataUnitDetected(mPreviousDataUnitId, getNAC(correctedNid),
                         (bitErrorCount + nidBitErrorCount), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), correctedNid);
                 }
-
-                reset();
             }
             else if(mPreviousDataUnitId == DataUnitID.LOGICAL_LINK_DATA_UNIT_1)
             {
@@ -434,7 +434,14 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
                 counter++;
             }
 
-            mLog.debug("Buffer: " + sb.toString() + " Length:" + mBuffer.length);
+            if(this instanceof NIDDelayBuffer)
+            {
+                mLog.debug("NIDBUF: " + sb.toString() + " Length:" + mBuffer.length);
+            }
+            else
+            {
+                mLog.debug("SYNBUF: " + sb.toString() + " Length:" + mBuffer.length);
+            }
         }
 
         /**
