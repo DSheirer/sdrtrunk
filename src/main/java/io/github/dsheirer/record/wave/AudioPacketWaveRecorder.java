@@ -32,6 +32,8 @@ import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,6 +56,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
     private ScheduledFuture<?> mProcessorHandle;
     private Metadata mMetadata;
     private long mLastBufferReceived;
+    private List<ReusableAudioPacket> mAudioPacketsToProcess = new ArrayList<>();
 
     private AtomicBoolean mRunning = new AtomicBoolean();
 
@@ -186,24 +189,24 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
      */
     private void write() throws IOException
     {
-        ReusableAudioPacket audioPacket = mTransferQueue.poll();
+        mTransferQueue.drainTo(mAudioPacketsToProcess);
 
-        while(audioPacket != null && audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
+        for(ReusableAudioPacket audioPacket: mAudioPacketsToProcess)
         {
-            if(audioPacket.hasMetadata())
+            if(audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
             {
-                mMetadata = audioPacket.getMetadata();
+                if(audioPacket.hasMetadata())
+                {
+                    mMetadata = audioPacket.getMetadata();
+                }
+
+                mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples()));
             }
 
-            mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples()));
             audioPacket.decrementUserCount();
-            audioPacket = mTransferQueue.poll();
         }
 
-        if(audioPacket != null)
-        {
-            audioPacket.decrementUserCount();
-        }
+        mAudioPacketsToProcess.clear();
     }
 
     /**

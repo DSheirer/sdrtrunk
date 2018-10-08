@@ -101,7 +101,14 @@ public class OverflowableTransferQueue<E>
      */
     public E poll()
     {
-        return mQueue.poll();
+        E element = mQueue.poll();
+
+        if(element != null)
+        {
+            mCounter.decrementAndGet();
+        }
+
+        return element;
     }
 
     /**
