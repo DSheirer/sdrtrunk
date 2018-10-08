@@ -114,6 +114,8 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     @Override
     public void reset()
     {
+        getMutableMetadata().resetTemporalAttributes();
+
         broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
 
         mState = State.IDLE;
@@ -400,8 +402,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     private void processTeardownState()
     {
         broadcast(SquelchState.SQUELCH);
-
-        getMutableMetadata().resetTemporalAttributes();
 
         mState = State.TEARDOWN;
 
