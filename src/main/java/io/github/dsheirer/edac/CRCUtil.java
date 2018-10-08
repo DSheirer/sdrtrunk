@@ -161,8 +161,8 @@ public class CRCUtil
 //		decode( message, 0, 135, polynomial, 9 );
 //
 //		mLog.debug( message.toString() );
-		
-		long[] table = generate( 135, 9, 0x259l, 0, false, Parity.NONE );
+
+       long[] table = CRCUtil.generate( 135, 9, 0x259l, 0x1FF, false, Parity.NONE );
 		mLog.debug( toCodeArray( table ) );
 		mLog.debug( "Finished" );
 	}

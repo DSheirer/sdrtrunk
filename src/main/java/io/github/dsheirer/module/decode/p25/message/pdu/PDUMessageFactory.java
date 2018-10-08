@@ -70,13 +70,10 @@ public class PDUMessageFactory
 
         //Decode 1/2 rate trellis encoded PDU header
         CorrectedBinaryMessage viterbiDecoded = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
-        mLog.debug("Header Viterbi Corrected Errors: [" + viterbiDecoded.getCorrectedBitCount() + "]");
 
         if(viterbiDecoded != null)
         {
             PDUHeader header = PDUHeaderFactory.getPDUHeader(viterbiDecoded);
-            mLog.debug("Header CCITT   Corrected Errors: [" + header.getBitErrorsCount() + "]");
-
             return new PacketSequence(header, timestamp, nac);
         }
 

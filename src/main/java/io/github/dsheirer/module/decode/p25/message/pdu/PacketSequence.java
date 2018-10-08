@@ -122,9 +122,14 @@ public class PacketSequence implements IBitErrorProvider
 
         sb.append(" ").append(getHeader().toString());
 
-        for(DataBlock dataBlock: mDataBlockList)
+        if(!mDataBlockList.isEmpty())
         {
-            sb.append(" ").append(dataBlock.getMessage());
+            sb.append(" MSG:");
+
+            for(DataBlock dataBlock: mDataBlockList)
+            {
+                sb.append(dataBlock.getMessage().toHexString());
+            }
         }
 
         return sb.toString();

@@ -30,7 +30,7 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     private final static Logger mLog = LoggerFactory.getLogger(P25DataUnitDetector.class);
     private static final int DATA_UNIT_DIBIT_LENGTH = 57; //56 dibits plus 1 status symbol
     private static final int SYNC_DIBIT_LENGTH = 24;
-    private static final int MAXIMUM_SYNC_MATCH_BIT_ERRORS = 6;
+    private static final int MAXIMUM_SYNC_MATCH_BIT_ERRORS = 9;
     private P25SyncDetector mSyncDetector;
     private NIDDelayBuffer mDataUnitBuffer = new NIDDelayBuffer();
     private DibitDelayBuffer mSyncDelayBuffer = new DibitDelayBuffer(DATA_UNIT_DIBIT_LENGTH - SYNC_DIBIT_LENGTH);
@@ -112,23 +112,17 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     /**
      * Chects/tests the contents of the data unit buffer for a valid NID when a sync pattern is detected
      * or when commanded following a valid message sequence
+     *
+     * @param bitErrorCount when comparing the sync pattern to the received bit sequence
+     * @param forcedCheck indicates if the NID check was forced, meaning that the primary sync detector
+     * did not detect a sync, however we expect there to be a message sync following a successfully
+     * decoded and framed preceeding messsage.  In these instances, the framer will allow for a less
+     * than perfect match on the sync pattern, as long as the NID passes error check.
      */
-    private void checkForNid(int bitErrorCount, boolean isForNoSync)
+    private void checkForNid(int bitErrorCount, boolean forcedCheck)
     {
         if(bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS)
         {
-            if(bitErrorCount > 0)
-            {
-                mLog.debug("[" + isForNoSync + "] ******************************************************* Sync Error Count:" + bitErrorCount);
-            }
-
-            if(!isForNoSync)
-            {
-                mLog.debug("  Sync: 010101010111010111110101111111110111011111111111");
-                mDataUnitBuffer.log();
-                mSyncDelayBuffer.log();
-            }
-
             int[] nid = mSyncDelayBuffer.getNID();
             int[] correctedNid = new int[63];
 

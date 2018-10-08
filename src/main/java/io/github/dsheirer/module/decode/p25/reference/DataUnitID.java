@@ -20,48 +20,48 @@ package io.github.dsheirer.module.decode.p25.reference;
  */
 public enum DataUnitID
 {
+    HEADER_DATA_UNIT(0, 64 + 648 + 10, false, "HDU  "),
+    LOGICAL_LINK_DATA_UNIT_1(5, 64 + 1568, true, "LDU1 "),
+    LOGICAL_LINK_DATA_UNIT_2(10, 64 + 1568, true, "LDU2 "),
+
+    PACKET_HEADER_DATA_UNIT(12, 64 + 196, false, "PDU0 "),
+    PACKET_DATA_UNIT(-1, 196, false, "PDU  "),
+
     UNKN(-1, -1, false, "UNKN "),
     NID(-1, 64, false, "NID  "),
-//    HEADER_DATA_UNIT(0, 712, false, "HDU  "),
-    HEADER_DATA_UNIT(0, 658 + 64, false, "HDU  "),
     UNKNOWN_1(1, -1, false, "UNKN1"),
     UNKNOWN_2(2, -1, false, "UNKN2"),
-    TERMINATOR_DATA_UNIT(3, 28 + 64, false, "TDU  "),
+    TERMINATOR_DATA_UNIT(3, 64 + 28, true, "TDU  "),
     UNKNOWN_4(4, -1, false, "UNKN4"),
-    LOGICAL_LINK_DATA_UNIT_1(5, 1568 + 64, true, "LDU1 "),
     VSELP1(6, 1616, false, "VSEL1"),
     TRUNKING_SIGNALING_BLOCK_1(7, 196 + 64, false, "TSBK1"),
     TRUNKING_SIGNALING_BLOCK_2(7, 196 + 64, false, "TSBK2"),
     TRUNKING_SIGNALING_BLOCK_3(7, 196 + 64, false, "TSBK3"),
     UNKNOWN_8(8, -1, false, "UNKN8"),
     VSELP2(9, 1616 + 64, false, "VSEL2"),
-    LOGICAL_LINK_DATA_UNIT_2(10, 1568 + 64, true, "LDU2 "),
     UNKNOWN_11(11, -1, false, "UNKN11"),
-    PACKET_HEADER_DATA_UNIT(12, 196 + 64, false, "PDU0 "),
 
     //TODO: update the message length for these PDUs
-    PACKET_DATA_UNIT(-1, 196, false, "PDU"),
     PACKET_DATA_UNIT_1(12, 196, false, "PDU1 "),
     PACKET_DATA_UNIT_2(12, 196, false, "PDU2 "),
     PACKET_DATA_UNIT_3(12, 196, false, "PDU3 "),
     PACKET_DATA_UNIT_CONFIRMED(12, 196, false, "PDUC"),
 
-    TRAILING_NULLS(-1, -1, false, "NULLS"),
 
     UNKNOWN_13(13, -1, false, "UNKN13"),
     UNKNOWN_14(14, -1, false, "UNKN14"),
-    TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 308 + 64, false, "TDULC");
+    TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 308 + 64, true, "TDULC");
 
     private int mValue;
     private int mMessageLength;
-    private boolean mParity;
+    private boolean mTrailingStatusDibit;
     private String mLabel;
 
-    DataUnitID(int value, int length, boolean parity, String label)
+    DataUnitID(int value, int length, boolean trailingStatusDibit, String label)
     {
         mValue = value;
         mMessageLength = length;
-        mParity = parity;
+        mTrailingStatusDibit = trailingStatusDibit;
         mLabel = label;
     }
 
@@ -90,11 +90,11 @@ public enum DataUnitID
     }
 
     /**
-     * Indicates if the message includes a parity bit at the end
+     * Indicates if the message has a trailing status dibit that must be processed
      */
-    public boolean getParity()
+    public boolean hasTrailingStatusDibit()
     {
-        return mParity;
+        return mTrailingStatusDibit;
     }
 
     /**

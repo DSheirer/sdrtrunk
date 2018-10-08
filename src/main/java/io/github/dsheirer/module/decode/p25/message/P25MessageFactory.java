@@ -51,6 +51,7 @@ public class P25MessageFactory
                 return LDULCMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
             case LOGICAL_LINK_DATA_UNIT_2:
                 return new LDU2Message(correctedBinaryMessage, dataUnitID, null);
+            case UNKNOWN_2:
             case TERMINATOR_DATA_UNIT:
                 return new TDUMessage(correctedBinaryMessage, dataUnitID, null);
             case TERMINATOR_DATA_UNIT_LINK_CONTROL:

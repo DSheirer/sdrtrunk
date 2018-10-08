@@ -280,6 +280,21 @@ public class BinaryMessage extends BitSet
         return sb.toString();
     }
 
+    public String toHexString()
+    {
+        int pointer = 0;
+
+        StringBuilder sb = new StringBuilder();
+
+        while(pointer < size())
+        {
+            sb.append(getHex(pointer, pointer + 3, 1));
+            pointer += 4;
+        }
+
+        return sb.toString();
+    }
+
     /**
      * Returns this bitset as an array of integer ones and zeros
      */

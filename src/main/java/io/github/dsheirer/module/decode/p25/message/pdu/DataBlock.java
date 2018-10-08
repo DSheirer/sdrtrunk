@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.IBitErrorProvider;
 
 /**
@@ -26,7 +26,7 @@ public abstract class DataBlock implements IBitErrorProvider
     /**
      * Decoded binary message payload.
      */
-    public abstract CorrectedBinaryMessage getMessage();
+    public abstract BinaryMessage getMessage();
 
     /**
      * Number of bits that were processed for this data block (196).
@@ -43,4 +43,9 @@ public abstract class DataBlock implements IBitErrorProvider
      */
     @Override
     public abstract int getBitErrorsCount();
+
+    /**
+     * Indicates if the data block passes any block level error correction
+     */
+    public abstract boolean isValid();
 }

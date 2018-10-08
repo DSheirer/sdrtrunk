@@ -48,7 +48,7 @@ public class SyncLossMessage extends Message
     @Override
     public String toString()
     {
-        return "No Sync - Bits Processed: " + mBitsProcessed;
+        return "<-> SYNC LOSS - BITS PROCESSED [" + mBitsProcessed + "]";
     }
 
     @Override

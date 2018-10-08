@@ -51,6 +51,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private long mCurrentTime = System.currentTimeMillis();
     private double mBitRate;
     private PacketSequence mPacketSequence;
+    private int mTrailingDibitsToSuppress = 0;
 
     private P25MessageFramer2(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
@@ -61,6 +62,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     /**
      * Current timestamp or timestamp of incoming message buffers that is continuously updated to as
      * close as possible to the bits processed for the expected baud rate.
+     *
      * @return
      */
     private long getTimestamp()
@@ -70,6 +72,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
     /**
      * Sets the current time.  This should be invoked by an incoming message buffer stream.
+     *
      * @param currentTime
      */
     public void setCurrentTime(long currentTime)
@@ -80,6 +83,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     /**
      * Updates the current timestamp based on the number of bits processed versus the bit rate per second
      * in order to keep an accurate running timestamp to use for timestamped message creation.
+     *
      * @param bitsProcessed thus far
      */
     private void updateBitsProcessed(int bitsProcessed)
@@ -92,6 +96,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
     /**
      * Registers the listener for messages produced by this message framer
+     *
      * @param messageListener to receive framed and decoded messages
      */
     public void setListener(Listener<Message> messageListener)
@@ -106,6 +111,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
     /**
      * Primary method for streaming decoded symbol dibits for message framing.
+     *
      * @param dibit to process
      */
     @Override
@@ -122,30 +128,43 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 //                }
                 mStatusSymbolDibitCounter = 0;
                 mStatusSymbolsDetected++;
+
                 return;
             }
 
             mStatusSymbolDibitCounter++;
 
+            try
+            {
+                mBinaryMessage.add(dibit.getBit1());
+                mBinaryMessage.add(dibit.getBit2());
+            }
+            catch(BitSetFullException bsfe)
+            {
+                mLog.debug("Message full exception - unexpected");
+            }
+
             if(mBinaryMessage.isFull())
             {
+                //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
+                if(mDataUnitID.hasTrailingStatusDibit())
+                {
+                    mTrailingDibitsToSuppress = 1;
+                }
+
                 dispatchMessage();
-            }
-            else
-            {
-                try
-                {
-                    mBinaryMessage.add(dibit.getBit1());
-                    mBinaryMessage.add(dibit.getBit2());
-                }
-                catch(BitSetFullException bsfe)
-                {
-                    mLog.debug("Message full exception - unexpected");
-                }
             }
         }
         else
         {
+            //Suppress any trailing nulls or status dibits that follow certain DUID sequences
+            if(mTrailingDibitsToSuppress > 0)
+            {
+                mTrailingDibitsToSuppress--;
+                updateBitsProcessed(2);
+                return;
+            }
+
             mDataUnitDetector.receive(dibit);
         }
     }
@@ -157,7 +176,6 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             switch(mDataUnitID)
             {
                 case PACKET_HEADER_DATA_UNIT:
-                    mLog.debug("** PDU HEADR INTERLEAVED: " + mBinaryMessage.toString());
                     mPacketSequence = PDUMessageFactory.createPacketSequence(mNAC, mCurrentTime, mBinaryMessage);
 
                     if(mPacketSequence != null)
@@ -171,20 +189,18 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                         }
                         else
                         {
-                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence));
-                            updateBitsProcessed(mPacketSequence.getBitsProcessedCount());
-                            mPacketSequence = null;
+                            //Process 44 bits/22 dibits of trailing nulls
+                            mTrailingDibitsToSuppress = 22;
 
-                            //Process 42 trailing null bits
-                            mDataUnitID = DataUnitID.TRAILING_NULLS;
-                            mBinaryMessage = new CorrectedBinaryMessage(40);
+                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence));
+                            reset(mPacketSequence.getBitsProcessedCount());
+                            mPacketSequence = null;
                         }
                     }
                     break;
                 case PACKET_DATA_UNIT:
                     if(mPacketSequence != null)
                     {
-                        mLog.debug("** PDU BLOCK INTERLEAVED: " + mBinaryMessage.toString());
                         if(mPacketSequence.getHeader().isConfirmationRequired())
                         {
                             mPacketSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(mBinaryMessage));
@@ -198,17 +214,27 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                         {
                             mMessageListener.receive(PDUMessageFactory.create(mPacketSequence));
 
-                            if(mPacketSequence.getHeader().getBlocksToFollowCount() == 3)
+                            switch(mPacketSequence.getHeader().getBlocksToFollowCount())
                             {
-                                updateBitsProcessed(mPacketSequence.getBitsProcessedCount());
-                                //Process 8 trailing null bits
-                                mDataUnitID = DataUnitID.TRAILING_NULLS;
-                                mBinaryMessage = new CorrectedBinaryMessage(6);
+                                case 1:
+                                    mLog.debug("*** SINGLE PDU BLOCK DETECTED - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
+                                    break;
+                                case 2:
+                                    //Process 2 bits or 1 dibit of trailing nulls
+                                    mTrailingDibitsToSuppress = 1;
+                                    break;
+                                case 3:
+                                    //Process 16 bits or 8 dibits of trailing nulls
+                                    mTrailingDibitsToSuppress = 8;
+                                    break;
+                                default:
+                                    mLog.debug("*** MORE THAN 3 PDU BLOCKS DETECTED [" +
+                                        mPacketSequence.getHeader().getBlocksToFollowCount() +
+                                        "] - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
+                                    break;
                             }
-                            else
-                            {
-                                reset(mPacketSequence.getBitsProcessedCount());
-                            }
+
+                            reset(mPacketSequence.getBitsProcessedCount());
                         }
                         else
                         {
@@ -223,11 +249,6 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                         mLog.error("Received PDU data block with out a preceeding data header");
                         reset(mDataUnitID.getMessageLength());
                     }
-                    break;
-                case TRAILING_NULLS:
-                    //Throw away the trailing nulls
-                    mLog.debug("Trailing Nulls: " + mBinaryMessage.toString());
-                    reset(mBinaryMessage.size());
                     break;
                 default:
                     P25Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
@@ -259,6 +280,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
     /**
      * Primary method for streaming decoded symbol byte arrays.
+     *
      * @param buffer to process into a stream of dibits for processing.
      */
     public void receive(ReusableByteBuffer buffer)
@@ -266,9 +288,9 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         //Updates current timestamp to the timestamp from the incoming buffer
         setCurrentTime(buffer.getTimestamp());
 
-        for(byte value: buffer.getBytes())
+        for(byte value : buffer.getBytes())
         {
-            for(int x = 0; x <=3; x++)
+            for(int x = 0; x <= 3; x++)
             {
                 receive(Dibit.parse(value, x));
             }
@@ -344,18 +366,40 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
     public static void main(String[] args)
     {
+        boolean pduOnly = true;
+
         P25MessageFramer2 messageFramer = new P25MessageFramer2(null, 9600);
         messageFramer.setListener(new Listener<Message>()
         {
             @Override
             public void receive(Message message)
             {
-                mLog.debug(message.toString());
+                if(pduOnly)
+                {
+                    String s = message.toString();
+
+                    if(s.contains(" PDU  "))
+                    {
+                        mLog.debug(s);
+                    }
+                }
+                else
+                {
+                    mLog.debug(message.toString());
+                }
             }
         });
 
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_040600_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_042033_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045614_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045647_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050325_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050403_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050721_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051808_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_EMERG_AND_PACKETS.bits");
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_052519_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {

@@ -35,7 +35,7 @@ public class ResponseHeader extends PDUHeader
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("PDU RESPONSE:").append(getResponse());
+        sb.append("PDU   RESPONSE:").append(getResponse());
 
         if(!isValid())
         {
