@@ -366,7 +366,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
     public static void main(String[] args)
     {
-        boolean pduOnly = true;
+        boolean pduOnly = false;
 
         P25MessageFramer2 messageFramer = new P25MessageFramer2(null, 9600);
         messageFramer.setListener(new Listener<Message>()
@@ -399,7 +399,9 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050721_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051808_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_EMERG_AND_PACKETS.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_052519_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_052519_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091511_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091650_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {

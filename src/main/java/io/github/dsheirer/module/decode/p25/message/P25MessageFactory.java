@@ -21,6 +21,7 @@ import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.lc.LDULCMessageFactory;
 import io.github.dsheirer.module.decode.p25.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULCMessageFactory;
+import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,8 @@ public class P25MessageFactory
                 return new TDUMessage(correctedBinaryMessage, dataUnitID, null);
             case TERMINATOR_DATA_UNIT_LINK_CONTROL:
                 return TDULCMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
+            case TRUNKING_SIGNALING_BLOCK_1:
+                return TSBKMessageFactory.getMessage(correctedBinaryMessage, dataUnitID, null);
             default:
                 mLog.debug("Unrecognized P25 Data Unit ID [" + dataUnitID + "] - cannot create message");
                 return new P25Message(correctedBinaryMessage, dataUnitID, null);
