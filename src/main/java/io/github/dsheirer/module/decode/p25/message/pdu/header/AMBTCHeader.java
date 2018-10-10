@@ -23,9 +23,9 @@ import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 /**
- * Alternage Multi-Block Control Header
+ * Alternage Multi-Block Trunking Control Header
  */
-public class AMBCHeader extends PDUHeader
+public class AMBTCHeader extends PDUHeader
 {
     public static final int[] SAP_ID = {10, 11, 12, 13, 14, 15};
     public static final int FULL_MESSAGE_FLAG = 48;
@@ -33,7 +33,7 @@ public class AMBCHeader extends PDUHeader
     public static final int[] OPCODE = {58, 59, 60, 61, 62, 63};
     public static final int[] DATA_HEADER_OFFSET = {74, 75, 76, 77, 78, 79};
 
-    public AMBCHeader(CorrectedBinaryMessage message, boolean passesCRC)
+    public AMBTCHeader(CorrectedBinaryMessage message, boolean passesCRC)
     {
         super(message, passesCRC);
     }
@@ -45,72 +45,23 @@ public class AMBCHeader extends PDUHeader
 
         if(!isValid())
         {
-            sb.append(" *CRC-FAIL*");
+            sb.append("*CRC-FAIL*");
         }
 
-        switch(getFormat())
-        {
-            case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
-                sb.append(" AMBTC");
-                break;
-            case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
-                sb.append(" MBTC ");
-                break;
-            default:
-                sb.append(" PDU  ");
-                break;
-        }
-
-        sb.append(isConfirmationRequired() ? " CONFIRMED" : " UNCONFIRMED");
+        sb.append("AMBTC");
 
         Vendor vendor = getVendor();
 
-        switch(getFormat())
+        if(vendor == Vendor.STANDARD)
         {
-            case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
-                if(vendor == Vendor.STANDARD)
-                {
-                    sb.append(" ").append(getOpcode().getLabel());
-                }
-                else
-                {
-                    sb.append(" ").append(getVendorOpcode().getLabel());
-                }
-                break;
-            case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
-                sb.append(" PAD OCTETS:" + getPadOctetCount());
-                sb.append(" HDR OFFSET:" + getDataHeaderOffset());
-                break;
-            case RESPONSE_PACKET_HEADER_FORMAT:
-                sb.append(" ");
-                sb.append(getDirection());
-                sb.append(" FMT:");
-                sb.append(getFormat().getLabel());
-                sb.append(" SAP:");
-                sb.append(getServiceAccessPoint().name());
-                sb.append(" VEND:");
-                sb.append(getVendor().getLabel());
-                sb.append(" LLID:");
-                sb.append(getToLogicalLinkID());
-                sb.append(" BLKS TO FOLLOW:");
-                sb.append(getBlocksToFollowCount());
-                break;
-            default:
-                sb.append(" ");
-                sb.append(getDirection());
-                sb.append(" FMT:");
-                sb.append(getFormat().getLabel());
-                sb.append(" SAP:");
-                sb.append(getServiceAccessPoint().name());
-                sb.append(" VEND:");
-                sb.append(getVendor().getLabel());
-                sb.append(" LLID:");
-                sb.append(getToLogicalLinkID());
-                sb.append(" BLKS TO FOLLOW:");
-                sb.append(getBlocksToFollowCount());
-                break;
+            sb.append(" ").append(getOpcode().getLabel());
+        }
+        else
+        {
+            sb.append(" ").append(getVendorOpcode().getLabel());
         }
 
+        sb.append(" TA DAH!");
         return sb.toString();
     }
 

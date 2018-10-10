@@ -282,7 +282,7 @@ public class P25MessageFramer implements Listener<Dibit>
 
                         DataUnitID duid = DataUnitID.fromValue(value);
 
-                        if(duid != DataUnitID.UNKN)
+                        if(duid != DataUnitID.UNKNOWN)
                         {
                             setDUID(duid);
                         }
@@ -638,7 +638,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     mComplete = true;
                     dispatch(new VSELP2Message(mMessage.copy(), mDUID, mAliasList));
                     break;
-                case UNKN:
+                case UNKNOWN:
                     mComplete = true;
                     dispatch(new P25Message(mMessage.copy(), mDUID, mAliasList));
                     break;

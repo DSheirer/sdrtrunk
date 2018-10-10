@@ -19,7 +19,7 @@ public class PDUHeaderFactory
         switch(format)
         {
             case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
-                return new AMBCHeader(correctedBinaryMessage, passesCRC);
+                return new AMBTCHeader(correctedBinaryMessage, passesCRC);
             case PACKET_DATA:
                 return new PacketHeader(correctedBinaryMessage, passesCRC);
             case RESPONSE_PACKET_HEADER_FORMAT:

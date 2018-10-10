@@ -25,6 +25,8 @@ import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
+import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
+import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -217,7 +219,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                             switch(mPacketSequence.getHeader().getBlocksToFollowCount())
                             {
                                 case 1:
-                                    mLog.debug("*** SINGLE PDU BLOCK DETECTED - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
+                                    mTrailingDibitsToSuppress = 29;
                                     break;
                                 case 2:
                                     //Process 2 bits or 1 dibit of trailing nulls
@@ -248,6 +250,22 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                     {
                         mLog.error("Received PDU data block with out a preceeding data header");
                         reset(mDataUnitID.getMessageLength());
+                    }
+                    break;
+                case TRUNKING_SIGNALING_BLOCK:
+                    TSBKMessage tsbkMessage = TSBKMessageFactory.create(mBinaryMessage, mDataUnitID);
+                    mMessageListener.receive(tsbkMessage);
+
+                    if(tsbkMessage.isLastBlock())
+                    {
+                        reset(mDataUnitID.getMessageLength());
+                        mTrailingDibitsToSuppress = 1;
+                    }
+                    else
+                    {
+                        updateBitsProcessed(mDataUnitID.getMessageLength());
+                        mBinaryMessage = new CorrectedBinaryMessage(mDataUnitID.getMessageLength());
+                        loadNid(mBinaryMessage, mCorrectedNID);
                     }
                     break;
                 default:

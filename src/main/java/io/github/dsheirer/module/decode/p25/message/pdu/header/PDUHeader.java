@@ -26,6 +26,7 @@ public class PDUHeader implements IBitErrorProvider
 
     protected boolean mValid;
     protected CorrectedBinaryMessage mMessage;
+    private boolean mExcessiveBlocksToFollowLogged = false;
 
     /**
      * Constructs a PDU header.
@@ -126,7 +127,11 @@ public class PDUHeader implements IBitErrorProvider
         }
         else
         {
-            mLog.debug("***Excessive blocks to follow count detected: " + blocksToFollow);
+            if(!mExcessiveBlocksToFollowLogged)
+            {
+                mLog.debug("*** EXCESSIVE BLOCKS TO FOLLOW COUNT DETECTED [" + blocksToFollow + "]");
+                mExcessiveBlocksToFollowLogged = true;
+            }
             return 0;
         }
     }

@@ -7,31 +7,31 @@ import io.github.dsheirer.module.decode.p25.reference.Opcode;
 
 public class IdentifierUpdateVUHF extends IdentifierUpdate
 {
-    public static final int[] BANDWIDTH = { 84,85,86,87 };
+    public static final int[] BANDWIDTH = {84, 85, 86, 87};
 
     public static final int TRANSMIT_OFFSET_VHF_UHF_SIGN = 88;
 
-    public static final int[] TRANSMIT_OFFSET = { 89,90,91,92,93,94,95,96,97,98,
-    	99,100,101 };
-    
-    public IdentifierUpdateVUHF( BinaryMessage message, 
-                             DataUnitID duid,
-                             AliasList aliasList ) 
+    public static final int[] TRANSMIT_OFFSET = {89, 90, 91, 92, 93, 94, 95, 96, 97, 98,
+        99, 100, 101};
+
+    public IdentifierUpdateVUHF(BinaryMessage message,
+                                DataUnitID duid,
+                                AliasList aliasList)
     {
-        super( message, duid, aliasList );
+        super(message, duid, aliasList);
     }
-    
+
     @Override
     public String getEventType()
     {
-    	return Opcode.IDENTIFIER_UPDATE_VHF_UHF_BANDS.getDescription();
+        return Opcode.IDENTIFIER_UPDATE_VHF_UHF_BANDS.getDescription();
     }
-    
+
     public String getMessage()
     {
         StringBuilder sb = new StringBuilder();
-        
-        sb.append( getMessageStub() );
+
+        sb.append(getMessageStub());
         sb.append(toString());
 
         return sb.toString();
@@ -40,12 +40,13 @@ public class IdentifierUpdateVUHF extends IdentifierUpdate
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-
-        sb.append( " ID:" + getIdentifier() );
-        sb.append( " BASE:" + getBaseFrequency() );
-        sb.append( " BANDWIDTH:" + getBandwidth() );
-        sb.append( " SPACING:" + getChannelSpacing() );
-        sb.append( " OFFSET:" + getTransmitOffset() );
+        sb.append("NAC:").append(getNAC());
+        sb.append(" ").append(getDUID().getLabel());
+        sb.append(" FREQUENCY BAND ID:" + getIdentifier());
+        sb.append(" BASE:" + getBaseFrequency());
+        sb.append(" BANDWIDTH:" + getBandwidth());
+        sb.append(" SPACING:" + getChannelSpacing());
+        sb.append(" OFFSET:" + getTransmitOffset());
 
         return sb.toString();
     }
@@ -55,9 +56,9 @@ public class IdentifierUpdateVUHF extends IdentifierUpdate
      */
     public int getBandwidth()
     {
-        int bandwidth = mMessage.getInt( BANDWIDTH );
+        int bandwidth = mMessage.getInt(BANDWIDTH);
 
-        switch( bandwidth )
+        switch(bandwidth)
         {
             case 4:
                 return 6250;
@@ -74,10 +75,10 @@ public class IdentifierUpdateVUHF extends IdentifierUpdate
     @Override
     public long getTransmitOffset()
     {
-        long offset = mMessage.getLong( TRANSMIT_OFFSET ) * 
-        		getChannelSpacing();
-        
-        if( mMessage.get( TRANSMIT_OFFSET_VHF_UHF_SIGN ) )
+        long offset = mMessage.getLong(TRANSMIT_OFFSET) *
+            getChannelSpacing();
+
+        if(mMessage.get(TRANSMIT_OFFSET_VHF_UHF_SIGN))
         {
             return offset;
         }

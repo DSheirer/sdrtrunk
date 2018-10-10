@@ -20,7 +20,6 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.P25Interleave;
-import io.github.dsheirer.module.decode.p25.Trellis_3_4_Rate;
 import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeader;
 import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeaderFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.osp.control.AdjacentStatusBroadcastExtended;
@@ -58,9 +57,7 @@ public class PDUMessageFactory
 
     public static final int PDU0_BEGIN = 64;
     public static final int PDU0_END = 260;
-
     private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
-    private static Trellis_3_4_Rate mThreeQuarterRate = new Trellis_3_4_Rate();
 
     public static PacketSequence createPacketSequence(int nac, long timestamp, CorrectedBinaryMessage correctedBinaryMessage)
     {
