@@ -26,7 +26,7 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,7 @@ public class LJ1200DecoderState extends DecoderState
         super(aliasList);
 
         mAddressAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
     }
 
     @Override
@@ -60,7 +60,7 @@ public class LJ1200DecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message instanceof LJ1200Message)
         {

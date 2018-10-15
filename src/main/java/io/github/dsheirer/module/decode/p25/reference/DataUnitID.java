@@ -20,7 +20,7 @@ package io.github.dsheirer.module.decode.p25.reference;
  */
 public enum DataUnitID
 {
-    HEADER_DATA_UNIT(0, 64 + 648 + 10, false, "HDU  "),
+    HEADER_DATA_UNIT(0, 648 + 10, false, "HDU  "),
     UNKNOWN_1(1, -1, false, "UNKN1"),
     UNKNOWN_2(2, -1, false, "UNKN2"),
     TERMINATOR_DATA_UNIT(3, 64 + 28, true, "TDU  "),

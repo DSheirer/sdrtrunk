@@ -15,16 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.message;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.map.Plottable;
-
-import java.util.Collections;
-import java.util.List;
-
 /**
- * Legacy base message class.
- *
- * Note: this class will eventually be removed as the architecture is updated to use IMessage interface.
+ * IMessage implementation.
  */
 public abstract class Message implements IMessage
 {
@@ -40,6 +32,7 @@ public abstract class Message implements IMessage
 
     /**
      * Constructs a new message using the argument timestamp.
+     *
      * @param timestamp for the message
      */
     public Message(long timestamp)
@@ -57,15 +50,6 @@ public abstract class Message implements IMessage
     }
 
     /**
-     * Map plottable
-     */
-    public Plottable getPlottable()
-    {
-//TODO: move this to an IPlottable interface that only gets implemented as needed
-        return null;
-    }
-
-    /**
      * Decoded textual representation of the message
      */
     public abstract String toString();
@@ -76,61 +60,7 @@ public abstract class Message implements IMessage
     public abstract boolean isValid();
 
     /**
-     * Status of the CRC check of the message
-     */
-    public abstract String getErrorStatus();
-
-    /**
-     * Parsed Message
-     *
-     * @return
-     */
-    public abstract String getMessage();
-
-    /**
-     * Raw ( 0 & 1 ) message bits
-     */
-    public abstract String getBinaryMessage();
-
-
-    /**
      * Decoded protocol
      */
     public abstract String getProtocol();
-
-    /**
-     * Event - call, data, idle, etc.
-     */
-    public abstract String getEventType();
-
-    /**
-     * Formatted from identifier
-     */
-    public abstract String getFromID();
-
-    /**
-     * From identifier alias (from AliasManager)
-     */
-    public abstract Alias getFromIDAlias();
-
-    /**
-     * Formatted to identifier
-     */
-    public abstract String getToID();
-
-    /**
-     * To identifier alias (from AliasManager)
-     *
-     * @return
-     */
-    public abstract Alias getToIDAlias();
-
-
-    /**
-     * Provides a listing of aliases contained in the message.
-     */
-    public List<Alias> getAliases()
-    {
-        return Collections.EMPTY_LIST;
-    }
 }

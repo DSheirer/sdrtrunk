@@ -29,10 +29,7 @@ public class PacketData extends PDUConfirmedMessage
 		
 		
 		sb.append( " PACKET DATA" );
-		sb.append( " CRC[" );
-		sb.append( getErrorStatus() );
-		sb.append( "]" );
-		
+
 		if( !mMessage.get( FINAL_FRAGMENT_FLAG ) )
 		{
 			sb.append( " RESENDING" );

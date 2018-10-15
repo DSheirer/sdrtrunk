@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.p25.message.pdu.osp.voice;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
 import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
@@ -28,6 +29,7 @@ import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Opcode;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage implements IdentifierReceiver
@@ -49,26 +51,29 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage implem
     public static final int[] MULTIPLE_BLOCK_CRC = {224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236,
         237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255};
 
+    private SimpleDateFormat mTimeDurationFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+
     private IBandIdentifier mTransmitIdentifierUpdate;
     private IBandIdentifier mReceiveIdentifierUpdate;
 
-    public TelephoneInterconnectChannelGrantExplicit(BinaryMessage message, DataUnitID duid, AliasList aliasList)
+    public TelephoneInterconnectChannelGrantExplicit(CorrectedBinaryMessage message, int nac, long timestamp)
     {
-        super(message, duid, aliasList);
+        super(message, nac, timestamp);
 
 	    /* Header block is already error detected/corrected - perform error
          * detection correction on the intermediate and final data blocks */
-        mMessage = CRCP25.correctPDU1(mMessage);
-        mCRC[1] = mMessage.getCRC();
+//        mMessage = CRCP25.correctPDU1(mMessage);
+//        mCRC[1] = mMessage.getCRC();
     }
 
-    @Override
+
+
     public String getEventType()
     {
         return Opcode.TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT.getDescription();
     }
 
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -96,28 +101,28 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage implem
 
     public boolean isEmergency()
     {
-        return mMessage.get(EMERGENCY_FLAG);
+        return getMessage().get(EMERGENCY_FLAG);
     }
 
     public boolean isEncrypted()
     {
-        return mMessage.get(ENCRYPTED_CHANNEL_FLAG);
+        return getMessage().get(ENCRYPTED_CHANNEL_FLAG);
     }
 
     public P25Message.DuplexMode getDuplexMode()
     {
-        return mMessage.get(DUPLEX_MODE) ? P25Message.DuplexMode.FULL : P25Message.DuplexMode.HALF;
+        return getMessage().get(DUPLEX_MODE) ? P25Message.DuplexMode.FULL : P25Message.DuplexMode.HALF;
     }
 
     public P25Message.SessionMode getSessionMode()
     {
-        return mMessage.get(SESSION_MODE) ?
+        return getMessage().get(SESSION_MODE) ?
             P25Message.SessionMode.CIRCUIT : P25Message.SessionMode.PACKET;
     }
 
     public String getAddress()
     {
-        return mMessage.getHex(ADDRESS, 6);
+        return getMessage().getHex(ADDRESS, 6);
     }
 
     /*
@@ -125,19 +130,19 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage implem
      */
     public long getCallTimer()
     {
-        int timer = mMessage.getInt(CALL_TIMER);
+        int timer = getMessage().getInt(CALL_TIMER);
 
         return timer / 100;
     }
 
     public int getTransmitChannelIdentifier()
     {
-        return mMessage.getInt(TRANSMIT_IDENTIFIER);
+        return getMessage().getInt(TRANSMIT_IDENTIFIER);
     }
 
     public int getTransmitChannelNumber()
     {
-        return mMessage.getInt(TRANSMIT_NUMBER);
+        return getMessage().getInt(TRANSMIT_NUMBER);
     }
 
     public String getTransmitChannel()
@@ -147,12 +152,12 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage implem
 
     public int getReceiveChannelIdentifier()
     {
-        return mMessage.getInt(RECEIVE_IDENTIFIER);
+        return getMessage().getInt(RECEIVE_IDENTIFIER);
     }
 
     public int getReceiveChannelNumber()
     {
-        return mMessage.getInt(RECEIVE_NUMBER);
+        return getMessage().getInt(RECEIVE_NUMBER);
     }
 
     public String getReceiveChannel()

@@ -21,6 +21,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCLTR;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.ltrstandard.message.CallEndMessage;
@@ -34,7 +35,7 @@ public class LTRStandardMessageProcessor implements Listener<BinaryMessage>
 {
 	private MessageDirection mDirection;
 	private AliasList mAliasList;
-	private Listener<Message> mMessageListener;
+	private Listener<IMessage> mMessageListener;
 	
 	/**
 	 * Processes raw binary messages and converts them to the correct message class
@@ -109,7 +110,7 @@ public class LTRStandardMessageProcessor implements Listener<BinaryMessage>
 		return ( 1 <= channel && channel <= 20 );
 	}
 	
-    public void setMessageListener( Listener<Message> listener )
+    public void setMessageListener( Listener<IMessage> listener )
     {
 		mMessageListener = listener;
     }

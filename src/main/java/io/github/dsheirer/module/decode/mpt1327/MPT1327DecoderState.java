@@ -32,7 +32,7 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.channel.traffic.TrafficChannelAllocationEvent;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.CallEvent;
@@ -52,7 +52,7 @@ public class MPT1327DecoderState extends DecoderState
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327DecoderState.class);
 
     private TreeSet<String> mIdents = new TreeSet<String>();
-    private HashMap<String,ArrayList<String>> mGroups = new HashMap<String,ArrayList<String>>();
+    private HashMap<String, ArrayList<String>> mGroups = new HashMap<String, ArrayList<String>>();
 
     private String mSite;
     private AliasedStringAttributeMonitor mFromAttribute;
@@ -73,9 +73,9 @@ public class MPT1327DecoderState extends DecoderState
         mChannelType = channelType;
         mCallTimeout = callTimeout;
         mFromAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MPT1327);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MPT1327);
         mToAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MPT1327);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MPT1327);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class MPT1327DecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message.isValid())
         {
@@ -113,24 +113,24 @@ public class MPT1327DecoderState extends DecoderState
                         if(identType == MPT1327Message.IdentType.REGI)
                         {
                             broadcast(new MPT1327CallEvent.Builder(CallEvent.CallEventType.REGISTER)
-                                .aliasList(getAliasList())
-                                .channel(String.valueOf(mChannelNumber))
-                                .details("REGISTERED ON NETWORK")
-                                .frequency(mFrequency)
-                                .from(mpt.getToID())
-                                .to(mpt.getFromID())
-                                .build());
+                                    .aliasList(getAliasList())
+                                    .channel(String.valueOf(mChannelNumber))
+                                    .details("REGISTERED ON NETWORK")
+                                    .frequency(mFrequency)
+                                    .from(mpt.getToID())
+                                    .to(mpt.getFromID())
+                                    .build());
                         }
                         else
                         {
                             broadcast(new MPT1327CallEvent.Builder(CallEvent.CallEventType.RESPONSE)
-                                .aliasList(getAliasList())
-                                .channel(String.valueOf(mChannelNumber))
-                                .details("ACK " + identType.getLabel())
-                                .frequency(mFrequency)
-                                .from(mpt.getFromID())
-                                .to(mpt.getToID())
-                                .build());
+                                    .aliasList(getAliasList())
+                                    .channel(String.valueOf(mChannelNumber))
+                                    .details("ACK " + identType.getLabel())
+                                    .frequency(mFrequency)
+                                    .from(mpt.getFromID())
+                                    .to(mpt.getToID())
+                                    .build());
                         }
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
@@ -145,25 +145,25 @@ public class MPT1327DecoderState extends DecoderState
                         mIdents.add(mpt.getToID());
 
                         broadcast(new MPT1327CallEvent.Builder(CallEvent.CallEventType.COMMAND)
-                            .aliasList(getAliasList())
-                            .channel(String.valueOf(mChannelNumber))
-                            .details(((MPT1327Message) message).getRequestString())
-                            .frequency(mFrequency)
-                            .from(mpt.getFromID())
-                            .to(mpt.getToID())
-                            .build());
+                                .aliasList(getAliasList())
+                                .channel(String.valueOf(mChannelNumber))
+                                .details(((MPT1327Message) message).getRequestString())
+                                .frequency(mFrequency)
+                                .from(mpt.getFromID())
+                                .to(mpt.getToID())
+                                .build());
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
                         break;
                     case AHYQ:
                         broadcast(new MPT1327CallEvent.Builder(CallEvent.CallEventType.STATUS)
-                            .aliasList(getAliasList())
-                            .channel(String.valueOf(mChannelNumber))
-                            .details(mpt.getStatusMessage())
-                            .frequency(mFrequency)
-                            .from(mpt.getFromID())
-                            .to(mpt.getToID())
-                            .build());
+                                .aliasList(getAliasList())
+                                .channel(String.valueOf(mChannelNumber))
+                                .details(mpt.getStatusMessage())
+                                .frequency(mFrequency)
+                                .from(mpt.getFromID())
+                                .to(mpt.getToID())
+                                .build());
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
                         break;
@@ -185,7 +185,7 @@ public class MPT1327DecoderState extends DecoderState
                             mIdents.add(to);
                         }
 
-						/* Capture the idents that talk to each group */
+                        /* Capture the idents that talk to each group */
                         if(from != null && to != null)
                         {
                             if(mGroups.containsKey(to))
@@ -216,13 +216,13 @@ public class MPT1327DecoderState extends DecoderState
                         }
 
                         CallEvent event = new MPT1327CallEvent.Builder(CallEvent.CallEventType.CALL)
-                            .aliasList(getAliasList())
-                            .channel(String.valueOf(channel))
-                            .details("GTC")
-                            .frequency(frequency)
-                            .from(mpt.getFromID())
-                            .to(mpt.getToID())
-                            .build();
+                                .aliasList(getAliasList())
+                                .channel(String.valueOf(channel))
+                                .details("GTC")
+                                .frequency(frequency)
+                                .from(mpt.getFromID())
+                                .to(mpt.getToID())
+                                .build();
 
                         broadcast(new TrafficChannelAllocationEvent(this, event));
                         break;
@@ -231,15 +231,15 @@ public class MPT1327DecoderState extends DecoderState
                     case HEAD_PLUS3:
                     case HEAD_PLUS4:
                         broadcast(new MPT1327CallEvent.Builder(CallEvent.CallEventType.SDM)
-                            .aliasList(getAliasList())
-                            .details(mpt.getMessage())
-                            .from(mpt.getFromID())
-                            .to(mpt.getToID())
-                            .build());
+                                .aliasList(getAliasList())
+                                .details(mpt.getMessage())
+                                .from(mpt.getFromID())
+                                .to(mpt.getToID())
+                                .build());
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
                         break;
 
-					/* Traffic Channel Events */
+                    /* Traffic Channel Events */
                     case CLEAR:
                         mChannelNumber = mpt.getChannel();
 
@@ -255,17 +255,17 @@ public class MPT1327DecoderState extends DecoderState
                              * be using the shorter default call timeout
                              */
                             broadcast(new ChangeChannelTimeoutEvent(this,
-                                mChannelType, mCallTimeout));
+                                    mChannelType, mCallTimeout));
 
                             if(mCurrentCallEvent == null)
                             {
                                 mCurrentCallEvent = new MPT1327CallEvent.Builder(CallEvent.CallEventType.CALL)
-                                    .aliasList(getAliasList())
-                                    .channel(String.valueOf(mChannelNumber))
-                                    .details("MONITORED TRAFFIC CHANNEL")
-                                    .frequency(mFrequency)
-                                    .to(mpt.getToID())
-                                    .build();
+                                        .aliasList(getAliasList())
+                                        .channel(String.valueOf(mChannelNumber))
+                                        .details("MONITORED TRAFFIC CHANNEL")
+                                        .frequency(mFrequency)
+                                        .to(mpt.getToID())
+                                        .build();
 
                                 broadcast(mCurrentCallEvent);
                             }
@@ -321,7 +321,7 @@ public class MPT1327DecoderState extends DecoderState
         if(mChannelType == ChannelType.STANDARD)
         {
             broadcast(new ChangeChannelTimeoutEvent(this, mChannelType,
-                DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000));
+                    DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000));
 
             if(mCurrentCallEvent != null)
             {
@@ -346,7 +346,7 @@ public class MPT1327DecoderState extends DecoderState
         {
             mSite = site;
             broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_1, "SITE:" + getSite(),
-                getSiteAlias()));
+                    getSiteAlias()));
         }
     }
 
@@ -524,7 +524,7 @@ public class MPT1327DecoderState extends DecoderState
                     if(event instanceof TrafficChannelAllocationEvent)
                     {
                         TrafficChannelAllocationEvent allocationEvent =
-                            (TrafficChannelAllocationEvent) event;
+                                (TrafficChannelAllocationEvent) event;
 
                         String channel = allocationEvent.getCallEvent().getChannel();
 
@@ -542,7 +542,7 @@ public class MPT1327DecoderState extends DecoderState
 
                         mFrequency = allocationEvent.getCallEvent().getFrequency();
                         broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY,
-                            allocationEvent.getCallEvent().getFrequency()));
+                                allocationEvent.getCallEvent().getFrequency()));
 
                         mFromAttribute.process(allocationEvent.getCallEvent().getFromID());
                         mToAttribute.process(allocationEvent.getCallEvent().getToID());

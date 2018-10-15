@@ -15,8 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.message;
 
-import io.github.dsheirer.alias.Alias;
-
 /**
  * Empty message to convey that a number of bits were processed with no sync or valid message detected.
  *
@@ -28,6 +26,7 @@ public class SyncLossMessage extends Message
 
     /**
      * Constructs a sync loss message.
+     *
      * @param timestamp of the message
      * @param bitsProcessed without a sync pattern detection of message decode
      */
@@ -48,7 +47,7 @@ public class SyncLossMessage extends Message
     @Override
     public String toString()
     {
-        return "<-> SYNC LOSS - BITS PROCESSED [" + mBitsProcessed + "]";
+        return "<-> SYNC LOSS - BITS PROCESSED [" + getBitsProcessed() + "]";
     }
 
     @Override
@@ -58,56 +57,8 @@ public class SyncLossMessage extends Message
     }
 
     @Override
-    public String getErrorStatus()
-    {
-        return "NO SYNC";
-    }
-
-    @Override
-    public String getMessage()
-    {
-        return toString();
-    }
-
-    @Override
-    public String getBinaryMessage()
-    {
-        return "";
-    }
-
-    @Override
     public String getProtocol()
     {
-        return "";
-    }
-
-    @Override
-    public String getEventType()
-    {
-        return "";
-    }
-
-    @Override
-    public String getFromID()
-    {
-        return "";
-    }
-
-    @Override
-    public Alias getFromIDAlias()
-    {
-        return null;
-    }
-
-    @Override
-    public String getToID()
-    {
-        return "";
-    }
-
-    @Override
-    public Alias getToIDAlias()
-    {
-        return null;
+        return "NONE";
     }
 }

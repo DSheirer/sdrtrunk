@@ -28,7 +28,7 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.util.StringUtils;
 
@@ -51,9 +51,9 @@ public class Fleetsync2DecoderState extends DecoderState
         super(aliasList);
 
         mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
         mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class Fleetsync2DecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message instanceof FleetsyncMessage)
         {
@@ -164,13 +164,13 @@ public class Fleetsync2DecoderState extends DecoderState
                 }
 
                 FleetsyncCallEvent fsCallEvent =
-                    FleetsyncCallEvent.getFleetsync2Event(fleetsync, mFrequency);
+                        FleetsyncCallEvent.getFleetsync2Event(fleetsync, mFrequency);
 
                 fsCallEvent.setAliasList(getAliasList());
 
                 broadcast(fsCallEvent);
 
-			    /* Broadcast decode event so that the channel state will
+                /* Broadcast decode event so that the channel state will
                  * kick in and reset everything after a short delay */
                 broadcast(new DecoderStateEvent(this, Event.DECODE, state));
             }

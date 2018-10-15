@@ -20,7 +20,7 @@ import io.github.dsheirer.gui.instrument.chart.DoubleLineChart;
 import io.github.dsheirer.gui.instrument.chart.EyeDiagramChart;
 import io.github.dsheirer.gui.instrument.chart.PhaseLineChart;
 import io.github.dsheirer.gui.instrument.chart.SymbolChart;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25DecoderC4FMInstrumented;
 import io.github.dsheirer.sample.Listener;
@@ -67,12 +67,12 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
         HBox.setHgrow(getDecoderChartBox(), Priority.ALWAYS);
         getChildren().addAll(getSampleChartBox(), getDecoderChartBox());
 
-        mDecoder.setMessageListener(new Listener<Message>()
+        mDecoder.setMessageListener(new Listener<IMessage>()
         {
             @Override
-            public void receive(Message message)
+            public void receive(IMessage message)
             {
-                mLog.debug(message.getMessage());
+                mLog.debug(message.toString());
             }
         });
 
@@ -86,7 +86,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
         mDecoder.setSampleRate(sampleRate);
         double samplesPerSymbol = sampleRate / 4800.0;
 
-        getSampleLineChart().setSamplesPerSymbol((int)samplesPerSymbol);
+        getSampleLineChart().setSamplesPerSymbol((int) samplesPerSymbol);
     }
 
     private P25DecoderC4FMInstrumented getDecoder()
@@ -117,7 +117,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
             HBox.setHgrow(getPLLPhaseErrorLineChart(), Priority.ALWAYS);
             HBox.setHgrow(getPLLFrequencyLineChart(), Priority.ALWAYS);
             mDecoderChartBox.getChildren().addAll(getSymbolChart(), getPLLPhaseErrorLineChart(),
-                getPLLFrequencyLineChart());
+                    getPLLFrequencyLineChart());
         }
 
         return mDecoderChartBox;
@@ -136,7 +136,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
             HBox.setHgrow(getEyeDiagramChart(), Priority.ALWAYS);
             HBox.setHgrow(getSamplesPerSymbolLineChart(), Priority.ALWAYS);
             mSampleChartBox.getChildren().addAll(getSampleLineChart(), getEyeDiagramChart(),
-                getSamplesPerSymbolLineChart());
+                    getSamplesPerSymbolLineChart());
         }
 
         return mSampleChartBox;
@@ -176,7 +176,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
     {
         if(mPLLFrequencyLineChart == null)
         {
-            mPLLFrequencyLineChart = new DoubleLineChart( "PLL Frequency", -500, 500, 50, 40);
+            mPLLFrequencyLineChart = new DoubleLineChart("PLL Frequency", -500, 500, 50, 40);
         }
 
         return mPLLFrequencyLineChart;
@@ -186,7 +186,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
     {
         if(mSamplesPerSymbolLineChart == null)
         {
-            mSamplesPerSymbolLineChart = new DoubleLineChart( "Sample Point", 9.5, 11.5, 0.1, 40);
+            mSamplesPerSymbolLineChart = new DoubleLineChart("Sample Point", 9.5, 11.5, 0.1, 40);
         }
 
         return mSamplesPerSymbolLineChart;

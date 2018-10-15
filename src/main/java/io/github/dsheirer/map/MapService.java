@@ -20,17 +20,17 @@ package io.github.dsheirer.map;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.sample.Listener;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-public class MapService implements Listener<Message>
+public class MapService implements Listener<IMessage>
 {
     private int mMaxHistory = 2;
     private int mCullThresholdMinutes = 60;
@@ -40,7 +40,7 @@ public class MapService implements Listener<Message>
     private List<PlottableUpdateListener> mListeners = new ArrayList<PlottableUpdateListener>();
 
     private HashMap<String, PlottableEntity> mEntities =
-        new HashMap<String, PlottableEntity>();
+            new HashMap<String, PlottableEntity>();
 
     private IconManager mIconManager;
 
@@ -78,49 +78,51 @@ public class MapService implements Listener<Message>
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
-        Plottable plottable = message.getPlottable();
-
-        if(plottable != null)
+        if(message instanceof IPlottable)
         {
-            PlottableEntity entity = mEntities.get(plottable.getID());
+            Plottable plottable = ((IPlottable) message).getPlottable();
 
-            if(entity == null)
+            if(plottable != null)
             {
-                Alias alias = plottable.getAlias();
+                PlottableEntity entity = mEntities.get(plottable.getID());
 
-                Color color = null;
-
-                if(alias != null)
+                if(entity == null)
                 {
-                    color = alias.getDisplayColor();
+                    Alias alias = plottable.getAlias();
+
+                    Color color = null;
+
+                    if(alias != null)
+                    {
+                        color = alias.getDisplayColor();
+                    }
+
+                    if(color == null)
+                    {
+                        color = sDEFAULT_COLOR;
+                    }
+
+                    entity = new PlottableEntity(plottable, color);
+
+                    entity.setMaxHistory(mMaxHistory);
+
+                    mEntities.put(plottable.getID(), entity);
+
+                    for(PlottableUpdateListener listener : mListeners)
+                    {
+                        listener.addPlottableEntity(entity);
+                    }
                 }
-
-                if(color == null)
+                else
                 {
-                    color = sDEFAULT_COLOR;
-                }
+                    entity.addPlottable(plottable);
 
-                entity = new PlottableEntity(plottable, color);
-
-                entity.setMaxHistory(mMaxHistory);
-
-                mEntities.put(plottable.getID(), entity);
-
-                for(PlottableUpdateListener listener : mListeners)
-                {
-                    listener.addPlottableEntity(entity);
-                }
-            }
-            else
-            {
-                entity.addPlottable(plottable);
-
-                for(PlottableUpdateListener listener : mListeners)
-                {
-                    listener.entitiesUpdated();
-                    ;
+                    for(PlottableUpdateListener listener : mListeners)
+                    {
+                        listener.entitiesUpdated();
+                    }
                 }
             }
         }
@@ -142,7 +144,7 @@ public class MapService implements Listener<Message>
         public void run()
         {
             long cutoffTime = System.currentTimeMillis() -
-                (mCullThresholdMinutes * 1000);
+                    (mCullThresholdMinutes * 1000);
 
             Set<String> ids = Collections.unmodifiableSet(mEntities.keySet());
 

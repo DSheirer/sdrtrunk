@@ -17,6 +17,7 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode;
 
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.Module;
@@ -25,8 +26,8 @@ import io.github.dsheirer.sample.Listener;
 public abstract class Decoder extends Module implements IMessageProvider
 {
     /* This has to be a broadcaster in order for references to persist */
-    private Listener<Message> mMessageDistributor = new MessageDistributor();
-    protected Listener<Message> mMessageListener;
+    private Listener<IMessage> mMessageDistributor = new MessageDistributor();
+    protected Listener<IMessage> mMessageListener;
 
     /**
      * Decoder - parent class for all decoders, demodulators and components.
@@ -66,7 +67,7 @@ public abstract class Decoder extends Module implements IMessageProvider
      * Adds a listener for receiving decoded messages from this decoder
      */
     @Override
-    public void setMessageListener(Listener<Message> listener)
+    public void setMessageListener(Listener<IMessage> listener)
     {
         mMessageListener = listener;
     }
@@ -84,7 +85,7 @@ public abstract class Decoder extends Module implements IMessageProvider
     /**
      * Message listener for receiving the output from this decoder
      */
-    protected Listener<Message> getMessageListener()
+    protected Listener<IMessage> getMessageListener()
     {
         return mMessageDistributor;
     }
@@ -92,10 +93,10 @@ public abstract class Decoder extends Module implements IMessageProvider
     /**
      * Distributes/forwards messages from sub-class decoder implementations to the registered message listener.
      */
-    public class MessageDistributor implements Listener<Message>
+    public class MessageDistributor implements Listener<IMessage>
     {
         @Override
-        public void receive(Message message)
+        public void receive(IMessage message)
         {
             if(mMessageListener != null)
             {

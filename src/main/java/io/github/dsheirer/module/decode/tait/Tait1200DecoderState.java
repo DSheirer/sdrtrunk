@@ -28,7 +28,7 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.util.StringUtils;
@@ -53,9 +53,9 @@ public class Tait1200DecoderState extends DecoderState
         super(aliasList);
 
         mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
         mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class Tait1200DecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message instanceof Tait1200GPSMessage)
         {
@@ -116,13 +116,13 @@ public class Tait1200DecoderState extends DecoderState
             if(position != null)
             {
                 setMessage(gps.getGPSLocation().toString().replace("[", "")
-                    .replace("]", ""));
+                        .replace("]", ""));
             }
 
             setMessageType("GPS");
 
             broadcast(new Tait1200CallEvent(CallEvent.CallEventType.GPS, getAliasList(),
-                gps.getFromID(), gps.getToID(), gps.getGPSLocation().toString()));
+                    gps.getFromID(), gps.getToID(), gps.getGPSLocation().toString()));
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
         }
@@ -139,7 +139,7 @@ public class Tait1200DecoderState extends DecoderState
             setMessageType("ANI");
 
             broadcast(new Tait1200CallEvent(CallEvent.CallEventType.ID_ANI, getAliasList(),
-                ani.getFromID(), ani.getToID(), "ANI"));
+                    ani.getFromID(), ani.getToID(), "ANI"));
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL));
         }

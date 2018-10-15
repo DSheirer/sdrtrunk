@@ -35,7 +35,7 @@ import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.filter.IFilter;
 import io.github.dsheirer.gui.editor.EmptyValidatingEditor;
 import io.github.dsheirer.gui.editor.ValidatingEditor;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.am.AMDecoder;
@@ -122,7 +122,7 @@ public class DecoderFactory
         AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
 
         List<Module> modules = getPrimaryModules(channelModel, channelMapModel, channelProcessingManager, aliasList,
-            channel, metadata);
+                channel, metadata);
 
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration(), aliasList));
 
@@ -200,8 +200,8 @@ public class DecoderFactory
                 if(channelType == ChannelType.STANDARD)
                 {
                     modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
+                            channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
+                            (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
                 break;
             case PASSPORT:
@@ -223,7 +223,7 @@ public class DecoderFactory
                     case C4FM:
                         modules.add(new P25DecoderC4FM(aliasList));
                         modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
-                            p25Config.getIgnoreDataCalls()));
+                                p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:
                         modules.add(new P25DecoderLSM(aliasList));
@@ -236,8 +236,8 @@ public class DecoderFactory
                 if(channelType == ChannelType.STANDARD)
                 {
                     modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
+                            channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
+                            (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
                 }
 
                 modules.add(new P25AudioModule(metadata));
@@ -285,7 +285,7 @@ public class DecoderFactory
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized auxiliary "
-                            + "decoder type [" + auxDecoder + "]");
+                                + "decoder type [" + auxDecoder + "]");
                 }
             }
         }
@@ -297,22 +297,22 @@ public class DecoderFactory
      * Assembles a filter set containing filters for the primary channel
      * decoder and each of the auxiliary decoders
      */
-    public static FilterSet<Message> getMessageFilters(List<Module> modules)
+    public static FilterSet<IMessage> getMessageFilters(List<Module> modules)
     {
-        FilterSet<Message> filterSet = new FilterSet<>();
+        FilterSet<IMessage> filterSet = new FilterSet<>();
 
         for(Module module : modules)
         {
             if(module instanceof Decoder)
             {
-                filterSet.addFilters(getMessageFilter(((Decoder)module).getDecoderType()));
+                filterSet.addFilters(getMessageFilter(((Decoder) module).getDecoderType()));
             }
         }
 
         /* If we don't have any filters, add an ALL-PASS filter */
         if(filterSet.getFilters().isEmpty())
         {
-            filterSet.addFilter(new AllPassFilter<Message>());
+            filterSet.addFilter(new AllPassFilter<>());
         }
 
         return filterSet;
@@ -322,9 +322,9 @@ public class DecoderFactory
      * Returns a set of IMessageFilter objects (FilterSets or Filters) that
      * can process all of the messages produced by the specified decoder type.
      */
-    public static List<IFilter<Message>> getMessageFilter(DecoderType decoder)
+    public static List<IFilter<IMessage>> getMessageFilter(DecoderType decoder)
     {
-        ArrayList<IFilter<Message>> filters = new ArrayList<IFilter<Message>>();
+        ArrayList<IFilter<IMessage>> filters = new ArrayList<>();
 
         switch(decoder)
         {

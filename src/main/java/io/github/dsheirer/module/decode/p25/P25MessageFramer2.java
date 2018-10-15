@@ -49,7 +49,6 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private int[] mCorrectedNID;
     private int mNAC;
     private int mStatusSymbolDibitCounter = 0;
-    private int mStatusSymbolsDetected;
     private long mCurrentTime = System.currentTimeMillis();
     private double mBitRate;
     private PacketSequence mPacketSequence;
@@ -124,12 +123,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             //Strip out the status symbol dibit after every 70 bits or 35 dibits
             if(mStatusSymbolDibitCounter == 35)
             {
-//                if(mDataUnitID == DataUnitID.PACKET_HEADER_DATA_UNIT)
-//                {
-//                    mLog.debug("Throwing away status symbol: " + dibit.toString());
-//                }
                 mStatusSymbolDibitCounter = 0;
-                mStatusSymbolsDetected++;
 
                 return;
             }
@@ -291,9 +285,6 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         mNAC = 0;
         mDataUnitDetector.reset();
         mStatusSymbolDibitCounter = 0;
-
-//        mLog.debug("Status Symbols Removed: " + mStatusSymbolsDetected);
-        mStatusSymbolsDetected = 0;
     }
 
     /**
@@ -336,7 +327,16 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         mCorrectedNID = correctedNid;
         mBinaryMessage = new CorrectedBinaryMessage(dataUnitID.getMessageLength());
         mBinaryMessage.incrementCorrectedBitCount(bitErrors);
-        loadNid(mBinaryMessage, correctedNid);
+
+        switch(mDataUnitID)
+        {
+            case HEADER_DATA_UNIT:
+                break;
+            default:
+                loadNid(mBinaryMessage, correctedNid);
+                break;
+        }
+
         mAssemblingMessage = true;
         mStatusSymbolDibitCounter = 21;
     }

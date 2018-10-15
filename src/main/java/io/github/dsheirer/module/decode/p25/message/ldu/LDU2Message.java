@@ -208,7 +208,22 @@ public class LDU2Message extends LDUMessage
 		
 	    return sb.toString();
     }
-	
+
+	public String getMessageStub()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("NAC:");
+		sb.append(getNAC());
+		sb.append(" ");
+		sb.append(getDUID().getLabel());
+		sb.append(" VOICE LSD:");
+		sb.append(getLowSpeedData());
+		sb.append(" ");
+
+		return sb.toString();
+	}
+
 	public String getMessageIndicator()
 	{
 		StringBuilder sb = new StringBuilder();

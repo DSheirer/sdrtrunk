@@ -22,4 +22,14 @@ public interface IMessage
      * @return milliseconds since epoch timestamp
      */
     long getTimestamp();
+
+    /**
+     * Indicates if the message is valid and has passed all error detection and correction.
+     */
+    boolean isValid();
+
+    /**
+     * Protocol name associated with the message
+     */
+    String getProtocol();
 }

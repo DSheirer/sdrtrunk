@@ -13,8 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public class PDUConfirmedMessage extends PDUMessage
 {
-	public final static Logger mLog = 
-			LoggerFactory.getLogger( PDUConfirmedMessage.class );
+	public final static Logger mLog = LoggerFactory.getLogger( PDUConfirmedMessage.class );
 
 	public static final int SEQUENCE_RESET_FLAG = 128; //SYN
 	public static final int[] PACKET_SEQUENCE_NUMBER = { 129,130,131 };
@@ -77,8 +76,6 @@ public class PDUConfirmedMessage extends PDUMessage
 		sb.append( getDUID().getLabel() );
 		sb.append( " " );
 		sb.append( getDirection() );
-		sb.append( " CRC[" );
-		sb.append( getErrorStatus() );
 		sb.append( "] LLID:" );
 		sb.append( getLogicalLinkID() );
 

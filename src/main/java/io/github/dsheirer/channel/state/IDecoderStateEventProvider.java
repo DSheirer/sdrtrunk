@@ -4,6 +4,6 @@ import io.github.dsheirer.sample.Listener;
 
 public interface IDecoderStateEventProvider
 {
-	public void setDecoderStateListener( Listener<DecoderStateEvent> listener );
-	public void removeDecoderStateListener();
+	void setDecoderStateListener( Listener<DecoderStateEvent> listener );
+	void removeDecoderStateListener();
 }

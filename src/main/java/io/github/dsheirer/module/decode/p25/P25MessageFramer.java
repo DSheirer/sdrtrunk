@@ -274,32 +274,32 @@ public class P25MessageFramer implements Listener<Dibit>
             switch(mDUID)
             {
                 case NID:
-                    mMessage = mNIDDecoder.correctNID(mMessage);
-
-                    if(mMessage.getCRC() != CRC.FAILED_CRC)
-                    {
-                        int value = mMessage.getInt(P25Message.DUID);
-
-                        DataUnitID duid = DataUnitID.fromValue(value);
-
-                        if(duid != DataUnitID.UNKNOWN)
-                        {
-                            setDUID(duid);
-                        }
-                        else
-                        {
-                            mComplete = true;
-                            dispatch(new P25Message(mMessage.copy(), mDUID, mAliasList));
-                        }
-                    }
-                    else
-                    {
-                        mComplete = true;
-                    }
+//                    mMessage = mNIDDecoder.correctNID(mMessage);
+//
+//                    if(mMessage.getCRC() != CRC.FAILED_CRC)
+//                    {
+//                        int value = mMessage.getInt(P25Message.DUID);
+//
+//                        DataUnitID duid = DataUnitID.fromValue(value);
+//
+//                        if(duid != DataUnitID.UNKNOWN)
+//                        {
+//                            setDUID(duid);
+//                        }
+//                        else
+//                        {
+//                            mComplete = true;
+//                            dispatch(new P25Message(mMessage.copy(), mDUID, mAliasList));
+//                        }
+//                    }
+//                    else
+//                    {
+//                        mComplete = true;
+//                    }
                     break;
                 case HEADER_DATA_UNIT:
                     mComplete = true;
-                    dispatch(new HDUMessage(mMessage.copy(), mDUID, mAliasList));
+//                    dispatch(new HDUMessage(mMessage.copy(), mDUID, mAliasList));
 
                     /* We're in a call now, lower the sync match threshold */
                     mPrimarySyncDetector.setThreshold(SYNC_IN_CALL_THRESHOLD);
@@ -640,7 +640,7 @@ public class P25MessageFramer implements Listener<Dibit>
                     break;
                 case UNKNOWN:
                     mComplete = true;
-                    dispatch(new P25Message(mMessage.copy(), mDUID, mAliasList));
+//                    dispatch(new P25Message(mMessage.copy(), mDUID, mAliasList));
                     break;
                 default:
                     mComplete = true;

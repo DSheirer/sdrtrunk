@@ -21,6 +21,7 @@ import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.Module;
@@ -36,8 +37,8 @@ import jmbe.iface.AudioConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class P25AudioModule extends Module implements Listener<Message>, IAudioPacketProvider, IMessageListener,
-    ISquelchStateListener
+public class P25AudioModule extends Module implements Listener<IMessage>, IAudioPacketProvider, IMessageListener,
+        ISquelchStateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25AudioModule.class);
 
@@ -63,7 +64,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     @Override
-    public Listener<Message> getMessageListener()
+    public Listener<IMessage> getMessageListener()
     {
         return this;
     }
@@ -104,7 +105,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
      * LDU2 message is received and the encryption state can be determined. Both the LDU1 and the LDU2 message are
      * then processed for audio if the call is unencrypted.
      */
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(mCanConvertAudio && mAudioPacketListener != null)
         {
@@ -112,7 +113,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
             {
                 if(message instanceof LDUMessage)
                 {
-                    processAudio((LDUMessage)message);
+                    processAudio((LDUMessage) message);
                 }
             }
             else
@@ -120,18 +121,18 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                 if(message instanceof HDUMessage)
                 {
                     mEncryptedCallStateEstablished = true;
-                    mEncryptedCall = ((HDUMessage)message).isEncryptedAudio();
+                    mEncryptedCall = ((HDUMessage) message).isEncryptedAudio();
                 }
                 else if(message instanceof LDU1Message)
                 {
                     //When we receive an LDU1 message with first receiving the HDU message, cache the LDU1 Message
                     //until we can determine the encrypted call state from the next LDU2 message
-                    mCachedLDU1Message = (LDU1Message)message;
+                    mCachedLDU1Message = (LDU1Message) message;
                 }
                 else if(message instanceof LDU2Message)
                 {
                     mEncryptedCallStateEstablished = true;
-                    LDU2Message ldu2 = (LDU2Message)message;
+                    LDU2Message ldu2 = (LDU2Message) message;
                     mEncryptedCall = ldu2.isEncryptedAudio();
 
                     if(mCachedLDU1Message != null)
@@ -186,10 +187,10 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
             @SuppressWarnings("rawtypes")
             Class temp = Class.forName("jmbe.JMBEAudioLibrary");
 
-            library = (AudioConversionLibrary)temp.newInstance();
+            library = (AudioConversionLibrary) temp.newInstance();
 
             if((library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 &&
-                library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1)
+                    library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1)
             {
                 mAudioConverter = library.getAudioConverter(IMBE_CODEC, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
 
@@ -244,7 +245,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
             if(!mLibraryLoadStatusLogged)
             {
                 mLog.error("Couldn't load JMBE audio conversion library due to "
-                    + "security restrictions");
+                        + "security restrictions");
                 mLibraryLoadStatusLogged = true;
             }
         }

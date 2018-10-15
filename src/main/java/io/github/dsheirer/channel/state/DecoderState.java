@@ -3,8 +3,8 @@ package io.github.dsheirer.channel.state;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.metadata.IAttributeChangeRequestProvider;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.ActivitySummaryProvider;
@@ -19,9 +19,9 @@ import io.github.dsheirer.sample.Listener;
  *
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<Message>,
-    IAttributeChangeRequestProvider, ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, IMessageListener
+public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>,
+        IAttributeChangeRequestProvider, ICallEventProvider, IDecoderStateEventListener,
+        IDecoderStateEventProvider, IMessageListener
 {
     protected String DIVIDER1 = "======================================================\n";
     protected String DIVIDER2 = "------------------------------------------------------\n";
@@ -60,6 +60,13 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     protected Broadcaster<CallEvent> getCallEventBroadcaster()
     {
         return mCallEventBroadcaster;
+    }
+
+
+    @Override
+    public Listener<IMessage> getMessageListener()
+    {
+        return this;
     }
 
     /**
@@ -165,12 +172,6 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     public void removeDecoderStateListener()
     {
         mDecoderStateListener = null;
-    }
-
-    @Override
-    public Listener<Message> getMessageListener()
-    {
-        return this;
     }
 
     /**

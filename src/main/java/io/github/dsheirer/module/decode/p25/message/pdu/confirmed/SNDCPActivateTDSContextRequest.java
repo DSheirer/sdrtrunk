@@ -43,10 +43,7 @@ public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
 		sb.append( getIPAddress() );
 		sb.append( " NSAPI:" );
 		sb.append( getNSAPI() );
-		sb.append( " CRC[" );
-		sb.append( getErrorStatus() );
-		sb.append( "]" );
-		
+
 		sb.append( " PACKET #" );
 		sb.append( getPacketSequenceNumber() );
 		

@@ -29,10 +29,7 @@ public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
 		sb.append( getLogicalLinkID() );
 		sb.append( " REQUEST SNDCP PACKET DATA DEACTIVATE " );
 		sb.append( getDeactivationType() );
-		sb.append( " CRC[" );
-		sb.append( getErrorStatus() );
-		sb.append( "] " );
-		
+
 	    return sb.toString();
     }
 

@@ -24,7 +24,7 @@ import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
@@ -53,10 +53,10 @@ public class ChannelProcessingManager implements ChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelProcessingManager.class);
 
-    private Map<Integer,ProcessingChain> mProcessingChains = new HashMap<>();
+    private Map<Integer, ProcessingChain> mProcessingChains = new HashMap<>();
 
     private List<Listener<ReusableAudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
-    private List<Listener<Message>> mMessageListeners = new CopyOnWriteArrayList<>();
+    private List<Listener<IMessage>> mMessageListeners = new CopyOnWriteArrayList<>();
 
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
@@ -104,7 +104,7 @@ public class ChannelProcessingManager implements ChannelEventListener
     private boolean isProcessing(Channel channel)
     {
         return mProcessingChains.containsKey(channel.getChannelID()) &&
-            mProcessingChains.get(channel.getChannelID()).isProcessing();
+                mProcessingChains.get(channel.getChannelID()).isProcessing();
     }
 
     /**
@@ -118,6 +118,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
     /**
      * Returns the channel associated with the processing chain
+     *
      * @param processingChain
      * @return channel associated with the processing chain or null
      */
@@ -133,7 +134,7 @@ public class ChannelProcessingManager implements ChannelEventListener
     {
         if(processingChain != null)
         {
-            for(Map.Entry<Integer,ProcessingChain> entry: mProcessingChains.entrySet())
+            for(Map.Entry<Integer, ProcessingChain> entry : mProcessingChains.entrySet())
             {
                 if(entry.getValue() == processingChain)
                 {
@@ -154,7 +155,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         {
             case REQUEST_ENABLE:
                 if(!mProcessingChains.containsKey(channel.getChannelID()) ||
-                    !mProcessingChains.get(channel.getChannelID()).isProcessing())
+                        !mProcessingChains.get(channel.getChannelID()).isProcessing())
                 {
                     startProcessing(event);
                 }
@@ -212,7 +213,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         try
         {
             source = mSourceManager.getSource(channel.getSourceConfiguration(),
-                channel.getDecodeConfiguration().getChannelSpecification());
+                    channel.getDecodeConfiguration().getChannelSpecification());
         }
         catch(SourceException se)
         {
@@ -232,13 +233,13 @@ public class ChannelProcessingManager implements ChannelEventListener
         {
             processingChain = new ProcessingChain(channel.getChannelType());
 
-			/* Register global listeners */
+            /* Register global listeners */
             for(Listener<ReusableAudioPacket> listener : mAudioPacketListeners)
             {
                 processingChain.addAudioPacketListener(listener);
             }
 
-            for(Listener<Message> listener : mMessageListeners)
+            for(Listener<IMessage> listener : mMessageListeners)
             {
                 processingChain.addMessageListener(listener);
             }
@@ -246,13 +247,13 @@ public class ChannelProcessingManager implements ChannelEventListener
             //Register channel to receive frequency correction events to show in the spectral display (hack!)
             processingChain.addFrequencyChangeListener(channel);
 
-			/* Processing Modules */
+            /* Processing Modules */
             List<Module> modules = DecoderFactory.getModules(mChannelModel, mChannelMapModel, this,
-                mAliasModel, channel, processingChain.getChannelState().getMutableMetadata());
+                    mAliasModel, channel, processingChain.getChannelState().getMutableMetadata());
             processingChain.addModules(modules);
 
-			/* Setup message activity model with filtering */
-            FilterSet<Message> messageFilter = DecoderFactory.getMessageFilters(modules);
+            /* Setup message activity model with filtering */
+            FilterSet<IMessage> messageFilter = DecoderFactory.getMessageFilters(modules);
             MessageActivityModel messageModel = new MessageActivityModel(messageFilter);
             processingChain.setMessageActivityModel(messageModel);
 
@@ -261,29 +262,29 @@ public class ChannelProcessingManager implements ChannelEventListener
         //Set the recordable flag to true if the user has requested recording.  The metadata class can still
         //override recordability if any of the aliased values has 'Do Not Record' alias identifier.
         boolean recordable = channel.getRecordConfiguration() != null &&
-            channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO);
+                channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO);
 
         processingChain.getChannelState().getMutableMetadata().setRecordable(recordable);
 
         //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
         processingChain.getChannelState().getMutableMetadata().receive(
-            new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SYSTEM, channel.getSystem()));
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SYSTEM, channel.getSystem()));
         processingChain.getChannelState().getMutableMetadata().receive(
-            new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SITE, channel.getSite()));
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SITE, channel.getSite()));
         processingChain.getChannelState().getMutableMetadata().receive(
-            new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, channel.getName()));
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, channel.getName()));
 
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
-            long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+            long frequency = ((SourceConfigTuner) channel.getSourceConfiguration()).getFrequency();
 
             processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
+                    new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
         }
 
         processingChain.getChannelState().getMutableMetadata().receive(
-            new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
-                channel.getDecodeConfiguration().getDecoderType()));
+                new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
+                        channel.getDecodeConfiguration().getDecoderType()));
 
         /* Setup event logging */
         List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), channel.getName());
@@ -314,18 +315,18 @@ public class ChannelProcessingManager implements ChannelEventListener
             if(DecoderFactory.getBitstreamDecoders().contains(channel.getDecodeConfiguration().getDecoderType()))
             {
                 if((recorders.contains(RecorderType.DEMODULATED_BIT_STREAM) &&
-                    channel.getChannelType() == Channel.ChannelType.STANDARD))
+                        channel.getChannelType() == Channel.ChannelType.STANDARD))
                 {
                     processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
+                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
                 }
 
                 /* Add traffic channel decoded bit stream recorder */
                 if(recorders.contains(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM) &&
-                    channel.getChannelType() == Channel.ChannelType.TRAFFIC)
+                        channel.getChannelType() == Channel.ChannelType.TRAFFIC)
                 {
                     processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
+                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
                 }
             }
         }
@@ -337,8 +338,8 @@ public class ChannelProcessingManager implements ChannelEventListener
             TrafficChannelEvent trafficChannelEvent = (TrafficChannelEvent) event;
 
             processingChain.getChannelState().configureAsTrafficChannel(
-                trafficChannelEvent.getTrafficChannelManager(),
-                trafficChannelEvent.getCallEvent());
+                    trafficChannelEvent.getTrafficChannelManager(),
+                    trafficChannelEvent.getCallEvent());
         }
 
         processingChain.start();
@@ -389,7 +390,7 @@ public class ChannelProcessingManager implements ChannelEventListener
     public void shutdown()
     {
         mLog.debug("Stopping Channels ...");
-        for(Channel channel: mChannelModel.getChannels())
+        for(Channel channel : mChannelModel.getChannels())
         {
             if(channel.isProcessing())
             {
@@ -420,7 +421,7 @@ public class ChannelProcessingManager implements ChannelEventListener
      * Adds a message listener that will be added to all channels to receive
      * any messages.
      */
-    public void addMessageListener(Listener<Message> listener)
+    public void addMessageListener(Listener<IMessage> listener)
     {
         mMessageListeners.add(listener);
     }
@@ -428,7 +429,7 @@ public class ChannelProcessingManager implements ChannelEventListener
     /**
      * Removes a message listener.
      */
-    public void removeMessageListener(Listener<Message> listener)
+    public void removeMessageListener(Listener<IMessage> listener)
     {
         mMessageListeners.remove(listener);
     }

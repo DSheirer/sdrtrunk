@@ -24,8 +24,6 @@ public class PDUTypeUnknown extends PDUConfirmedMessage
 		sb.append( getLogicalLinkID() );
 		sb.append( " PACKET DATA UNIT CONFIRMED - " );
 		sb.append( getPDUType().getLabel() );
-		sb.append( " CRC[" );
-		sb.append( getErrorStatus() );
 		sb.append( "]" );
 		
 		sb.append( " PACKET #" );

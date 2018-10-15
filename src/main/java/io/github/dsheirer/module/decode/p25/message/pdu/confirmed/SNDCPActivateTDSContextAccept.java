@@ -50,10 +50,7 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 		sb.append( getNSAPI() );
 		sb.append( " MTU:" );
 		sb.append( getMaximumTransmissionUnit() );
-		sb.append( " CRC[" );
-		sb.append( getErrorStatus() );
-		sb.append( "]" );
-		
+
 		sb.append( " PACKET #" );
 		sb.append( getPacketSequenceNumber() );
 		

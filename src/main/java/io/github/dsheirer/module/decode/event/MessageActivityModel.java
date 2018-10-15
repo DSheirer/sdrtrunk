@@ -1,23 +1,24 @@
 /*******************************************************************************
  *     SDR Trunk 
  *     Copyright (C) 2014-2016 Dennis Sheirer
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
 
@@ -27,167 +28,160 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 
-public class MessageActivityModel extends AbstractTableModel
-								  implements Listener<Message>
+public class MessageActivityModel extends AbstractTableModel implements Listener<IMessage>
 {
     private static final long serialVersionUID = 1L;
     private static final int TIME = 0;
     private static final int PROTOCOL = 1;
-    private static final int ERROR_STATUS = 2;
-    private static final int MESSAGE = 3;
-    private static final int MESSAGE_BITS = 4;
+    private static final int MESSAGE = 2;
 
-	protected int mMaxMessages = 500;
-	protected LinkedList<Message> mMessages = new LinkedList<Message>();
+    protected int mMaxMessages = 500;
+    protected LinkedList<IMessage> mMessages = new LinkedList<>();
+    protected int[] mColumnWidths = {110, 110, 110};
+    protected String[] mHeaders = new String[]{"Time", "Protocol", "Message"};
 
-	protected int[] mColumnWidths = { 110, 110, 110, -1, -1 };
+    private SimpleDateFormat mSDFTime = new SimpleDateFormat("dd MMM HH:mm:ss");
 
-	protected String[] mHeaders = new String[] { "Time",
-												 "Protocol",
-												 "Error Check",
-												 "Message",
-												 "Binary" };
+    private FilterSet<IMessage> mMessageFilter;
 
-	private SimpleDateFormat mSDFTime = new SimpleDateFormat( "HH:mm:ss" );
-	
-	private boolean mNewMessagesFirst = true;
-	
-	private FilterSet<Message> mMessageFilter;
-	
-	public MessageActivityModel( FilterSet<Message> messageFilter )
-	{
-		mMessageFilter = messageFilter;
-	}
-	
-	public MessageActivityModel()
-	{
-	}
-	
-	/**
-	 * Clears all messages from history
-	 */
-	public void clear()
-	{
-		EventQueue.invokeLater( new Runnable()
-		{
-			@Override
+    public MessageActivityModel(FilterSet<IMessage> messageFilter)
+    {
+        mMessageFilter = messageFilter;
+    }
+
+    public MessageActivityModel()
+    {
+    }
+
+    /**
+     * Clears all messages from history
+     */
+    public void clear()
+    {
+        EventQueue.invokeLater(new Runnable()
+        {
+            @Override
             public void run()
             {
-				int messageCount = mMessages.size();
-				
-				mMessages.clear();
+                int messageCount = mMessages.size();
 
-				fireTableRowsDeleted( 0, messageCount - 1 );
+                mMessages.clear();
+
+                fireTableRowsDeleted(0, messageCount - 1);
             }
-		});
-	}
-	
-	public FilterSet<Message> getMessageFilter()
-	{
-		return mMessageFilter;
-	}
-	
-	public void dispose()
-	{
-		mMessages.clear();
-	}
-	
-	public int[] getColumnWidths()
-	{
-		return mColumnWidths;
-	}
-	
-	public void setColumnWidths( int[] widths )
-	{
-		if( widths.length != 5 )
-		{
-			throw new IllegalArgumentException( "MessageActivityModel - "
-					+ "column widths array should have 5 elements" );
-		}
-		else
-		{
-			mColumnWidths = widths;
-		}
-	}
-	
-	public int getMaxMessageCount()
-	{
-		return mMaxMessages;
-	}
+        });
+    }
 
-	public void setMaxMessageCount( int count )
-	{
-		mMaxMessages = count;
-	}
-	
-	public void receive( final Message message )
-	{
-		if( message.isValid() && mMessageFilter.passes( message ) )
-		{
-			EventQueue.invokeLater( new Runnable() 
-			{
-				@Override
-	            public void run()
-	            {
-					mMessages.addFirst( message );
+    public FilterSet<IMessage> getMessageFilter()
+    {
+        return mMessageFilter;
+    }
 
-					MessageActivityModel.this.fireTableRowsInserted( 0, 0 );
+    public void dispose()
+    {
+        mMessages.clear();
+    }
 
-					prune();
-	            }
-			} );
-		}
-	}
-	
-	private void prune()
-	{
-		while( mMessages.size() > mMaxMessages )
-		{
-			mMessages.removeLast();
-			
-			super.fireTableRowsDeleted( mMessages.size() - 1, mMessages.size() - 1 );
-		}
-	}
+    public int[] getColumnWidths()
+    {
+        return mColumnWidths;
+    }
 
-	@Override
+    public void setColumnWidths(int[] widths)
+    {
+        if(widths.length != 3)
+        {
+            throw new IllegalArgumentException("MessageActivityModel - column widths array should have 3 elements");
+        }
+        else
+        {
+            mColumnWidths = widths;
+        }
+    }
+
+    public int getMaxMessageCount()
+    {
+        return mMaxMessages;
+    }
+
+    public void setMaxMessageCount(int count)
+    {
+        mMaxMessages = count;
+    }
+
+    public void receive(final IMessage message)
+    {
+        if(message.isValid() && mMessageFilter.passes(message))
+        {
+            EventQueue.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    mMessages.addFirst(message);
+
+                    MessageActivityModel.this.fireTableRowsInserted(0, 0);
+
+                    prune();
+                }
+            });
+        }
+    }
+
+    private void prune()
+    {
+        while(mMessages.size() > mMaxMessages)
+        {
+            mMessages.removeLast();
+
+            super.fireTableRowsDeleted(mMessages.size() - 1, mMessages.size() - 1);
+        }
+    }
+
+    @Override
     public int getRowCount()
     {
-		return mMessages.size();
+        return mMessages.size();
     }
 
-	@Override
+    @Override
     public int getColumnCount()
     {
-	    return mHeaders.length;
+        return mHeaders.length;
     }
 
-	public String getColumnName( int column ) 
-	{
-        return mHeaders[ column ];
-    }
-	
-	@Override
-    public Object getValueAt( int rowIndex, int columnIndex )
+    public String getColumnName(int column)
     {
-		if( 0 <= rowIndex && rowIndex < mMessages.size() )
-		{
-			Message message = mMessages.get( rowIndex );
-			
-			switch( columnIndex )
-			{
-				case TIME:
-					return mSDFTime.format( new Date( message.getTimestamp() ) );
-				case PROTOCOL:
-					return message.getProtocol();
-				case ERROR_STATUS:
-					return message.getErrorStatus();
-				case MESSAGE:
-					return message.getMessage();
-				case MESSAGE_BITS:
-					return message.getBinaryMessage();
-			}
-		}
-		
-		return null;
+        return mHeaders[column];
+    }
+
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex)
+    {
+        if(0 <= rowIndex && rowIndex < mMessages.size())
+        {
+            IMessage message = mMessages.get(rowIndex);
+
+            switch(columnIndex)
+            {
+                case TIME:
+                    return mSDFTime.format(new Date(message.getTimestamp()));
+                case PROTOCOL:
+                    return message.getProtocol();
+                case MESSAGE:
+                    if(message.isValid())
+                    {
+                        return message.toString();
+                    }
+                    else
+                    {
+                        return "INVALID MESSAGE";
+                    }
+                default:
+                    break;
+            }
+        }
+
+        return null;
     }
 }

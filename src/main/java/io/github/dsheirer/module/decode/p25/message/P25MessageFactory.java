@@ -47,7 +47,7 @@ public class P25MessageFactory
         switch(dataUnitID)
         {
             case HEADER_DATA_UNIT:
-                return new HDUMessage(correctedBinaryMessage, dataUnitID, null);
+                return new HDUMessage(correctedBinaryMessage, nac, timestamp);
             case LOGICAL_LINK_DATA_UNIT_1:
                 return LDULCMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
             case LOGICAL_LINK_DATA_UNIT_2:
@@ -61,7 +61,11 @@ public class P25MessageFactory
                 return TSBKMessageFactory.getMessage(correctedBinaryMessage, dataUnitID, null);
             default:
                 mLog.debug("Unrecognized P25 Data Unit ID [" + dataUnitID + "] - cannot create message");
-                return new P25Message(correctedBinaryMessage, dataUnitID, null);
+//                return new P25Message(correctedBinaryMessage, dataUnitID, null);
         }
+
+        return null;
     }
+
+
 }

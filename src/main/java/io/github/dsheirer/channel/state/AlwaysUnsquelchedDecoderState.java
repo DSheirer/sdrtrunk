@@ -20,7 +20,7 @@ package io.github.dsheirer.channel.state;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,9 +69,9 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message t)
+    public void receive(IMessage t)
     {
-		/* Not implemented */
+        /* Not implemented */
     }
 
     @Override

@@ -36,7 +36,6 @@ public class UnknownMessage extends LTRStandardMessage
 		return MessageType.UN_KNWN;
 	}
 
-	@Override
     public String getMessage()
     {
 		StringBuilder sb = new StringBuilder();

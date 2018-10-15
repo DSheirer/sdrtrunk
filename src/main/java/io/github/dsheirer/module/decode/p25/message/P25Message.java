@@ -18,102 +18,83 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.edac.CRC;
-import io.github.dsheirer.map.Plottable;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
-import java.text.SimpleDateFormat;
-
-public class P25Message extends Message
+public abstract class P25Message extends Message
 {
-    public enum DuplexMode {HALF, FULL};
-    public enum SessionMode {PACKET, CIRCUIT};
+    public enum DuplexMode
+    {
+        HALF, FULL
+    }
 
-    public static final int[] NAC = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-    public static final int[] DUID = {12, 13, 14, 15};
-    public static final int[] BCH = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-        36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
+    public enum SessionMode
+    {
+        PACKET, CIRCUIT
+    }
 
-    protected SimpleDateFormat mTimeDurationFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+    private CorrectedBinaryMessage mMessage;
+    private int mNAC;
+    private boolean mValid = true;
 
-    protected BinaryMessage mMessage;
-    protected DataUnitID mDUID;
-    protected AliasList mAliasList;
-
-    protected CRC[] mCRC;
-
-    public P25Message(BinaryMessage message, DataUnitID duid, AliasList aliasList, long timestamp)
+    /**
+     * Constructs a P25 message.
+     *
+     * @param message containing the binary message and optional corrected bit count
+     * @param nac Network Access Code (NAC) for the message
+     * @param timestamp when the message was transmitted
+     */
+    public P25Message(CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(timestamp);
-
         mMessage = message;
-        mDUID = duid;
-        mAliasList = aliasList;
+        mNAC = nac;
     }
 
-    public P25Message(BinaryMessage message, DataUnitID duid, AliasList aliasList)
+    /**
+     * Constructs a P25 message using current system time for when the message was transmitted.
+     *
+     * @param message containing the binary message and optional corrected bit count
+     * @param nac Network Access Code (NAC) for the message
+     */
+    public P25Message(CorrectedBinaryMessage message, int nac)
     {
-        this(message, duid, aliasList, System.currentTimeMillis());
+        this(message, nac, System.currentTimeMillis());
     }
 
-    public CRC[] getCRCResults()
-    {
-        return mCRC;
-    }
-
-    public BinaryMessage getSourceMessage()
+    /**
+     * The transmitted binary message
+     */
+    protected CorrectedBinaryMessage getMessage()
     {
         return mMessage;
     }
 
-    public AliasList getAliasList()
+    /**
+     * Network Access Code (NAC) transmitted in the Network Identifier (NID) message prefix.
+     */
+    public int getNAC()
     {
-        return mAliasList;
+        return mNAC;
     }
 
-    public String getNAC()
-    {
-        return mMessage.getHex(NAC, 3);
-    }
+    /**
+     * Data Unit ID indicates the type of P25 message
+     */
+    public abstract DataUnitID getDUID();
 
-    public DataUnitID getDUID()
-    {
-        return mDUID;
-    }
-
-    @Override
-    public String getErrorStatus()
-    {
-        if(mCRC == null)
-        {
-            return "UNKNOWN";
-        }
-
-        return CRC.format(mCRC);
-    }
-
-    @Override
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
         sb.append("NAC:");
-        sb.append(getNAC());
+        sb.append(P25Utils.formatNAC(getNAC()));
         sb.append(" ");
         sb.append(getDUID().getLabel());
-        sb.append(" DATA UNIT ID:" + mMessage.getInt(DUID));
 
         return sb.toString();
-    }
-
-    @Override
-    public String getBinaryMessage()
-    {
-        return mMessage.toString();
     }
 
     @Override
@@ -122,72 +103,20 @@ public class P25Message extends Message
         return "P25 Phase 1";
     }
 
-    @Override
-    public String getEventType()
-    {
-        return mDUID.name();
-    }
-
-    @Override
-    public String getFromID()
-    {
-        return null;
-    }
-
-    @Override
-    public Alias getFromIDAlias()
-    {
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(getFromID());
-        }
-
-        return null;
-    }
-
-    @Override
-    public String getToID()
-    {
-        return null;
-    }
-
-    @Override
-    public Alias getToIDAlias()
-    {
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(getToID());
-        }
-
-        return null;
-    }
-
-    @Override
-    public Plottable getPlottable()
-    {
-        return null;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getMessage();
-    }
-
+    /**
+     * Indicates if this message is valid and has passed all error detection and correction routines.
+     */
     @Override
     public boolean isValid()
     {
-        if(mCRC != null)
-        {
-            for(CRC crc : mCRC)
-            {
-                if(crc == CRC.FAILED_CRC)
-                {
-                    return false;
-                }
-            }
-        }
+        return mValid;
+    }
 
-        return true;
+    /**
+     * Sets this message to the valid/invalid state.  The default state is valid (true).
+     */
+    protected void setValid(boolean valid)
+    {
+        mValid = valid;
     }
 }

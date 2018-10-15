@@ -18,7 +18,7 @@ package io.github.dsheirer.gui.instrument.decoder;
 import io.github.dsheirer.gui.instrument.chart.LTRNetSampleBufferChart;
 import io.github.dsheirer.gui.instrument.chart.RealSampleLineChart;
 import io.github.dsheirer.gui.instrument.chart.ZeroCrossingErrorDetectorChart;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.ltrnet.DecodeConfigLTRNet;
@@ -73,12 +73,12 @@ public class LTRNetPane extends RealDecoderPane
             DecodeConfigLTRNet config = new DecodeConfigLTRNet();
             config.setMessageDirection(MessageDirection.OSW);
             mDecoder = new LTRNetDecoderInstrumented(config, null);
-            mDecoder.setMessageListener(new Listener<Message>()
+            mDecoder.setMessageListener(new Listener<IMessage>()
             {
                 @Override
-                public void receive(Message message)
+                public void receive(IMessage message)
                 {
-                    mLog.debug(message.getMessage());
+                    mLog.debug(message.toString());
                 }
             });
         }
@@ -143,7 +143,7 @@ public class LTRNetPane extends RealDecoderPane
         if(mZeroCrossingErrorDetectorChart == null)
         {
             mZeroCrossingErrorDetectorChart = new ZeroCrossingErrorDetectorChart(getDecoder(),
-                getDecoder().getLTRDecoder().getErrorDetector().getBuffer().length);
+                    getDecoder().getLTRDecoder().getErrorDetector().getBuffer().length);
         }
 
         return mZeroCrossingErrorDetectorChart;

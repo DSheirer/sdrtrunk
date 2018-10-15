@@ -28,6 +28,7 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
@@ -88,7 +89,7 @@ public class LTRNetDecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message.isValid())
         {

@@ -35,6 +35,7 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.message.Message;
@@ -105,7 +106,7 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
-    private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
+    private Broadcaster<IMessage> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 
     private AtomicBoolean mRunning = new AtomicBoolean();
@@ -195,15 +196,15 @@ public class ProcessingChain implements IChannelEventListener
      *
      * @param source - real or complex sample source
      * @throws IllegalStateException if the processing chain is currently
-     *                               processing with another source.  Invoke stop() before applying a new
-     *                               source.
+     * processing with another source.  Invoke stop() before applying a new
+     * source.
      */
     public void setSource(Source source) throws IllegalStateException
     {
         if(isProcessing())
         {
             throw new IllegalStateException("Processing chain is currently processing.  Invoke stop() on the " +
-                "processing chain before applying a new sample source");
+                    "processing chain before applying a new sample source");
         }
 
         mSource = source;
@@ -290,7 +291,7 @@ public class ProcessingChain implements IChannelEventListener
     {
         if(module instanceof IAttributeChangeRequestListener)
         {
-            mAttributeChangeRequestBroadcaster.addListener(((IAttributeChangeRequestListener)module).getAttributeChangeRequestListener());
+            mAttributeChangeRequestBroadcaster.addListener(((IAttributeChangeRequestListener) module).getAttributeChangeRequestListener());
         }
 
         if(module instanceof IAudioPacketListener)
@@ -315,7 +316,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IHeartbeatListener)
         {
-            mHeartbeatBroadcaster.addListener(((IHeartbeatListener)module).getHeartbeatListener());
+            mHeartbeatBroadcaster.addListener(((IHeartbeatListener) module).getHeartbeatListener());
         }
 
         if(module instanceof IMessageListener)
@@ -325,22 +326,22 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IReusableBufferListener)
         {
-            mDemodulatedAudioBufferBroadcaster.addListener(((IReusableBufferListener)module).getReusableBufferListener());
+            mDemodulatedAudioBufferBroadcaster.addListener(((IReusableBufferListener) module).getReusableBufferListener());
         }
 
         if(module instanceof IReusableByteBufferListener)
         {
-            mDemodulatedBitstreamBufferBroadcaster.addListener(((IReusableByteBufferListener)module).getReusableByteBufferListener());
+            mDemodulatedBitstreamBufferBroadcaster.addListener(((IReusableByteBufferListener) module).getReusableByteBufferListener());
         }
 
         if(module instanceof IReusableComplexBufferListener)
         {
-            mBasebandComplexBufferBroadcaster.addListener(((IReusableComplexBufferListener)module).getReusableComplexBufferListener());
+            mBasebandComplexBufferBroadcaster.addListener(((IReusableComplexBufferListener) module).getReusableComplexBufferListener());
         }
 
         if(module instanceof ISourceEventListener)
         {
-            Listener<SourceEvent> listener = ((ISourceEventListener)module).getSourceEventListener();
+            Listener<SourceEvent> listener = ((ISourceEventListener) module).getSourceEventListener();
 
             if(listener != null)
             {
@@ -387,12 +388,12 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IHeartbeatListener)
         {
-            mHeartbeatBroadcaster.removeListener(((IHeartbeatListener)module).getHeartbeatListener());
+            mHeartbeatBroadcaster.removeListener(((IHeartbeatListener) module).getHeartbeatListener());
         }
 
         if(module instanceof IReusableBufferListener)
         {
-            mDemodulatedAudioBufferBroadcaster.removeListener(((IReusableBufferListener)module).getReusableBufferListener());
+            mDemodulatedAudioBufferBroadcaster.removeListener(((IReusableBufferListener) module).getReusableBufferListener());
         }
 
         if(module instanceof IReusableByteBufferListener)
@@ -429,7 +430,7 @@ public class ProcessingChain implements IChannelEventListener
     {
         if(module instanceof IAttributeChangeRequestProvider)
         {
-            ((IAttributeChangeRequestProvider)module).setAttributeChangeRequestListener(mAttributeChangeRequestBroadcaster);
+            ((IAttributeChangeRequestProvider) module).setAttributeChangeRequestListener(mAttributeChangeRequestBroadcaster);
         }
 
         if(module instanceof IAudioPacketProvider)
@@ -454,7 +455,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IHeartbeatProvider)
         {
-            ((IHeartbeatProvider)module).getHeartbeatManager().addHeartbeatListener(mHeartbeatBroadcaster);
+            ((IHeartbeatProvider) module).getHeartbeatManager().addHeartbeatListener(mHeartbeatBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -469,12 +470,12 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IReusableByteBufferProvider)
         {
-            ((IReusableByteBufferProvider)module).setBufferListener(mDemodulatedBitstreamBufferBroadcaster);
+            ((IReusableByteBufferProvider) module).setBufferListener(mDemodulatedBitstreamBufferBroadcaster);
         }
 
         if(module instanceof IReusableBufferProvider)
         {
-            ((IReusableBufferProvider)module).setBufferListener(mDemodulatedAudioBufferBroadcaster);
+            ((IReusableBufferProvider) module).setBufferListener(mDemodulatedAudioBufferBroadcaster);
         }
 
         if(module instanceof ISourceEventProvider)
@@ -496,7 +497,7 @@ public class ProcessingChain implements IChannelEventListener
     {
         if(module instanceof IAttributeChangeRequestProvider)
         {
-            ((IAttributeChangeRequestProvider)module).removeAttributeChangeRequestListener(mAttributeChangeRequestBroadcaster);
+            ((IAttributeChangeRequestProvider) module).removeAttributeChangeRequestListener(mAttributeChangeRequestBroadcaster);
         }
 
         if(module instanceof IAudioPacketProvider)
@@ -506,7 +507,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IReusableByteBufferProvider)
         {
-            ((IReusableByteBufferProvider)module).removeBufferListener(mDemodulatedBitstreamBufferBroadcaster);
+            ((IReusableByteBufferProvider) module).removeBufferListener(mDemodulatedBitstreamBufferBroadcaster);
         }
 
         if(module instanceof ICallEventProvider)
@@ -526,7 +527,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IHeartbeatProvider)
         {
-            ((IHeartbeatProvider)module).getHeartbeatManager().removeHeartbeatListener(mHeartbeatBroadcaster);
+            ((IHeartbeatProvider) module).getHeartbeatManager().removeHeartbeatListener(mHeartbeatBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -541,7 +542,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IReusableBufferProvider)
         {
-            ((IReusableBufferProvider)module).setBufferListener(null);
+            ((IReusableBufferProvider) module).setBufferListener(null);
         }
 
         if(module instanceof ISourceEventProvider)
@@ -574,9 +575,9 @@ public class ProcessingChain implements IChannelEventListener
                 //Setup the channel state to monitor source overflow conditions
                 mSource.setOverflowListener(mChannelState);
 
-				/* Register with the source to receive sample data.  Setup a
-				 * timer task to process the buffer queues 50 times a second
-				 * (every 20 ms) */
+                /* Register with the source to receive sample data.  Setup a
+                 * timer task to process the buffer queues 50 times a second
+                 * (every 20 ms) */
                 switch(mSource.getSampleType())
                 {
                     case COMPLEX:
@@ -587,10 +588,10 @@ public class ProcessingChain implements IChannelEventListener
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized source "
-                            + "sample type - cannot start processing chain");
+                                + "sample type - cannot start processing chain");
                 }
-				
-				/* Start each of the modules */
+
+                /* Start each of the modules */
                 for(Module module : mModules)
                 {
                     try
@@ -635,13 +636,13 @@ public class ProcessingChain implements IChannelEventListener
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized source sample type - cannot start processing " +
-                            "chain");
+                                "chain");
                 }
 
                 mSource = null;
             }
 
-			/* Stop each of the remaining modules */
+            /* Stop each of the remaining modules */
             for(Module module : mModules)
             {
                 module.stop();
@@ -757,7 +758,7 @@ public class ProcessingChain implements IChannelEventListener
     /**
      * Adds the listener to receive decoded messages from all decoders.
      */
-    public void addMessageListener(Listener<Message> listener)
+    public void addMessageListener(Listener<IMessage> listener)
     {
         mMessageBroadcaster.addListener(listener);
     }
@@ -765,9 +766,9 @@ public class ProcessingChain implements IChannelEventListener
     /**
      * Adds the list of listeners to receive decoded messages from all decoders.
      */
-    public void addMessageListeners(List<Listener<Message>> listeners)
+    public void addMessageListeners(List<Listener<IMessage>> listeners)
     {
-        for(Listener<Message> listener : listeners)
+        for(Listener<IMessage> listener : listeners)
         {
             mMessageBroadcaster.addListener(listener);
         }
@@ -776,13 +777,14 @@ public class ProcessingChain implements IChannelEventListener
     /**
      * Removes the listener from receiving decoded messages from all decoders.
      */
-    public void removeMessageListener(Listener<Message> listener)
+    public void removeMessageListener(Listener<IMessage> listener)
     {
         mMessageBroadcaster.removeListener(listener);
     }
 
     /**
      * Adds the listener to receive frequency change events from the processing chain
+     *
      * @param listener to receive events
      */
     public void addFrequencyChangeListener(Listener<SourceEvent> listener)
@@ -792,6 +794,7 @@ public class ProcessingChain implements IChannelEventListener
 
     /**
      * Removes the listener from receiving frequency change events
+     *
      * @param listener to remove
      */
     public void removeFrequencyChangeListener(Listener<SourceEvent> listener)

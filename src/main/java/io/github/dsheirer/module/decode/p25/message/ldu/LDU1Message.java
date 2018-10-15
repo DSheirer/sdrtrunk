@@ -1,10 +1,12 @@
 package io.github.dsheirer.module.decode.p25.message.ldu;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.Hamming10;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
+import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWordFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -20,10 +22,8 @@ public class LDU1Message extends LDUMessage
     public static final int IMPLICIT_VENDOR_FLAG = 353;
     public static final int[] OPCODE = {354, 355, 356, 357, 362, 363};
     public static final int[] VENDOR = {364, 365, 366, 367, 372, 373, 374, 375};
-
-    public static final int[] GOLAY_WORD_STARTS = {
-        352, 362, 372, 382, 536, 546, 556, 566, 720, 730, 740, 750, 904, 914, 924, 934, 1088,
-        1098, 1108, 1118, 1272, 1282, 1292, 1302};
+    public static final int[] GOLAY_WORD_STARTS = {352, 362, 372, 382, 536, 546, 556, 566, 720, 730, 740, 750, 904, 914,
+            924, 934, 1088, 1098, 1108, 1118, 1272, 1282, 1292, 1302};
 
     public static final int[] CW_HEX_0 = {352, 353, 354, 355, 356, 357};
     public static final int[] CW_HEX_1 = {362, 363, 364, 365, 366, 367};
@@ -52,21 +52,37 @@ public class LDU1Message extends LDUMessage
 
     /* Reed-Solomon(24,12,13) code protects the link control word.  Maximum
      * correctable errors are: Hamming Distance(13) / 2 = 6  */
-    public static final ReedSolomon_63_47_17 mReedSolomonDecoder =
-        new ReedSolomon_63_47_17(6);
+    public static final ReedSolomon_63_47_17 REED_SOLOMON_63_47_17 = new ReedSolomon_63_47_17(6);
 
-    public LDU1Message(BinaryMessage message, DataUnitID duid,
-                       AliasList aliasList)
+    private LinkControlWord mLinkControlWord;
+
+    public LDU1Message(CorrectedBinaryMessage message, int nac, long timestamp)
     {
-        super(message, duid, aliasList);
+        super(message, nac, timestamp);
 
-	    
-	    /* NID CRC is checked in the message framer, thus a constructed message
+
+        /* NID CRC is checked in the message framer, thus a constructed message
          * means it passed the CRC */
         mCRC = new CRC[3];
         mCRC[0] = CRC.PASSED;
 
-        checkCRC();
+        createLinkControlWord();
+    }
+
+    @Override
+    public DataUnitID getDUID()
+    {
+        return DataUnitID.LOGICAL_LINK_DATA_UNIT_1;
+    }
+
+    public LinkControlWord getLinkControlWord()
+    {
+        if(mLinkControlWord == null)
+        {
+
+        }
+
+        return mLinkControlWord;
     }
 
     /**
@@ -89,106 +105,93 @@ public class LDU1Message extends LDUMessage
         return mMessage.get(ENCRYPTED_LINK_CONTROL_WORD_FLAG);
     }
 
-    private void checkCRC()
+    /**
+     * Performs error detection and correction on Link Control Word bits and extracts the 72-bit word
+     */
+    private void createLinkControlWord()
     {
-        mCRC[1] = CRC.PASSED;
-
-    	/* Hamming( 10,6,3 ) error detection and correction */
+        //Perform error detection and a maximum of one bit error correction using Hamming( 10,6,3 )
         for(int index : GOLAY_WORD_STARTS)
         {
-            int errors = Hamming10.checkAndCorrect(mMessage, index);
-
-            if(errors > 1)
-            {
-                mCRC[1] = CRC.FAILED_CRC;
-            }
+            //Attempt to fix any single-bit errors
+            Hamming10.checkAndCorrect(getMessage(), index);
         }
 
-		/* Reed-Solomon( 24,16,9 ) error detection and correction
-		 * Check the Reed-Solomon parity bits. The RS decoder expects the code
-		 * words and reed solomon parity hex codewords in reverse order.  
-		 * 
-		 * Since this is a truncated RS(63) codes, we pad the code with zeros */
+        //Perform Reed-Solomon( 24,16,9 ) error detection and correction.  Check the Reed-Solomon parity bits. The RS
+        // decoder expects the code words and reed solomon parity hex codewords in reverse order.  Since this is a
+        // truncated RS(63) codes, we pad the code with zeros
         int[] input = new int[63];
         int[] output = new int[63];
 
-        input[0] = mMessage.getInt(RS_HEX_11);
-        input[1] = mMessage.getInt(RS_HEX_10);
-        input[2] = mMessage.getInt(RS_HEX_9);
-        input[3] = mMessage.getInt(RS_HEX_8);
-        input[4] = mMessage.getInt(RS_HEX_7);
-        input[5] = mMessage.getInt(RS_HEX_6);
-        input[6] = mMessage.getInt(RS_HEX_5);
-        input[7] = mMessage.getInt(RS_HEX_4);
-        input[8] = mMessage.getInt(RS_HEX_3);
-        input[9] = mMessage.getInt(RS_HEX_2);
-        input[10] = mMessage.getInt(RS_HEX_1);
-        input[11] = mMessage.getInt(RS_HEX_0);
+        input[0] = getMessage().getInt(RS_HEX_11);
+        input[1] = getMessage().getInt(RS_HEX_10);
+        input[2] = getMessage().getInt(RS_HEX_9);
+        input[3] = getMessage().getInt(RS_HEX_8);
+        input[4] = getMessage().getInt(RS_HEX_7);
+        input[5] = getMessage().getInt(RS_HEX_6);
+        input[6] = getMessage().getInt(RS_HEX_5);
+        input[7] = getMessage().getInt(RS_HEX_4);
+        input[8] = getMessage().getInt(RS_HEX_3);
+        input[9] = getMessage().getInt(RS_HEX_2);
+        input[10] = getMessage().getInt(RS_HEX_1);
+        input[11] = getMessage().getInt(RS_HEX_0);
 
-        input[12] = mMessage.getInt(CW_HEX_11);
-        input[13] = mMessage.getInt(CW_HEX_10);
-        input[14] = mMessage.getInt(CW_HEX_9);
-        input[15] = mMessage.getInt(CW_HEX_8);
-        input[16] = mMessage.getInt(CW_HEX_7);
-        input[17] = mMessage.getInt(CW_HEX_6);
-        input[18] = mMessage.getInt(CW_HEX_5);
-        input[19] = mMessage.getInt(CW_HEX_4);
-        input[20] = mMessage.getInt(CW_HEX_3);
-        input[21] = mMessage.getInt(CW_HEX_2);
-        input[22] = mMessage.getInt(CW_HEX_1);
-        input[23] = mMessage.getInt(CW_HEX_0);
+        input[12] = getMessage().getInt(CW_HEX_11);
+        input[13] = getMessage().getInt(CW_HEX_10);
+        input[14] = getMessage().getInt(CW_HEX_9);
+        input[15] = getMessage().getInt(CW_HEX_8);
+        input[16] = getMessage().getInt(CW_HEX_7);
+        input[17] = getMessage().getInt(CW_HEX_6);
+        input[18] = getMessage().getInt(CW_HEX_5);
+        input[19] = getMessage().getInt(CW_HEX_4);
+        input[20] = getMessage().getInt(CW_HEX_3);
+        input[21] = getMessage().getInt(CW_HEX_2);
+        input[22] = getMessage().getInt(CW_HEX_1);
+        input[23] = getMessage().getInt(CW_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        boolean irrecoverableErrors = mReedSolomonDecoder.decode(input, output);
+        boolean irrecoverableErrors = REED_SOLOMON_63_47_17.decode(input, output);
+
+        //Transfer error corrected output to a new binary message
+        BinaryMessage binaryMessage = new BinaryMessage(72);
+
+        int pointer = 0;
+
+        for(int x = 23; x >= 12; x--)
+        {
+            if(output[x] != -1)
+            {
+                binaryMessage.load(pointer, 6, output[x]);
+            }
+
+            pointer += 6;
+        }
+
+        mLinkControlWord = LinkControlWordFactory.create(binaryMessage);
 
         if(irrecoverableErrors)
         {
-            mCRC[2] = CRC.FAILED_CRC;
+            mLinkControlWord.setValid(false);
         }
         else
         {
-        	/* Since we've detected that we can correct the RS words, mark the
-        	 * hamming crc as corrected as well, if it is currently failed */
-            if(mCRC[1] == CRC.FAILED_CRC)
+            //If we corrected any bit errors, update the original message with the bit error count
+            for(int x = 0; x < 23; x++)
             {
-                mCRC[1] = CRC.CORRECTED;
+                if(output[x] != input[x])
+                {
+                    getMessage().incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
+                }
             }
-
-            mCRC[2] = CRC.PASSED;
-        	
-        	/* Only fix the codeword data hex codewords */
-            repairHexCodeword(input, output, 12, CW_HEX_11);
-            repairHexCodeword(input, output, 13, CW_HEX_10);
-            repairHexCodeword(input, output, 14, CW_HEX_9);
-            repairHexCodeword(input, output, 15, CW_HEX_8);
-            repairHexCodeword(input, output, 16, CW_HEX_7);
-            repairHexCodeword(input, output, 17, CW_HEX_6);
-            repairHexCodeword(input, output, 18, CW_HEX_5);
-            repairHexCodeword(input, output, 19, CW_HEX_4);
-            repairHexCodeword(input, output, 20, CW_HEX_3);
-            repairHexCodeword(input, output, 21, CW_HEX_2);
-            repairHexCodeword(input, output, 22, CW_HEX_1);
-            repairHexCodeword(input, output, 23, CW_HEX_0);
-        }
-    }
-
-    private void repairHexCodeword(int[] input, int[] output, int index, int[] indexSet)
-    {
-        if(input[index] != output[index])
-        {
-            mMessage.load(indexSet[0], 6, output[index]);
-            mCRC[2] = CRC.CORRECTED;
         }
     }
 
     @Override
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
         sb.append(getMessageStub());
-        sb.append(" ");
-        sb.append(mMessage.toString());
 
         return sb.toString();
     }
