@@ -18,6 +18,7 @@ package io.github.dsheirer.identifier.integer.node;
 public enum NodeType
 {
     CHANNEL,
+    ENCRYPTION_KEY,
     FREQUENCY_BAND,
     LOCATION_REGISTRATION_AREA,
     NAC,

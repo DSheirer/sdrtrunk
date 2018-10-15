@@ -19,8 +19,20 @@ public class LinkControlWordFactory
 
         switch(opcode)
         {
+            case ADJACENT_SITE_STATUS_BROADCAST:
+                return new AdjacentSiteStatusBroadcast(binaryMessage);
+            case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
+                return new AdjacentSiteStatusBroadcastExplicit(binaryMessage);
+            case CALL_ALERT:
+                return new CallAlert(binaryMessage);
             case CALL_TERMINATION_OR_CANCELLATION:
                 return new CallTermination(binaryMessage);
+            case CHANNEL_IDENTIFIER_UPDATE:
+                return new ChannelIdentifierUpdate(binaryMessage);
+            case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
+                return new ChannelIdentifierUpdateExplicit(binaryMessage);
+            case EXTENDED_FUNCTION_COMMAND:
+                return new ExtendedFunctionCommand(binaryMessage);
             case GROUP_AFFILIATION_QUERY:
                 return new GroupAffiliationQuery(binaryMessage);
             case GROUP_VOICE_CHANNEL_USER:
@@ -29,8 +41,28 @@ public class LinkControlWordFactory
                 return new GroupVoiceChannelUpdate(binaryMessage);
             case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
                 return new GroupVoiceChannelUpdateExplicit(binaryMessage);
+            case MESSAGE_UPDATE:
+                return new MessageUpdate(binaryMessage);
+            case NETWORK_STATUS_BROADCAST:
+                return new NetworkStatusBroadcast(binaryMessage);
+            case NETWORK_STATUS_BROADCAST_EXPLICIT:
+                return new NetworkStatusBroadcastExplicit(binaryMessage);
+            case PROTECTION_PARAMETER_BROADCAST:
+                return new EncryptionParameterBroadcast(binaryMessage);
+            case RFSS_STATUS_BROADCAST:
+                return new RFSSStatusBroadcast(binaryMessage);
+            case RFSS_STATUS_BROADCAST_EXPLICIT:
+                return new RFSSStatusBroadcastExplicit(binaryMessage);
+            case SECONDARY_CONTROL_CHANNEL_BROADCAST:
+                return new SecondaryControlChannelBroadcast(binaryMessage);
+            case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+                return new SecondaryControlChannelBroadcastExplicit(binaryMessage);
             case STATUS_QUERY:
                 return new StatusQuery(binaryMessage);
+            case STATUS_UPDATE:
+                return new StatusUpdate(binaryMessage);
+            case SYSTEM_SERVICE_BROADCAST:
+                return new SystemServiceBroadcast(binaryMessage);
             case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 return new TelephoneInterconnectAnswerRequest(binaryMessage);
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:

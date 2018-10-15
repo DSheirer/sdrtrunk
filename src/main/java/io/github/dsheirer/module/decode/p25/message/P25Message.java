@@ -19,8 +19,9 @@
 package io.github.dsheirer.module.decode.p25.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.node.APCO25Nac;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 public abstract class P25Message extends Message
@@ -50,7 +51,7 @@ public abstract class P25Message extends Message
     {
         super(timestamp);
         mMessage = message;
-        mNAC = nac;
+        mNAC = APCO25Nac.create(nac);
     }
 
     /**
@@ -72,13 +73,8 @@ public abstract class P25Message extends Message
         return mMessage;
     }
 
-    public String getNAC()
+    public IIdentifier getNAC()
     {
-        if(mNAC == null)
-        {
-            mNAC = APCO25Nac.create(mMessage.getInt(NAC));
-        }
-
         return mNAC;
     }
 
@@ -89,10 +85,15 @@ public abstract class P25Message extends Message
 
     public String toString()
     {
+        return getMessageStub();
+    }
+
+    protected String getMessageStub()
+    {
         StringBuilder sb = new StringBuilder();
 
         sb.append("NAC:");
-        sb.append(P25Utils.formatNAC(getNAC()));
+        sb.append(getNAC());
         sb.append(" ");
         sb.append(getDUID().getLabel());
 

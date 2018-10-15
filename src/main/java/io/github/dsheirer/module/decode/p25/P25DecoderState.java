@@ -37,6 +37,7 @@ import io.github.dsheirer.module.decode.p25.message.IAdjacentSite;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
+import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.lc.CallTermination;
@@ -940,13 +941,15 @@ public class P25DecoderState extends DecoderState
 
         if(ldu instanceof LDU1Message)
         {
-            switch(((LDU1Message) ldu).getOpcode())
+            LinkControlWord lcw = ((LDU1Message)ldu).getLinkControlWord();
+
+            switch(lcw.getOpcode())
             {
                 case ADJACENT_SITE_STATUS_BROADCAST:
-                    if(ldu instanceof io.github.dsheirer.module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast)
+                    if(lcw instanceof io.github.dsheirer.module.decode.p25.message.lc.AdjacentSiteStatusBroadcast)
                     {
-                        IAdjacentSite ias = (IAdjacentSite) ldu;
-
+                        io.github.dsheirer.module.decode.p25.message.lc.AdjacentSiteStatusBroadcast ias =
+                                (io.github.dsheirer.module.decode.p25.message.lc.AdjacentSiteStatusBroadcast)lcw;
                         mNeighborMap.put(ias.getUniqueID(), ias);
 
                         updateSystem(ias.getSystemID());

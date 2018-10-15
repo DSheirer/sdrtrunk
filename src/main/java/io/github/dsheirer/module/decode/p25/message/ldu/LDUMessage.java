@@ -30,15 +30,24 @@ public abstract class LDUMessage extends P25Message
         super(message, nac, timestamp);
     }
 
+    /**
+     * Low speed data field contents.
+     */
     public String getLowSpeedData()
     {
         return getMessage().getHex(LOW_SPEED_DATA, 4);
     }
 
-    public boolean isValid()
+    public String getMessageStub()
     {
-//		return mCRC[ 2 ] != null && mCRC[ 2 ] != CRC.FAILED_CRC;
-        return true;
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(super.getMessageStub());
+        sb.append(" VOICE LSD:");
+        sb.append(getLowSpeedData());
+        sb.append(" ");
+
+        return sb.toString();
     }
 
     /**
