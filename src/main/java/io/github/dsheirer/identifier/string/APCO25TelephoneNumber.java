@@ -13,21 +13,36 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.identifier;
+package io.github.dsheirer.identifier.string;
 
-/**
- * Identifier role.  Indicates the role of the entity in the communication.
- */
-public enum Form
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.protocol.Protocol;
+
+public class APCO25TelephoneNumber extends AbstractStringIdentifier
 {
-    CHANNEL,
-    ESN,
-    FREQUENCY_BAND,
-    LOGICAL_LINK_ID,
-    NODE,
-    SHORT_DATA_MESSAGE,
-    STATUS,
-    TALKGROUP,
-    TELEPHONE_NUMBER,
-    ANY;
+    public APCO25TelephoneNumber(String telephoneNumber)
+    {
+        super(telephoneNumber);
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.APCO25;
+    }
+
+    @Override
+    public Form getForm()
+    {
+        return Form.TELEPHONE_NUMBER;
+    }
+
+    /**
+     * Creates a new APCO-25 telephone number
+     */
+    public static IIdentifier create(String telephoneNumber)
+    {
+        return new APCO25TelephoneNumber(telephoneNumber);
+    }
 }

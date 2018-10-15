@@ -5,6 +5,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.Hamming10;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWordFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -14,7 +15,7 @@ import io.github.dsheirer.module.decode.p25.reference.VendorLinkControlOpcode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LDU1Message extends LDUMessage
+public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
 {
     private final static Logger mLog = LoggerFactory.getLogger(LDU1Message.class);
 

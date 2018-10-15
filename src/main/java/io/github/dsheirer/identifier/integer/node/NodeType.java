@@ -24,5 +24,5 @@ public enum NodeType
     RF_SUB_SYSTEM,
     SYSTEM,
     SITE,
-    WACN;
+    WACN
 }

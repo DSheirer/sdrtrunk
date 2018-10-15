@@ -1,14 +1,17 @@
 package io.github.dsheirer.module.decode.p25.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
+
+import java.util.List;
 
 /**
  * APCO 25 Link Control Word.  This message word is contained in Logical Link Data Unit 1 and Terminator with
  * Link Control messages.
  */
-public class LinkControlWord
+public abstract class LinkControlWord
 {
     private static final int ENCRYPTION_FLAG = 0;
     private static final int STANDARD_VENDOR_ID_FLAG = 1;
@@ -116,6 +119,11 @@ public class LinkControlWord
     }
 
     /**
+     * List of identifiers provided by the message
+     */
+    public abstract List<IIdentifier> getIdentifiers();
+
+    /**
      * Creates a string with the basic Link Control Word information
      */
     public String getMessageStub()
@@ -144,11 +152,5 @@ public class LinkControlWord
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public String toString()
-    {
-        return getMessageStub();
     }
 }
