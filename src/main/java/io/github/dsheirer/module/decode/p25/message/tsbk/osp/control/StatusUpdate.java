@@ -23,7 +23,7 @@ import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class StatusUpdate extends TSBKMessage
 {
@@ -45,7 +45,7 @@ public class StatusUpdate extends TSBKMessage
     @Override
     public String getEventType()
     {
-        return Opcode.STATUS_UPDATE.getDescription();
+        return Opcode.OSP_STATUS_UPDATE.toString();
     }
 
     public String getMessage()

@@ -22,7 +22,7 @@ import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 public class TSBKMessage extends P25Message

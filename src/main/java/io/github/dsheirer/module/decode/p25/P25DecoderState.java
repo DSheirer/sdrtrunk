@@ -1477,7 +1477,7 @@ public class P25DecoderState extends DecoderState
         {
             switch(tsbk.getOpcode())
             {
-                case ADJACENT_STATUS_BROADCAST:
+                case OSP_ADJACENT_STATUS_BROADCAST:
                     if(tsbk instanceof AdjacentStatusBroadcast)
                     {
                         IAdjacentSite ias = (IAdjacentSite) tsbk;
@@ -1487,45 +1487,45 @@ public class P25DecoderState extends DecoderState
                         updateSystem(ias.getSystemID());
                     }
                     break;
-                case ACKNOWLEDGE_RESPONSE:
+                case OSP_ACKNOWLEDGE_RESPONSE:
                     processTSBKResponse(tsbk);
                     break;
-                case AUTHENTICATION_COMMAND:
+                case OSP_AUTHENTICATION_COMMAND:
                     processTSBKCommand(tsbk);
                     break;
-                case CALL_ALERT:
+                case OSP_CALL_ALERT:
                     processTSBKPage(tsbk);
                     break;
-                case DENY_RESPONSE:
+                case OSP_DENY_RESPONSE:
                     processTSBKResponse(tsbk);
                     break;
-                case EXTENDED_FUNCTION_COMMAND:
+                case OSP_EXTENDED_FUNCTION_COMMAND:
                     processTSBKCommand(tsbk);
                     break;
-                case GROUP_AFFILIATION_QUERY:
+                case OSP_GROUP_AFFILIATION_QUERY:
                     processTSBKQuery(tsbk);
                     break;
-                case GROUP_AFFILIATION_RESPONSE:
+                case OSP_GROUP_AFFILIATION_RESPONSE:
                     processTSBKResponse(tsbk);
                     break;
-                case GROUP_DATA_CHANNEL_ANNOUNCEMENT:
-                case GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+                case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT:
+                case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                     processTSBKDataChannelAnnouncement(tsbk);
                     break;
-                case GROUP_DATA_CHANNEL_GRANT:
-                case GROUP_VOICE_CHANNEL_GRANT:
-                case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
-                case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
-                case INDIVIDUAL_DATA_CHANNEL_GRANT:
-                case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-                case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+                case OSP_GROUP_DATA_CHANNEL_GRANT:
+                case OSP_GROUP_VOICE_CHANNEL_GRANT:
+                case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
+                case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+                case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
+                case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+                case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+                case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                     processTSBKChannelGrant(tsbk);
                     break;
-                case IDENTIFIER_UPDATE_NON_VUHF:
-                case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
-                case IDENTIFIER_UPDATE_TDMA:
+                case OSP_IDENTIFIER_UPDATE_NON_VUHF:
+                case OSP_IDENTIFIER_UPDATE_VHF_UHF_BANDS:
+                case OSP_IDENTIFIER_UPDATE_TDMA:
                     IdentifierUpdateFrequency iu = (IdentifierUpdateFrequency)tsbk;
 
                     if(!mBands.containsKey(iu.getIdentifier()))
@@ -1533,32 +1533,32 @@ public class P25DecoderState extends DecoderState
                         mBands.put(iu.getIdentifier(), iu);
                     }
                     break;
-                case LOCATION_REGISTRATION_RESPONSE:
-                case UNIT_DEREGISTRATION_ACKNOWLEDGE:
+                case OSP_LOCATION_REGISTRATION_RESPONSE:
+                case OSP_UNIT_DEREGISTRATION_ACKNOWLEDGE:
                     processTSBKResponse(tsbk);
                     break;
-                case MESSAGE_UPDATE:
+                case OSP_MESSAGE_UPDATE:
                     processTSBKMessage(tsbk);
                     break;
-                case NETWORK_STATUS_BROADCAST:
+                case OSP_NETWORK_STATUS_BROADCAST:
                     mNetworkStatus = (NetworkStatusBroadcast) tsbk;
                     break;
-                case PROTECTION_PARAMETER_UPDATE:
+                case OSP_PROTECTION_PARAMETER_UPDATE:
                     processTSBKResponse(tsbk);
                     break;
-                case QUEUED_RESPONSE:
+                case OSP_QUEUED_RESPONSE:
                     processTSBKResponse(tsbk);
                     break;
-                case RADIO_UNIT_MONITOR_COMMAND:
+                case OSP_RADIO_UNIT_MONITOR_COMMAND:
                     processTSBKCommand(tsbk);
                     break;
-                case RFSS_STATUS_BROADCAST:
+                case OSP_RFSS_STATUS_BROADCAST:
                     processTSBKRFSSStatus((RFSSStatusBroadcast) tsbk);
                     break;
-                case ROAMING_ADDRESS_COMMAND:
+                case OSP_ROAMING_ADDRESS_COMMAND:
                     processTSBKCommand(tsbk);
                     break;
-                case SECONDARY_CONTROL_CHANNEL_BROADCAST:
+                case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST:
                     SecondaryControlChannelBroadcast sccb =
                             (SecondaryControlChannelBroadcast) tsbk;
 
@@ -1567,26 +1567,26 @@ public class P25DecoderState extends DecoderState
                         mSecondaryControlChannels.add(sccb);
                     }
                     break;
-                case SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+                case OSP_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                     mSNDCPDataChannel = (SNDCPDataChannelAnnouncementExplicit) tsbk;
                     break;
-                case SNDCP_DATA_CHANNEL_GRANT:
+                case OSP_SNDCP_DATA_CHANNEL_GRANT:
                     processTSBKChannelGrant(tsbk);
                     break;
                 case STATUS_QUERY:
                     processTSBKQuery(tsbk);
                     break;
-                case STATUS_UPDATE:
+                case OSP_STATUS_UPDATE:
                     processTSBKResponse(tsbk);
                     break;
-                case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-                case UNIT_TO_UNIT_ANSWER_REQUEST:
+                case OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
+                case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                     processTSBKPage(tsbk);
                     break;
-                case UNIT_REGISTRATION_COMMAND:
+                case OSP_UNIT_REGISTRATION_COMMAND:
                     processTSBKCommand(tsbk);
                     break;
-                case UNIT_REGISTRATION_RESPONSE:
+                case OSP_UNIT_REGISTRATION_RESPONSE:
                     processTSBKResponse(tsbk);
                     break;
                 default:
@@ -1729,15 +1729,15 @@ public class P25DecoderState extends DecoderState
         {
             switch(pdu.getOpcode())
             {
-                case GROUP_DATA_CHANNEL_GRANT:
-                case GROUP_VOICE_CHANNEL_GRANT:
-                case INDIVIDUAL_DATA_CHANNEL_GRANT:
-                case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+                case OSP_GROUP_DATA_CHANNEL_GRANT:
+                case OSP_GROUP_VOICE_CHANNEL_GRANT:
+                case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
+                case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+                case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                     processPDUChannelGrant(pdu);
                     break;
-                case ADJACENT_STATUS_BROADCAST:
+                case OSP_ADJACENT_STATUS_BROADCAST:
                     if(pdu instanceof AdjacentStatusBroadcastExtended)
                     {
                         IAdjacentSite ias = (IAdjacentSite) pdu;
@@ -1747,7 +1747,7 @@ public class P25DecoderState extends DecoderState
                         updateSystem(ias.getSystemID());
                     }
                     break;
-                case CALL_ALERT:
+                case OSP_CALL_ALERT:
                     if(pdu instanceof CallAlertExtended)
                     {
                         CallAlertExtended ca = (CallAlertExtended) pdu;
@@ -1764,7 +1764,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case GROUP_AFFILIATION_QUERY:
+                case OSP_GROUP_AFFILIATION_QUERY:
                     if(pdu instanceof GroupAffiliationQueryExtended)
                     {
                         GroupAffiliationQueryExtended gaqe =
@@ -1785,7 +1785,7 @@ public class P25DecoderState extends DecoderState
                         }
                     }
                     break;
-                case GROUP_AFFILIATION_RESPONSE:
+                case OSP_GROUP_AFFILIATION_RESPONSE:
                     if(pdu instanceof GroupAffiliationResponseExtended)
                     {
                         GroupAffiliationResponseExtended gar =
@@ -1815,7 +1815,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case MESSAGE_UPDATE:
+                case OSP_MESSAGE_UPDATE:
                     if(pdu instanceof MessageUpdateExtended)
                     {
                         MessageUpdateExtended mu = (MessageUpdateExtended) pdu;
@@ -1833,7 +1833,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case NETWORK_STATUS_BROADCAST:
+                case OSP_NETWORK_STATUS_BROADCAST:
                     if(pdu instanceof NetworkStatusBroadcastExtended)
                     {
                         mNetworkStatusExtended = (NetworkStatusBroadcastExtended) pdu;
@@ -1843,7 +1843,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case PROTECTION_PARAMETER_BROADCAST:
+                case OSP_PROTECTION_PARAMETER_BROADCAST:
                     if(pdu instanceof ProtectionParameterBroadcast)
                     {
                         mProtectionParameterBroadcast =
@@ -1854,7 +1854,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case RFSS_STATUS_BROADCAST:
+                case OSP_RFSS_STATUS_BROADCAST:
                     if(pdu instanceof RFSSStatusBroadcastExtended)
                     {
                         mRFSSStatusMessageExtended = (RFSSStatusBroadcastExtended) pdu;
@@ -1869,7 +1869,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case ROAMING_ADDRESS_UPDATE:
+                case OSP_ROAMING_ADDRESS_UPDATE:
                     if(pdu instanceof RoamingAddressUpdateExtended)
                     {
                         RoamingAddressUpdateExtended raue =
@@ -1941,7 +1941,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case STATUS_UPDATE:
+                case OSP_STATUS_UPDATE:
                     if(pdu instanceof StatusUpdateExtended)
                     {
                         StatusUpdateExtended su = (StatusUpdateExtended) pdu;
@@ -1967,7 +1967,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case UNIT_REGISTRATION_RESPONSE:
+                case OSP_UNIT_REGISTRATION_RESPONSE:
                     if(pdu instanceof UnitRegistrationResponseExtended)
                     {
                         UnitRegistrationResponseExtended urr =
@@ -2001,7 +2001,7 @@ public class P25DecoderState extends DecoderState
                         logAlternateVendorMessage(pdu);
                     }
                     break;
-                case UNIT_TO_UNIT_ANSWER_REQUEST:
+                case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                     if(pdu instanceof UnitToUnitAnswerRequestExplicit)
                     {
                         UnitToUnitAnswerRequestExplicit utuare =
@@ -2041,7 +2041,7 @@ public class P25DecoderState extends DecoderState
 
         switch(pdu.getOpcode())
         {
-            case GROUP_DATA_CHANNEL_GRANT:
+            case OSP_GROUP_DATA_CHANNEL_GRANT:
                 if(pdu instanceof GroupDataChannelGrantExtended)
                 {
                     GroupDataChannelGrantExtended gdcge =
@@ -2082,7 +2082,7 @@ public class P25DecoderState extends DecoderState
                             mChannelCallMap.get(channel)));
                 }
                 break;
-            case GROUP_VOICE_CHANNEL_GRANT:
+            case OSP_GROUP_VOICE_CHANNEL_GRANT:
                 if(pdu instanceof GroupVoiceChannelGrantExplicit)
                 {
                     GroupVoiceChannelGrantExplicit gvcge =
@@ -2120,7 +2120,7 @@ public class P25DecoderState extends DecoderState
                     logAlternateVendorMessage(pdu);
                 }
                 break;
-            case INDIVIDUAL_DATA_CHANNEL_GRANT:
+            case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                 if(pdu instanceof IndividualDataChannelGrantExtended)
                 {
                     IndividualDataChannelGrantExtended idcge =
@@ -2163,7 +2163,7 @@ public class P25DecoderState extends DecoderState
                     logAlternateVendorMessage(pdu);
                 }
                 break;
-            case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                 TelephoneInterconnectChannelGrantExplicit ticge =
                         (TelephoneInterconnectChannelGrantExplicit) pdu;
 
@@ -2198,7 +2198,7 @@ public class P25DecoderState extends DecoderState
                 broadcast(new TrafficChannelAllocationEvent(this,
                         mChannelCallMap.get(channel)));
                 break;
-            case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
                 if(pdu instanceof UnitToUnitVoiceChannelGrantExtended)
                 {
                     UnitToUnitVoiceChannelGrantExtended uuvcge =
@@ -2238,7 +2238,7 @@ public class P25DecoderState extends DecoderState
                     logAlternateVendorMessage(pdu);
                 }
                 break;
-            case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                 if(pdu instanceof UnitToUnitVoiceChannelGrantUpdateExtended)
                 {
                     UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue =
@@ -2288,7 +2288,7 @@ public class P25DecoderState extends DecoderState
     {
         switch(message.getOpcode())
         {
-            case AUTHENTICATION_COMMAND:
+            case OSP_AUTHENTICATION_COMMAND:
                 AuthenticationCommand ac = (AuthenticationCommand) message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
@@ -2304,7 +2304,7 @@ public class P25DecoderState extends DecoderState
                     mLastCommandEventID = ac.getFullTargetID();
                 }
                 break;
-            case EXTENDED_FUNCTION_COMMAND:
+            case OSP_EXTENDED_FUNCTION_COMMAND:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.ExtendedFunctionCommand efc = (io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.ExtendedFunctionCommand) message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
@@ -2321,7 +2321,7 @@ public class P25DecoderState extends DecoderState
                     mLastCommandEventID = efc.getTargetAddress();
                 }
                 break;
-            case RADIO_UNIT_MONITOR_COMMAND:
+            case OSP_RADIO_UNIT_MONITOR_COMMAND:
                 RadioUnitMonitorCommand rumc = (RadioUnitMonitorCommand) message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
@@ -2337,7 +2337,7 @@ public class P25DecoderState extends DecoderState
                     mLastCommandEventID = rumc.getTargetAddress();
                 }
                 break;
-            case ROAMING_ADDRESS_COMMAND:
+            case OSP_ROAMING_ADDRESS_COMMAND:
                 RoamingAddressCommand rac = (RoamingAddressCommand) message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
@@ -2354,7 +2354,7 @@ public class P25DecoderState extends DecoderState
                     mLastCommandEventID = rac.getTargetID();
                 }
                 break;
-            case UNIT_REGISTRATION_COMMAND:
+            case OSP_UNIT_REGISTRATION_COMMAND:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.UnitRegistrationCommand urc = (io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.UnitRegistrationCommand) message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
@@ -2391,7 +2391,7 @@ public class P25DecoderState extends DecoderState
     {
         switch(message.getOpcode())
         {
-            case GROUP_AFFILIATION_QUERY:
+            case OSP_GROUP_AFFILIATION_QUERY:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.GroupAffiliationQuery gaq = (io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.GroupAffiliationQuery) message;
 
                 if(mLastQueryEventID == null || !mLastQueryEventID
@@ -2428,7 +2428,7 @@ public class P25DecoderState extends DecoderState
     {
         switch(message.getOpcode())
         {
-            case ACKNOWLEDGE_RESPONSE:
+            case OSP_ACKNOWLEDGE_RESPONSE:
                 AcknowledgeResponse ar = (AcknowledgeResponse) message;
 
                 if(mLastResponseEventID == null || !ar.getTargetAddress()
@@ -2459,7 +2459,7 @@ public class P25DecoderState extends DecoderState
                     mLastResponseEventID = ar.getTargetAddress();
                 }
                 break;
-            case DENY_RESPONSE:
+            case OSP_DENY_RESPONSE:
                 DenyResponse dr = (DenyResponse) message;
 
                 if(mLastResponseEventID == null || !dr.getTargetAddress()
@@ -2476,7 +2476,7 @@ public class P25DecoderState extends DecoderState
                     mLastResponseEventID = dr.getTargetAddress();
                 }
                 break;
-            case GROUP_AFFILIATION_RESPONSE:
+            case OSP_GROUP_AFFILIATION_RESPONSE:
                 GroupAffiliationResponse gar = (GroupAffiliationResponse) message;
 
                 if(mLastResponseEventID == null || !gar.getTargetAddress()
@@ -2495,7 +2495,7 @@ public class P25DecoderState extends DecoderState
                     mLastResponseEventID = gar.getTargetAddress();
                 }
                 break;
-            case LOCATION_REGISTRATION_RESPONSE:
+            case OSP_LOCATION_REGISTRATION_RESPONSE:
                 LocationRegistrationResponse lrr =
                         (LocationRegistrationResponse) message;
 
@@ -2520,7 +2520,7 @@ public class P25DecoderState extends DecoderState
                     mLastRegistrationEventID = lrr.getTargetAddress();
                 }
                 break;
-            case PROTECTION_PARAMETER_UPDATE:
+            case OSP_PROTECTION_PARAMETER_UPDATE:
                 ProtectionParameterUpdate ppu = (ProtectionParameterUpdate) message;
 
                 if(mLastResponseEventID == null || !ppu.getTargetAddress()
@@ -2537,7 +2537,7 @@ public class P25DecoderState extends DecoderState
                     mLastResponseEventID = ppu.getTargetAddress();
                 }
                 break;
-            case QUEUED_RESPONSE:
+            case OSP_QUEUED_RESPONSE:
                 QueuedResponse qr = (QueuedResponse) message;
 
                 if(mLastResponseEventID == null || !qr.getTargetAddress()
@@ -2554,7 +2554,7 @@ public class P25DecoderState extends DecoderState
                     mLastResponseEventID = qr.getTargetAddress();
                 }
                 break;
-            case STATUS_UPDATE:
+            case OSP_STATUS_UPDATE:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.StatusUpdate su =
                         (io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.StatusUpdate) message;
 
@@ -2573,7 +2573,7 @@ public class P25DecoderState extends DecoderState
                 }
 
                 break;
-            case UNIT_REGISTRATION_RESPONSE:
+            case OSP_UNIT_REGISTRATION_RESPONSE:
                 UnitRegistrationResponse urr = (UnitRegistrationResponse) message;
 
                 if(urr.getResponse() == Response.ACCEPT)
@@ -2596,7 +2596,7 @@ public class P25DecoderState extends DecoderState
                     mLastRegistrationEventID = urr.getSourceAddress();
                 }
                 break;
-            case UNIT_DEREGISTRATION_ACKNOWLEDGE:
+            case OSP_UNIT_DEREGISTRATION_ACKNOWLEDGE:
                 UnitDeregistrationAcknowledge udr =
                         (UnitDeregistrationAcknowledge) message;
 
@@ -2648,7 +2648,7 @@ public class P25DecoderState extends DecoderState
     {
         switch(message.getOpcode())
         {
-            case GROUP_DATA_CHANNEL_ANNOUNCEMENT:
+            case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT:
                 GroupDataChannelAnnouncement gdca = (GroupDataChannelAnnouncement) message;
 
                 broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.ANNOUNCEMENT)
@@ -2672,7 +2672,7 @@ public class P25DecoderState extends DecoderState
                             .build());
                 }
                 break;
-            case GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+            case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                 GroupDataChannelAnnouncementExplicit gdcae =
                         (GroupDataChannelAnnouncementExplicit) message;
 
@@ -2838,7 +2838,7 @@ public class P25DecoderState extends DecoderState
 
         switch(message.getOpcode())
         {
-            case GROUP_DATA_CHANNEL_GRANT:
+            case OSP_GROUP_DATA_CHANNEL_GRANT:
                 GroupDataChannelGrant gdcg = (GroupDataChannelGrant) message;
 
                 channel = gdcg.getChannel();
@@ -2877,7 +2877,7 @@ public class P25DecoderState extends DecoderState
                             mChannelCallMap.get(channel)));
                 }
                 break;
-            case GROUP_VOICE_CHANNEL_GRANT:
+            case OSP_GROUP_VOICE_CHANNEL_GRANT:
                 GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant) message;
 
                 channel = gvcg.getChannel();
@@ -2915,7 +2915,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
+            case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                 GroupVoiceChannelGrantUpdate gvcgu = (GroupVoiceChannelGrantUpdate) message;
 
                 channel = gvcgu.getChannel1();
@@ -2989,7 +2989,7 @@ public class P25DecoderState extends DecoderState
                     }
                 }
                 break;
-            case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+            case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
                 GroupVoiceChannelGrantUpdateExplicit gvcgue =
                         (GroupVoiceChannelGrantUpdateExplicit) message;
 
@@ -3029,7 +3029,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case INDIVIDUAL_DATA_CHANNEL_GRANT:
+            case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                 IndividualDataChannelGrant idcg = (IndividualDataChannelGrant) message;
 
                 channel = idcg.getChannel();
@@ -3067,7 +3067,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case SNDCP_DATA_CHANNEL_GRANT:
+            case OSP_SNDCP_DATA_CHANNEL_GRANT:
                 SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant) message;
 
                 channel = sdcg.getTransmitChannel();
@@ -3104,7 +3104,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                 TelephoneInterconnectVoiceChannelGrant tivcg = (TelephoneInterconnectVoiceChannelGrant) message;
 
                 channel = tivcg.getChannel();
@@ -3146,7 +3146,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
                 TelephoneInterconnectVoiceChannelGrantUpdate tivcgu = (TelephoneInterconnectVoiceChannelGrantUpdate) message;
 
                 channel = tivcgu.getChannelIdentifier() + "-" + tivcgu.getChannelNumber();
@@ -3189,7 +3189,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
                 UnitToUnitVoiceChannelGrant uuvcg = (UnitToUnitVoiceChannelGrant) message;
 
                 channel = uuvcg.getChannelIdentifier() + "-" + uuvcg.getChannelNumber();
@@ -3228,7 +3228,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
-            case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                 UnitToUnitVoiceChannelGrantUpdate uuvcgu = (UnitToUnitVoiceChannelGrantUpdate) message;
 
                 channel = uuvcgu.getChannelIdentifier() + "-" + uuvcgu.getChannelNumber();
@@ -3306,7 +3306,7 @@ public class P25DecoderState extends DecoderState
     {
         switch(message.getOpcode())
         {
-            case CALL_ALERT:
+            case OSP_CALL_ALERT:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.CallAlert ca = (io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.CallAlert) message;
 
                 broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.PAGE)
@@ -3315,7 +3315,7 @@ public class P25DecoderState extends DecoderState
                         .to(ca.getTargetAddress())
                         .build());
                 break;
-            case UNIT_TO_UNIT_ANSWER_REQUEST:
+            case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest utuar = (io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest) message;
 
                 if(mLastPageEventID == null || !mLastPageEventID
@@ -3331,7 +3331,7 @@ public class P25DecoderState extends DecoderState
                     mLastPageEventID = utuar.getTargetAddress();
                 }
                 break;
-            case SNDCP_DATA_PAGE_REQUEST:
+            case OSP_SNDCP_DATA_PAGE_REQUEST:
                 SNDCPDataPageRequest sdpr = (SNDCPDataPageRequest) message;
 
                 if(mLastPageEventID == null || !mLastPageEventID
@@ -3348,7 +3348,7 @@ public class P25DecoderState extends DecoderState
                     mLastPageEventID = sdpr.getTargetAddress();
                 }
                 break;
-            case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
+            case OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.TelephoneInterconnectAnswerRequest tiar =
                         (io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.TelephoneInterconnectAnswerRequest) message;
 

@@ -3,6 +3,7 @@ package io.github.dsheirer.module.decode.p25.message.lc;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.reference.ExtendedFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +13,9 @@ import java.util.List;
  */
 public class ExtendedFunctionCommand extends LinkControlWord
 {
-    private static final int[] EXTENDED_FUNCTION = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] EXTENDED_FUNCTION = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
+    private static final int[] EXTENDED_FUNCTION_ARGUMENTS = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+            38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] TARGET_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
             65, 66, 67, 68, 69, 70, 71};
 
@@ -35,13 +37,25 @@ public class ExtendedFunctionCommand extends LinkControlWord
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
         sb.append(" TO:").append(getTargetAddress());
-        sb.append(" FUNCTION:").append(getExtendedFunction());
+        sb.append(" ").append(getExtendedFunction());
+        sb.append(" ARGUMENTS:").append(getExtendedFunctionArguments());
         return sb.toString();
     }
 
-    public String getExtendedFunction()
+    /**
+     * Indicates the type of extended function
+     */
+    public ExtendedFunction getExtendedFunction()
     {
-        return getMessage().getHex(EXTENDED_FUNCTION, 10);
+        return ExtendedFunction.fromValue(getMessage().getInt(EXTENDED_FUNCTION));
+    }
+
+    /**
+     * Argument(s).  May not be required for the class/function and will be set to null (0) if not required.
+     */
+    public String getExtendedFunctionArguments()
+    {
+        return getMessage().getHex(EXTENDED_FUNCTION_ARGUMENTS, 6);
     }
 
     /**

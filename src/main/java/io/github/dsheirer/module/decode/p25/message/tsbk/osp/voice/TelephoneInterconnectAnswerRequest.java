@@ -5,7 +5,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Digit;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +36,7 @@ public class TelephoneInterconnectAnswerRequest extends TSBKMessage
     @Override
     public String getEventType()
     {
-        return Opcode.TELEPHONE_INTERCONNECT_ANSWER_REQUEST.getDescription();
+        return Opcode.OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST.toString();
     }
 
     public String getMessage()

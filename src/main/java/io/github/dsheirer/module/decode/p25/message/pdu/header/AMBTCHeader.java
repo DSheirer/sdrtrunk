@@ -17,7 +17,7 @@ package io.github.dsheirer.module.decode.p25.message.pdu.header;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -96,7 +96,7 @@ public class AMBTCHeader extends PDUHeader
             return Opcode.fromValue(mMessage.getInt(OPCODE));
         }
 
-        return Opcode.UNKNOWN;
+        return Opcode.OSP_UNKNOWN;
     }
 
     public VendorOpcode getVendorOpcode()

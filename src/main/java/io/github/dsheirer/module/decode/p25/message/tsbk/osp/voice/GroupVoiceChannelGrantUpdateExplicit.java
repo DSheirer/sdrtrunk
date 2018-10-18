@@ -4,7 +4,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.GroupChannelGrantExplicit;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class GroupVoiceChannelGrantUpdateExplicit extends GroupChannelGrantExplicit
 {
@@ -18,6 +18,6 @@ public class GroupVoiceChannelGrantUpdateExplicit extends GroupChannelGrantExpli
     @Override
     public String getEventType()
     {
-        return Opcode.GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT.getDescription();
+        return Opcode.OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT.toString();
     }
 }

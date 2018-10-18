@@ -5,7 +5,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class MessageUpdateExtended extends PDUMessage
 {
@@ -36,7 +36,7 @@ public class MessageUpdateExtended extends PDUMessage
     @Override
     public String getEventType()
     {
-        return Opcode.CALL_ALERT.getDescription();
+        return Opcode.OSP_CALL_ALERT.toString();
     }
     
     public String getMessage()

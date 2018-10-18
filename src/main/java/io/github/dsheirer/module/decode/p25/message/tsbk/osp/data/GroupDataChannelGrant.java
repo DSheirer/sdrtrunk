@@ -22,7 +22,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.GroupChannelGrant;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class GroupDataChannelGrant extends GroupChannelGrant
 
@@ -35,6 +35,6 @@ public class GroupDataChannelGrant extends GroupChannelGrant
     @Override
     public String getEventType()
     {
-        return Opcode.GROUP_DATA_CHANNEL_GRANT.getDescription();
+        return Opcode.OSP_GROUP_DATA_CHANNEL_GRANT.toString();
     }
 }

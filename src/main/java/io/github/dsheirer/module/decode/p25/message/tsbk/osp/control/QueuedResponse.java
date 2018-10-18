@@ -22,7 +22,7 @@ import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.QueuedResponseReason;
 
 public class QueuedResponse extends TSBKMessage
@@ -80,7 +80,7 @@ public class QueuedResponse extends TSBKMessage
 
     public int getCallDelaySeconds()
     {
-        if(getServiceType() == Opcode.TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT)
+        if(getServiceType() == Opcode.OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT)
         {
             return (mMessage.getInt(SOURCE_ADDRESS) * 5);
         }
@@ -94,12 +94,12 @@ public class QueuedResponse extends TSBKMessage
         {
             switch(getServiceType())
             {
-                case GROUP_DATA_CHANNEL_GRANT:
-                case GROUP_VOICE_CHANNEL_GRANT:
+                case OSP_GROUP_DATA_CHANNEL_GRANT:
+                case OSP_GROUP_VOICE_CHANNEL_GRANT:
                     mSourceAddress = APCO25FromTalkgroup.createGroup(mMessage.getInt(SOURCE_GROUP));
                     break;
-                case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                case INDIVIDUAL_DATA_CHANNEL_GRANT:
+                case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                     mSourceAddress = APCO25FromTalkgroup.createIndividual(mMessage.getInt(SOURCE_ADDRESS));
                     break;
                 default:

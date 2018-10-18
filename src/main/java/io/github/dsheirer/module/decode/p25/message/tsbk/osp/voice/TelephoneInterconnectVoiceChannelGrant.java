@@ -4,7 +4,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.UnitChannelGrant;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
 {
@@ -61,6 +61,6 @@ public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
     @Override
     public String getEventType()
     {
-        return Opcode.TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT.getDescription();
+        return Opcode.OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT.toString();
     }
 }

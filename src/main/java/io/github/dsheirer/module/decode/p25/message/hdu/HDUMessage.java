@@ -18,18 +18,12 @@ package io.github.dsheirer.module.decode.p25.message.hdu;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Golay18;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class HDUMessage extends P25Message
 {
@@ -206,7 +200,7 @@ public class HDUMessage extends P25Message
         StringBuilder sb = new StringBuilder();
 
         sb.append("NAC:");
-        sb.append(P25Utils.formatNAC(getNAC()));
+        sb.append(getNAC());
         sb.append(" HDU");
 
         if(isValid())

@@ -26,7 +26,7 @@ import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.P25NetworkCallsign;
 
 public class NetworkStatusBroadcastExtended extends PDUMessage implements FrequencyBandReceiver
@@ -59,7 +59,7 @@ public class NetworkStatusBroadcastExtended extends PDUMessage implements Freque
     @Override
     public String getEventType()
     {
-        return Opcode.NETWORK_STATUS_BROADCAST.getDescription();
+        return Opcode.OSP_NETWORK_STATUS_BROADCAST.toString();
     }
 
     public String getMessage()

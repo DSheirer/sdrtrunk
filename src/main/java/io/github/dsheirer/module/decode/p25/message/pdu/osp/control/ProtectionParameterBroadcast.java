@@ -6,7 +6,7 @@ import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class ProtectionParameterBroadcast extends PDUMessage
 {
@@ -49,7 +49,7 @@ public class ProtectionParameterBroadcast extends PDUMessage
     @Override
     public String getEventType()
     {
-        return Opcode.PROTECTION_PARAMETER_BROADCAST.getDescription();
+        return Opcode.OSP_PROTECTION_PARAMETER_BROADCAST.toString();
     }
     
     public String getMessage()

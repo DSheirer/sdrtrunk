@@ -38,9 +38,6 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.DenyRespons
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.ExtendedFunctionCommand;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.GroupAffiliationQuery;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.GroupAffiliationResponse;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.IdentifierUpdateNonVUHFFrequency;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.IdentifierUpdateTDMAFrequency;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.IdentifierUpdateVUHFFrequency;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.LocationRegistrationResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.MessageUpdate;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.NetworkStatusBroadcast;
@@ -75,7 +72,7 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitAns
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 import java.util.BitSet;
@@ -129,93 +126,93 @@ public class TSBKMessageFactory
 
                 switch(opcode)
                 {
-                    case ACKNOWLEDGE_RESPONSE:
+                    case OSP_ACKNOWLEDGE_RESPONSE:
                         return new AcknowledgeResponse(message, duid, aliasList);
-                    case ADJACENT_STATUS_BROADCAST:
+                    case OSP_ADJACENT_STATUS_BROADCAST:
                         return new AdjacentStatusBroadcast(message, duid, aliasList);
-                    case AUTHENTICATION_COMMAND:
+                    case OSP_AUTHENTICATION_COMMAND:
                         return new AuthenticationCommand(message, duid, aliasList);
-                    case CALL_ALERT:
+                    case OSP_CALL_ALERT:
                         return new CallAlert(message, duid, aliasList);
-                    case DENY_RESPONSE:
+                    case OSP_DENY_RESPONSE:
                         return new DenyResponse(message, duid, aliasList);
-                    case EXTENDED_FUNCTION_COMMAND:
+                    case OSP_EXTENDED_FUNCTION_COMMAND:
                         return new ExtendedFunctionCommand(message, duid, aliasList);
-                    case GROUP_AFFILIATION_QUERY:
+                    case OSP_GROUP_AFFILIATION_QUERY:
                         return new GroupAffiliationQuery(message, duid, aliasList);
-                    case GROUP_AFFILIATION_RESPONSE:
+                    case OSP_GROUP_AFFILIATION_RESPONSE:
                         return new GroupAffiliationResponse(message, duid, aliasList);
-                    case GROUP_DATA_CHANNEL_ANNOUNCEMENT:
+                    case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT:
                         return new GroupDataChannelAnnouncement(message, duid, aliasList);
-                    case GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+                    case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                         return new GroupDataChannelAnnouncementExplicit(message, duid, aliasList);
-                    case GROUP_DATA_CHANNEL_GRANT:
+                    case OSP_GROUP_DATA_CHANNEL_GRANT:
                         return new GroupDataChannelGrant(message, duid, aliasList);
-                    case GROUP_VOICE_CHANNEL_GRANT:
+                    case OSP_GROUP_VOICE_CHANNEL_GRANT:
                         return new GroupVoiceChannelGrant(message, duid, aliasList);
-                    case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
+                    case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                         return new GroupVoiceChannelGrantUpdate(message, duid, aliasList);
-                    case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+                    case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
                         return new GroupVoiceChannelGrantUpdateExplicit(message, duid, aliasList);
-                    case IDENTIFIER_UPDATE_NON_VUHF:
+                    case OSP_IDENTIFIER_UPDATE_NON_VUHF:
                         return new IdentifierUpdateNonVUHF(message, duid, aliasList);
-                    case IDENTIFIER_UPDATE_TDMA:
+                    case OSP_IDENTIFIER_UPDATE_TDMA:
                         return new IdentifierUpdateTDMA(message, duid, aliasList);
-                    case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
+                    case OSP_IDENTIFIER_UPDATE_VHF_UHF_BANDS:
                         return new IdentifierUpdateVUHF(message, duid, aliasList);
-                    case INDIVIDUAL_DATA_CHANNEL_GRANT:
+                    case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                         return new IndividualDataChannelGrant(message, duid, aliasList);
-                    case LOCATION_REGISTRATION_RESPONSE:
+                    case OSP_LOCATION_REGISTRATION_RESPONSE:
                         return new LocationRegistrationResponse(message, duid, aliasList);
-                    case MESSAGE_UPDATE:
+                    case OSP_MESSAGE_UPDATE:
                         return new MessageUpdate(message, duid, aliasList);
-                    case NETWORK_STATUS_BROADCAST:
+                    case OSP_NETWORK_STATUS_BROADCAST:
                         return new NetworkStatusBroadcast(message, duid, aliasList);
-                    case QUEUED_RESPONSE:
+                    case OSP_QUEUED_RESPONSE:
                         return new QueuedResponse(message, duid, aliasList);
-                    case PROTECTION_PARAMETER_UPDATE:
+                    case OSP_PROTECTION_PARAMETER_UPDATE:
                         return new ProtectionParameterUpdate(message, duid, aliasList);
-                    case RADIO_UNIT_MONITOR_COMMAND:
+                    case OSP_RADIO_UNIT_MONITOR_COMMAND:
                         return new RadioUnitMonitorCommand(message, duid, aliasList);
-                    case RFSS_STATUS_BROADCAST:
+                    case OSP_RFSS_STATUS_BROADCAST:
                         return new RFSSStatusBroadcast(message, duid, aliasList);
-                    case ROAMING_ADDRESS_COMMAND:
+                    case OSP_ROAMING_ADDRESS_COMMAND:
                         return new RoamingAddressCommand(message, duid, aliasList);
-                    case SECONDARY_CONTROL_CHANNEL_BROADCAST:
+                    case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST:
                         return new SecondaryControlChannelBroadcast(message, duid, aliasList);
-                    case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+                    case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
                         return new SecondaryControlChannelBroadcastExplicit(message, duid, aliasList);
-                    case SNDCP_DATA_CHANNEL_GRANT:
+                    case OSP_SNDCP_DATA_CHANNEL_GRANT:
                         return new SNDCPDataChannelGrant(message, duid, aliasList);
-                    case SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+                    case OSP_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                         return new SNDCPDataChannelAnnouncementExplicit(message, duid, aliasList);
-                    case SNDCP_DATA_PAGE_REQUEST:
+                    case OSP_SNDCP_DATA_PAGE_REQUEST:
                         return new SNDCPDataPageRequest(message, duid, aliasList);
                     case STATUS_QUERY:
                         return new StatusQuery(message, duid, aliasList);
-                    case STATUS_UPDATE:
+                    case OSP_STATUS_UPDATE:
                         return new StatusUpdate(message, duid, aliasList);
-                    case TDMA_SYNC_BROADCAST:
+                    case OSP_TDMA_SYNC_BROADCAST:
                         return new SyncBroadcast(message, duid, aliasList);
-                    case SYSTEM_SERVICE_BROADCAST:
+                    case OSP_SYSTEM_SERVICE_BROADCAST:
                         return new SystemServiceBroadcast(message, duid, aliasList);
-                    case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
+                    case OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                         return new TelephoneInterconnectAnswerRequest(message, duid, aliasList);
-                    case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+                    case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                         return new TelephoneInterconnectVoiceChannelGrant(message, duid, aliasList);
-                    case TIME_DATE_ANNOUNCEMENT:
+                    case OSP_TIME_DATE_ANNOUNCEMENT:
                         return new TimeAndDateAnnouncement(message, duid, aliasList);
-                    case UNIT_DEREGISTRATION_ACKNOWLEDGE:
+                    case OSP_UNIT_DEREGISTRATION_ACKNOWLEDGE:
                         return new UnitDeregistrationAcknowledge(message, duid, aliasList);
-                    case UNIT_REGISTRATION_COMMAND:
+                    case OSP_UNIT_REGISTRATION_COMMAND:
                         return new UnitRegistrationCommand(message, duid, aliasList);
-                    case UNIT_REGISTRATION_RESPONSE:
+                    case OSP_UNIT_REGISTRATION_RESPONSE:
                         return new UnitRegistrationResponse(message, duid, aliasList);
-                    case UNIT_TO_UNIT_ANSWER_REQUEST:
+                    case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                         return new UnitToUnitAnswerRequest(message, duid, aliasList);
-                    case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                    case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
                         return new UnitToUnitVoiceChannelGrant(message, duid, aliasList);
-                    case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+                    case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                         return new UnitToUnitVoiceChannelGrantUpdate(message, duid, aliasList);
                     default:
                         return new TSBKMessage(message, duid, aliasList);

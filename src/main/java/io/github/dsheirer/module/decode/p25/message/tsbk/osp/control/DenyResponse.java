@@ -23,7 +23,7 @@ import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.DenyReason;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class DenyResponse extends TSBKMessage
 {
@@ -81,13 +81,13 @@ public class DenyResponse extends TSBKMessage
         {
             switch(getServiceType())
             {
-                case GROUP_DATA_CHANNEL_GRANT:
-                case GROUP_VOICE_CHANNEL_GRANT:
+                case OSP_GROUP_DATA_CHANNEL_GRANT:
+                case OSP_GROUP_VOICE_CHANNEL_GRANT:
                     mSourceAddress = APCO25FromTalkgroup.createGroup(mMessage.getInt(SOURCE_GROUP));
                     break;
-                case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                case INDIVIDUAL_DATA_CHANNEL_GRANT:
-                case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+                case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
+                case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                     mSourceAddress = APCO25FromTalkgroup.createIndividual(mMessage.getInt(SOURCE_ADDRESS));
                     break;
                 default:

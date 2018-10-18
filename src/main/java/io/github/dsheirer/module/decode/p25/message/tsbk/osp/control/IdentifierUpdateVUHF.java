@@ -3,7 +3,7 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.osp.control;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class IdentifierUpdateVUHF extends IdentifierUpdate
 {
@@ -24,7 +24,7 @@ public class IdentifierUpdateVUHF extends IdentifierUpdate
     @Override
     public String getEventType()
     {
-        return Opcode.IDENTIFIER_UPDATE_VHF_UHF_BANDS.getDescription();
+        return Opcode.OSP_IDENTIFIER_UPDATE_VHF_UHF_BANDS.toString();
     }
 
     public String getMessage()

@@ -43,7 +43,7 @@ import io.github.dsheirer.module.decode.p25.message.pdu.osp.voice.UnitToUnitAnsw
 import io.github.dsheirer.module.decode.p25.message.pdu.osp.voice.UnitToUnitVoiceChannelGrantExtended;
 import io.github.dsheirer.module.decode.p25.message.pdu.osp.voice.UnitToUnitVoiceChannelGrantUpdateExtended;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import org.slf4j.Logger;
@@ -118,65 +118,65 @@ public class PDUMessageFactory
 
                         switch(opcode)
                         {
-                            case ADJACENT_STATUS_BROADCAST:
+                            case OSP_ADJACENT_STATUS_BROADCAST:
                                 return new AdjacentStatusBroadcastExtended(
                                     message, duid, aliasList);
-                            case CALL_ALERT:
+                            case OSP_CALL_ALERT:
                                 return new CallAlertExtended(message, duid,
                                     aliasList);
-                            case GROUP_AFFILIATION_QUERY:
+                            case OSP_GROUP_AFFILIATION_QUERY:
                                 return new GroupAffiliationQueryExtended(
                                     message, duid, aliasList);
-                            case GROUP_AFFILIATION_RESPONSE:
+                            case OSP_GROUP_AFFILIATION_RESPONSE:
                                 return new GroupAffiliationResponseExtended(
                                     message, duid, aliasList);
-                            case GROUP_DATA_CHANNEL_GRANT:
+                            case OSP_GROUP_DATA_CHANNEL_GRANT:
                                 return new GroupDataChannelGrantExtended(
                                     message, duid, aliasList);
-                            case GROUP_VOICE_CHANNEL_GRANT:
+                            case OSP_GROUP_VOICE_CHANNEL_GRANT:
 
                                 return new GroupVoiceChannelGrantExplicit(
                                     message, duid, aliasList);
-                            case INDIVIDUAL_DATA_CHANNEL_GRANT:
+                            case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                                 return new IndividualDataChannelGrantExtended(
                                     message, duid, aliasList);
-                            case MESSAGE_UPDATE:
+                            case OSP_MESSAGE_UPDATE:
                                 return new MessageUpdateExtended(message, duid,
                                     aliasList);
-                            case NETWORK_STATUS_BROADCAST:
+                            case OSP_NETWORK_STATUS_BROADCAST:
                                 return new NetworkStatusBroadcastExtended(
                                     message, duid, aliasList);
-                            case PROTECTION_PARAMETER_BROADCAST:
+                            case OSP_PROTECTION_PARAMETER_BROADCAST:
                                 return new ProtectionParameterBroadcast(
                                     message, duid, aliasList);
-                            case RFSS_STATUS_BROADCAST:
+                            case OSP_RFSS_STATUS_BROADCAST:
                                 return new RFSSStatusBroadcastExtended(message,
                                     duid, aliasList);
-                            case ROAMING_ADDRESS_UPDATE:
+                            case OSP_ROAMING_ADDRESS_UPDATE:
                                 return new RoamingAddressUpdateExtended(
                                     message, duid, aliasList);
                             case STATUS_QUERY:
                                 return new StatusQueryExtended(message, duid,
                                     aliasList);
-                            case STATUS_UPDATE:
+                            case OSP_STATUS_UPDATE:
                                 return new StatusUpdateExtended(message, duid,
                                     aliasList);
-                            case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+                            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                                 return new TelephoneInterconnectChannelGrantExplicit(
                                     message, duid, aliasList);
-                            case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+                            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
                                 return new TelephoneInterconnectChannelGrantUpdateExplicit(
                                     message, duid, aliasList);
-                            case UNIT_REGISTRATION_RESPONSE:
+                            case OSP_UNIT_REGISTRATION_RESPONSE:
                                 return new UnitRegistrationResponseExtended(
                                     message, duid, aliasList);
-                            case UNIT_TO_UNIT_ANSWER_REQUEST:
+                            case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                                 return new UnitToUnitAnswerRequestExplicit(
                                     message, duid, aliasList);
-                            case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
                                 return new UnitToUnitVoiceChannelGrantExtended(
                                     message, duid, aliasList);
-                            case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+                            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                                 return new UnitToUnitVoiceChannelGrantUpdateExtended(
                                     message, duid, aliasList);
                             default:

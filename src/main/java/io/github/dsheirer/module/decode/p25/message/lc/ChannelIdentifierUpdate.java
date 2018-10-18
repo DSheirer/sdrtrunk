@@ -14,7 +14,8 @@ public class ChannelIdentifierUpdate extends LinkControlWord implements IFrequen
 {
     private static final int[] FREQUENCY_BAND_IDENTIFIER = {8, 9, 10, 11};
     private static final int[] BANDWIDTH = {12, 13, 14, 15, 16, 17, 18, 19, 20};
-    private static final int[] TRANSMIT_OFFSET = {21, 22, 23, 24, 25, 26, 27, 28, 29};
+    private static final int TRANSMIT_OFFSET_SIGN = 21;
+    private static final int[] TRANSMIT_OFFSET = {22, 23, 24, 25, 26, 27, 28, 29};
     private static final int[] CHANNEL_SPACING = {30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] BASE_FREQUENCY = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
             65, 66, 67, 68, 69, 70, 71};
@@ -68,7 +69,14 @@ public class ChannelIdentifierUpdate extends LinkControlWord implements IFrequen
     @Override
     public long getTransmitOffset()
     {
-        return -1 * getMessage().getLong(TRANSMIT_OFFSET) * 250000l;
+        long offset = getMessage().getLong(TRANSMIT_OFFSET) * 250000l;
+
+        if(!getMessage().get(TRANSMIT_OFFSET_SIGN))
+        {
+            offset *= -1;
+        }
+
+        return offset;
     }
 
     @Override

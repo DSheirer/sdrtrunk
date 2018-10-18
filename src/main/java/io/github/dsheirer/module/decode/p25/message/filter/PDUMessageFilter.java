@@ -4,7 +4,7 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 import java.util.ArrayList;
 import java.util.HashMap;

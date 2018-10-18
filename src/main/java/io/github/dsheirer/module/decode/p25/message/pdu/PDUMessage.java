@@ -15,12 +15,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -186,7 +185,7 @@ public class PDUMessage extends P25Message
             return Opcode.fromValue(mMessage.getInt(OPCODE));
         }
 
-        return Opcode.UNKNOWN;
+        return Opcode.OSP_UNKNOWN;
     }
 
     public VendorOpcode getVendorOpcode()

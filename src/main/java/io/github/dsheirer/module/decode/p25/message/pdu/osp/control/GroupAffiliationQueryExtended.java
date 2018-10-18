@@ -25,7 +25,7 @@ import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 
 public class GroupAffiliationQueryExtended extends PDUMessage
 {
@@ -58,7 +58,7 @@ public class GroupAffiliationQueryExtended extends PDUMessage
     @Override
     public String getEventType()
     {
-        return Opcode.GROUP_AFFILIATION_QUERY.getDescription();
+        return Opcode.OSP_GROUP_AFFILIATION_QUERY.toString();
     }
 
     public String getMessage()

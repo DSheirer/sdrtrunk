@@ -4,11 +4,10 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 import java.util.ArrayList;
@@ -64,7 +63,7 @@ public class TSBKMessageFilterSet extends FilterSet<IMessage>
 
             for(Opcode opcode : Opcode.values())
             {
-                if(opcode != Opcode.UNKNOWN)
+                if(opcode != Opcode.OSP_UNKNOWN)
                 {
                     mStandardElements.put(opcode, new FilterElement<Opcode>(opcode));
                 }
