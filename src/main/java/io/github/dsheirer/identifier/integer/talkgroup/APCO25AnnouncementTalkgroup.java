@@ -13,17 +13,43 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.identifier;
+package io.github.dsheirer.identifier.integer.talkgroup;
+
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Role;
 
 /**
- * Identifier role.  Indicates the role of the entity in the communication.
+ * APCO25 Announcement Talkgroup - grouping of talkgroups within a system.
  */
-public enum Role
+public class APCO25AnnouncementTalkgroup extends APCO25Talkgroup
 {
-    ANNOUNCEMENT,
-    FROM,
-    TO,
-    UNIT,
-    USER,
-    ANY;
+    /**
+     * Constructs an APCO25 Talkgroup Identifier with a FROM role.
+     *
+     * @param value of the talkgroup
+     */
+    public APCO25AnnouncementTalkgroup(int value)
+    {
+        super(value);
+    }
+
+    @Override
+    public Role getRole()
+    {
+        return Role.ANNOUNCEMENT;
+    }
+
+    @Override
+    boolean isGroup()
+    {
+        return true;
+    }
+
+    /**
+     * Creates an APCO-25 announcement group talkgroup identifier
+     */
+    public static IIdentifier create(int talkgroup)
+    {
+        return new APCO25AnnouncementTalkgroup(talkgroup);
+    }
 }

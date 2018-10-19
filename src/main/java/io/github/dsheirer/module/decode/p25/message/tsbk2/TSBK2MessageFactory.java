@@ -6,14 +6,36 @@ import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.CallAlert
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.CancelServiceRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.EmergencyAlarmRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.ExtendedFunctionResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.GroupAffiliationQueryResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.GroupAffiliationRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.GroupVoiceServiceRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.IdentifierUpdateRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.IndividualDataServiceRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.LocationRegistrationRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.MessageUpdateRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.ProtectionParameterRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.RadioUnitMonitorRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.RoamingAddressRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.RoamingAddressResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.StatusQueryRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.StatusQueryResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.StatusUpdateRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.TelephoneInterconnectAnswerResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.TelephoneInterconnectPstnRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.UnitAcknowledgeResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.UnitDeRegistrationRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.UnitRegistrationRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.UnitToUnitVoiceServiceAnswerResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.UnitToUnitVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.isp.UnknownISPMessage;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.AcknowledgeResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.AdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.AuthenticationCommand;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.CallAlert;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.DenyResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.ExtendedFunctionCommand;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.GroupAffiliationQuery;
+import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.GroupAffiliationResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.GroupDataChannelAnnouncement;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.GroupDataChannelAnnouncementExplicit;
 import io.github.dsheirer.module.decode.p25.message.tsbk2.standard.osp.GroupDataChannelGrant;
@@ -68,20 +90,64 @@ public class TSBK2MessageFactory
                 return new EmergencyAlarmRequest(dataUnitID, message, nac, timestamp);
             case ISP_EXTENDED_FUNCTION_RESPONSE:
                 return new ExtendedFunctionResponse(dataUnitID, message, nac, timestamp);
+            case ISP_GROUP_AFFILIATION_QUERY_RESPONSE:
+                return new GroupAffiliationQueryResponse(dataUnitID, message, nac, timestamp);
+            case ISP_GROUP_AFFILIATION_REQUEST:
+                return new GroupAffiliationRequest(dataUnitID, message, nac, timestamp);
             case ISP_GROUP_VOICE_SERVICE_REQUEST:
                 return new GroupVoiceServiceRequest(dataUnitID, message, nac, timestamp);
+            case ISP_IDENTIFIER_UPDATE_REQUEST:
+                return new IdentifierUpdateRequest(dataUnitID, message, nac, timestamp);
             case ISP_INDIVIDUAL_DATA_SERVICE_REQUEST:
                 return new IndividualDataServiceRequest(dataUnitID, message, nac, timestamp);
+            case ISP_LOCATION_REGISTRATION_REQUEST:
+                return new LocationRegistrationRequest(dataUnitID, message, nac, timestamp);
+            case ISP_MESSAGE_UPDATE_REQUEST:
+                return new MessageUpdateRequest(dataUnitID, message, nac, timestamp);
+            case ISP_PROTECTION_PARAMETER_REQUEST:
+                return new ProtectionParameterRequest(dataUnitID, message, nac, timestamp);
+            case ISP_RADIO_UNIT_MONITOR_REQUEST:
+                return new RadioUnitMonitorRequest(dataUnitID, message, nac, timestamp);
+            case ISP_ROAMING_ADDRESS_REQUEST:
+                return new RoamingAddressRequest(dataUnitID, message, nac, timestamp);
+            case ISP_ROAMING_ADDRESS_RESPONSE:
+                return new RoamingAddressResponse(dataUnitID, message, nac, timestamp);
+            case ISP_STATUS_QUERY_REQUEST:
+                return new StatusQueryRequest(dataUnitID, message, nac, timestamp);
+            case ISP_STATUS_QUERY_RESPONSE:
+                return new StatusQueryResponse(dataUnitID, message, nac, timestamp);
+            case ISP_STATUS_UPDATE_REQUEST:
+                return new StatusUpdateRequest(dataUnitID, message, nac, timestamp);
             case ISP_TELEPHONE_INTERCONNECT_ANSWER_RESPONSE:
                 return new TelephoneInterconnectAnswerResponse(dataUnitID, message, nac, timestamp);
             case ISP_TELEPHONE_INTERCONNECT_PSTN_REQUEST:
                 return new TelephoneInterconnectPstnRequest(dataUnitID, message, nac, timestamp);
             case ISP_UNIT_ACKNOWLEDGE_RESPONSE:
                 return new UnitAcknowledgeResponse(dataUnitID, message, nac, timestamp);
+            case ISP_UNIT_REGISTRATION_REQUEST:
+                return new UnitRegistrationRequest(dataUnitID, message, nac, timestamp);
+            case ISP_UNIT_DE_REGISTRATION_REQUEST:
+                return new UnitDeRegistrationRequest(dataUnitID, message, nac, timestamp);
             case ISP_UNIT_TO_UNIT_ANSWER_RESPONSE:
                 return new UnitToUnitVoiceServiceAnswerResponse(dataUnitID, message, nac, timestamp);
             case ISP_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST:
                 return new UnitToUnitVoiceServiceRequest(dataUnitID, message, nac, timestamp);
+            case OSP_ACKNOWLEDGE_RESPONSE:
+                return new AcknowledgeResponse(dataUnitID, message, nac, timestamp);
+            case OSP_ADJACENT_STATUS_BROADCAST:
+                return new AdjacentStatusBroadcast(dataUnitID, message, nac, timestamp);
+            case OSP_AUTHENTICATION_COMMAND:
+                return new AuthenticationCommand(dataUnitID, message, nac, timestamp);
+            case OSP_CALL_ALERT:
+                return new CallAlert(dataUnitID, message, nac, timestamp);
+            case OSP_DENY_RESPONSE:
+                return new DenyResponse(dataUnitID, message, nac, timestamp);
+            case OSP_EXTENDED_FUNCTION_COMMAND:
+                return new ExtendedFunctionCommand(dataUnitID, message, nac, timestamp);
+            case OSP_GROUP_AFFILIATION_QUERY:
+                return new GroupAffiliationQuery(dataUnitID, message, nac, timestamp);
+            case OSP_GROUP_AFFILIATION_RESPONSE:
+                return new GroupAffiliationResponse(dataUnitID, message, nac, timestamp);
             case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT:
                 return new GroupDataChannelAnnouncement(dataUnitID, message, nac, timestamp);
             case OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
