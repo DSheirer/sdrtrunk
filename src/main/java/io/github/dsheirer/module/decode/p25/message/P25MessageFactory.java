@@ -17,11 +17,12 @@ package io.github.dsheirer.module.decode.p25.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
+import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
-import io.github.dsheirer.module.decode.p25.message.ldu.lc.LDULCMessageFactory;
+import io.github.dsheirer.module.decode.p25.message.tdu.TDULinkControlMessage;
 import io.github.dsheirer.module.decode.p25.message.tdu.TDUMessage;
-import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULCMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
+import io.github.dsheirer.module.decode.p25.message.vselp.VSELP1Message;
+import io.github.dsheirer.module.decode.p25.message.vselp.VSELP2Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,37 +36,47 @@ public class P25MessageFactory
 
     /**
      * Creates a P25 message for known message types.
+     *
+     * NOTE: TSBK and PDU messages are not processed by this factory class.
+     *
      * @param dataUnitID that identifies the message type
-     * @param correctedBinaryMessage containing message bits and bit error count results from nid error detection and
-     * correction
      * @param nac decoded from the network identifier (NID)
-     * @return constructed message or null of the message type is unrecognized
+     * @param timestamp of the message
+     * @param message containing message bits and bit error count results from nid error detection and
+     * correction
+     * @return constructed message parser
      */
-    public static P25Message create(DataUnitID dataUnitID, int nac, long timestamp,
-                                    CorrectedBinaryMessage correctedBinaryMessage)
+    public static P25Message create(DataUnitID dataUnitID, int nac, long timestamp, CorrectedBinaryMessage message)
     {
         switch(dataUnitID)
         {
             case HEADER_DATA_UNIT:
-                return new HDUMessage(correctedBinaryMessage, nac, timestamp);
+                return new HDUMessage(message, nac, timestamp);
             case LOGICAL_LINK_DATA_UNIT_1:
-                return LDULCMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
+                return new LDU1Message(message, nac, timestamp);
             case LOGICAL_LINK_DATA_UNIT_2:
-                return new LDU2Message(correctedBinaryMessage, dataUnitID, null);
-            case UNKNOWN_2:
+                return new LDU2Message(message, nac, timestamp);
+            case PACKET_HEADER_DATA_UNIT:
+            case PACKET_DATA_UNIT_1:
+            case PACKET_DATA_UNIT_2:
+            case PACKET_DATA_UNIT_3:
+                mLog.warn("WARNING: PDU messages must be created by the PDUMessageFactory");
+                return null;
             case TERMINATOR_DATA_UNIT:
-                return new TDUMessage(correctedBinaryMessage, dataUnitID, null);
+                return new TDUMessage(message, nac, timestamp);
             case TERMINATOR_DATA_UNIT_LINK_CONTROL:
-                return TDULCMessageFactory.create(dataUnitID, nac, timestamp, correctedBinaryMessage);
+                return new TDULinkControlMessage(message, nac, timestamp);
             case TRUNKING_SIGNALING_BLOCK_1:
-                return TSBKMessageFactory.getMessage(correctedBinaryMessage, dataUnitID, null);
+            case TRUNKING_SIGNALING_BLOCK_2:
+            case TRUNKING_SIGNALING_BLOCK_3:
+                mLog.warn("WARNING: TSBK messages must be created by the TSBKMessageFactory");
+                return null;
+            case VSELP1:
+                return new VSELP1Message(message, nac, timestamp);
+            case VSELP2:
+                return new VSELP2Message(message, nac, timestamp);
             default:
-                mLog.debug("Unrecognized P25 Data Unit ID [" + dataUnitID + "] - cannot create message");
-//                return new P25Message(correctedBinaryMessage, dataUnitID, null);
+                return new UnknownP25Message(message, nac, timestamp, dataUnitID);
         }
-
-        return null;
     }
-
-
 }

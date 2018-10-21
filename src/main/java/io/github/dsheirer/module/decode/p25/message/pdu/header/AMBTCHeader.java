@@ -16,8 +16,7 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.header;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
-import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -56,10 +55,6 @@ public class AMBTCHeader extends PDUHeader
         {
             sb.append(" ").append(getOpcode().getLabel());
         }
-        else
-        {
-            sb.append(" ").append(getVendorOpcode().getLabel());
-        }
 
         sb.append(" TA DAH!");
         return sb.toString();
@@ -97,16 +92,6 @@ public class AMBTCHeader extends PDUHeader
         }
 
         return Opcode.OSP_UNKNOWN;
-    }
-
-    public VendorOpcode getVendorOpcode()
-    {
-        if(getFormat() == PDUFormat.ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL)
-        {
-            return VendorOpcode.fromValue(mMessage.getInt(OPCODE));
-        }
-
-        return VendorOpcode.UNKNOWN;
     }
 
     public int getDataHeaderOffset()

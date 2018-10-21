@@ -35,4 +35,28 @@ public class P25Utils
 
         return sb.toString();
     }
+
+    /**
+     * Adds spaces to the string builder until it is the specified length
+     * @param sb to pad with spaces
+     * @param length of the stringbuilder when complete
+     */
+    public static void pad(StringBuilder sb, int length)
+    {
+        pad(sb, length, " ");
+    }
+
+    /**
+     * Adds pad characters to the string builder until it is the specified length
+     * @param sb to pad with spaces
+     * @param length of the stringbuilder when complete
+     * @param padCharacter to use for padding
+     */
+    public static void pad(StringBuilder sb, int length, String padCharacter)
+    {
+        while(sb.length() < length)
+        {
+            sb.append(padCharacter);
+        }
+    }
 }

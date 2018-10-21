@@ -7,7 +7,7 @@ import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
 import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
 import io.github.dsheirer.identifier.integer.node.APCO25Site;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +30,7 @@ public class SecondaryControlChannelBroadcastExplicit extends LinkControlWord im
     private IIdentifier mRFSS;
     private IIdentifier mSite;
     private IAPCO25Channel mChannel;
+    private ServiceOptions mServiceOptions;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -47,7 +48,7 @@ public class SecondaryControlChannelBroadcastExplicit extends LinkControlWord im
         sb.append(getMessageStub());
         sb.append(" SITE:" + getRFSS() + "-" + getSite());
         sb.append(" CHAN:" + getChannel());
-        sb.append(" " + SystemService.toString(getSystemServiceClass()));
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
 
@@ -76,16 +77,21 @@ public class SecondaryControlChannelBroadcastExplicit extends LinkControlWord im
         if(mChannel == null)
         {
             mChannel = APCO25ExplicitChannel.create(getMessage().getInt(DOWNLINK_FREQUENCY_BAND),
-                    getMessage().getInt(DOWNLINK_CHANNEL_NUMBER), getMessage().getInt(UPLINK_FREQUENCY_BAND),
-                    getMessage().getInt(UPNLINK_CHANNEL_NUMBER));
+                getMessage().getInt(DOWNLINK_CHANNEL_NUMBER), getMessage().getInt(UPLINK_FREQUENCY_BAND),
+                getMessage().getInt(UPNLINK_CHANNEL_NUMBER));
         }
 
         return mChannel;
     }
 
-    public int getSystemServiceClass()
+    public ServiceOptions getServiceOptions()
     {
-        return getMessage().getInt(SERVICE_CLASS);
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_CLASS));
+        }
+
+        return mServiceOptions;
     }
 
     /**

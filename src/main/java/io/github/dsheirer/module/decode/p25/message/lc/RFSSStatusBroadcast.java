@@ -9,7 +9,7 @@ import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
 import io.github.dsheirer.identifier.integer.node.APCO25Site;
 import io.github.dsheirer.identifier.integer.node.APCO25System;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +33,7 @@ public class RFSSStatusBroadcast extends LinkControlWord implements FrequencyBan
     private IIdentifier mRFSS;
     private IIdentifier mSite;
     private IAPCO25Channel mChannel;
+    private ServiceOptions mServiceOptions;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -52,7 +53,7 @@ public class RFSSStatusBroadcast extends LinkControlWord implements FrequencyBan
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" SITE:" + getRFSS() + "-" + getSite());
         sb.append(" CHAN:" + getChannel());
-        sb.append(" " + SystemService.toString(getSystemServiceClass()));
+        sb.append(" SERVICE OPTIONS:" + getServiceOptions());
         return sb.toString();
     }
 
@@ -107,10 +108,16 @@ public class RFSSStatusBroadcast extends LinkControlWord implements FrequencyBan
         return mChannel;
     }
 
-    public int getSystemServiceClass()
+    public ServiceOptions getServiceOptions()
     {
-        return getMessage().getInt(SERVICE_CLASS);
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_CLASS));
+        }
+
+        return mServiceOptions;
     }
+
 
     /**
      * List of identifiers contained in this message

@@ -16,8 +16,8 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class P25MessageProcessor implements Listener<Message>
 {
@@ -103,7 +105,7 @@ public class P25MessageProcessor implements Listener<Message>
         mMessageListener = null;
     }
 
-    public void setMessageListener(Listener<Message> listener)
+    public void setMessageListener(Listener<IMessage> listener)
     {
         mMessageListener = listener;
     }

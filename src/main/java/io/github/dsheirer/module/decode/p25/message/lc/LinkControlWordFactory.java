@@ -28,9 +28,9 @@ public class LinkControlWordFactory
             case CALL_TERMINATION_OR_CANCELLATION:
                 return new CallTermination(binaryMessage);
             case CHANNEL_IDENTIFIER_UPDATE:
-                return new ChannelIdentifierUpdate(binaryMessage);
+                return new IdentifierUpdate(binaryMessage);
             case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-                return new ChannelIdentifierUpdateExplicit(binaryMessage);
+                return new IdentifierUpdateExplicit(binaryMessage);
             case EXTENDED_FUNCTION_COMMAND:
                 return new ExtendedFunctionCommand(binaryMessage);
             case GROUP_AFFILIATION_QUERY:

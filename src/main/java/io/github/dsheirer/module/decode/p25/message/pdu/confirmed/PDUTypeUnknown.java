@@ -25,11 +25,11 @@ public class PDUTypeUnknown extends PDUConfirmedMessage
 
 	public PDUTypeUnknown( PDUConfirmedMessage message )
     {
-        super(message);
+        super(null, null);
     }
 
 	@Override
-    public String getMessage()
+    public String toString()
     {
 		StringBuilder sb = new StringBuilder();
 
@@ -61,7 +61,7 @@ public class PDUTypeUnknown extends PDUConfirmedMessage
 		
 		sb.append( " " );
 		
-		sb.append( mMessage.toString() );
+		sb.append( getMessage().toString() );
 		
 	    return sb.toString();
     }

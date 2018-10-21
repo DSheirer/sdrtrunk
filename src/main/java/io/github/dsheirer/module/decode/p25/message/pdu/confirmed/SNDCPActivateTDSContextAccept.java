@@ -40,11 +40,11 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 
     public SNDCPActivateTDSContextAccept(PDUConfirmedMessage message)
     {
-        super(message);
+        super(null, null);
     }
 
 	@Override
-    public String getMessage()
+    public String toString()
     {
 		StringBuilder sb = new StringBuilder();
 
@@ -91,17 +91,17 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
      */
     public int getNSAPI()
     {
-        return mMessage.getInt(NSAPI);
+        return getMessage().getInt(NSAPI);
     }
 
     public int getPDUPriorityMaximum()
     {
-        return mMessage.getInt(PDUPM);
+        return getMessage().getInt(PDUPM);
     }
 
     public String getReadyTimer()
     {
-        switch(mMessage.getInt(READY))
+        switch(getMessage().getInt(READY))
         {
             case 1:
                 return "1 Second";
@@ -141,7 +141,7 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 
     public String getStandbyTimer()
     {
-        switch(mMessage.getInt(STANDBY))
+        switch(getMessage().getInt(STANDBY))
         {
             case 1:
                 return "10 Seconds";
@@ -180,47 +180,47 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 
     public String getNetworkAddressType()
     {
-        return mMessage.getInt(NAT) == 0 ? "IPV4 STATIC" : "IPV4 DYNAMIC";
+        return getMessage().getInt(NAT) == 0 ? "IPV4 STATIC" : "IPV4 DYNAMIC";
     }
 
     public String getIPAddress()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(mMessage.getInt(IP_1));
+        sb.append(getMessage().getInt(IP_1));
         sb.append(".");
-        sb.append(mMessage.getInt(IP_2));
+        sb.append(getMessage().getInt(IP_2));
         sb.append(".");
-        sb.append(mMessage.getInt(IP_3));
+        sb.append(getMessage().getInt(IP_3));
         sb.append(".");
-        sb.append(mMessage.getInt(IP_4));
+        sb.append(getMessage().getInt(IP_4));
 
         return sb.toString();
     }
 
     public boolean hasIPHeaderCompression()
     {
-        return mMessage.getInt(IPHC) == 1;
+        return getMessage().getInt(IPHC) == 1;
     }
 
     public boolean hasUserDataPayloadCompression()
     {
-        return mMessage.getInt(UDPC) == 1;
+        return getMessage().getInt(UDPC) == 1;
     }
 
     public int getTCPStateSlots()
     {
-        return mMessage.getInt(TCPSS);
+        return getMessage().getInt(TCPSS);
     }
 
     public int getUDPStateSlots()
     {
-        return mMessage.getInt(UDPSS);
+        return getMessage().getInt(UDPSS);
     }
 
     public String getMaximumTransmissionUnit()
     {
-        int mtu = mMessage.getInt(MTU);
+        int mtu = getMessage().getInt(MTU);
 
         switch(mtu)
         {
@@ -239,11 +239,11 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 
     public MDPConfigurationOption getMDPConfigurationOption()
     {
-        return MDPConfigurationOption.fromValue(mMessage.getInt(MDPCO));
+        return MDPConfigurationOption.fromValue(getMessage().getInt(MDPCO));
     }
 
     public String getDataAccessControl()
     {
-        return mMessage.getHex(DATA_ACCESS_CONTROL, 4);
+        return getMessage().getHex(DATA_ACCESS_CONTROL, 4);
     }
 }

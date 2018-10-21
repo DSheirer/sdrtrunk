@@ -14,22 +14,10 @@ import io.github.dsheirer.edac.BCH_63_16_11;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
-import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
-import io.github.dsheirer.module.decode.p25.message.ldu.lc.LDULCMessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.confirmed.PDUConfirmedMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.confirmed.PDUConfirmedMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.tdu.TDUMessage;
-import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULCMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULinkControlMessage;
-import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
-import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.vselp.VSELP1Message;
-import io.github.dsheirer.module.decode.p25.message.vselp.VSELP2Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -307,18 +295,17 @@ public class P25MessageFramer implements Listener<Dibit>
                 case LOGICAL_LINK_DATA_UNIT_1:
                     mComplete = true;
 
-                    LDU1Message ldu1 = new LDU1Message(mMessage.copy(),
-                        mDUID, mAliasList);
-
-                    /* Convert the LDU1 message into a link control LDU1 message */
-                    dispatch(LDULCMessageFactory.getMessage(ldu1));
+//                    LDU1Message ldu1 = new LDU1Message(mMessage.copy(), mDUID, mAliasList);
+//
+//                    /* Convert the LDU1 message into a link control LDU1 message */
+//                    dispatch(LDULCMessageFactory.getMessage(ldu1));
 
                     /* We're in a call now, lower the sync match threshold */
                     mPrimarySyncDetector.setThreshold(SYNC_IN_CALL_THRESHOLD);
                     break;
                 case LOGICAL_LINK_DATA_UNIT_2:
                     mComplete = true;
-                    dispatch(new LDU2Message(mMessage.copy(), mDUID, mAliasList));
+//                    dispatch(new LDU2Message(mMessage.copy(), mDUID, mAliasList));
 
                     /* We're in a call now, lower the sync match threshold */
                     mPrimarySyncDetector.setThreshold(SYNC_IN_CALL_THRESHOLD);
@@ -500,20 +487,20 @@ public class P25MessageFramer implements Listener<Dibit>
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
                 case TERMINATOR_DATA_UNIT:
-                    dispatch(new TDUMessage(mMessage.copy(), mDUID, mAliasList));
+//                    dispatch(new TDUMessage(mMessage.copy(), mDUID, mAliasList));
                     mComplete = true;
 
                     /* Set sync match threshold to normal */
                     mPrimarySyncDetector.setThreshold(SYNC_MATCH_THRESHOLD);
                     break;
                 case TERMINATOR_DATA_UNIT_LINK_CONTROL:
-                    TDULinkControlMessage tdulc = new TDULinkControlMessage(
-                        mMessage.copy(), mDUID, mAliasList);
-
-                    /* Convert to an appropriate link control message */
-                    tdulc = TDULCMessageFactory.getMessage(tdulc);
-
-                    dispatch(tdulc);
+//                    TDULinkControlMessage tdulc = new TDULinkControlMessage(
+//                        mMessage.copy(), mDUID, mAliasList);
+//
+//                    /* Convert to an appropriate link control message */
+//                    tdulc = TDULCMessageFactory.getMessage(tdulc);
+//
+//                    dispatch(tdulc);
                     mComplete = true;
 
                     /* Set sync match threshold to normal */
@@ -536,20 +523,20 @@ public class P25MessageFramer implements Listener<Dibit>
                             BinaryMessage tsbkBuffer1 = mMessage.copy();
                             tsbkBuffer1.setSize(TSBK_DECODED_END);
 
-                            TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer1, DataUnitID.TRUNKING_SIGNALING_BLOCK_1, mAliasList);
-
-                            if(tsbkMessage1.isLastBlock())
-                            {
-                                mComplete = true;
-                            }
-                            else
-                            {
-                                setDUID(DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
-                                mMessage.setPointer(TSBK_BEGIN);
-                            }
-
-                            dispatch(tsbkMessage1);
+//                            TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage(
+//                                tsbkBuffer1, DataUnitID.TRUNKING_SIGNALING_BLOCK_1, mAliasList);
+//
+//                            if(tsbkMessage1.isLastBlock())
+//                            {
+//                                mComplete = true;
+//                            }
+//                            else
+//                            {
+//                                setDUID(DataUnitID.TRUNKING_SIGNALING_BLOCK_2);
+//                                mMessage.setPointer(TSBK_BEGIN);
+//                            }
+//
+//                            dispatch(tsbkMessage1);
                         }
                         else
                         {
@@ -577,23 +564,23 @@ public class P25MessageFramer implements Listener<Dibit>
 
                         if(mMessage.getCRC() != CRC.FAILED_CRC)
                         {
-                            BinaryMessage tsbkBuffer2 = mMessage.copy();
-                            tsbkBuffer2.setSize(TSBK_DECODED_END);
-
-                            TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer2, DataUnitID.TRUNKING_SIGNALING_BLOCK_2, mAliasList);
-
-                            if(tsbkMessage2.isLastBlock())
-                            {
-                                mComplete = true;
-                            }
-                            else
-                            {
-                                setDUID(DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
-                                mMessage.setPointer(TSBK_BEGIN);
-                            }
-
-                            dispatch(tsbkMessage2);
+//                            BinaryMessage tsbkBuffer2 = mMessage.copy();
+//                            tsbkBuffer2.setSize(TSBK_DECODED_END);
+//
+//                            TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage(
+//                                tsbkBuffer2, DataUnitID.TRUNKING_SIGNALING_BLOCK_2, mAliasList);
+//
+//                            if(tsbkMessage2.isLastBlock())
+//                            {
+//                                mComplete = true;
+//                            }
+//                            else
+//                            {
+//                                setDUID(DataUnitID.TRUNKING_SIGNALING_BLOCK_3);
+//                                mMessage.setPointer(TSBK_BEGIN);
+//                            }
+//
+//                            dispatch(tsbkMessage2);
                         }
                         else
                         {
@@ -621,10 +608,10 @@ public class P25MessageFramer implements Listener<Dibit>
                             BinaryMessage tsbkBuffer3 = mMessage.copy();
                             tsbkBuffer3.setSize(TSBK_DECODED_END);
 
-                            TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage(
-                                tsbkBuffer3, DataUnitID.TRUNKING_SIGNALING_BLOCK_3, mAliasList);
-
-                            dispatch(tsbkMessage3);
+//                            TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage(
+//                                tsbkBuffer3, DataUnitID.TRUNKING_SIGNALING_BLOCK_3, mAliasList);
+//
+//                            dispatch(tsbkMessage3);
                         }
                     }
 
@@ -632,11 +619,11 @@ public class P25MessageFramer implements Listener<Dibit>
                     break;
                 case VSELP1:
                     mComplete = true;
-                    dispatch(new VSELP1Message(mMessage.copy(), mDUID, mAliasList));
+//                    dispatch(new VSELP1Message(mMessage.copy(), mDUID, mAliasList));
                     break;
                 case VSELP2:
                     mComplete = true;
-                    dispatch(new VSELP2Message(mMessage.copy(), mDUID, mAliasList));
+//                    dispatch(new VSELP2Message(mMessage.copy(), mDUID, mAliasList));
                     break;
                 case UNKNOWN:
                     mComplete = true;

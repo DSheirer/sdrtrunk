@@ -7,9 +7,9 @@ public class PacketSequenceMessage extends P25Message
 {
     private PacketSequence mPacketSequence;
 
-    public PacketSequenceMessage(PacketSequence packetSequence)
+    public PacketSequenceMessage(PacketSequence packetSequence, int nac, long timestamp)
     {
-        super(null, DataUnitID.PACKET_HEADER_DATA_UNIT, null);
+        super(null, nac, timestamp);
         mPacketSequence = packetSequence;
     }
 
@@ -23,5 +23,11 @@ public class PacketSequenceMessage extends P25Message
         StringBuilder sb = new StringBuilder();
         sb.append(getPacketSequence().toString());
         return sb.toString();
+    }
+
+    @Override
+    public DataUnitID getDUID()
+    {
+        return DataUnitID.PACKET_DATA_UNIT;
     }
 }

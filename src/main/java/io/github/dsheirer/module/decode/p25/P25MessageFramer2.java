@@ -41,6 +41,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25MessageFramer2.class);
     private P25DataUnitDetector mDataUnitDetector;
+    private P25ChannelStatusProcessor mChannelStatusProcessor = new P25ChannelStatusProcessor();
     private Listener<Message> mMessageListener;
 
     private boolean mAssemblingMessage = false;
@@ -123,6 +124,11 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             //Strip out the status symbol dibit after every 70 bits or 35 dibits
             if(mStatusSymbolDibitCounter == 35)
             {
+                if(mAssemblingMessage)
+                {
+                    //Send status dibit to channel status processor to identify ISP or OSP channel
+                    mChannelStatusProcessor.receive(dibit);
+                }
                 mStatusSymbolDibitCounter = 0;
 
                 return;
@@ -188,7 +194,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                             //Process 44 bits/22 dibits of trailing nulls
                             mTrailingDibitsToSuppress = 22;
 
-                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence));
+                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence, mNAC, getTimestamp()));
                             reset(mPacketSequence.getBitsProcessedCount());
                             mPacketSequence = null;
                         }
@@ -208,7 +214,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
                         if(mPacketSequence.isComplete())
                         {
-                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence));
+                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence, mNAC, getTimestamp()));
 
                             switch(mPacketSequence.getHeader().getBlocksToFollowCount())
                             {
@@ -246,8 +252,12 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                         reset(mDataUnitID.getMessageLength());
                     }
                     break;
-                case TRUNKING_SIGNALING_BLOCK:
-                    TSBKMessage tsbkMessage = TSBKMessageFactory.create(mBinaryMessage, mDataUnitID);
+                case TRUNKING_SIGNALING_BLOCK_1:
+                case TRUNKING_SIGNALING_BLOCK_2:
+                case TRUNKING_SIGNALING_BLOCK_3:
+                    TSBKMessage tsbkMessage = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
+                        mDataUnitID, mBinaryMessage, mNAC, getTimestamp());
+
                     mMessageListener.receive(tsbkMessage);
 
                     if(tsbkMessage.isLastBlock())
@@ -259,7 +269,14 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                     {
                         updateBitsProcessed(mDataUnitID.getMessageLength());
                         mBinaryMessage = new CorrectedBinaryMessage(mDataUnitID.getMessageLength());
-                        loadNid(mBinaryMessage, mCorrectedNID);
+                        if(mDataUnitID == DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
+                        {
+                            mDataUnitID = DataUnitID.TRUNKING_SIGNALING_BLOCK_2;
+                        }
+                        else if(mDataUnitID == DataUnitID.TRUNKING_SIGNALING_BLOCK_2)
+                        {
+                            mDataUnitID = DataUnitID.TRUNKING_SIGNALING_BLOCK_3;
+                        }
                     }
                     break;
                 default:
@@ -328,41 +345,8 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         mBinaryMessage = new CorrectedBinaryMessage(dataUnitID.getMessageLength());
         mBinaryMessage.incrementCorrectedBitCount(bitErrors);
 
-        switch(mDataUnitID)
-        {
-            case HEADER_DATA_UNIT:
-                break;
-            default:
-                loadNid(mBinaryMessage, correctedNid);
-                break;
-        }
-
         mAssemblingMessage = true;
         mStatusSymbolDibitCounter = 21;
-    }
-
-    /**
-     * Loads the nid bits into the (empty) binary message
-     *
-     * @param correctedBinaryMessage to be loaded, having a length of 63 or greater
-     * @param nid corrected by the BCH code
-     */
-    private void loadNid(CorrectedBinaryMessage correctedBinaryMessage, int[] nid)
-    {
-        try
-        {
-            for(int x = 0; x < 63; x++)
-            {
-                correctedBinaryMessage.add((nid[62 - x] == 1) ? true : false);
-            }
-
-            //Load a dummy parity bit to ensure the total nid message length is 64-bits
-            correctedBinaryMessage.add(false);
-        }
-        catch(BitSetFullException bsfe)
-        {
-            mLog.debug("Unexpected message full error", bsfe);
-        }
     }
 
     @Override
@@ -418,8 +402,8 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051808_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_EMERG_AND_PACKETS.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_052519_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091511_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091650_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091511_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091650_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {

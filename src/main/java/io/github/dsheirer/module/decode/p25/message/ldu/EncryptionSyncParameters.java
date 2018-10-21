@@ -41,6 +41,22 @@ public class EncryptionSyncParameters
         mMessage = message;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        if(isEncryptedAudio())
+        {
+            sb.append(getEncryptionKey());
+            sb.append(" MSG INDICATOR:").append(getMessageIndicator());
+        }
+        else
+        {
+            sb.append("UNENCRYPTED");
+        }
+        return sb.toString();
+    }
+
     private BinaryMessage getMessage()
     {
         return mMessage;

@@ -29,11 +29,11 @@ public class SNDCPActivateTDSContextReject extends PDUConfirmedMessage
 
     public SNDCPActivateTDSContextReject(PDUConfirmedMessage message)
     {
-        super(message);
+        super(null, null);
     }
 
     @Override
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -43,7 +43,7 @@ public class SNDCPActivateTDSContextReject extends PDUConfirmedMessage
         sb.append(getLogicalLinkID());
         sb.append(" REJECT SNDCP PACKET DATA ACTIVATE - REASON:");
         sb.append(getReason().getLabel());
-        sb.append(mMessage.toString());
+        sb.append(getMessage().toString());
 
         return sb.toString();
     }
@@ -55,11 +55,11 @@ public class SNDCPActivateTDSContextReject extends PDUConfirmedMessage
      */
     public int getNSAPI()
     {
-        return mMessage.getInt(NSAPI);
+        return getMessage().getInt(NSAPI);
     }
 
     public SNDCPActivationRejectReason getReason()
     {
-        return SNDCPActivationRejectReason.fromValue(mMessage.getInt(REJECT_CODE));
+        return SNDCPActivationRejectReason.fromValue(getMessage().getInt(REJECT_CODE));
     }
 }

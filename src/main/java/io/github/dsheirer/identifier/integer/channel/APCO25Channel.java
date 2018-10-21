@@ -76,7 +76,7 @@ public class APCO25Channel extends AbstractAPCO25Channel
      */
     public boolean hasDownlink()
     {
-        return mFrequencyBand != null && isValidChannelNumber();
+        return mFrequencyBand != null && isValidChannelNumber(getValue());
     }
 
     /**
@@ -104,7 +104,7 @@ public class APCO25Channel extends AbstractAPCO25Channel
      */
     public boolean hasUplink()
     {
-        return mFrequencyBand != null && isValidChannelNumber();
+        return mFrequencyBand != null && isValidChannelNumber(getValue());
     }
 
     /**

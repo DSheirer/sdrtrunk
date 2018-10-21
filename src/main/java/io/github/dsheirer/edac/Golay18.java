@@ -1,6 +1,5 @@
 package io.github.dsheirer.edac;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +44,9 @@ public class Golay18
         CorrectedBinaryMessage temp = new CorrectedBinaryMessage(24);
         temp.load(6, 18, value);
 
-        CorrectedBinaryMessage corrected = Golay24.checkAndCorrect(temp, 0);
+        int errorsCorrected = Golay24.checkAndCorrect(temp, 0);
 
-        int correctedValue = corrected.getInt(6, 23);
+        int correctedValue = temp.getInt(6, 23);
 
         message.load(startIndex, 18, correctedValue);
 

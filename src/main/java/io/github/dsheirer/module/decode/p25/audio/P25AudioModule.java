@@ -23,7 +23,6 @@ import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
@@ -133,7 +132,7 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
                 {
                     mEncryptedCallStateEstablished = true;
                     LDU2Message ldu2 = (LDU2Message) message;
-                    mEncryptedCall = ldu2.isEncryptedAudio();
+                    mEncryptedCall = ldu2.getEncryptionSyncParameters().isEncryptedAudio();
 
                     if(mCachedLDU1Message != null)
                     {

@@ -28,7 +28,7 @@ public class PacketData extends PDUConfirmedMessage
     }
 
 	@Override
-    public String getMessage()
+    public String toString()
     {
 		StringBuilder sb = new StringBuilder();
 
@@ -40,7 +40,7 @@ public class PacketData extends PDUConfirmedMessage
 		
 		sb.append( " PACKET DATA" );
 
-		if( !mMessage.get( FINAL_FRAGMENT_FLAG ) )
+		if( !getMessage().get( FINAL_FRAGMENT_FLAG ) )
 		{
 			sb.append( " RESENDING" );
 		}
@@ -65,7 +65,7 @@ public class PacketData extends PDUConfirmedMessage
 		
 		sb.append( " " );
 		
-		sb.append( mMessage.toString() );
+		sb.append( getMessage().toString() );
 		
 	    return sb.toString();
     }

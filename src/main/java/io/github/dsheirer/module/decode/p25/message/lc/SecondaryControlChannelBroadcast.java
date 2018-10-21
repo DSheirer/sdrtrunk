@@ -7,7 +7,7 @@ import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
 import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
 import io.github.dsheirer.identifier.integer.node.APCO25Site;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +31,8 @@ public class SecondaryControlChannelBroadcast extends LinkControlWord implements
     private IIdentifier mSite;
     private IAPCO25Channel mChannelA;
     private IAPCO25Channel mChannelB;
+    private ServiceOptions mServiceOptionsA;
+    private ServiceOptions mServiceOptionsB;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -48,9 +50,13 @@ public class SecondaryControlChannelBroadcast extends LinkControlWord implements
         sb.append(getMessageStub());
         sb.append(" SITE:" + getRFSS() + "-" + getSite());
         sb.append(" CHAN A:" + getChannelA());
-        sb.append(" " + SystemService.toString(getSystemServiceClassA()));
-        sb.append(" CHAN B:" + getChannelB());
-        sb.append(" " + SystemService.toString(getSystemServiceClassB()));
+        sb.append(" SERVICE OPTIONS:" + getServiceOptionsA());
+
+        if(hasChannelB())
+        {
+            sb.append(" CHAN B:" + getChannelB());
+            sb.append(" SERVICE OPTIONS:" + getServiceOptionsB());
+        }
         return sb.toString();
     }
 
@@ -79,10 +85,16 @@ public class SecondaryControlChannelBroadcast extends LinkControlWord implements
         if(mChannelA == null)
         {
             mChannelA = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_A),
-                    getMessage().getInt(CHANNEL_NUMBER_A));
+                getMessage().getInt(CHANNEL_NUMBER_A));
         }
 
         return mChannelA;
+    }
+
+    private boolean hasChannelB()
+    {
+        return getMessage().getInt(CHANNEL_NUMBER_A) != getMessage().getInt(CHANNEL_NUMBER_B) &&
+            getMessage().getInt(SERVICE_CLASS_B) != 0;
     }
 
     public IAPCO25Channel getChannelB()
@@ -90,21 +102,33 @@ public class SecondaryControlChannelBroadcast extends LinkControlWord implements
         if(mChannelB == null)
         {
             mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_B),
-                    getMessage().getInt(CHANNEL_NUMBER_B));
+                getMessage().getInt(CHANNEL_NUMBER_B));
         }
 
         return mChannelB;
     }
 
-    public int getSystemServiceClassA()
+    public ServiceOptions getServiceOptionsA()
     {
-        return getMessage().getInt(SERVICE_CLASS_A);
+        if(mServiceOptionsA == null)
+        {
+            mServiceOptionsA = new ServiceOptions(getMessage().getInt(SERVICE_CLASS_A));
+        }
+
+        return mServiceOptionsA;
     }
 
-    public int getSystemServiceClassB()
+
+    public ServiceOptions getServiceOptionsB()
     {
-        return getMessage().getInt(SERVICE_CLASS_B);
+        if(mServiceOptionsB == null)
+        {
+            mServiceOptionsB = new ServiceOptions(getMessage().getInt(SERVICE_CLASS_B));
+        }
+
+        return mServiceOptionsB;
     }
+
 
     /**
      * List of identifiers contained in this message
@@ -127,7 +151,10 @@ public class SecondaryControlChannelBroadcast extends LinkControlWord implements
     {
         List<IAPCO25Channel> channels = new ArrayList<>();
         channels.add(getChannelA());
-        channels.add(getChannelB());
+        if(hasChannelB())
+        {
+            channels.add(getChannelB());
+        }
         return channels;
     }
 }

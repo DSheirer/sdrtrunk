@@ -16,8 +16,6 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.confirmed;
 
 import io.github.dsheirer.module.decode.p25.reference.MDPConfigurationOption;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
 {
@@ -37,11 +35,11 @@ public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
 
     public SNDCPActivateTDSContextRequest(PDUConfirmedMessage message)
     {
-        super(message);
+        super(null, null);
     }
 
     @Override
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -84,7 +82,7 @@ public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
      */
     public int getSNDCPVersion()
     {
-        return mMessage.getInt(SNDCP_VERSION);
+        return getMessage().getInt(SNDCP_VERSION);
     }
 
     /**
@@ -94,32 +92,32 @@ public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
      */
     public int getNSAPI()
     {
-        return mMessage.getInt(NSAPI);
+        return getMessage().getInt(NSAPI);
     }
 
     public String getNetworkAddressType()
     {
-        return mMessage.getInt(NAT) == 0 ? "IPV4 STATIC" : "IPV4 DYNAMIC";
+        return getMessage().getInt(NAT) == 0 ? "IPV4 STATIC" : "IPV4 DYNAMIC";
     }
 
     public String getIPAddress()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(mMessage.getInt(IP_1));
+        sb.append(getMessage().getInt(IP_1));
         sb.append(".");
-        sb.append(mMessage.getInt(IP_2));
+        sb.append(getMessage().getInt(IP_2));
         sb.append(".");
-        sb.append(mMessage.getInt(IP_3));
+        sb.append(getMessage().getInt(IP_3));
         sb.append(".");
-        sb.append(mMessage.getInt(IP_4));
+        sb.append(getMessage().getInt(IP_4));
 
         return sb.toString();
     }
 
     public String getDataSubscriberUnitType()
     {
-        switch(mMessage.getInt(DSUT))
+        switch(getMessage().getInt(DSUT))
         {
             case 0:
                 return "DATA ONLY MRC";
@@ -132,26 +130,26 @@ public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
 
     public boolean hasIPHeaderCompression()
     {
-        return mMessage.getInt(IPHC) == 1;
+        return getMessage().getInt(IPHC) == 1;
     }
 
     public boolean hasUserDataPayloadCompression()
     {
-        return mMessage.getInt(UDPC) == 1;
+        return getMessage().getInt(UDPC) == 1;
     }
 
     public int getTCPStateSlots()
     {
-        return mMessage.getInt(TCPSS);
+        return getMessage().getInt(TCPSS);
     }
 
     public int getUDPStateSlots()
     {
-        return mMessage.getInt(UDPSS);
+        return getMessage().getInt(UDPSS);
     }
 
     public MDPConfigurationOption getMDPConfigurationOption()
     {
-        return MDPConfigurationOption.fromValue(mMessage.getInt(MDPCO));
+        return MDPConfigurationOption.fromValue(getMessage().getInt(MDPCO));
     }
 }

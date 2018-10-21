@@ -3,7 +3,7 @@ package io.github.dsheirer.module.decode.p25.message.filter;
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.message.tdu.TDULinkControlMessage;
 
 import java.util.Collections;
 import java.util.List;

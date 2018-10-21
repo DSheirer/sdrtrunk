@@ -68,7 +68,7 @@ public class Golay24
      * @param startIndex - start of the 24-bit galois 24 protected bit set
      * @return - corrected 24-bit galois value
      */
-    public static CorrectedBinaryMessage checkAndCorrect(CorrectedBinaryMessage message, int startIndex)
+    public static int checkAndCorrect(CorrectedBinaryMessage message, int startIndex)
     {
         boolean parityError = message.cardinality() % 2 != 0;
 
@@ -81,11 +81,10 @@ public class Golay24
             {
                 message.flip(startIndex + 23);
                 message.incrementCorrectedBitCount(1);
+                return 1;
             }
 
-            message.setCRC(CRC.PASSED);
-
-            return message;
+            return 0;
         }
 
         /* Get original message value */
@@ -134,14 +133,10 @@ public class Golay24
 
                         if(Integer.bitCount(original ^ corrected) > 3)
                         {
-                            message.setCRC(CRC.FAILED_CRC);
-
-                            return message;
+                            return 2;
                         }
 
-                        message.setCRC(CRC.PASSED);
-
-                        return message;
+                        return 1;
                     }
                     else
                     {
@@ -154,9 +149,7 @@ public class Golay24
             }
         }
 
-        message.setCRC(CRC.FAILED_CRC);
-
-        return message;
+        return 2;
     }
 
     private static int getSyndrome(BinaryMessage message, int startIndex)

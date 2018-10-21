@@ -32,9 +32,9 @@ public abstract class AbstractAPCO25Channel extends AbstractIntegerIdentifier im
         super(channelNumber);
     }
 
-    protected boolean isValidChannelNumber()
+    protected boolean isValidChannelNumber(int channelNumber)
     {
-        return getValue() != INVALID_CHANNEL_NUMBER;
+        return channelNumber != INVALID_CHANNEL_NUMBER;
     }
 
     /**

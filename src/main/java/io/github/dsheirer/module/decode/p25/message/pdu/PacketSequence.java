@@ -16,7 +16,6 @@
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.message.IBitErrorProvider;
-import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeader;
 
 import java.util.ArrayList;
@@ -112,7 +111,7 @@ public class PacketSequence implements IBitErrorProvider
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("NAC:").append(P25Utils.formatNAC(getNAC()));
+        sb.append("NAC:").append(getNAC());
 
         if(!isComplete())
         {

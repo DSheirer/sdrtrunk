@@ -422,7 +422,7 @@ public class CRCP25
      *
      * @return - true if all 12 segments of the message can be checked/corrected
      */
-    public static boolean correctGalois24(BinaryMessage tdulc)
+    public static boolean correctGalois24(CorrectedBinaryMessage tdulc)
     {
         boolean passes = true;
 
@@ -431,9 +431,9 @@ public class CRCP25
         while(x < tdulc.size() && passes)
         {
 
-            tdulc = Golay24.checkAndCorrect(tdulc, x);
+            int errors = Golay24.checkAndCorrect(tdulc, x);
 
-            passes = tdulc.getCRC() == CRC.PASSED;
+            passes = errors < 2;
 
             x += 24;
         }

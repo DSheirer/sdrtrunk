@@ -16,8 +16,6 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.confirmed;
 
 import io.github.dsheirer.module.decode.p25.reference.PDUType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
 {
@@ -27,11 +25,11 @@ public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
 
     public SNDCPDeactivateTDSContext(PDUConfirmedMessage message)
     {
-        super(message);
+        super(null, null);
     }
 
     @Override
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -52,14 +50,14 @@ public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
      */
     public int getNSAPI()
     {
-        return mMessage.getInt(NSAPI);
+        return getMessage().getInt(NSAPI);
     }
 
     public String getDeactivationType()
     {
         if(getPDUType() == PDUType.SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST)
         {
-            return mMessage.getInt(DEACTIVATION_TYPE) == 0 ?
+            return getMessage().getInt(DEACTIVATION_TYPE) == 0 ?
                 "ALL NSAPIS" : "THIS NSAPI";
         }
 

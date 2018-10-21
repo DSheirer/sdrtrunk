@@ -16,10 +16,11 @@
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25LogicalLinkId;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
+import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.message.tsbk2.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -39,6 +40,8 @@ public class PDUMessage extends P25Message
     public static final int[] DATA_HEADER_OFFSET = {138, 139, 140, 141, 142, 143};
     public static final int[] PDU_CRC = {144, 145, 146, 147, 148, 149, 150, 151, 152,
             153, 154, 155, 156, 157, 158, 159};
+
+    private IIdentifier mLLID;
 
     public PDUMessage(CorrectedBinaryMessage message, int nac, long timestamp)
     {
@@ -155,14 +158,14 @@ public class PDUMessage extends P25Message
 
     public Vendor getVendor()
     {
-        return Vendor.fromValue(mMessage.getInt(VENDOR_ID));
+        return Vendor.fromValue(getMessage().getInt(VENDOR_ID));
     }
 
     public IIdentifier getLogicalLinkID()
     {
         if(mLLID == null)
         {
-            mLLID = APCO25LogicalLinkId.create(mMessage.getInt(LOGICAL_LINK_ID));
+            mLLID = APCO25LogicalLinkId.create(getMessage().getInt(LOGICAL_LINK_ID));
         }
 
         return mLLID;
@@ -170,36 +173,26 @@ public class PDUMessage extends P25Message
 
     public int getBlocksToFollowCount()
     {
-        return mMessage.getInt(BLOCKS_TO_FOLLOW);
+        return getMessage().getInt(BLOCKS_TO_FOLLOW);
     }
 
     public int getPadOctetCount()
     {
-        return mMessage.getInt(PAD_OCTET_COUNT);
+        return getMessage().getInt(PAD_OCTET_COUNT);
     }
 
     public Opcode getOpcode()
     {
         if(getFormat() == PDUFormat.ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL)
         {
-            return Opcode.fromValue(mMessage.getInt(OPCODE));
+            return Opcode.fromValue(getMessage().getInt(OPCODE));
         }
 
         return Opcode.OSP_UNKNOWN;
     }
 
-    public VendorOpcode getVendorOpcode()
-    {
-        if(getFormat() == PDUFormat.ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL)
-        {
-            return VendorOpcode.fromValue(mMessage.getInt(OPCODE));
-        }
-
-        return VendorOpcode.UNKNOWN;
-    }
-
     public int getDataHeaderOffset()
     {
-        return mMessage.getInt(DATA_HEADER_OFFSET);
+        return getMessage().getInt(DATA_HEADER_OFFSET);
     }
 }

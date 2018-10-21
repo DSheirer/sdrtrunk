@@ -16,36 +16,37 @@
 
 package io.github.dsheirer.module.decode.p25.message.tdu;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.edac.CRC;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
+import java.util.Collections;
+import java.util.List;
+
 public class TDUMessage extends P25Message
 {
-    public TDUMessage(BinaryMessage message, DataUnitID duid, AliasList aliasList)
+    public TDUMessage(CorrectedBinaryMessage message, int nac, long timestamp)
     {
-        super(message, duid, aliasList);
-
-        /* NID CRC is checked in the message framer, thus a constructed message
-         * means it passed the CRC */
-        mCRC = new CRC[1];
-        mCRC[0] = CRC.PASSED;
+        super(message, nac, timestamp);
     }
 
     @Override
-    public String getMessage()
+    public DataUnitID getDUID()
+    {
+        return DataUnitID.TERMINATOR_DATA_UNIT;
+    }
+
+    @Override
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("NAC:");
-        sb.append(getNAC());
-        sb.append(" ");
-        sb.append(getDUID().getLabel());
-
-        sb.append(" TERMINATOR DATA UNIT");
-
+        sb.append(getMessageStub());
         return sb.toString();
+    }
+
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

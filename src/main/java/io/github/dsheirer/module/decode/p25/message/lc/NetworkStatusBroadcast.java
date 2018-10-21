@@ -7,7 +7,7 @@ import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
 import io.github.dsheirer.identifier.integer.node.APCO25System;
 import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +28,7 @@ public class NetworkStatusBroadcast extends LinkControlWord implements Frequency
     private IIdentifier mWACN;
     private IIdentifier mSystem;
     private IAPCO25Channel mChannel;
+    private ServiceOptions mServiceOptions;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -46,7 +47,7 @@ public class NetworkStatusBroadcast extends LinkControlWord implements Frequency
         sb.append(" WACN:").append(getWACN());
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" CHAN:" + getChannel());
-        sb.append(" " + SystemService.toString(getSystemServiceClass()));
+        sb.append(" SERVICE OPTIONS:" + getServiceOptions());
         return sb.toString();
     }
 
@@ -75,16 +76,22 @@ public class NetworkStatusBroadcast extends LinkControlWord implements Frequency
         if(mChannel == null)
         {
             mChannel = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND),
-                    getMessage().getInt(CHANNEL_NUMBER));
+                getMessage().getInt(CHANNEL_NUMBER));
         }
 
         return mChannel;
     }
 
-    public int getSystemServiceClass()
+    public ServiceOptions getServiceOptions()
     {
-        return getMessage().getInt(SERVICE_CLASS);
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_CLASS));
+        }
+
+        return mServiceOptions;
     }
+
 
     /**
      * List of identifiers contained in this message

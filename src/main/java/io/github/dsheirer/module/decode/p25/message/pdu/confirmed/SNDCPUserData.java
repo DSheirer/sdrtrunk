@@ -74,11 +74,11 @@ public class SNDCPUserData extends PDUConfirmedMessage
 
     public SNDCPUserData(PDUConfirmedMessage message)
     {
-        super(message);
+        super(null, null);
     }
 
     @Override
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -135,7 +135,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
 
         sb.append(" ");
 
-        sb.append(mMessage.toString());
+        sb.append(getMessage().toString());
 
         return sb.toString();
     }
@@ -147,12 +147,12 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getNSAPI()
     {
-        return mMessage.getInt(NSAPI);
+        return getMessage().getInt(NSAPI);
     }
 
     public IPHeaderCompression getIPHeaderCompressionState()
     {
-        return IPHeaderCompression.fromValue(mMessage.getInt(PCOMP));
+        return IPHeaderCompression.fromValue(getMessage().getInt(PCOMP));
     }
 
     /**
@@ -160,7 +160,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public boolean hasUserDataCompression()
     {
-        return mMessage.getInt(DCOMP) > 0;
+        return getMessage().getInt(DCOMP) > 0;
     }
 
     /**
@@ -168,7 +168,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getIPVersion()
     {
-        return mMessage.getInt(IP_VERSION);
+        return getMessage().getInt(IP_VERSION);
     }
 
     /**
@@ -176,7 +176,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getInternetHeaderLength()
     {
-        return mMessage.getInt(IHL);
+        return getMessage().getInt(IHL);
     }
 
     /**
@@ -184,7 +184,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getDifferentiatedServicesCodePoint()
     {
-        return mMessage.getInt(DSCP);
+        return getMessage().getInt(DSCP);
     }
 
     /**
@@ -192,7 +192,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getExplicitCongestionNotification()
     {
-        return mMessage.getInt(ECN);
+        return getMessage().getInt(ECN);
     }
 
     /**
@@ -200,7 +200,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getTotalLength()
     {
-        return mMessage.getInt(TOTAL_LENGTH);
+        return getMessage().getInt(TOTAL_LENGTH);
     }
 
     /**
@@ -208,7 +208,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getIdentification()
     {
-        return mMessage.getInt(IDENTIFICATION);
+        return getMessage().getInt(IDENTIFICATION);
     }
 
     /**
@@ -216,7 +216,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getFlags()
     {
-        return mMessage.getInt(FLAGS);
+        return getMessage().getInt(FLAGS);
     }
 
     public boolean isFragment()
@@ -230,7 +230,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getFragmentOffset()
     {
-        return mMessage.getInt(FRAGMENT_OFFSET);
+        return getMessage().getInt(FRAGMENT_OFFSET);
     }
 
     /**
@@ -238,7 +238,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getTimeToLive()
     {
-        return mMessage.getInt(TTL);
+        return getMessage().getInt(TTL);
     }
 
     /**
@@ -246,7 +246,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public IPProtocol getIPProtocol()
     {
-        return IPProtocol.fromValue(mMessage.getInt(PROTOCOL));
+        return IPProtocol.fromValue(getMessage().getInt(PROTOCOL));
     }
 
     /**
@@ -256,13 +256,13 @@ public class SNDCPUserData extends PDUConfirmedMessage
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(mMessage.getInt(SOURCE_IP_1));
+        sb.append(getMessage().getInt(SOURCE_IP_1));
         sb.append(".");
-        sb.append(mMessage.getInt(SOURCE_IP_2));
+        sb.append(getMessage().getInt(SOURCE_IP_2));
         sb.append(".");
-        sb.append(mMessage.getInt(SOURCE_IP_3));
+        sb.append(getMessage().getInt(SOURCE_IP_3));
         sb.append(".");
-        sb.append(mMessage.getInt(SOURCE_IP_4));
+        sb.append(getMessage().getInt(SOURCE_IP_4));
 
         return sb.toString();
     }
@@ -274,13 +274,13 @@ public class SNDCPUserData extends PDUConfirmedMessage
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(mMessage.getInt(DESTINATION_IP_1));
+        sb.append(getMessage().getInt(DESTINATION_IP_1));
         sb.append(".");
-        sb.append(mMessage.getInt(DESTINATION_IP_2));
+        sb.append(getMessage().getInt(DESTINATION_IP_2));
         sb.append(".");
-        sb.append(mMessage.getInt(DESTINATION_IP_3));
+        sb.append(getMessage().getInt(DESTINATION_IP_3));
         sb.append(".");
-        sb.append(mMessage.getInt(DESTINATION_IP_4));
+        sb.append(getMessage().getInt(DESTINATION_IP_4));
 
         return sb.toString();
     }
@@ -290,7 +290,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getUDPSourcePort()
     {
-        return mMessage.getInt(UDP_SOURCE_PORT);
+        return getMessage().getInt(UDP_SOURCE_PORT);
     }
 
     /**
@@ -298,7 +298,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getUDPDestinationPort()
     {
-        return mMessage.getInt(UDP_DESTINATION_PORT);
+        return getMessage().getInt(UDP_DESTINATION_PORT);
     }
 
     /**
@@ -306,7 +306,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
      */
     public int getUDPDataLength()
     {
-        return mMessage.getInt(UDP_LENGTH);
+        return getMessage().getInt(UDP_LENGTH);
     }
 
     /**
@@ -361,7 +361,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
 
         int start = DATA_BLOCK_START + (block * 144) + (offset * 8);
 
-        return mMessage.getHex(start, start + 7, 2);
+        return getMessage().getHex(start, start + 7, 2);
     }
 
 }

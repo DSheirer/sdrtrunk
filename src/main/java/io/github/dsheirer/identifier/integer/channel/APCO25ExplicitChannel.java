@@ -88,7 +88,7 @@ public class APCO25ExplicitChannel extends AbstractAPCO25Channel
      */
     public boolean hasDownlink()
     {
-        return mDownlinkFrequencyBand != null && isValidChannelNumber();
+        return mDownlinkFrequencyBand != null && isValidChannelNumber(getValue());
     }
 
     /**
@@ -124,7 +124,7 @@ public class APCO25ExplicitChannel extends AbstractAPCO25Channel
      */
     public boolean hasUplink()
     {
-        return mUplinkFrequencyBand != null && isValidChannelNumber();
+        return mUplinkFrequencyBand != null && isValidChannelNumber(mUplinkChannelNumber);
     }
 
     /**
@@ -159,7 +159,15 @@ public class APCO25ExplicitChannel extends AbstractAPCO25Channel
     {
         StringBuilder sb = new StringBuilder();
         sb.append("DN:").append(mDownlinkFrequencyBandIdentifier).append("-").append(getDownlinkChannelNumber());
-        sb.append(" UP:").append(mUplinkFrequencyBandIdentifier).append("-").append(getUplinkChannelNumber());
+
+        if(hasUplink())
+        {
+            sb.append(" UP:").append(mUplinkFrequencyBandIdentifier).append("-").append(getUplinkChannelNumber());
+        }
+        else
+        {
+            sb.append(" UP:-----");
+        }
         return sb.toString();
     }
 }

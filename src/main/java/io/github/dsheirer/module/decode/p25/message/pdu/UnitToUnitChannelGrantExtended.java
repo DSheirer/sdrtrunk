@@ -17,7 +17,6 @@ package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
@@ -61,15 +60,16 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
 
     public UnitToUnitChannelGrantExtended(BinaryMessage message, DataUnitID duid, AliasList aliasList)
     {
-        super(message, duid, aliasList);
+        super(null, 0, 0);
+//        super(message, duid, aliasList);
 
         /* Header block is already error detected/corrected - perform error
          * detection correction on the intermediate and final data blocks */
-        mMessage = CRCP25.correctPDU2(mMessage);
-        mCRC[1] = mMessage.getCRC();
+//        getMessage() = CRCP25.correctPDU2(getMessage());
+//        mCRC[1] = getMessage().getCRC();
     }
 
-    public String getMessage()
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -94,7 +94,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(mMessage.getInt(SERVICE_OPTIONS));
+            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
         }
 
         return mServiceOptions;
@@ -104,7 +104,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(mMessage.getInt(SOURCE_ADDRESS));
+            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS));
         }
 
         return mSourceAddress;
@@ -114,7 +114,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mSourceId == null)
         {
-            mSourceId = APCO25FromTalkgroup.createIndividual(mMessage.getInt(SOURCE_ID));
+            mSourceId = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ID));
         }
 
         return mSourceId;
@@ -124,7 +124,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mSourceWACN == null)
         {
-            mSourceWACN = APCO25Wacn.create(mMessage.getInt(SOURCE_WACN));
+            mSourceWACN = APCO25Wacn.create(getMessage().getInt(SOURCE_WACN));
         }
 
         return mSourceWACN;
@@ -134,7 +134,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mSourceSystem == null)
         {
-            mSourceSystem = APCO25System.create(mMessage.getInt(SOURCE_SYSTEM_ID));
+            mSourceSystem = APCO25System.create(getMessage().getInt(SOURCE_SYSTEM_ID));
         }
 
         return mSourceSystem;
@@ -144,7 +144,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(mMessage.getInt(TARGET_ADDRESS));
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;
@@ -154,9 +154,9 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage implemen
     {
         if(mChannel == null)
         {
-            mChannel = APCO25ExplicitChannel.create(mMessage.getInt(DOWNLINK_FREQUENCY_BAND),
-                mMessage.getInt(DOWNLINK_CHANNEL_NUMBER), mMessage.getInt(UPLINK_FREQUENCY_BAND),
-                mMessage.getInt(UPLINK_CHANNEL_NUMBER));
+            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(DOWNLINK_FREQUENCY_BAND),
+                getMessage().getInt(DOWNLINK_CHANNEL_NUMBER), getMessage().getInt(UPLINK_FREQUENCY_BAND),
+                getMessage().getInt(UPLINK_CHANNEL_NUMBER));
         }
 
         return mChannel;

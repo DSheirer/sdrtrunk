@@ -8,7 +8,7 @@ import io.github.dsheirer.identifier.integer.node.APCO25Lra;
 import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
 import io.github.dsheirer.identifier.integer.node.APCO25Site;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +32,7 @@ public class AdjacentSiteStatusBroadcastExplicit extends LinkControlWord impleme
     private IIdentifier mRFSS;
     private IIdentifier mSite;
     private IAPCO25Channel mChannel;
+    private ServiceOptions mServiceOptions;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -50,7 +51,7 @@ public class AdjacentSiteStatusBroadcastExplicit extends LinkControlWord impleme
         sb.append(" LRA:").append(getLRA());
         sb.append(" SITE:" + getRFSS() + "-" + getSite());
         sb.append(" CHAN:" + getChannel());
-        sb.append(" " + SystemService.toString(getSystemServiceClass()));
+        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
 
@@ -96,10 +97,16 @@ public class AdjacentSiteStatusBroadcastExplicit extends LinkControlWord impleme
         return mChannel;
     }
 
-    public int getSystemServiceClass()
+    public ServiceOptions getServiceOptions()
     {
-        return getMessage().getInt(SERVICE_CLASS);
+        if(mServiceOptions == null)
+        {
+            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_CLASS));
+        }
+
+        return mServiceOptions;
     }
+
 
     /**
      * List of identifiers contained in this message
