@@ -36,7 +36,8 @@ public enum DataUnitID
     UNKNOWN_13(13, -1, false, "UNKN13"),
     UNKNOWN_14(14, -1, false, "UNKN14"),
     TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 308, true, "TDULC"),
-
+    ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "AMBTC"),
+    UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "UMBTC"),
 
     //TODO: remove these once the legacy message framer is removed
     NID(-1, 64, false, "NID  "),

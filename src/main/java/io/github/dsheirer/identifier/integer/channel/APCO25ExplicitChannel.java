@@ -124,7 +124,8 @@ public class APCO25ExplicitChannel extends AbstractAPCO25Channel
      */
     public boolean hasUplink()
     {
-        return mUplinkFrequencyBand != null && isValidChannelNumber(mUplinkChannelNumber);
+        return isValidChannelNumber(mUplinkChannelNumber) &&
+            mUplinkChannelNumber != getDownlinkChannelNumber();
     }
 
     /**

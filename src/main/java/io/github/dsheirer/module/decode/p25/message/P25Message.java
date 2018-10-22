@@ -66,6 +66,25 @@ public abstract class P25Message extends Message
     }
 
     /**
+     * Constructs a P25 message where the binary message will be created/updated after construction.
+     * @param nac Network Access Code (NAC) for the message
+     * @param timestamp when the message was transmitted
+     */
+    protected P25Message(int nac, long timestamp)
+    {
+        super(timestamp);
+        mNAC = APCO25Nac.create(nac);
+    }
+
+    /**
+     * Establishes the message binary sequence.
+     */
+    protected void setMessage(CorrectedBinaryMessage message)
+    {
+        mMessage = message;
+    }
+
+    /**
      * The transmitted binary message
      */
     protected CorrectedBinaryMessage getMessage()

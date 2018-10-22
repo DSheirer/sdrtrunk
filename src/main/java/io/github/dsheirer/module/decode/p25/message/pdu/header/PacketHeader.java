@@ -70,7 +70,7 @@ public class PacketHeader extends PDUHeader
      */
     public ServiceAccessPoint getServiceAccessPoint()
     {
-        return ServiceAccessPoint.fromValue(mMessage.getInt(SAP_ID));
+        return ServiceAccessPoint.fromValue(getMessage().getInt(SAP_ID));
     }
 
     /**
@@ -79,7 +79,7 @@ public class PacketHeader extends PDUHeader
      */
     public boolean isFullMessage()
     {
-        return mMessage.get(FULL_MESSAGE_FLAG);
+        return getMessage().get(FULL_MESSAGE_FLAG);
     }
 
     /**
@@ -87,7 +87,7 @@ public class PacketHeader extends PDUHeader
      */
     public int getPadOctetCount()
     {
-        return mMessage.getInt(PAD_OCTET_COUNT);
+        return getMessage().getInt(PAD_OCTET_COUNT);
     }
 
     /**
@@ -95,7 +95,7 @@ public class PacketHeader extends PDUHeader
      */
     public boolean isSynchronize()
     {
-        return mMessage.get(SYNCHRONIZE_FLAG);
+        return getMessage().get(SYNCHRONIZE_FLAG);
     }
 
     /**
@@ -103,7 +103,7 @@ public class PacketHeader extends PDUHeader
      */
     public int getPacketSequenceNumber()
     {
-        return mMessage.getInt(PACKET_SEQUENCE_NUMBER);
+        return getMessage().getInt(PACKET_SEQUENCE_NUMBER);
     }
 
     /**
@@ -111,7 +111,7 @@ public class PacketHeader extends PDUHeader
      */
     public int getMessageFragmentSequenceNumber()
     {
-        return mMessage.getInt(MESSAGE_FRAGMENT_SEQUENCE_NUMBER);
+        return getMessage().getInt(MESSAGE_FRAGMENT_SEQUENCE_NUMBER);
     }
 
     /**
@@ -120,6 +120,6 @@ public class PacketHeader extends PDUHeader
      */
     public int getDataHeaderOffset()
     {
-        return mMessage.getInt(DATA_HEADER_OFFSET);
+        return getMessage().getInt(DATA_HEADER_OFFSET);
     }
 }

@@ -66,7 +66,7 @@ public class ResponseHeader extends PDUHeader
      */
     public PacketResponse getResponse()
     {
-        return PacketResponse.fromValue(mMessage.getInt(RESPONSE));
+        return PacketResponse.fromValue(getMessage().getInt(RESPONSE));
     }
 
     /**
@@ -74,7 +74,7 @@ public class ResponseHeader extends PDUHeader
      */
     public boolean hasSourceLLID()
     {
-        return !mMessage.get(SOURCE_LLID_FLAG);
+        return !getMessage().get(SOURCE_LLID_FLAG);
     }
 
     /**
@@ -82,6 +82,6 @@ public class ResponseHeader extends PDUHeader
      */
     public String getFromLogicalLinkID()
     {
-        return mMessage.getHex(FROM_LOGICAL_LINK_ID, 6);
+        return getMessage().getHex(FROM_LOGICAL_LINK_ID, 6);
     }
 }

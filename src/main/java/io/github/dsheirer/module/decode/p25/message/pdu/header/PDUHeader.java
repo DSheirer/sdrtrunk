@@ -18,14 +18,14 @@ public class PDUHeader implements IBitErrorProvider
 
     public static final int CONFIRMATION_REQUIRED_INDICATOR = 1;
     public static final int PACKET_DIRECTION_INDICATOR = 2;
-    public static final int[] FORMAT = {3, 4, 5, 6, 7};
+    public static final int[] PDU_FORMAT = {3, 4, 5, 6, 7};
     public static final int[] VENDOR_ID = {16, 17, 18, 19, 20, 21, 22, 23};
     public static final int[] TO_LOGICAL_LINK_ID = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     public static final int[] BLOCKS_TO_FOLLOW = {49, 50, 51, 52, 53, 54, 55};
     public static final int[] PDU_CRC = {80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95};
 
     protected boolean mValid;
-    protected CorrectedBinaryMessage mMessage;
+    private CorrectedBinaryMessage mMessage;
     private boolean mExcessiveBlocksToFollowLogged = false;
 
     /**
@@ -37,6 +37,11 @@ public class PDUHeader implements IBitErrorProvider
     {
         mMessage = message;
         mValid = passesCRC;
+    }
+
+    public CorrectedBinaryMessage getMessage()
+    {
+        return mMessage;
     }
 
     /**
@@ -52,7 +57,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public boolean isConfirmationRequired()
     {
-        return mMessage.get(CONFIRMATION_REQUIRED_INDICATOR);
+        return getMessage().get(CONFIRMATION_REQUIRED_INDICATOR);
     }
 
     /**
@@ -60,7 +65,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public Direction getDirection()
     {
-        return Direction.fromValue(mMessage.get(PACKET_DIRECTION_INDICATOR));
+        return Direction.fromValue(getMessage().get(PACKET_DIRECTION_INDICATOR));
     }
 
     /**
@@ -68,7 +73,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public PDUFormat getFormat()
     {
-        return getFormat(mMessage);
+        return getFormat(getMessage());
     }
 
     /**
@@ -76,7 +81,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public static PDUFormat getFormat(BinaryMessage binaryMessage)
     {
-        return PDUFormat.fromValue(binaryMessage.getInt(FORMAT));
+        return PDUFormat.fromValue(binaryMessage.getInt(PDU_FORMAT));
     }
 
     /**
@@ -95,7 +100,7 @@ public class PDUHeader implements IBitErrorProvider
     @Override
     public int getBitErrorsCount()
     {
-        return mMessage.getCorrectedBitCount();
+        return getMessage().getCorrectedBitCount();
     }
 
     /**
@@ -103,7 +108,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public Vendor getVendor()
     {
-        return Vendor.fromValue(mMessage.getInt(VENDOR_ID));
+        return Vendor.fromValue(getMessage().getInt(VENDOR_ID));
     }
 
     /**
@@ -111,7 +116,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public String getToLogicalLinkID()
     {
-        return mMessage.getHex(TO_LOGICAL_LINK_ID, 6);
+        return getMessage().getHex(TO_LOGICAL_LINK_ID, 6);
     }
 
     /**
@@ -119,7 +124,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public int getBlocksToFollowCount()
     {
-        int blocksToFollow = mMessage.getInt(BLOCKS_TO_FOLLOW);
+        int blocksToFollow = getMessage().getInt(BLOCKS_TO_FOLLOW);
 
         if(blocksToFollow <= 3)
         {

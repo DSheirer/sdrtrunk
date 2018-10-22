@@ -29,7 +29,7 @@ public class PacketSequence implements IBitErrorProvider
     private long mTimestamp;
     private int mNAC;
     private PDUHeader mHeader;
-    private List<DataBlock> mDataBlockList = new ArrayList<>();
+    private List<DataBlock> mDataBlocks = new ArrayList<>();
 
     public PacketSequence(PDUHeader pduHeader, long timestamp, int nac)
     {
@@ -59,7 +59,7 @@ public class PacketSequence implements IBitErrorProvider
      */
     public boolean isComplete()
     {
-        return getHeader().getBlocksToFollowCount() == mDataBlockList.size();
+        return getHeader().getBlocksToFollowCount() == mDataBlocks.size();
     }
 
     /**
@@ -70,7 +70,30 @@ public class PacketSequence implements IBitErrorProvider
      */
     public void addDataBlock(DataBlock dataBlock)
     {
-        mDataBlockList.add(dataBlock);
+        mDataBlocks.add(dataBlock);
+    }
+
+    public boolean hasDataBlock(int index)
+    {
+        return getDataBlock(index) != null;
+    }
+
+    public DataBlock getDataBlock(int index)
+    {
+        if(index < mDataBlocks.size())
+        {
+            return mDataBlocks.get(index);
+        }
+
+        return null;
+    }
+
+    /**
+     * Data blocks that follow the header
+     */
+    public List<DataBlock> getDataBlocks()
+    {
+        return mDataBlocks;
     }
 
     /**
@@ -86,7 +109,7 @@ public class PacketSequence implements IBitErrorProvider
     {
         int processed = getHeader().getBitsProcessedCount();
 
-        for(DataBlock dataBlock : mDataBlockList)
+        for(DataBlock dataBlock : mDataBlocks)
         {
             processed += dataBlock.getBitsProcessedCount();
         }
@@ -99,7 +122,7 @@ public class PacketSequence implements IBitErrorProvider
     {
         int errorCount = getHeader().getBitErrorsCount();
 
-        for(DataBlock dataBlock : mDataBlockList)
+        for(DataBlock dataBlock : mDataBlocks)
         {
             errorCount += dataBlock.getBitErrorsCount();
         }
@@ -115,17 +138,19 @@ public class PacketSequence implements IBitErrorProvider
 
         if(!isComplete())
         {
-            sb.append(" *INCOMPLETE - RECEIVED ").append(mDataBlockList.size()).append("/")
+            sb.append(" *INCOMPLETE - RECEIVED ").append(mDataBlocks.size()).append("/")
                 .append(getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
         }
 
         sb.append(" ").append(getHeader().toString());
 
-        if(!mDataBlockList.isEmpty())
+        sb.append(" DATA BLOCKS:").append(mDataBlocks.size());
+
+        if(!mDataBlocks.isEmpty())
         {
             sb.append(" MSG:");
 
-            for(DataBlock dataBlock: mDataBlockList)
+            for(DataBlock dataBlock: mDataBlocks)
             {
                 sb.append(dataBlock.getMessage().toHexString());
             }
