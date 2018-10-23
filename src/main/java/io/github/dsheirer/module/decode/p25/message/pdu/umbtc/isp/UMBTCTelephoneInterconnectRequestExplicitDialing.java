@@ -24,7 +24,7 @@ import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.string.APCO25TelephoneNumber;
 import io.github.dsheirer.message.IBitErrorProvider;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.UMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.Digit;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -42,9 +42,9 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
     private IIdentifier mTelephoneNumber;
     private List<IIdentifier> mIdentifiers;
 
-    public UMBTCTelephoneInterconnectRequestExplicitDialing(PacketSequence packetSequence, int nac, long timestamp)
+    public UMBTCTelephoneInterconnectRequestExplicitDialing(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(packetSequence, nac, timestamp);
+        super(PDUSequence, nac, timestamp);
     }
 
     public String toString()

@@ -1,6 +1,34 @@
 package io.github.dsheirer.module.decode.p25.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.AdjacentSiteStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.AdjacentSiteStatusBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.CallAlert;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.CallTermination;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.EncryptionParameterBroadcast;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.ExtendedFunctionCommand;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.GroupAffiliationQuery;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.GroupVoiceChannelUpdate;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.GroupVoiceChannelUpdateExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.GroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.IdentifierUpdate;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.IdentifierUpdateExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.MessageUpdate;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.NetworkStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.NetworkStatusBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.RFSSStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.RFSSStatusBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.SecondaryControlChannelBroadcast;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.SecondaryControlChannelBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.StatusQuery;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.StatusUpdate;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.SystemServiceBroadcast;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.TelephoneInterconnectAnswerRequest;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.TelephoneInterconnectVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.UnitAuthenticationCommand;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.UnitRegistrationCommand;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.UnitToUnitAnswerRequest;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
 /**

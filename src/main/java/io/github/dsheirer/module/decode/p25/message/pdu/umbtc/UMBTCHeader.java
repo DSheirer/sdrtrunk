@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.message.pdu.umbtc;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.P25Utils;
-import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeader;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUHeader;
 import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 

@@ -29,9 +29,9 @@ import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
-import io.github.dsheirer.module.decode.p25.message.pdu.UnconfirmedDataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
@@ -62,9 +62,9 @@ public class AMBTCIndividualDataChannelGrant extends AMBTCMessage implements Fre
     private IAPCO25Channel mChannel;
     private List<IAPCO25Channel> mChannels;
 
-    public AMBTCIndividualDataChannelGrant(PacketSequence packetSequence, int nac, long timestamp)
+    public AMBTCIndividualDataChannelGrant(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(packetSequence, nac, timestamp);
+        super(PDUSequence, nac, timestamp);
     }
 
     public String toString()

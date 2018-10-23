@@ -26,9 +26,9 @@ import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.module.decode.p25.message.pdu.DataBlock;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
-import io.github.dsheirer.module.decode.p25.message.pdu.UnconfirmedDataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.DataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 import java.util.List;
@@ -38,12 +38,12 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
     protected static final int[] HEADER_ADDRESS = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
         40, 41, 42, 43, 44, 45, 46, 47};
 
-    private PacketSequence mPacketSequence;
+    private PDUSequence mPDUSequence;
 
-    public AMBTCMessage(PacketSequence packetSequence, int nac, long timestamp)
+    public AMBTCMessage(PDUSequence PDUSequence, int nac, long timestamp)
     {
         super(nac, timestamp);
-        mPacketSequence = packetSequence;
+        mPDUSequence = PDUSequence;
     }
 
     @Override
@@ -59,7 +59,7 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
 
     public AMBTCHeader getHeader()
     {
-        return (AMBTCHeader)getPacketSequence().getHeader();
+        return (AMBTCHeader)getPDUSequence().getHeader();
     }
 
     public boolean hasDataBlock(int index)
@@ -69,7 +69,7 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
 
     public UnconfirmedDataBlock getDataBlock(int index)
     {
-        DataBlock dataBlock = getPacketSequence().getDataBlocks().get(index);
+        DataBlock dataBlock = getPDUSequence().getDataBlocks().get(index);
 
         if(dataBlock instanceof UnconfirmedDataBlock)
         {
@@ -96,21 +96,21 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
         StringBuilder sb = new StringBuilder();
         sb.append("NAC:").append(getNAC());
 
-        if(!getPacketSequence().isComplete())
+        if(!getPDUSequence().isComplete())
         {
-            sb.append(" *INCOMPLETE - RECEIVED ").append(getPacketSequence().getDataBlocks().size()).append("/")
-                .append(getPacketSequence().getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
+            sb.append(" *INCOMPLETE - RECEIVED ").append(getPDUSequence().getDataBlocks().size()).append("/")
+                .append(getPDUSequence().getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
         }
 
-        sb.append(" ").append(getPacketSequence().getHeader().toString());
+        sb.append(" ").append(getPDUSequence().getHeader().toString());
 
-        sb.append(" DATA BLOCKS:").append(getPacketSequence().getDataBlocks().size());
+        sb.append(" DATA BLOCKS:").append(getPDUSequence().getDataBlocks().size());
 
-        if(!getPacketSequence().getDataBlocks().isEmpty())
+        if(!getPDUSequence().getDataBlocks().isEmpty())
         {
             sb.append(" MSG:");
 
-            for(DataBlock dataBlock: getPacketSequence().getDataBlocks())
+            for(DataBlock dataBlock: getPDUSequence().getDataBlocks())
             {
                 sb.append(dataBlock.getMessage().toHexString());
             }
@@ -121,9 +121,9 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
         return sb.toString();
     }
 
-    public PacketSequence getPacketSequence()
+    public PDUSequence getPDUSequence()
     {
-        return mPacketSequence;
+        return mPDUSequence;
     }
 
     private void extractMessage()
@@ -131,7 +131,7 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
         //There are 16 bits in the header
         int length = 16;
 
-        int blockCount = getPacketSequence().getHeader().getBlocksToFollowCount();
+        int blockCount = getPDUSequence().getHeader().getBlocksToFollowCount();
 
         //Each block provides 108 bits/12 bytes and the final block uses 32-bits for CRC
         length += (blockCount * 96);
@@ -139,15 +139,15 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
         CorrectedBinaryMessage consolidatedMessage = new CorrectedBinaryMessage(length);
 
         //Transfer 2 octets from header
-        AMBTCHeader header = (AMBTCHeader)getPacketSequence().getHeader();
+        AMBTCHeader header = (AMBTCHeader)getPDUSequence().getHeader();
 
         int dataOctetsValue = header.getDataOctets();
         consolidatedMessage.load(0, 16, dataOctetsValue);
 
-        if(getPacketSequence().isComplete())
+        if(getPDUSequence().isComplete())
         {
             int offset = 16;
-            for(DataBlock dataBlock: getPacketSequence().getDataBlocks())
+            for(DataBlock dataBlock: getPDUSequence().getDataBlocks())
             {
                 if(dataBlock instanceof UnconfirmedDataBlock)
                 {
@@ -176,12 +176,12 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
     @Override
     public int getBitsProcessedCount()
     {
-        return getPacketSequence().getBitsProcessedCount();
+        return getPDUSequence().getBitsProcessedCount();
     }
 
     @Override
     public int getBitErrorsCount()
     {
-        return getPacketSequence().getBitErrorsCount();
+        return getPDUSequence().getBitErrorsCount();
     }
 }

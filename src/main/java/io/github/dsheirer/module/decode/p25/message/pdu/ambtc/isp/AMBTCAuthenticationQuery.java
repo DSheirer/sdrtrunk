@@ -25,17 +25,14 @@ import io.github.dsheirer.identifier.integer.node.APCO25System;
 import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
-import io.github.dsheirer.module.decode.p25.reference.Direction;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class AMBTCAuthenticationQuery extends AMBTCMessage
 {
-    private static final int[] ACKNOWLEDGED_SERVICE_OPCODE = {};
     private static final int[] HEADER_WACN = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
     private static final int[] BLOCK_0_WACN = {0, 1, 2, 3};
     private static final int[] BLOCK_0_SYSTEM = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
@@ -43,16 +40,15 @@ public class AMBTCAuthenticationQuery extends AMBTCMessage
         33, 34, 35, 36, 37, 38, 39};
     private static final int[] BLOCK_0_RESERVED = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
 
-    private Opcode mAcknowledgedService;
     private IIdentifier mWacn;
     private IIdentifier mSystem;
     private IIdentifier mSourceAddress;
     private IIdentifier mTargetId;
     private List<IIdentifier> mIdentifiers;
 
-    public AMBTCAuthenticationQuery(PacketSequence packetSequence, int nac, long timestamp)
+    public AMBTCAuthenticationQuery(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(packetSequence, nac, timestamp);
+        super(PDUSequence, nac, timestamp);
     }
 
     public String toString()
@@ -72,7 +68,6 @@ public class AMBTCAuthenticationQuery extends AMBTCMessage
         {
             sb.append(" SYSTEM:").append(getSystem());
         }
-        sb.append(" ACK SERVICE:").append(getAcknowledgedService());
         return sb.toString();
     }
 
@@ -84,17 +79,6 @@ public class AMBTCAuthenticationQuery extends AMBTCMessage
         }
 
         return mSourceAddress;
-    }
-
-    public Opcode getAcknowledgedService()
-    {
-        if(mAcknowledgedService == null)
-        {
-            mAcknowledgedService = Opcode.fromValue(getHeader().getMessage().getInt(ACKNOWLEDGED_SERVICE_OPCODE),
-                Direction.OUTBOUND, getHeader().getVendor());
-        }
-
-        return mAcknowledgedService;
     }
 
     public IIdentifier getWacn()

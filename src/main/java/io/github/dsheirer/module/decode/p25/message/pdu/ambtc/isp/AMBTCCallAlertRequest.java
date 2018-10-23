@@ -24,7 +24,7 @@ import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.identifier.integer.node.APCO25System;
 import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
 import java.util.ArrayList;
@@ -44,9 +44,9 @@ public class AMBTCCallAlertRequest extends AMBTCMessage
     private IIdentifier mSourceAddress;
     private List<IIdentifier> mIdentifiers;
 
-    public AMBTCCallAlertRequest(PacketSequence packetSequence, int nac, long timestamp)
+    public AMBTCCallAlertRequest(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(packetSequence, nac, timestamp);
+        super(PDUSequence, nac, timestamp);
     }
 
     public String toString()

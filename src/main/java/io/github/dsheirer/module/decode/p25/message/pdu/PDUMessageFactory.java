@@ -37,16 +37,27 @@ import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp.AMBTCUnitAckno
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceAnswerResponse;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp.AMBTCUnitToUnitVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCCallAlert;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCGroupAffiliationQuery;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCGroupAffiliationResponse;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCGroupDataChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCGroupVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCIndividualDataChannelGrant;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCMessageUpdate;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCProtectionParameterBroadcast;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCRoamingAddressResponse;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCRoamingAddressUpdate;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCStatusQuery;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCStatusUpdate;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCTelephoneInterconnectChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCTelephoneInterconnectChannelGrantUpdate;
+import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCUnitRegistrationResponse;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCUnitToUnitAnswerRequest;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCUnitToUnitVoiceServiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCUnitToUnitVoiceServiceChannelGrantUpdate;
-import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeader;
-import io.github.dsheirer.module.decode.p25.message.pdu.header.PDUHeaderFactory;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.ConfirmedDataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.DataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -66,7 +77,7 @@ public class PDUMessageFactory
 
     private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
 
-    public static PacketSequence createPacketSequence(int nac, long timestamp, CorrectedBinaryMessage correctedBinaryMessage)
+    public static PDUSequence createPacketSequence(int nac, long timestamp, CorrectedBinaryMessage correctedBinaryMessage)
     {
         //Get deinterleaved header chunk
         BitSet interleaved = correctedBinaryMessage.get(PDU0_BEGIN, PDU0_END);
@@ -78,7 +89,7 @@ public class PDUMessageFactory
         if(viterbiDecoded != null)
         {
             PDUHeader header = PDUHeaderFactory.getPDUHeader(viterbiDecoded);
-            return new PacketSequence(header, timestamp, nac);
+            return new PDUSequence(header, timestamp, nac);
         }
 
         return null;
@@ -87,19 +98,19 @@ public class PDUMessageFactory
     /**
      * Creates a packet sequence message from the packet sequence.
      *
-     * @param packetSequence
+     * @param PDUSequence
      * @return
      */
-    public static P25Message create(PacketSequence packetSequence, int nac, long timestamp)
+    public static P25Message create(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        switch(packetSequence.getHeader().getFormat())
+        switch(PDUSequence.getHeader().getFormat())
         {
             case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
-                return createAMBTC(packetSequence, nac, timestamp);
+                return createAMBTC(PDUSequence, nac, timestamp);
             case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
-                return createUMBTC(packetSequence, nac, timestamp);
+                return createUMBTC(PDUSequence, nac, timestamp);
             default:
-                return new PacketSequenceMessage(packetSequence, nac, timestamp);
+                return new PDUSequenceMessage(PDUSequence, nac, timestamp);
         }
     }
 
@@ -124,93 +135,113 @@ public class PDUMessageFactory
     /**
      * Creates an alternate multi-block trunking control message
      *
-     * @param packetSequence containing an AMBTC (PDU) header
+     * @param pduSequence containing an AMBTC (PDU) header
      * @param nac network access code
      * @param timestamp of the packet sequence
      * @return AMBTC message parser for the specific opcode
      */
-    public static P25Message createAMBTC(PacketSequence packetSequence, int nac, long timestamp)
+    public static P25Message createAMBTC(PDUSequence pduSequence, int nac, long timestamp)
     {
-        AMBTCHeader ambtcHeader = (AMBTCHeader)packetSequence.getHeader();
+        AMBTCHeader ambtcHeader = (AMBTCHeader)pduSequence.getHeader();
 
         switch(ambtcHeader.getOpcode())
         {
             case ISP_AUTHENTICATION_QUERY_OBSOLETE:
-                return new AMBTCAuthenticationQuery(packetSequence, nac, timestamp);
+                return new AMBTCAuthenticationQuery(pduSequence, nac, timestamp);
             case ISP_AUTHENTICATION_RESPONSE:
-                return new AMBTCAuthenticationResponse(packetSequence, nac, timestamp);
+                return new AMBTCAuthenticationResponse(pduSequence, nac, timestamp);
             case ISP_CALL_ALERT_REQUEST:
-                return new AMBTCCallAlertRequest(packetSequence, nac, timestamp);
+                return new AMBTCCallAlertRequest(pduSequence, nac, timestamp);
             case ISP_GROUP_AFFILIATION_REQUEST:
-                return new AMBTCGroupAffiliationRequest(packetSequence, nac, timestamp);
+                return new AMBTCGroupAffiliationRequest(pduSequence, nac, timestamp);
             case ISP_INDIVIDUAL_DATA_SERVICE_REQUEST:
-                return new AMBTCIndividualDataServiceRequest(packetSequence, nac, timestamp);
+                return new AMBTCIndividualDataServiceRequest(pduSequence, nac, timestamp);
             case ISP_LOCATION_REGISTRATION_REQUEST:
-                return new AMBTCLocationRegistrationRequest(packetSequence, nac, timestamp);
+                return new AMBTCLocationRegistrationRequest(pduSequence, nac, timestamp);
             case ISP_MESSAGE_UPDATE_REQUEST:
-                return new AMBTCMessageUpdateRequest(packetSequence, nac, timestamp);
+                return new AMBTCMessageUpdateRequest(pduSequence, nac, timestamp);
             case ISP_ROAMING_ADDRESS_REQUEST:
-                return new AMBTCRoamingAddressRequest(packetSequence, nac, timestamp);
+                return new AMBTCRoamingAddressRequest(pduSequence, nac, timestamp);
             case ISP_STATUS_QUERY_REQUEST:
-                return new AMBTCStatusQueryRequest(packetSequence, nac, timestamp);
+                return new AMBTCStatusQueryRequest(pduSequence, nac, timestamp);
             case ISP_STATUS_QUERY_RESPONSE:
-                return new AMBTCStatusQueryResponse(packetSequence, nac, timestamp);
+                return new AMBTCStatusQueryResponse(pduSequence, nac, timestamp);
             case ISP_STATUS_UPDATE_REQUEST:
-                return new AMBTCStatusUpdateRequest(packetSequence, nac, timestamp);
+                return new AMBTCStatusUpdateRequest(pduSequence, nac, timestamp);
             case ISP_UNIT_ACKNOWLEDGE_RESPONSE:
-                return new AMBTCUnitAcknowledgeResponse(packetSequence, nac, timestamp);
+                return new AMBTCUnitAcknowledgeResponse(pduSequence, nac, timestamp);
             case ISP_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST:
-                return new AMBTCUnitToUnitVoiceServiceRequest(packetSequence, nac, timestamp);
+                return new AMBTCUnitToUnitVoiceServiceRequest(pduSequence, nac, timestamp);
             case ISP_UNIT_TO_UNIT_ANSWER_RESPONSE:
-                return new AMBTCUnitToUnitVoiceServiceAnswerResponse(packetSequence, nac, timestamp);
+                return new AMBTCUnitToUnitVoiceServiceAnswerResponse(pduSequence, nac, timestamp);
 
             case OSP_ADJACENT_STATUS_BROADCAST:
-                return new AMBTCAdjacentStatusBroadcast(packetSequence, nac, timestamp);
+                return new AMBTCAdjacentStatusBroadcast(pduSequence, nac, timestamp);
+            case OSP_CALL_ALERT:
+                return new AMBTCCallAlert(pduSequence, nac, timestamp);
             case OSP_GROUP_DATA_CHANNEL_GRANT:
-                return new AMBTCGroupDataChannelGrant(packetSequence, nac, timestamp);
+                return new AMBTCGroupDataChannelGrant(pduSequence, nac, timestamp);
+            case OSP_GROUP_AFFILIATION_QUERY:
+                return new AMBTCGroupAffiliationQuery(pduSequence, nac, timestamp);
+            case OSP_GROUP_AFFILIATION_RESPONSE:
+                return new AMBTCGroupAffiliationResponse(pduSequence, nac, timestamp);
             case OSP_GROUP_VOICE_CHANNEL_GRANT:
-                return new AMBTCGroupVoiceChannelGrant(packetSequence, nac, timestamp);
+                return new AMBTCGroupVoiceChannelGrant(pduSequence, nac, timestamp);
             case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
-                return new AMBTCIndividualDataChannelGrant(packetSequence, nac, timestamp);
+                return new AMBTCIndividualDataChannelGrant(pduSequence, nac, timestamp);
+            case OSP_MESSAGE_UPDATE:
+                return new AMBTCMessageUpdate(pduSequence, nac, timestamp);
+            case OSP_PROTECTION_PARAMETER_BROADCAST:
+                return new AMBTCProtectionParameterBroadcast(pduSequence, nac, timestamp);
+            case OSP_ROAMING_ADDRESS_UPDATE:
+                return new AMBTCRoamingAddressUpdate(pduSequence, nac, timestamp);
+            case OSP_ROAMING_ADDRESS_COMMAND:
+                return new AMBTCRoamingAddressResponse(pduSequence, nac, timestamp);
+            case OSP_STATUS_QUERY:
+                return new AMBTCStatusQuery(pduSequence, nac, timestamp);
+            case OSP_STATUS_UPDATE:
+                return new AMBTCStatusUpdate(pduSequence, nac, timestamp);
             case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                return new AMBTCTelephoneInterconnectChannelGrant(packetSequence, nac, timestamp);
+                return new AMBTCTelephoneInterconnectChannelGrant(pduSequence, nac, timestamp);
             case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-                return new AMBTCTelephoneInterconnectChannelGrantUpdate(packetSequence, nac, timestamp);
+                return new AMBTCTelephoneInterconnectChannelGrantUpdate(pduSequence, nac, timestamp);
+            case OSP_UNIT_REGISTRATION_RESPONSE:
+                return new AMBTCUnitRegistrationResponse(pduSequence, nac, timestamp);
             case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
-                return new AMBTCUnitToUnitAnswerRequest(packetSequence, nac, timestamp);
+                return new AMBTCUnitToUnitAnswerRequest(pduSequence, nac, timestamp);
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                return new AMBTCUnitToUnitVoiceServiceChannelGrant(packetSequence, nac, timestamp);
+                return new AMBTCUnitToUnitVoiceServiceChannelGrant(pduSequence, nac, timestamp);
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-                return new AMBTCUnitToUnitVoiceServiceChannelGrantUpdate(packetSequence, nac, timestamp);
+                return new AMBTCUnitToUnitVoiceServiceChannelGrantUpdate(pduSequence, nac, timestamp);
             default:
-                return new PacketSequenceMessage(packetSequence, nac, timestamp);
+                return new PDUSequenceMessage(pduSequence, nac, timestamp);
         }
     }
 
     /**
      * Creates an unconfirmed multi-block trunking control message
      *
-     * @param packetSequence containing a UMBTC (PDU) header
+     * @param pduSequence containing a UMBTC (PDU) header
      * @param nac network access code
      * @param timestamp of the packet sequence
      * @return UMBTC message parser for the specific opcode
      */
-    public static P25Message createUMBTC(PacketSequence packetSequence, int nac, long timestamp)
+    public static P25Message createUMBTC(PDUSequence pduSequence, int nac, long timestamp)
     {
         Opcode opcode = Opcode.OSP_UNKNOWN;
 
-        if(packetSequence.hasDataBlock(0))
+        if(pduSequence.hasDataBlock(0))
         {
-            opcode = Opcode.fromValue(packetSequence.getDataBlock(0).getMessage().getInt(BLOCK_0_UMBTC_OPCODE),
-                packetSequence.getHeader().getDirection(), packetSequence.getHeader().getVendor());
+            opcode = Opcode.fromValue(pduSequence.getDataBlock(0).getMessage().getInt(BLOCK_0_UMBTC_OPCODE),
+                pduSequence.getHeader().getDirection(), pduSequence.getHeader().getVendor());
         }
 
         switch(opcode)
         {
             case ISP_TELEPHONE_INTERCONNECT_EXPLICIT_DIAL_REQUEST:
-                return new UMBTCTelephoneInterconnectRequestExplicitDialing(packetSequence, nac, timestamp);
+                return new UMBTCTelephoneInterconnectRequestExplicitDialing(pduSequence, nac, timestamp);
             default:
-                return new PacketSequenceMessage(packetSequence, nac, timestamp);
+                return new PDUSequenceMessage(pduSequence, nac, timestamp);
         }
     }
 

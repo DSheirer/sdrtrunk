@@ -24,9 +24,9 @@ import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.module.decode.p25.message.pdu.DataBlock;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
-import io.github.dsheirer.module.decode.p25.message.pdu.UnconfirmedDataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.DataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -38,12 +38,12 @@ public abstract class UMBTCMessage extends P25Message implements IBitErrorProvid
         40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] BLOCK_0_OPCODE = {2, 3, 4, 5, 6, 7};
 
-    private PacketSequence mPacketSequence;
+    private PDUSequence mPDUSequence;
 
-    public UMBTCMessage(PacketSequence packetSequence, int nac, long timestamp)
+    public UMBTCMessage(PDUSequence PDUSequence, int nac, long timestamp)
     {
         super(nac, timestamp);
-        mPacketSequence = packetSequence;
+        mPDUSequence = PDUSequence;
     }
 
     @Override
@@ -59,7 +59,7 @@ public abstract class UMBTCMessage extends P25Message implements IBitErrorProvid
 
     public UMBTCHeader getHeader()
     {
-        return (UMBTCHeader)getPacketSequence().getHeader();
+        return (UMBTCHeader)getPDUSequence().getHeader();
     }
 
     public Opcode getOpcode()
@@ -80,7 +80,7 @@ public abstract class UMBTCMessage extends P25Message implements IBitErrorProvid
 
     public UnconfirmedDataBlock getDataBlock(int index)
     {
-        DataBlock dataBlock = getPacketSequence().getDataBlocks().get(index);
+        DataBlock dataBlock = getPDUSequence().getDataBlocks().get(index);
 
         if(dataBlock instanceof UnconfirmedDataBlock)
         {
@@ -107,21 +107,21 @@ public abstract class UMBTCMessage extends P25Message implements IBitErrorProvid
         StringBuilder sb = new StringBuilder();
         sb.append("NAC:").append(getNAC());
 
-        if(!getPacketSequence().isComplete())
+        if(!getPDUSequence().isComplete())
         {
-            sb.append(" *INCOMPLETE - RECEIVED ").append(getPacketSequence().getDataBlocks().size()).append("/")
-                .append(getPacketSequence().getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
+            sb.append(" *INCOMPLETE - RECEIVED ").append(getPDUSequence().getDataBlocks().size()).append("/")
+                .append(getPDUSequence().getHeader().getBlocksToFollowCount()).append(" DATA BLOCKS");
         }
 
-        sb.append(" ").append(getPacketSequence().getHeader().toString());
+        sb.append(" ").append(getPDUSequence().getHeader().toString());
 
-        sb.append(" DATA BLOCKS:").append(getPacketSequence().getDataBlocks().size());
+        sb.append(" DATA BLOCKS:").append(getPDUSequence().getDataBlocks().size());
 
-        if(!getPacketSequence().getDataBlocks().isEmpty())
+        if(!getPDUSequence().getDataBlocks().isEmpty())
         {
             sb.append(" MSG:");
 
-            for(DataBlock dataBlock : getPacketSequence().getDataBlocks())
+            for(DataBlock dataBlock : getPDUSequence().getDataBlocks())
             {
                 sb.append(dataBlock.getMessage().toHexString());
             }
@@ -130,20 +130,20 @@ public abstract class UMBTCMessage extends P25Message implements IBitErrorProvid
         return sb.toString();
     }
 
-    public PacketSequence getPacketSequence()
+    public PDUSequence getPDUSequence()
     {
-        return mPacketSequence;
+        return mPDUSequence;
     }
 
     @Override
     public int getBitsProcessedCount()
     {
-        return getPacketSequence().getBitsProcessedCount();
+        return getPDUSequence().getBitsProcessedCount();
     }
 
     @Override
     public int getBitErrorsCount()
     {
-        return getPacketSequence().getBitErrorsCount();
+        return getPDUSequence().getBitErrorsCount();
     }
 }

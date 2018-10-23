@@ -25,7 +25,7 @@ import io.github.dsheirer.identifier.integer.node.APCO25System;
 import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
@@ -48,9 +48,9 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
     private IIdentifier mTargetId;
     private List<IIdentifier> mIdentifiers;
 
-    public AMBTCIndividualDataServiceRequest(PacketSequence packetSequence, int nac, long timestamp)
+    public AMBTCIndividualDataServiceRequest(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(packetSequence, nac, timestamp);
+        super(PDUSequence, nac, timestamp);
     }
 
     public String toString()

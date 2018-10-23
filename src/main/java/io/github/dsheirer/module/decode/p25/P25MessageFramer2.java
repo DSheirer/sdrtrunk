@@ -24,7 +24,7 @@ import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -52,7 +52,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private int mStatusSymbolDibitCounter = 0;
     private long mCurrentTime = System.currentTimeMillis();
     private double mBitRate;
-    private PacketSequence mPacketSequence;
+    private PDUSequence mPDUSequence;
     private int mTrailingDibitsToSuppress = 0;
 
     private P25MessageFramer2(IPhaseLockedLoop phaseLockedLoop, int bitRate)
@@ -178,11 +178,11 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             switch(mDataUnitID)
             {
                 case PACKET_HEADER_DATA_UNIT:
-                    mPacketSequence = PDUMessageFactory.createPacketSequence(mNAC, mCurrentTime, mBinaryMessage);
+                    mPDUSequence = PDUMessageFactory.createPacketSequence(mNAC, mCurrentTime, mBinaryMessage);
 
-                    if(mPacketSequence != null)
+                    if(mPDUSequence != null)
                     {
-                        if(mPacketSequence.getHeader().getBlocksToFollowCount() > 0)
+                        if(mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
                         {
                             //Setup to catch the sequence of data blocks that follow the header
                             mDataUnitID = DataUnitID.PACKET_DATA_UNIT;
@@ -194,29 +194,29 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                             //Process 44 bits/22 dibits of trailing nulls
                             mTrailingDibitsToSuppress = 22;
 
-                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence, mNAC, getTimestamp()));
-                            reset(mPacketSequence.getBitsProcessedCount());
-                            mPacketSequence = null;
+                            mMessageListener.receive(PDUMessageFactory.create(mPDUSequence, mNAC, getTimestamp()));
+                            reset(mPDUSequence.getBitsProcessedCount());
+                            mPDUSequence = null;
                         }
                     }
                     break;
                 case PACKET_DATA_UNIT:
-                    if(mPacketSequence != null)
+                    if(mPDUSequence != null)
                     {
-                        if(mPacketSequence.getHeader().isConfirmationRequired())
+                        if(mPDUSequence.getHeader().isConfirmationRequired())
                         {
-                            mPacketSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(mBinaryMessage));
+                            mPDUSequence.addDataBlock(PDUMessageFactory.createConfirmedDataBlock(mBinaryMessage));
                         }
                         else
                         {
-                            mPacketSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(mBinaryMessage));
+                            mPDUSequence.addDataBlock(PDUMessageFactory.createUnconfirmedDataBlock(mBinaryMessage));
                         }
 
-                        if(mPacketSequence.isComplete())
+                        if(mPDUSequence.isComplete())
                         {
-                            mMessageListener.receive(PDUMessageFactory.create(mPacketSequence, mNAC, getTimestamp()));
+                            mMessageListener.receive(PDUMessageFactory.create(mPDUSequence, mNAC, getTimestamp()));
 
-                            switch(mPacketSequence.getHeader().getBlocksToFollowCount())
+                            switch(mPDUSequence.getHeader().getBlocksToFollowCount())
                             {
                                 case 1:
                                     mTrailingDibitsToSuppress = 29;
@@ -231,12 +231,12 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                                     break;
                                 default:
                                     mLog.debug("*** MORE THAN 3 PDU BLOCKS DETECTED [" +
-                                        mPacketSequence.getHeader().getBlocksToFollowCount() +
+                                        mPDUSequence.getHeader().getBlocksToFollowCount() +
                                         "] - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
                                     break;
                             }
 
-                            reset(mPacketSequence.getBitsProcessedCount());
+                            reset(mPDUSequence.getBitsProcessedCount());
                         }
                         else
                         {
@@ -295,7 +295,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private void reset(int bitsProcessed)
     {
         updateBitsProcessed(bitsProcessed);
-        mPacketSequence = null;
+        mPDUSequence = null;
         mBinaryMessage = null;
         mAssemblingMessage = false;
         mDataUnitID = null;

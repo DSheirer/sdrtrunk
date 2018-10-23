@@ -27,9 +27,9 @@ import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
 import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
 import io.github.dsheirer.identifier.integer.node.APCO25Site;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.message.pdu.PacketSequence;
-import io.github.dsheirer.module.decode.p25.message.pdu.UnconfirmedDataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +49,9 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
     private List<IIdentifier> mIdentifiers;
     private List<IAPCO25Channel> mChannels;
 
-    public AMBTCAdjacentStatusBroadcast(PacketSequence packetSequence, int nac, long timestamp)
+    public AMBTCAdjacentStatusBroadcast(PDUSequence PDUSequence, int nac, long timestamp)
     {
-        super(packetSequence, nac, timestamp);
+        super(PDUSequence, nac, timestamp);
     }
 
     public String toString()
