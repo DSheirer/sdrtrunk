@@ -85,7 +85,7 @@ public class AdjacentSiteStatusBroadcast extends LinkControlWord implements Freq
             mLRA = APCO25Lra.create(getMessage().getInt(LRA));
         }
 
-        return mRFSS;
+        return mLRA;
     }
 
     public IIdentifier getSystem()

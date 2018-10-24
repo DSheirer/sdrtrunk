@@ -52,7 +52,7 @@ public class EncryptionSyncParameters
         }
         else
         {
-            sb.append("UNENCRYPTED");
+            sb.append("UNENCRYPTED    ");
         }
         return sb.toString();
     }

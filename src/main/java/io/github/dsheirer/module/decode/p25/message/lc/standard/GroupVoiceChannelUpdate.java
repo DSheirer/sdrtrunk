@@ -62,12 +62,12 @@ public class GroupVoiceChannelUpdate extends LinkControlWord implements Frequenc
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
         sb.append(" TALKGROUP A:").append(getGroupAddressA());
-        sb.append(" ").append(getChannelA());
+        sb.append(" CHAN A:").append(getChannelA());
 
         if(hasChannelB())
         {
             sb.append(" TALKGROUP B:").append(getGroupAddressB());
-            sb.append(" ").append(getChannelB());
+            sb.append(" CHAN B:").append(getChannelB());
         }
 
         return sb.toString();
@@ -112,7 +112,7 @@ public class GroupVoiceChannelUpdate extends LinkControlWord implements Frequenc
 
     public boolean hasChannelB()
     {
-        return getMessage().getInt(CHANNEL_B) != 0;
+        return getMessage().getInt(CHANNEL_B) != 0 && getMessage().getInt(GROUP_ADDRESS_A) != getMessage().getInt(GROUP_ADDRESS_B);
     }
 
     public IIdentifier getGroupAddressA()

@@ -17,36 +17,57 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * LDU Message is formatted as:
+ *
+ * IMBE 1: 0000-0143
+ * IMBE 2: 0144-0287
+ *     LC: 0288-0327
+ * IMBE 3: 0328-0471
+ *     LC: 0472-0511
+ * IMBE 4: 0512-0655
+ *     LC: 0656-0695
+ * IMBE 5: 0696-0839
+ *     LC: 0840-0879
+ * IMBE 6: 0880-1023
+ *     LC: 1024-1063
+ * IMBE 7: 1064-1207
+ *     LC: 1208-1247
+ * IMBE 8: 1248-1391
+ *     LC: 1392-1423 (LSD)
+ * IMBE 9: 1424-1567
+ */
+
 public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
 {
     private final static Logger mLog = LoggerFactory.getLogger(LDU1Message.class);
 
-    private static final int[] GOLAY_WORD_STARTS = {352, 362, 372, 382, 536, 546, 556, 566, 720, 730, 740, 750, 904, 914,
-            924, 934, 1088, 1098, 1108, 1118, 1272, 1282, 1292, 1302};
-    private static final int[] CW_HEX_0 = {352, 353, 354, 355, 356, 357};
-    private static final int[] CW_HEX_1 = {362, 363, 364, 365, 366, 367};
-    private static final int[] CW_HEX_2 = {372, 373, 374, 375, 376, 377};
-    private static final int[] CW_HEX_3 = {382, 383, 384, 385, 386, 387};
-    private static final int[] CW_HEX_4 = {536, 537, 538, 539, 540, 541};
-    private static final int[] CW_HEX_5 = {546, 547, 548, 549, 550, 551};
-    private static final int[] CW_HEX_6 = {556, 557, 558, 559, 560, 561};
-    private static final int[] CW_HEX_7 = {566, 567, 568, 569, 570, 571};
-    private static final int[] CW_HEX_8 = {720, 721, 722, 723, 724, 725};
-    private static final int[] CW_HEX_9 = {730, 731, 732, 733, 734, 735};
-    private static final int[] CW_HEX_10 = {740, 741, 742, 743, 744, 745};
-    private static final int[] CW_HEX_11 = {750, 751, 752, 753, 754, 755};
-    private static final int[] RS_HEX_0 = {904, 905, 906, 907, 908, 909};
-    private static final int[] RS_HEX_1 = {914, 915, 916, 917, 918, 919};
-    private static final int[] RS_HEX_2 = {924, 925, 926, 927, 928, 929};
-    private static final int[] RS_HEX_3 = {934, 935, 936, 937, 938, 939};
-    private static final int[] RS_HEX_4 = {1088, 1089, 1090, 1091, 1092, 1093};
-    private static final int[] RS_HEX_5 = {1098, 1099, 1100, 1101, 1102, 1103};
-    private static final int[] RS_HEX_6 = {1108, 1109, 1110, 1111, 1112, 1113};
-    private static final int[] RS_HEX_7 = {1118, 1119, 1120, 1121, 1122, 1123};
-    private static final int[] RS_HEX_8 = {1272, 1273, 1274, 1275, 1276, 1277};
-    private static final int[] RS_HEX_9 = {1282, 1283, 1284, 1285, 1286, 1287};
-    private static final int[] RS_HEX_10 = {1292, 1293, 1294, 1295, 1296, 1297};
-    private static final int[] RS_HEX_11 = {1302, 1303, 1304, 1305, 1306, 1307};
+    private static final int[] GOLAY_WORD_STARTS = {288, 298, 308, 318, 472, 482, 492, 502, 656, 666, 676, 686,
+        840, 850, 860, 870, 1024, 1034, 1044, 1054, 1208, 1218, 1228, 1238};
+    private static final int[] CW_HEX_0 = {288, 289, 290, 291, 292, 293};
+    private static final int[] CW_HEX_1 = {298, 299, 300, 301, 302, 303};
+    private static final int[] CW_HEX_2 = {308, 309, 310, 311, 312, 313};
+    private static final int[] CW_HEX_3 = {318, 319, 320, 321, 322, 323};
+    private static final int[] CW_HEX_4 = {472, 473, 474, 475, 475, 477};
+    private static final int[] CW_HEX_5 = {482, 483, 484, 485, 486, 487};
+    private static final int[] CW_HEX_6 = {492, 493, 494, 495, 496, 497};
+    private static final int[] CW_HEX_7 = {502, 503, 504, 505, 506, 507};
+    private static final int[] CW_HEX_8 = {656, 657, 658, 659, 660, 661};
+    private static final int[] CW_HEX_9 = {666, 667, 668, 669, 670, 671};
+    private static final int[] CW_HEX_10 = {676, 677, 678, 679, 680, 681};
+    private static final int[] CW_HEX_11 = {686, 686, 688, 689, 690, 691};
+    private static final int[] RS_HEX_0 = {840, 841, 842, 843, 844, 845};
+    private static final int[] RS_HEX_1 = {850, 851, 852, 853, 854, 855};
+    private static final int[] RS_HEX_2 = {860, 861, 862, 863, 864, 865};
+    private static final int[] RS_HEX_3 = {870, 871, 872, 873, 874, 875};
+    private static final int[] RS_HEX_4 = {1024, 1025, 1026, 1027, 1028, 1029};
+    private static final int[] RS_HEX_5 = {1034, 1035, 1036, 1037, 1038, 1039};
+    private static final int[] RS_HEX_6 = {1044, 1045, 1046, 1047, 1048, 1049};
+    private static final int[] RS_HEX_7 = {1054, 1055, 1056, 1057, 1058, 1059};
+    private static final int[] RS_HEX_8 = {1208, 1209, 1210, 1211, 1212, 1213};
+    private static final int[] RS_HEX_9 = {1218, 1219, 1220, 1221, 1222, 1223};
+    private static final int[] RS_HEX_10 = {1228, 1229, 1230, 1231, 1232, 1233};
+    private static final int[] RS_HEX_11 = {1238, 1239, 1240, 1241, 1242, 1243};
 
     /* Reed-Solomon(24,12,13) code protects the link control word.  Maximum
      * correctable errors are: Hamming Distance(13) / 2 = 6  */
@@ -149,6 +170,10 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
             if(output[x] != -1)
             {
                 binaryMessage.load(pointer, 6, output[x]);
+            }
+            else
+            {
+                mLog.error("-1 output");
             }
 
             pointer += 6;

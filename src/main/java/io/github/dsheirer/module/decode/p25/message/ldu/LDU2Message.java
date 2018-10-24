@@ -16,33 +16,32 @@ public class LDU2Message extends LDUMessage
 {
     private final static Logger mLog = LoggerFactory.getLogger(LDU2Message.class);
 
-    public static final int[] GOLAY_WORD_STARTS = {352, 362, 372, 382, 536, 546, 556, 566, 720, 730, 740, 750, 904,
-            914, 924, 934, 1088, 1098, 1108, 1118, 1272, 1282, 1292, 1302};
-
-    public static final int[] CW_HEX_0 = {352, 353, 354, 355, 356, 357};
-    public static final int[] CW_HEX_1 = {362, 363, 364, 365, 366, 367};
-    public static final int[] CW_HEX_2 = {372, 373, 374, 375, 376, 377};
-    public static final int[] CW_HEX_3 = {382, 383, 384, 385, 386, 387};
-    public static final int[] CW_HEX_4 = {536, 537, 538, 539, 540, 541};
-    public static final int[] CW_HEX_5 = {546, 547, 548, 549, 550, 551};
-    public static final int[] CW_HEX_6 = {556, 557, 558, 559, 560, 561};
-    public static final int[] CW_HEX_7 = {566, 567, 568, 569, 570, 571};
-    public static final int[] CW_HEX_8 = {720, 721, 722, 723, 724, 725};
-    public static final int[] CW_HEX_9 = {730, 731, 732, 733, 734, 735};
-    public static final int[] CW_HEX_10 = {740, 741, 742, 743, 744, 745};
-    public static final int[] CW_HEX_11 = {750, 751, 752, 753, 754, 755};
-    public static final int[] CW_HEX_12 = {904, 905, 906, 907, 908, 909};
-    public static final int[] CW_HEX_13 = {914, 915, 916, 917, 918, 919};
-    public static final int[] CW_HEX_14 = {924, 925, 926, 927, 928, 929};
-    public static final int[] CW_HEX_15 = {934, 935, 936, 937, 938, 939};
-    public static final int[] RS_HEX_0 = {1088, 1089, 1090, 1091, 1092, 1093};
-    public static final int[] RS_HEX_1 = {1098, 1099, 1100, 1101, 1102, 1103};
-    public static final int[] RS_HEX_2 = {1108, 1109, 1110, 1111, 1112, 1113};
-    public static final int[] RS_HEX_3 = {1118, 1119, 1120, 1121, 1122, 1123};
-    public static final int[] RS_HEX_4 = {1272, 1273, 1274, 1275, 1276, 1277};
-    public static final int[] RS_HEX_5 = {1282, 1283, 1284, 1285, 1286, 1287};
-    public static final int[] RS_HEX_6 = {1292, 1293, 1294, 1295, 1296, 1297};
-    public static final int[] RS_HEX_7 = {1302, 1303, 1304, 1305, 1306, 1307};
+    private static final int[] GOLAY_WORD_STARTS = {288, 298, 308, 318, 472, 482, 492, 502, 656, 666, 676, 686,
+        840, 850, 860, 870, 1024, 1034, 1044, 1054, 1208, 1218, 1228, 1238};
+    private static final int[] CW_HEX_0 = {288, 289, 290, 291, 292, 293};
+    private static final int[] CW_HEX_1 = {298, 299, 300, 301, 302, 303};
+    private static final int[] CW_HEX_2 = {308, 309, 310, 311, 312, 313};
+    private static final int[] CW_HEX_3 = {318, 319, 320, 321, 322, 323};
+    private static final int[] CW_HEX_4 = {472, 473, 474, 475, 475, 477};
+    private static final int[] CW_HEX_5 = {482, 483, 484, 485, 486, 487};
+    private static final int[] CW_HEX_6 = {492, 493, 494, 495, 496, 497};
+    private static final int[] CW_HEX_7 = {502, 503, 504, 505, 506, 507};
+    private static final int[] CW_HEX_8 = {656, 657, 658, 659, 660, 661};
+    private static final int[] CW_HEX_9 = {666, 667, 668, 669, 670, 671};
+    private static final int[] CW_HEX_10 = {676, 677, 678, 679, 680, 681};
+    private static final int[] CW_HEX_11 = {686, 686, 688, 689, 690, 691};
+    private static final int[] CW_HEX_12 = {840, 841, 842, 843, 844, 845};
+    private static final int[] CW_HEX_13 = {850, 851, 852, 853, 854, 855};
+    private static final int[] CW_HEX_14 = {860, 861, 862, 863, 864, 865};
+    private static final int[] CW_HEX_15 = {870, 871, 872, 873, 874, 875};
+    private static final int[] RS_HEX_0 = {1024, 1025, 1026, 1027, 1028, 1029};
+    private static final int[] RS_HEX_1 = {1034, 1035, 1036, 1037, 1038, 1039};
+    private static final int[] RS_HEX_2 = {1044, 1045, 1046, 1047, 1048, 1049};
+    private static final int[] RS_HEX_3 = {1054, 1055, 1056, 1057, 1058, 1059};
+    private static final int[] RS_HEX_4 = {1208, 1209, 1210, 1211, 1212, 1213};
+    private static final int[] RS_HEX_5 = {1218, 1219, 1220, 1221, 1222, 1223};
+    private static final int[] RS_HEX_6 = {1228, 1229, 1230, 1231, 1232, 1233};
+    private static final int[] RS_HEX_7 = {1238, 1239, 1240, 1241, 1242, 1243};
 
     /* Reed-Solomon(24,16,9) code protects the encryption sync word.  Maximum
      * correctable errors are: Hamming Distance(9) / 2 = 4  */

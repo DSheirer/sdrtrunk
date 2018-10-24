@@ -19,7 +19,7 @@ public abstract class LinkControlWord
     private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
 
     private BinaryMessage mMessage;
-    private boolean mValid;
+    private boolean mValid = true;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -130,25 +130,22 @@ public abstract class LinkControlWord
     {
         StringBuilder sb = new StringBuilder();
 
-        if(isValid())
+        if(!isValid())
         {
-            sb.append(getOpcode().getLabel());
+            sb.append("**CRC-FAILED** ");
+        }
+        sb.append(getOpcode().getLabel());
 
-            if(isEncrypted())
-            {
-                sb.append(" ENCRYPTED");
-            }
-            else
-            {
-                if(!isStandardVendorFormat())
-                {
-                    sb.append(" VENDOR:").append(getVendor().getLabel());
-                }
-            }
+        if(isEncrypted())
+        {
+            sb.append(" ENCRYPTED");
         }
         else
         {
-            sb.append("**CRC-FAILED**");
+            if(!isStandardVendorFormat())
+            {
+                sb.append(" VENDOR:").append(getVendor().getLabel());
+            }
         }
 
         return sb.toString();
