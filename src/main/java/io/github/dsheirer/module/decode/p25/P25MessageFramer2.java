@@ -402,15 +402,15 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             }
         });
 
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_040600_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_040600_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_042033_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045614_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045614_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits"); //Has Moto LC Opcode 01
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045647_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050325_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050403_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050721_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051808_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_EMERG_AND_PACKETS.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits"); //ARS PDUs and SNDCP PDUs
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051808_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_EMERG_AND_PACKETS.bits"); //ARS and SNCDP PDUs
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_052519_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091511_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091650_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");

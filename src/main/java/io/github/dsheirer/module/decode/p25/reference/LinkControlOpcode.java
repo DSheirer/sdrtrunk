@@ -2,105 +2,132 @@ package io.github.dsheirer.module.decode.p25.reference;
 
 public enum LinkControlOpcode
 {
-	GROUP_VOICE_CHANNEL_USER( "GRP_VCH_USER    ", "Group Voice Channel User", 0 ),
-	RESERVED_01( "RESERVED_01     ", "Reserved", 1 ),
-	GROUP_VOICE_CHANNEL_UPDATE( "GRP_VCH_UPDATE  ", "Group Voice Channel Grant Update", 2 ),
-	UNIT_TO_UNIT_VOICE_CHANNEL_USER( "UU_VCH_USER     ", "Unit-to-Unit Voice Channel User", 3 ),
-	GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT( "GRP_VCH_UPD_EXPL", "Group Voice Channel Update Explicit", 4 ),
-	UNIT_TO_UNIT_ANSWER_REQUEST( "UU_ANS_REQ      ", "Unit-to-Unit Answer Request", 5 ),
-	TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER( "TEL_INT_VCH_USER", "Telephone Interconnect Voice Channel User", 6 ),
-	TELEPHONE_INTERCONNECT_ANSWER_REQUEST( "TEL_INT_ANS_RQST", "Telephone Interconnect Answer Request", 7 ),
-	RESERVED_08( "RESERVED_08     ", "Reserved", 8 ),
-	RESERVED_09( "RESERVED_09     ", "Reserved", 9 ),
-	RESERVED_0A( "RESERVED_0A     ", "Reserved", 10 ),
-	RESERVED_0B( "RESERVED_0B     ", "Reserved", 11 ),
-	RESERVED_0C( "RESERVED_0C     ", "Reserved", 12 ),
-	RESERVED_0D( "RESERVED_0D     ", "Reserved", 13 ),
-	RESERVED_0E( "RESERVED_0E     ", "Reserved", 14 ),
-	CALL_TERMINATION_OR_CANCELLATION( "CALL TERMINATION", "Call Termination Cancellation", 15 ),
-	GROUP_AFFILIATION_QUERY( "GRP_AFFIL_QUERY ", "Group Affiliation Query", 16 ),
-	UNIT_REGISTRATION_COMMAND( "UNIT_REG_COMMAND", "Unit Registration Command", 17 ),
-	UNIT_AUTHENTICATION_COMMAND( "UNIT_AUTHEN_CMD ", "Unit Authentication Command", 18 ),
-	STATUS_QUERY( "STATUS QUERY    ", "Status Query", 19 ),
-	STATUS_UPDATE( "STATUS_UPDATE   ", "Status Update", 20 ),
-	MESSAGE_UPDATE( "MESSAGE UPDATE  ", "Message Update", 21 ),
-	CALL_ALERT( "CALL ALERT", "Call Alert", 22 ),
-	EXTENDED_FUNCTION_COMMAND( "EXT FUNC COMMAND", "Extended Function Command", 23 ),
-	CHANNEL_IDENTIFIER_UPDATE( "CHAN IDEN UPDATE", "Channel Identifier Update", 24 ),
-	CHANNEL_IDENTIFIER_UPDATE_EXPLICIT( "CHAN IDEN UPD EX", "Channel Identifier Update Explicit", 25 ),
-	RESERVED_1A( "RESERVED_1A     ", "Reserved", 26 ),
-	RESERVED_1B( "RESERVED_1B     ", "Reserved", 27 ),
-	RESERVED_1C( "RESERVED_1C     ", "Reserved", 28 ),
-	RESERVED_1D( "RESERVED_1D     ", "Reserved", 29 ),
-	RESERVED_1E( "RESERVED_1E     ", "Reserved", 30 ),
-	RESERVED_1F( "RESERVED_1F     ", "Reserved", 31 ),
-	SYSTEM_SERVICE_BROADCAST( "SYS_SVC_BCAST   ", "System Service Broadcast", 32 ),
-	SECONDARY_CONTROL_CHANNEL_BROADCAST( "SEC_CCH_BROADCST", "Secondary Control Channel Broadcast", 33 ),
-	ADJACENT_SITE_STATUS_BROADCAST( "ADJ SITE STATUS ", "Adjacent Site Status Broadcast", 34 ),
-	RFSS_STATUS_BROADCAST( "RFSS_STATUS_BCST", "RFSS Status Broadcast", 35 ),
-	NETWORK_STATUS_BROADCAST( "NET_STATUS_BCAST", "Network Status Broadcast", 36 ),
-	PROTECTION_PARAMETER_BROADCAST( "ENCRYPT_PAR_BCST", "Protection Parameter Broadcast", 37 ),
-	SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT( "SCCB_CCH_BCST_EX", "Secondary Control Channel Broadcast-Explicit", 38 ),
-	ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT( "ADJ SITE STAT EX", "Adjacent Site Status Broadcast Explicit", 39 ),
-	RFSS_STATUS_BROADCAST_EXPLICIT( "RFSS STAT BCST E", "RFSS Status Broadcast Explicit", 40 ),
-	NETWORK_STATUS_BROADCAST_EXPLICIT( "NET STAT BCAST E", "Network Status Broadcast", 41 ),
-	RESERVED_2A( "RESERVED_2A     ", "Reserved", 42 ),
-	RESERVED_2B( "RESERVED_2B     ", "Reserved", 43 ),
-	RESERVED_2C( "RESERVED_2C     ", "Reserved", 44 ),
-	RESERVED_2D( "RESERVED_2D     ", "Reserved", 45 ),
-	RESERVED_2E( "RESERVED_2E     ", "Reserved", 46 ),
-	RESERVED_2F( "RESERVED_2F     ", "Reserved", 47 ),
-	RESERVED_30( "RESERVED_30     ", "Reserved", 48 ),
-	RESERVED_31( "RESERVED_31     ", "Reserved", 49 ),
-	RESERVED_32( "RESERVED_32     ", "Reserved", 50 ),
-	RESERVED_33( "RESERVED_33     ", "Reserved", 51 ),
-	RESERVED_34( "RESERVED_34     ", "Reserved", 52 ),
-	RESERVED_35( "RESERVED_35     ", "Reserved", 53 ),
-	RESERVED_36( "RESERVED_36     ", "Reserved", 54 ),
-	RESERVED_37( "RESERVED_37     ", "Reserved", 55 ),
-	RESERVED_38( "RESERVED_38     ", "Reserved", 56 ),
-	RESERVED_39( "RESERVED_39     ", "Reserved", 57 ),
-	RESERVED_3A( "RESERVED_3A     ", "Reserved", 58 ),
-	RESERVED_3B( "RESERVED_3B     ", "Reserved", 59 ),
-	RESERVED_3C( "RESERVED_3C     ", "Reserved", 60 ),
-	RESERVED_3D( "RESERVED_3D     ", "Reserved", 61 ),
-	RESERVED_3E( "RESERVED_3E     ", "Reserved", 62 ),
-	RESERVED_3F( "RESERVED_3F     ", "Reserved", 63 ),
-	UNKNOWN( "UNKNOWN         ", "Unknown", -1 );
+    GROUP_VOICE_CHANNEL_USER("GROUP VOICE CHANNEL USER", 0),
+    RESERVED_01("RESERVED-01", 1),
+    GROUP_VOICE_CHANNEL_UPDATE("GROUP VOICE CHANNEL UPDATE", 2),
+    UNIT_TO_UNIT_VOICE_CHANNEL_USER("UNIT-TO-UNIT VOICE CHANNEL USER", 3),
+    GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT("GROUP VOICE CHANNEL UPDATE EXPLICIT", 4),
+    UNIT_TO_UNIT_ANSWER_REQUEST("UNIT-TO-UNIT ANSWER REQUEST", 5),
+    TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER("TELEPHONE INTERCONNECT VOICE CHANNEL USER", 6),
+    TELEPHONE_INTERCONNECT_ANSWER_REQUEST("TELEPHONE INTERCONNECT ANSWER REQUEST", 7),
+    RESERVED_08("RESERVED-08", 8),
+    RESERVED_09("RESERVED-09", 9),
+    RESERVED_0A("RESERVED-0A", 10),
+    RESERVED_0B("RESERVED-0B", 11),
+    RESERVED_0C("RESERVED-0C", 12),
+    RESERVED_0D("RESERVED-0D", 13),
+    RESERVED_0E("RESERVED-0E", 14),
+    CALL_TERMINATION_OR_CANCELLATION("CALL TERMINATION", 15),
+    GROUP_AFFILIATION_QUERY("GROUP AFFILIATION QUERY", 16),
+    UNIT_REGISTRATION_COMMAND("UNIT REGISTRATION COMMAND", 17),
+    UNIT_AUTHENTICATION_COMMAND("UNIT AUTHENTICATION COMMAND", 18),
+    STATUS_QUERY("STATUS QUERY", 19),
+    STATUS_UPDATE("STATUS_UPDATE", 20),
+    MESSAGE_UPDATE("MESSAGE UPDATE", 21),
+    CALL_ALERT("CALL ALERT", 22),
+    EXTENDED_FUNCTION_COMMAND("EXTENDED FUNCTION COMMAND", 23),
+    CHANNEL_IDENTIFIER_UPDATE("CHANNEL IDENTIFIER UPDATE", 24),
+    CHANNEL_IDENTIFIER_UPDATE_EXPLICIT("CHANNEL IDENTIFIER UPDATE EXPLICIT", 25),
+    RESERVED_1A("RESERVED-1A", 26),
+    RESERVED_1B("RESERVED-1B", 27),
+    RESERVED_1C("RESERVED-1C", 28),
+    RESERVED_1D("RESERVED-1D", 29),
+    RESERVED_1E("RESERVED-1E", 30),
+    RESERVED_1F("RESERVED-1F", 31),
+    SYSTEM_SERVICE_BROADCAST("SYSTEM SERVICE BROADCAST", 32),
+    SECONDARY_CONTROL_CHANNEL_BROADCAST("SECONDARY CONTROL CHANNEL BROADCAST", 33),
+    ADJACENT_SITE_STATUS_BROADCAST("ADJACENT SITE STATUS", 34),
+    RFSS_STATUS_BROADCAST("RFSS STATUS BROADCAST", 35),
+    NETWORK_STATUS_BROADCAST("NET STATUS BROADCAST", 36),
+    PROTECTION_PARAMETER_BROADCAST("ENCRYPTION PARAMETERS BROADCAST", 37),
+    SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT("SECONDARY CONTROL CHANNEL BROADCAST EXPLICIT", 38),
+    ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT("ADJACENT SITE STATUS EXPLICIT", 39),
+    RFSS_STATUS_BROADCAST_EXPLICIT("RFSS STATUS BROADCAST EXPLICIT", 40),
+    NETWORK_STATUS_BROADCAST_EXPLICIT("NETWORK STATUS BROADCAST EXPLICIT", 41),
+    RESERVED_2A("RESERVED-2A", 42),
+    RESERVED_2B("RESERVED-2B", 43),
+    RESERVED_2C("RESERVED-2C", 44),
+    RESERVED_2D("RESERVED-2D", 45),
+    RESERVED_2E("RESERVED-2E", 46),
+    RESERVED_2F("RESERVED-2F", 47),
+    RESERVED_30("RESERVED-30", 48),
+    RESERVED_31("RESERVED-31", 49),
+    RESERVED_32("RESERVED-32", 50),
+    RESERVED_33("RESERVED-33", 51),
+    RESERVED_34("RESERVED-34", 52),
+    RESERVED_35("RESERVED-35", 53),
+    RESERVED_36("RESERVED-36", 54),
+    RESERVED_37("RESERVED-37", 55),
+    RESERVED_38("RESERVED-38", 56),
+    RESERVED_39("RESERVED-39", 57),
+    RESERVED_3A("RESERVED-3A", 58),
+    RESERVED_3B("RESERVED-3B", 59),
+    RESERVED_3C("RESERVED-3C", 60),
+    RESERVED_3D("RESERVED-3D", 61),
+    RESERVED_3E("RESERVED-3E", 62),
+    RESERVED_3F("RESERVED-3F", 63),
 
-	private String mLabel;
-	private String mDescription;
-	private int mCode;
-	
-	private LinkControlOpcode( String label, String description, int code )
-	{
-		mLabel = label;
-		mDescription = description;
-		mCode = code;
-	}
-	
-	public String getLabel()
-	{
-		return mLabel;
-	}
-	
-	public String getDescription()
-	{
-		return mDescription;
-	}
-	
-	public int getCode()
-	{
-		return mCode;
-	}
-	
-	public static LinkControlOpcode fromValue( int value )
-	{
-		if( 0 <= value && value <= 63 )
-		{
-			return values()[ value ];
-		}
-		
-		return UNKNOWN;
-	}
+    MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER("PATCH GROUP VOICE CHANNEL USER", 0),
+    MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE("PATCH GROUP VOICE CHANNEL UPDATE", 1),
+    MOTOROLA_PATCH_GROUP_ADD("PATCH GROUP ADD", 3),
+    MOTOROLA_PATCH_GROUP_DELETE("PATCH GROUP DELETE", 4),
+    MOTOROLA_TALK_COMPLETE("TALK_COMPLETE", 15),
+    MOTOROLA_UNKNOWN("UNKNOWN", -1),
+
+    UNKNOWN("UNKNOWN", -1);
+
+    private String mLabel;
+    private int mCode;
+
+    LinkControlOpcode(String label, int code)
+    {
+        mLabel = label;
+        mCode = code;
+    }
+
+    public String getLabel()
+    {
+        return mLabel;
+    }
+
+    public int getCode()
+    {
+        return mCode;
+    }
+
+    public static LinkControlOpcode fromValue(int value, Vendor vendor)
+    {
+        switch(vendor)
+        {
+            case STANDARD:
+                if(0 <= value && value <= 63)
+                {
+                    return values()[value];
+                }
+                break;
+            case MOTOROLA:
+                switch(value)
+                {
+                    case 0:
+                        return MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER;
+                    case 1:
+                        return MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE;
+                    case 3:
+                        return MOTOROLA_PATCH_GROUP_ADD;
+                    case 4:
+                        return MOTOROLA_PATCH_GROUP_DELETE;
+                    case 15:
+                        return MOTOROLA_TALK_COMPLETE;
+                    default:
+                        return MOTOROLA_UNKNOWN;
+                }
+            default:
+                if(0 <= value && value <= 63)
+                {
+                    return values()[value];
+                }
+        }
+
+        return UNKNOWN;
+    }
 }

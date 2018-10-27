@@ -16,7 +16,11 @@
 package io.github.dsheirer.identifier.integer.talkgroup;
 
 import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.identifier.integer.AbstractIntegerIdentifier;
+
+import java.util.Collections;
+import java.util.List;
 
 public abstract class AbstractTalkgroup extends AbstractIntegerIdentifier
 {
@@ -33,5 +37,21 @@ public abstract class AbstractTalkgroup extends AbstractIntegerIdentifier
     public Form getForm()
     {
         return Form.TALKGROUP;
+    }
+
+    /**
+     * Indicates if this is a patch group or a group of talkgroups.
+     */
+    public boolean isPatchGroup()
+    {
+        return false;
+    }
+
+    /**
+     * List of IIdentifiers that are included in a patch group
+     */
+    public List<IIdentifier> getPatchedGroups()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

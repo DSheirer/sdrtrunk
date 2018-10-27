@@ -35,33 +35,30 @@ import java.util.List;
 
 public class TDULinkControlMessage extends P25Message implements FrequencyBandReceiver
 {
-    public static final int[] LC_HEX_0 = {64, 65, 66, 67, 68, 69};
-    public static final int[] LC_HEX_1 = {70, 71, 72, 73, 74, 75};
-    public static final int[] LC_HEX_2 = {88, 89, 90, 91, 92, 93};
-    public static final int[] LC_HEX_3 = {94, 95, 96, 97, 98, 99};
-    public static final int[] LC_HEX_4 = {112, 113, 114, 115, 116, 117};
-    public static final int[] LC_HEX_5 = {118, 119, 120, 121, 122, 123};
-    public static final int[] LC_HEX_6 = {136, 137, 138, 139, 140, 141};
-    public static final int[] LC_HEX_7 = {142, 143, 144, 145, 146, 147};
-    public static final int[] LC_HEX_8 = {160, 161, 162, 163, 164, 165};
-    public static final int[] LC_HEX_9 = {166, 167, 168, 169, 170, 171};
-    public static final int[] LC_HEX_10 = {184, 185, 186, 187, 188, 189};
-    public static final int[] LC_HEX_11 = {190, 191, 192, 193, 194, 195};
-    public static final int[] RS_HEX_0 = {208, 209, 210, 211, 212, 213};
-    public static final int[] RS_HEX_1 = {214, 215, 216, 217, 218, 219};
-    public static final int[] RS_HEX_2 = {232, 233, 234, 235, 236, 237};
-    public static final int[] RS_HEX_3 = {238, 239, 240, 241, 242, 243};
-    public static final int[] RS_HEX_4 = {256, 257, 258, 259, 260, 261};
-    public static final int[] RS_HEX_5 = {262, 263, 264, 265, 266, 267};
-    public static final int[] RS_HEX_6 = {280, 281, 282, 283, 284, 285};
-    public static final int[] RS_HEX_7 = {286, 287, 288, 289, 290, 291};
-    public static final int[] RS_HEX_8 = {304, 305, 306, 307, 308, 309};
-    public static final int[] RS_HEX_9 = {310, 311, 312, 313, 314, 315};
-    public static final int[] RS_HEX_10 = {328, 329, 330, 331, 332, 333};
-    public static final int[] RS_HEX_11 = {334, 335, 336, 337, 338, 339};
-
-    //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are: Hamming Distance(13) / 2 = 6
-    public static final ReedSolomon_63_47_17 REED_SOLOMON_63_47_17 = new ReedSolomon_63_47_17(6);
+    public static final int[] LC_HEX_0 = {0, 1, 2, 3, 4, 5};
+    public static final int[] LC_HEX_1 = {6, 7, 8, 9, 10, 11};
+    public static final int[] LC_HEX_2 = {24, 25, 26, 27, 28, 29};
+    public static final int[] LC_HEX_3 = {30, 31, 32, 33, 34, 35};
+    public static final int[] LC_HEX_4 = {48, 49, 50, 51, 52, 53};
+    public static final int[] LC_HEX_5 = {54, 55, 56, 57, 58, 59};
+    public static final int[] LC_HEX_6 = {72, 73, 74, 75, 76, 77};
+    public static final int[] LC_HEX_7 = {78, 79, 80, 81, 82, 83};
+    public static final int[] LC_HEX_8 = {96, 97, 98, 99, 100, 101};
+    public static final int[] LC_HEX_9 = {102, 103, 104, 105, 106, 107};
+    public static final int[] LC_HEX_10 = {120, 121, 122, 123, 124, 125};
+    public static final int[] LC_HEX_11 = {126, 127, 128, 129, 130, 131};
+    public static final int[] RS_HEX_0 = {144, 145, 146, 147, 148, 149};
+    public static final int[] RS_HEX_1 = {150, 151, 152, 153, 154, 155};
+    public static final int[] RS_HEX_2 = {168, 169, 170, 171, 172, 173};
+    public static final int[] RS_HEX_3 = {174, 175, 176, 177, 178, 179};
+    public static final int[] RS_HEX_4 = {192, 193, 194, 195, 196, 197};
+    public static final int[] RS_HEX_5 = {198, 199, 200, 201, 202, 203};
+    public static final int[] RS_HEX_6 = {216, 217, 218, 219, 220, 221};
+    public static final int[] RS_HEX_7 = {222, 223, 224, 225, 226, 227};
+    public static final int[] RS_HEX_8 = {240, 241, 242, 243, 244, 245};
+    public static final int[] RS_HEX_9 = {246, 247, 248, 249, 250, 251};
+    public static final int[] RS_HEX_10 = {264, 265, 266, 267, 268, 269};
+    public static final int[] RS_HEX_11 = {270, 271, 272, 273, 274, 275};
 
     private LinkControlWord mLinkControlWord;
 
@@ -92,7 +89,7 @@ public class TDULinkControlMessage extends P25Message implements FrequencyBandRe
         StringBuilder sb = new StringBuilder();
 
         sb.append(getMessageStub());
-        sb.append(" LINK CONTROL:").append(getLinkControlWord());
+        sb.append(" ").append(getLinkControlWord());
 
         return sb.toString();
     }
@@ -145,7 +142,10 @@ public class TDULinkControlMessage extends P25Message implements FrequencyBandRe
         input[23] = getMessage().getInt(LC_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        boolean irrecoverableErrors = REED_SOLOMON_63_47_17.decode(input, output);
+        //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are:  6
+        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
+
+        boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
 
         //Transfer error corrected output to a new binary message
         BinaryMessage binaryMessage = new BinaryMessage(72);
@@ -168,15 +168,13 @@ public class TDULinkControlMessage extends P25Message implements FrequencyBandRe
         {
             mLinkControlWord.setValid(false);
         }
-        else
+
+        //If we corrected any bit errors, update the original message with the bit error count
+        for(int x = 0; x < 23; x++)
         {
-            //If we corrected any bit errors, update the original message with the bit error count
-            for(int x = 0; x < 23; x++)
+            if(output[x] != input[x])
             {
-                if(output[x] != input[x])
-                {
-                    getMessage().incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
-                }
+                getMessage().incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
             }
         }
     }

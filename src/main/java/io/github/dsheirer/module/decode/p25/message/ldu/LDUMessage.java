@@ -45,7 +45,6 @@ public abstract class LDUMessage extends P25Message
         sb.append(super.getMessageStub());
         sb.append(" VOICE LSD:");
         sb.append(getLowSpeedData());
-        sb.append(" ");
 
         return sb.toString();
     }

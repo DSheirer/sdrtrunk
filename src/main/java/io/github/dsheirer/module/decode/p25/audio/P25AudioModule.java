@@ -120,7 +120,7 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
                 if(message instanceof HDUMessage)
                 {
                     mEncryptedCallStateEstablished = true;
-                    mEncryptedCall = ((HDUMessage) message).isEncryptedAudio();
+                    mEncryptedCall = ((HDUMessage) message).getHeaderData().isEncryptedAudio();
                 }
                 else if(message instanceof LDU1Message)
                 {

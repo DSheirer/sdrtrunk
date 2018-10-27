@@ -31,7 +31,6 @@ import io.github.dsheirer.channel.traffic.TrafficChannelAllocationEvent;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.p25.message.IAdjacentSite;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
@@ -106,6 +105,8 @@ public class P25DecoderState extends DecoderState
         mModulation = modulation;
         mIgnoreDataCalls = ignoreDataCalls;
 
+        //TODO: update patch group manager to catch patch group add and delete and use
+        //TODO: those when we have a patch group channel grant or update
         mPatchGroupManager = new PatchGroupManager(aliasList, getCallEventBroadcaster());
         mSiteAttributeMonitor = new AliasedStringAttributeMonitor(Attribute.NETWORK_ID_2,
             getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
@@ -319,22 +320,22 @@ public class P25DecoderState extends DecoderState
         {
             broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
 
-            String to = hdu.getToID();
-
-            mToTalkgroupMonitor.process(to);
-
-            if(mCurrentCallEvent == null)
-            {
-                mCurrentCallEvent = new P25CallEvent.Builder(CallEvent.CallEventType.CALL)
-                        .aliasList(getAliasList())
-                        .channel(mCurrentChannel)
-                        .details((hdu.isEncryptedAudio() ? "ENCRYPTED " : ""))
-                        .frequency(mCurrentChannelFrequency)
-                        .to(to)
-                        .build();
-
-                broadcast(mCurrentCallEvent);
-            }
+//            String to = hdu.getTalkgroup();
+//
+//            mToTalkgroupMonitor.process(to);
+//
+//            if(mCurrentCallEvent == null)
+//            {
+//                mCurrentCallEvent = new P25CallEvent.Builder(CallEvent.CallEventType.CALL)
+//                        .aliasList(getAliasList())
+//                        .channel(mCurrentChannel)
+//                        .details((hdu.isEncryptedAudio() ? "ENCRYPTED " : ""))
+//                        .frequency(mCurrentChannelFrequency)
+//                        .to(to)
+//                        .build();
+//
+//                broadcast(mCurrentCallEvent);
+//            }
 
         }
     }

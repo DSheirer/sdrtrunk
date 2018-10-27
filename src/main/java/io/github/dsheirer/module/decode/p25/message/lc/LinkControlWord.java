@@ -19,6 +19,7 @@ public abstract class LinkControlWord
     private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
 
     private BinaryMessage mMessage;
+    private LinkControlOpcode mLinkControlOpcode;
     private boolean mValid = true;
 
     /**
@@ -107,7 +108,12 @@ public abstract class LinkControlWord
      */
     public LinkControlOpcode getOpcode()
     {
-        return getOpcode(getMessage());
+        if(mLinkControlOpcode == null)
+        {
+            mLinkControlOpcode = getOpcode(getMessage());
+        }
+
+        return mLinkControlOpcode;
     }
 
     /**
@@ -115,7 +121,7 @@ public abstract class LinkControlWord
      */
     public static LinkControlOpcode getOpcode(BinaryMessage binaryMessage)
     {
-        return LinkControlOpcode.fromValue(binaryMessage.getInt(OPCODE));
+        return LinkControlOpcode.fromValue(binaryMessage.getInt(OPCODE), getVendor(binaryMessage));
     }
 
     /**
@@ -132,8 +138,9 @@ public abstract class LinkControlWord
 
         if(!isValid())
         {
-            sb.append("**CRC-FAILED** ");
+            sb.append("***LINK CONTROL CRC FAIL*** ");
         }
+
         sb.append(getOpcode().getLabel());
 
         if(isEncrypted())
@@ -144,7 +151,12 @@ public abstract class LinkControlWord
         {
             if(!isStandardVendorFormat())
             {
-                sb.append(" VENDOR:").append(getVendor().getLabel());
+                Vendor vendor = getVendor();
+
+                if(vendor != Vendor.STANDARD)
+                {
+                    sb.append(" ").append(vendor.getLabel());
+                }
             }
         }
 

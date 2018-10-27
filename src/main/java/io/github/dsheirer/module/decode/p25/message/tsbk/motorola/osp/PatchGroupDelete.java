@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25PatchGroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
@@ -36,7 +37,7 @@ public class PatchGroupDelete extends OSPMessage
     public static final int[] GROUP_ADDRESS_2 = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     public static final int[] GROUP_ADDRESS_3 = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
-    private IIdentifier mPatchGroupAddress;
+    private APCO25PatchGroup mPatchGroupAddress;
     private IIdentifier mGroupAddress1;
     private IIdentifier mGroupAddress2;
     private IIdentifier mGroupAddress3;
@@ -52,12 +53,8 @@ public class PatchGroupDelete extends OSPMessage
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-
         sb.append(getMessageStub());
-
         sb.append(" PATCH GROUP:").append(getPatchGroupAddress());
-        sb.append(" PATCHED GROUPS ").append(getPatchedTalkgroups());
-
         return sb.toString();
     }
 
@@ -65,14 +62,15 @@ public class PatchGroupDelete extends OSPMessage
     {
         if(mPatchGroupAddress == null)
         {
-            mPatchGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP_ADDRESS));
+            mPatchGroupAddress = APCO25PatchGroup.create(getMessage().getInt(PATCH_GROUP_ADDRESS));
+            mPatchGroupAddress.addPatchedGroups(getPatchedTalkgroups());
         }
 
         return mPatchGroupAddress;
     }
 
     /**
-     * List of de-deplicated patched talkgroups contained in this message
+     * List of de-duplicated patched talkgroups contained in this message
      */
     public List<IIdentifier> getPatchedTalkgroups()
     {
@@ -145,7 +143,6 @@ public class PatchGroupDelete extends OSPMessage
         {
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getPatchGroupAddress());
-            mIdentifiers.addAll(getPatchedTalkgroups());
         }
 
         return mIdentifiers;

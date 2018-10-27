@@ -34,7 +34,7 @@ import java.util.List;
  * IMBE 7: 1064-1207
  *     LC: 1208-1247
  * IMBE 8: 1248-1391
- *     LC: 1392-1423 (LSD)
+ *    LSD: 1392-1423
  * IMBE 9: 1424-1567
  */
 
@@ -68,10 +68,6 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
     private static final int[] RS_HEX_9 = {1218, 1219, 1220, 1221, 1222, 1223};
     private static final int[] RS_HEX_10 = {1228, 1229, 1230, 1231, 1232, 1233};
     private static final int[] RS_HEX_11 = {1238, 1239, 1240, 1241, 1242, 1243};
-
-    /* Reed-Solomon(24,12,13) code protects the link control word.  Maximum
-     * correctable errors are: Hamming Distance(13) / 2 = 6  */
-    private static final ReedSolomon_63_47_17 REED_SOLOMON_63_47_17 = new ReedSolomon_63_47_17(6);
 
     private LinkControlWord mLinkControlWord;
     private List<IIdentifier> mIdentifiers;
@@ -158,7 +154,9 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
         input[23] = getMessage().getInt(CW_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        boolean irrecoverableErrors = REED_SOLOMON_63_47_17.decode(input, output);
+        //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are: 6
+        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
+        boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
 
         //Transfer error corrected output to a new binary message
         BinaryMessage binaryMessage = new BinaryMessage(72);
@@ -185,15 +183,13 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
         {
             mLinkControlWord.setValid(false);
         }
-        else
+
+        //If we corrected any bit errors, update the original message with the bit error count
+        for(int x = 0; x < 23; x++)
         {
-            //If we corrected any bit errors, update the original message with the bit error count
-            for(int x = 0; x < 23; x++)
+            if(output[x] != input[x])
             {
-                if(output[x] != input[x])
-                {
-                    getMessage().incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
-                }
+                getMessage().incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
             }
         }
     }

@@ -33,6 +33,7 @@ public class UnknownLinkControlWord extends LinkControlWord
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
         sb.append(" UNKNOWN/UNRECOGNIZED OPCODE");
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 }

@@ -15,28 +15,22 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.hdu;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Golay18;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Encryption;
-import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class HDUMessage extends P25Message
 {
     private final static Logger mLog = LoggerFactory.getLogger(HDUMessage.class);
 
-    private static final int[] MESSAGE_INDICATOR_A = {0, 1, 2, 3, 4, 5, 18, 19, 20, 21, 22, 23, 36, 37, 38, 39, 40, 41, 54, 55,
-            56, 57, 58, 59, 72, 73, 74, 75, 76, 77, 90, 91, 92, 93, 94, 95};
-    private static final int[] MESSAGE_INDICATOR_B = {108, 109, 110, 111, 112, 113, 126, 127, 128, 129, 130, 131,
-            144, 145, 146, 147, 148, 149, 162, 163, 164, 165, 166, 167, 180, 181, 182, 183, 184, 185, 198, 199, 200, 201, 202, 203};
-    private static final int[] VENDOR_ID = {216, 217, 218, 219, 220, 221, 234, 235};
-    private static final int[] ALGORITHM_ID = {236, 237, 238, 239, 252, 253, 254, 255};
-    private static final int[] KEY_ID = {256, 257, 270, 271, 272, 273, 274, 275, 288, 289, 290, 291, 292, 293, 306, 307};
-    private static final int[] TALKGROUP_ID = {308, 309, 310, 311, 324, 325, 326, 327, 328, 329, 342, 343, 344, 345, 346, 347};
     private static final int[] GOLAY_WORD_STARTS = {0, 18, 36, 54, 72, 90, 108,
             126, 144, 162, 180, 198, 216, 234, 252, 270, 288, 306, 324, 342, 360, 278, 396, 414,
             432, 450, 468, 486, 504, 522, 540, 558, 576, 594, 612, 630};
@@ -78,16 +72,11 @@ public class HDUMessage extends P25Message
     private static final int[] RS_HEX_14 = {612, 613, 614, 615, 616, 617};
     private static final int[] RS_HEX_15 = {630, 631, 632, 633, 634, 635};
 
-    /**
-     * Reed-Solomon(36,20,17) code protects the header word.  Maximum correctable errors
-     * are: Hamming Distance(17) / 2 = 8
-     */
-    public static final ReedSolomon_63_47_17 REED_SOLOMON_63_47_17 = new ReedSolomon_63_47_17(8);
+    private HeaderData mHeaderData;
 
     public HDUMessage(CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(message, nac, timestamp);
-        checkCRC();
     }
 
     @Override
@@ -96,10 +85,20 @@ public class HDUMessage extends P25Message
         return DataUnitID.HEADER_DATA_UNIT;
     }
 
+    public HeaderData getHeaderData()
+    {
+        if(mHeaderData == null)
+        {
+            extractHeaderData();
+        }
+
+        return mHeaderData;
+    }
+
     /**
-     * Performs Golay(18,6,18) error detection and correction.
+     * Performs error detection and correction and extracts the header data from the HDU message
      */
-    private void checkCRC()
+    private void extractHeaderData()
     {
         for(int index : GOLAY_WORD_STARTS)
         {
@@ -153,44 +152,41 @@ public class HDUMessage extends P25Message
         input[35] = getMessage().getInt(CW_HEX_0);
         /* indexes 36 - 62 are defaulted to zero */
 
-        boolean irrecoverableErrors = REED_SOLOMON_63_47_17.decode(input, output);
+        //Reed-Solomon(36,20,17) code protects the header word.  Maximum correctable errors are: 8
+        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(8);
+
+        boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
+
+        BinaryMessage binaryMessage = new BinaryMessage(120);
+
+        int pointer = 0;
+
+        for(int x = 35; x >= 16; x--)
+        {
+            if(output[x] != -1)
+            {
+                binaryMessage.load(pointer, 6, output[x]);
+            }
+
+            pointer += 6;
+        }
+
+        mHeaderData = new HeaderData(binaryMessage);
 
         if(irrecoverableErrors)
         {
-            setValid(false);
+            mHeaderData.setValid(false);
         }
         else
         {
-            /* Only fix the codeword data hex codewords */
-            repairHexCodeword(input, output, 16, CW_HEX_19);
-            repairHexCodeword(input, output, 17, CW_HEX_18);
-            repairHexCodeword(input, output, 18, CW_HEX_17);
-            repairHexCodeword(input, output, 19, CW_HEX_16);
-            repairHexCodeword(input, output, 20, CW_HEX_15);
-            repairHexCodeword(input, output, 21, CW_HEX_14);
-            repairHexCodeword(input, output, 22, CW_HEX_13);
-            repairHexCodeword(input, output, 23, CW_HEX_12);
-            repairHexCodeword(input, output, 24, CW_HEX_11);
-            repairHexCodeword(input, output, 25, CW_HEX_10);
-            repairHexCodeword(input, output, 26, CW_HEX_9);
-            repairHexCodeword(input, output, 27, CW_HEX_8);
-            repairHexCodeword(input, output, 28, CW_HEX_7);
-            repairHexCodeword(input, output, 29, CW_HEX_6);
-            repairHexCodeword(input, output, 30, CW_HEX_5);
-            repairHexCodeword(input, output, 31, CW_HEX_4);
-            repairHexCodeword(input, output, 32, CW_HEX_3);
-            repairHexCodeword(input, output, 33, CW_HEX_2);
-            repairHexCodeword(input, output, 34, CW_HEX_1);
-            repairHexCodeword(input, output, 35, CW_HEX_0);
-        }
-    }
-
-    private void repairHexCodeword(int[] input, int[] output, int index, int[] indexSet)
-    {
-        if(input[index] != output[index])
-        {
-            getMessage().incrementCorrectedBitCount(1);
-            getMessage().load(indexSet[0], 6, output[index]);
+            //If we corrected any bit errors, update the original message with the bit error count
+            for(int x = 0; x < 23; x++)
+            {
+                if(output[x] != input[x])
+                {
+                    getMessage().incrementCorrectedBitCount(Integer.bitCount((output[x] ^ input[x])));
+                }
+            }
         }
     }
 
@@ -198,90 +194,13 @@ public class HDUMessage extends P25Message
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-
-        sb.append("NAC:");
-        sb.append(getNAC());
-        sb.append(" HDU");
-
-        if(isValid())
-        {
-            sb.append(" TALKGROUP:" + getTalkgroupID());
-
-            Vendor vendor = getVendor();
-
-            if(vendor != Vendor.STANDARD)
-            {
-                sb.append(" VENDOR:").append(vendor.getLabel());
-            }
-
-            Encryption encryption = getEncryption();
-
-            if(encryption != Encryption.UNENCRYPTED)
-            {
-                sb.append(" ENCRYPTION:");
-
-                if(encryption == Encryption.UNKNOWN)
-                {
-                    sb.append("UNK ALGO ID:");
-                    sb.append(getMessage().getInt(ALGORITHM_ID));
-                }
-                else
-                {
-                    sb.append(encryption.name());
-                }
-                sb.append(" KEY ID:" + getKeyID());
-                sb.append(" MSG INDICATOR:" + getMessageIndicator());
-            }
-            else
-            {
-                sb.append(" UNENCRYPTED");
-            }
-        }
-        else
-        {
-            sb.append(" **CRC FAILED**");
-        }
-
+        sb.append("NAC:").append(getNAC());
+        sb.append(" HDU   ").append(getHeaderData());
         return sb.toString();
     }
 
-    public String getMessageIndicator()
+    public List<IIdentifier> getIdentifiers()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getMessage().getHex(MESSAGE_INDICATOR_A, 9));
-        sb.append(getMessage().getHex(MESSAGE_INDICATOR_B, 9));
-
-        return sb.toString();
-    }
-
-    public Vendor getVendor()
-    {
-        return Vendor.fromValue(getMessage().getInt(VENDOR_ID));
-    }
-
-    public Encryption getEncryption()
-    {
-        return Encryption.fromValue(getMessage().getInt(ALGORITHM_ID));
-    }
-
-    public boolean isEncryptedAudio()
-    {
-        return getEncryption() != Encryption.UNENCRYPTED;
-    }
-
-    public int getKeyID()
-    {
-        return getMessage().getInt(KEY_ID);
-    }
-
-    public String getTalkgroupID()
-    {
-        return getMessage().getHex(TALKGROUP_ID, 4);
-    }
-
-    public String getToID()
-    {
-        return getTalkgroupID();
+        return getHeaderData().getIdentifiers();
     }
 }

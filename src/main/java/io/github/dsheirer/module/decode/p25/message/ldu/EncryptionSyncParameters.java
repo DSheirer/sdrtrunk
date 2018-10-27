@@ -45,15 +45,24 @@ public class EncryptionSyncParameters
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        if(isEncryptedAudio())
+
+        if(isValid())
         {
-            sb.append(getEncryptionKey());
-            sb.append(" MSG INDICATOR:").append(getMessageIndicator());
+            if(isEncryptedAudio())
+            {
+                sb.append(getEncryptionKey());
+                sb.append(" MSG INDICATOR:").append(getMessageIndicator());
+            }
+            else
+            {
+                sb.append("UNENCRYPTED       ");
+            }
         }
         else
         {
-            sb.append("UNENCRYPTED    ");
+            sb.append("***CRC-FAIL***");
         }
+
         return sb.toString();
     }
 
