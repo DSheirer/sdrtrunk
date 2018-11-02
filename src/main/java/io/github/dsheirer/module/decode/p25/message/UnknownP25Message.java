@@ -21,7 +21,11 @@
 package io.github.dsheirer.module.decode.p25.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * P25 Message with unknown or unrecognized data unit id
@@ -49,5 +53,11 @@ public class UnknownP25Message extends P25Message
         sb.append(getMessageStub());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
+    }
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

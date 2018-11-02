@@ -58,6 +58,10 @@ import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp.AMBTCUnitToUni
 import io.github.dsheirer.module.decode.p25.message.pdu.block.ConfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.DataBlock;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.packet.PacketHeader;
+import io.github.dsheirer.module.decode.p25.message.pdu.packet.PacketMessage;
+import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacketMessage;
+import io.github.dsheirer.module.decode.p25.message.pdu.response.ResponseMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -98,19 +102,23 @@ public class PDUMessageFactory
     /**
      * Creates a packet sequence message from the packet sequence.
      *
-     * @param PDUSequence
+     * @param pduSequence
      * @return
      */
-    public static P25Message create(PDUSequence PDUSequence, int nac, long timestamp)
+    public static P25Message create(PDUSequence pduSequence, int nac, long timestamp)
     {
-        switch(PDUSequence.getHeader().getFormat())
+        switch(pduSequence.getHeader().getFormat())
         {
             case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
-                return createAMBTC(PDUSequence, nac, timestamp);
+                return createAMBTC(pduSequence, nac, timestamp);
+            case PACKET_DATA:
+                return createPacketData(pduSequence, nac, timestamp);
+            case RESPONSE_PACKET_HEADER_FORMAT:
+                return new ResponseMessage(pduSequence, nac, timestamp);
             case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
-                return createUMBTC(PDUSequence, nac, timestamp);
+                return createUMBTC(pduSequence, nac, timestamp);
             default:
-                return new PDUSequenceMessage(PDUSequence, nac, timestamp);
+                return new PDUSequenceMessage(pduSequence, nac, timestamp);
         }
     }
 
@@ -133,13 +141,58 @@ public class PDUMessageFactory
     }
 
     /**
-     * Creates an alternate multi-block trunking control message
+     * Creates a packet data message
      *
-     * @param pduSequence containing an AMBTC (PDU) header
+     * @param pduSequence containing a packet data header and zero or more data blocks
      * @param nac network access code
      * @param timestamp of the packet sequence
-     * @return AMBTC message parser for the specific opcode
+     * @return packet data message parser
      */
+    public static P25Message createPacketData(PDUSequence pduSequence, int nac, long timestamp)
+    {
+        PacketHeader packetHeader = (PacketHeader)pduSequence.getHeader();
+
+        switch(packetHeader.getServiceAccessPoint())
+        {
+            case UNENCRYPTED_USER_DATA:
+                return new PacketMessage(pduSequence, nac, timestamp);
+            case SNDCP_PACKET_DATA_CONTROL:
+                return new SNDCPPacketMessage(pduSequence, nac, timestamp);
+            case PACKET_DATA:
+                return new PacketMessage(pduSequence, nac, timestamp);
+            case ADDRESS_RESOLUTION_PROTOCOL:
+            case CHANNEL_REASSIGNMENT:
+            case CIRCUIT_DATA:
+            case CIRCUIT_DATA_CONTROL:
+            case ENCRYPTED_KEY_MANAGEMENT_MESSAGE:
+            case ENCRYPTED_TRUNKING_CONTROL:
+            case ENCRYPTED_USER_DATA:
+            case EXTENDED_ADDRESS:
+            case MOBILE_RADIO_CONFIGURATION:
+            case MOBILE_RADIO_LOOPBACK:
+            case MOBILE_RADIO_PAGING:
+            case MOBILE_RADIO_STATISTICS:
+            case MOBILE_RADIO_OUT_OF_SERVICE:
+            case REGISTRATION_AND_AUTHORIZATION:
+            case SYSTEM_CONFIGURATION:
+            case UNENCRYPTED_KEY_MANAGEMENT_MESSAGE:
+            case UNENCRYPTED_TRUNKING_CONTROL:
+            case UNKNOWN:
+            default:
+        }
+
+        return new PDUSequenceMessage(pduSequence, nac, timestamp);
+    }
+
+
+        /**
+         * Creates an alternate multi-block trunking control message
+         *
+         * @param pduSequence containing an AMBTC (PDU) header
+         * @param nac network access code
+         * @param timestamp of the packet sequence
+         * @return AMBTC message parser for the specific opcode
+         */
     public static P25Message createAMBTC(PDUSequence pduSequence, int nac, long timestamp)
     {
         AMBTCHeader ambtcHeader = (AMBTCHeader)pduSequence.getHeader();

@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCHeader;
 import io.github.dsheirer.module.decode.p25.message.pdu.packet.PacketHeader;
+import io.github.dsheirer.module.decode.p25.message.pdu.response.ResponseHeader;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 
 public class PDUHeaderFactory

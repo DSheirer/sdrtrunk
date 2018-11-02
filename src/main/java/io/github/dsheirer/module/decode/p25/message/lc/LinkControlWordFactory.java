@@ -35,7 +35,6 @@ import io.github.dsheirer.module.decode.p25.message.lc.standard.LCUnitAuthentica
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCUnitRegistrationCommand;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCUnitToUnitAnswerRequest;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCUnitToUnitVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
 /**
  * Factory class for creating link control word (LCW) message parsers.

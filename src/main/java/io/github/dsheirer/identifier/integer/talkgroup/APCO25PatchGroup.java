@@ -19,79 +19,26 @@
  */
 package io.github.dsheirer.identifier.integer.talkgroup;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.Role;
-
-import java.util.ArrayList;
-import java.util.List;
+import io.github.dsheirer.protocol.Protocol;
 
 /**
- * APCO25 Talkgroup Identifier with a FROM role.
+ * APCO25 Patch Group
  */
-public class APCO25PatchGroup extends APCO25Talkgroup
+public class APCO25PatchGroup extends AbstractPatchGroup
 {
-    private List<IIdentifier> mPatchedGroups = new ArrayList<>();
-
     /**
-     * Constructs an APCO25 Talkgroup Identifier with a FROM role.
-     *
-     * @param value of the talkgroup
+     * Constructs an APCO25 Patch Group with an implicit TO role
+     * @param patchGroup of the talkgroup
      */
-    public APCO25PatchGroup(int value)
+    public APCO25PatchGroup(int patchGroup)
     {
-        super(value);
+        super(patchGroup);
     }
 
     @Override
-    public Role getRole()
+    public Protocol getProtocol()
     {
-        return Role.TO;
-    }
-
-    @Override
-    boolean isGroup()
-    {
-        return true;
-    }
-
-    @Override
-    public boolean isPatchGroup()
-    {
-        return true;
-    }
-
-    @Override
-    public List<IIdentifier> getPatchedGroups()
-    {
-        return mPatchedGroups;
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getValue());
-        sb.append(" PATCHED FROM ").append(getPatchedGroups());
-        return sb.toString();
-    }
-
-
-    /**
-     * Adds the patched group to this patch group
-     * @param patchedGroup to add
-     */
-    public void addPatchedGroup(IIdentifier patchedGroup)
-    {
-        mPatchedGroups.add(patchedGroup);
-    }
-
-    /**
-     * Adds the patched groups to this patch group
-     * @param patchedGroups to add
-     */
-    public void addPatchedGroups(List<IIdentifier> patchedGroups)
-    {
-        mPatchedGroups.addAll(patchedGroups);
+        return Protocol.APCO25;
     }
 
     /**

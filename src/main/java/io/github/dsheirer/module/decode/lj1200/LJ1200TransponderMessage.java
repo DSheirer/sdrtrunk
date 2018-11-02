@@ -20,11 +20,14 @@ package io.github.dsheirer.module.decode.lj1200;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.List;
 
 public class LJ1200TransponderMessage extends Message
 {
@@ -139,5 +142,12 @@ public class LJ1200TransponderMessage extends Message
     public String getEventType()
     {
         return "TRANSPONDER";
+    }
+
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

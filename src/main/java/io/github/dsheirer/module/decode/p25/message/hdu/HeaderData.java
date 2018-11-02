@@ -67,7 +67,7 @@ public class HeaderData
 
         if(isValid())
         {
-            sb.append("TALGROUP:" + getTalkgroup());
+            sb.append("TALKGROUP:" + getTalkgroup());
 
             Vendor vendor = getVendor();
 

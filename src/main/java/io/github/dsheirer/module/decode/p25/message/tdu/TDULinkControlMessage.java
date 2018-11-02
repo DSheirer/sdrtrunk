@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Golay24;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
 import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
@@ -188,5 +189,11 @@ public class TDULinkControlMessage extends P25Message implements FrequencyBandRe
         }
 
         return Collections.EMPTY_LIST;
+    }
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return getLinkControlWord().getIdentifiers();
     }
 }

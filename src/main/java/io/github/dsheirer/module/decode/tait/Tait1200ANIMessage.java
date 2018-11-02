@@ -21,12 +21,14 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Tait1200ANIMessage extends Message
@@ -237,5 +239,11 @@ public class Tait1200ANIMessage extends Message
         }
 
         return aliases;
+    }
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

@@ -22,11 +22,13 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCLJ;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class LJ1200Message extends Message
@@ -381,5 +383,12 @@ public class LJ1200Message extends Message
         }
 
         return aliases;
+    }
+
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

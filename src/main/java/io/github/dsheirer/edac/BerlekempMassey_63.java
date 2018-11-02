@@ -222,7 +222,7 @@ public class BerlekempMassey_63
     	/* put recd[i] into index form (ie as powers of alpha) */
         for( int i = 0; i < NN; i++ )
         {
-        	output[ i ] = index_of[ input[ i ] ]; 
+            output[ i ] = index_of[ input[ i ] ];
         }
         
         /* first form the syndromes */

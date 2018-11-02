@@ -19,6 +19,7 @@ package io.github.dsheirer.module.decode.fleetsync1;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.Message;
 
 import java.util.Collections;
@@ -60,4 +61,12 @@ public class Fleetsync1Message extends Message
     {
         return Collections.EMPTY_LIST;
     }
+
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
+    }
+
 }

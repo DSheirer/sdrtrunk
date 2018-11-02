@@ -2,7 +2,6 @@ package io.github.dsheirer.module.decode.p25.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 import java.util.List;

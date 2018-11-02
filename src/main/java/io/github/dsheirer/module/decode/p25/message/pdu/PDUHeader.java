@@ -22,6 +22,8 @@ package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.integer.talkgroup.APCO25LogicalLinkId;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
@@ -40,13 +42,14 @@ public class PDUHeader implements IBitErrorProvider
     public static final int PACKET_DIRECTION_INDICATOR = 2;
     public static final int[] PDU_FORMAT = {3, 4, 5, 6, 7};
     public static final int[] VENDOR_ID = {16, 17, 18, 19, 20, 21, 22, 23};
-    public static final int[] TO_LOGICAL_LINK_ID = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
+    public static final int[] LOGICAL_LINK_ID = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     public static final int[] BLOCKS_TO_FOLLOW = {49, 50, 51, 52, 53, 54, 55};
     public static final int[] PDU_CRC = {80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95};
 
     protected boolean mValid;
     private CorrectedBinaryMessage mMessage;
     private boolean mExcessiveBlocksToFollowLogged = false;
+    private IIdentifier mLLID;
 
     /**
      * Constructs a PDU header.
@@ -134,9 +137,14 @@ public class PDUHeader implements IBitErrorProvider
     /**
      * Logical Link Identifier (ie TO radio identifier)
      */
-    public String getToLogicalLinkID()
+    public IIdentifier getLLID()
     {
-        return getMessage().getHex(TO_LOGICAL_LINK_ID, 6);
+        if(mLLID == null)
+        {
+            mLLID = APCO25LogicalLinkId.create(getMessage().getInt(LOGICAL_LINK_ID));
+        }
+
+        return mLLID;
     }
 
     /**
@@ -168,13 +176,14 @@ public class PDUHeader implements IBitErrorProvider
 
         if(!isValid())
         {
-            sb.append(" *CRC-FAIL*");
+            sb.append("***CRC-FAIL*** ");
         }
 
         sb.append("PDU HEADER FORMAT:");
         sb.append(getFormat().getLabel());
         sb.append(isConfirmationRequired() ? " CONFIRMED" : " UNCONFIRMED");
         sb.append(" VENDOR:" + getVendor().getLabel());
+        sb.append(" LLID").append(getLLID());
 
         return sb.toString();
     }

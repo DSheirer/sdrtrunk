@@ -48,6 +48,12 @@ public abstract class AbstractTalkgroup extends AbstractIntegerIdentifier
     }
 
     /**
+     * Indicates if this is a group (true) or individual (false) identifier
+     * @return true if this is a group identifier
+     */
+    abstract boolean isGroup();
+
+    /**
      * List of IIdentifiers that are included in a patch group
      */
     public List<IIdentifier> getPatchedGroups()

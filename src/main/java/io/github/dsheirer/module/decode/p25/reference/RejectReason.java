@@ -1,6 +1,6 @@
 package io.github.dsheirer.module.decode.p25.reference;
 
-public enum SNDCPActivationRejectReason
+public enum RejectReason
 {
 	R0( 0, "ANY REASON" ),
 	R1( 1, "MRC NOT PROVISIONED FOR TDS" ),
@@ -20,7 +20,7 @@ public enum SNDCPActivationRejectReason
     private int mValue;
     public String mLabel;
     
-    private SNDCPActivationRejectReason( int value, String label )
+    private RejectReason(int value, String label )
     {
         mValue = value;
         mLabel = label;
@@ -41,7 +41,7 @@ public enum SNDCPActivationRejectReason
     	return getLabel();
     }
     
-    public static SNDCPActivationRejectReason fromValue( int value )
+    public static RejectReason fromValue(int value )
     {
     	if( 0 <= value && value <= 12 )
     	{

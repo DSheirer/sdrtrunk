@@ -22,14 +22,12 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCFleetsync;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.Message;
 
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.util.Collections;
 import java.util.List;
 
 public class MPT1327Message extends Message
@@ -2068,5 +2066,11 @@ public class MPT1327Message extends Message
                     return UNKN;
             }
         }
+    }
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

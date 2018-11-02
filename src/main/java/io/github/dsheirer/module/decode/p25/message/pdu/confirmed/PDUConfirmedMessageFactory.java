@@ -37,15 +37,15 @@ public class PDUConfirmedMessageFactory
                 break;
             case EXTENDED_ADDRESS:
                 break;
-            case MR_CONFIGURATION:
+            case MOBILE_RADIO_CONFIGURATION:
                 break;
-            case MR_LOOPBACK:
+            case MOBILE_RADIO_LOOPBACK:
                 break;
-            case MR_OUT_OF_SERVICE:
+            case MOBILE_RADIO_OUT_OF_SERVICE:
                 break;
-            case MR_PAGING:
+            case MOBILE_RADIO_PAGING:
                 break;
-            case MR_STATISTICS:
+            case MOBILE_RADIO_STATISTICS:
                 break;
             case PACKET_DATA:
                 break;
@@ -56,19 +56,19 @@ public class PDUConfirmedMessageFactory
             case UNENCRYPTED_USER_DATA:
                 switch(message.getPDUType())
                 {
-                    case SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
-                        return new SNDCPActivateTDSContextAccept(message);
-                    case SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
-                        return new SNDCPActivateTDSContextReject(message);
-                    case SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
-                        return new SNDCPActivateTDSContextRequest(message);
-                    case SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
-                    case SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
-                        return new SNDCPDeactivateTDSContext(message);
-                    case SNDCP_RF_CONFIRMED_DATA:
-                        return new SNDCPUserData(message);
-                    case SNDCP_RF_UNCONFIRMED_DATA:
-                        break;
+//                    case SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
+//                        return new SNDCPActivateTDSContextAccept(message);
+//                    case SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
+//                        return new SNDCPActivateTDSContextReject(message);
+//                    case SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
+//                        return new SNDCPActivateTDSContextRequest(message);
+//                    case SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
+//                    case SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
+//                        return new SNDCPDeactivateTDSContext(message);
+//                    case SNDCP_RF_CONFIRMED_DATA:
+//                        return new SNDCPUserData(message);
+//                    case SNDCP_RF_UNCONFIRMED_DATA:
+//                        break;
                     default:
                         break;
                 }

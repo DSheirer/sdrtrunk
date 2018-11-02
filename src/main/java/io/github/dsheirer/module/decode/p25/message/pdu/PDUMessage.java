@@ -25,6 +25,9 @@ import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
+import java.util.Collections;
+import java.util.List;
+
 public class PDUMessage extends P25Message
 {
     public static final int CONFIRMATION_REQUIRED_INDICATOR = 65;
@@ -194,5 +197,12 @@ public class PDUMessage extends P25Message
     public int getDataHeaderOffset()
     {
         return getMessage().getInt(DATA_HEADER_OFFSET);
+    }
+
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

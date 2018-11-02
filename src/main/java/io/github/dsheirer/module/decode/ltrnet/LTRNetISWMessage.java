@@ -22,6 +22,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCLTR;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.message.MessageType;
 
@@ -296,6 +297,13 @@ public class LTRNetISWMessage extends LTRNetMessage
      * Provides a listing of aliases contained in the message.
      */
     public List<Alias> getAliases()
+    {
+        return Collections.EMPTY_LIST;
+    }
+
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

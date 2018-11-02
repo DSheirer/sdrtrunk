@@ -22,6 +22,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCFleetsync;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.map.IPlottable;
 import io.github.dsheirer.map.Plottable;
 import io.github.dsheirer.message.Message;
@@ -32,6 +33,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -881,5 +883,12 @@ public class FleetsyncMessage extends Message implements IPlottable
         }
 
         return aliases;
+    }
+
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

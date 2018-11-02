@@ -15,8 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.pdu.confirmed;
 
+import io.github.dsheirer.module.decode.ip.IPProtocol;
 import io.github.dsheirer.module.decode.p25.reference.IPHeaderCompression;
-import io.github.dsheirer.module.decode.p25.reference.IPProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

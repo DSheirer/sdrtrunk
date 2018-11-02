@@ -31,9 +31,8 @@ public class HDUMessage extends P25Message
 {
     private final static Logger mLog = LoggerFactory.getLogger(HDUMessage.class);
 
-    private static final int[] GOLAY_WORD_STARTS = {0, 18, 36, 54, 72, 90, 108,
-            126, 144, 162, 180, 198, 216, 234, 252, 270, 288, 306, 324, 342, 360, 278, 396, 414,
-            432, 450, 468, 486, 504, 522, 540, 558, 576, 594, 612, 630};
+    private static final int[] GOLAY_WORD_STARTS = {0, 18, 36, 54, 72, 90, 108, 126, 144, 162, 180, 198, 216, 234, 252,
+        270, 288, 306, 324, 342, 360, 278, 396, 414, 432, 450, 468, 486, 504, 522, 540, 558, 576, 594, 612, 630};
 
     private static final int[] CW_HEX_0 = {0, 1, 2, 3, 4, 5, 6};
     private static final int[] CW_HEX_1 = {18, 19, 20, 21, 22, 23};
@@ -155,7 +154,16 @@ public class HDUMessage extends P25Message
         //Reed-Solomon(36,20,17) code protects the header word.  Maximum correctable errors are: 8
         ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(8);
 
-        boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
+        boolean irrecoverableErrors;
+
+        try
+        {
+            irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
+        }
+        catch(Exception e)
+        {
+            irrecoverableErrors = true;
+        }
 
         BinaryMessage binaryMessage = new BinaryMessage(120);
 

@@ -21,22 +21,29 @@ package io.github.dsheirer.module.decode.p25.reference;
 public enum DataUnitID
 {
     HEADER_DATA_UNIT(0, 648 + 10, true, "HDU  "),
-    UNKNOWN_1(1, -1, false, "UNKN1"),
-    UNKNOWN_2(2, -1, false, "UNKN2"),
+    UNKNOWN_1(1, -1, false, "UNK01"),
+    UNKNOWN_2(2, -1, false, "UNK02"),
     TERMINATOR_DATA_UNIT(3, 28, true, "TDU  "),
-    UNKNOWN_4(4, -1, false, "UNKN4"),
+    UNKNOWN_4(4, -1, false, "UNK04"),
     LOGICAL_LINK_DATA_UNIT_1(5, 1568, true, "LDU1 "),
     VSELP1(6, 64 + 1616, false, "VSEL1"),
-    UNKNOWN_8(8, -1, false, "UNKN8"),
+    UNKNOWN_8(8, -1, false, "UNK08"),
     VSELP2(9, 1616 + 64, false, "VSEL2"),
     LOGICAL_LINK_DATA_UNIT_2(10, 1568, true, "LDU2 "),
-    UNKNOWN_11(11, -1, false, "UNKN11"),
-    PACKET_HEADER_DATA_UNIT(12, 196, false, "PDU0 "),
+    UNKNOWN_11(11, -1, false, "UNK11"),
+    PACKET_HEADER_DATA_UNIT(12, 196, false, "PDUH "),
     PACKET_DATA_UNIT(-1, 196, false, "PDU  "),
-    UNKNOWN_13(13, -1, false, "UNKN13"),
-    UNKNOWN_14(14, -1, false, "UNKN14"),
+    UNKNOWN_13(13, -1, false, "UNK13"),
+    UNKNOWN_14(14, -1, false, "UNK14"),
     TERMINATOR_DATA_UNIT_LINK_CONTROL(15, 308, true, "TDULC"),
+
+    //The following are not true data unit identifiers, rather they are used as identifiers
     ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "AMBTC"),
+    IP_PACKET_DATA(-1, 0, false, "IPPKT"),
+    SUBNETWORK_DEPENDENT_CONVERGENCE_PROTOCOL(-1, 0, false, "SNDCP"),
+    TRUNKING_SIGNALING_BLOCK_1(7, 196, false, "TSBK1"),
+    TRUNKING_SIGNALING_BLOCK_2(7, 196, false, "TSBK2"),
+    TRUNKING_SIGNALING_BLOCK_3(7, 196, false, "TSBK3"),
     UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "UMBTC"),
 
     //TODO: remove these once the legacy message framer is removed
@@ -45,9 +52,6 @@ public enum DataUnitID
     PACKET_DATA_UNIT_2(12, 196, false, "PDU2 "),
     PACKET_DATA_UNIT_3(12, 196, false, "PDU3 "),
     PACKET_DATA_UNIT_CONFIRMED(12, 196, false, "PDUC"),
-    TRUNKING_SIGNALING_BLOCK_1(7, 196, false, "TSBK1"),
-    TRUNKING_SIGNALING_BLOCK_2(7, 196, false, "TSBK2"),
-    TRUNKING_SIGNALING_BLOCK_3(7, 196, false, "TSBK3"),
 
     UNKNOWN(-1, -1, false, "UNKN ");
 

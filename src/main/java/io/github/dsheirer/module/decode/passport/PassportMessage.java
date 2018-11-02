@@ -23,6 +23,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCPassport;
+import io.github.dsheirer.identifier.IIdentifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -30,6 +31,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PassportMessage extends Message
@@ -596,5 +598,11 @@ public class PassportMessage extends Message
         }
 
         return aliases;
+    }
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

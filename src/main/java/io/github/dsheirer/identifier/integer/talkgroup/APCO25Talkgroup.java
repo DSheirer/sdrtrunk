@@ -37,12 +37,6 @@ public abstract class APCO25Talkgroup extends AbstractTalkgroup
         return Protocol.APCO25;
     }
 
-    /**
-     * Indicates if this is a group (true) or individual (false) identifier
-     * @return true if this is a group identifier
-     */
-    abstract boolean isGroup();
-
     @Override
     public boolean equals(Object other)
     {

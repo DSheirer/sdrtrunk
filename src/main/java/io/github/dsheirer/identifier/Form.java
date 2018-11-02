@@ -23,6 +23,7 @@ public enum Form
     CHANNEL,
     ESN,
     FREQUENCY_BAND,
+    IPV4_ADDRESS,
     LOGICAL_LINK_ID,
     NODE,
     SHORT_DATA_MESSAGE,

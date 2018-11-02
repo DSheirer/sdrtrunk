@@ -20,29 +20,15 @@ package io.github.dsheirer.protocol;
  */
 public enum Protocol
 {
-    APCO25(true),
-    FLEETSYNC(false),
-    LOJACK(false),
-    LTR_NET(true),
-    LTR_STANDARD(true),
-    MDC1200(false),
-    MPT1327(true),
-    PASSPORT(true),
-    TAIT1200(false),
-    UNKNOWN(false);
-
-    private boolean mPrimary;
-
-    Protocol(boolean primary)
-    {
-        mPrimary = primary;
-    }
-
-    /**
-     * Indicates if this protocol has a corresponding primary decoder or an auxiliary decoder.
-     */
-    public boolean isPrimary()
-    {
-        return mPrimary;
-    }
+    APCO25,
+    FLEETSYNC,
+    IPV4,
+    LOJACK,
+    LTR_NET,
+    LTR_STANDARD,
+    MDC1200,
+    MPT1327,
+    PASSPORT,
+    TAIT1200,
+    UNKNOWN;
 }

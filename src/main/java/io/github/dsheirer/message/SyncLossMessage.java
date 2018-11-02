@@ -15,6 +15,11 @@
  ******************************************************************************/
 package io.github.dsheirer.message;
 
+import io.github.dsheirer.identifier.IIdentifier;
+
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Empty message to convey that a number of bits were processed with no sync or valid message detected.
  *
@@ -60,5 +65,11 @@ public class SyncLossMessage extends Message
     public String getProtocol()
     {
         return "NONE";
+    }
+
+    @Override
+    public List<IIdentifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

@@ -17,9 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.module.decode.p25.message.pdu;
+package io.github.dsheirer.module.decode.p25.message.pdu.response;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.p25.message.pdu.PDUHeader;
 import io.github.dsheirer.module.decode.p25.reference.PacketResponse;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
@@ -39,19 +40,19 @@ public class ResponseHeader extends PDUHeader
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("PDU   RESPONSE:").append(getResponse());
-
         if(!isValid())
         {
-            sb.append(" *CRC-FAIL*");
+            sb.append("***CRC-FAIL*** ");
         }
+
+        sb.append("PDU   RESPONSE:").append(getResponse());
 
         if(hasSourceLLID())
         {
             sb.append(" FROM:").append(getFromLogicalLinkID());
         }
 
-        sb.append(" TO:").append(getToLogicalLinkID());
+        sb.append(" TO:").append(getLLID());
 
         Vendor vendor = getVendor();
 

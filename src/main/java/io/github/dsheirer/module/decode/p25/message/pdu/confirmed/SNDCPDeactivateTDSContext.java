@@ -15,8 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.pdu.confirmed;
 
-import io.github.dsheirer.module.decode.p25.reference.PDUType;
-
 public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
 {
     public static final int[] NSAPI = {180, 181, 182, 183};
@@ -55,11 +53,11 @@ public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
 
     public String getDeactivationType()
     {
-        if(getPDUType() == PDUType.SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST)
-        {
-            return getMessage().getInt(DEACTIVATION_TYPE) == 0 ?
-                "ALL NSAPIS" : "THIS NSAPI";
-        }
+//        if(getPDUType() == PDUType.SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST)
+//        {
+//            return getMessage().getInt(DEACTIVATION_TYPE) == 0 ?
+//                "ALL NSAPIS" : "THIS NSAPI";
+//        }
 
         return null;
     }
