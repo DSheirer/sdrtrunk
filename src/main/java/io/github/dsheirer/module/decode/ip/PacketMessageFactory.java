@@ -25,6 +25,8 @@ import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Header;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
+import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacketHeader;
+import io.github.dsheirer.module.decode.p25.reference.IPHeaderCompression;
 
 /**
  * Message parser factory for packet based binary sequences.
@@ -38,16 +40,23 @@ public class PacketMessageFactory
      * @param offset to the IP packet within the message
      * @return constructed packet message parser
      */
-    public static IPacket create(BinaryMessage message, int offset)
+    public static IPacket create(SNDCPPacketHeader sndcpPacketHeader, BinaryMessage message, int offset)
     {
-        int version = IPV4Header.getIPVersion(message, offset);
-
-        switch(version)
+        if(sndcpPacketHeader.getIPHeaderCompression() == IPHeaderCompression.NONE)
         {
-            case 4:
-                return new IPV4Packet(message, offset);
-            default:
-                return new UnknownPacket(message, offset);
+            int version = IPV4Header.getIPVersion(message, offset);
+
+            switch(version)
+            {
+                case 4:
+                    return new IPV4Packet(message, offset);
+                default:
+                    return new UnknownPacket(message, offset);
+            }
+        }
+        else
+        {
+            return new UnknownCompressedHeaderPacket(sndcpPacketHeader, message, offset);
         }
     }
 
@@ -71,7 +80,7 @@ public class PacketMessageFactory
     }
 
     /**
-     * Creates an IP/UDP packet payload parser
+     * Creates a UDP/IP packet payload parser
      *
      * @param destinationPort for the packet (to identify the protocol/format)
      * @param binaryMessage containing the IP/UDP payload

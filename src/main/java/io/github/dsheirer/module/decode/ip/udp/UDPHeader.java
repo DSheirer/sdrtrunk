@@ -43,7 +43,7 @@ public class UDPHeader extends Header
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("UDP PORT FM:").append(getSourcePort());
+        sb.append("UDP PORT FROM:").append(getSourcePort());
         sb.append(" TO:").append(getDestinationPort());
         return sb.toString();
     }

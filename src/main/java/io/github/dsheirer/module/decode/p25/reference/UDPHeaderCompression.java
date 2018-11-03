@@ -20,17 +20,15 @@
 
 package io.github.dsheirer.module.decode.p25.reference;
 
-public enum IPHeaderCompression
+public enum UDPHeaderCompression
 {
 	NONE( 0, "NONE" ),
-	RFC1144_COMPRESSED( 1, "RFC-1144 COMPRESSED" ),
-	RFC1144_UNCOMPRESSED( 2, "RFC-1144 UNCOMPRESSED" ),
 	UNKNOWN( -1, "UNKNOWN" );
-	
+
 	private int mValue;
 	private String mLabel;
-	
-	IPHeaderCompression( int value, String label )
+
+	UDPHeaderCompression(int value, String label )
 	{
 		mValue = value;
 		mLabel = label;
@@ -46,13 +44,13 @@ public enum IPHeaderCompression
 		return mLabel;
 	}
 	
-	public static IPHeaderCompression fromValue( int value )
+	public static UDPHeaderCompression fromValue(int value )
 	{
-		if( 0 <= value && value <= 2 )
+		if(value == 0)
 		{
-			return values()[ value ];
+			return NONE;
 		}
-		
-		return IPHeaderCompression.UNKNOWN;
+
+		return UNKNOWN;
 	}
 }

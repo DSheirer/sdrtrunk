@@ -39,9 +39,14 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/**
+ * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
+ * and issue phase corrections.
+ */
 public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25MessageFramer2.class);
+
     private P25DataUnitDetector mDataUnitDetector;
     private P25ChannelStatusProcessor mChannelStatusProcessor = new P25ChannelStatusProcessor();
     private Listener<Message> mMessageListener;
@@ -49,18 +54,23 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private boolean mAssemblingMessage = false;
     private CorrectedBinaryMessage mBinaryMessage;
     private DataUnitID mDataUnitID;
+    private PDUSequence mPDUSequence;
     private int[] mCorrectedNID;
     private int mNAC;
     private int mStatusSymbolDibitCounter = 0;
-    private long mCurrentTime = System.currentTimeMillis();
-    private double mBitRate;
-    private PDUSequence mPDUSequence;
     private int mTrailingDibitsToSuppress = 0;
+    private double mBitRate;
+    private long mCurrentTime = System.currentTimeMillis();
 
-    private P25MessageFramer2(IPhaseLockedLoop phaseLockedLoop, int bitRate)
+    public P25MessageFramer2(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
         mDataUnitDetector = new P25DataUnitDetector(this, phaseLockedLoop);
         mBitRate = bitRate;
+    }
+
+    public P25MessageFramer2(int bitRate)
+    {
+        this(null, bitRate);
     }
 
     /**
@@ -410,7 +420,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                 {
                     String s = message.toString();
 
-                    if(s.contains("IPPKT"))
+                    if(s.contains("IPPKT") || s.contains("SNDCP") || s.contains(" PDU  "))
                     {
                         mLog.debug(s);
                     }
@@ -453,7 +463,10 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143012_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143031_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143723_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143741_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143741_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_100905_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_101622_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_102339_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {

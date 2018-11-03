@@ -48,11 +48,11 @@ public class PDUHeader implements IBitErrorProvider
 
     protected boolean mValid;
     private CorrectedBinaryMessage mMessage;
-    private boolean mExcessiveBlocksToFollowLogged = false;
     private IIdentifier mLLID;
 
     /**
      * Constructs a PDU header.
+     *
      * @param message
      * @param passesCRC
      */
@@ -92,6 +92,14 @@ public class PDUHeader implements IBitErrorProvider
     }
 
     /**
+     * Indicates if this is an outbound (true) FNE -> SU, or an inbound (false) SU -> FNE packet.
+     */
+    public boolean isOutbound()
+    {
+        return getDirection() == Direction.OUTBOUND;
+    }
+
+    /**
      * Packet Data Unit format
      */
     public PDUFormat getFormat()
@@ -109,6 +117,7 @@ public class PDUHeader implements IBitErrorProvider
 
     /**
      * Number of bits processed to produce this header.
+     *
      * @return 196 bits
      */
     @Override
@@ -160,11 +169,6 @@ public class PDUHeader implements IBitErrorProvider
         }
         else
         {
-            if(!mExcessiveBlocksToFollowLogged)
-            {
-                mLog.debug("*** EXCESSIVE BLOCKS TO FOLLOW COUNT DETECTED [" + blocksToFollow + "]");
-                mExcessiveBlocksToFollowLogged = true;
-            }
             return 0;
         }
     }

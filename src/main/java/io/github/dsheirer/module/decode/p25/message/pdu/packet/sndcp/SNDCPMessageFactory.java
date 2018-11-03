@@ -31,19 +31,23 @@ public class SNDCPMessageFactory
 
         switch(pduType)
         {
+            case OUTBOUND_SNDCP_RF_UNCONFIRMED_DATA:
+                //Note: (un)confirmed data type is processed by the PDUMessageFactory as a packet message
+            case OUTBOUND_SNDCP_RF_CONFIRMED_DATA:
+                //Note: (un)confirmed data type is processed by the PDUMessageFactory as a packet message
+            case INBOUND_SNDCP_RF_CONFIRMED_DATA:
+                //Note: (un)confirmed data type is processed by the PDUMessageFactory as a packet message
             case OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
                 return new ActivateTdsContextAccept(binaryMessage, outbound);
             case INBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
                 return new ActivateTdsContextRequest(binaryMessage, outbound);
             case OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
                 return new ActivateTdsContextReject(binaryMessage, outbound);
-            case OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
             case OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
-            case OUTBOUND_SNDCP_RF_UNCONFIRMED_DATA:
-            case OUTBOUND_SNDCP_RF_CONFIRMED_DATA:
+                return new DeActivateTdsContextRequest(binaryMessage, outbound);
+            case OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
             case INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
             case INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
-            case INBOUND_SNDCP_RF_CONFIRMED_DATA:
 
             case OUTBOUND_UNKNOWN:
             case INBOUND_UNKNOWN:

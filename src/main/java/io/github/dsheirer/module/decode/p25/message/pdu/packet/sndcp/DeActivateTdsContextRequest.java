@@ -22,18 +22,18 @@ package io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.module.decode.p25.reference.RejectReason;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * Activate Trunking Data Service (TDS) Context Reject
+ * De-Activate Trunking Data Service (TDS) Context Request
  */
-public class ActivateTdsContextReject extends SNDCPMessage
+public class DeActivateTdsContextRequest extends SNDCPMessage
 {
     private static final int[] NSAPI = {4, 5, 6, 7};
-    private static final int[] REJECT_REASON = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] DEACTIVATION_TYPE = {8, 9, 10, 11, 12, 13, 14, 15};
 
     /**
      * Constructs an SNDCP message parser instance.
@@ -41,7 +41,7 @@ public class ActivateTdsContextReject extends SNDCPMessage
      * @param message containing the binary sequence
      * @param outbound where true is outbound (from repeater) and false is inbound (from mobile)
      */
-    public ActivateTdsContextReject(BinaryMessage message, boolean outbound)
+    public DeActivateTdsContextRequest(BinaryMessage message, boolean outbound)
     {
         super(message, outbound);
     }
@@ -51,8 +51,7 @@ public class ActivateTdsContextReject extends SNDCPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(super.toString());
-        sb.append(" NSAPI:").append(getNSAPI());
-        sb.append(" REASON:").append(getRejectReason());
+        sb.append(" DEACTIVATE NSAPIs ").append(getDeactivateNSAPIs());
         return sb.toString();
     }
 
@@ -64,10 +63,32 @@ public class ActivateTdsContextReject extends SNDCPMessage
         return getMessage().getInt(NSAPI);
     }
 
-
-    public RejectReason getRejectReason()
+    /**
+     * List of NSAPIs to deactivate for the mobile subscriber
+     */
+    public List<Integer> getDeactivateNSAPIs()
     {
-        return RejectReason.fromValue(getMessage().getInt(REJECT_REASON));
+        int type = getMessage().getInt(DEACTIVATION_TYPE);
+
+        if(type == 0)
+        {
+            List<Integer> allNSAPIs = new ArrayList<>();
+
+            for(int x = 0; x < 16; x++)
+            {
+                allNSAPIs.add(x);
+            }
+
+            return allNSAPIs;
+        }
+        else if(type == 1)
+        {
+            List<Integer> thisNSAPI = new ArrayList<>();
+            thisNSAPI.add(getNSAPI());
+            return thisNSAPI;
+        }
+
+        return Collections.EMPTY_LIST;
     }
 
     public List<IIdentifier> getIdentifiers()

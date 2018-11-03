@@ -45,7 +45,7 @@ public class ResponseHeader extends PDUHeader
             sb.append("***CRC-FAIL*** ");
         }
 
-        sb.append("PDU   RESPONSE:").append(getResponse());
+        sb.append("PDU   RESPONSE");
 
         if(hasSourceLLID())
         {
@@ -54,14 +54,14 @@ public class ResponseHeader extends PDUHeader
 
         sb.append(" TO:").append(getLLID());
 
+        sb.append(" ").append(getResponse());
+
         Vendor vendor = getVendor();
 
         if(vendor != Vendor.STANDARD)
         {
             sb.append(" VENDOR:").append(getVendor());
         }
-
-        sb.append(" BLOCKS TO FOLLOW:").append(getBlocksToFollowCount());
 
         return sb.toString();
     }

@@ -28,6 +28,7 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.DataBlock;
+import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacketHeader;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 import java.util.Collections;
@@ -41,6 +42,7 @@ public class PacketMessage extends P25Message
     private PDUSequence mPDUSequence;
     private BinaryMessage mPayload;
     private BinaryMessage mPacketMessage;
+    private SNDCPPacketHeader mSNDCPPacketHeader;
     private IPacket mPacket;
 
     public PacketMessage(PDUSequence PDUSequence, int nac, long timestamp)
@@ -65,6 +67,24 @@ public class PacketMessage extends P25Message
         return (PacketHeader)getPDUSequence().getHeader();
     }
 
+    public SNDCPPacketHeader getSNDCPPacketHeader()
+    {
+        if(mSNDCPPacketHeader == null)
+        {
+            if(getPDUSequence().isComplete() && getHeader().getDataHeaderOffset() == 2)
+            {
+                BinaryMessage message = getPDUSequence().getDataBlocks().get(0).getMessage().getSubMessage(0, 16);
+                mSNDCPPacketHeader = new SNDCPPacketHeader(message, getHeader().isOutbound());
+            }
+            else
+            {
+                mSNDCPPacketHeader = new SNDCPPacketHeader(getHeader().isOutbound());
+            }
+        }
+
+        return mSNDCPPacketHeader;
+    }
+
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
@@ -78,6 +98,7 @@ public class PacketMessage extends P25Message
         if(getPacket() instanceof IPV4Packet)
         {
             sb.append(" LLID:").append(getHeader().getLLID());
+            sb.append(" NSAPI:").append(getSNDCPPacketHeader().getNSAPI());
             sb.append(" ").append(getPacket());
         }
         else
@@ -90,7 +111,7 @@ public class PacketMessage extends P25Message
             {
                 sb.append(" MSG:");
 
-                for(DataBlock dataBlock: getPDUSequence().getDataBlocks())
+                for(DataBlock dataBlock : getPDUSequence().getDataBlocks())
                 {
                     sb.append(dataBlock.getMessage().toHexString());
                 }
@@ -106,7 +127,7 @@ public class PacketMessage extends P25Message
     {
         if(mPacket == null)
         {
-            mPacket = PacketMessageFactory.create(getPacketMessage(), 0);
+            mPacket = PacketMessageFactory.create(getSNDCPPacketHeader(), getPacketMessage(), 0);
         }
 
         return mPacket;
@@ -166,7 +187,7 @@ public class PacketMessage extends P25Message
 
             List<DataBlock> dataBlocks = getPDUSequence().getDataBlocks();
 
-            for(DataBlock dataBlock: dataBlocks)
+            for(DataBlock dataBlock : dataBlocks)
             {
                 BinaryMessage blockPayload = dataBlock.getMessage();
                 mPayload.load(pointer, blockPayload);

@@ -23,7 +23,6 @@ package io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.packet.PacketMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Direction;
 
 public class SNDCPPacketMessage extends PacketMessage
 {
@@ -43,12 +42,13 @@ public class SNDCPPacketMessage extends PacketMessage
         if(getPDUSequence().isComplete())
         {
             sb.append(" ").append(getSNDCPMessage().toString());
+            sb.append(" MSG:").append(getPacketMessage().toHexString());
         }
         else
         {
-            sb.append(" **INCOMPLETE DATA BLOCKS RECEIVED***");
+            sb.append(" ***INCOMPLETE DATA BLOCKS RECEIVED***");
         }
-        sb.append(" MSG:").append(getPacketMessage().toHexString());
+
         return sb.toString();
     }
 
@@ -62,8 +62,7 @@ public class SNDCPPacketMessage extends PacketMessage
     {
         if(mSNDCPMessage == null)
         {
-            mSNDCPMessage = SNDCPMessageFactory.create(getPacketMessage(),
-                getPDUSequence().getHeader().getDirection() == Direction.OUTBOUND);
+            mSNDCPMessage = SNDCPMessageFactory.create(getPacketMessage(), getPDUSequence().getHeader().isOutbound());
         }
 
         return mSNDCPMessage;
