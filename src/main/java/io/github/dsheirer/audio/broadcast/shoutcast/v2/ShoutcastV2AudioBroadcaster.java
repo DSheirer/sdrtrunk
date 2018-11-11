@@ -18,6 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.shoutcast.v2;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
@@ -36,7 +39,11 @@ import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageF
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageType;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMetadata;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxProtocolFactory;
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
@@ -66,7 +73,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
-
+    private AliasModel mAliasModel;
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
     private LinkedTransferQueue<UltravoxMessage> mMetadataMessageQueue = new LinkedTransferQueue<>();
@@ -83,9 +90,10 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
      *
      * @param configuration for the Shoutcast V2 stream
      */
-    public ShoutcastV2AudioBroadcaster(ShoutcastV2Configuration configuration)
+    public ShoutcastV2AudioBroadcaster(ShoutcastV2Configuration configuration, AliasModel aliasModel)
     {
         super(configuration);
+        mAliasModel = aliasModel;
     }
 
     public ShoutcastV2Configuration getConfiguration()
@@ -119,9 +127,9 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
     }
 
     @Override
-    public void update(Metadata metadata)
+    public void update(IdentifierCollection identifierCollection)
     {
-        List<UltravoxMessage> metadataMessages = getMetadataMessages(metadata);
+        List<UltravoxMessage> metadataMessages = getMetadataMessages(identifierCollection);
 
         if(!metadataMessages.isEmpty())
         {
@@ -241,10 +249,10 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
      *
      * See UltravoxMetadata.TAG.asXML(String value)
      *
-     * @param metadata containing audio metadata tags and attributes
+     * @param identifierCollection containing audio metadata tags and attributes
      * @return a sequence of CacheableXMLMetadata messages sufficient to carry the complete set of metadata
      */
-    private List<UltravoxMessage> getMetadataMessages(Metadata metadata)
+    private List<UltravoxMessage> getMetadataMessages(IdentifierCollection identifierCollection)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -266,24 +274,37 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
                 sb.append(UltravoxMetadata.URL.asXML(getConfiguration().getURL()));
             }
 
-            if(metadata != null)
+            if(identifierCollection != null)
             {
-                if(metadata.getPrimaryAddressTo().hasAlias())
+                AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
+
+                Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
+                if(to == null)
                 {
-                    sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getAlias().getName()));
-                }
-                else if(metadata.getPrimaryAddressTo().hasIdentifier())
-                {
-                    sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getIdentifier()));
+                    to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
                 }
 
-                if(metadata.getPrimaryAddressFrom().hasAlias())
+                Alias toAlias = aliasList != null ? aliasList.getAlias(to) : null;
+
+                if(toAlias != null)
                 {
-                    sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getAlias().getName()));
+                    sb.append(UltravoxMetadata.TITLE_2.asXML(toAlias.getName()));
                 }
-                else if(metadata.getPrimaryAddressFrom().hasIdentifier())
+                else if(to != null)
                 {
-                    sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getIdentifier()));
+                    sb.append(UltravoxMetadata.TITLE_2.asXML(to.toString()));
+                }
+
+                Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
+                Alias fromAlias = aliasList != null ? aliasList.getAlias(from) : null;
+
+                if(fromAlias != null)
+                {
+                    sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + fromAlias.getName()));
+                }
+                else if(from != null)
+                {
+                    sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + from.toString()));
                 }
             }
             else

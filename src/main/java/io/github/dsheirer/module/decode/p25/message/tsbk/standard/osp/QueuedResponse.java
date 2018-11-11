@@ -21,8 +21,8 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -48,8 +48,8 @@ public class QueuedResponse extends OSPMessage
 
     private QueuedResponseReason mQueuedResponseReason;
     private String mAdditionalInfo;
-    private IIdentifier mTargetAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mTargetAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -108,7 +108,7 @@ public class QueuedResponse extends OSPMessage
         return mQueuedResponseReason;
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -119,7 +119,7 @@ public class QueuedResponse extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

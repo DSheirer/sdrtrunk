@@ -21,12 +21,17 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+@Deprecated //Use Talkgroup instead
 public class MPT1327IDEditor extends DocumentListenerEditor<AliasID>
 {
 	private static final long serialVersionUID = 1L;

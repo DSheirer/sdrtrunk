@@ -1,9 +1,8 @@
 package io.github.dsheirer.module.decode.p25.message.ldu;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25EncryptionKey;
-import io.github.dsheirer.module.decode.p25.reference.Encryption;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,7 @@ public class EncryptionSyncParameters
     private boolean mValid = true;
     private String mMessageIndicator;
     private APCO25EncryptionKey mEncryptionKey;
-    private List<IIdentifier> mIdentifiers;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -122,10 +121,10 @@ public class EncryptionSyncParameters
      */
     public boolean isEncryptedAudio()
     {
-        return getEncryptionKey().getEncryption() != Encryption.UNENCRYPTED;
+        return getEncryptionKey().getValue().isEncrypted();
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

@@ -21,10 +21,10 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 
 import java.util.ArrayList;
@@ -41,10 +41,10 @@ public class LCUnitRegistrationCommand extends LinkControlWord
             57, 58, 59, 60, 61, 62, 63};
     private static final int[] RESERVED = {64, 65, 66, 67, 68, 69, 70, 71};
 
-    private IIdentifier mWACN;
-    private IIdentifier mSystem;
-    private IIdentifier mTargetAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWACN;
+    private Identifier mSystem;
+    private Identifier mTargetAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -69,7 +69,7 @@ public class LCUnitRegistrationCommand extends LinkControlWord
     /**
      * WACN
      */
-    public IIdentifier getWACN()
+    public Identifier getWACN()
     {
         if(mWACN == null)
         {
@@ -82,7 +82,7 @@ public class LCUnitRegistrationCommand extends LinkControlWord
     /**
      * System
      */
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -95,7 +95,7 @@ public class LCUnitRegistrationCommand extends LinkControlWord
     /**
      * Source address
      */
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -109,7 +109,7 @@ public class LCUnitRegistrationCommand extends LinkControlWord
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

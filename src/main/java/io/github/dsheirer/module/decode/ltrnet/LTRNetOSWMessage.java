@@ -20,7 +20,7 @@ package io.github.dsheirer.module.decode.ltrnet;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.message.MessageType;
 
@@ -633,7 +633,7 @@ public class LTRNetOSWMessage extends LTRNetMessage
 
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

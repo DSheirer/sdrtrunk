@@ -21,9 +21,9 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Response;
@@ -45,10 +45,10 @@ public class UnitRegistrationResponse extends OSPMessage
         74, 75, 76, 77, 78, 79};
 
     private Response mResponse;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceId;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mSystem;
+    private Identifier mSourceId;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -79,7 +79,7 @@ public class UnitRegistrationResponse extends OSPMessage
         return mResponse;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -89,7 +89,7 @@ public class UnitRegistrationResponse extends OSPMessage
         return mSystem;
     }
 
-    public IIdentifier getSourceId()
+    public Identifier getSourceId()
     {
         if(mSourceId == null)
         {
@@ -99,7 +99,7 @@ public class UnitRegistrationResponse extends OSPMessage
         return mSourceId;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -110,7 +110,7 @@ public class UnitRegistrationResponse extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

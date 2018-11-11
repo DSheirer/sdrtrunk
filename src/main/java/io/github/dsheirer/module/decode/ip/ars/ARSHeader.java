@@ -47,6 +47,12 @@ public class ARSHeader extends Header
     {
         StringBuilder sb = new StringBuilder();
         sb.append("ARS ").append(getPDUType());
+
+        if(getPDUType() == ARSPDUType.UNKNOWN)
+        {
+            sb.append(" PACKET:").append(getMessage().toHexString());
+        }
+
         return sb.toString();
     }
 

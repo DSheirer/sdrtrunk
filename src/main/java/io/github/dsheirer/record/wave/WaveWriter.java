@@ -127,40 +127,35 @@ public class WaveWriter implements AutoCloseable
     }
 
     /**
-     * Closes the file
+     * Implements the auto-closeable interface.  Closes the recording without any renaming operation.
+     * @throws IOException if there is an error closing the file channel.
      */
     public void close() throws IOException
+    {
+        close(null);
+    }
+
+    /**
+     * Closes the file and renames/moves the contents to the specified path
+     */
+    public void close(Path path) throws IOException
     {
         mFileChannel.force(true);
         mFileChannel.close();
 
-        rename();
+        rename(path);
     }
 
     /**
-     * Renames the file from *.tmp to *.wav after file has been closed.
+     * Renames the file to the specified filename moving it to the from *.tmp to *.wav after file has been closed.
+     *
      * @throws IOException
      */
-    private void rename() throws IOException
+    private void rename(Path path) throws IOException
     {
-        if(mFile != null && Files.exists(mFile))
+        if(mFile != null && Files.exists(mFile) && path != null)
         {
-            String renamed = mFile.getFileName().toString();
-            renamed = renamed.replace(".tmp", ".wav");
-            Path renamedPath = mFile.resolveSibling(renamed);
-
-            int suffix = 1;
-
-            while(Files.exists(renamedPath) && suffix < 4)
-            {
-                String renamedWithSuffix = mFile.getFileName().toString();
-                renamedWithSuffix = renamedWithSuffix.replace(".tmp", "_" + suffix + ".wav");
-                Path renamedWithSuffixPath = mFile.resolveSibling(renamedWithSuffix);
-                renamedPath = mFile.resolveSibling(renamedWithSuffixPath);
-                suffix++;
-            }
-
-            Files.move(mFile, renamedPath);
+            Files.move(mFile, path);
         }
     }
 

@@ -21,8 +21,8 @@
 package io.github.dsheirer.module.decode.p25.message.lc.motorola;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25AnyTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnyTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 
 import java.util.ArrayList;
@@ -38,8 +38,8 @@ public class LCMotorolaTalkComplete extends LinkControlWord
     private static final int[] ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
         67, 68, 69, 70, 71};
 
-    private IIdentifier mAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -88,7 +88,7 @@ public class LCMotorolaTalkComplete extends LinkControlWord
     /**
      * To/From radio identifier communicating with a landline
      */
-    public IIdentifier getAddress()
+    public Identifier getAddress()
     {
         if(mAddress == null)
         {
@@ -102,7 +102,7 @@ public class LCMotorolaTalkComplete extends LinkControlWord
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

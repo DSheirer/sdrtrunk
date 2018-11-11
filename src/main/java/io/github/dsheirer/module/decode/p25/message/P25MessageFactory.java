@@ -57,9 +57,6 @@ public class P25MessageFactory
             case LOGICAL_LINK_DATA_UNIT_2:
                 return new LDU2Message(message, nac, timestamp);
             case PACKET_HEADER_DATA_UNIT:
-            case PACKET_DATA_UNIT_1:
-            case PACKET_DATA_UNIT_2:
-            case PACKET_DATA_UNIT_3:
                 mLog.warn("WARNING: PDU messages must be created by the PDUMessageFactory");
                 return null;
             case TERMINATOR_DATA_UNIT:

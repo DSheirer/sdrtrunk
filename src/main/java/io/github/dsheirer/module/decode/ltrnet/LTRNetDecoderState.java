@@ -17,19 +17,14 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.ltrnet;
 
-import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedIntegerAttributeMonitor;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.util.StringUtils;
@@ -69,17 +64,17 @@ public class LTRNetDecoderState extends DecoderState
 
     public LTRNetDecoderState(AliasList aliasList)
     {
-        super(aliasList);
-
-        mToAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
-        mToAttribute.addIllegalValue("0-00-000");
-
-        mFromUIDAttribute = new AliasedIntegerAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.LTR_NET_UID);
-
-        mESNAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.ESN);
+//        super(aliasList);
+//
+//        mToAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+//            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+//        mToAttribute.addIllegalValue("0-00-000");
+//
+//        mFromUIDAttribute = new AliasedIntegerAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+//            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.LTR_NET_UID);
+//
+//        mESNAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+//            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.ESN);
     }
 
     @Override
@@ -116,7 +111,7 @@ public class LTRNetDecoderState extends DecoderState
                             {
                                 mCurrentCallEvent = new LTRCallEvent.Builder(
                                     DecoderType.LTR_NET, CallEvent.CallEventType.STATION_ID)
-                                    .aliasList(getAliasList())
+//                                    .aliasList(getAliasList())
                                     .channel(String.valueOf(mChannelNumber))
                                     .frequency(mFrequency)
                                     .to(ltr.getTalkgroupID())
@@ -200,7 +195,7 @@ public class LTRNetDecoderState extends DecoderState
                         {
                             mCurrentCallEvent = new LTRCallEvent.Builder(
                                 DecoderType.LTR_NET, CallEvent.CallEventType.REGISTER)
-                                .aliasList(getAliasList())
+//                                .aliasList(getAliasList())
                                 .channel(String.valueOf(mChannelNumber))
                                 .frequency(mFrequency)
                                 .from(String.valueOf(uniqueID))
@@ -261,7 +256,7 @@ public class LTRNetDecoderState extends DecoderState
                         {
                             mCurrentCallEvent = new LTRCallEvent.Builder(
                                 DecoderType.LTR_NET, CallEvent.CallEventType.REGISTER_ESN)
-                                .aliasList(getAliasList())
+//                                .aliasList(getAliasList())
                                 .details("ESN:" + ltr.getESN())
                                 .frequency(mFrequency)
                                 .from(ltr.getESN())
@@ -287,7 +282,7 @@ public class LTRNetDecoderState extends DecoderState
                             {
                                 mCurrentCallEvent = new LTRCallEvent.Builder(
                                     DecoderType.LTR_NET, CallEvent.CallEventType.REGISTER)
-                                    .aliasList(getAliasList())
+//                                    .aliasList(getAliasList())
                                     .channel(String.valueOf(mChannelNumber))
                                     .frequency(mFrequency)
                                     .from(String.valueOf(uniqueid))
@@ -344,16 +339,16 @@ public class LTRNetDecoderState extends DecoderState
 
                 sb.append(siteID);
 
-                if(hasAliasList())
-                {
-                    Alias siteAlias = getAliasList().getSiteID(String.valueOf(siteID));
-
-                    if(siteAlias != null)
-                    {
-                        sb.append(" ");
-                        sb.append(siteAlias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias siteAlias = getAliasList().getSiteID(String.valueOf(siteID));
+//
+//                    if(siteAlias != null)
+//                    {
+//                        sb.append(" ");
+//                        sb.append(siteAlias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -440,15 +435,15 @@ public class LTRNetDecoderState extends DecoderState
                 sb.append(tgid);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getTalkgroupAlias(tgid);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getTalkgroupAlias(tgid);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -472,15 +467,15 @@ public class LTRNetDecoderState extends DecoderState
                 sb.append(uid);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getUniqueID(uid);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getUniqueID(uid);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -504,15 +499,15 @@ public class LTRNetDecoderState extends DecoderState
                 sb.append(esn);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getESNAlias(esn);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getESNAlias(esn);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -536,15 +531,15 @@ public class LTRNetDecoderState extends DecoderState
                 sb.append(neighbor);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getSiteID(String.valueOf(neighbor));
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getSiteID(String.valueOf(neighbor));
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -573,7 +568,7 @@ public class LTRNetDecoderState extends DecoderState
             }
 
             broadcast(new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEvent.CallEventType.CALL_DETECT)
-                .aliasList(getAliasList())
+//                .aliasList(getAliasList())
                 .channel(String.valueOf(message.getChannel()))
                 .frequency(frequency)
                 .to(message.getTalkgroupID())
@@ -644,7 +639,7 @@ public class LTRNetDecoderState extends DecoderState
                     }
 
                     CallEvent callEvent = new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEvent.CallEventType.CALL)
-                        .aliasList(getAliasList())
+//                        .aliasList(getAliasList())
                         .channel(String.valueOf(message.getChannel()))
                         .frequency(mFrequency)
                         .to(message.getTalkgroupID())
@@ -716,8 +711,9 @@ public class LTRNetDecoderState extends DecoderState
     /**
      * Resets the decoder state after a call or other decode event
      */
-    private void resetState()
+    protected void resetState()
     {
+        super.resetState();
         if(mCurrentCallEvent != null && mCurrentCallEvent
             .getCallEventType() == CallEvent.CallEventType.CALL)
         {
@@ -744,7 +740,7 @@ public class LTRNetDecoderState extends DecoderState
         if(!StringUtils.isEqual(mMessage, message))
         {
             mMessage = message;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessageType));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessageType));
         }
     }
 
@@ -758,7 +754,7 @@ public class LTRNetDecoderState extends DecoderState
         if(!StringUtils.isEqual(mMessageType, messageType))
         {
             mMessageType = messageType;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, mMessageType));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, mMessageType));
         }
     }
 
@@ -777,8 +773,8 @@ public class LTRNetDecoderState extends DecoderState
         if(mChannelNumber != channelNumber)
         {
             mChannelNumber = channelNumber;
-            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
-                "LCN:" + getChannelNumber()));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
+//                "LCN:" + getChannelNumber()));
         }
     }
 

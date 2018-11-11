@@ -21,10 +21,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -42,10 +42,10 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
     private static final int[] SOURCE_ID = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
         74, 75, 76, 77, 78, 79};
 
-    private IIdentifier mWACN;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWACN;
+    private Identifier mSystem;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -65,7 +65,7 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
         return sb.toString();
     }
 
-    public IIdentifier getWACN()
+    public Identifier getWACN()
     {
         if(mWACN == null)
         {
@@ -75,7 +75,7 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
         return mWACN;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -85,7 +85,7 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
         return mSystem;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -96,7 +96,7 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

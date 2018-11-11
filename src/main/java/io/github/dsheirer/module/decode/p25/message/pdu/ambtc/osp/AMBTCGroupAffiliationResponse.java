@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
@@ -48,15 +48,15 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
     private static final int[] BLOCK_0_ANNOUNCEMENT_GROUP_ID = {88, 89, 90, 91, 92, 93, 94, 95};
     private static final int[] BLOCK_1_ANNOUNCEMENT_GROUP_ID = {0, 1, 2, 3, 4, 5, 6, 7};
 
-    private IIdentifier mTargetAddress;
-    private IIdentifier mSourceWacn;
-    private IIdentifier mSourceSystem;
-    private IIdentifier mSourceId;
-    private IIdentifier mGroupWacn;
-    private IIdentifier mGroupSystem;
-    private IIdentifier mGroupId;
-    private IIdentifier mAnnouncementGroupId;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mTargetAddress;
+    private Identifier mSourceWacn;
+    private Identifier mSourceSystem;
+    private Identifier mSourceId;
+    private Identifier mGroupWacn;
+    private Identifier mGroupSystem;
+    private Identifier mGroupId;
+    private Identifier mAnnouncementGroupId;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCGroupAffiliationResponse(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -103,7 +103,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
@@ -113,7 +113,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mTargetAddress;
     }
 
-    public IIdentifier getSourceWacn()
+    public Identifier getSourceWacn()
     {
         if(mSourceWacn == null && hasDataBlock(0))
         {
@@ -126,7 +126,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mSourceWacn;
     }
 
-    public IIdentifier getSourceSystem()
+    public Identifier getSourceSystem()
     {
         if(mSourceSystem == null && hasDataBlock(0))
         {
@@ -136,7 +136,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mSourceSystem;
     }
 
-    public IIdentifier getSourceId()
+    public Identifier getSourceId()
     {
         if(mSourceId == null && hasDataBlock(0))
         {
@@ -146,7 +146,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mSourceId;
     }
 
-    public IIdentifier getGroupWacn()
+    public Identifier getGroupWacn()
     {
         if(mGroupWacn == null && hasDataBlock(0))
         {
@@ -156,7 +156,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mGroupWacn;
     }
 
-    public IIdentifier getGroupSystem()
+    public Identifier getGroupSystem()
     {
         if(mGroupSystem == null && hasDataBlock(0))
         {
@@ -166,7 +166,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mGroupSystem;
     }
 
-    public IIdentifier getGroupId()
+    public Identifier getGroupId()
     {
         if(mGroupId == null && hasDataBlock(0))
         {
@@ -176,7 +176,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         return mGroupId;
     }
 
-    public IIdentifier getAnnouncementGroupId()
+    public Identifier getAnnouncementGroupId()
     {
         if(mAnnouncementGroupId == null && hasDataBlock(0) && hasDataBlock(1))
         {
@@ -192,7 +192,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
 
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

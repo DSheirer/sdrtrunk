@@ -13,12 +13,12 @@ import io.github.dsheirer.module.decode.p25.message.lc.standard.LCCallAlert;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCCallTermination;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCEncryptionParameterBroadcast;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCExtendedFunctionCommand;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.LCFrequencyBandUpdate;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.LCFrequencyBandUpdateExplicit;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCGroupAffiliationQuery;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCGroupVoiceChannelUpdate;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCGroupVoiceChannelUpdateExplicit;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCGroupVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.message.lc.standard.LCIdentifierUpdate;
-import io.github.dsheirer.module.decode.p25.message.lc.standard.LCIdentifierUpdateExplicit;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCMessageUpdate;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCNetworkStatusBroadcastExplicit;
@@ -60,9 +60,9 @@ public class LinkControlWordFactory
             case CALL_TERMINATION_OR_CANCELLATION:
                 return new LCCallTermination(binaryMessage);
             case CHANNEL_IDENTIFIER_UPDATE:
-                return new LCIdentifierUpdate(binaryMessage);
+                return new LCFrequencyBandUpdate(binaryMessage);
             case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-                return new LCIdentifierUpdateExplicit(binaryMessage);
+                return new LCFrequencyBandUpdateExplicit(binaryMessage);
             case EXTENDED_FUNCTION_COMMAND:
                 return new LCExtendedFunctionCommand(binaryMessage);
             case GROUP_AFFILIATION_QUERY:

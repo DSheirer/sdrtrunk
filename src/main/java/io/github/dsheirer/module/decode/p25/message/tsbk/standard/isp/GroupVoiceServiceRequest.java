@@ -1,9 +1,9 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -23,9 +23,9 @@ public class GroupVoiceServiceRequest extends ISPMessage
             74, 75, 76, 77, 78, 79};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mGroupAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mGroupAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -58,7 +58,7 @@ public class GroupVoiceServiceRequest extends ISPMessage
         return mServiceOptions;
     }
 
-    public IIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
@@ -68,7 +68,7 @@ public class GroupVoiceServiceRequest extends ISPMessage
         return mGroupAddress;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -79,7 +79,7 @@ public class GroupVoiceServiceRequest extends ISPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

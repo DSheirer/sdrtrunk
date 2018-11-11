@@ -23,12 +23,17 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+@Deprecated //Use Talkgroup instead
 public class FleetsyncIDEditor extends DocumentListenerEditor<AliasID>
 {
 	private final static Logger mLog = LoggerFactory.getLogger( FleetsyncIDEditor.class );

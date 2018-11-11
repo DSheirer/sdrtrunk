@@ -21,11 +21,11 @@ package io.github.dsheirer.module.decode.p25.message.tdu;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
 import io.github.dsheirer.edac.Golay24;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWordFactory;
@@ -34,7 +34,7 @@ import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import java.util.Collections;
 import java.util.List;
 
-public class TDULinkControlMessage extends P25Message implements FrequencyBandReceiver
+public class TDULinkControlMessage extends P25Message implements IFrequencyBandReceiver
 {
     public static final int[] LC_HEX_0 = {0, 1, 2, 3, 4, 5};
     public static final int[] LC_HEX_1 = {6, 7, 8, 9, 10, 11};
@@ -181,18 +181,18 @@ public class TDULinkControlMessage extends P25Message implements FrequencyBandRe
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        if(getLinkControlWord().isValid() && getLinkControlWord() instanceof FrequencyBandReceiver)
+        if(getLinkControlWord().isValid() && getLinkControlWord() instanceof IFrequencyBandReceiver)
         {
-            return ((FrequencyBandReceiver)getLinkControlWord()).getChannels();
+            return ((IFrequencyBandReceiver)getLinkControlWord()).getChannels();
         }
 
         return Collections.EMPTY_LIST;
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return getLinkControlWord().getIdentifiers();
     }

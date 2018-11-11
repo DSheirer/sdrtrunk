@@ -18,18 +18,13 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.ltrstandard;
 
-import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.ltrnet.LTRCallEvent;
@@ -63,10 +58,10 @@ public class LTRStandardDecoderState extends DecoderState
 
     public LTRStandardDecoderState(AliasList aliasList)
     {
-        super(aliasList);
-
-        mTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+//        super(aliasList);
+//
+//        mTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+//            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -114,7 +109,7 @@ public class LTRStandardDecoderState extends DecoderState
                                 DecoderType.LTR_STANDARD,
                                 current ? CallEvent.CallEventType.CALL : CallEvent.CallEventType.CALL_DETECT)
                                 .to(start.getToID())
-                                .aliasList(getAliasList())
+//                                .aliasList(getAliasList())
                                 .channel(start.getChannelFormatted())
                                 .frequency(current ? mFrequency : 0)
                                 .build();
@@ -220,8 +215,9 @@ public class LTRStandardDecoderState extends DecoderState
     /**
      * Performs a temporal reset following a call or other decode event
      */
-    private void resetState()
+    protected void resetState()
     {
+        super.resetState();
         for(Integer key : mActiveCalls.keySet())
         {
             LTRCallEvent event = mActiveCalls.get(key);
@@ -257,8 +253,8 @@ public class LTRStandardDecoderState extends DecoderState
 
         if(mLCNTracker.getCurrentChannel() != original)
         {
-            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
-                "LCN:" + mLCNTracker.getCurrentChannel()));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
+//                "LCN:" + mLCNTracker.getCurrentChannel()));
         }
     }
 
@@ -328,15 +324,15 @@ public class LTRStandardDecoderState extends DecoderState
                 sb.append(talkgroup);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getTalkgroupAlias(talkgroup);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getTalkgroupAlias(talkgroup);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
 

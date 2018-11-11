@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.message;
 
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 
 import java.util.List;
 
@@ -41,5 +41,5 @@ public interface IMessage
      * List of identifiers present in the message
      * @return list of identifiers or an empty list
      */
-    List<IIdentifier> getIdentifiers();
+    List<Identifier> getIdentifiers();
 }

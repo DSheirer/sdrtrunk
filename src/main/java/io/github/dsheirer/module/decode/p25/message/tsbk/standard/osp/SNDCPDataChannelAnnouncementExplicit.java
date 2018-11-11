@@ -21,14 +21,13 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
+import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,9 +36,9 @@ import java.util.List;
 /**
  * Sub-Network Dependent Convergence Protocol (SNDCP) Data Channel Announcement - Explicit
  */
-public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements FrequencyBandReceiver
+public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements IFrequencyBandReceiver
 {
-    private static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
+    private static final int[] DATA_SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int AUTONOMOUS_ACCESS_FLAG = 24;
     private static final int REQUESTED_ACCESS_FLAG = 25;
     private static final int[] DOWNLINK_FREQUENCY_BAND = {32, 33, 34, 35};
@@ -48,9 +47,9 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
     private static final int[] UPLINK_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] DATA_ACCESS_CONTROL = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
-    private ServiceOptions mServiceOptions;
-    private IAPCO25Channel mChannel;
-    private List<IAPCO25Channel> mChannels;
+    private DataServiceOptions mServiceOptions;
+    private IChannelDescriptor mChannel;
+    private List<IChannelDescriptor> mChannels;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -78,6 +77,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
             sb.append(" REQUESTED-ACCESS");
         }
         sb.append(" DAC:").append(getDataAccessControl());
+        sb.append(" **:").append(getMessage().getInt(DATA_SERVICE_OPTIONS));
         sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
         return sb.toString();
     }
@@ -92,31 +92,23 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
         return getMessage().get(REQUESTED_ACCESS_FLAG);
     }
 
-    public ServiceOptions getServiceOptions()
+    public DataServiceOptions getServiceOptions()
     {
         if(mServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
+            mServiceOptions = new DataServiceOptions(getMessage().getInt(DATA_SERVICE_OPTIONS));
         }
 
         return mServiceOptions;
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
-            if(isExplicitChannel())
-            {
-                mChannel = APCO25ExplicitChannel.create(getMessage().getInt(DOWNLINK_FREQUENCY_BAND),
-                    getMessage().getInt(DOWNLINK_CHANNEL_NUMBER), getMessage().getInt(UPLINK_FREQUENCY_BAND),
-                    getMessage().getInt(UPLINK_CHANNEL_NUMBER));
-            }
-            else
-            {
-                mChannel = APCO25Channel.create(getMessage().getInt(DOWNLINK_FREQUENCY_BAND),
-                    getMessage().getInt(DOWNLINK_CHANNEL_NUMBER));
-            }
+            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(DOWNLINK_FREQUENCY_BAND),
+                getMessage().getInt(DOWNLINK_CHANNEL_NUMBER), getMessage().getInt(UPLINK_FREQUENCY_BAND),
+                getMessage().getInt(UPLINK_CHANNEL_NUMBER));
         }
 
         return mChannel;
@@ -140,13 +132,13 @@ public class SNDCPDataChannelAnnouncementExplicit extends OSPMessage implements 
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

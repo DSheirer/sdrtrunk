@@ -21,9 +21,11 @@
 package io.github.dsheirer.module.decode.p25.message.lc.motorola;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25PatchGroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,9 +37,9 @@ public class LCMotorolaPatchGroupDelete extends MotorolaLinkControlWord
     private static final int[] PATCHED_GROUP_2 = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
 
     private APCO25PatchGroup mPatchGroup;
-    private IIdentifier mPatchedGroup1;
-    private IIdentifier mPatchedGroup2;
-    private List<IIdentifier> mIdentifiers;
+    private TalkgroupIdentifier mPatchedGroup1;
+    private TalkgroupIdentifier mPatchedGroup2;
+    private List<Identifier> mIdentifiers;
 
     public LCMotorolaPatchGroupDelete(BinaryMessage message)
     {
@@ -57,20 +59,21 @@ public class LCMotorolaPatchGroupDelete extends MotorolaLinkControlWord
     /**
      * Patch Group
      */
-    public IIdentifier getPatchGroup()
+    public Identifier getPatchGroup()
     {
         if(mPatchGroup == null)
         {
-            mPatchGroup = APCO25PatchGroup.create(getMessage().getInt(PATCH_GROUP));
-            mPatchGroup.addPatchedGroups(getPatchedGroups());
+            PatchGroup patchGroup = new PatchGroup(APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP)));
+            patchGroup.addPatchedGroups(getPatchedGroups());
+            mPatchGroup = APCO25PatchGroup.create(patchGroup);
         }
 
         return mPatchGroup;
     }
 
-    public List<IIdentifier> getPatchedGroups()
+    public List<TalkgroupIdentifier> getPatchedGroups()
     {
-        List<IIdentifier> patchedGroups = new ArrayList<>();
+        List<TalkgroupIdentifier> patchedGroups = new ArrayList<>();
 
         if(hasPatchedGroup1())
         {
@@ -88,7 +91,7 @@ public class LCMotorolaPatchGroupDelete extends MotorolaLinkControlWord
     /**
      * Patched Group 1
      */
-    public IIdentifier getPatchedGroup1()
+    public TalkgroupIdentifier getPatchedGroup1()
     {
         if(mPatchedGroup1 == null)
         {
@@ -107,7 +110,7 @@ public class LCMotorolaPatchGroupDelete extends MotorolaLinkControlWord
     /**
      * Patched Group 2
      */
-    public IIdentifier getPatchedGroup2()
+    public TalkgroupIdentifier getPatchedGroup2()
     {
         if(mPatchedGroup2 == null)
         {
@@ -127,7 +130,7 @@ public class LCMotorolaPatchGroupDelete extends MotorolaLinkControlWord
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

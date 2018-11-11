@@ -1,11 +1,11 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Group voice channel grant update.
  */
-public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements FrequencyBandReceiver
+public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements IFrequencyBandReceiver
 {
     private static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] RESERVED = {24, 25, 26, 27, 28, 29, 30, 31};
@@ -25,9 +25,9 @@ public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements 
     private static final int[] UPLINK_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] GROUP_ADDRESS = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
-    private IAPCO25Channel mChannel;
-    private IIdentifier mGroupAddress;
-    private List<IIdentifier> mIdentifiers;
+    private IChannelDescriptor mChannel;
+    private Identifier mGroupAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -46,7 +46,7 @@ public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements 
         return sb.toString();
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -58,7 +58,7 @@ public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements 
         return mChannel;
     }
 
-    public IIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
@@ -69,7 +69,7 @@ public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements 
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -81,9 +81,9 @@ public class GroupDataChannelAnnouncementExplicit extends OSPMessage implements 
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }

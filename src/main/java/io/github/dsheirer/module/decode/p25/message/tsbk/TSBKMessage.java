@@ -3,7 +3,7 @@ package io.github.dsheirer.module.decode.p25.message.tsbk;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCP25;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -116,7 +116,7 @@ public abstract class TSBKMessage extends P25Message
     /**
      * List of identifiers provided by the message
      */
-    public abstract List<IIdentifier> getIdentifiers();
+    public abstract List<Identifier> getIdentifiers();
 
     /**
      * Creates a string with the basic TSBK information

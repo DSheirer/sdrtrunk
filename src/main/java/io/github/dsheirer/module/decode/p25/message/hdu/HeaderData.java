@@ -21,9 +21,9 @@
 package io.github.dsheirer.module.decode.p25.message.hdu;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25EncryptionKey;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
@@ -46,9 +46,9 @@ public class HeaderData
 
     private boolean mValid = true;
     private BinaryMessage mMessage;
-    private IIdentifier mEncryptionKey;
-    private IIdentifier mTalkgroup;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mEncryptionKey;
+    private Identifier mTalkgroup;
+    private List<Identifier> mIdentifiers;
 
     public HeaderData(BinaryMessage message)
     {
@@ -126,7 +126,7 @@ public class HeaderData
         return Vendor.fromValue(getMessage().getInt(VENDOR_ID));
     }
 
-    public IIdentifier getEncryptionKey()
+    public Identifier getEncryptionKey()
     {
         if(mEncryptionKey == null && isEncryptedAudio())
         {
@@ -147,7 +147,7 @@ public class HeaderData
         return getEncryption() != Encryption.UNENCRYPTED;
     }
 
-    public IIdentifier getTalkgroup()
+    public Identifier getTalkgroup()
     {
         if(mTalkgroup == null)
         {
@@ -157,16 +157,19 @@ public class HeaderData
         return mTalkgroup;
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getTalkgroup());
-            mIdentifiers.add(getEncryptionKey());
+
+            if(isValid())
+            {
+                mIdentifiers.add(getTalkgroup());
+                mIdentifiers.add(getEncryptionKey());
+            }
         }
 
         return mIdentifiers;
     }
-
 }

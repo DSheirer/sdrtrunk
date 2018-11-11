@@ -20,9 +20,11 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25PatchGroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -36,12 +38,12 @@ public class PatchGroupAdd extends OSPMessage
     public static final int[] GROUP_ADDRESS_2 = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     public static final int[] GROUP_ADDRESS_3 = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
-    private APCO25PatchGroup mPatchGroupAddress;
-    private IIdentifier mGroupAddress1;
-    private IIdentifier mGroupAddress2;
-    private IIdentifier mGroupAddress3;
-    private List<IIdentifier> mPatchedTalkgroups;
-    private List<IIdentifier> mIdentifiers;
+    private APCO25PatchGroup mPatchGroup;
+    private TalkgroupIdentifier mGroupAddress1;
+    private TalkgroupIdentifier mGroupAddress2;
+    private TalkgroupIdentifier mGroupAddress3;
+    private List<TalkgroupIdentifier> mPatchedTalkgroups;
+    private List<Identifier> mIdentifiers;
 
     public PatchGroupAdd(DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timeslot)
     {
@@ -53,31 +55,38 @@ public class PatchGroupAdd extends OSPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" PATCH GROUP:").append(getPatchGroupAddress());
+        sb.append(" PATCH GROUP:").append(getPatchGroup());
         return sb.toString();
     }
 
-    public IIdentifier getPatchGroupAddress()
+    public Identifier getPatchGroup()
     {
-        if(mPatchGroupAddress == null)
+        if(mPatchGroup == null)
         {
-            mPatchGroupAddress = APCO25PatchGroup.create(getMessage().getInt(PATCH_GROUP_ADDRESS));
-            mPatchGroupAddress.addPatchedGroups(getPatchedTalkgroups());
+            PatchGroup patchGroup = new PatchGroup(APCO25ToTalkgroup.createGroup(getPatchAddress()));
+            patchGroup.addPatchedGroups(getPatchedTalkgroups());
+            mPatchGroup = APCO25PatchGroup.create(patchGroup);
         }
 
-        return mPatchGroupAddress;
+        return mPatchGroup;
     }
+
+    private int getPatchAddress()
+    {
+        return getMessage().getInt(PATCH_GROUP_ADDRESS);
+    }
+
 
     /**
      * List of de-duplicated patched talkgroups contained in this message
      */
-    public List<IIdentifier> getPatchedTalkgroups()
+    public List<TalkgroupIdentifier> getPatchedTalkgroups()
     {
         if(mPatchedTalkgroups == null)
         {
             mPatchedTalkgroups = new ArrayList<>();
 
-            if(hasGroupAddress1())
+            if(hasAddress1())
             {
                 mPatchedTalkgroups.add(getGroupAddress1());
             }
@@ -96,62 +105,76 @@ public class PatchGroupAdd extends OSPMessage
         return mPatchedTalkgroups;
     }
 
-    public IIdentifier getGroupAddress1()
+    public TalkgroupIdentifier getGroupAddress1()
     {
         if(mGroupAddress1 == null)
         {
-            mGroupAddress1 = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_1));
+            mGroupAddress1 = APCO25ToTalkgroup.createGroup(getAddress1());
         }
 
         return mGroupAddress1;
     }
 
-    public boolean hasGroupAddress1()
+    private int getAddress1()
     {
-        return getMessage().getInt(GROUP_ADDRESS_1) != 0 &&
-            getMessage().getInt(GROUP_ADDRESS_1) != getMessage().getInt(PATCH_GROUP_ADDRESS);
+        return getMessage().getInt(GROUP_ADDRESS_1);
     }
 
-    public IIdentifier getGroupAddress2()
+    private boolean hasAddress1()
+    {
+        return getPatchAddress() != getAddress1();
+    }
+
+    public TalkgroupIdentifier getGroupAddress2()
     {
         if(mGroupAddress2 == null)
         {
-            mGroupAddress2 = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_2));
+            mGroupAddress2 = APCO25ToTalkgroup.createGroup(getAddress2());
         }
 
         return mGroupAddress2;
     }
 
-    public boolean hasGroupAddress2()
+    private int getAddress2()
     {
-        return getMessage().getInt(GROUP_ADDRESS_2) != 0 &&
-            getMessage().getInt(GROUP_ADDRESS_1) != getMessage().getInt(GROUP_ADDRESS_2);
+        return getMessage().getInt(GROUP_ADDRESS_2);
     }
 
-    public IIdentifier getGroupAddress3()
+    public boolean hasGroupAddress2()
+    {
+        return getPatchAddress() != getAddress2() &&
+            getAddress1() != getAddress2();
+    }
+
+    public TalkgroupIdentifier getGroupAddress3()
     {
         if(mGroupAddress3 == null)
         {
-            mGroupAddress3 = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_3));
+            mGroupAddress3 = APCO25ToTalkgroup.createGroup(getAddress3());
         }
 
         return mGroupAddress3;
     }
 
+    private int getAddress3()
+    {
+        return getMessage().getInt(GROUP_ADDRESS_3);
+    }
+
     public boolean hasGroupAddress3()
     {
-        return getMessage().getInt(GROUP_ADDRESS_3) != 0 &&
-            getMessage().getInt(GROUP_ADDRESS_1) != getMessage().getInt(GROUP_ADDRESS_3) &&
-            getMessage().getInt(GROUP_ADDRESS_2) != getMessage().getInt(GROUP_ADDRESS_3);
+        return getPatchAddress() != getAddress2() &&
+            getAddress1() != getAddress3() &&
+            getAddress2() != getAddress3();
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getPatchGroupAddress());
+            mIdentifiers.add(getPatchGroup());
         }
 
         return mIdentifiers;

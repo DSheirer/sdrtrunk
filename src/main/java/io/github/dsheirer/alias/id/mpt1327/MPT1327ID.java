@@ -22,6 +22,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 
+@Deprecated //Use Talkgroup instead
 public class MPT1327ID extends AliasID
 {
     private String mID;

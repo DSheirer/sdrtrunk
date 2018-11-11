@@ -1,7 +1,7 @@
 package io.github.dsheirer.module.decode.p25.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +22,7 @@ public class UnknownLinkControlWord extends LinkControlWord
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

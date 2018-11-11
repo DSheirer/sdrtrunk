@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
@@ -41,11 +41,11 @@ public class AMBTCStatusQueryRequest extends AMBTCMessage
     private static final int[] RESERVED = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58,
         59, 60, 61, 62, 63};
 
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mTargetId;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mTargetId;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCStatusQueryRequest(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -72,7 +72,7 @@ public class AMBTCStatusQueryRequest extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getTargetId()
+    public Identifier getTargetId()
     {
         if(mTargetId == null)
         {
@@ -82,7 +82,7 @@ public class AMBTCStatusQueryRequest extends AMBTCMessage
         return mTargetId;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -95,7 +95,7 @@ public class AMBTCStatusQueryRequest extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -105,7 +105,7 @@ public class AMBTCStatusQueryRequest extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null && hasDataBlock(0))
         {
@@ -116,7 +116,7 @@ public class AMBTCStatusQueryRequest extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
@@ -42,11 +42,11 @@ public class AMBTCCallAlert extends AMBTCMessage
     private static final int[] BLOCK_0_SOURCE_ID = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
         34, 35, 36, 37, 38, 39};
 
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceId;
-    private IIdentifier mTargetAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mSourceId;
+    private Identifier mTargetAddress;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCCallAlert(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -77,7 +77,7 @@ public class AMBTCCallAlert extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -90,7 +90,7 @@ public class AMBTCCallAlert extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -100,7 +100,7 @@ public class AMBTCCallAlert extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
@@ -110,7 +110,7 @@ public class AMBTCCallAlert extends AMBTCMessage
         return mTargetAddress;
     }
 
-    public IIdentifier getSourceId()
+    public Identifier getSourceId()
     {
         if(mSourceId == null && hasDataBlock(0))
         {
@@ -121,7 +121,7 @@ public class AMBTCCallAlert extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

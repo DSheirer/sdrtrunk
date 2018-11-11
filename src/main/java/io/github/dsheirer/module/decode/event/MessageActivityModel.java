@@ -19,13 +19,11 @@ package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
 import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.LinkedList;
 
 public class MessageActivityModel extends AbstractTableModel implements Listener<IMessage>
@@ -36,11 +34,11 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
     private static final int MESSAGE = 2;
 
     protected int mMaxMessages = 500;
-    protected LinkedList<IMessage> mMessages = new LinkedList<>();
-    protected int[] mColumnWidths = {110, 110, 110};
+    protected LinkedList<MessageItem> mMessageItems = new LinkedList<>();
+    protected int[] mColumnWidths = {20, 20, 500};
     protected String[] mHeaders = new String[]{"Time", "Protocol", "Message"};
 
-    private SimpleDateFormat mSDFTime = new SimpleDateFormat("dd MMM HH:mm:ss");
+    private SimpleDateFormat mSDFTime = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
 
     private FilterSet<IMessage> mMessageFilter;
 
@@ -63,9 +61,9 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
             @Override
             public void run()
             {
-                int messageCount = mMessages.size();
+                int messageCount = mMessageItems.size();
 
-                mMessages.clear();
+                mMessageItems.clear();
 
                 fireTableRowsDeleted(0, messageCount - 1);
             }
@@ -79,7 +77,7 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
 
     public void dispose()
     {
-        mMessages.clear();
+        mMessageItems.clear();
     }
 
     public int[] getColumnWidths()
@@ -111,14 +109,16 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
 
     public void receive(final IMessage message)
     {
-        if(message.isValid() && mMessageFilter.passes(message))
+        if(mMessageFilter.passes(message))
         {
+            final MessageItem messageItem = new MessageItem(message);
+
             EventQueue.invokeLater(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    mMessages.addFirst(message);
+                    mMessageItems.addFirst(messageItem);
 
                     MessageActivityModel.this.fireTableRowsInserted(0, 0);
 
@@ -130,18 +130,18 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
 
     private void prune()
     {
-        while(mMessages.size() > mMaxMessages)
+        while(mMessageItems.size() > mMaxMessages)
         {
-            mMessages.removeLast();
-
-            super.fireTableRowsDeleted(mMessages.size() - 1, mMessages.size() - 1);
+            MessageItem removed = mMessageItems.removeLast();
+            removed.dispose();
+            super.fireTableRowsDeleted(mMessageItems.size() - 1, mMessageItems.size() - 1);
         }
     }
 
     @Override
     public int getRowCount()
     {
-        return mMessages.size();
+        return mMessageItems.size();
     }
 
     @Override
@@ -158,25 +158,18 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
     @Override
     public Object getValueAt(int rowIndex, int columnIndex)
     {
-        if(0 <= rowIndex && rowIndex < mMessages.size())
+        if(0 <= rowIndex && rowIndex < mMessageItems.size())
         {
-            IMessage message = mMessages.get(rowIndex);
+            MessageItem messageItem = mMessageItems.get(rowIndex);
 
             switch(columnIndex)
             {
                 case TIME:
-                    return mSDFTime.format(new Date(message.getTimestamp()));
+                    return messageItem.getTimestamp(mSDFTime);
                 case PROTOCOL:
-                    return message.getProtocol();
+                    return messageItem.getProtocol();
                 case MESSAGE:
-                    if(message.isValid())
-                    {
-                        return message.toString();
-                    }
-                    else
-                    {
-                        return "INVALID MESSAGE";
-                    }
+                    return messageItem.getText();
                 default:
                     break;
             }

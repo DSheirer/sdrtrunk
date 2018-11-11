@@ -1,0 +1,150 @@
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.p25.identifier.channel;
+
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
+
+public class P25Channel implements IChannelDescriptor
+{
+    private IFrequencyBand mFrequencyBand;
+    private int mBandIdentifier;
+    private int mChannelNumber;
+
+    public P25Channel(int bandIdentifier, int channelNumber)
+    {
+        mBandIdentifier = bandIdentifier;
+        mChannelNumber = channelNumber;
+    }
+
+    public int getDownlinkBandIdentifier()
+    {
+        return mBandIdentifier;
+    }
+
+    public int getDownlinkChannelNumber()
+    {
+        return mChannelNumber;
+    }
+
+    public int getUplinkBandIdentifier()
+    {
+        return mBandIdentifier;
+    }
+
+    public int getUplinkChannelNumber()
+    {
+        return mChannelNumber;
+    }
+
+    @Override
+    public long getDownlinkFrequency()
+    {
+        if(mFrequencyBand != null)
+        {
+            return mFrequencyBand.getDownlinkFrequency(getDownlinkChannelNumber());
+        }
+
+        return 0;
+    }
+
+    @Override
+    public long getUplinkFrequency()
+    {
+        if(mFrequencyBand != null)
+        {
+            return mFrequencyBand.getUplinkFrequency(getUplinkChannelNumber());
+        }
+
+        return 0;
+    }
+
+    public boolean hasUplinkChannel()
+    {
+        return getUplinkChannelNumber() != 4095;
+    }
+
+    @Override
+    public int[] getFrequencyBandIdentifiers()
+    {
+        if(getDownlinkBandIdentifier() != getUplinkBandIdentifier())
+        {
+            int[] identifiers = new int[2];
+            identifiers[0] = getDownlinkBandIdentifier();
+            identifiers[1] = getUplinkBandIdentifier();
+            return identifiers;
+        }
+        else
+        {
+            int[] identifiers = new int[1];
+            identifiers[0] = getDownlinkBandIdentifier();
+            return identifiers;
+        }
+    }
+
+    @Override
+    public void setFrequencyBand(IFrequencyBand frequencyBand)
+    {
+        mFrequencyBand = frequencyBand;
+    }
+
+    @Override
+    public int getTimeslotCount()
+    {
+        if(mFrequencyBand != null)
+        {
+            return mFrequencyBand.getTimeslotCount();
+        }
+
+        return 0;
+    }
+
+    @Override
+    public boolean isTDMAChannel()
+    {
+        if(mFrequencyBand != null)
+        {
+            return mFrequencyBand.isTDMA();
+        }
+
+        return false;
+    }
+
+    /**
+     * Formatted channel number
+     */
+    public String toString()
+    {
+        if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
+        {
+            return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber();
+        }
+        else if(hasUplinkChannel())
+        {
+            return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/" +
+                getUplinkBandIdentifier() + "-" + getUplinkChannelNumber();
+        }
+        else
+        {
+            return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/-----";
+        }
+    }
+}

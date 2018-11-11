@@ -1,10 +1,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25Lra;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.Capability;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -26,10 +26,10 @@ public class LocationRegistrationRequest extends ISPMessage
             74, 75, 76, 77, 78, 79};
 
     private Capability mCapability;
-    private IIdentifier mLocationRegistrationArea;
-    private IIdentifier mGroupAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mLocationRegistrationArea;
+    private Identifier mGroupAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -69,7 +69,7 @@ public class LocationRegistrationRequest extends ISPMessage
         return mCapability;
     }
 
-    public IIdentifier getLocationRegistrationArea()
+    public Identifier getLocationRegistrationArea()
     {
         if(mLocationRegistrationArea == null)
         {
@@ -79,7 +79,7 @@ public class LocationRegistrationRequest extends ISPMessage
         return mLocationRegistrationArea;
     }
 
-    public IIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
@@ -89,7 +89,7 @@ public class LocationRegistrationRequest extends ISPMessage
         return mGroupAddress;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -100,7 +100,7 @@ public class LocationRegistrationRequest extends ISPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

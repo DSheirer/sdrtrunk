@@ -19,8 +19,10 @@ import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
@@ -61,6 +63,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private int mTrailingDibitsToSuppress = 0;
     private double mBitRate;
     private long mCurrentTime = System.currentTimeMillis();
+    private ISyncDetectListener mSyncDetectListener;
 
     public P25MessageFramer2(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
@@ -71,6 +74,22 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     public P25MessageFramer2(int bitRate)
     {
         this(null, bitRate);
+    }
+
+    /**
+     * Sets the sample rate for the sync detector
+     */
+    public void setSampleRate(double sampleRate)
+    {
+        mDataUnitDetector.setSampleRate(sampleRate);
+    }
+
+    /**
+     * Registers a sync detect listener to be notified each time a sync pattern and NID are detected.
+     */
+    public void setSyncDetectListener(ISyncDetectListener syncDetectListener)
+    {
+        mSyncDetectListener = syncDetectListener;
     }
 
     /**
@@ -194,7 +213,8 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
                     if(mPDUSequence != null)
                     {
-                        if(mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
+                        if(mPDUSequence.getHeader().isValid() &&
+                           mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
                         {
                             //Setup to catch the sequence of data blocks that follow the header
                             mDataUnitID = DataUnitID.PACKET_DATA_UNIT;
@@ -241,8 +261,16 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                                     //Process 16 bits or 8 dibits of trailing nulls
                                     mTrailingDibitsToSuppress = 8;
                                     break;
+                                case 4:
+                                    //Process 30 bits or 15 dibits of trailing nulls
+                                    mTrailingDibitsToSuppress = 15;
+                                    break;
+                                case 5:
+                                    //Process 44 bits or 22 dibits of trailing nulls
+                                    mTrailingDibitsToSuppress = 22;
+                                    break;
                                 default:
-                                    mLog.debug("*** MORE THAN 3 PDU BLOCKS DETECTED [" +
+                                    mLog.debug("*** MORE THAN 5 PDU BLOCKS DETECTED [" +
                                         mPDUSequence.getHeader().getBlocksToFollowCount() +
                                         "] - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
                                     break;
@@ -351,6 +379,11 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             return;
         }
 
+        if(mSyncDetectListener != null)
+        {
+            mSyncDetectListener.syncDetected(bitErrors);
+        }
+
         mDataUnitID = dataUnitID;
         mNAC = nac;
         mCorrectedNID = correctedNid;
@@ -365,6 +398,11 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     public void syncLost(int bitsProcessed)
     {
         dispatchSyncLoss(bitsProcessed);
+
+        if(mSyncDetectListener != null)
+        {
+            mSyncDetectListener.syncLost();
+        }
     }
 
     private void dispatchSyncLoss(int bitsProcessed)
@@ -383,9 +421,9 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         boolean pduOnly = false;
         boolean mbtcOnly = false;
         boolean sndcpOnly = false;
-        boolean ippacketOnly = true;
+        boolean ippacketOnly = false;
 
-        P25MessageFramer2 messageFramer = new P25MessageFramer2(null, 9600);
+        P25MessageFramer2 messageFramer = new P25MessageFramer2(null, DecoderType.P25_PHASE1.getBitRate());
         messageFramer.setListener(new Listener<Message>()
         {
             @Override
@@ -465,8 +503,14 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143723_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143741_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_100905_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_101622_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_101622_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_102339_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_134948_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144312_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits"); //Interesting UDP port 231 packets (oswego LCN 4)
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144429_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144437_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
+
+
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {

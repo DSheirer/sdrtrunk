@@ -21,7 +21,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,7 +242,7 @@ public class Tait1200ANIMessage extends Message
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

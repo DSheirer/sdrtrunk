@@ -19,8 +19,6 @@
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
@@ -28,7 +26,6 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.record.RecorderManager;
@@ -39,8 +36,6 @@ import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.SourceType;
-import io.github.dsheirer.source.config.SourceConfigTuner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,24 +56,24 @@ public class ChannelProcessingManager implements ChannelEventListener
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
     private ChannelMetadataModel mChannelMetadataModel = new ChannelMetadataModel();
-    private AliasModel mAliasModel;
     private EventLogManager mEventLogManager;
     private RecorderManager mRecorderManager;
     private SourceManager mSourceManager;
+    private AliasModel mAliasModel;
 
     public ChannelProcessingManager(ChannelModel channelModel,
                                     ChannelMapModel channelMapModel,
-                                    AliasModel aliasModel,
                                     EventLogManager eventLogManager,
                                     RecorderManager recorderManager,
-                                    SourceManager sourceManager)
+                                    SourceManager sourceManager,
+                                    AliasModel aliasModel)
     {
         mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
-        mAliasModel = aliasModel;
         mEventLogManager = eventLogManager;
         mRecorderManager = recorderManager;
         mSourceManager = sourceManager;
+        mAliasModel = aliasModel;
     }
 
     /**
@@ -231,7 +226,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         if(processingChain == null)
         {
-            processingChain = new ProcessingChain(channel.getChannelType());
+            processingChain = new ProcessingChain(channel, mAliasModel);
 
             /* Register global listeners */
             for(Listener<ReusableAudioPacket> listener : mAudioPacketListeners)
@@ -248,8 +243,7 @@ public class ChannelProcessingManager implements ChannelEventListener
             processingChain.addFrequencyChangeListener(channel);
 
             /* Processing Modules */
-            List<Module> modules = DecoderFactory.getModules(mChannelModel, mChannelMapModel, this,
-                    mAliasModel, channel, processingChain.getChannelState().getMutableMetadata());
+            List<Module> modules = DecoderFactory.getModules(mChannelModel, mChannelMapModel, channel);
             processingChain.addModules(modules);
 
             /* Setup message activity model with filtering */
@@ -258,33 +252,6 @@ public class ChannelProcessingManager implements ChannelEventListener
             processingChain.setMessageActivityModel(messageModel);
 
         }
-
-        //Set the recordable flag to true if the user has requested recording.  The metadata class can still
-        //override recordability if any of the aliased values has 'Do Not Record' alias identifier.
-        boolean recordable = channel.getRecordConfiguration() != null &&
-                channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO);
-
-        processingChain.getChannelState().getMutableMetadata().setRecordable(recordable);
-
-        //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
-        processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SYSTEM, channel.getSystem()));
-        processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SITE, channel.getSite()));
-        processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, channel.getName()));
-
-        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-        {
-            long frequency = ((SourceConfigTuner) channel.getSourceConfiguration()).getFrequency();
-
-            processingChain.getChannelState().getMutableMetadata().receive(
-                    new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
-        }
-
-        processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
-                        channel.getDecodeConfiguration().getDecoderType()));
 
         /* Setup event logging */
         List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), channel.getName());
@@ -344,7 +311,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         processingChain.start();
 
-        getChannelMetadataModel().add(processingChain.getChannelState().getMutableMetadata(), channel);
+        getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
 
         channel.setProcessing(true);
 
@@ -361,7 +328,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         {
             ProcessingChain processingChain = mProcessingChains.get(channel.getChannelID());
 
-            getChannelMetadataModel().remove(processingChain.getChannelState().getMutableMetadata());
+            getChannelMetadataModel().remove(processingChain.getChannelState().getChannelMetadata());
 
             processingChain.stop();
 

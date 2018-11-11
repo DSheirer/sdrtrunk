@@ -21,13 +21,13 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25Lra;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -38,7 +38,7 @@ import java.util.List;
 /**
  * Network status broadcast
  */
-public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandReceiver
+public class NetworkStatusBroadcast extends OSPMessage implements IFrequencyBandReceiver
 {
     private static final int[] LOCATION_REGISTRATION_AREA = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] WACN = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43};
@@ -47,12 +47,12 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
     private static final int[] CHANNEL_NUMBER = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] SYSTEM_SERVICE_CLASS = {72, 73, 74, 75, 76, 77, 78, 79};
 
-    private IIdentifier mLocationRegistrationArea;
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IAPCO25Channel mChannel;
+    private Identifier mLocationRegistrationArea;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private IChannelDescriptor mChannel;
     private ServiceOptions mServiceOptions;
-    private List<IIdentifier> mIdentifiers;
+    private List<Identifier> mIdentifiers;
     private List<String> mSiteFlags;
 
     /**
@@ -74,7 +74,7 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
         return sb.toString();
     }
 
-    public IIdentifier getLocationRegistrationArea()
+    public Identifier getLocationRegistrationArea()
     {
         if(mLocationRegistrationArea == null)
         {
@@ -84,7 +84,7 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
         return mLocationRegistrationArea;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null)
         {
@@ -94,7 +94,7 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -104,7 +104,7 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
         return mSystem;
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -125,7 +125,7 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -139,9 +139,9 @@ public class NetworkStatusBroadcast extends OSPMessage implements FrequencyBandR
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }

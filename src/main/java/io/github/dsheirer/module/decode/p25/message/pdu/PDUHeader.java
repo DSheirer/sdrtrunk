@@ -22,9 +22,10 @@ package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25LogicalLinkId;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -48,7 +49,7 @@ public class PDUHeader implements IBitErrorProvider
 
     protected boolean mValid;
     private CorrectedBinaryMessage mMessage;
-    private IIdentifier mLLID;
+    private Identifier mLLID;
 
     /**
      * Constructs a PDU header.
@@ -146,11 +147,18 @@ public class PDUHeader implements IBitErrorProvider
     /**
      * Logical Link Identifier (ie TO radio identifier)
      */
-    public IIdentifier getLLID()
+    public Identifier getLLID()
     {
         if(mLLID == null)
         {
-            mLLID = APCO25LogicalLinkId.create(getMessage().getInt(LOGICAL_LINK_ID));
+            if(isOutbound())
+            {
+                mLLID = APCO25ToTalkgroup.createIndividual(getMessage().getInt(LOGICAL_LINK_ID));
+            }
+            else
+            {
+                mLLID = APCO25FromTalkgroup.createIndividual(getMessage().getInt(LOGICAL_LINK_ID));
+            }
         }
 
         return mLLID;
@@ -161,16 +169,7 @@ public class PDUHeader implements IBitErrorProvider
      */
     public int getBlocksToFollowCount()
     {
-        int blocksToFollow = getMessage().getInt(BLOCKS_TO_FOLLOW);
-
-        if(blocksToFollow <= 3)
-        {
-            return blocksToFollow;
-        }
-        else
-        {
-            return 0;
-        }
+        return getMessage().getInt(BLOCKS_TO_FOLLOW);
     }
 
     @Override
@@ -187,7 +186,7 @@ public class PDUHeader implements IBitErrorProvider
         sb.append(getFormat().getLabel());
         sb.append(isConfirmationRequired() ? " CONFIRMED" : " UNCONFIRMED");
         sb.append(" VENDOR:" + getVendor().getLabel());
-        sb.append(" LLID").append(getLLID());
+        sb.append(isOutbound() ? "TO" : "FROM").append(" LLID").append(getLLID());
 
         return sb.toString();
     }

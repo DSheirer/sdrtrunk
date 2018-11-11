@@ -19,9 +19,7 @@
 package io.github.dsheirer.module.decode.lj1200;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -47,10 +45,10 @@ public class LJ1200DecoderState extends DecoderState
 
     public LJ1200DecoderState(AliasList aliasList)
     {
-        super(aliasList);
-
-        mAddressAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
+//        super(aliasList);
+//
+//        mAddressAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
+//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
     }
 
     @Override
@@ -120,8 +118,9 @@ public class LJ1200DecoderState extends DecoderState
         }
     }
 
-    private void resetState()
+    protected void resetState()
     {
+        super.resetState();
         mAddressAttribute.reset();
     }
 

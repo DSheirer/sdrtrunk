@@ -32,7 +32,8 @@ import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
+import io.github.dsheirer.alias.id.talkgroup.LegacyTalkgroupID;
+import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.PROPERTY, property="type")
@@ -45,10 +46,11 @@ import io.github.dsheirer.alias.id.uniqueID.UniqueID;
     @JsonSubTypes.Type(value = Min.class, name = "min"),
     @JsonSubTypes.Type(value = MPT1327ID.class, name = "mpt1327ID"),
     @JsonSubTypes.Type(value = NonRecordable.class, name = "nonRecordable"),
+	@JsonSubTypes.Type(value = Talkgroup.class, name = "talkgroup"),
     @JsonSubTypes.Type(value = Priority.class, name = "priority"),
     @JsonSubTypes.Type(value = SiteID.class, name = "siteID"),
     @JsonSubTypes.Type(value = StatusID.class, name = "statusID"),
-    @JsonSubTypes.Type(value = TalkgroupID.class, name = "talkgroupID"),
+    @JsonSubTypes.Type(value = LegacyTalkgroupID.class, name = "talkgroupID"),
     @JsonSubTypes.Type(value = UniqueID.class, name = "uniqueID")
 })
 @JacksonXmlRootElement( localName = "id" )

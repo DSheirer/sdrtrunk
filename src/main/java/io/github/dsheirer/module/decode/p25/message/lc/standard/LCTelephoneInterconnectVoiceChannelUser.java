@@ -21,8 +21,8 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25AnyTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnyTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
@@ -42,8 +42,8 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
             65, 66, 67, 68, 69, 70, 71};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -91,7 +91,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
     /**
      * To/From radio identifier communicating with a landline
      */
-    public IIdentifier getAddress()
+    public Identifier getAddress()
     {
         if(mAddress == null)
         {
@@ -105,7 +105,7 @@ public class LCTelephoneInterconnectVoiceChannelUser extends LinkControlWord
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

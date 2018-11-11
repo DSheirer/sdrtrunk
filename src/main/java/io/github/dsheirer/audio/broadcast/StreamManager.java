@@ -117,11 +117,11 @@ public class StreamManager implements Listener<ReusableAudioPacket>
     @Override
     public void receive(ReusableAudioPacket audioPacket)
     {
-        if(mRunning.get() && audioPacket.hasMetadata())
+        if(mRunning.get() && audioPacket.hasIdentifierCollection())
         {
             synchronized(mStreamRecorders)
             {
-                int channelMetadataID = audioPacket.getMetadata().getMetadataID();
+                int channelMetadataID = audioPacket.getAudioChannelId();
 
                 ReusableAudioPacket.Type type = audioPacket.getType();
 
@@ -139,8 +139,7 @@ public class StreamManager implements Listener<ReusableAudioPacket>
                     }
                     else
                     {
-                        AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(),
-                            mBroadcastFormat);
+                        AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(), mBroadcastFormat);
                         recorder.start();
                         audioPacket.incrementUserCount();
                         recorder.receive(audioPacket);
@@ -181,7 +180,7 @@ public class StreamManager implements Listener<ReusableAudioPacket>
                 public void receive(AudioRecorder audioRecorder)
                 {
                     AudioRecording audioRecording =
-                        new AudioRecording(audioRecorder.getPath(), audioRecorder.getMetadata(),
+                        new AudioRecording(audioRecorder.getPath(), audioRecorder.getIdentifierCollection(),
                             audioRecorder.getTimeRecordingStart(), audioRecorder.getRecordingLength());
 
                     if(mAudioRecordingListener != null)

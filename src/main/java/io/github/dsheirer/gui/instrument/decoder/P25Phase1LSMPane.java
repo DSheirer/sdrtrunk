@@ -44,7 +44,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     private DoubleLineChart mPLLFrequencyLineChart;
     private SamplesPerSymbolChart mSamplesPerSymbolLineChart;
     private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
-    private P25DecoderLSMInstrumented mDecoder = new P25DecoderLSMInstrumented(null);
+    private P25DecoderLSMInstrumented mDecoder = new P25DecoderLSMInstrumented();
 
     public P25Phase1LSMPane()
     {

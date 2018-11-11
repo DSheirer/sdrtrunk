@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
@@ -24,6 +23,7 @@ import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 
@@ -38,7 +38,7 @@ public class P25DecoderLSM extends P25Decoder
     private ComplexFIRFilter2 mBasebandFilter;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
-    protected P25MessageFramer mMessageFramer;
+    protected P25MessageFramer2 mMessageFramer;
     protected CostasLoop mCostasLoop;
     protected AdaptivePLLGainMonitor mPLLGainMonitor;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
@@ -46,12 +46,10 @@ public class P25DecoderLSM extends P25Decoder
     /**
      * P25 Phase 1 - linear simulcast modulation (LSM) decoder.  Uses Differential QPSK decoding with a Costas PLL and
      * a gardner timing error detector.
-     *
-     * @param aliasList
      */
-    public P25DecoderLSM(AliasList aliasList)
+    public P25DecoderLSM()
     {
-        super(4800.0, aliasList);
+        super(4800.0);
         setSampleRate(25000.0);
     }
 
@@ -78,10 +76,10 @@ public class P25DecoderLSM extends P25Decoder
         if(mMessageFramer != null)
         {
             getDibitBroadcaster().removeListener(mMessageFramer);
-            mMessageFramer.dispose();
         }
 
-        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
+        mMessageFramer = new P25MessageFramer2(mCostasLoop, DecoderType.P25_PHASE1.getBitRate());
+        mMessageFramer.setSyncDetectListener(mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
         mQPSKDemodulator.setSymbolListener(getDibitBroadcaster());
@@ -163,7 +161,6 @@ public class P25DecoderLSM extends P25Decoder
         mQPSKDemodulator.dispose();
         mQPSKDemodulator = null;
 
-        mMessageFramer.dispose();
         mMessageFramer = null;
     }
 

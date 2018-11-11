@@ -1,8 +1,8 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.ExtendedFunction;
@@ -23,8 +23,8 @@ public class ExtendedFunctionResponse extends ISPMessage
 
     private ExtendedFunction mExtendedFunction;
     private String mArguments;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -64,7 +64,7 @@ public class ExtendedFunctionResponse extends ISPMessage
         return mArguments;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -75,7 +75,7 @@ public class ExtendedFunctionResponse extends ISPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

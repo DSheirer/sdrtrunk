@@ -21,10 +21,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.status.APCO25Status;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25Status;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -43,11 +43,11 @@ public class StatusUpdate extends OSPMessage
     private static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
         74, 75, 76, 77, 78, 79};
 
-    private IIdentifier mUnitStatus;
-    private IIdentifier mUserStatus;
-    private IIdentifier mTargetAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mUnitStatus;
+    private Identifier mUserStatus;
+    private Identifier mTargetAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -68,7 +68,7 @@ public class StatusUpdate extends OSPMessage
         return sb.toString();
     }
 
-    public IIdentifier getUnitStatus()
+    public Identifier getUnitStatus()
     {
         if(mUnitStatus == null)
         {
@@ -78,7 +78,7 @@ public class StatusUpdate extends OSPMessage
         return mUnitStatus;
     }
 
-    public IIdentifier getUserStatus()
+    public Identifier getUserStatus()
     {
         if(mUserStatus == null)
         {
@@ -88,7 +88,7 @@ public class StatusUpdate extends OSPMessage
         return mUserStatus;
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -98,7 +98,7 @@ public class StatusUpdate extends OSPMessage
         return mTargetAddress;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -109,7 +109,7 @@ public class StatusUpdate extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

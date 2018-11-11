@@ -21,16 +21,22 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.packet;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.PacketMessageFactory;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.message.pdu.block.ConfirmedDataBlock;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.DataBlock;
 import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacketHeader;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.module.decode.p25.reference.IPHeaderCompression;
+import io.github.dsheirer.module.decode.p25.reference.UDPHeaderCompression;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,6 +45,8 @@ import java.util.List;
  */
 public class PacketMessage extends P25Message
 {
+    private final static Logger mLog = LoggerFactory.getLogger(PacketMessage.class);
+
     private PDUSequence mPDUSequence;
     private BinaryMessage mPayload;
     private BinaryMessage mPacketMessage;
@@ -73,8 +81,16 @@ public class PacketMessage extends P25Message
         {
             if(getPDUSequence().isComplete() && getHeader().getDataHeaderOffset() == 2)
             {
-                BinaryMessage message = getPDUSequence().getDataBlocks().get(0).getMessage().getSubMessage(0, 16);
-                mSNDCPPacketHeader = new SNDCPPacketHeader(message, getHeader().isOutbound());
+                if(getPDUSequence().getDataBlocks().size() >= 1)
+                {
+                    BinaryMessage message = getPDUSequence().getDataBlocks().get(0).getMessage().getSubMessage(0, 16);
+                    mSNDCPPacketHeader = new SNDCPPacketHeader(message, getHeader().isOutbound());
+                }
+                else
+                {
+                    mLog.debug("***************** 2 byte SNDCP header with no data blocks header: " + getPDUSequence().getHeader().getMessage().toHexString());
+                    mSNDCPPacketHeader = new SNDCPPacketHeader(getHeader().isOutbound());
+                }
             }
             else
             {
@@ -98,14 +114,33 @@ public class PacketMessage extends P25Message
         if(getPacket() instanceof IPV4Packet)
         {
             sb.append(" LLID:").append(getHeader().getLLID());
-            sb.append(" NSAPI:").append(getSNDCPPacketHeader().getNSAPI());
+
+            SNDCPPacketHeader sndcpPacketHeader = getSNDCPPacketHeader();
+            sb.append(" NSAPI:").append(sndcpPacketHeader.getNSAPI());
+
+            if(sndcpPacketHeader.getIPHeaderCompression() != IPHeaderCompression.NONE)
+            {
+                sb.append("IP HEADER COMPRESSION:").append(sndcpPacketHeader.getIPHeaderCompression());
+            }
+            if(sndcpPacketHeader.getUDPHeaderCompression() != UDPHeaderCompression.NONE)
+            {
+                sb.append("UDP HEADER COMPRESSION:").append(sndcpPacketHeader.getUDPHeaderCompression());
+            }
+
             sb.append(" ").append(getPacket());
         }
         else
         {
             sb.append(" ").append(getPDUSequence().getHeader().toString());
 
-            sb.append(" DATA BLOCKS:").append(getPDUSequence().getDataBlocks().size());
+            if(getHeader().isConfirmationRequired())
+            {
+                sb.append(" DATA BLOCKS ").append(getDataBlockSequenceNumbers());
+            }
+            else
+            {
+                sb.append(" DATA BLOCKS:").append(getPDUSequence().getDataBlocks().size());
+            }
 
             if(!getPDUSequence().getDataBlocks().isEmpty())
             {
@@ -121,6 +156,26 @@ public class PacketMessage extends P25Message
             sb.append(" ").append(getPacket());
         }
         return sb.toString();
+    }
+
+    public List<Integer> getDataBlockSequenceNumbers()
+    {
+        List<Integer> numbers = new ArrayList<>();
+
+        for(DataBlock dataBlock: getPDUSequence().getDataBlocks())
+        {
+            if(dataBlock instanceof ConfirmedDataBlock)
+            {
+                int sequenceNumber = ((ConfirmedDataBlock)dataBlock).getSequenceNumber();
+
+                if(sequenceNumber != -1)
+                {
+                    numbers.add(sequenceNumber);
+                }
+            }
+        }
+
+        return numbers;
     }
 
     public IPacket getPacket()
@@ -205,7 +260,7 @@ public class PacketMessage extends P25Message
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

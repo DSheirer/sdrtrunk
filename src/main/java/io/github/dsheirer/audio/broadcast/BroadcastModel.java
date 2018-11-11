@@ -18,8 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
@@ -72,13 +73,15 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
     private IconManager mIconManager;
     private StreamManager mStreamManager;
+    private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(IconManager iconManager)
+    public BroadcastModel(AliasModel aliasModel, IconManager iconManager)
     {
+        mAliasModel = aliasModel;
         mIconManager = iconManager;
         mStreamManager = new StreamManager(new CompletedRecordingListener(), BroadcastFormat.MP3,
             SystemProperties.getInstance().getApplicationFolder(TEMPORARY_STREAM_DIRECTORY));
@@ -278,9 +281,9 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     @Override
     public void receive(ReusableAudioPacket audioPacket)
     {
-        if(audioPacket.hasMetadata() && audioPacket.getMetadata().isStreamable())
+        if(audioPacket.isStreamable())
         {
-            for(BroadcastChannel channel: audioPacket.getMetadata().getBroadcastChannels())
+            for(BroadcastChannel channel: audioPacket.getBroadcastChannels())
             {
                 if(mBroadcasterMap.containsKey(channel.getChannelName()))
                 {
@@ -302,7 +305,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
         if(broadcastConfiguration != null && broadcastConfiguration.isEnabled() && broadcastConfiguration.isValid() &&
             !mBroadcasterMap.containsKey(broadcastConfiguration.getName()))
         {
-            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration);
+            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration, mAliasModel);
 
             if(audioBroadcaster != null)
             {
@@ -706,22 +709,25 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
         @Override
         public void receive(AudioRecording audioRecording)
         {
-            Metadata metadata = audioRecording.getMetadata();
-
-            if(metadata != null && metadata.isStreamable())
+            if(audioRecording != null && audioRecording.hasIdentifierCollection())
             {
-                for(BroadcastChannel broadcastChannel : metadata.getBroadcastChannels())
+                AliasList aliasList = mAliasModel.getAliasList(audioRecording.getIdentifierCollection());
+
+                if(aliasList != null)
                 {
-                    String channelName = broadcastChannel.getChannelName();
-
-                    if(channelName != null)
+                    for(BroadcastChannel broadcastChannel : aliasList.getBroadcastChannels(audioRecording.getIdentifierCollection()))
                     {
-                        AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
+                        String channelName = broadcastChannel.getChannelName();
 
-                        if(audioBroadcaster != null)
+                        if(channelName != null)
                         {
-                            audioRecording.addPendingReplay();
-                            audioBroadcaster.receive(audioRecording);
+                            AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
+
+                            if(audioBroadcaster != null)
+                            {
+                                audioRecording.addPendingReplay();
+                                audioBroadcaster.receive(audioRecording);
+                            }
                         }
                     }
                 }

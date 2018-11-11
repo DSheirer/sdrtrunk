@@ -115,6 +115,7 @@ public abstract class AbstractReusableBuffer
 
         if(mUserCount.get() < 0)
         {
+            mUserCount.set(0);
             throw new IllegalStateException("User count is below zero.  This indicates that this buffer's decrement" +
                 " user count was invoked by more than the expected user count");
         }

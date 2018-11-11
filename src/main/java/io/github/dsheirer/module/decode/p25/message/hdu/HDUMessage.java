@@ -19,7 +19,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Golay18;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import org.slf4j.Logger;
@@ -207,7 +207,7 @@ public class HDUMessage extends P25Message
         return sb.toString();
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return getHeaderData().getIdentifiers();
     }

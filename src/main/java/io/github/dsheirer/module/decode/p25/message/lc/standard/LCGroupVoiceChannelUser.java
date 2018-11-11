@@ -21,9 +21,9 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
@@ -41,9 +41,9 @@ public class LCGroupVoiceChannelUser extends LinkControlWord
             65, 66, 67, 68, 69, 70, 71};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mGroupAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mGroupAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -81,7 +81,7 @@ public class LCGroupVoiceChannelUser extends LinkControlWord
     /**
      * Talkgroup address
      */
-    public IIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
@@ -94,7 +94,7 @@ public class LCGroupVoiceChannelUser extends LinkControlWord
     /**
      * Source address
      */
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -108,7 +108,7 @@ public class LCGroupVoiceChannelUser extends LinkControlWord
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

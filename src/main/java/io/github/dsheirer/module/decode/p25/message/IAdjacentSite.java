@@ -1,7 +1,7 @@
 package io.github.dsheirer.module.decode.p25.message;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
 
 /**
  * Interface for adjacent site (ie neighbor) messages
@@ -10,15 +10,15 @@ public interface IAdjacentSite
 {
     String getUniqueID();
 
-    IIdentifier getRFSSId();
+    Identifier getRFSSId();
 
-    IIdentifier getSystemID();
+    Identifier getSystemID();
 
-    IIdentifier getSiteID();
+    Identifier getSiteID();
 
-    IIdentifier getLRAId();
+    Identifier getLRAId();
 
     String getSystemServiceClass();
 
-    IAPCO25Channel getChannel();
+    IChannelDescriptor getChannel();
 }

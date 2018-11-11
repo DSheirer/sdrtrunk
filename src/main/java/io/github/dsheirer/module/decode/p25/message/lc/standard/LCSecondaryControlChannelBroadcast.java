@@ -21,12 +21,12 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
-import io.github.dsheirer.identifier.integer.node.APCO25Site;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
@@ -36,7 +36,7 @@ import java.util.List;
 /**
  * Secondary control channel broadcast information.
  */
-public class LCSecondaryControlChannelBroadcast extends LinkControlWord implements FrequencyBandReceiver
+public class LCSecondaryControlChannelBroadcast extends LinkControlWord implements IFrequencyBandReceiver
 {
     private static final int[] RFSS = {8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] SITE = {16, 17, 18, 19, 20, 21, 22, 23};
@@ -47,11 +47,11 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     private static final int[] CHANNEL_NUMBER_B = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] SERVICE_CLASS_B = {64, 65, 66, 67, 68, 69, 70, 71};
 
-    private List<IIdentifier> mIdentifiers;
-    private IIdentifier mRFSS;
-    private IIdentifier mSite;
-    private IAPCO25Channel mChannelA;
-    private IAPCO25Channel mChannelB;
+    private List<Identifier> mIdentifiers;
+    private Identifier mRFSS;
+    private Identifier mSite;
+    private IChannelDescriptor mChannelA;
+    private IChannelDescriptor mChannelB;
     private ServiceOptions mServiceOptionsA;
     private ServiceOptions mServiceOptionsB;
 
@@ -81,7 +81,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         return sb.toString();
     }
 
-    public IIdentifier getRFSS()
+    public Identifier getRFSS()
     {
         if(mRFSS == null)
         {
@@ -91,7 +91,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         return mRFSS;
     }
 
-    public IIdentifier getSite()
+    public Identifier getSite()
     {
         if(mSite == null)
         {
@@ -101,7 +101,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         return mSite;
     }
 
-    public IAPCO25Channel getChannelA()
+    public IChannelDescriptor getChannelA()
     {
         if(mChannelA == null)
         {
@@ -118,7 +118,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
             getMessage().getInt(SERVICE_CLASS_B) != 0;
     }
 
-    public IAPCO25Channel getChannelB()
+    public IChannelDescriptor getChannelB()
     {
         if(mChannelB == null)
         {
@@ -155,7 +155,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -168,9 +168,9 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
         if(hasChannelB())
         {

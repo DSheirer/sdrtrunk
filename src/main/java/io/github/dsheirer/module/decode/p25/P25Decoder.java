@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.Decoder;
@@ -37,15 +36,13 @@ public abstract class P25Decoder extends Decoder implements ISourceEventListener
     private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
     private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
     private P25MessageProcessor mMessageProcessor;
-    private AliasList mAliasList;
     private Listener<SourceEvent> mSourceEventListener;
     private double mSymbolRate;
 
-    public P25Decoder(double symbolRate, AliasList aliasList)
+    public P25Decoder(double symbolRate)
     {
         mSymbolRate = symbolRate;
-        mAliasList = aliasList;
-        mMessageProcessor = new P25MessageProcessor(mAliasList);
+        mMessageProcessor = new P25MessageProcessor();
         mMessageProcessor.setMessageListener(getMessageListener());
         mDibitBroadcaster.addListener(mByteBufferAssembler);
     }
@@ -88,11 +85,6 @@ public abstract class P25Decoder extends Decoder implements ISourceEventListener
     protected double getSymbolRate()
     {
         return mSymbolRate;
-    }
-
-    protected AliasList getAliasList()
-    {
-        return mAliasList;
     }
 
     /**

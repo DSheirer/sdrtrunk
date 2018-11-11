@@ -1,11 +1,11 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Telephone interconnect voice call channel grant.
  */
-public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implements FrequencyBandReceiver
+public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implements IFrequencyBandReceiver
 {
     private static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] FREQUENCY_BAND = {24, 25, 26, 27};
@@ -26,9 +26,9 @@ public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implement
             74, 75, 76, 77, 78, 79};
 
     private ServiceOptions mServiceOptions;
-    private IAPCO25Channel mChannel;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private IChannelDescriptor mChannel;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -70,7 +70,7 @@ public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implement
         return getMessage().getInt(CALL_TIMER) * 100l; //Convert from 100ms units to milliseconds
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -80,7 +80,7 @@ public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implement
         return mChannel;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -91,7 +91,7 @@ public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implement
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -103,9 +103,9 @@ public class TelephoneInterconnectVoiceChannelGrant extends OSPMessage implement
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }

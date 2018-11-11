@@ -1,10 +1,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25AnnouncementTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnnouncementTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Response;
@@ -27,10 +27,10 @@ public class GroupAffiliationResponse extends OSPMessage
             74, 75, 76, 77, 78, 79};
 
     private Response mAffiliationResponse;
-    private IIdentifier mAnnouncementGroupAddress;
-    private IIdentifier mGroupAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mAnnouncementGroupAddress;
+    private Identifier mGroupAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -67,7 +67,7 @@ public class GroupAffiliationResponse extends OSPMessage
         return mAffiliationResponse;
     }
 
-    public IIdentifier getAnnouncementGroupAddress()
+    public Identifier getAnnouncementGroupAddress()
     {
         if(mAnnouncementGroupAddress == null)
         {
@@ -77,7 +77,7 @@ public class GroupAffiliationResponse extends OSPMessage
         return mAnnouncementGroupAddress;
     }
 
-    public IIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
@@ -87,7 +87,7 @@ public class GroupAffiliationResponse extends OSPMessage
         return mGroupAddress;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -98,7 +98,7 @@ public class GroupAffiliationResponse extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

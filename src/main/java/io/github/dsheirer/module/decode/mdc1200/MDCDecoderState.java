@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,22 +15,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.mdc1200;
 
-import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.util.StringUtils;
 
@@ -47,10 +43,10 @@ public class MDCDecoderState extends DecoderState
 
     public MDCDecoderState(AliasList aliasList)
     {
-        super(aliasList);
-
-        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MDC1200);
+//        super(aliasList);
+//
+//        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+//            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MDC1200);
     }
 
     @Override
@@ -86,8 +82,9 @@ public class MDCDecoderState extends DecoderState
 
     }
 
-    private void resetState()
+    protected void resetState()
     {
+        super.resetState();
         mFromAttribute.reset();
         mMessage = null;
         mMessageType = null;
@@ -131,7 +128,7 @@ public class MDCDecoderState extends DecoderState
             setMessage(sb.toString());
 
             MDCCallEvent event = MDCCallEvent.getMDCCallEvent(mdc);
-            event.setAliasList(getAliasList());
+//            event.setAliasList(getAliasList());
             broadcast(event);
 
             switch(type)
@@ -161,7 +158,7 @@ public class MDCDecoderState extends DecoderState
         if(!StringUtils.isEqual(mMessage, message))
         {
             mMessage = message;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
         }
     }
 
@@ -175,7 +172,7 @@ public class MDCDecoderState extends DecoderState
         if(!StringUtils.isEqual(mMessageType, type))
         {
             mMessageType = type;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, "MDC:" + mMessageType));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, "MDC:" + mMessageType));
         }
     }
 
@@ -204,15 +201,15 @@ public class MDCDecoderState extends DecoderState
                 sb.append(ident);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getMDC1200Alias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getMDC1200Alias(ident);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -236,15 +233,15 @@ public class MDCDecoderState extends DecoderState
                 sb.append(ident);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getMDC1200Alias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getMDC1200Alias(ident);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }

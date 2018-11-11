@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
@@ -35,12 +34,9 @@ public class P25DecoderC4FMInstrumented extends P25DecoderC4FM
     /**
      * Instrumented version of the P25 C4FM decoder that supports registering listeners to provide access to data as
      * it is being processed by the decoder.
-     *
-     * @param aliasList
      */
-    public P25DecoderC4FMInstrumented(AliasList aliasList)
+    public P25DecoderC4FMInstrumented()
     {
-        super(aliasList);
     }
 
     /**

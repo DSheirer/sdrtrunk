@@ -21,7 +21,7 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -91,7 +91,7 @@ public class DeActivateTdsContextRequest extends SNDCPMessage
         return Collections.EMPTY_LIST;
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

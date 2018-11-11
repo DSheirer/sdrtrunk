@@ -1,9 +1,9 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.AnswerResponse;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -25,9 +25,9 @@ public class UnitToUnitVoiceServiceAnswerResponse extends ISPMessage
             74, 75, 76, 77, 78, 79};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mTargetAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mTargetAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -69,7 +69,7 @@ public class UnitToUnitVoiceServiceAnswerResponse extends ISPMessage
         return AnswerResponse.fromValue(getMessage().getInt(ANSWER_RESPONSE));
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -79,7 +79,7 @@ public class UnitToUnitVoiceServiceAnswerResponse extends ISPMessage
         return mTargetAddress;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -90,7 +90,7 @@ public class UnitToUnitVoiceServiceAnswerResponse extends ISPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

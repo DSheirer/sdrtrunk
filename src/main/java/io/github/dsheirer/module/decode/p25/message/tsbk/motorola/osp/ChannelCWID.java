@@ -20,10 +20,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ChannelCWID extends OSPMessage implements FrequencyBandReceiver
+public class ChannelCWID extends OSPMessage implements IFrequencyBandReceiver
 {
     public static final int[] CHARACTER_1 = {16, 17, 18, 19, 20, 21};
     public static final int[] CHARACTER_2 = {22, 23, 24, 25, 26, 27};
@@ -45,7 +45,7 @@ public class ChannelCWID extends OSPMessage implements FrequencyBandReceiver
     public static final int[] CHANNEL_NUMBER = {68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
     private String mCWID;
-    private IAPCO25Channel mChannel;
+    private IChannelDescriptor mChannel;
 
     public ChannelCWID(DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timestamp)
     {
@@ -110,7 +110,7 @@ public class ChannelCWID extends OSPMessage implements FrequencyBandReceiver
         return "";
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -122,15 +122,15 @@ public class ChannelCWID extends OSPMessage implements FrequencyBandReceiver
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

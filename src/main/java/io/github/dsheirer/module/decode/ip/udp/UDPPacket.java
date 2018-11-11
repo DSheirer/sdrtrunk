@@ -79,7 +79,8 @@ public class UDPPacket extends Packet
         }
         else
         {
-            mPayload = new UnknownPacket(getMessage(), getOffset());
+            //Set the offset to the message offset plus 64 bits for UDP header
+            mPayload = new UnknownPacket(getMessage(), getOffset() + 64);
         }
 
         return mPayload;

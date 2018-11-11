@@ -21,9 +21,11 @@
 package io.github.dsheirer.module.decode.p25.message.lc.motorola;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25PatchGroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
 import java.util.ArrayList;
@@ -38,8 +40,8 @@ public class LCMotorolaPatchGroupVoiceChannelUser extends MotorolaLinkControlWor
 
     private ServiceOptions mServiceOptions;
     private APCO25PatchGroup mGroupAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     public LCMotorolaPatchGroupVoiceChannelUser(BinaryMessage message)
     {
@@ -78,7 +80,8 @@ public class LCMotorolaPatchGroupVoiceChannelUser extends MotorolaLinkControlWor
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25PatchGroup.create(getMessage().getInt(PATCH_GROUP_ADDRESS));
+            PatchGroup patchGroup = new PatchGroup(APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP_ADDRESS)));
+            mGroupAddress = APCO25PatchGroup.create(patchGroup);
         }
 
         return mGroupAddress;
@@ -87,7 +90,7 @@ public class LCMotorolaPatchGroupVoiceChannelUser extends MotorolaLinkControlWor
     /**
      * Source address
      */
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -101,7 +104,7 @@ public class LCMotorolaPatchGroupVoiceChannelUser extends MotorolaLinkControlWor
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

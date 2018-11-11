@@ -21,7 +21,7 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.reference.RejectReason;
 
 import java.util.Collections;
@@ -70,7 +70,7 @@ public class ActivateTdsContextReject extends SNDCPMessage
         return RejectReason.fromValue(getMessage().getInt(REJECT_REASON));
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

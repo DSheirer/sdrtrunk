@@ -21,10 +21,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.StackOperation;
@@ -44,10 +44,10 @@ public class RoamingAddressCommand extends ISPMessage
         74, 75, 76, 77, 78, 79};
 
     private StackOperation mStackOperation;
-    private IIdentifier mWACN;
-    private IIdentifier mSystem;
-    private IIdentifier mTargetId;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWACN;
+    private Identifier mSystem;
+    private Identifier mTargetId;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -78,7 +78,7 @@ public class RoamingAddressCommand extends ISPMessage
         return mStackOperation;
     }
 
-    public IIdentifier getWACN()
+    public Identifier getWACN()
     {
         if(mWACN == null)
         {
@@ -88,7 +88,7 @@ public class RoamingAddressCommand extends ISPMessage
         return mWACN;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -98,7 +98,7 @@ public class RoamingAddressCommand extends ISPMessage
         return mSystem;
     }
 
-    public IIdentifier getTargetId()
+    public Identifier getTargetId()
     {
         if(mTargetId == null)
         {
@@ -109,7 +109,7 @@ public class RoamingAddressCommand extends ISPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

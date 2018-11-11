@@ -20,12 +20,15 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -33,7 +36,7 @@ import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PatchGroupVoiceChannelGrant extends OSPMessage implements FrequencyBandReceiver
+public class PatchGroupVoiceChannelGrant extends OSPMessage implements IFrequencyBandReceiver
 {
     public static final int[] SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
     public static final int[] FREQUENCY_BAND = {24, 25, 26, 27};
@@ -43,10 +46,10 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements Frequency
         74, 75, 76, 77, 78, 79};
 
     private ServiceOptions mServiceOptions;
-    private IAPCO25Channel mChannel;
-    private IIdentifier mSourceAddress;
-    private IIdentifier mPatchGroupAddress;
-    private List<IIdentifier> mIdentifiers;
+    private IChannelDescriptor mChannel;
+    private Identifier mSourceAddress;
+    private PatchGroupIdentifier mPatchGroup;
+    private List<Identifier> mIdentifiers;
 
     public PatchGroupVoiceChannelGrant(DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timestlot)
     {
@@ -59,7 +62,7 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements Frequency
         StringBuilder sb = new StringBuilder();
 
         sb.append(getMessageStub());
-        sb.append(" PATCH GROUP:").append(getPatchGroupAddress());
+        sb.append(" PATCH GROUP:").append(getPatchGroup());
         sb.append(" FROM:").append(getSourceAddress());
         sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
 
@@ -76,17 +79,17 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements Frequency
         return mServiceOptions;
     }
 
-    public IIdentifier getPatchGroupAddress()
+    public PatchGroupIdentifier getPatchGroup()
     {
-        if(mPatchGroupAddress == null)
+        if(mPatchGroup == null)
         {
-            mPatchGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP_ADDRESS));
+            mPatchGroup = APCO25PatchGroup.create(new PatchGroup(APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP_ADDRESS))));
         }
 
-        return mPatchGroupAddress;
+        return mPatchGroup;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -96,7 +99,7 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements Frequency
         return mSourceAddress;
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -107,20 +110,20 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements Frequency
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getPatchGroupAddress());
+            mIdentifiers.add(getPatchGroup());
             mIdentifiers.add(getSourceAddress());
         }
 

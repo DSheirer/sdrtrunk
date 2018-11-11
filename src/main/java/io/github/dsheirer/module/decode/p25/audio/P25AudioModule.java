@@ -15,15 +15,12 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.audio;
 
+import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.audio.IAudioPacketProvider;
-import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.SquelchState;
-import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
-import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
@@ -36,11 +33,9 @@ import jmbe.iface.AudioConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class P25AudioModule extends Module implements Listener<IMessage>, IAudioPacketProvider, IMessageListener,
-        ISquelchStateListener
+public class P25AudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25AudioModule.class);
-
+    private static final Logger mLog = LoggerFactory.getLogger(P25AudioModule.class);
     private static final String IMBE_CODEC = "IMBE";
     private static boolean mLibraryLoadStatusLogged = false;
 
@@ -49,16 +44,13 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
     private boolean mEncryptedCallStateEstablished = false;
 
     private AudioConverter mAudioConverter;
-    private Listener<ReusableAudioPacket> mAudioPacketListener;
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-    private Metadata mMetadata;
     private LDU1Message mCachedLDU1Message = null;
     private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("P25AudioModule");
 
-    public P25AudioModule(Metadata metadata)
+    public P25AudioModule()
     {
-        mMetadata = metadata;
         loadConverter();
     }
 
@@ -83,6 +75,7 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
     @Override
     public void reset()
     {
+        getIdentifierCollection().clear();
     }
 
     @Override
@@ -94,7 +87,15 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
     @Override
     public void stop()
     {
-
+        if(hasAudioPacketListener())
+        {
+            ReusableAudioPacket endAudioPacket = mAudioPacketQueue.getEndAudioBuffer();
+            endAudioPacket.resetAttributes();
+            endAudioPacket.setAudioChannelId(getAudioChannelId());
+            endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
+            endAudioPacket.incrementUserCount();
+            getAudioPacketListener().receive(endAudioPacket);
+        }
     }
 
     /**
@@ -106,7 +107,7 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
      */
     public void receive(IMessage message)
     {
-        if(mCanConvertAudio && mAudioPacketListener != null)
+        if(mCanConvertAudio && hasAudioPacketListener())
         {
             if(mEncryptedCallStateEstablished)
             {
@@ -124,7 +125,7 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
                 }
                 else if(message instanceof LDU1Message)
                 {
-                    //When we receive an LDU1 message with first receiving the HDU message, cache the LDU1 Message
+                    //When we receive an LDU1 message without first receiving the HDU message, cache the LDU1 Message
                     //until we can determine the encrypted call state from the next LDU2 message
                     mCachedLDU1Message = (LDU1Message) message;
                 }
@@ -160,10 +161,12 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
                 audio = mGain.apply(audio);
 
                 ReusableAudioPacket audioPacket = mAudioPacketQueue.getBuffer(audio.length);
-                audioPacket.setMetadata(mMetadata.copyOf());
+                audioPacket.resetAttributes();
+                audioPacket.setAudioChannelId(getAudioChannelId());
+                audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
                 audioPacket.loadAudioFrom(audio);
 
-                mAudioPacketListener.receive(audioPacket);
+                getAudioPacketListener().receive(audioPacket);
             }
         }
         else
@@ -250,18 +253,6 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
         }
     }
 
-    @Override
-    public void setAudioPacketListener(Listener<ReusableAudioPacket> listener)
-    {
-        mAudioPacketListener = listener;
-    }
-
-    @Override
-    public void removeAudioPacketListener()
-    {
-        mAudioPacketListener = null;
-    }
-
     /**
      * Wrapper for squelch state to process end of call actions.  At call end the encrypted call state established
      * flag is reset so that the encrypted audio state for the next call can be properly detected and we send an
@@ -274,12 +265,14 @@ public class P25AudioModule extends Module implements Listener<IMessage>, IAudio
         {
             if(state == SquelchState.SQUELCH)
             {
-                if(mAudioPacketListener != null)
+                if(hasAudioPacketListener())
                 {
                     ReusableAudioPacket endAudioPacket = mAudioPacketQueue.getEndAudioBuffer();
-                    endAudioPacket.setMetadata(mMetadata.copyOf());
+                    endAudioPacket.resetAttributes();
+                    endAudioPacket.setAudioChannelId(getAudioChannelId());
+                    endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
                     endAudioPacket.incrementUserCount();
-                    mAudioPacketListener.receive(endAudioPacket);
+                    getAudioPacketListener().receive(endAudioPacket);
                 }
 
                 mEncryptedCallStateEstablished = false;

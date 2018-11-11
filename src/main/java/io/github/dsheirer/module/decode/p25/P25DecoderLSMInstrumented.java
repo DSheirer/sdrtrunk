@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
@@ -37,12 +36,9 @@ public class P25DecoderLSMInstrumented extends P25DecoderLSM
      * a gardner timing error detector.
      *
      * Instrumented decoder instance.
-     *
-     * @param aliasList
      */
-    public P25DecoderLSMInstrumented(AliasList aliasList)
+    public P25DecoderLSMInstrumented()
     {
-        super(aliasList);
     }
 
     /**

@@ -17,7 +17,6 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.invert;
 
-import io.github.dsheirer.audio.InversionFrequency;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.FloatFIRFilter;
 import io.github.dsheirer.dsp.mixer.IOscillator;

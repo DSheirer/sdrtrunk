@@ -18,16 +18,12 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioModule;
-import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.channel.traffic.TrafficChannelManager;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.AllPassFilter;
@@ -110,34 +106,17 @@ public class DecoderFactory
      *
      * @return list of configured decoders
      */
-    public static List<Module> getModules(ChannelModel channelModel,
-                                          ChannelMapModel channelMapModel,
-                                          ChannelProcessingManager channelProcessingManager,
-                                          AliasModel aliasModel,
-                                          Channel channel,
-                                          Metadata metadata)
+    public static List<Module> getModules(ChannelModel channelModel, ChannelMapModel channelMapModel, Channel channel)
     {
-
-        /* Get the optional alias list for the decode modules to use */
-        AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
-
-        List<Module> modules = getPrimaryModules(channelModel, channelMapModel, channelProcessingManager, aliasList,
-                channel, metadata);
-
-        modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration(), aliasList));
-
+        List<Module> modules = getPrimaryModules(channelModel, channelMapModel, channel);
+        modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
 
     /**
      * Constructs a primary decoder as specified in the decode configuration
      */
-    public static List<Module> getPrimaryModules(ChannelModel channelModel,
-                                                 ChannelMapModel channelMapModel,
-                                                 ChannelProcessingManager channelProcessingManager,
-                                                 AliasList aliasList,
-                                                 Channel channel,
-                                                 Metadata metadata)
+    public static List<Module> getPrimaryModules(ChannelModel channelModel, ChannelMapModel channelMapModel, Channel channel)
     {
         List<Module> modules = new ArrayList<Module>();
 
@@ -151,7 +130,7 @@ public class DecoderFactory
             case AM:
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -160,38 +139,38 @@ public class DecoderFactory
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
                 break;
             case LTR_STANDARD:
-                MessageDirection direction = ((DecodeConfigLTRStandard) decodeConfig).getMessageDirection();
-                modules.add(new LTRStandardDecoder(aliasList, direction));
-                modules.add(new LTRStandardDecoderState(aliasList));
-                modules.add(new AudioModule(metadata));
+                MessageDirection direction = ((DecodeConfigLTRStandard)decodeConfig).getMessageDirection();
+                modules.add(new LTRStandardDecoder(null, direction));
+                modules.add(new LTRStandardDecoderState(null));
+                modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
                 break;
             case LTR_NET:
-                modules.add(new LTRNetDecoder((DecodeConfigLTRNet) decodeConfig, aliasList));
-                modules.add(new LTRNetDecoderState(aliasList));
-                modules.add(new AudioModule(metadata));
+                modules.add(new LTRNetDecoder((DecodeConfigLTRNet)decodeConfig, null));
+                modules.add(new LTRNetDecoderState(null));
+                modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
                 break;
             case MPT1327:
-                DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327) decodeConfig;
+                DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)decodeConfig;
                 ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
                 Sync sync = mptConfig.getSync();
-                modules.add(new MPT1327Decoder(aliasList, sync));
-                modules.add(new MPT1327DecoderState(aliasList, channelMap, channelType, mptConfig.getCallTimeout() * 1000));
-                modules.add(new AudioModule(metadata));
+                modules.add(new MPT1327Decoder(null, sync));
+                modules.add(new MPT1327DecoderState(null, channelMap, channelType, mptConfig.getCallTimeout() * 1000));
+                modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -200,34 +179,33 @@ public class DecoderFactory
                 if(channelType == ChannelType.STANDARD)
                 {
                     modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-                            channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                            (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
+                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
+                        null, mptConfig.getTrafficChannelPoolSize()));
                 }
                 break;
             case PASSPORT:
-                modules.add(new PassportDecoder(decodeConfig, aliasList));
-                modules.add(new PassportDecoderState(aliasList));
-                modules.add(new AudioModule(metadata));
+                modules.add(new PassportDecoder(decodeConfig, null));
+                modules.add(new PassportDecoderState(null));
+                modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
                 break;
             case P25_PHASE1:
-                DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1) decodeConfig;
+                DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)decodeConfig;
 
                 Modulation modulation = p25Config.getModulation();
 
                 switch(modulation)
                 {
                     case C4FM:
-                        modules.add(new P25DecoderC4FM(aliasList));
-                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
-                                p25Config.getIgnoreDataCalls()));
+                        modules.add(new P25DecoderC4FM());
+                        modules.add(new P25DecoderState(channel, Modulation.C4FM, p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:
-                        modules.add(new P25DecoderLSM(aliasList));
-                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
+                        modules.add(new P25DecoderLSM());
+                        modules.add(new P25DecoderState(channel, Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + modulation + "]");
@@ -236,11 +214,11 @@ public class DecoderFactory
                 if(channelType == ChannelType.STANDARD)
                 {
                     modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-                            channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                            (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
+                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
+                        null, p25Config.getTrafficChannelPoolSize()));
                 }
 
-                modules.add(new P25AudioModule(metadata));
+                modules.add(new P25AudioModule());
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
@@ -253,11 +231,9 @@ public class DecoderFactory
      * Constructs a list of auxiliary decoders, as specified in the configuration
      *
      * @param config - auxiliary configuration
-     * @param aliasList - optional alias list
      * @return - list of auxiliary decoders
      */
-    public static List<Module> getAuxiliaryDecoders(AuxDecodeConfiguration config,
-                                                    AliasList aliasList)
+    public static List<Module> getAuxiliaryDecoders(AuxDecodeConfiguration config)
     {
         List<Module> modules = new ArrayList<>();
 
@@ -268,24 +244,24 @@ public class DecoderFactory
                 switch(auxDecoder)
                 {
                     case FLEETSYNC2:
-                        modules.add(new Fleetsync2Decoder(aliasList));
-                        modules.add(new Fleetsync2DecoderState(aliasList));
+                        modules.add(new Fleetsync2Decoder(null));
+                        modules.add(new Fleetsync2DecoderState(null));
                         break;
                     case MDC1200:
-                        modules.add(new MDCDecoder(aliasList));
-                        modules.add(new MDCDecoderState(aliasList));
+                        modules.add(new MDCDecoder(null));
+                        modules.add(new MDCDecoderState(null));
                         break;
                     case LJ_1200:
-                        modules.add(new LJ1200Decoder(aliasList));
-                        modules.add(new LJ1200DecoderState(aliasList));
+                        modules.add(new LJ1200Decoder(null));
+                        modules.add(new LJ1200DecoderState(null));
                         break;
                     case TAIT_1200:
-                        modules.add(new Tait1200Decoder(aliasList));
-                        modules.add(new Tait1200DecoderState(aliasList));
+                        modules.add(new Tait1200Decoder(null));
+                        modules.add(new Tait1200DecoderState(null));
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized auxiliary "
-                                + "decoder type [" + auxDecoder + "]");
+                            + "decoder type [" + auxDecoder + "]");
                 }
             }
         }
@@ -305,7 +281,7 @@ public class DecoderFactory
         {
             if(module instanceof Decoder)
             {
-                filterSet.addFilters(getMessageFilter(((Decoder) module).getDecoderType()));
+                filterSet.addFilters(getMessageFilter(((Decoder)module).getDecoderType()));
             }
         }
 
@@ -424,21 +400,21 @@ public class DecoderFactory
             switch(config.getDecoderType())
             {
                 case AM:
-                    DecodeConfigAM originalAM = (DecodeConfigAM) config;
+                    DecodeConfigAM originalAM = (DecodeConfigAM)config;
                     DecodeConfigAM copyAM = new DecodeConfigAM();
                     return copyAM;
                 case LTR_NET:
-                    DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet) config;
+                    DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
                     copyLTRNet.setMessageDirection(originalLTRNet.getMessageDirection());
                     return copyLTRNet;
                 case LTR_STANDARD:
-                    DecodeConfigLTRStandard originalLTRStandard = (DecodeConfigLTRStandard) config;
+                    DecodeConfigLTRStandard originalLTRStandard = (DecodeConfigLTRStandard)config;
                     DecodeConfigLTRStandard copyLTRStandard = new DecodeConfigLTRStandard();
                     copyLTRStandard.setMessageDirection(originalLTRStandard.getMessageDirection());
                     return copyLTRStandard;
                 case MPT1327:
-                    DecodeConfigMPT1327 originalMPT = (DecodeConfigMPT1327) config;
+                    DecodeConfigMPT1327 originalMPT = (DecodeConfigMPT1327)config;
                     DecodeConfigMPT1327 copyMPT = new DecodeConfigMPT1327();
                     copyMPT.setCallTimeout(originalMPT.getCallTimeout());
                     copyMPT.setChannelMapName(originalMPT.getChannelMapName());
@@ -446,18 +422,18 @@ public class DecoderFactory
                     copyMPT.setTrafficChannelPoolSize(originalMPT.getTrafficChannelPoolSize());
                     return copyMPT;
                 case NBFM:
-                    DecodeConfigNBFM originalNBFM = (DecodeConfigNBFM) config;
+                    DecodeConfigNBFM originalNBFM = (DecodeConfigNBFM)config;
                     DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
                     return copyNBFM;
                 case P25_PHASE1:
-                    DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1) config;
+                    DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;
                     DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();
                     copyP25.setIgnoreDataCalls(originalP25.getIgnoreDataCalls());
                     copyP25.setModulation(originalP25.getModulation());
                     copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
                     return copyP25;
                 case PASSPORT:
-                    DecodeConfigPassport originalPass = (DecodeConfigPassport) config;
+                    DecodeConfigPassport originalPass = (DecodeConfigPassport)config;
                     DecodeConfigPassport copyPass = new DecodeConfigPassport();
                     return copyPass;
                 default:

@@ -4,7 +4,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Hamming10;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ public class LDU2Message extends LDUMessage
     private static final int[] RS_HEX_7 = {1238, 1239, 1240, 1241, 1242, 1243};
 
     private EncryptionSyncParameters mEncryptionSyncParameters;
-    private List<IIdentifier> mIdentifiers;
+    private List<Identifier> mIdentifiers;
 
     public LDU2Message(CorrectedBinaryMessage message, int nac, long timestamp)
     {
@@ -154,7 +154,7 @@ public class LDU2Message extends LDUMessage
         }
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

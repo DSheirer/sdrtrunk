@@ -21,9 +21,10 @@
 package io.github.dsheirer.module.decode.ip.ipv4;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.ipv4.IPV4Address;
+import io.github.dsheirer.identifier.ipv4.IPV4Identifier;
 import io.github.dsheirer.module.decode.ip.Header;
 import io.github.dsheirer.module.decode.ip.IPProtocol;
+import io.github.dsheirer.module.decode.p25.identifier.ipv4.APCO25IpAddress;
 
 public class IPV4Header extends Header
 {
@@ -36,8 +37,8 @@ public class IPV4Header extends Header
     private static final int[] TO_ADDRESS = {128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,
         143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159};
 
-    private IPV4Address mFromAddress;
-    private IPV4Address mToAddress;
+    private IPV4Identifier mFromAddress;
+    private IPV4Identifier mToAddress;
 
     public IPV4Header(BinaryMessage message, int offset)
     {
@@ -135,11 +136,11 @@ public class IPV4Header extends Header
     /**
      * From IP Address
      */
-    public IPV4Address getFromAddress()
+    public IPV4Identifier getFromAddress()
     {
         if(mFromAddress == null)
         {
-            mFromAddress = IPV4Address.createFrom(getMessage().getInt(FROM_ADDRESS, getOffset()));
+            mFromAddress = APCO25IpAddress.createFrom(getMessage().getInt(FROM_ADDRESS, getOffset()));
         }
 
         return mFromAddress;
@@ -148,11 +149,11 @@ public class IPV4Header extends Header
     /**
      * To IP Address
      */
-    public IPV4Address getToAddress()
+    public IPV4Identifier getToAddress()
     {
         if(mToAddress == null)
         {
-            mToAddress = IPV4Address.createTo(getMessage().getInt(TO_ADDRESS, getOffset()));
+            mToAddress = APCO25IpAddress.createTo(getMessage().getInt(TO_ADDRESS, getOffset()));
         }
 
         return mToAddress;

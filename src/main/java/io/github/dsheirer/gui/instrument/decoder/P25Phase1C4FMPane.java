@@ -43,7 +43,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
     private DoubleLineChart mPLLFrequencyLineChart;
     private DoubleLineChart mSamplesPerSymbolLineChart;
     private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
-    private P25DecoderC4FMInstrumented mDecoder = new P25DecoderC4FMInstrumented(null);
+    private P25DecoderC4FMInstrumented mDecoder = new P25DecoderC4FMInstrumented();
 
     public P25Phase1C4FMPane()
     {

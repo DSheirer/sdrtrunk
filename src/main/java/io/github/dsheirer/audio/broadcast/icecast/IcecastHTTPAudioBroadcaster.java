@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.icecast;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.properties.SystemProperties;
@@ -69,9 +70,9 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
      *
      * @param configuration for the Icecast stream
      */
-    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration)
+    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration, AliasModel aliasModel)
     {
-        super(configuration);
+        super(configuration, aliasModel);
     }
 
     /**

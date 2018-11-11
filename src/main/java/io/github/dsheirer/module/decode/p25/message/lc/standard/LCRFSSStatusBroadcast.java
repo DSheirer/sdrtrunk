@@ -21,14 +21,14 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25Lra;
-import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
-import io.github.dsheirer.identifier.integer.node.APCO25Site;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 
@@ -38,7 +38,7 @@ import java.util.List;
 /**
  * Secondary control channel broadcast information.
  */
-public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyBandReceiver
+public class LCRFSSStatusBroadcast extends LinkControlWord implements IFrequencyBandReceiver
 {
     private static final int[] LRA = {8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] SYSTEM = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -48,12 +48,12 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
     private static final int[] CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] SERVICE_CLASS = {64, 65, 66, 67, 68, 69, 70, 71};
 
-    private List<IIdentifier> mIdentifiers;
-    private IIdentifier mLRA;
-    private IIdentifier mSystem;
-    private IIdentifier mRFSS;
-    private IIdentifier mSite;
-    private IAPCO25Channel mChannel;
+    private List<Identifier> mIdentifiers;
+    private Identifier mLRA;
+    private Identifier mSystem;
+    private Identifier mRFSS;
+    private Identifier mSite;
+    private IChannelDescriptor mChannel;
     private ServiceOptions mServiceOptions;
 
     /**
@@ -78,7 +78,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
         return sb.toString();
     }
 
-    public IIdentifier getLRA()
+    public Identifier getLRA()
     {
         if(mLRA == null)
         {
@@ -88,7 +88,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
         return mLRA;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -98,7 +98,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
         return mSystem;
     }
 
-    public IIdentifier getRFSS()
+    public Identifier getRFSS()
     {
         if(mRFSS == null)
         {
@@ -108,7 +108,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
         return mRFSS;
     }
 
-    public IIdentifier getSite()
+    public Identifier getSite()
     {
         if(mSite == null)
         {
@@ -118,7 +118,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
         return mSite;
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -144,7 +144,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -159,9 +159,9 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements FrequencyB
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }

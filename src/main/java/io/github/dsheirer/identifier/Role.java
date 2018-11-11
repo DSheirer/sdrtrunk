@@ -20,10 +20,8 @@ package io.github.dsheirer.identifier;
  */
 public enum Role
 {
-    ANNOUNCEMENT,
+    BROADCAST,
     FROM,
     TO,
-    UNIT,
-    USER,
     ANY;
 }

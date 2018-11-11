@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
@@ -47,7 +48,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
     private IBroadcastMetadataUpdater mMetadataUpdater;
-
+    private AliasModel mAliasModel;
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
 
@@ -61,9 +62,10 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
      *
      * @param configuration for the Shoutcast stream
      */
-    public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration)
+    public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration, AliasModel aliasModel)
     {
         super(configuration);
+        mAliasModel = aliasModel;
     }
 
     /**
@@ -79,7 +81,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
     {
         if(mMetadataUpdater == null)
         {
-            mMetadataUpdater = new ShoutcastV1BroadcastMetadataUpdater(getConfiguration());
+            mMetadataUpdater = new ShoutcastV1BroadcastMetadataUpdater(getConfiguration(), mAliasModel);
         }
 
         return mMetadataUpdater;

@@ -53,7 +53,7 @@ public class PacketHeader extends PDUHeader
         sb.append(" FMT:").append(getFormat().getLabel());
         sb.append(" SAP:").append(getServiceAccessPoint().name());
         sb.append(" VEND:").append(getVendor().getLabel());
-        sb.append(" LLID:").append(getLLID());
+        sb.append(isOutbound() ? "TO" : "FROM").append(" LLID:").append(getLLID());
         sb.append(" BLKS TO FOLLOW:").append(getBlocksToFollowCount());
 
         if(isSynchronize())

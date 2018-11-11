@@ -21,17 +21,24 @@ package io.github.dsheirer.alias;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.WildcardID;
+import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.mobileID.Min;
 import io.github.dsheirer.alias.id.mpt1327.MPT1327ID;
+import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
+import io.github.dsheirer.alias.id.talkgroup.LegacyTalkgroupID;
+import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.lj1200.LJ1200Message;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +48,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class AliasList implements Listener<AliasEvent>
 {
@@ -66,6 +74,8 @@ public class AliasList implements Listener<AliasEvent>
     private List<WildcardID> mMPT1327Wildcards = new ArrayList<>();
     private List<WildcardID> mSiteWildcards = new ArrayList<>();
     private List<WildcardID> mTalkgroupWildcards = new ArrayList<>();
+
+    private Map<Protocol,Map<Integer,Alias>> mTalkgroupProtocolMap = new HashMap<>();
 
     private String mName;
 
@@ -105,6 +115,19 @@ public class AliasList implements Listener<AliasEvent>
             {
                 switch(id.getType())
                 {
+                    case TALKGROUP:
+                        Talkgroup talkgroup = (Talkgroup)id;
+
+                        Map<Integer,Alias> protocolMap = mTalkgroupProtocolMap.get(talkgroup.getProtocol());
+
+                        if(protocolMap == null)
+                        {
+                            protocolMap = new TreeMap<Integer,Alias>();
+                            mTalkgroupProtocolMap.put(talkgroup.getProtocol(), protocolMap);
+                        }
+
+                        protocolMap.put(talkgroup.getValue(), alias);
+                        break;
                     case ESN:
                         String esn = ((Esn) id).getEsn();
 
@@ -198,8 +221,8 @@ public class AliasList implements Listener<AliasEvent>
                     case STATUS:
                         mStatus.put(((StatusID) id).getStatus(), alias);
                         break;
-                    case TALKGROUP:
-                        String tgid = ((TalkgroupID) id).getTalkgroup();
+                    case LEGACY_TALKGROUP:
+                        String tgid = ((LegacyTalkgroupID) id).getTalkgroup();
 
                         if(tgid != null)
                         {
@@ -343,8 +366,8 @@ public class AliasList implements Listener<AliasEvent>
                 case STATUS:
                     mStatus.remove(((StatusID) id).getStatus());
                     break;
-                case TALKGROUP:
-                    String tgid = ((TalkgroupID) id).getTalkgroup();
+                case LEGACY_TALKGROUP:
+                    String tgid = ((LegacyTalkgroupID) id).getTalkgroup();
 
                     if(tgid != null)
                     {
@@ -673,5 +696,120 @@ public class AliasList implements Listener<AliasEvent>
                     break;
             }
         }
+    }
+
+    /**
+     * Returns an optional alias that is associated with the identifier
+      * @param identifier to alias
+     * @return alias or null
+     */
+    public Alias getAlias(Identifier identifier)
+    {
+        switch(identifier.getForm())
+        {
+            case TALKGROUP:
+                TalkgroupIdentifier talkgroup = (TalkgroupIdentifier)identifier;
+                Map<Integer,Alias> protocolMap = mTalkgroupProtocolMap.get(identifier.getProtocol());
+
+                if(protocolMap != null)
+                {
+                    return protocolMap.get(talkgroup.getValue());
+                }
+                break;
+        }
+
+        return null;
+    }
+
+    /**
+     * Indicates if any of the identifiers contain a broadcast channel for streaming of audio.
+     * @param identifierCollection to inspect
+     * @return true if the identifier collection is designated for streaming to one or more channels.
+     */
+    public boolean isStreamable(IdentifierCollection identifierCollection)
+    {
+        for(Identifier identifier: identifierCollection.getIdentifiers())
+        {
+            Alias alias = getAlias(identifier);
+
+            if(alias != null && alias.isStreamable())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Indicates if any of the identifiers have been identified for recording.
+     * @param identifierCollection to inspect
+     * @return true if recordable.
+     */
+    public boolean isRecordable(IdentifierCollection identifierCollection)
+    {
+        for(Identifier identifier: identifierCollection.getIdentifiers())
+        {
+            Alias alias = getAlias(identifier);
+
+            if(alias != null && alias.isStreamable())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the lowest audio playback priority specified by aliases for identifiers in the
+     * identifier collection.
+     *
+     * @param identifierCollection to inspect for audio priority
+     * @return audio playback priority
+     */
+    public int getAudioPlaybackPriority(IdentifierCollection identifierCollection)
+    {
+        int priority = Priority.DEFAULT_PRIORITY;
+
+        for(Identifier identifier: identifierCollection.getIdentifiers())
+        {
+            Alias alias = getAlias(identifier);
+
+            if(alias != null && alias.getPlaybackPriority() < priority)
+            {
+                priority = alias.getPlaybackPriority();
+            }
+        }
+
+        return priority;
+    }
+
+    /**
+     * Returns a list of streaming broadcast channels specified for any of the identifiers in the collection.
+     *
+     * @return list of broadcast channels or an empty list
+     */
+    public List<BroadcastChannel> getBroadcastChannels(IdentifierCollection identifierCollection)
+    {
+        List<BroadcastChannel> channels = new ArrayList<>();
+
+        for(Identifier identifier: identifierCollection.getIdentifiers())
+        {
+            Alias alias = getAlias(identifier);
+
+            if(alias != null && alias.isStreamable())
+            {
+                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+                {
+                    if(!channels.contains(broadcastChannel))
+                    {
+                        channels.add(broadcastChannel);
+                    }
+                }
+            }
+        }
+
+        return channels;
     }
 }

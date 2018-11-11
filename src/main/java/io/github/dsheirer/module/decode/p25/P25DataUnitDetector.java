@@ -44,10 +44,15 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     public P25DataUnitDetector(IDataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
     {
         mDataUnitDetectListener = dataUnitDetectListener;
-
-        //TODO: the sync detector for a sync inversion should also trigger this checking
-        //TODO: so that we're not throwing away a valid word
         mSyncDetector = new P25SyncDetector(this, phaseLockedLoop);
+    }
+
+    /**
+     * Sets the sample rate for the phase inversion sync detector
+     */
+    public void setSampleRate(double sampleRate)
+    {
+        mSyncDetector.setSampleRate(sampleRate);
     }
 
     public void reset()
@@ -59,10 +64,6 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     @Override
     public void syncDetected(int bitErrors)
     {
-//        mLog.debug("Sync detected with [" + bitErrors + "] bit errors - dibits processed [" + mDibitsProcessed + "]");
-//        mLog.debug("  Sync: 010101010111010111110101111111110111011111111111");
-//        mDataUnitBuffer.log();
-//        mSyncDelayBuffer.log();
         mInitialSyncTestProcessed = true;
         checkForNid(bitErrors, false);
     }

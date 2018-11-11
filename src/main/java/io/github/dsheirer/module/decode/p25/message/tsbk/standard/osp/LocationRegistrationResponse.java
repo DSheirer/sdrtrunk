@@ -21,10 +21,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
-import io.github.dsheirer.identifier.integer.node.APCO25Site;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Response;
@@ -46,11 +46,11 @@ public class LocationRegistrationResponse extends OSPMessage
         74, 75, 76, 77, 78, 79};
 
     private Response mResponse;
-    private IIdentifier mRfss;
-    private IIdentifier mSite;
-    private IIdentifier mGroupAddress;
-    private IIdentifier mTargetAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mRfss;
+    private Identifier mSite;
+    private Identifier mGroupAddress;
+    private Identifier mTargetAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -82,7 +82,7 @@ public class LocationRegistrationResponse extends OSPMessage
         return mResponse;
     }
 
-    public IIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
@@ -92,7 +92,7 @@ public class LocationRegistrationResponse extends OSPMessage
         return mGroupAddress;
     }
 
-    public IIdentifier getRfss()
+    public Identifier getRfss()
     {
         if(mRfss == null)
         {
@@ -102,7 +102,7 @@ public class LocationRegistrationResponse extends OSPMessage
         return mRfss;
     }
 
-    public IIdentifier getSite()
+    public Identifier getSite()
     {
         if(mSite == null)
         {
@@ -112,7 +112,7 @@ public class LocationRegistrationResponse extends OSPMessage
         return mSite;
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -123,7 +123,7 @@ public class LocationRegistrationResponse extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

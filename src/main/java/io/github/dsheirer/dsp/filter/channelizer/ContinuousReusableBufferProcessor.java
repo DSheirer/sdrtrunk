@@ -17,9 +17,16 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.buffer.AbstractReusableBuffer;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ContinuousReusableBufferProcessor<T extends AbstractReusableBuffer> extends ContinuousBufferProcessor<T>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ContinuousReusableBufferProcessor.class);
+
     /**
      * Scheduled Reusable Buffer Processor combines an internal overflowable buffer with a scheduled runnable processing
      * task for periodically distributing internally queued elements to the registered listener.  This processor
@@ -37,5 +44,45 @@ public class ContinuousReusableBufferProcessor<T extends AbstractReusableBuffer>
     public ContinuousReusableBufferProcessor(int maximumSize, int resetThreshold)
     {
         super(new OverflowableReusableBufferTransferQueue<T>(maximumSize, resetThreshold));
+    }
+
+    /**
+     * Distributes queued buffers to the listener
+     */
+    @Override
+    protected void process()
+    {
+        List<T> buffers = new ArrayList<>();
+
+        mQueue.drainTo(buffers);
+
+        try
+        {
+            if(getListener() != null)
+            {
+                getListener().receive(buffers);
+            }
+
+            buffers.clear();
+        }
+        catch(Throwable throwable)
+        {
+            mLog.error("Error while dispatching buffers to listener.  Performing buffer user count cleanup", throwable);
+
+            if(!buffers.isEmpty())
+            {
+                for(T buffer: buffers)
+                {
+                    try
+                    {
+                        buffer.decrementUserCount();
+                    }
+                    catch(IllegalStateException ise)
+                    {
+                        mLog.error("Error while performing user count cleanup on reusable buffers.");
+                    }
+                }
+            }
+        }
     }
 }

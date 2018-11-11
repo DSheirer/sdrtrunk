@@ -18,16 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.action;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.gui.SDRTrunk;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Manages all alias action events.  Each received message is interrogated for
@@ -39,6 +33,7 @@ import java.util.List;
 public class AliasActionManager implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasActionManager.class);
+    private int mLogCounter;
 
     public AliasActionManager()
     {
@@ -50,7 +45,11 @@ public class AliasActionManager implements Listener<IMessage>
     {
         if(message.isValid())
         {
-            mLog.debug("Update alias action manager to support new alias list construct");
+            if(mLogCounter < 5)
+            {
+                mLog.debug("Update alias action manager to support new alias list construct");
+                mLogCounter++;
+            }
 //            List<Alias> aliases = message.getAliases();
 //
 //            if(aliases != null)

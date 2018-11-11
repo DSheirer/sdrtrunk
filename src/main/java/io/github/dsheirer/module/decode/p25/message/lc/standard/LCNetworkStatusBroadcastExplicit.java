@@ -21,12 +21,12 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * Secondary control channel broadcast information.
  */
-public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements FrequencyBandReceiver
+public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements IFrequencyBandReceiver
 {
     private static final int[] WACN = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
     private static final int[] SYSTEM = {28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
@@ -44,10 +44,10 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
     private static final int[] UPLINK_FREQUENCY_BAND = {56, 57, 58, 59};
     private static final int[] UPLINK_CHANNEL_NUMBER = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
 
-    private List<IIdentifier> mIdentifiers;
-    private IIdentifier mWACN;
-    private IIdentifier mSystem;
-    private IAPCO25Channel mChannel;
+    private List<Identifier> mIdentifiers;
+    private Identifier mWACN;
+    private Identifier mSystem;
+    private IChannelDescriptor mChannel;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -69,7 +69,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
         return sb.toString();
     }
 
-    public IIdentifier getWACN()
+    public Identifier getWACN()
     {
         if(mWACN == null)
         {
@@ -79,7 +79,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
         return mWACN;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -89,7 +89,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
         return mSystem;
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -105,7 +105,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -118,9 +118,9 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannel());
         return channels;
     }

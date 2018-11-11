@@ -19,9 +19,9 @@
 package io.github.dsheirer.module.decode.p25.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25Nac;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 public abstract class P25Message extends Message
@@ -38,7 +38,7 @@ public abstract class P25Message extends Message
 
     private CorrectedBinaryMessage mMessage;
     private boolean mValid = true;
-    private IIdentifier mNAC;
+    private Identifier mNAC;
 
     /**
      * Constructs a P25 message.
@@ -92,7 +92,7 @@ public abstract class P25Message extends Message
         return mMessage;
     }
 
-    public IIdentifier getNAC()
+    public Identifier getNAC()
     {
         return mNAC;
     }

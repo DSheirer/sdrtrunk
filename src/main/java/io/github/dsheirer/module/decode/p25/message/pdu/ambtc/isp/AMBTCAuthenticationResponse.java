@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
@@ -42,11 +42,11 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
     private static final int[] BLOCK_1_AUTHENTICATION_VALUE = {0, 1, 2, 3};
 
     private String mAuthenticationValue;
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mTargetAddress;
-    private IIdentifier mSourceId;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mTargetAddress;
+    private Identifier mSourceId;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCAuthenticationResponse(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -77,7 +77,7 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -87,7 +87,7 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
         return mTargetAddress;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -100,7 +100,7 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -110,7 +110,7 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getSourceId()
+    public Identifier getSourceId()
     {
         if(mSourceId == null && hasDataBlock(0))
         {
@@ -132,7 +132,7 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

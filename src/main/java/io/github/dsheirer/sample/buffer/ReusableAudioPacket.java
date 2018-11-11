@@ -15,7 +15,13 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.identifier.IdentifierCollection;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Reusable audio packet that carries audio sample data, associated metadata and a type to indicate if this
@@ -24,8 +30,13 @@ import io.github.dsheirer.channel.metadata.Metadata;
 public class ReusableAudioPacket extends AbstractReusableBuffer
 {
     private Type mType = Type.AUDIO;
-    private Metadata mMetadata;
     private float[] mAudioSamples;
+
+    private IdentifierCollection mIdentifierCollection;
+    private int mChannelId = 0;
+    private int mMonitoringPriority = Priority.DEFAULT_PRIORITY;
+    private boolean mRecordable = false;
+    private List<BroadcastChannel> mBroadcastChannels = new ArrayList<>();
 
     /**
      * Constructs a reusable audio packet.  This constructor is package private and should only be used by
@@ -41,27 +52,137 @@ public class ReusableAudioPacket extends AbstractReusableBuffer
     }
 
     /**
-     * Indicates if this packet has associated metadata
+     * Resets the attributes for this packet to default audio priority, non-recordable and non-streamable.
      */
-    public boolean hasMetadata()
+    public void resetAttributes()
     {
-        return mMetadata != null;
+        mChannelId = 0;
+        mMonitoringPriority = Priority.DEFAULT_PRIORITY;
+        mRecordable = false;
+        mBroadcastChannels.clear();
     }
 
     /**
-     * Associated audio metadata
+     * Identifier for the channel that produced this audio packet.  This ID is used to identify all packets
+     * within a packet stream that come from the same channel.
+     *
+     * @return channel identifier
      */
-    public Metadata getMetadata()
+    public int getAudioChannelId()
     {
-        return mMetadata;
+        return mChannelId;
+    }
+
+    /**
+     * Sets the channel identifier for this audio packet
+     *
+     * @param channelId for this audio packet.
+     */
+    public void setAudioChannelId(int channelId)
+    {
+        mChannelId = channelId;
+    }
+
+    /**
+     * Monitoring (ie local playback) priority.
+     */
+    public int getMonitoringPriority()
+    {
+        return mMonitoringPriority;
+    }
+
+    /**
+     * Sets the monitoring priority
+     *
+     * @param priority for monitoring:
+     *
+     * -1  Do Not Monitor
+     * 0  Selected (monitor override)
+     * 1  Highest
+     * ...
+     * 100 Lowest
+     */
+    public void setMonitoringPriority(int priority)
+    {
+        mMonitoringPriority = priority;
+    }
+
+    /**
+     * Indicates if the monitoring priority of this audio packet is set to do not monitor.
+     */
+    public boolean isDoNotMonitor()
+    {
+        return mMonitoringPriority == Priority.DO_NOT_MONITOR;
+    }
+
+    /**
+     * Indicates if this audio packet should be recorded.
+     */
+    public boolean isRecordable()
+    {
+        return mRecordable;
+    }
+
+    /**
+     * Sets the recordable status for this audio packet.
+     */
+    public void setRecordable(boolean recordable)
+    {
+        mRecordable = recordable;
+    }
+
+    /**
+     * List of broadcast/streaming channels for this audio packet.
+     */
+    public List<BroadcastChannel> getBroadcastChannels()
+    {
+        return mBroadcastChannels;
+    }
+
+    /**
+     * Adds the broadcast channels to this metadata
+     */
+    public void addBroadcastChannels(Collection<BroadcastChannel> channels)
+    {
+        for(BroadcastChannel channel: channels)
+        {
+            if(!mBroadcastChannels.contains(channel))
+            {
+                mBroadcastChannels.add(channel);
+            }
+        }
+    }
+
+    /**
+     * Indicates if this audio packet has one or more streaming/broadcast channels assigned.
+     */
+    public boolean isStreamable()
+    {
+        return !mBroadcastChannels.isEmpty();
+    }
+
+    /**
+     * Indicates if this packet has associated identifier collection
+     */
+    public boolean hasIdentifierCollection()
+    {
+        return mIdentifierCollection != null;
+    }
+
+    /**
+     * Associated audio metadata and identifiers
+     */
+    public IdentifierCollection getIdentifierCollection()
+    {
+        return mIdentifierCollection;
     }
 
     /**
      * Sets the metadata associated with this audio packet.
      */
-    public void setMetadata(Metadata metadata)
+    public void setIdentifierCollection(IdentifierCollection identifierCollection)
     {
-        mMetadata = metadata;
+        mIdentifierCollection = identifierCollection;
     }
 
     /**

@@ -20,12 +20,12 @@ package io.github.dsheirer.channel.metadata;
 
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.decode.event.CallEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
-import io.github.dsheirer.settings.SettingsManager;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
@@ -44,12 +44,12 @@ public class ChannelMetadataViewer extends JPanel
      * messages, events, and spectral view.
      */
     public ChannelMetadataViewer(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
-                                 SettingsManager settingsManager)
+                                 AliasModel aliasModel)
     {
         mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
         mCallEventPanel = new CallEventPanel(iconManager);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
-        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager);
+        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager, aliasModel);
 
         init();
     }

@@ -55,6 +55,7 @@ public class IPV4Packet extends Packet
         else
         {
             sb.append("IPV4 - INVALID HEADER");
+            sb.append(" HDR:").append(getHeader().getMessage().toHexString());
         }
 
         if(hasPayload())
@@ -93,7 +94,7 @@ public class IPV4Packet extends Packet
     @Override
     public IPacket getPayload()
     {
-        if(mPayload == null && getHeader().isValid())
+        if(mPayload == null)
         {
             if(getHeader().isValid())
             {

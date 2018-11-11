@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.p25.message.pdu.ambtc;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
@@ -64,7 +64,7 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
 
     public boolean hasDataBlock(int index)
     {
-        return getDataBlock(index) != null;
+        return index < getPDUSequence().getDataBlocks().size();
     }
 
     public UnconfirmedDataBlock getDataBlock(int index)
@@ -89,7 +89,7 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
     /**
      * List of identifiers provided by the message
      */
-    public abstract List<IIdentifier> getIdentifiers();
+    public abstract List<Identifier> getIdentifiers();
 
     public String toString()
     {

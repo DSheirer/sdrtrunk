@@ -21,8 +21,8 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.ipv4.APCO25IpAddress;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.ipv4.APCO25IpAddress;
 import io.github.dsheirer.module.decode.p25.reference.MDPConfigurationOption;
 import io.github.dsheirer.module.decode.p25.reference.MaximumTransmitUnit;
 import io.github.dsheirer.module.decode.p25.reference.NetworkAddressType;
@@ -54,8 +54,8 @@ public class ActivateTdsContextAccept extends SNDCPMessage
     private static final int[] MDPCO = {80, 81, 82, 83, 84, 85, 86, 87};
     private static final int[] DATA_ACCESS_CONTROL = {88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103};
 
-    private IIdentifier mIPAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mIPAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs an SNDCP message parser instance.
@@ -134,7 +134,7 @@ public class ActivateTdsContextAccept extends SNDCPMessage
             nat == NetworkAddressType.IPV4_DYNAMIC_ADDRESS;
     }
 
-    public IIdentifier getIPAddress()
+    public Identifier getIPAddress()
     {
         if(mIPAddress == null && hasIPAddress())
         {
@@ -215,7 +215,7 @@ public class ActivateTdsContextAccept extends SNDCPMessage
         return MDPConfigurationOption.fromValue(getMessage().getInt(MDPCO));
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

@@ -20,35 +20,18 @@
 
 package io.github.dsheirer.identifier.ipv4;
 
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.protocol.Protocol;
+import java.util.Objects;
 
 /**
  * IPV4 Address
  */
-public class IPV4Address implements IIdentifier
+public class IPV4Address
 {
     private int mIPAddress;
-    private Role mRole;
 
-    public IPV4Address(int ipAddress, Role role)
+    public IPV4Address(int ipAddress)
     {
         mIPAddress = ipAddress;
-        mRole = role;
-    }
-
-    @Override
-    public Role getRole()
-    {
-        return mRole;
-    }
-
-    @Override
-    public Protocol getProtocol()
-    {
-        return Protocol.IPV4;
     }
 
     @Override
@@ -88,24 +71,23 @@ public class IPV4Address implements IIdentifier
     }
 
     @Override
-    public Form getForm()
+    public boolean equals(Object o)
     {
-        return Form.IPV4_ADDRESS;
+        if(this == o)
+        {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        IPV4Address that = (IPV4Address)o;
+        return mIPAddress == that.mIPAddress;
     }
 
-    /**
-     * Creates a TO role IPV4 address
-     */
-    public static IPV4Address createTo(int address)
+    @Override
+    public int hashCode()
     {
-        return new IPV4Address(address, Role.TO);
-    }
-
-    /**
-     * Creates a FROM role IPV4 address
-     */
-    public static IPV4Address createFrom(int address)
-    {
-        return new IPV4Address(address, Role.FROM);
+        return Objects.hash(mIPAddress);
     }
 }

@@ -21,11 +21,11 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * Update detailing other users/channels that are active on the network.
  */
-public class LCGroupVoiceChannelUpdate extends LinkControlWord implements FrequencyBandReceiver
+public class LCGroupVoiceChannelUpdate extends LinkControlWord implements IFrequencyBandReceiver
 {
     public static final int[] FREQUENCY_BAND_A = {8, 9, 10, 11};
     public static final int[] CHANNEL_A = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
@@ -43,11 +43,11 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
     public static final int[] CHANNEL_B = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     public static final int[] GROUP_ADDRESS_B = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
 
-    private IAPCO25Channel mChannelA;
-    private IAPCO25Channel mChannelB;
-    private IIdentifier mTalkgroupA;
-    private IIdentifier mTalkgroupB;
-    private List<IIdentifier> mIdentifiers;
+    private IChannelDescriptor mChannelA;
+    private IChannelDescriptor mChannelB;
+    private Identifier mTalkgroupA;
+    private Identifier mTalkgroupB;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -74,7 +74,7 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -90,7 +90,7 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
         return mIdentifiers;
     }
 
-    public IAPCO25Channel getChannelA()
+    public IChannelDescriptor getChannelA()
     {
         if(mChannelA == null)
         {
@@ -100,7 +100,7 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
         return mChannelA;
     }
 
-    public IAPCO25Channel getChannelB()
+    public IChannelDescriptor getChannelB()
     {
         if(mChannelB == null)
         {
@@ -115,7 +115,7 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
         return getMessage().getInt(CHANNEL_B) != 0 && getMessage().getInt(GROUP_ADDRESS_A) != getMessage().getInt(GROUP_ADDRESS_B);
     }
 
-    public IIdentifier getGroupAddressA()
+    public Identifier getGroupAddressA()
     {
         if(mTalkgroupA == null)
         {
@@ -125,7 +125,7 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
         return mTalkgroupA;
     }
 
-    public IIdentifier getGroupAddressB()
+    public Identifier getGroupAddressB()
     {
         if(mTalkgroupB == null)
         {
@@ -136,9 +136,9 @@ public class LCGroupVoiceChannelUpdate extends LinkControlWord implements Freque
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
         channels.add(getChannelB());
         return channels;

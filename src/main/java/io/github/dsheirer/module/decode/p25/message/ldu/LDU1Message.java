@@ -2,11 +2,11 @@ package io.github.dsheirer.module.decode.p25.message.ldu;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
 import io.github.dsheirer.edac.Hamming10;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWordFactory;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -38,7 +38,7 @@ import java.util.List;
  * IMBE 9: 1424-1567
  */
 
-public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
+public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
 {
     private final static Logger mLog = LoggerFactory.getLogger(LDU1Message.class);
 
@@ -70,7 +70,7 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
     private static final int[] RS_HEX_11 = {1238, 1239, 1240, 1241, 1242, 1243};
 
     private LinkControlWord mLinkControlWord;
-    private List<IIdentifier> mIdentifiers;
+    private List<Identifier> mIdentifiers;
 
     public LDU1Message(CorrectedBinaryMessage message, int nac, long timestamp)
     {
@@ -93,7 +93,7 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
         return mLinkControlWord;
     }
 
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -195,11 +195,11 @@ public class LDU1Message extends LDUMessage implements FrequencyBandReceiver
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        if(getLinkControlWord().isValid() && getLinkControlWord() instanceof FrequencyBandReceiver)
+        if(getLinkControlWord().isValid() && getLinkControlWord() instanceof IFrequencyBandReceiver)
         {
-            return ((FrequencyBandReceiver) getLinkControlWord()).getChannels();
+            return ((IFrequencyBandReceiver) getLinkControlWord()).getChannels();
         }
 
         return Collections.EMPTY_LIST;

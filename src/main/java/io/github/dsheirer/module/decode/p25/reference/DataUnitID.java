@@ -46,13 +46,6 @@ public enum DataUnitID
     TRUNKING_SIGNALING_BLOCK_3(7, 196, false, "TSBK3"),
     UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL(-1, -1, false, "UMBTC"),
 
-    //TODO: remove these once the legacy message framer is removed
-    NID(-1, 64, false, "NID  "),
-    PACKET_DATA_UNIT_1(12, 196, false, "PDU1 "),
-    PACKET_DATA_UNIT_2(12, 196, false, "PDU2 "),
-    PACKET_DATA_UNIT_3(12, 196, false, "PDU3 "),
-    PACKET_DATA_UNIT_CONFIRMED(12, 196, false, "PDUC"),
-
     UNKNOWN(-1, -1, false, "UNKN ");
 
     private int mValue;

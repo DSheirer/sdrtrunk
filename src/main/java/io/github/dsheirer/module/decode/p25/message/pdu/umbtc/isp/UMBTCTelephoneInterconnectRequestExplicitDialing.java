@@ -20,10 +20,10 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.umbtc.isp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.string.APCO25TelephoneNumber;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.telephone.APCO25TelephoneNumber;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.UMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.Digit;
@@ -38,9 +38,9 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
     private static final int[] BLOCK_0_SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mSourceAddress;
-    private IIdentifier mTelephoneNumber;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mSourceAddress;
+    private Identifier mTelephoneNumber;
+    private List<Identifier> mIdentifiers;
 
     public UMBTCTelephoneInterconnectRequestExplicitDialing(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -77,7 +77,7 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
         return mServiceOptions;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -87,7 +87,7 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
         return mSourceAddress;
     }
 
-    public IIdentifier getTelephoneNumber()
+    public Identifier getTelephoneNumber()
     {
         if(mTelephoneNumber == null && hasDataBlock(0))
         {
@@ -134,7 +134,7 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

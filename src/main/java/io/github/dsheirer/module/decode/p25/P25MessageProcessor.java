@@ -15,13 +15,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
-import io.github.dsheirer.module.decode.p25.message.ldu.LDUMessage;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,11 +39,8 @@ public class P25MessageProcessor implements Listener<Message>
      * so that the uplink/downlink frequencies can be calculated */
     private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<Integer,IFrequencyBand>();
 
-    private AliasList mAliasList;
-
-    public P25MessageProcessor(AliasList aliasList)
+    public P25MessageProcessor()
     {
-        mAliasList = aliasList;
     }
 
     @Override
@@ -60,13 +55,13 @@ public class P25MessageProcessor implements Listener<Message>
         if(message.isValid())
         {
             /* Insert frequency band identifier update messages into channel-type messages */
-            if(message instanceof FrequencyBandReceiver)
+            if(message instanceof IFrequencyBandReceiver)
             {
-                FrequencyBandReceiver receiver = (FrequencyBandReceiver)message;
+                IFrequencyBandReceiver receiver = (IFrequencyBandReceiver)message;
 
-                List<IAPCO25Channel> channels = receiver.getChannels();
+                List<IChannelDescriptor> channels = receiver.getChannels();
 
-                for(IAPCO25Channel channel : channels)
+                for(IChannelDescriptor channel : channels)
                 {
                     int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
 
@@ -89,11 +84,7 @@ public class P25MessageProcessor implements Listener<Message>
             }
         }
 
-        /**
-         * Broadcast all valid messages and any LDU voice messages regardless if
-         * they are valid or not, so that we don't miss any voice frames
-         */
-        if(mMessageListener != null && message.isValid() || message instanceof LDUMessage)
+        if(mMessageListener != null)
         {
             mMessageListener.receive(message);
         }

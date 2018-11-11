@@ -1,11 +1,11 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -30,11 +30,11 @@ public class AcknowledgeResponse extends OSPMessage
     private static final int[] TARGET_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
             72, 73, 74, 75, 76, 77, 78, 79};
 
-    private IIdentifier mWACN;
-    private IIdentifier mSystemId;
-    private IIdentifier mTargetAddress;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWACN;
+    private Identifier mSystemId;
+    private Identifier mTargetAddress;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -80,7 +80,7 @@ public class AcknowledgeResponse extends OSPMessage
         return hasAdditionalInformation() && isExtendedSystemInformation();
     }
 
-    public IIdentifier getWACN()
+    public Identifier getWACN()
     {
         if(hasWACN())
         {
@@ -100,7 +100,7 @@ public class AcknowledgeResponse extends OSPMessage
         return hasAdditionalInformation() && isExtendedSystemInformation();
     }
 
-    public IIdentifier getSystemId()
+    public Identifier getSystemId()
     {
         if(hasSystem())
         {
@@ -123,7 +123,7 @@ public class AcknowledgeResponse extends OSPMessage
         return Opcode.fromValue(getMessage().getInt(SERVICE_TYPE), Direction.OUTBOUND, Vendor.STANDARD);
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -138,7 +138,7 @@ public class AcknowledgeResponse extends OSPMessage
         return hasAdditionalInformation() && !isExtendedSystemInformation();
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(hasSourceAddress())
         {
@@ -154,7 +154,7 @@ public class AcknowledgeResponse extends OSPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

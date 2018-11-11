@@ -1,10 +1,10 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.Capability;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -25,10 +25,10 @@ public class UnitRegistrationRequest extends ISPMessage
             74, 75, 76, 77, 78, 79};
 
     private Capability mCapability;
-    private IIdentifier mWACN;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWACN;
+    private Identifier mSystem;
+    private Identifier mSourceAddress;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -69,7 +69,7 @@ public class UnitRegistrationRequest extends ISPMessage
         return mCapability;
     }
 
-    public IIdentifier getWACN()
+    public Identifier getWACN()
     {
         if(mWACN == null)
         {
@@ -79,7 +79,7 @@ public class UnitRegistrationRequest extends ISPMessage
         return mWACN;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null)
         {
@@ -89,7 +89,7 @@ public class UnitRegistrationRequest extends ISPMessage
         return mSystem;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -100,7 +100,7 @@ public class UnitRegistrationRequest extends ISPMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

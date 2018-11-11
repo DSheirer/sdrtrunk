@@ -21,10 +21,10 @@ package io.github.dsheirer.controller;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.alias.AliasController;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioManager;
-import io.github.dsheirer.audio.AudioPanel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastPanel;
+import io.github.dsheirer.audio.playback.AudioPanel;
+import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.channel.metadata.ChannelMetadataViewer;
 import io.github.dsheirer.controller.channel.ChannelController;
 import io.github.dsheirer.controller.channel.ChannelModel;
@@ -39,8 +39,10 @@ import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.TunerViewPanel;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import javax.swing.JTable;
+import java.awt.Color;
+import java.awt.Dimension;
 
 public class ControllerPanel extends JPanel
 {
@@ -59,7 +61,7 @@ public class ControllerPanel extends JPanel
     private JideTabbedPane mTabbedPane;
     protected JTable mChannelActivityTable = new JTable();
 
-    public ControllerPanel(AudioManager audioManager,
+    public ControllerPanel(AudioPlaybackManager audioPlaybackManager,
                            AliasModel aliasModel,
                            BroadcastModel broadcastModel,
                            ChannelModel channelModel,
@@ -74,9 +76,9 @@ public class ControllerPanel extends JPanel
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
 
-        mAudioPanel = new AudioPanel(iconManager, settingsManager, sourceManager, audioManager);
+        mAudioPanel = new AudioPanel(iconManager, settingsManager, sourceManager, audioPlaybackManager, aliasModel);
 
-        mChannelMetadataViewer = new ChannelMetadataViewer(channelProcessingManager, iconManager, settingsManager);
+        mChannelMetadataViewer = new ChannelMetadataViewer(channelProcessingManager, iconManager, aliasModel);
 
         mMapPanel = new MapPanel(mapService, iconManager, settingsManager);
 

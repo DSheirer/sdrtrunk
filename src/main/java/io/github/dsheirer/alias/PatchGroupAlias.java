@@ -23,7 +23,7 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.priority.Priority;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
+import io.github.dsheirer.alias.id.talkgroup.LegacyTalkgroupID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,9 +152,9 @@ public class PatchGroupAlias extends Alias
         {
             for(AliasID id: getId())
             {
-                if(id.getType() == AliasIDType.TALKGROUP)
+                if(id.getType() == AliasIDType.LEGACY_TALKGROUP)
                 {
-                    return "PATCH:" + ((TalkgroupID)id).getTalkgroup();
+                    return "PATCH:" + ((LegacyTalkgroupID)id).getTalkgroup();
                 }
             }
         }
@@ -208,23 +208,23 @@ public class PatchGroupAlias extends Alias
      * if that is the only priority defined.  Otherwise, returns default (100) priority.
      */
     @Override
-    public int getCallPriority()
+    public int getPlaybackPriority()
     {
         boolean hasDoNotMonitor = false;
 
-        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getCallPriority() : Priority.DEFAULT_PRIORITY + 1);
+        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getPlaybackPriority() : Priority.DEFAULT_PRIORITY + 1);
 
         for(Alias alias: mPatchedAliases)
         {
-            if(!(alias instanceof PatchGroupAlias) && alias.hasCallPriority() && alias.getCallPriority() < highestPriority)
+            if(!(alias instanceof PatchGroupAlias) && alias.hasCallPriority() && alias.getPlaybackPriority() < highestPriority)
             {
-                if(alias.getCallPriority() == Priority.DO_NOT_MONITOR)
+                if(alias.getPlaybackPriority() == Priority.DO_NOT_MONITOR)
                 {
                     hasDoNotMonitor = true;
                 }
                 else
                 {
-                    highestPriority = alias.getCallPriority();
+                    highestPriority = alias.getPlaybackPriority();
                 }
             }
         }

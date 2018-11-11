@@ -20,13 +20,13 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
-import io.github.dsheirer.identifier.integer.node.APCO25Site;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
@@ -34,7 +34,7 @@ import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlo
 import java.util.ArrayList;
 import java.util.List;
 
-public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements FrequencyBandReceiver
+public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements IFrequencyBandReceiver
 {
     private static final int[] HEADER_RFSS = {64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] HEADER_SITE = {72, 73, 74, 75, 76, 77, 78, 79};
@@ -43,11 +43,11 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
     private static final int[] BLOCK_0_UPLINK_FREQUENCY_BAND = {16, 17, 18, 19};
     private static final int[] BLOCK_0_UPLINK_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 
-    private IIdentifier mRfss;
-    private IIdentifier mSite;
-    private IAPCO25Channel mChannel;
-    private List<IIdentifier> mIdentifiers;
-    private List<IAPCO25Channel> mChannels;
+    private Identifier mRfss;
+    private Identifier mSite;
+    private IChannelDescriptor mChannel;
+    private List<Identifier> mIdentifiers;
+    private List<IChannelDescriptor> mChannels;
 
     public AMBTCAdjacentStatusBroadcast(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -64,7 +64,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
         return sb.toString();
     }
 
-    public IIdentifier getRfss()
+    public Identifier getRfss()
     {
         if(mRfss == null)
         {
@@ -74,7 +74,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
         return mRfss;
     }
 
-    public IIdentifier getSite()
+    public Identifier getSite()
     {
         if(mSite == null)
         {
@@ -91,7 +91,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
                 getDataBlock(0).getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null && hasDataBlock(0))
         {
@@ -115,7 +115,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -128,7 +128,7 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements Freque
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

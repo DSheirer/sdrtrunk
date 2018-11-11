@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.AnswerResponse;
@@ -46,11 +46,11 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
 
     private ServiceOptions mServiceOptions;
     private AnswerResponse mAnswerResponse;
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceAddress;
-    private IIdentifier mTargetId;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mSourceAddress;
+    private Identifier mTargetId;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCUnitToUnitVoiceServiceAnswerResponse(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -79,7 +79,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -109,7 +109,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
         return mServiceOptions;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -119,7 +119,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -129,7 +129,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getTargetId()
+    public Identifier getTargetId()
     {
         if(mTargetId == null && hasDataBlock(0))
         {
@@ -140,7 +140,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

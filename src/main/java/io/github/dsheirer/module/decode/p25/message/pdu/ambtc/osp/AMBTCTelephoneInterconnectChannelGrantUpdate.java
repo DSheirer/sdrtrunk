@@ -20,12 +20,12 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
@@ -34,7 +34,7 @@ import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage implements FrequencyBandReceiver
+public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage implements IFrequencyBandReceiver
 {
     private static final int[] HEADER_SERVICE_OPTIONS = {64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] HEADER_RESERVED = {72, 73, 74, 75, 76, 77, 78, 79};
@@ -46,10 +46,10 @@ public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage i
     private static final int[] BLOCK_0_RESERVED = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
 
     private ServiceOptions mServiceOptions;
-    private IAPCO25Channel mChannel;
-    private IIdentifier mAnyAddress;
-    private List<IIdentifier> mIdentifiers;
-    private List<IAPCO25Channel> mChannels;
+    private IChannelDescriptor mChannel;
+    private Identifier mAnyAddress;
+    private List<Identifier> mIdentifiers;
+    private List<IChannelDescriptor> mChannels;
 
     public AMBTCTelephoneInterconnectChannelGrantUpdate(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -90,7 +90,7 @@ public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage i
         return 0;
     }
 
-    public IIdentifier getAnyAddress()
+    public Identifier getAnyAddress()
     {
         if(mAnyAddress == null)
         {
@@ -107,7 +107,7 @@ public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage i
                 getDataBlock(0).getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null && hasDataBlock(0))
         {
@@ -131,7 +131,7 @@ public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage i
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -143,7 +143,7 @@ public class AMBTCTelephoneInterconnectChannelGrantUpdate extends AMBTCMessage i
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

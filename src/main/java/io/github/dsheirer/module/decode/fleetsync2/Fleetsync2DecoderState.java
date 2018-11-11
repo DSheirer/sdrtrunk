@@ -20,10 +20,7 @@ package io.github.dsheirer.module.decode.fleetsync2;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -48,12 +45,12 @@ public class Fleetsync2DecoderState extends DecoderState
 
     public Fleetsync2DecoderState(AliasList aliasList)
     {
-        super(aliasList);
+        super();
 
-        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
-        mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
+//        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
+//        mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
+//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
     }
 
     @Override
@@ -166,7 +163,7 @@ public class Fleetsync2DecoderState extends DecoderState
                 FleetsyncCallEvent fsCallEvent =
                         FleetsyncCallEvent.getFleetsync2Event(fleetsync, mFrequency);
 
-                fsCallEvent.setAliasList(getAliasList());
+//                fsCallEvent.setAliasList(getAliasList());
 
                 broadcast(fsCallEvent);
 
@@ -187,7 +184,7 @@ public class Fleetsync2DecoderState extends DecoderState
         if(!StringUtils.isEqual(mMessage, message))
         {
             mMessage = message;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
         }
     }
 
@@ -201,7 +198,7 @@ public class Fleetsync2DecoderState extends DecoderState
         if(!StringUtils.isEqual(mMessageType, type))
         {
             mMessageType = type;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, getMessageType()));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, getMessageType()));
         }
     }
 
@@ -248,16 +245,16 @@ public class Fleetsync2DecoderState extends DecoderState
                 sb.append("  ");
                 sb.append(formatIdent(ident));
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getFleetsyncAlias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(" ");
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getFleetsyncAlias(ident);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(" ");
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -280,18 +277,18 @@ public class Fleetsync2DecoderState extends DecoderState
                 sb.append("  ");
                 sb.append(formatIdent(ident));
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getFleetsyncAlias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(" ");
-                        sb.append(alias.getName());
-                    }
-
-                    sb.append("\n");
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getFleetsyncAlias(ident);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(" ");
+//                        sb.append(alias.getName());
+//                    }
+//
+//                    sb.append("\n");
+//                }
             }
         }
 

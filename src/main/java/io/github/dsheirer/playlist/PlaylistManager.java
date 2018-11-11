@@ -327,7 +327,7 @@ public class PlaylistManager implements ChannelEventListener
      */
     public PlaylistV2 load()
     {
-        mLog.info("Attempting to load version 2 playlist file [" + getPlaylistPath().toString() + "]");
+        mLog.info("Loading version 2 playlist file [" + getPlaylistPath().toString() + "]");
 
         PlaylistV2 playlist = null;
 
@@ -373,6 +373,13 @@ public class PlaylistManager implements ChannelEventListener
         else
         {
             mLog.info("PlaylistManager - playlist not found at [" + getPlaylistPath().toString() + "]");
+        }
+
+        //Perform any updates that may be needed for the playist.
+        if(PlaylistUpdater.update(playlist))
+        {
+            mLog.info("Playlist was updated ... saving");
+            schedulePlaylistSave();
         }
 
         return playlist;

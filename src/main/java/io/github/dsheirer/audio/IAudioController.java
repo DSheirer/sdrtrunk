@@ -1,6 +1,6 @@
 package io.github.dsheirer.audio;
 
-import io.github.dsheirer.audio.output.AudioOutput;
+import io.github.dsheirer.audio.playback.AudioOutput;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
 

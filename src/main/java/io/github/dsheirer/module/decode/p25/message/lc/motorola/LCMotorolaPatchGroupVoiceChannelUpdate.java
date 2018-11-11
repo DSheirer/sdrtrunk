@@ -21,11 +21,13 @@
 package io.github.dsheirer.module.decode.p25.message.lc.motorola;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25PatchGroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +35,7 @@ import java.util.List;
 /**
  * Motorola Patch Group Voice Channel Update
  */
-public class LCMotorolaPatchGroupVoiceChannelUpdate extends MotorolaLinkControlWord implements FrequencyBandReceiver
+public class LCMotorolaPatchGroupVoiceChannelUpdate extends MotorolaLinkControlWord implements IFrequencyBandReceiver
 {
     private static final int[] UNKNOWN_1 = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] PATCH_GROUP = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
@@ -43,9 +45,9 @@ public class LCMotorolaPatchGroupVoiceChannelUpdate extends MotorolaLinkControlW
     private static final int[] CHANNEL_NUMBER = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
 
     private APCO25PatchGroup mPatchGroup;
-    private IAPCO25Channel mChannel;
-    private List<IIdentifier> mIdentifiers;
-    private List<IAPCO25Channel> mChannels;
+    private IChannelDescriptor mChannel;
+    private List<Identifier> mIdentifiers;
+    private List<IChannelDescriptor> mChannels;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -74,13 +76,14 @@ public class LCMotorolaPatchGroupVoiceChannelUpdate extends MotorolaLinkControlW
     {
         if(mPatchGroup == null)
         {
-            mPatchGroup = APCO25PatchGroup.create(getMessage().getInt(PATCH_GROUP));
+            PatchGroup patchGroup = new PatchGroup(APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP)));
+            mPatchGroup = APCO25PatchGroup.create(patchGroup);
         }
 
         return mPatchGroup;
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null)
         {
@@ -104,7 +107,7 @@ public class LCMotorolaPatchGroupVoiceChannelUpdate extends MotorolaLinkControlW
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -116,7 +119,7 @@ public class LCMotorolaPatchGroupVoiceChannelUpdate extends MotorolaLinkControlW
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

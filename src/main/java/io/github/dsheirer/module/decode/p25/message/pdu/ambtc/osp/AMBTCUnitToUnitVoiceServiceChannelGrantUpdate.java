@@ -20,15 +20,15 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
@@ -37,7 +37,7 @@ import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage implements FrequencyBandReceiver
+public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage implements IFrequencyBandReceiver
 {
     private static final int[] HEADER_SERVICE_OPTIONS = {64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] HEADER_RESERVED = {72, 73, 74, 75, 76, 77, 78, 79};
@@ -53,14 +53,14 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
     private static final int[] BLOCK_1_UPLINK_CHANNEL_NUMBER = {4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceAddress;
-    private IIdentifier mSourceId;
-    private IIdentifier mTargetAddress;
-    private List<IIdentifier> mIdentifiers;
-    private IAPCO25Channel mChannel;
-    private List<IAPCO25Channel> mChannels;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mSourceAddress;
+    private Identifier mSourceId;
+    private Identifier mTargetAddress;
+    private List<Identifier> mIdentifiers;
+    private IChannelDescriptor mChannel;
+    private List<IChannelDescriptor> mChannels;
 
     public AMBTCUnitToUnitVoiceServiceChannelGrantUpdate(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -98,7 +98,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
         return mServiceOptions;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -108,7 +108,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -118,7 +118,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
         return mSystem;
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -128,7 +128,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
         return mSourceAddress;
     }
 
-    public IIdentifier getSourceId()
+    public Identifier getSourceId()
     {
         if(mSourceId == null && hasDataBlock(0))
         {
@@ -138,7 +138,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
         return mSourceId;
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
@@ -149,7 +149,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -183,7 +183,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
                 getDataBlock(0).getMessage().getInt(BLOCK_1_UPLINK_CHANNEL_NUMBER));
     }
 
-    public IAPCO25Channel getChannel()
+    public IChannelDescriptor getChannel()
     {
         if(mChannel == null && hasDataBlock(0) && hasDataBlock(1))
         {
@@ -207,7 +207,7 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
         if(mChannels == null)
         {

@@ -20,10 +20,10 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
@@ -47,10 +47,10 @@ public class AMBTCRoamingAddressUpdate extends AMBTCMessage
     private static final int[] BLOCK_0_WACN_A = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
     private static final int[] BLOCK_0_SYSTEM_A = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
 
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mTargetAddress;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mTargetAddress;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCRoamingAddressUpdate(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -111,7 +111,7 @@ public class AMBTCRoamingAddressUpdate extends AMBTCMessage
         return getHeader().getMessage().getInt(HEADER_MSN);
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -124,7 +124,7 @@ public class AMBTCRoamingAddressUpdate extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -134,7 +134,7 @@ public class AMBTCRoamingAddressUpdate extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
@@ -145,7 +145,7 @@ public class AMBTCRoamingAddressUpdate extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

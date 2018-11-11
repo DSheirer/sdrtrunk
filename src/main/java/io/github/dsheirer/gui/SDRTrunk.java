@@ -22,9 +22,10 @@ package io.github.dsheirer.gui;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
-import io.github.dsheirer.audio.AudioManager;
+import io.github.dsheirer.audio.AudioPacketManager;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
+import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.controller.ControllerPanel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
@@ -88,6 +89,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
     private boolean mBroadcastStatusVisible;
 
+    private AudioPacketManager mAudioPacketManager;
     private IconManager mIconManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private BroadcastModel mBroadcastModel;
@@ -146,13 +148,12 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         EventLogManager eventLogManager = new EventLogManager();
 
-        RecorderManager recorderManager = new RecorderManager();
+        RecorderManager recorderManager = new RecorderManager(aliasModel);
 
         mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
-        mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, aliasModel,
-            eventLogManager, recorderManager, mSourceManager);
-        mChannelProcessingManager.addAudioPacketListener(recorderManager);
+        mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, eventLogManager,
+            recorderManager, mSourceManager, aliasModel);
 
         mChannelModel.addListener(mChannelProcessingManager);
 
@@ -163,17 +164,23 @@ public class SDRTrunk implements Listener<TunerEvent>
         AliasActionManager aliasActionManager = new AliasActionManager();
         mChannelProcessingManager.addMessageListener(aliasActionManager);
 
-        AudioManager audioManager = new AudioManager(mSourceManager.getMixerManager());
-        mChannelProcessingManager.addAudioPacketListener(audioManager);
+        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSourceManager.getMixerManager());
 
-        mBroadcastModel = new BroadcastModel(mIconManager);
+        mBroadcastModel = new BroadcastModel(aliasModel, mIconManager);
 
-        mChannelProcessingManager.addAudioPacketListener(mBroadcastModel);
+        //Audio packets are routed through the audio packet manager for metadata enrichment and then
+        //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
+        mAudioPacketManager = new AudioPacketManager(aliasModel);
+        mAudioPacketManager.addListener(recorderManager);
+        mAudioPacketManager.addListener(audioPlaybackManager);
+        mAudioPacketManager.addListener(mBroadcastModel);
+        mAudioPacketManager.start();
+        mChannelProcessingManager.addAudioPacketListener(mAudioPacketManager);
 
         MapService mapService = new MapService(mIconManager);
         mChannelProcessingManager.addMessageListener(mapService);
 
-        mControllerPanel = new ControllerPanel(audioManager, aliasModel, mBroadcastModel,
+        mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
             mapService, mSettingsManager, mSourceManager, tunerModel);
 
@@ -415,14 +422,15 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void processShutdown()
     {
-        mLog.debug("Application shutdown started ...");
-        mLog.debug("Stopping channels ...");
+        mLog.info("Application shutdown started ...");
+        mLog.info("Stopping channels ...");
         mChannelProcessingManager.shutdown();
-        mLog.debug("Stopping spectral display ...");
+        mAudioPacketManager.stop();
+        mLog.info("Stopping spectral display ...");
         mSpectralPanel.clearTuner();
-        mLog.debug("Releasing tuners ...");
+        mLog.info("Releasing tuners ...");
         mSourceManager.shutdown();
-        mLog.debug("Shutdown complete.");
+        mLog.info("Shutdown complete.");
     }
 
     /**

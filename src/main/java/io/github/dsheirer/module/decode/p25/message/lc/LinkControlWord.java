@@ -1,7 +1,7 @@
 package io.github.dsheirer.module.decode.p25.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 import java.util.List;
@@ -126,7 +126,7 @@ public abstract class LinkControlWord
     /**
      * List of identifiers provided by the message
      */
-    public abstract List<IIdentifier> getIdentifiers();
+    public abstract List<Identifier> getIdentifiers();
 
     /**
      * Creates a string with the basic Link Control Word information

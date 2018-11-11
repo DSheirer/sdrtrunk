@@ -15,20 +15,39 @@
  ******************************************************************************/
 package io.github.dsheirer.protocol;
 
+import java.util.EnumSet;
+
 /**
  * Binary protocols supported within this application
  */
 public enum Protocol
 {
-    APCO25,
-    FLEETSYNC,
-    IPV4,
-    LOJACK,
-    LTR_NET,
-    LTR_STANDARD,
-    MDC1200,
-    MPT1327,
-    PASSPORT,
-    TAIT1200,
-    UNKNOWN;
+    APCO25("APCO-25"),
+    FLEETSYNC("Fleetsync"),
+    IPV4("IPV4"),
+    LOJACK("LoJack"),
+    LTR("LTR"),
+    LTR_NET("LTR-Net"),
+    LTR_STANDARD("LTR-Standard"),
+    MDC1200("MDC-1200"),
+    MPT1327("MPT-1327"),
+    PASSPORT("Passport"),
+    TAIT1200("Tait 1200"),
+    UNKNOWN("Unknown");
+
+    private String mLabel;
+
+    Protocol(String label)
+    {
+        mLabel = label;
+    }
+
+    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, FLEETSYNC, LTR, MDC1200,
+        MPT1327, PASSPORT, TAIT1200);
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
+    }
 }

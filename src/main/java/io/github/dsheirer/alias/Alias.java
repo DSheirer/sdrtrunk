@@ -27,7 +27,7 @@ import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.priority.Priority;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -187,7 +187,7 @@ public class Alias
      * Returns the priority level of this alias, if defined, or the default priority
      */
     @JsonIgnore
-    public int getCallPriority()
+    public int getPlaybackPriority()
     {
         for(AliasID id : mAliasIDs)
         {

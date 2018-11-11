@@ -81,6 +81,10 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
             {
                 mTable.setModel(processingChain != null ? processingChain.getMessageActivityModel() : EMPTY_MODEL);
 
+                mTable.getColumnModel().getColumn(0).setPreferredWidth(18);
+                mTable.getColumnModel().getColumn(1).setPreferredWidth(15);
+                mTable.getColumnModel().getColumn(2).setPreferredWidth(600);
+
                 if(processingChain != null)
                 {
                     mManagementPanel.enableButtons();

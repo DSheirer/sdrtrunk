@@ -21,9 +21,9 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.identifier.string.APCO25TelephoneNumber;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.telephone.APCO25TelephoneNumber;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.reference.Digit;
 
@@ -48,9 +48,9 @@ public class LCTelephoneInterconnectAnswerRequest extends LinkControlWord
     private static final int[] TARGET_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
             65, 66, 67, 68, 69, 70, 71};
 
-    private IIdentifier mTargetAddress;
-    private IIdentifier mTelephoneNumber;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mTargetAddress;
+    private Identifier mTelephoneNumber;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -72,7 +72,7 @@ public class LCTelephoneInterconnectAnswerRequest extends LinkControlWord
         return sb.toString();
     }
 
-    public IIdentifier getTelephoneNumber()
+    public Identifier getTelephoneNumber()
     {
         if(mTelephoneNumber == null)
         {
@@ -97,7 +97,7 @@ public class LCTelephoneInterconnectAnswerRequest extends LinkControlWord
     /**
      * To/From radio identifier communicating with a landline
      */
-    public IIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
@@ -111,7 +111,7 @@ public class LCTelephoneInterconnectAnswerRequest extends LinkControlWord
      * List of identifiers contained in this message
      */
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

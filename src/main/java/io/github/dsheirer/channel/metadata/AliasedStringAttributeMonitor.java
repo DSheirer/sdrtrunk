@@ -25,16 +25,16 @@ import io.github.dsheirer.sample.Listener;
 
 import static io.github.dsheirer.alias.id.AliasIDType.ESN;
 import static io.github.dsheirer.alias.id.AliasIDType.FLEETSYNC;
+import static io.github.dsheirer.alias.id.AliasIDType.LEGACY_TALKGROUP;
 import static io.github.dsheirer.alias.id.AliasIDType.MDC1200;
 import static io.github.dsheirer.alias.id.AliasIDType.MIN;
 import static io.github.dsheirer.alias.id.AliasIDType.MPT1327;
 import static io.github.dsheirer.alias.id.AliasIDType.SITE;
-import static io.github.dsheirer.alias.id.AliasIDType.TALKGROUP;
 
 
 public class AliasedStringAttributeMonitor extends AttributeMonitor<String>
 {
-    private static final AliasIDType[] VALID_ID_TYPES =  {ESN, FLEETSYNC, MDC1200, MIN, MPT1327, SITE, TALKGROUP};
+    private static final AliasIDType[] VALID_ID_TYPES =  {ESN, FLEETSYNC, MDC1200, MIN, MPT1327, SITE, LEGACY_TALKGROUP};
 
     private AliasList mAliasList;
     private AliasIDType mAliasIDType;
@@ -109,7 +109,7 @@ public class AliasedStringAttributeMonitor extends AttributeMonitor<String>
                     case SITE:
                         alias = mAliasList.getSiteID(getValue());
                         break;
-                    case TALKGROUP:
+                    case LEGACY_TALKGROUP:
                         alias = mAliasList.getTalkgroupAlias(getValue());
                         break;
                 }

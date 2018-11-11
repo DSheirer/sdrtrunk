@@ -1,8 +1,10 @@
 package io.github.dsheirer.channel.state;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
-import io.github.dsheirer.channel.metadata.IAttributeChangeRequestProvider;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.IdentifierUpdateProvider;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
@@ -19,39 +21,58 @@ import io.github.dsheirer.sample.Listener;
  *
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>,
-        IAttributeChangeRequestProvider, ICallEventProvider, IDecoderStateEventListener,
-        IDecoderStateEventProvider, IMessageListener
+public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>, ICallEventProvider,
+    IDecoderStateEventListener, IDecoderStateEventProvider, IMessageListener, IdentifierUpdateProvider
 {
     protected String DIVIDER1 = "======================================================\n";
     protected String DIVIDER2 = "------------------------------------------------------\n";
 
     /* This has to be a broadcaster in order for references to persist */
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
-    private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
     private Listener<DecoderStateEvent> mDecoderStateListener;
-
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
+    private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
 
     protected CallEvent mCurrentCallEvent;
 
-    private AliasList mAliasList;
-
-    public DecoderState(AliasList aliasList)
+    public DecoderState()
     {
-        mAliasList = aliasList;
+        mIdentifierCollection.update(new DecoderTypeConfigurationIdentifier(getDecoderType()));
+    }
+
+    @Override
+    public void start()
+    {
+        //Broadcast the existing identifiers (as add events) so that they can be received by external listeners
+        mIdentifierCollection.broadcastIdentifiers();
     }
 
     public abstract DecoderType getDecoderType();
 
-    public AliasList getAliasList()
+    /**
+     * Current collection of identifiers managed by the decoder state.
+     */
+    public MutableIdentifierCollection getIdentifierCollection()
     {
-        return mAliasList;
+        return mIdentifierCollection;
     }
 
-    public boolean hasAliasList()
+    /**
+     * Registers the listener to receive identifier update notifications
+     */
+    @Override
+    public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
     {
-        return mAliasList != null;
+        getIdentifierCollection().setIdentifierUpdateListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving identifier update notifications
+     */
+    @Override
+    public void removeIdentifierUpdateListener()
+    {
+        getIdentifierCollection().removeIdentifierUpdateListener();
     }
 
     /**
@@ -67,6 +88,14 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     public Listener<IMessage> getMessageListener()
     {
         return this;
+    }
+
+    /**
+     * Resets the current temporal state variables to end the current event and prepare for the next.
+     */
+    protected void resetState()
+    {
+        mIdentifierCollection.remove(IdentifierClass.USER);
     }
 
     /**
@@ -95,8 +124,6 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
         mCallEventBroadcaster.dispose();
         mCallEventBroadcaster = null;
         mDecoderStateListener = null;
-
-        mAliasList = null;
     }
 
     /**
@@ -172,39 +199,5 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     public void removeDecoderStateListener()
     {
         mDecoderStateListener = null;
-    }
-
-    /**
-     * Broadcasts the attribute change request to the registered listener
-     */
-    protected void broadcast(AttributeChangeRequest<?> request)
-    {
-        mAttributeChangeRequestBroadcaster.broadcast(request);
-    }
-
-    /**
-     * Sets the listener to receive attribute change requests from this decoder state
-     */
-    @Override
-    public void setAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener)
-    {
-        mAttributeChangeRequestBroadcaster.addListener(listener);
-    }
-
-    /**
-     * Removes any listener from receiving attribute change requests
-     */
-    @Override
-    public void removeAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener)
-    {
-        mAttributeChangeRequestBroadcaster.removeListener(listener);
-    }
-
-    /**
-     * Broadaster so that Attribute monitors can broadcast attribute change requests
-     */
-    protected Listener<AttributeChangeRequest> getAttributeChangeRequestListener()
-    {
-        return mAttributeChangeRequestBroadcaster;
     }
 }

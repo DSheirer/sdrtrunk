@@ -21,12 +21,12 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.channel.APCO25Channel;
-import io.github.dsheirer.identifier.integer.channel.IAPCO25Channel;
-import io.github.dsheirer.identifier.integer.node.APCO25Rfss;
-import io.github.dsheirer.identifier.integer.node.APCO25Site;
-import io.github.dsheirer.module.decode.p25.message.FrequencyBandReceiver;
+import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -37,7 +37,7 @@ import java.util.List;
 /**
  * Secondary control channel broadcast
  */
-public class SecondaryControlChannelBroadcast extends OSPMessage implements FrequencyBandReceiver
+public class SecondaryControlChannelBroadcast extends OSPMessage implements IFrequencyBandReceiver
 {
     private static final int[] RFSS = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] SITE = {24, 25, 26, 27, 28, 29, 30, 31};
@@ -48,13 +48,13 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
     private static final int[] CHANNEL_NUMBER_B = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] SYSTEM_SERVICE_CLASS_B = {72, 73, 74, 75, 76, 77, 78, 79};
 
-    private IIdentifier mRfss;
-    private IIdentifier mSite;
-    private IAPCO25Channel mChannelA;
-    private IAPCO25Channel mChannelB;
+    private Identifier mRfss;
+    private Identifier mSite;
+    private IChannelDescriptor mChannelA;
+    private IChannelDescriptor mChannelB;
     private ServiceOptions mServiceOptionsA;
     private ServiceOptions mServiceOptionsB;
-    private List<IIdentifier> mIdentifiers;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -80,7 +80,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
         return sb.toString();
     }
 
-    public IIdentifier getRfss()
+    public Identifier getRfss()
     {
         if(mRfss == null)
         {
@@ -90,7 +90,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
         return mRfss;
     }
 
-    public IIdentifier getSite()
+    public Identifier getSite()
     {
         if(mSite == null)
         {
@@ -100,7 +100,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
         return mSite;
     }
 
-    public IAPCO25Channel getChannelA()
+    public IChannelDescriptor getChannelA()
     {
         if(mChannelA == null)
         {
@@ -126,7 +126,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
             getMessage().getInt(SYSTEM_SERVICE_CLASS_B) != 0;
     }
 
-    public IAPCO25Channel getChannelB()
+    public IChannelDescriptor getChannelB()
     {
         if(hasChannelB() && mChannelB == null)
         {
@@ -147,7 +147,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
@@ -160,9 +160,9 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements Freq
     }
 
     @Override
-    public List<IAPCO25Channel> getChannels()
+    public List<IChannelDescriptor> getChannels()
     {
-        List<IAPCO25Channel> channels = new ArrayList<>();
+        List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
 
         if(hasChannelB())

@@ -18,12 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.passport;
 
-import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -61,12 +57,12 @@ public class PassportDecoderState extends DecoderState
 
     public PassportDecoderState(AliasList aliasList)
     {
-        super(aliasList);
-
-        mFromMobileIDAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MIN);
-        mToTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+//        super(aliasList);
+//
+//        mFromMobileIDAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
+//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MIN);
+//        mToTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -149,7 +145,7 @@ public class PassportDecoderState extends DecoderState
                             {
                                 mCurrentCallEvent = new PassportCallEvent
                                         .Builder(CallEvent.CallEventType.CALL)
-                                        .aliasList(getAliasList())
+//                                        .aliasList(getAliasList())
                                         .channel(String.valueOf(mChannelNumber))
                                         .frequency(passport.getLCNFrequency())
                                         .to(String.valueOf(passport.getTalkgroupID()))
@@ -179,7 +175,7 @@ public class PassportDecoderState extends DecoderState
 
                                 broadcast(new PassportCallEvent
                                         .Builder(CallEvent.CallEventType.CALL_DETECT)
-                                        .aliasList(getAliasList())
+//                                        .aliasList(getAliasList())
                                         .channel(String.valueOf(lcn))
                                         .details("Site: " + passport.getSite())
                                         .frequency(passport.getLCNFrequency())
@@ -241,7 +237,7 @@ public class PassportDecoderState extends DecoderState
                             {
                                 mCurrentCallEvent = new PassportCallEvent
                                         .Builder(CallEvent.CallEventType.DATA_CALL)
-                                        .aliasList(getAliasList())
+//                                        .aliasList(getAliasList())
                                         .channel(String.valueOf(mChannelNumber))
                                         .frequency(passport.getLCNFrequency())
                                         .to(String.valueOf(passport.getTalkgroupID()))
@@ -271,7 +267,7 @@ public class PassportDecoderState extends DecoderState
 
                                 broadcast(new PassportCallEvent
                                         .Builder(CallEvent.CallEventType.DATA_CALL)
-                                        .aliasList(getAliasList())
+//                                        .aliasList(getAliasList())
                                         .channel(String.valueOf(lcn))
                                         .details("Site: " + passport.getSite())
                                         .frequency(passport.getLCNFrequency())
@@ -324,7 +320,7 @@ public class PassportDecoderState extends DecoderState
                         {
                             mCurrentCallEvent = new PassportCallEvent
                                     .Builder(CallEvent.CallEventType.REGISTER)
-                                    .aliasList(getAliasList())
+//                                    .aliasList(getAliasList())
                                     .channel(String.valueOf(passport.getLCN()))
                                     .frequency(passport.getLCNFrequency())
                                     .to(passport.getToID())
@@ -443,15 +439,15 @@ public class PassportDecoderState extends DecoderState
                 sb.append(tgid);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getTalkgroupAlias(tgid);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getTalkgroupAlias(tgid);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -475,15 +471,15 @@ public class PassportDecoderState extends DecoderState
                 sb.append(min);
                 sb.append(" ");
 
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getMobileIDNumberAlias(min);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
+//                if(hasAliasList())
+//                {
+//                    Alias alias = getAliasList().getMobileIDNumberAlias(min);
+//
+//                    if(alias != null)
+//                    {
+//                        sb.append(alias.getName());
+//                    }
+//                }
 
                 sb.append("\n");
             }
@@ -521,8 +517,9 @@ public class PassportDecoderState extends DecoderState
 
     }
 
-    private void resetState()
+    protected void resetState()
     {
+        super.resetState();
         mToTalkgroupAttribute.reset();
         mFromMobileIDAttribute.reset();
     }
@@ -537,7 +534,7 @@ public class PassportDecoderState extends DecoderState
         if(mChannelNumber != channel)
         {
             mChannelNumber = channel;
-            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, "CHAN:" + mChannelNumber));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, "CHAN:" + mChannelNumber));
         }
     }
 
@@ -551,8 +548,8 @@ public class PassportDecoderState extends DecoderState
         if(mSiteNumber != site)
         {
             mSiteNumber = site;
-            Alias alias = hasAliasList() ? getAliasList().getSiteID(String.valueOf(getSiteNumber())) : null;
-            broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_1, "SITE:" + mSiteNumber, alias));
+//            Alias alias = hasAliasList() ? getAliasList().getSiteID(String.valueOf(getSiteNumber())) : null;
+//            broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_1, "SITE:" + mSiteNumber, alias));
         }
     }
 
@@ -566,7 +563,7 @@ public class PassportDecoderState extends DecoderState
         if(mSiteBand == null)
         {
             mSiteBand = band;
-            broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_2, "BAND:" + band.getDescription()));
+//            broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_2, "BAND:" + band.getDescription()));
         }
     }
 
@@ -580,7 +577,7 @@ public class PassportDecoderState extends DecoderState
                 break;
             case SOURCE_FREQUENCY:
                 mFrequency = event.getFrequency();
-                broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, mFrequency));
+//                broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, mFrequency));
                 break;
             default:
                 break;

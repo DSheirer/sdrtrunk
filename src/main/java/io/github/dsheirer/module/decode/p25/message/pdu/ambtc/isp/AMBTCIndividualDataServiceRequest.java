@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
@@ -42,11 +42,11 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
     private static final int[] BLOCK_0_RESERVED = {56, 57, 58, 59, 60, 61, 62, 63};
 
     private ServiceOptions mServiceOptions;
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceAddress;
-    private IIdentifier mTargetId;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mSourceAddress;
+    private Identifier mTargetId;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCIndividualDataServiceRequest(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -74,7 +74,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -94,7 +94,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
         return mServiceOptions;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -104,7 +104,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -114,7 +114,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getTargetId()
+    public Identifier getTargetId()
     {
         if(mTargetId == null && hasDataBlock(0))
         {
@@ -125,7 +125,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {

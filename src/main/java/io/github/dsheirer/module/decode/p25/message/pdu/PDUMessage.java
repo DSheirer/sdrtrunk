@@ -16,8 +16,9 @@
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25LogicalLinkId;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -44,7 +45,7 @@ public class PDUMessage extends P25Message
     public static final int[] PDU_CRC = {144, 145, 146, 147, 148, 149, 150, 151, 152,
             153, 154, 155, 156, 157, 158, 159};
 
-    private IIdentifier mLLID;
+    private Identifier mLLID;
 
     public PDUMessage(CorrectedBinaryMessage message, int nac, long timestamp)
     {
@@ -164,11 +165,18 @@ public class PDUMessage extends P25Message
         return Vendor.fromValue(getMessage().getInt(VENDOR_ID));
     }
 
-    public IIdentifier getLogicalLinkID()
+    public Identifier getLogicalLinkID()
     {
         if(mLLID == null)
         {
-            mLLID = APCO25LogicalLinkId.create(getMessage().getInt(LOGICAL_LINK_ID));
+            if(isOutbound())
+            {
+                mLLID = APCO25ToTalkgroup.createIndividual(getMessage().getInt(LOGICAL_LINK_ID));
+            }
+            else
+            {
+                mLLID = APCO25FromTalkgroup.createIndividual(getMessage().getInt(LOGICAL_LINK_ID));
+            }
         }
 
         return mLLID;
@@ -201,7 +209,7 @@ public class PDUMessage extends P25Message
 
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

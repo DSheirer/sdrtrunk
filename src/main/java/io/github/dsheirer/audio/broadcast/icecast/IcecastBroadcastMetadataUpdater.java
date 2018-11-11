@@ -18,8 +18,15 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.icecast;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
@@ -52,7 +59,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     private final static String UTF8 = "UTF-8";
 
     private IcecastConfiguration mIcecastConfiguration;
-
+    private AliasModel mAliasModel;
     private NioSocketConnector mSocketConnector;
     private AtomicBoolean mUpdating = new AtomicBoolean();
     private Queue<String> mMetadataQueue = new LinkedTransferQueue<>();
@@ -65,9 +72,10 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
      * sequence, those updates will be queued and processed in the order received.
      */
-    public IcecastBroadcastMetadataUpdater(IcecastConfiguration icecastConfiguration)
+    public IcecastBroadcastMetadataUpdater(IcecastConfiguration icecastConfiguration, AliasModel aliasModel)
     {
         mIcecastConfiguration = icecastConfiguration;
+        mAliasModel = aliasModel;
     }
 
     /**
@@ -113,9 +121,9 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      * and will remain in the update queue until the next metadata update is requested.  However, this is a design
      * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
      */
-    public void update(Metadata metadata)
+    public void update(IdentifierCollection identifierCollection)
     {
-        mMetadataQueue.offer(getSong(metadata));
+        mMetadataQueue.offer(getSong(identifierCollection));
 
         if(!mUpdating.get() && !mMetadataQueue.isEmpty())
         {
@@ -181,45 +189,54 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     /**
      * Creates the song information for a metadata update
      */
-    private static String getSong(Metadata metadata)
+    private String getSong(IdentifierCollection identifierCollection)
     {
         StringBuilder sb = new StringBuilder();
 
-        if(metadata != null)
+        if(identifierCollection != null)
         {
-            String to = metadata.getPrimaryAddressTo().getIdentifier();
+            AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
 
-            sb.append("TO:");
+            Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
 
-            if(metadata.getPrimaryAddressTo().hasAlias())
+            if(to == null)
             {
-                sb.append(metadata.getPrimaryAddressTo().getAlias().getName());
-            }
-            else if(metadata.getPrimaryAddressTo().hasIdentifier())
-            {
-                sb.append(metadata.getPrimaryAddressTo().getIdentifier());
-            }
-            else
-            {
-                sb.append("UNKNOWN");
+                to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
             }
 
-
-            sb.append(" FROM:");
-
-            if(metadata.getPrimaryAddressFrom().hasAlias())
+            if(to != null)
             {
-                sb.append(metadata.getPrimaryAddressFrom().getAlias().getName());
-            }
-            else if(metadata.getPrimaryAddressFrom().hasIdentifier())
-            {
-                sb.append(metadata.getPrimaryAddressFrom().getIdentifier());
+                sb.append("TO:").append(to);
+
+                Alias toAlias = aliasList != null ? aliasList.getAlias(to) : null;
+
+                if(toAlias != null)
+                {
+                    sb.append(" ").append(toAlias.getName());
+                }
             }
             else
             {
-                sb.append("UNKNOWN");
+                sb.append("TO:UNKNOWN");
             }
 
+            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
+
+            if(from != null)
+            {
+                sb.append(" FROM:").append(from);
+
+                Alias fromAlias = aliasList != null ? aliasList.getAlias(from) : null;
+
+                if(fromAlias != null)
+                {
+                    sb.append(" ").append(fromAlias.getName());
+                }
+            }
+            else
+            {
+                sb.append(" FROM:UNKNOWN");
+            }
         }
         else
         {

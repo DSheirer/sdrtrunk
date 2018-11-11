@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.message;
 
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 
 import java.util.Collections;
 import java.util.List;
@@ -68,7 +68,7 @@ public class SyncLossMessage extends Message
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         return Collections.EMPTY_LIST;
     }

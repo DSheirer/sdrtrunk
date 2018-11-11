@@ -1,23 +1,27 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.alias;
 
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 
@@ -63,6 +67,37 @@ public class AliasModel extends AbstractTableModel
         if(mAliases.size() >= row)
         {
             return mAliases.get(row);
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns an optional alias list associated with the identifier collection
+     *
+     * @return alias list or null
+     */
+    public AliasList getAliasList(IdentifierCollection identifierCollection)
+    {
+        if(identifierCollection != null)
+        {
+            return getAliasList(identifierCollection.getAliasListConfiguration());
+        }
+
+        return null;
+    }
+
+    /**
+     * Retrieves an alias list specified by the alias list configuration identifier
+     *
+     * @param configurationIdentifier containing the name of an alias list
+     * @return alias list or null.
+     */
+    public AliasList getAliasList(AliasListConfigurationIdentifier configurationIdentifier)
+    {
+        if(configurationIdentifier != null && configurationIdentifier.isValid())
+        {
+            return getAliasList(configurationIdentifier.getValue());
         }
 
         return null;

@@ -20,7 +20,7 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.umbtc;
 
-import io.github.dsheirer.identifier.IIdentifier;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
 import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
@@ -100,7 +100,7 @@ public abstract class UMBTCMessage extends P25Message implements IBitErrorProvid
     /**
      * List of identifiers provided by the message
      */
-    public abstract List<IIdentifier> getIdentifiers();
+    public abstract List<Identifier> getIdentifiers();
 
     public String toString()
     {

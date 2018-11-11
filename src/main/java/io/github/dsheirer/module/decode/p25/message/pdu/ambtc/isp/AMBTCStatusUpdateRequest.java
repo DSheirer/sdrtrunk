@@ -20,12 +20,12 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp;
 
-import io.github.dsheirer.identifier.IIdentifier;
-import io.github.dsheirer.identifier.integer.node.APCO25System;
-import io.github.dsheirer.identifier.integer.node.APCO25Wacn;
-import io.github.dsheirer.identifier.integer.status.APCO25Status;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.identifier.integer.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25Status;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 
@@ -41,13 +41,13 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
     private static final int[] BLOCK_0_TARGET_ID = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     private static final int[] BLOCK_0_RESERVED = {56, 57, 58, 59, 60, 61, 62, 63};
 
-    private IIdentifier mUnitStatus;
-    private IIdentifier mUserStatus;
-    private IIdentifier mWacn;
-    private IIdentifier mSystem;
-    private IIdentifier mSourceAddress;
-    private IIdentifier mTargetId;
-    private List<IIdentifier> mIdentifiers;
+    private Identifier mUnitStatus;
+    private Identifier mUserStatus;
+    private Identifier mWacn;
+    private Identifier mSystem;
+    private Identifier mSourceAddress;
+    private Identifier mTargetId;
+    private List<Identifier> mIdentifiers;
 
     public AMBTCStatusUpdateRequest(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -76,7 +76,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
         return sb.toString();
     }
 
-    public IIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
@@ -86,7 +86,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
         return mSourceAddress;
     }
 
-    public IIdentifier getUnitStatus()
+    public Identifier getUnitStatus()
     {
         if(mUnitStatus == null)
         {
@@ -96,7 +96,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
         return mUnitStatus;
     }
 
-    public IIdentifier getUserStatus()
+    public Identifier getUserStatus()
     {
         if(mUserStatus == null)
         {
@@ -106,7 +106,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
         return mUserStatus;
     }
 
-    public IIdentifier getWacn()
+    public Identifier getWacn()
     {
         if(mWacn == null && hasDataBlock(0))
         {
@@ -116,7 +116,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
         return mWacn;
     }
 
-    public IIdentifier getSystem()
+    public Identifier getSystem()
     {
         if(mSystem == null && hasDataBlock(0))
         {
@@ -126,7 +126,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
         return mSystem;
     }
 
-    public IIdentifier getTargetId()
+    public Identifier getTargetId()
     {
         if(mTargetId == null && hasDataBlock(0))
         {
@@ -137,7 +137,7 @@ public class AMBTCStatusUpdateRequest extends AMBTCMessage
     }
 
     @Override
-    public List<IIdentifier> getIdentifiers()
+    public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
