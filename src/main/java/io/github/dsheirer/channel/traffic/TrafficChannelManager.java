@@ -22,12 +22,11 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.TrafficChannelEvent;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.module.decode.event.CallEvent.CallEventType;
-import io.github.dsheirer.module.decode.event.ICallEventProvider;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
@@ -40,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TrafficChannelManager extends Module implements ICallEventProvider, IDecoderStateEventListener
+public class TrafficChannelManager extends Module implements IDecodeEventProvider, IDecoderStateEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TrafficChannelManager.class);
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
@@ -52,7 +51,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     private Map<String,Channel> mTrafficChannelsInUse = new ConcurrentHashMap<String,Channel>();
 
     private DecoderStateEventListener mEventListener = new DecoderStateEventListener();
-    private Listener<CallEvent> mCallEventListener;
+    private Listener<IDecodeEvent> mDecodeEventListener;
 
     private ChannelModel mChannelModel;
     private DecodeConfiguration mDecodeConfiguration;
@@ -105,7 +104,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
         mTrafficChannelsInUse.clear();
 
-        mCallEventListener = null;
+        mDecodeEventListener = null;
         mDecodeConfiguration = null;
     }
 
@@ -171,93 +170,94 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      */
     private void process(TrafficChannelAllocationEvent event)
     {
-        CallEvent callEvent = event.getCallEvent();
 
-        /* Check for duplicate events and suppress */
-        synchronized(mTrafficChannelsInUse)
-        {
-            if(mTrafficChannelsInUse.containsKey(callEvent.getChannel()))
-            {
-                return;
-            }
-
-            long frequency = callEvent.getFrequency();
-
-            if(frequency > 0)
-            {
-                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(frequency,
-                    mDecodeConfiguration.getChannelSpecification().getBandwidth()));
-
-                if(channel != null)
-                {
-                    TrafficChannelEvent trafficChannelEvent =
-                        new TrafficChannelEvent(this, channel, Event.REQUEST_ENABLE, callEvent);
-
-                    //Request to enable the channel
-                    mChannelModel.broadcast(trafficChannelEvent);
-
-                    if(channel.isProcessing())
-                    {
-                        mTrafficChannelsInUse.put(callEvent.getChannel(), channel);
-                    }
-                    else
-                    {
-                        callEvent.setCallEventType(CallEventType.CALL_DETECT);
-
-                        String details = callEvent.getDetails();
-
-                        if(details == null || details.isEmpty())
-                        {
-                            callEvent.setDetails(CHANNEL_START_REJECTED);
-                        }
-                        else if(!details.contains(CHANNEL_START_REJECTED))
-                        {
-                            callEvent.setDetails(new StringBuilder(CHANNEL_START_REJECTED).append(" : ")
-                                .append(callEvent.getDetails()).toString());
-                        }
-                    }
-                }
-                else
-                {
-                    callEvent.setCallEventType(CallEventType.CALL_DETECT);
-
-                    String details = callEvent.getDetails();
-
-                    if(details == null || details.isEmpty())
-                    {
-                        callEvent.setDetails(NO_TUNER_AVAILABLE);
-                    }
-                    else if(!details.contains(NO_TUNER_AVAILABLE))
-                    {
-                        callEvent.setDetails(new StringBuilder(NO_TUNER_AVAILABLE).append(" : ")
-                            .append(callEvent.getDetails()).toString());
-                    }
-                }
-            }
-            else
-            {
-                callEvent.setCallEventType(CallEventType.CALL_DETECT);
-
-                String details = callEvent.getDetails();
-
-                if(details == null || details.isEmpty())
-                {
-                    callEvent.setDetails(UNKNOWN_FREQUENCY);
-                }
-                else if(!details.contains(UNKNOWN_FREQUENCY))
-                {
-                    callEvent.setDetails(new StringBuilder(UNKNOWN_FREQUENCY).append(" : ")
-                        .append(callEvent.getDetails()).toString());
-                }
-            }
-
-            final Listener<CallEvent> listener = mCallEventListener;
-
-            if(listener != null)
-            {
-                listener.receive(callEvent);
-            }
-        }
+//        CallEvent callEvent = event.getCallEvent();
+//
+//        /* Check for duplicate events and suppress */
+//        synchronized(mTrafficChannelsInUse)
+//        {
+//            if(mTrafficChannelsInUse.containsKey(callEvent.getChannel()))
+//            {
+//                return;
+//            }
+//
+//            long frequency = callEvent.getFrequency();
+//
+//            if(frequency > 0)
+//            {
+//                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(frequency,
+//                    mDecodeConfiguration.getChannelSpecification().getBandwidth()));
+//
+//                if(channel != null)
+//                {
+//                    TrafficChannelEvent trafficChannelEvent =
+//                        new TrafficChannelEvent(this, channel, Event.REQUEST_ENABLE, callEvent);
+//
+//                    //Request to enable the channel
+//                    mChannelModel.broadcast(trafficChannelEvent);
+//
+//                    if(channel.isProcessing())
+//                    {
+//                        mTrafficChannelsInUse.put(callEvent.getChannel(), channel);
+//                    }
+//                    else
+//                    {
+//                        callEvent.setCallEventType(CallEventType.CALL_DETECT);
+//
+//                        String details = callEvent.getDetails();
+//
+//                        if(details == null || details.isEmpty())
+//                        {
+//                            callEvent.setDetails(CHANNEL_START_REJECTED);
+//                        }
+//                        else if(!details.contains(CHANNEL_START_REJECTED))
+//                        {
+//                            callEvent.setDetails(new StringBuilder(CHANNEL_START_REJECTED).append(" : ")
+//                                .append(callEvent.getDetails()).toString());
+//                        }
+//                    }
+//                }
+//                else
+//                {
+//                    callEvent.setCallEventType(CallEventType.CALL_DETECT);
+//
+//                    String details = callEvent.getDetails();
+//
+//                    if(details == null || details.isEmpty())
+//                    {
+//                        callEvent.setDetails(NO_TUNER_AVAILABLE);
+//                    }
+//                    else if(!details.contains(NO_TUNER_AVAILABLE))
+//                    {
+//                        callEvent.setDetails(new StringBuilder(NO_TUNER_AVAILABLE).append(" : ")
+//                            .append(callEvent.getDetails()).toString());
+//                    }
+//                }
+//            }
+//            else
+//            {
+//                callEvent.setCallEventType(CallEventType.CALL_DETECT);
+//
+//                String details = callEvent.getDetails();
+//
+//                if(details == null || details.isEmpty())
+//                {
+//                    callEvent.setDetails(UNKNOWN_FREQUENCY);
+//                }
+//                else if(!details.contains(UNKNOWN_FREQUENCY))
+//                {
+//                    callEvent.setDetails(new StringBuilder(UNKNOWN_FREQUENCY).append(" : ")
+//                        .append(callEvent.getDetails()).toString());
+//                }
+//            }
+//
+//            final Listener<IDecodeEvent> listener = mDecodeEventListener;
+//
+//            if(listener != null)
+//            {
+//                listener.receive(callEvent);
+//            }
+//        }
     }
 
     /**
@@ -309,15 +309,15 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     }
 
     @Override
-    public void addCallEventListener(Listener<CallEvent> listener)
+    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventListener = listener;
+        mDecodeEventListener = listener;
     }
 
     @Override
-    public void removeCallEventListener(Listener<CallEvent> listener)
+    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventListener = null;
+        mDecodeEventListener = null;
     }
 
     @Override

@@ -40,10 +40,10 @@ import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.IMessageProvider;
-import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.module.decode.event.CallEventModel;
-import io.github.dsheirer.module.decode.event.ICallEventListener;
-import io.github.dsheirer.module.decode.event.ICallEventProvider;
+import io.github.dsheirer.module.decode.event.DecodeEventModel;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventListener;
+import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogger;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
@@ -101,7 +101,7 @@ public class ProcessingChain implements IChannelEventListener
     private ReusableBufferBroadcaster<ReusableFloatBuffer> mDemodulatedAudioBufferBroadcaster = new ReusableBufferBroadcaster();
     private ReusableBufferBroadcaster<ReusableComplexBuffer> mBasebandComplexBufferBroadcaster = new ReusableBufferBroadcaster();
     private ReusableBufferBroadcaster<ReusableByteBuffer> mDemodulatedBitstreamBufferBroadcaster = new ReusableBufferBroadcaster();
-    private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
+    private Broadcaster<IDecodeEvent> mDecodeEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
@@ -114,7 +114,7 @@ public class ProcessingChain implements IChannelEventListener
 
     protected Source mSource;
     private List<Module> mModules = new ArrayList<>();
-    private CallEventModel mCallEventModel;
+    private DecodeEventModel mDecodeEventModel;
     private ChannelState mChannelState;
     private MessageActivityModel mMessageActivityModel;
 
@@ -128,13 +128,13 @@ public class ProcessingChain implements IChannelEventListener
         mChannelState = new ChannelState(channel, aliasModel);
         addModule(mChannelState);
 
-        mCallEventModel = new CallEventModel();
-        addCallEventListener(mCallEventModel);
+        mDecodeEventModel = new DecodeEventModel();
+        addDecodeEventListener(mDecodeEventModel);
     }
 
-    public CallEventModel getCallEventModel()
+    public DecodeEventModel getDecodeEventModel()
     {
-        return mCallEventModel;
+        return mDecodeEventModel;
     }
 
     public ChannelState getChannelState()
@@ -166,7 +166,7 @@ public class ProcessingChain implements IChannelEventListener
         mModules.clear();
 
         mAudioPacketBroadcaster.dispose();
-        mCallEventBroadcaster.dispose();
+        mDecodeEventBroadcaster.dispose();
         mChannelEventBroadcaster.dispose();
         mBasebandComplexBufferBroadcaster.dispose();
         mDemodulatedBitstreamBufferBroadcaster.dispose();
@@ -300,9 +300,9 @@ public class ProcessingChain implements IChannelEventListener
             mAudioPacketBroadcaster.addListener(((IAudioPacketListener)module).getAudioPacketListener());
         }
 
-        if(module instanceof ICallEventListener)
+        if(module instanceof IDecodeEventListener)
         {
-            mCallEventBroadcaster.addListener(((ICallEventListener)module).getCallEventListener());
+            mDecodeEventBroadcaster.addListener(((IDecodeEventListener)module).getDecodeEventListener());
         }
 
         if(module instanceof IChannelEventListener)
@@ -372,9 +372,9 @@ public class ProcessingChain implements IChannelEventListener
             mAudioPacketBroadcaster.removeListener(((IAudioPacketListener)module).getAudioPacketListener());
         }
 
-        if(module instanceof ICallEventListener)
+        if(module instanceof IDecodeEventListener)
         {
-            mCallEventBroadcaster.removeListener(((ICallEventListener)module).getCallEventListener());
+            mDecodeEventBroadcaster.removeListener(((IDecodeEventListener)module).getDecodeEventListener());
         }
 
         if(module instanceof IChannelEventListener)
@@ -439,9 +439,9 @@ public class ProcessingChain implements IChannelEventListener
             ((IAudioPacketProvider)module).setAudioPacketListener(mAudioPacketBroadcaster);
         }
 
-        if(module instanceof ICallEventProvider)
+        if(module instanceof IDecodeEventProvider)
         {
-            ((ICallEventProvider)module).addCallEventListener(mCallEventBroadcaster);
+            ((IDecodeEventProvider)module).addDecodeEventListener(mDecodeEventBroadcaster);
         }
 
         if(module instanceof IChannelEventProvider)
@@ -511,9 +511,9 @@ public class ProcessingChain implements IChannelEventListener
             ((IReusableByteBufferProvider)module).removeBufferListener(mDemodulatedBitstreamBufferBroadcaster);
         }
 
-        if(module instanceof ICallEventProvider)
+        if(module instanceof IDecodeEventProvider)
         {
-            ((ICallEventProvider)module).removeCallEventListener(mCallEventBroadcaster);
+            ((IDecodeEventProvider)module).removeDecodeEventListener(mDecodeEventBroadcaster);
         }
 
         if(module instanceof IChannelEventProvider)
@@ -713,16 +713,16 @@ public class ProcessingChain implements IChannelEventListener
     }
 
     /**
-     * Adds the listener to receive call events from all modules.
+     * Adds the listener to receive decode events from all modules.
      */
-    public void addCallEventListener(Listener<CallEvent> listener)
+    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventBroadcaster.addListener(listener);
+        mDecodeEventBroadcaster.addListener(listener);
     }
 
-    public void removeCallEventListener(Listener<CallEvent> listener)
+    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventBroadcaster.removeListener(listener);
+        mDecodeEventBroadcaster.removeListener(listener);
     }
 
     /**

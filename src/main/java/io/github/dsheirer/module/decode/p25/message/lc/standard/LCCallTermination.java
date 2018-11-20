@@ -33,6 +33,7 @@ import java.util.List;
  */
 public class LCCallTermination extends LinkControlWord
 {
+    private static final int SYSTEM_CONTROLLER = 0xFFFFFD;
     private static final int[] ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
             67, 68, 69, 70, 71};
 
@@ -68,6 +69,14 @@ public class LCCallTermination extends LinkControlWord
         }
 
         return mAddress;
+    }
+
+    /**
+     * Indicates if the call termination was ordered by the system controller
+     */
+    public boolean isNetworkCommandedTeardown()
+    {
+        return getMessage().getInt(ADDRESS) == SYSTEM_CONTROLLER;
     }
 
     /**

@@ -24,6 +24,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnyTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
@@ -86,7 +87,7 @@ public class LocationRegistrationResponse extends OSPMessage
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS));
+            mGroupAddress = APCO25AnyTalkgroup.create(getMessage().getInt(GROUP_ADDRESS));
         }
 
         return mGroupAddress;

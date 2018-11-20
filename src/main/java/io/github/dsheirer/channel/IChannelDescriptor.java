@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.channel.traffic;
+package io.github.dsheirer.channel;
 
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 

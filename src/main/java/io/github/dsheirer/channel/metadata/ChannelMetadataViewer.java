@@ -24,8 +24,9 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.module.decode.event.CallEventPanel;
+import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
+import io.github.dsheirer.preference.UserPreferences;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
@@ -36,7 +37,7 @@ public class ChannelMetadataViewer extends JPanel
     private ChannelMetadataPanel mChannelMetadataPanel;
 
     private ChannelDetailPanel mChannelDetailPanel;
-    private CallEventPanel mCallEventPanel;
+    private DecodeEventPanel mDecodeEventPanel;
     private MessageActivityPanel mMessageActivityPanel;
 
     /**
@@ -44,12 +45,12 @@ public class ChannelMetadataViewer extends JPanel
      * messages, events, and spectral view.
      */
     public ChannelMetadataViewer(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
-                                 AliasModel aliasModel)
+                                 AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
-        mCallEventPanel = new CallEventPanel(iconManager);
+        mDecodeEventPanel = new DecodeEventPanel(iconManager, userPreferences, aliasModel);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
-        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager, aliasModel);
+        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager, aliasModel, userPreferences);
 
         init();
     }
@@ -60,7 +61,7 @@ public class ChannelMetadataViewer extends JPanel
 
         JideTabbedPane tabbedPane = new JideTabbedPane();
         tabbedPane.addTab("Details", mChannelDetailPanel);
-        tabbedPane.addTab("Events", mCallEventPanel);
+        tabbedPane.addTab("Events", mDecodeEventPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
 //        tabbedPane.addTab("Spectrum", mChannelSpectrumPanel);
         tabbedPane.setFont(this.getFont());
@@ -73,7 +74,7 @@ public class ChannelMetadataViewer extends JPanel
         add(splitPane);
 
         mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mCallEventPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mDecodeEventPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
     }
 }

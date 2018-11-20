@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +15,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.channel.traffic;
 
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.module.decode.event.CallEvent;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
 
 /**
  * Traffic channel allocation event wraps a call event indicating the channel
@@ -30,16 +31,16 @@ import io.github.dsheirer.module.decode.event.CallEvent;
  */
 public class TrafficChannelAllocationEvent extends DecoderStateEvent
 {
-	private CallEvent mCallEvent;
-	
-	public TrafficChannelAllocationEvent( Object source, CallEvent callEvent )
-	{
-		super( source, Event.TRAFFIC_CHANNEL_ALLOCATION, State.CALL );
-		mCallEvent = callEvent;
-	}
-	
-	public CallEvent getCallEvent()
-	{
-		return mCallEvent;
-	}
+    private DecodeEvent mCallEvent;
+
+    public TrafficChannelAllocationEvent(Object source, DecodeEvent callEvent)
+    {
+        super(source, Event.TRAFFIC_CHANNEL_ALLOCATION, State.CALL);
+        mCallEvent = callEvent;
+    }
+
+    public DecodeEvent getCallEvent()
+    {
+        return mCallEvent;
+    }
 }

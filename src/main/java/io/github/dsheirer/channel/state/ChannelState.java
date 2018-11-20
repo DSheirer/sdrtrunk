@@ -40,7 +40,8 @@ import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.module.decode.event.ICallEventProvider;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -54,7 +55,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
+public class ChannelState extends Module implements IDecodeEventProvider, IDecoderStateEventListener,
     IDecoderStateEventProvider, ISourceEventListener, ISourceEventProvider, IHeartbeatListener,
     ISquelchStateProvider, IOverflowListener, IdentifierUpdateListener, IdentifierUpdateProvider
 {
@@ -65,7 +66,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
     private State mState = State.IDLE;
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
-    private Listener<CallEvent> mCallEventListener;
+    private Listener<IDecodeEvent> mDecodeEventListener;
     private Listener<DecoderStateEvent> mDecoderStateListener;
     private Listener<SquelchState> mSquelchStateListener;
     private Listener<SourceEvent> mExternalSourceEventListener;
@@ -203,7 +204,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
     public void dispose()
     {
-        mCallEventListener = null;
+        mDecodeEventListener = null;
         mDecoderStateListener = null;
         mSquelchStateListener = null;
     }
@@ -475,7 +476,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         if(mTrafficChannelEndListener != null && mTrafficChannelCallEvent != null)
         {
             mTrafficChannelCallEvent.end();
-            broadcast(mTrafficChannelCallEvent);
+//            broadcast(mTrafficChannelCallEvent);
             mTrafficChannelEndListener.callEnd(mTrafficChannelCallEvent.getChannel());
             mTrafficChannelEndListener = null;
             mTrafficChannelCallEvent = null;
@@ -485,24 +486,24 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     /**
      * Broadcasts the call event to the registered listener
      */
-    protected void broadcast(CallEvent event)
+    protected void broadcast(IDecodeEvent event)
     {
-        if(mCallEventListener != null)
+        if(mDecodeEventListener != null)
         {
-            mCallEventListener.receive(event);
+            mDecodeEventListener.receive(event);
         }
     }
 
     @Override
-    public void addCallEventListener(Listener<CallEvent> listener)
+    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventListener = listener;
+        mDecodeEventListener = listener;
     }
 
     @Override
-    public void removeCallEventListener(Listener<CallEvent> listener)
+    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventListener = null;
+        mDecodeEventListener = null;
     }
 
     /**
@@ -546,6 +547,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
      */
     public void configureAsTrafficChannel(TrafficChannelManager manager, CallEvent callEvent)
     {
+        mLog.warn("**************** Fix the Channel State configure as Traffic channel method");
         mTrafficChannelEndListener = manager;
 
         mTrafficChannelCallEvent = callEvent;
@@ -588,7 +590,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
         /* Rebroadcast the allocation event so that the internal decoder states
          * can self-configure with the call event details */
-        broadcast(mTrafficChannelCallEvent);
+//        broadcast(mTrafficChannelCallEvent);
     }
 
     /**

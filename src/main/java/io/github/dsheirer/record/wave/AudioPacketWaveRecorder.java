@@ -140,6 +140,12 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
     {
         if(mRunning.compareAndSet(true, false))
         {
+            if(mProcessorHandle != null)
+            {
+                mProcessorHandle.cancel(false);
+                mProcessorHandle = null;
+            }
+
             try
             {
                 //Finish writing any residual audio buffers
@@ -198,7 +204,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
      *
      * @throws IOException if there are any errors writing the audio
      */
-    private void write() throws IOException
+    private synchronized void write() throws IOException
     {
         mTransferQueue.drainTo(mAudioPacketsToProcess);
 
@@ -214,7 +220,14 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
                 mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples()));
             }
 
-            audioPacket.decrementUserCount();
+            try
+            {
+                audioPacket.decrementUserCount();
+            }
+            catch(IllegalStateException ise)
+            {
+                mLog.error("Error while decrementing user count on audio packet while writing data to recording file", ise);
+            }
         }
 
         mAudioPacketsToProcess.clear();

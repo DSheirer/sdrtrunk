@@ -1,14 +1,14 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +26,7 @@ public class GroupVoiceChannelGrantUpdateExplicit extends OSPMessage implements 
     private static final int[] UPLINK_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] GROUP_ADDRESS = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private IChannelDescriptor mChannel;
     private Identifier mGroupAddress;
     private List<Identifier> mIdentifiers;
@@ -45,21 +45,21 @@ public class GroupVoiceChannelGrantUpdateExplicit extends OSPMessage implements 
         sb.append(getMessageStub());
         sb.append(" TALKGROUP:").append(getGroupAddress());
         sb.append(" CHAN:").append(getChannel());
-        sb.append(" ").append(getServiceOptions().toString());
+        sb.append(" ").append(getVoiceServiceOptions().toString());
         return sb.toString();
     }
 
     /**
      * Service options for the request
      */
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     public IChannelDescriptor getChannel()

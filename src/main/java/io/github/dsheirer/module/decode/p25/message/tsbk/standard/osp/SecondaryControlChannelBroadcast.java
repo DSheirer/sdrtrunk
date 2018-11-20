@@ -21,7 +21,7 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
@@ -29,7 +29,7 @@ import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +52,8 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
     private Identifier mSite;
     private IChannelDescriptor mChannelA;
     private IChannelDescriptor mChannelB;
-    private ServiceOptions mServiceOptionsA;
-    private ServiceOptions mServiceOptionsB;
+    private VoiceServiceOptions mVoiceServiceOptionsA;
+    private VoiceServiceOptions mVoiceServiceOptionsB;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -71,11 +71,11 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
         sb.append(" RFSS:").append(getRfss());
         sb.append(" SITE:").append(getSite());
         sb.append(" CHAN A:").append(getChannelA());
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptionsA());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptionsA());
         if(hasChannelB())
         {
             sb.append(" CHAN B:").append(getChannelB());
-            sb.append(" SERVICE OPTIONS:").append(getServiceOptionsB());
+            sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptionsB());
         }
         return sb.toString();
     }
@@ -110,14 +110,14 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
         return mChannelA;
     }
 
-    public ServiceOptions getServiceOptionsA()
+    public VoiceServiceOptions getVoiceServiceOptionsA()
     {
-        if(mServiceOptionsA == null)
+        if(mVoiceServiceOptionsA == null)
         {
-            mServiceOptionsA = new ServiceOptions(getMessage().getInt(SYSTEM_SERVICE_CLASS_A));
+            mVoiceServiceOptionsA = new VoiceServiceOptions(getMessage().getInt(SYSTEM_SERVICE_CLASS_A));
         }
 
-        return mServiceOptionsA;
+        return mVoiceServiceOptionsA;
     }
 
     private boolean hasChannelB()
@@ -136,14 +136,14 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
         return mChannelB;
     }
 
-    public ServiceOptions getServiceOptionsB()
+    public VoiceServiceOptions getVoiceServiceOptionsB()
     {
-        if(mServiceOptionsB == null)
+        if(mVoiceServiceOptionsB == null)
         {
-            mServiceOptionsB = new ServiceOptions(getMessage().getInt(SYSTEM_SERVICE_CLASS_B));
+            mVoiceServiceOptionsB = new VoiceServiceOptions(getMessage().getInt(SYSTEM_SERVICE_CLASS_B));
         }
 
-        return mServiceOptionsB;
+        return mVoiceServiceOptionsB;
     }
 
     @Override

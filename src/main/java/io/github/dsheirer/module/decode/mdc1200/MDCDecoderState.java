@@ -129,7 +129,7 @@ public class MDCDecoderState extends DecoderState
 
             MDCCallEvent event = MDCCallEvent.getMDCCallEvent(mdc);
 //            event.setAliasList(getAliasList());
-            broadcast(event);
+//            broadcast(event);
 
             switch(type)
             {

@@ -21,11 +21,11 @@
 package io.github.dsheirer.identifier.talkgroup;
 
 import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 
-public abstract class TalkgroupIdentifier extends Identifier<Integer>
+public abstract class TalkgroupIdentifier extends IntegerIdentifier
 {
     private boolean mIsGroup;
 

@@ -37,7 +37,7 @@ public class APCO25ShortDataMessage extends IntegerIdentifier
      */
     public APCO25ShortDataMessage(int shortDataMessage)
     {
-        super(shortDataMessage, IdentifierClass.USER, Form.SHORT_DATA_MESSAGE, Role.FROM);
+        super(shortDataMessage, IdentifierClass.USER, Form.SHORT_DATA_MESSAGE, Role.ANY);
     }
 
     @Override

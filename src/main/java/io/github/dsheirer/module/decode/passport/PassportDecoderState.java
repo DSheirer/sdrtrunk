@@ -151,7 +151,7 @@ public class PassportDecoderState extends DecoderState
                                         .to(String.valueOf(passport.getTalkgroupID()))
                                         .build();
 
-                                broadcast(mCurrentCallEvent);
+//                                broadcast(mCurrentCallEvent);
 
                                 broadcast(new DecoderStateEvent(this,
                                         Event.START, State.CALL));
@@ -173,14 +173,14 @@ public class PassportDecoderState extends DecoderState
                             {
                                 mActiveCalls.put(lcn, tg);
 
-                                broadcast(new PassportCallEvent
-                                        .Builder(CallEvent.CallEventType.CALL_DETECT)
-//                                        .aliasList(getAliasList())
-                                        .channel(String.valueOf(lcn))
-                                        .details("Site: " + passport.getSite())
-                                        .frequency(passport.getLCNFrequency())
-                                        .to(tg)
-                                        .build());
+//                                broadcast(new PassportCallEvent
+//                                        .Builder(CallEvent.CallEventType.CALL_DETECT)
+////                                        .aliasList(getAliasList())
+//                                        .channel(String.valueOf(lcn))
+//                                        .details("Site: " + passport.getSite())
+//                                        .frequency(passport.getLCNFrequency())
+//                                        .to(tg)
+//                                        .build());
                             }
                         }
                         break;
@@ -197,7 +197,7 @@ public class PassportDecoderState extends DecoderState
                         if(mCurrentCallEvent != null)
                         {
                             mCurrentCallEvent.end();
-                            broadcast(mCurrentCallEvent);
+//                            broadcast(mCurrentCallEvent);
                             mCurrentCallEvent = null;
 
                             broadcast(new DecoderStateEvent(this, Event.RESET, State.FADE));
@@ -243,7 +243,7 @@ public class PassportDecoderState extends DecoderState
                                         .to(String.valueOf(passport.getTalkgroupID()))
                                         .build();
 
-                                broadcast(mCurrentCallEvent);
+//                                broadcast(mCurrentCallEvent);
 
                                 broadcast(new DecoderStateEvent(this,
                                         Event.START, State.DATA));
@@ -265,14 +265,14 @@ public class PassportDecoderState extends DecoderState
                             {
                                 mActiveCalls.put(lcn, tg);
 
-                                broadcast(new PassportCallEvent
-                                        .Builder(CallEvent.CallEventType.DATA_CALL)
-//                                        .aliasList(getAliasList())
-                                        .channel(String.valueOf(lcn))
-                                        .details("Site: " + passport.getSite())
-                                        .frequency(passport.getLCNFrequency())
-                                        .to(tg)
-                                        .build());
+//                                broadcast(new PassportCallEvent
+//                                        .Builder(CallEvent.CallEventType.DATA_CALL)
+////                                        .aliasList(getAliasList())
+//                                        .channel(String.valueOf(lcn))
+//                                        .details("Site: " + passport.getSite())
+//                                        .frequency(passport.getLCNFrequency())
+//                                        .to(tg)
+//                                        .build());
                             }
                         }
                         break;
@@ -289,7 +289,7 @@ public class PassportDecoderState extends DecoderState
                         if(mCurrentCallEvent != null)
                         {
                             mCurrentCallEvent.end();
-                            broadcast(mCurrentCallEvent);
+//                            broadcast(mCurrentCallEvent);
                             mCurrentCallEvent = null;
 
                             broadcast(new DecoderStateEvent(this, Event.RESET, State.FADE));
@@ -310,7 +310,7 @@ public class PassportDecoderState extends DecoderState
                         if(current != null)
                         {
                             current.setFromID(min);
-                            broadcast(current);
+//                            broadcast(current);
 
                         }
                         break;
@@ -326,7 +326,7 @@ public class PassportDecoderState extends DecoderState
                                     .to(passport.getToID())
                                     .build();
 
-                            broadcast(mCurrentCallEvent);
+//                            broadcast(mCurrentCallEvent);
 
                             broadcast(new DecoderStateEvent(this,
                                     Event.START, State.DATA));

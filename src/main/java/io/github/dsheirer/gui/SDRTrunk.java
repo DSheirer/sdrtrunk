@@ -37,6 +37,7 @@ import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
@@ -150,10 +151,12 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         RecorderManager recorderManager = new RecorderManager(aliasModel);
 
+        UserPreferences userPreferences = new UserPreferences(SystemProperties.getInstance());
+
         mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
         mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, eventLogManager,
-            recorderManager, mSourceManager, aliasModel);
+            recorderManager, mSourceManager, aliasModel, userPreferences);
 
         mChannelModel.addListener(mChannelProcessingManager);
 
@@ -182,7 +185,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, mSourceManager, tunerModel);
+            mapService, mSettingsManager, mSourceManager, tunerModel, userPreferences);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager, tunerModel);

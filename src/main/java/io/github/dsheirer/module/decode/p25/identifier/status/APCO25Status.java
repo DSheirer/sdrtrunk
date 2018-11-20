@@ -56,7 +56,7 @@ public class APCO25Status extends IntegerIdentifier
      */
     public static APCO25Status createUnitStatus(int status)
     {
-        return new APCO25Status(status, IdentifierClass.USER, Form.UNIT_STATUS, Role.FROM);
+        return new APCO25Status(status, IdentifierClass.USER, Form.UNIT_STATUS, Role.STATUS);
     }
 
     /**
@@ -64,6 +64,6 @@ public class APCO25Status extends IntegerIdentifier
      */
     public static APCO25Status createUserStatus(int status)
     {
-        return new APCO25Status(status, IdentifierClass.USER, Form.USER_STATUS, Role.FROM);
+        return new APCO25Status(status, IdentifierClass.USER, Form.USER_STATUS, Role.STATUS);
     }
 }

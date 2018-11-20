@@ -28,7 +28,7 @@ import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgro
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.AnswerResponse;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
     private static final int[] BLOCK_0_TARGET_ID = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
         57, 58, 59, 60, 61, 62, 63};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private AnswerResponse mAnswerResponse;
     private Identifier mWacn;
     private Identifier mSystem;
@@ -75,7 +75,7 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
         {
             sb.append(" SYSTEM:").append(getSystem());
         }
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         return sb.toString();
     }
 
@@ -99,14 +99,14 @@ public class AMBTCUnitToUnitVoiceServiceAnswerResponse extends AMBTCMessage
         return mAnswerResponse;
     }
 
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     public Identifier getWacn()

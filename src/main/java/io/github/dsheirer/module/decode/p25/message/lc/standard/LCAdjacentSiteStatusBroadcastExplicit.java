@@ -21,7 +21,7 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
@@ -29,7 +29,7 @@ import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +53,7 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
     private Identifier mRFSS;
     private Identifier mSite;
     private IChannelDescriptor mChannel;
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -73,7 +73,7 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
         sb.append(" SITE:" + getSite());
         sb.append(" LRA:").append(getLRA());
         sb.append(" CHAN:" + getChannel());
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         return sb.toString();
     }
 
@@ -119,14 +119,14 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
         return mChannel;
     }
 
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_CLASS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_CLASS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
 

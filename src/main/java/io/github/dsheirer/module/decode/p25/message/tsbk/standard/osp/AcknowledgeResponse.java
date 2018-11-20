@@ -120,7 +120,7 @@ public class AcknowledgeResponse extends OSPMessage
      */
     public Opcode getAcknowledgedServiceType()
     {
-        return Opcode.fromValue(getMessage().getInt(SERVICE_TYPE), Direction.OUTBOUND, Vendor.STANDARD);
+        return Opcode.fromValue(getMessage().getInt(SERVICE_TYPE), Direction.INBOUND, Vendor.STANDARD);
     }
 
     public Identifier getTargetAddress()

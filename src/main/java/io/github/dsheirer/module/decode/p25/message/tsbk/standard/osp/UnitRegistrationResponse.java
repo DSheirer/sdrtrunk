@@ -23,7 +23,8 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25IdentifierTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Response;
@@ -39,15 +40,15 @@ public class UnitRegistrationResponse extends OSPMessage
     private static final int[] RESERVED = {16, 17};
     private static final int[] RESPONSE = {18, 19};
     private static final int[] SYSTEM_ID = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] SOURCE_ID = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+    private static final int[] TARGET_UNIQUE_ID = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
         49, 50, 51, 52, 53, 54, 55};
-    private static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
+    private static final int[] TARGET_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
         74, 75, 76, 77, 78, 79};
 
     private Response mResponse;
     private Identifier mSystem;
-    private Identifier mSourceId;
-    private Identifier mSourceAddress;
+    private Identifier mTargetUniqueId;
+    private Identifier mTargetAddress;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -62,8 +63,8 @@ public class UnitRegistrationResponse extends OSPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" TO ADDR:").append(getSourceAddress());
-        sb.append(" TO ID:").append(getSourceId());
+        sb.append(" TO ADDR:").append(getTargetAddress());
+        sb.append(" TO ID:").append(getTargetUniqueId());
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" RESPONSE:").append(getResponse());
         return sb.toString();
@@ -89,24 +90,24 @@ public class UnitRegistrationResponse extends OSPMessage
         return mSystem;
     }
 
-    public Identifier getSourceId()
+    public Identifier getTargetUniqueId()
     {
-        if(mSourceId == null)
+        if(mTargetUniqueId == null)
         {
-            mSourceId = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ID));
+            mTargetUniqueId = APCO25IdentifierTalkgroup.createIndividual(getMessage().getInt(TARGET_UNIQUE_ID));
         }
 
-        return mSourceId;
+        return mTargetUniqueId;
     }
 
-    public Identifier getSourceAddress()
+    public Identifier getTargetAddress()
     {
-        if(mSourceAddress == null)
+        if(mTargetAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS));
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS));
         }
 
-        return mSourceAddress;
+        return mTargetAddress;
     }
 
     @Override
@@ -115,8 +116,8 @@ public class UnitRegistrationResponse extends OSPMessage
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceId());
-            mIdentifiers.add(getSourceAddress());
+            mIdentifiers.add(getTargetUniqueId());
+            mIdentifiers.add(getTargetAddress());
             mIdentifiers.add(getSystem());
         }
 

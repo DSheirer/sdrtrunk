@@ -116,7 +116,7 @@ public class LTRStandardDecoderState extends DecoderState
 
                             mActiveCalls.put(channel, event);
 
-                            broadcast(event);
+//                            broadcast(event);
 
                             if(mLCNTracker.isCurrentChannel(channel))
                             {
@@ -149,7 +149,7 @@ public class LTRStandardDecoderState extends DecoderState
                         if(event != null)
                         {
                             event.end();
-                            broadcast(event);
+//                            broadcast(event);
                             broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
                         }
                     }
@@ -226,7 +226,7 @@ public class LTRStandardDecoderState extends DecoderState
             {
                 event.end();
 
-                broadcast(event);
+//                broadcast(event);
             }
         }
 

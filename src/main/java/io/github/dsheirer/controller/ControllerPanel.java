@@ -33,6 +33,7 @@ import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.map.MapPanel;
 import io.github.dsheirer.map.MapService;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.tuner.TunerModel;
@@ -71,14 +72,15 @@ public class ControllerPanel extends JPanel
                            MapService mapService,
                            SettingsManager settingsManager,
                            SourceManager sourceManager,
-                           TunerModel tunerModel)
+                           TunerModel tunerModel,
+                           UserPreferences userPreferences)
     {
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
 
-        mAudioPanel = new AudioPanel(iconManager, settingsManager, sourceManager, audioPlaybackManager, aliasModel);
+        mAudioPanel = new AudioPanel(iconManager, userPreferences, settingsManager, sourceManager, audioPlaybackManager, aliasModel);
 
-        mChannelMetadataViewer = new ChannelMetadataViewer(channelProcessingManager, iconManager, aliasModel);
+        mChannelMetadataViewer = new ChannelMetadataViewer(channelProcessingManager, iconManager, aliasModel, userPreferences);
 
         mMapPanel = new MapPanel(mapService, iconManager, settingsManager);
 

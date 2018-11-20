@@ -25,6 +25,7 @@ import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25IdentifierTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
@@ -108,7 +109,7 @@ public class AMBTCLocationRegistrationRequest extends AMBTCMessage
     {
         if(mSourceId == null)
         {
-            mSourceId = APCO25FromTalkgroup.createIndividual(getHeader().getMessage().getInt(BLOCK_0_SOURCE_ID));
+            mSourceId = APCO25IdentifierTalkgroup.createIndividual(getHeader().getMessage().getInt(BLOCK_0_SOURCE_ID));
         }
 
         return mSourceId;

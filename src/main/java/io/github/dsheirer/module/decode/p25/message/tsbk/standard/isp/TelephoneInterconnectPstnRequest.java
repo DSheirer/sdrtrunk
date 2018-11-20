@@ -6,7 +6,7 @@ import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkg
 import io.github.dsheirer.module.decode.p25.identifier.telephone.APCO25TelephoneNumber;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ISPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +24,7 @@ public class TelephoneInterconnectPstnRequest extends ISPMessage
     private static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
             74, 75, 76, 77, 78, 79};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private Identifier mPstnAddress;
     private Identifier mSourceAddress;
     private List<Identifier> mIdentifiers;
@@ -43,28 +43,28 @@ public class TelephoneInterconnectPstnRequest extends ISPMessage
         sb.append(getMessageStub());
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" TO:").append(getPstnAddress());
-        sb.append(" ").append(getServiceOptions().toString());
+        sb.append(" ").append(getVoiceServiceOptions().toString());
         return sb.toString();
     }
 
     /**
      * Service options for the request
      */
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     public Identifier getPstnAddress()
     {
         if(mPstnAddress == null)
         {
-            mPstnAddress = APCO25TelephoneNumber.create("PREDEFINED PSTN " + getMessage().getInt(PSTN_ADDRESS));
+            mPstnAddress = APCO25TelephoneNumber.createTo("PSTN ENTRY #" + getMessage().getInt(PSTN_ADDRESS));
         }
 
         return mPstnAddress;

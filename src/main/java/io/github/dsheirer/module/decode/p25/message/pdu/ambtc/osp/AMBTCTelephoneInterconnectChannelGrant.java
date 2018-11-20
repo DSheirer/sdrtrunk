@@ -20,7 +20,7 @@
 
 package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
@@ -29,7 +29,7 @@ import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class AMBTCTelephoneInterconnectChannelGrant extends AMBTCMessage impleme
     private static final int[] BLOCK_0_CALL_TIMER = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] BLOCK_0_RESERVED = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private IChannelDescriptor mChannel;
     private Identifier mAnyAddress;
     private List<Identifier> mIdentifiers;
@@ -66,18 +66,18 @@ public class AMBTCTelephoneInterconnectChannelGrant extends AMBTCMessage impleme
             sb.append(" CHAN:").append(getChannel());
         }
         sb.append(" CALL TIMER:").append(getCallTimer()).append("ms");
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         return sb.toString();
     }
 
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     public long getCallTimer()

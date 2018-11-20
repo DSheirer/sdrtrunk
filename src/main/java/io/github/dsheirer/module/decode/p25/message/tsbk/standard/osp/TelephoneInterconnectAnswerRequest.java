@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Group voice call channel grant.
+ * Telephone Interconnect Answer Request.
  */
 public class TelephoneInterconnectAnswerRequest extends OSPMessage
 {
@@ -66,7 +66,7 @@ public class TelephoneInterconnectAnswerRequest extends OSPMessage
             digits.add(getMessage().getInt(DIGIT_9));
             digits.add(getMessage().getInt(DIGIT_10));
 
-            mTelephoneNumber = APCO25TelephoneNumber.create(Digit.decode(digits));
+            mTelephoneNumber = APCO25TelephoneNumber.createFrom(Digit.decode(digits));
         }
 
         return mTelephoneNumber;

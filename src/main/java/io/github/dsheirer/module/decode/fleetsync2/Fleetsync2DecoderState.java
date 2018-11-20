@@ -165,7 +165,7 @@ public class Fleetsync2DecoderState extends DecoderState
 
 //                fsCallEvent.setAliasList(getAliasList());
 
-                broadcast(fsCallEvent);
+//                broadcast(fsCallEvent);
 
                 /* Broadcast decode event so that the channel state will
                  * kick in and reset everything after a short delay */

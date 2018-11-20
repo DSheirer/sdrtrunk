@@ -705,17 +705,20 @@ public class AliasList implements Listener<AliasEvent>
      */
     public Alias getAlias(Identifier identifier)
     {
-        switch(identifier.getForm())
+        if(identifier != null)
         {
-            case TALKGROUP:
-                TalkgroupIdentifier talkgroup = (TalkgroupIdentifier)identifier;
-                Map<Integer,Alias> protocolMap = mTalkgroupProtocolMap.get(identifier.getProtocol());
+            switch(identifier.getForm())
+            {
+                case TALKGROUP:
+                    TalkgroupIdentifier talkgroup = (TalkgroupIdentifier)identifier;
+                    Map<Integer,Alias> protocolMap = mTalkgroupProtocolMap.get(identifier.getProtocol());
 
-                if(protocolMap != null)
-                {
-                    return protocolMap.get(talkgroup.getValue());
-                }
-                break;
+                    if(protocolMap != null)
+                    {
+                        return protocolMap.get(talkgroup.getValue());
+                    }
+                    break;
+            }
         }
 
         return null;

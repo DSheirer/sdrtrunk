@@ -59,6 +59,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     private List<ReusableAudioPacket> mAudioPackets = new ArrayList<>();
     private ScheduledFuture<?> mBufferProcessorFuture;
     private AliasModel mAliasModel;
+    private int mUnknownAudioRecordingIndex = 1;
 
     private boolean mCanStartNewRecorders = true;
 
@@ -89,7 +90,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         });
 
         mBufferProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferProcessor(), 0,
-            1, TimeUnit.SECONDS);
+            500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -191,7 +192,14 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     private void stopRecorder(AudioPacketWaveRecorder recorder)
     {
         Path rename = getFinalFileName(recorder.getIdentifierCollection());
-        AliasList aliasList = mAliasModel.getAliasList(recorder.getIdentifierCollection().getAliasListConfiguration());
+
+        AliasList aliasList = null;
+
+        if(recorder.getIdentifierCollection() != null)
+        {
+            aliasList = mAliasModel.getAliasList(recorder.getIdentifierCollection());
+        }
+
         WaveMetadata waveMetadata = WaveMetadata.createFrom(recorder.getIdentifierCollection(), aliasList);
         recorder.stop(rename, waveMetadata);
     }
@@ -209,7 +217,6 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
 
             if(entry.getValue().getLastBufferReceived() + IDLE_RECORDER_REMOVAL_THRESHOLD < System.currentTimeMillis())
             {
-                mLog.info("Removing idle recorder [" + entry.getKey() + "]");
                 it.remove();
                 stopRecorder(entry.getValue());
             }
@@ -273,7 +280,12 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         }
         else
         {
-            sb.append("audio_recording");
+            sb.append("audio_recording_no_metadata_").append(mUnknownAudioRecordingIndex++);
+
+            if(mUnknownAudioRecordingIndex < 0)
+            {
+                mUnknownAudioRecordingIndex = 1;
+            }
         }
 
         StringBuilder sbFinal = new StringBuilder();
@@ -313,8 +325,15 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         @Override
         public void run()
         {
-            processBuffers();
-            removeIdleRecorders();
+            try
+            {
+                processBuffers();
+                removeIdleRecorders();
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error while processing audio buffers", t);
+            }
         }
     }
 }

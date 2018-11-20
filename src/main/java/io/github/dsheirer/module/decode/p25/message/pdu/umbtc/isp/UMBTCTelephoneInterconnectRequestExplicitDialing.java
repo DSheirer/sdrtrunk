@@ -27,7 +27,7 @@ import io.github.dsheirer.module.decode.p25.identifier.telephone.APCO25Telephone
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.UMBTCMessage;
 import io.github.dsheirer.module.decode.p25.reference.Digit;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,7 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
     private static final int[] BLOCK_0_DIGIT_COUNT = {8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] BLOCK_0_SERVICE_OPTIONS = {16, 17, 18, 19, 20, 21, 22, 23};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private Identifier mSourceAddress;
     private Identifier mTelephoneNumber;
     private List<Identifier> mIdentifiers;
@@ -56,25 +56,25 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
         {
             sb.append(" TO:").append(getTelephoneNumber());
         }
-        if(getServiceOptions() != null)
+        if(getVoiceServiceOptions() != null)
         {
-            sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+            sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         }
 
         return sb.toString();
     }
 
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null && hasDataBlock(0))
+        if(mVoiceServiceOptions == null && hasDataBlock(0))
         {
             ;
         }
         {
-            mServiceOptions = new ServiceOptions(getDataBlock(0).getMessage().getInt(BLOCK_0_SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getDataBlock(0).getMessage().getInt(BLOCK_0_SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     public Identifier getSourceAddress()
@@ -99,7 +99,7 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
                 digits.add(getDigit(x));
             }
 
-            mTelephoneNumber = APCO25TelephoneNumber.create(Digit.decode(digits));
+            mTelephoneNumber = APCO25TelephoneNumber.createTo(Digit.decode(digits));
         }
 
         return mTelephoneNumber;

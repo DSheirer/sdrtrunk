@@ -117,7 +117,7 @@ public class LTRNetDecoderState extends DecoderState
                                     .to(ltr.getTalkgroupID())
                                     .build();
 
-                                broadcast(mCurrentCallEvent);
+//                                broadcast(mCurrentCallEvent);
 
                                 broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
                             }
@@ -207,7 +207,7 @@ public class LTRNetDecoderState extends DecoderState
                                 String.valueOf(ltr.getRadioUniqueID()));
                             mCurrentCallEvent.setDetails("Unique ID");
 
-                            broadcast(mCurrentCallEvent);
+//                            broadcast(mCurrentCallEvent);
                         }
 
                         mFromUIDAttribute.process(uniqueID);
@@ -262,7 +262,7 @@ public class LTRNetDecoderState extends DecoderState
                                 .from(ltr.getESN())
                                 .build();
 
-                            broadcast(mCurrentCallEvent);
+//                            broadcast(mCurrentCallEvent);
                         }
 
                         break;
@@ -294,7 +294,7 @@ public class LTRNetDecoderState extends DecoderState
                                     String.valueOf(ltr.getRadioUniqueID()));
                                 mCurrentCallEvent.setDetails("Unique ID");
 
-                                broadcast(mCurrentCallEvent);
+//                                broadcast(mCurrentCallEvent);
                             }
                         }
                         break;
@@ -567,12 +567,12 @@ public class LTRNetDecoderState extends DecoderState
                 frequency = mTransmitFrequencies.get(channel);
             }
 
-            broadcast(new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEvent.CallEventType.CALL_DETECT)
-//                .aliasList(getAliasList())
-                .channel(String.valueOf(message.getChannel()))
-                .frequency(frequency)
-                .to(message.getTalkgroupID())
-                .build());
+//            broadcast(new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEvent.CallEventType.CALL_DETECT)
+////                .aliasList(getAliasList())
+//                .channel(String.valueOf(message.getChannel()))
+//                .frequency(frequency)
+//                .to(message.getTalkgroupID())
+//                .build());
         }
 
         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
@@ -623,7 +623,7 @@ public class LTRNetDecoderState extends DecoderState
                     if(current != null)
                     {
                         current.setValid(false);
-                        broadcast(current);
+//                        broadcast(current);
                     }
 
                     /* A talkgroup must be seen at least once before it will be added
@@ -645,7 +645,7 @@ public class LTRNetDecoderState extends DecoderState
                         .to(message.getTalkgroupID())
                         .build();
 
-                    broadcast(callEvent);
+//                    broadcast(callEvent);
 
                     mCurrentCallEvent = callEvent;
 
@@ -663,7 +663,7 @@ public class LTRNetDecoderState extends DecoderState
             mCurrentCallEvent.getCallEventType() == CallEvent.CallEventType.CALL)
         {
             mCurrentCallEvent.setEnd(System.currentTimeMillis());
-            broadcast(mCurrentCallEvent);
+//            broadcast(mCurrentCallEvent);
         }
 
         mCurrentCallEvent = null;
@@ -718,7 +718,7 @@ public class LTRNetDecoderState extends DecoderState
             .getCallEventType() == CallEvent.CallEventType.CALL)
         {
             mCurrentCallEvent.end();
-            broadcast(mCurrentCallEvent);
+//            broadcast(mCurrentCallEvent);
         }
 
         mCurrentCallEvent = null;

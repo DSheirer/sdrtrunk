@@ -29,6 +29,8 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.identifier.IdentifierPreference;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
@@ -55,6 +57,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 {
     private ChannelProcessingManager mChannelProcessingManager;
     private IconManager mIconManager;
+    private UserPreferences mUserPreferences;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
     private Map<State,Color> mBackgroundColors = new HashMap<>();
@@ -64,11 +67,11 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
      * Table view for currently decoding channel metadata
      */
     public ChannelMetadataPanel(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
-                                AliasModel aliasModel)
+                                AliasModel aliasModel, UserPreferences userPreferences)
     {
         mIconManager = iconManager;
         mChannelProcessingManager = channelProcessingManager;
-
+        mUserPreferences = userPreferences;
         init();
     }
 
@@ -90,9 +93,13 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_DECODER_STATE)
             .setCellRenderer(new ColoredStateCellRenderer());
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_FROM)
-            .setCellRenderer(new FromCellRenderer());
+            .setCellRenderer(new FromCellRenderer(mUserPreferences.getIdentifierPreference()));
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_TO)
-            .setCellRenderer(new ToCellRenderer());
+            .setCellRenderer(new ToCellRenderer(mUserPreferences.getIdentifierPreference()));
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_FROM_ALIAS)
+            .setCellRenderer(new AliasCellRenderer());
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_TO_ALIAS)
+            .setCellRenderer(new AliasCellRenderer());
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_CONFIGURATION_FREQUENCY)
             .setCellRenderer(new FrequencyCellRenderer());
 
@@ -199,12 +206,51 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     }
 
     /**
-     * Abstract cell renderer for aliasable identifiers
+     * Alias cell renderer
      */
-    public abstract class AliasableIdentifierCellRenderer extends DefaultTableCellRenderer
+    public class AliasCellRenderer extends DefaultTableCellRenderer
     {
-        public AliasableIdentifierCellRenderer()
+        public AliasCellRenderer()
         {
+            setHorizontalAlignment(JLabel.LEFT);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if(value instanceof Alias)
+            {
+                Alias alias = (Alias)value;
+
+                label.setText(alias.getName());
+                label.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
+                label.setForeground(alias.getDisplayColor());
+
+            }
+            else
+            {
+                label.setText(null);
+                label.setIcon(null);
+                label.setForeground(table.getForeground());
+            }
+
+            return label;
+        }
+    }
+
+    /**
+     * Abstract cell renderer for identifiers
+     */
+    public abstract class IdentifierCellRenderer extends DefaultTableCellRenderer
+    {
+        private final static String EMPTY_VALUE = "-----";
+        private IdentifierPreference mIdentifierPreference;
+
+        public IdentifierCellRenderer(IdentifierPreference identifierPreference)
+        {
+            mIdentifierPreference = identifierPreference;
             setHorizontalAlignment(JLabel.CENTER);
         }
 
@@ -217,59 +263,56 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             {
                 ChannelMetadata channelMetadata = (ChannelMetadata)value;
                 Identifier identifier = getIdentifier(channelMetadata);
-                Alias alias = getAlias(channelMetadata);
+                String text = mIdentifierPreference.format(identifier);
+                if(text == null || text.isEmpty())
+                {
+                    text = EMPTY_VALUE;
+                }
 
-                label.setText(alias != null ? alias.getName() : identifier != null ? identifier.toString() : "-----");
-                label.setIcon(alias != null ? mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE) : null);
-                label.setForeground(alias != null ? alias.getDisplayColor() : table.getForeground());
-
+                label.setText(text);
             }
             else
             {
-                label.setText("?????");
-                label.setIcon(null);
+                label.setText(EMPTY_VALUE);
             }
 
             return label;
         }
 
         public abstract Identifier getIdentifier(ChannelMetadata channelMetadata);
-        public abstract Alias getAlias(ChannelMetadata channelMetadata);
     }
 
     /**
      * Cell renderer for the FROM identifier
      */
-    public class FromCellRenderer extends AliasableIdentifierCellRenderer
+    public class FromCellRenderer extends IdentifierCellRenderer
     {
+        public FromCellRenderer(IdentifierPreference identifierPreference)
+        {
+            super(identifierPreference);
+        }
+
         @Override
         public Identifier getIdentifier(ChannelMetadata channelMetadata)
         {
             return channelMetadata.getFromIdentifier();
-        }
-
-        @Override
-        public Alias getAlias(ChannelMetadata channelMetadata)
-        {
-            return channelMetadata.getFromIdentifierAlias();
         }
     }
 
     /**
      * Cell renderer for the TO identifier
      */
-    public class ToCellRenderer extends AliasableIdentifierCellRenderer
+    public class ToCellRenderer extends IdentifierCellRenderer
     {
+        public ToCellRenderer(IdentifierPreference identifierPreference)
+        {
+            super(identifierPreference);
+        }
+
         @Override
         public Identifier getIdentifier(ChannelMetadata channelMetadata)
         {
             return channelMetadata.getToIdentifier();
-        }
-
-        @Override
-        public Alias getAlias(ChannelMetadata channelMetadata)
-        {
-            return channelMetadata.getToIdentifierAlias();
         }
     }
 

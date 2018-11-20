@@ -28,6 +28,8 @@ import java.util.Objects;
 
 public class PatchGroup
 {
+//    private final static Logger mLog = LoggerFactory.getLogger(PatchGroup.class);
+
     private TalkgroupIdentifier mPatchGroupIdentifier;
     private List<TalkgroupIdentifier> mPatchedGroupIdentifiers = new ArrayList<>();
 
@@ -48,7 +50,13 @@ public class PatchGroup
 
     public void addPatchedGroups(List<TalkgroupIdentifier> patchedGroupIdentifiers)
     {
-        mPatchedGroupIdentifiers.addAll(patchedGroupIdentifiers);
+        for(TalkgroupIdentifier identifier : patchedGroupIdentifiers)
+        {
+            if(!mPatchedGroupIdentifiers.contains(identifier))
+            {
+                mPatchedGroupIdentifiers.add(identifier);
+            }
+        }
     }
 
     public List<TalkgroupIdentifier> getPatchedGroupIdentifiers()
@@ -60,11 +68,11 @@ public class PatchGroup
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getPatchGroup());
+        sb.append("P:").append(getPatchGroup());
 
         if(!getPatchedGroupIdentifiers().isEmpty())
         {
-            sb.append(" PATCHED FROM ").append(getPatchedGroupIdentifiers());
+            sb.append(" ").append(getPatchedGroupIdentifiers());
         }
 
         return sb.toString();

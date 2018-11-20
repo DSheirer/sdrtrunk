@@ -20,7 +20,7 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
@@ -31,7 +31,7 @@ import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgro
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements IFrequenc
     public static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
         74, 75, 76, 77, 78, 79};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private IChannelDescriptor mChannel;
     private Identifier mSourceAddress;
     private PatchGroupIdentifier mPatchGroup;
@@ -64,19 +64,19 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements IFrequenc
         sb.append(getMessageStub());
         sb.append(" PATCH GROUP:").append(getPatchGroup());
         sb.append(" FROM:").append(getSourceAddress());
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
 
         return sb.toString();
     }
 
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     public PatchGroupIdentifier getPatchGroup()

@@ -25,7 +25,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ public class LCGroupVoiceChannelUser extends LinkControlWord
     private static final int[] SOURCE_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
             65, 66, 67, 68, 69, 70, 71};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private Identifier mGroupAddress;
     private Identifier mSourceAddress;
     private List<Identifier> mIdentifiers;
@@ -61,21 +61,21 @@ public class LCGroupVoiceChannelUser extends LinkControlWord
         sb.append(getMessageStub());
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" TO:").append(getGroupAddress());
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         return sb.toString();
     }
 
     /**
      * Service Options for this channel
      */
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     /**

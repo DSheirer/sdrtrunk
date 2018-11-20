@@ -24,6 +24,7 @@ import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.AudioException;
 import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
@@ -65,18 +66,20 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
     private SourceManager mSourceManager;
     private IAudioController mController;
     private AliasModel mAliasModel;
+    private UserPreferences mUserPreferences;
 
     private JButton mMuteButton;
     private AudioChannelsPanel mAudioChannelsPanel;
 
-    public AudioPanel(IconManager iconManager, SettingsManager settingsManager, SourceManager sourceManager,
-                      IAudioController controller, AliasModel aliasModel)
+    public AudioPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
+                      SourceManager sourceManager, IAudioController controller, AliasModel aliasModel)
     {
         mIconManager = iconManager;
         mSettingsManager = settingsManager;
         mSourceManager = sourceManager;
         mController = controller;
         mAliasModel = aliasModel;
+        mUserPreferences = userPreferences;
 
         mController.addControllerListener(this);
 
@@ -92,7 +95,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
         mMuteButton.setBackground(getBackground());
         add(mMuteButton);
 
-        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mSettingsManager, mController, mAliasModel);
+        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mUserPreferences, mSettingsManager, mController, mAliasModel);
 
         add(mAudioChannelsPanel);
 
@@ -113,13 +116,10 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     public void run()
                     {
                         remove(mAudioChannelsPanel);
-
-                        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mSettingsManager, mController, mAliasModel);
-
+                        mAudioChannelsPanel.dispose();
+                        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mUserPreferences, mSettingsManager, mController, mAliasModel);
                         add(mAudioChannelsPanel);
-
                         mAudioChannelsPanel.repaint();
-
                         revalidate();
                         repaint();
                     }

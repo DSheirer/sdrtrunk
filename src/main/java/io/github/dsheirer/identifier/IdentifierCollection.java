@@ -48,6 +48,14 @@ public class IdentifierCollection
     public IdentifierCollection(Collection<Identifier> identifiers)
     {
         mIdentifiers.addAll(identifiers);
+
+        for(Identifier identifier: identifiers)
+        {
+            if(identifier instanceof AliasListConfigurationIdentifier)
+            {
+                mAliasListConfigurationIdentifier = (AliasListConfigurationIdentifier)identifier;
+            }
+        }
     }
 
     /**

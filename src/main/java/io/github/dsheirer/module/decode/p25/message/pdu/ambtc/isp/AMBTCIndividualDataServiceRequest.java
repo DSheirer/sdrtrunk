@@ -27,7 +27,7 @@ import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkg
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +41,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
     private static final int[] BLOCK_0_TARGET_ID = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     private static final int[] BLOCK_0_RESERVED = {56, 57, 58, 59, 60, 61, 62, 63};
 
-    private ServiceOptions mServiceOptions;
+    private DataServiceOptions mServiceOptions;
     private Identifier mWacn;
     private Identifier mSystem;
     private Identifier mSourceAddress;
@@ -70,7 +70,7 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
         {
             sb.append(" SYSTEM:").append(getSystem());
         }
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getDataServiceOptions());
         return sb.toString();
     }
 
@@ -84,11 +84,11 @@ public class AMBTCIndividualDataServiceRequest extends AMBTCMessage
         return mSourceAddress;
     }
 
-    public ServiceOptions getServiceOptions()
+    public DataServiceOptions getDataServiceOptions()
     {
         if(mServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
+            mServiceOptions = new DataServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
         }
 
         return mServiceOptions;

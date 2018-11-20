@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
@@ -126,10 +125,13 @@ public abstract class EventLogger extends Module
     {
         try
         {
-            mLogFile.write(eventLogEntry + "\n");
-            mLogFile.flush();
+            if(mLogFile != null)
+            {
+                mLogFile.write((eventLogEntry != null ? eventLogEntry : "") + "\n");
+                mLogFile.flush();
+            }
         }
-        catch(IOException e)
+        catch(Exception e)
         {
             mLog.error("Error writing entry to event log file", e);
         }

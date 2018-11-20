@@ -27,7 +27,6 @@ import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.util.StringUtils;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
@@ -119,8 +118,8 @@ public class Tait1200DecoderState extends DecoderState
 
             setMessageType("GPS");
 
-            broadcast(new Tait1200CallEvent(CallEvent.CallEventType.GPS, null,
-                gps.getFromID(), gps.getToID(), gps.getGPSLocation().toString()));
+//            broadcast(new Tait1200CallEvent(CallEvent.CallEventType.GPS, null,
+//                gps.getFromID(), gps.getToID(), gps.getGPSLocation().toString()));
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
         }
@@ -136,8 +135,8 @@ public class Tait1200DecoderState extends DecoderState
             setMessage(null);
             setMessageType("ANI");
 
-            broadcast(new Tait1200CallEvent(CallEvent.CallEventType.ID_ANI, null,
-                ani.getFromID(), ani.getToID(), "ANI"));
+//            broadcast(new Tait1200CallEvent(CallEvent.CallEventType.ID_ANI, null,
+//                ani.getFromID(), ani.getToID(), "ANI"));
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL));
         }

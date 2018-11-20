@@ -20,8 +20,10 @@
 
 package io.github.dsheirer.module.decode.p25.identifier.channel;
 
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
+
+import java.util.Objects;
 
 public class P25Channel implements IChannelDescriptor
 {
@@ -33,6 +35,14 @@ public class P25Channel implements IChannelDescriptor
     {
         mBandIdentifier = bandIdentifier;
         mChannelNumber = channelNumber;
+    }
+
+    /**
+     * Frequency band information that backs this channel
+     */
+    public IFrequencyBand getFrequencyBand()
+    {
+        return mFrequencyBand;
     }
 
     public int getDownlinkBandIdentifier()
@@ -146,5 +156,27 @@ public class P25Channel implements IChannelDescriptor
         {
             return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/-----";
         }
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        P25Channel that = (P25Channel)o;
+        return mBandIdentifier == that.mBandIdentifier &&
+            mChannelNumber == that.mChannelNumber;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(mBandIdentifier, mChannelNumber);
     }
 }

@@ -159,7 +159,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
                 mCurrentPath = path;
                 mWritableByteChannel = Files.newByteChannel(path,
                     EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
-                mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
+//                mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
             }
         }
 

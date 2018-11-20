@@ -21,14 +21,14 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,8 +52,8 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     private Identifier mSite;
     private IChannelDescriptor mChannelA;
     private IChannelDescriptor mChannelB;
-    private ServiceOptions mServiceOptionsA;
-    private ServiceOptions mServiceOptionsB;
+    private VoiceServiceOptions mVoiceServiceOptionsA;
+    private VoiceServiceOptions mVoiceServiceOptionsB;
 
     /**
      * Constructs a Link Control Word from the binary message sequence.
@@ -71,12 +71,12 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         sb.append(getMessageStub());
         sb.append(" SITE:" + getRFSS() + "-" + getSite());
         sb.append(" CHAN A:" + getChannelA());
-        sb.append(" SERVICE OPTIONS:" + getServiceOptionsA());
+        sb.append(" SERVICE OPTIONS:" + getVoiceServiceOptionsA());
 
         if(hasChannelB())
         {
             sb.append(" CHAN B:" + getChannelB());
-            sb.append(" SERVICE OPTIONS:" + getServiceOptionsB());
+            sb.append(" SERVICE OPTIONS:" + getVoiceServiceOptionsB());
         }
         return sb.toString();
     }
@@ -129,25 +129,25 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
         return mChannelB;
     }
 
-    public ServiceOptions getServiceOptionsA()
+    public VoiceServiceOptions getVoiceServiceOptionsA()
     {
-        if(mServiceOptionsA == null)
+        if(mVoiceServiceOptionsA == null)
         {
-            mServiceOptionsA = new ServiceOptions(getMessage().getInt(SERVICE_CLASS_A));
+            mVoiceServiceOptionsA = new VoiceServiceOptions(getMessage().getInt(SERVICE_CLASS_A));
         }
 
-        return mServiceOptionsA;
+        return mVoiceServiceOptionsA;
     }
 
 
-    public ServiceOptions getServiceOptionsB()
+    public VoiceServiceOptions getVoiceServiceOptionsB()
     {
-        if(mServiceOptionsB == null)
+        if(mVoiceServiceOptionsB == null)
         {
-            mServiceOptionsB = new ServiceOptions(getMessage().getInt(SERVICE_CLASS_B));
+            mVoiceServiceOptionsB = new VoiceServiceOptions(getMessage().getInt(SERVICE_CLASS_B));
         }
 
-        return mServiceOptionsB;
+        return mVoiceServiceOptionsB;
     }
 
 

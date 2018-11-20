@@ -67,7 +67,7 @@ public class EventLogManager
 			case DECODED_MESSAGE:
 				return new MessageEventLogger( mDirectory, sb.toString(), MessageEventLogger.Type.DECODED );
 			case CALL_EVENT:
-				return new CallEventLogger( mDirectory, sb.toString() );
+				return new DecodeEventLogger( mDirectory, sb.toString() );
 			default:
 				return null;
 		}

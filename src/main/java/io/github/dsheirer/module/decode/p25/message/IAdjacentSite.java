@@ -1,6 +1,6 @@
 package io.github.dsheirer.module.decode.p25.message;
 
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 
 /**

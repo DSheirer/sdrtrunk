@@ -21,7 +21,7 @@ package io.github.dsheirer.module.decode.p25.message.tdu;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.edac.Golay24;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
 import io.github.dsheirer.identifier.Identifier;

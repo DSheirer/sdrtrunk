@@ -28,6 +28,7 @@ import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.binary.BinaryRecorder;
@@ -47,7 +48,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class ChannelProcessingManager implements ChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelProcessingManager.class);
-
+    private static final String TUNER_UNAVAILABLE_DESCRIPTION = "TUNER UNAVAILABLE";
     private Map<Integer, ProcessingChain> mProcessingChains = new HashMap<>();
 
     private List<Listener<ReusableAudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
@@ -55,7 +56,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
-    private ChannelMetadataModel mChannelMetadataModel = new ChannelMetadataModel();
+    private ChannelMetadataModel mChannelMetadataModel;
     private EventLogManager mEventLogManager;
     private RecorderManager mRecorderManager;
     private SourceManager mSourceManager;
@@ -66,7 +67,8 @@ public class ChannelProcessingManager implements ChannelEventListener
                                     EventLogManager eventLogManager,
                                     RecorderManager recorderManager,
                                     SourceManager sourceManager,
-                                    AliasModel aliasModel)
+                                    AliasModel aliasModel,
+                                    UserPreferences userPreferences)
     {
         mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
@@ -74,6 +76,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         mRecorderManager = recorderManager;
         mSourceManager = sourceManager;
         mAliasModel = aliasModel;
+        mChannelMetadataModel = new ChannelMetadataModel(userPreferences);
     }
 
     /**
@@ -219,7 +222,8 @@ public class ChannelProcessingManager implements ChannelEventListener
         {
             channel.setProcessing(false);
 
-            mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_START_PROCESSING_REJECTED));
+            mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_START_PROCESSING_REJECTED,
+                TUNER_UNAVAILABLE_DESCRIPTION));
 
             return;
         }

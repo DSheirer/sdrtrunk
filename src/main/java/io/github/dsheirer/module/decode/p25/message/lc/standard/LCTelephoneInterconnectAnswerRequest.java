@@ -88,7 +88,7 @@ public class LCTelephoneInterconnectAnswerRequest extends LinkControlWord
             digits.add(getMessage().getInt(DIGIT_9));
             digits.add(getMessage().getInt(DIGIT_10));
 
-            mTelephoneNumber = APCO25TelephoneNumber.create(Digit.decode(digits));
+            mTelephoneNumber = APCO25TelephoneNumber.createFrom(Digit.decode(digits));
         }
 
         return mTelephoneNumber;

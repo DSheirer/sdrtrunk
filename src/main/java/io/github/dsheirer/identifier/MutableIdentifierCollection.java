@@ -26,6 +26,9 @@ import io.github.dsheirer.sample.Listener;
 import java.util.Collection;
 import java.util.Iterator;
 
+/**
+ * Identifier collection with methods for changing or updating managed identifiers
+ */
 public class MutableIdentifierCollection extends IdentifierCollection implements IdentifierUpdateProvider,
     Listener<IdentifierUpdateNotification>
 {
@@ -35,12 +38,20 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
     {
     }
 
+    public MutableIdentifierCollection(Collection<Identifier> identifiers)
+    {
+        for(Identifier identifier: identifiers)
+        {
+            update(identifier);
+        }
+    }
+
     /**
      * Broadcasts all of the currently held identifiers to the registered listener
      */
     public void broadcastIdentifiers()
     {
-        for(Identifier identifier: getIdentifiers())
+        for(Identifier identifier : getIdentifiers())
         {
             notifyAdd(identifier);
         }

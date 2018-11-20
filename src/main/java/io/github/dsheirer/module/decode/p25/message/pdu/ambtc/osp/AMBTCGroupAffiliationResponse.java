@@ -23,6 +23,7 @@ package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnnouncementTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
@@ -184,7 +185,7 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
             id <<= 8;
             id += getDataBlock(1).getMessage().getInt(BLOCK_1_ANNOUNCEMENT_GROUP_ID);
 
-            mAnnouncementGroupId = APCO25ToTalkgroup.createGroup(id);
+            mAnnouncementGroupId = APCO25AnnouncementTalkgroup.create(id);
         }
 
         return mAnnouncementGroupId;

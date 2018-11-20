@@ -75,7 +75,7 @@ public class DenyResponse extends OSPMessage
      */
     public Opcode getDeniedServiceType()
     {
-        return Opcode.fromValue(getMessage().getInt(SERVICE_TYPE), Direction.OUTBOUND, Vendor.STANDARD);
+        return Opcode.fromValue(getMessage().getInt(SERVICE_TYPE), Direction.INBOUND, Vendor.STANDARD);
     }
 
     public DenyReason getDenyReason()

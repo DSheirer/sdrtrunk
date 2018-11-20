@@ -27,11 +27,6 @@ import io.github.dsheirer.identifier.Form;
  */
 public class AliasListConfigurationIdentifier extends ConfigurationStringIdentifier
 {
-    public AliasListConfigurationIdentifier()
-    {
-        this(null);
-    }
-
     public AliasListConfigurationIdentifier(String value)
     {
         super(value, Form.ALIAS_LIST);

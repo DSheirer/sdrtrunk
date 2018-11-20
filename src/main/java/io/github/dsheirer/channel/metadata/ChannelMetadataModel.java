@@ -15,8 +15,12 @@
  ******************************************************************************/
 package io.github.dsheirer.channel.metadata;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,15 +38,33 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     public static final int COLUMN_DECODER_STATE = 0;
     public static final int COLUMN_DECODER_TYPE = 1;
     public static final int COLUMN_USER_FROM = 2;
-    public static final int COLUMN_USER_TO = 3;
-    public static final int COLUMN_DECODER_CHANNEL = 4;
-    public static final int COLUMN_CONFIGURATION_FREQUENCY = 5;
-    public static final int COLUMN_CONFIGURATION_CHANNEL = 6;
+    public static final int COLUMN_USER_FROM_ALIAS = 3;
+    public static final int COLUMN_USER_TO = 4;
+    public static final int COLUMN_USER_TO_ALIAS = 5;
+    public static final int COLUMN_DECODER_CHANNEL = 6;
+    public static final int COLUMN_CONFIGURATION_FREQUENCY = 7;
+    public static final int COLUMN_CONFIGURATION_CHANNEL = 8;
 
-    private static final String[] COLUMNS = {"Status", "Decoder", "From", "To", "Channel", "Frequency", "Channel Name"};
+    private static final String[] COLUMNS = {"Status", "Decoder", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Channel Name"};
 
     private List<ChannelMetadata> mChannelMetadata = new ArrayList();
     private Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap();
+
+    public ChannelMetadataModel(UserPreferences userPreferences)
+    {
+        userPreferences.addPreferenceUpdateListener(new Listener<PreferenceType>()
+        {
+            @Override
+            public void receive(PreferenceType preferenceType)
+            {
+                if(preferenceType == PreferenceType.IDENTIFIER)
+                {
+                    //If the identifier format changed, update the entire table
+                    fireTableDataChanged();
+                }
+            }
+        });
+    }
 
     public void add(ChannelMetadata channelMetadata, Channel channel)
     {
@@ -125,6 +147,9 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
             case COLUMN_USER_FROM:
             case COLUMN_USER_TO:
                 return ChannelMetadata.class;
+            case COLUMN_USER_FROM_ALIAS:
+            case COLUMN_USER_TO_ALIAS:
+                return Alias.class;
             default:
                 return Identifier.class;
         }
@@ -153,6 +178,10 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                     return channelMetadata;
                 case COLUMN_USER_FROM:
                     return channelMetadata;
+                case COLUMN_USER_FROM_ALIAS:
+                    return channelMetadata.getFromIdentifierAlias();
+                case COLUMN_USER_TO_ALIAS:
+                    return channelMetadata.getToIdentifierAlias();
             }
         }
 
@@ -164,7 +193,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     {
         final int rowIndex = mChannelMetadata.indexOf(channelMetadata);
 
-        if(rowIndex > 0)
+        if(rowIndex >= 0)
         {
             //Execute on the swing thread to avoid threading issues
             EventQueue.invokeLater(new Runnable()
@@ -188,9 +217,11 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                             break;
                         case USER_FROM:
                             fireTableCellUpdated(rowIndex, COLUMN_USER_FROM);
+                            fireTableCellUpdated(rowIndex, COLUMN_USER_FROM_ALIAS);
                             break;
                         case USER_TO:
                             fireTableCellUpdated(rowIndex, COLUMN_USER_TO);
+                            fireTableCellUpdated(rowIndex, COLUMN_USER_TO_ALIAS);
                             break;
                     }
                 }

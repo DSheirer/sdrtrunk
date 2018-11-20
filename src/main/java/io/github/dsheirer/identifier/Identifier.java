@@ -39,6 +39,17 @@ public abstract class Identifier<T>
         mRole = role;
     }
 
+    public String debug()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("CLASS:").append(getIdentifierClass());
+        sb.append(" FORM:").append(getForm());
+        sb.append(" VALUE:").append(getValue());
+        sb.append(" VALUE CLASS:").append(getValue().getClass());
+        sb.append(" CLASS:").append(getClass());
+        return sb.toString();
+    }
+
     /**
      * Validity test for the identifier.  This method always returns true unless a subclass
      * implementation overrides the value for a specific validity test implementation.

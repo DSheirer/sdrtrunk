@@ -22,6 +22,8 @@ public enum Role
 {
     BROADCAST,
     FROM,
+    IDENTIFIER,
+    STATUS,
     TO,
     ANY;
 }

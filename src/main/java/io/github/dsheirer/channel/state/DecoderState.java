@@ -1,6 +1,7 @@
 package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -11,7 +12,8 @@ import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.ActivitySummaryProvider;
 import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.module.decode.event.ICallEventProvider;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 
@@ -21,17 +23,18 @@ import io.github.dsheirer.sample.Listener;
  *
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>, ICallEventProvider,
-    IDecoderStateEventListener, IDecoderStateEventProvider, IMessageListener, IdentifierUpdateProvider
+public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>, IDecodeEventProvider,
+    IDecoderStateEventListener, IDecoderStateEventProvider, IMessageListener, IdentifierUpdateProvider, IdentifierUpdateListener
 {
     protected String DIVIDER1 = "======================================================\n";
     protected String DIVIDER2 = "------------------------------------------------------\n";
 
     /* This has to be a broadcaster in order for references to persist */
-    private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
+    private Broadcaster<IDecodeEvent> mDecodeEventBroadcaster = new Broadcaster<>();
     private Listener<DecoderStateEvent> mDecoderStateListener;
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
+    private ConfigurationIdentifierListener mConfigurationIdentifierListener = new ConfigurationIdentifierListener();
 
     protected CallEvent mCurrentCallEvent;
 
@@ -78,9 +81,9 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     /**
      * Provides subclass reference to the call event broadcaster
      */
-    protected Broadcaster<CallEvent> getCallEventBroadcaster()
+    protected Broadcaster<IDecodeEvent> getDecodeEventBroadcaster()
     {
-        return mCallEventBroadcaster;
+        return mDecodeEventBroadcaster;
     }
 
 
@@ -121,8 +124,8 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
      */
     public void dispose()
     {
-        mCallEventBroadcaster.dispose();
-        mCallEventBroadcaster = null;
+        mDecodeEventBroadcaster.dispose();
+        mDecodeEventBroadcaster = null;
         mDecoderStateListener = null;
     }
 
@@ -132,29 +135,29 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     public abstract String getActivitySummary();
 
     /**
-     * Broadcasts a call event to any registered listeners
+     * Broadcasts a decode event to any registered listeners
      */
-    protected void broadcast(CallEvent event)
+    protected void broadcast(IDecodeEvent event)
     {
-        mCallEventBroadcaster.broadcast(event);
+        mDecodeEventBroadcaster.broadcast(event);
     }
 
     /**
      * Adds a call event listener
      */
     @Override
-    public void addCallEventListener(Listener<CallEvent> listener)
+    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventBroadcaster.addListener(listener);
+        mDecodeEventBroadcaster.addListener(listener);
     }
 
     /**
      * Removes the call event listener
      */
     @Override
-    public void removeCallEventListener(Listener<CallEvent> listener)
+    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mCallEventBroadcaster.removeListener(listener);
+        mDecodeEventBroadcaster.removeListener(listener);
     }
 
     @Override
@@ -199,5 +202,32 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     public void removeDecoderStateListener()
     {
         mDecoderStateListener = null;
+    }
+
+    /**
+     * Listens for configuration identifiers and adds them to this decoder state's identifier collection.
+     * @return
+     */
+    @Override
+    public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
+    {
+        return mConfigurationIdentifierListener;
+    }
+
+    /**
+     * Listener for configuration type identifier updates sent from the channel state.  Adds configuration
+     * identifiers to this decoder state so that decode events will contain configuration details in the
+     * event's identifier collection.
+     */
+    public class ConfigurationIdentifierListener implements Listener<IdentifierUpdateNotification>
+    {
+        @Override
+        public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+        {
+            if(identifierUpdateNotification.getIdentifier().getIdentifierClass() == IdentifierClass.CONFIGURATION)
+            {
+                getIdentifierCollection().update(identifierUpdateNotification.getIdentifier());
+            }
+        }
     }
 }

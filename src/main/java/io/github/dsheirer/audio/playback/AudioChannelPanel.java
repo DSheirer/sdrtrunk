@@ -24,11 +24,13 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.identifier.IdentifierPreference;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.ColorSetting;
@@ -39,11 +41,13 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.util.List;
 
 public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, SettingChangeListener
 {
@@ -65,24 +69,31 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
+    private UserPreferences mUserPreferences;
+    private IdentifierPreference mIdentifierPreference;
+    private PreferenceUpdateListener mPreferenceUpdateListener = new PreferenceUpdateListener();
     private AudioOutput mAudioOutput;
 
     private JLabel mMutedLabel = new JLabel("M");
     private JLabel mChannelName = new JLabel(" ");
-    private JLabel mToAlias = new JLabel(" ");
-    private JLabel mTo = new JLabel("-----");
+    private JLabel mIconLabel = new JLabel(" ");
+    private JLabel mIdentifierLabel = new JLabel("-----");
+    private Identifier mIdentifier;
+    private Alias mAlias;
 
     private boolean mConfigured = false;
     private AliasModel mAliasModel;
 
-    public AudioChannelPanel(IconManager iconManager, SettingsManager settingsManager, AudioOutput audioOutput,
-                             AliasModel aliasModel)
+    public AudioChannelPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
+                             AudioOutput audioOutput, AliasModel aliasModel)
     {
         mIconManager = iconManager;
         mSettingsManager = settingsManager;
         mSettingsManager.addListener(this);
         mAliasModel = aliasModel;
-
+        mUserPreferences = userPreferences;
+        mIdentifierPreference = mUserPreferences.getIdentifierPreference();
+        mUserPreferences.addPreferenceUpdateListener(mPreferenceUpdateListener);
         mAudioOutput = audioOutput;
 
         if(mAudioOutput != null)
@@ -97,6 +108,12 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         mValueColor = SystemProperties.getInstance().get(PROPERTY_COLOR_VALUE, Color.GREEN);
 
         init();
+    }
+
+    public void dispose()
+    {
+        //Deregister from receiving preference update notifications
+        mUserPreferences.removePreferenceUpdateListener(mPreferenceUpdateListener);
     }
 
     private void init()
@@ -115,13 +132,13 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         mChannelName.setForeground(mLabelColor);
         add(mChannelName);
 
-        mToAlias.setFont(mFont);
-        mToAlias.setForeground(mValueColor);
-        add(mToAlias);
+        mIconLabel.setFont(mFont);
+        mIconLabel.setForeground(mValueColor);
+        add(mIconLabel);
 
-        mTo.setFont(mFont);
-        mTo.setForeground(mValueColor);
-        add(mTo, "wmin 10lp");
+        mIdentifierLabel.setFont(mFont);
+        mIdentifierLabel.setForeground(mValueColor);
+        add(mIdentifierLabel, "wmin 10lp");
     }
 
     @Override
@@ -161,9 +178,26 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
      */
     private void resetLabels()
     {
-        updateLabel(mTo, null, mToAlias, null);
-
+        mIdentifier = null;
+        mAlias = null;
+        updateLabels();
         mConfigured = false;
+    }
+
+    /**
+     * Truncates the string to the specified length using an ellipses at the end
+     * @param value to optionally truncate
+     * @param length of the final formatted string
+     * @return formatted string or null
+     */
+    private static String truncate(String value, int length)
+    {
+        if(value != null && value.length() > length)
+        {
+            return value.substring(0, length - 3) + "...";
+        }
+
+        return value;
     }
 
     /**
@@ -171,38 +205,23 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
      * does not occur on the Swing event thread -- wrap any calls to this
      * method with an event thread call.
      */
-    private void updateLabel(JLabel textLabel, String value, JLabel iconLabel, Alias alias)
+    private void updateLabels()
     {
-        if(value != null)
+        String identifier = mAlias != null ? mAlias.getName() : mIdentifierPreference.format(mIdentifier);
+        final ImageIcon icon = mAlias != null ? mIconManager.getIcon(mAlias.getIconName(), 18) : null;
+        final String identifierText = (identifier != null ? truncate(identifier, 33) : "-----");
+
+        EventQueue.invokeLater(new Runnable()
         {
-
-            if(alias != null)
+            @Override
+            public void run()
             {
-                iconLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 18));
-
-                String aliasName = alias.getName();
-
-                //Truncate label if length exceeds 33 characters - hack!
-                if(aliasName.length() > 33)
-                {
-                    textLabel.setText(aliasName.substring(0, 30) + "...");
-                }
-                else
-                {
-                    textLabel.setText(aliasName);
-                }
+                mIdentifierLabel.setText(identifierText);
+                mIconLabel.setIcon(icon);
+                mConfigured = true;
             }
-            else
-            {
-                iconLabel.setIcon(null);
-                textLabel.setText(value);
-            }
-        }
-        else
-        {
-            iconLabel.setIcon(null);
-            textLabel.setText("-----");
-        }
+        });
+
     }
 
     /**
@@ -215,28 +234,11 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         {
             if(identifierCollection != null && (identifierCollection.isUpdated() || !mConfigured))
             {
-                Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
-
-                if(to == null)
-                {
-                    to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
-                }
-
-                String toValue = (to != null ? to.toString() : null);
-
+                List<Identifier> toIds = identifierCollection.getIdentifiers(IdentifierClass.USER, Role.TO);
+                mIdentifier = !toIds.isEmpty() ? toIds.get(0) : null;
                 AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
-
-                final Alias toAlias = (aliasList != null ? aliasList.getAlias(to) : null);
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        updateLabel(mTo, toValue, mToAlias, toAlias);
-                        mConfigured = true;
-                    }
-                });
+                mAlias = (aliasList != null ? aliasList.getAlias(mIdentifier) : null);
+                updateLabels();
             }
         }
     }
@@ -252,13 +254,13 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
             switch(colorSetting.getColorSettingName())
             {
                 case CHANNEL_STATE_LABEL_DECODER:
-                    if(mTo != null)
+                    if(mIdentifierLabel != null)
                     {
-                        mTo.setForeground(mLabelColor);
+                        mIdentifierLabel.setForeground(mLabelColor);
                     }
-                    if(mToAlias != null)
+                    if(mIconLabel != null)
                     {
-                        mToAlias.setForeground(mLabelColor);
+                        mIconLabel.setForeground(mLabelColor);
                     }
                     break;
                 default:
@@ -270,5 +272,20 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     @Override
     public void settingDeleted(Setting setting)
     {
+    }
+
+    /**
+     * Receives notifications when preferences have been updated.
+     */
+    public class PreferenceUpdateListener implements Listener<PreferenceType>
+    {
+        @Override
+        public void receive(PreferenceType preferenceType)
+        {
+            if(preferenceType == PreferenceType.IDENTIFIER)
+            {
+                updateLabels();
+            }
+        }
     }
 }

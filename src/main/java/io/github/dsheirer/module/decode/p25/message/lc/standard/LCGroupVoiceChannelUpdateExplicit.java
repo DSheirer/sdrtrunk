@@ -21,13 +21,13 @@
 package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ public class LCGroupVoiceChannelUpdateExplicit extends LinkControlWord implement
     public static final int[] UPLINK_FREQUENCY_BAND = {56, 57, 58, 59};
     public static final int[] UPLINK_CHANNEL = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
 
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private IChannelDescriptor mChannel;
     private List<IChannelDescriptor> mChannels;
     private Identifier mTalkgroup;
@@ -64,7 +64,7 @@ public class LCGroupVoiceChannelUpdateExplicit extends LinkControlWord implement
         sb.append(getMessageStub());
         sb.append(" TALKGROUP:").append(getGroupAddress());
         sb.append(" ").append(getChannel());
-        sb.append(" ").append(getServiceOptions());
+        sb.append(" ").append(getVoiceServiceOptions());
 
         return sb.toString();
     }
@@ -72,14 +72,14 @@ public class LCGroupVoiceChannelUpdateExplicit extends LinkControlWord implement
     /**
      * Service options for this channel
      */
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     @Override

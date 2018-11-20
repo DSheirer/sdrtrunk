@@ -24,7 +24,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
@@ -39,12 +39,12 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
     private static final int[] RESERVED = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] WACN = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43};
     private static final int[] SYSTEM = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
-    private static final int[] SOURCE_ID = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
+    private static final int[] TARGET_ID = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
         74, 75, 76, 77, 78, 79};
 
     private Identifier mWACN;
     private Identifier mSystem;
-    private Identifier mSourceAddress;
+    private Identifier mTargetAddress;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -59,7 +59,7 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" FM:").append(getSourceAddress());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" WACN:").append(getWACN());
         sb.append(" SYSTEM:").append(getSystem());
         return sb.toString();
@@ -85,14 +85,14 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
         return mSystem;
     }
 
-    public Identifier getSourceAddress()
+    public Identifier getTargetAddress()
     {
-        if(mSourceAddress == null)
+        if(mTargetAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ID));
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ID));
         }
 
-        return mSourceAddress;
+        return mTargetAddress;
     }
 
     @Override
@@ -103,7 +103,7 @@ public class UnitDeRegistrationAcknowledge extends OSPMessage
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getWACN());
             mIdentifiers.add(getSystem());
-            mIdentifiers.add(getSourceAddress());
+            mIdentifiers.add(getTargetAddress());
         }
 
         return mIdentifiers;

@@ -71,7 +71,7 @@ public class LJ1200DecoderState extends DecoderState
                 mAddressAttribute.process(address);
                 mAddresses.add(address);
 
-                broadcast(LJ1200CallEvent.getLJ1200Event(lj));
+//                broadcast(LJ1200CallEvent.getLJ1200Event(lj));
 
                 broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
             }

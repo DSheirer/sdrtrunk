@@ -28,9 +28,9 @@ import io.github.dsheirer.protocol.Protocol;
 
 public class APCO25TelephoneNumber extends StringIdentifier
 {
-    public APCO25TelephoneNumber(String telephoneNumber)
+    public APCO25TelephoneNumber(String telephoneNumber, Role role)
     {
-        super(telephoneNumber, IdentifierClass.USER, Form.TELEPHONE_NUMBER, Role.ANY);
+        super(telephoneNumber, IdentifierClass.USER, Form.TELEPHONE_NUMBER, role);
     }
 
     @Override
@@ -42,8 +42,24 @@ public class APCO25TelephoneNumber extends StringIdentifier
     /**
      * Creates a new APCO-25 telephone number
      */
-    public static Identifier create(String telephoneNumber)
+    public static Identifier createFrom(String telephoneNumber)
     {
-        return new APCO25TelephoneNumber(telephoneNumber);
+        return new APCO25TelephoneNumber(telephoneNumber, Role.FROM);
+    }
+
+    /**
+     * Creates a new APCO-25 telephone number
+     */
+    public static Identifier createTo(String telephoneNumber)
+    {
+        return new APCO25TelephoneNumber(telephoneNumber, Role.TO);
+    }
+
+    /**
+     * Creates a new APCO-25 telephone number
+     */
+    public static Identifier createAny(String telephoneNumber)
+    {
+        return new APCO25TelephoneNumber(telephoneNumber, Role.ANY);
     }
 }

@@ -21,7 +21,7 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.channel.traffic.IChannelDescriptor;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
@@ -31,7 +31,7 @@ import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +55,7 @@ public class RFSSStatusBroadcast extends OSPMessage implements IFrequencyBandRec
     private Identifier mSite;
     private Identifier mRfss;
     private IChannelDescriptor mChannel;
-    private ServiceOptions mServiceOptions;
+    private VoiceServiceOptions mVoiceServiceOptions;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -78,7 +78,7 @@ public class RFSSStatusBroadcast extends OSPMessage implements IFrequencyBandRec
         {
             sb.append(" ACTIVE NETWORK CONNECTION");
         }
-        sb.append(" SERVICE OPTIONS:").append(getServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         return sb.toString();
     }
 
@@ -140,14 +140,14 @@ public class RFSSStatusBroadcast extends OSPMessage implements IFrequencyBandRec
         return mChannel;
     }
 
-    public ServiceOptions getServiceOptions()
+    public VoiceServiceOptions getVoiceServiceOptions()
     {
-        if(mServiceOptions == null)
+        if(mVoiceServiceOptions == null)
         {
-            mServiceOptions = new ServiceOptions(getMessage().getInt(SYSTEM_SERVICE_CLASS));
+            mVoiceServiceOptions = new VoiceServiceOptions(getMessage().getInt(SYSTEM_SERVICE_CLASS));
         }
 
-        return mServiceOptions;
+        return mVoiceServiceOptions;
     }
 
     @Override
