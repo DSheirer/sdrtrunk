@@ -30,7 +30,7 @@ import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentif
 import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IdentifierPreference;
+import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
@@ -93,9 +93,9 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_DECODER_STATE)
             .setCellRenderer(new ColoredStateCellRenderer());
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_FROM)
-            .setCellRenderer(new FromCellRenderer(mUserPreferences.getIdentifierPreference()));
+            .setCellRenderer(new FromCellRenderer(mUserPreferences.getTalkgroupFormatPreference()));
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_TO)
-            .setCellRenderer(new ToCellRenderer(mUserPreferences.getIdentifierPreference()));
+            .setCellRenderer(new ToCellRenderer(mUserPreferences.getTalkgroupFormatPreference()));
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_FROM_ALIAS)
             .setCellRenderer(new AliasCellRenderer());
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_TO_ALIAS)
@@ -246,11 +246,11 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     public abstract class IdentifierCellRenderer extends DefaultTableCellRenderer
     {
         private final static String EMPTY_VALUE = "-----";
-        private IdentifierPreference mIdentifierPreference;
+        private TalkgroupFormatPreference mTalkgroupFormatPreference;
 
-        public IdentifierCellRenderer(IdentifierPreference identifierPreference)
+        public IdentifierCellRenderer(TalkgroupFormatPreference talkgroupFormatPreference)
         {
-            mIdentifierPreference = identifierPreference;
+            mTalkgroupFormatPreference = talkgroupFormatPreference;
             setHorizontalAlignment(JLabel.CENTER);
         }
 
@@ -263,7 +263,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             {
                 ChannelMetadata channelMetadata = (ChannelMetadata)value;
                 Identifier identifier = getIdentifier(channelMetadata);
-                String text = mIdentifierPreference.format(identifier);
+                String text = mTalkgroupFormatPreference.format(identifier);
                 if(text == null || text.isEmpty())
                 {
                     text = EMPTY_VALUE;
@@ -287,9 +287,9 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
      */
     public class FromCellRenderer extends IdentifierCellRenderer
     {
-        public FromCellRenderer(IdentifierPreference identifierPreference)
+        public FromCellRenderer(TalkgroupFormatPreference talkgroupFormatPreference)
         {
-            super(identifierPreference);
+            super(talkgroupFormatPreference);
         }
 
         @Override
@@ -304,9 +304,9 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
      */
     public class ToCellRenderer extends IdentifierCellRenderer
     {
-        public ToCellRenderer(IdentifierPreference identifierPreference)
+        public ToCellRenderer(TalkgroupFormatPreference talkgroupFormatPreference)
         {
-            super(identifierPreference);
+            super(talkgroupFormatPreference);
         }
 
         @Override

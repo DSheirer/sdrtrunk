@@ -27,6 +27,9 @@ import java.text.SimpleDateFormat;
  */
 public enum TimestampFormat
 {
+    TIMESTAMP_COLONS("yyyy:MM:dd:HH:mm:ss", "Timestamp Colons: yyyy:MM:dd:HH:mm:ss"),
+    TIMESTAMP_MILLIS("yyyy:MM:dd:HH:mm:ss.SSS", "Timestamp Milliseconds: yyyy:MM:dd:HH:mm:ss.SSS"),
+    TIMESTAMP_COMPACT("yyyyMMddHHmmss", "Timestamp Compact: yyyyMMddHHmmss"),
     DATE_DASHES("yyyy-MM-dd", "Date Dashes: YYYY-MM-DD"),
     DATE_COLONS("yyyy:MM:dd", "Date Colons: YYYY:MM:DD"),
     DATE_COMPACT("yyyyMMdd", "Date Compact: YYYYMMDD"),
@@ -34,9 +37,7 @@ public enum TimestampFormat
     TIME_COLONS("HH:mm:ss", "Time Colons: HH:mm:ss"),
     TIME_MILLIS("HH:mm:ss.SSS", "Time Milliseconds: HH:mm:ss.SSS"),
     TIME_SECONDS("ss.SSS", "Time Seconds: ss.SSS"),
-    TIMESTAMP_COMPACT("yyyyMMddHHmmss", "Timestamp Compact: yyyyMMddHHmmss"),
-    TIMESTAMP_COLONS("yyyy:MM:dd:HH:mm:ss", "Timestamp Colons: yyyy:MM:dd:HH:mm:ss"),
-    TIMESTAMP_MILLIS("yyyy:MM:dd:HH:mm:ss.SSS", "Timestamp Milliseconds: yyyy:MM:dd:HH:mm:ss.SSS");
+    ;
 
     private String mFormat;
     private String mLabel;

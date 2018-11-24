@@ -14,26 +14,22 @@
  *
  ******************************************************************************/
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.gui.preference;
 
 /**
- * Options for formatting of integer values.
+ * Request to launch the preferences editor and scroll to a specific editor view
  */
-public enum IntegerFormat
+public class PreferenceEditorViewRequest
 {
-    DECIMAL("Decimal"),
-    FORMATTED("Formatted"),
-    HEXADECIMAL("Hexadecimal");
+    private PreferenceEditorType mPreferenceType;
 
-    private String mLabel;
-
-    IntegerFormat(String label)
+    public PreferenceEditorViewRequest(PreferenceEditorType preferenceEditorType)
     {
-        mLabel = label;
+        mPreferenceType = preferenceEditorType;
     }
 
-    public String toString()
+    public PreferenceEditorType getPreferenceType()
     {
-        return mLabel;
+        return mPreferenceType;
     }
 }

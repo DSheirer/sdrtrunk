@@ -28,15 +28,17 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.prefs.Preferences;
+
 /**
  * User preferences for the display of channel decode events
  */
 public class DecodeEventPreference extends Preference
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecodeEventPreference.class);
-
-    public static final String TIMESTAMP_FORMAT_PROPERTY = PROPERTY_PREFIX + "decode.event.timestamp.format";
+    private Preferences mPreferences = Preferences.userNodeForPackage(DecodeEventPreference.class);
     private TimestampFormat mTimestampFormat = TimestampFormat.TIMESTAMP_COLONS;
+    private static final String TIMESTAMP_FORMAT_KEY = "timestamp.format";
 
     public DecodeEventPreference(SystemProperties systemProperties, Listener<PreferenceType> updateListener)
     {
@@ -52,7 +54,7 @@ public class DecodeEventPreference extends Preference
 
     private void loadSettings()
     {
-        String format = getSystemProperties().get(TIMESTAMP_FORMAT_PROPERTY, TimestampFormat.TIMESTAMP_COLONS.name());
+        String format = mPreferences.get(TIMESTAMP_FORMAT_KEY, TimestampFormat.TIMESTAMP_COLONS.name());
 
         if(format != null && !format.isEmpty())
         {
@@ -83,7 +85,7 @@ public class DecodeEventPreference extends Preference
     public void setTimestampFormat(TimestampFormat timestampFormat)
     {
         mTimestampFormat = timestampFormat;
-        getSystemProperties().set(TIMESTAMP_FORMAT_PROPERTY, mTimestampFormat.name());
+        mPreferences.put(TIMESTAMP_FORMAT_KEY, mTimestampFormat.name());
         notifyPreferenceUpdated();
     }
 }

@@ -21,7 +21,7 @@
 package io.github.dsheirer.preference;
 
 import io.github.dsheirer.preference.event.DecodeEventPreference;
-import io.github.dsheirer.preference.identifier.IdentifierPreference;
+import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -33,7 +33,7 @@ public class UserPreferences implements Listener<PreferenceType>
 {
     private Broadcaster<PreferenceType> mPreferenceTypeBroadcaster = new Broadcaster<>();
     private DecodeEventPreference mDecodeEventPreference;
-    private IdentifierPreference mIdentifierPreference;
+    private TalkgroupFormatPreference mTalkgroupFormatPreference;
 
     /**
      * Constructs a new user preferences instance
@@ -48,9 +48,9 @@ public class UserPreferences implements Listener<PreferenceType>
     /**
      * Identifier preferences
      */
-    public IdentifierPreference getIdentifierPreference()
+    public TalkgroupFormatPreference getTalkgroupFormatPreference()
     {
-        return mIdentifierPreference;
+        return mTalkgroupFormatPreference;
     }
 
     /**
@@ -69,7 +69,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private void loadPreferenceTypes(SystemProperties systemProperties)
     {
         mDecodeEventPreference = new DecodeEventPreference(systemProperties, this);
-        mIdentifierPreference = new IdentifierPreference(systemProperties, this);
+        mTalkgroupFormatPreference = new TalkgroupFormatPreference(systemProperties, this);
     }
 
     /**

@@ -30,7 +30,7 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IdentifierPreference;
+import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.ColorSetting;
@@ -70,7 +70,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
     private UserPreferences mUserPreferences;
-    private IdentifierPreference mIdentifierPreference;
+    private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private PreferenceUpdateListener mPreferenceUpdateListener = new PreferenceUpdateListener();
     private AudioOutput mAudioOutput;
 
@@ -92,7 +92,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         mSettingsManager.addListener(this);
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
-        mIdentifierPreference = mUserPreferences.getIdentifierPreference();
+        mTalkgroupFormatPreference = mUserPreferences.getTalkgroupFormatPreference();
         mUserPreferences.addPreferenceUpdateListener(mPreferenceUpdateListener);
         mAudioOutput = audioOutput;
 
@@ -207,7 +207,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
      */
     private void updateLabels()
     {
-        String identifier = mAlias != null ? mAlias.getName() : mIdentifierPreference.format(mIdentifier);
+        String identifier = mAlias != null ? mAlias.getName() : mTalkgroupFormatPreference.format(mIdentifier);
         final ImageIcon icon = mAlias != null ? mIconManager.getIcon(mAlias.getIconName(), 18) : null;
         final String identifierText = (identifier != null ? truncate(identifier, 33) : "-----");
 

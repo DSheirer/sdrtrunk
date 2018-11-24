@@ -33,6 +33,9 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
+import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
+import io.github.dsheirer.gui.preference.PreferencesEditor;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
@@ -53,6 +56,8 @@ import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
+import javafx.application.Platform;
+import javafx.stage.Stage;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -102,6 +107,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private SpectralDisplayPanel mSpectralPanel;
     private JFrame mMainGui = new JFrame();
     private JideSplitPane mSplitPane;
+    private JavaFxWindowManager mJavaFxWindowManager;
+    private UserPreferences mUserPreferences;
 
     private String mTitle;
 
@@ -151,12 +158,14 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         RecorderManager recorderManager = new RecorderManager(aliasModel);
 
-        UserPreferences userPreferences = new UserPreferences(SystemProperties.getInstance());
+        mUserPreferences = new UserPreferences(SystemProperties.getInstance());
+
+        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
 
         mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
         mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, eventLogManager,
-            recorderManager, mSourceManager, aliasModel, userPreferences);
+            recorderManager, mSourceManager, aliasModel, mUserPreferences);
 
         mChannelModel.addListener(mChannelProcessingManager);
 
@@ -185,7 +194,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, mSourceManager, tunerModel, userPreferences);
+            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager, tunerModel);
@@ -349,6 +358,12 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new JSeparator());
         viewMenu.add(new ClearTunerMenuItem(mSpectralPanel));
 
+        viewMenu.add(new JSeparator());
+        JMenuItem preferencesItem = new JMenuItem("Preferences");
+        preferencesItem.addActionListener(e -> JavaFxWindowManager.getEventBus()
+                .post(new PreferenceEditorViewRequest(PreferenceEditorType.CHANNEL_EVENT)));
+        viewMenu.add(preferencesItem);
+
         menuBar.add(viewMenu);
 
         JMenuItem screenCaptureItem = new JMenuItem("Screen Capture");
@@ -426,6 +441,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void processShutdown()
     {
         mLog.info("Application shutdown started ...");
+        mJavaFxWindowManager.shutdown();
         mLog.info("Stopping channels ...");
         mChannelProcessingManager.shutdown();
         mAudioPacketManager.stop();

@@ -191,7 +191,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                 {
                     sb.append(",");
                 }
-                sb.append(mUserPreferences.getIdentifierPreference().format(identifier));
+                sb.append(mUserPreferences.getTalkgroupFormatPreference().format(identifier));
             }
 
             return sb.toString();

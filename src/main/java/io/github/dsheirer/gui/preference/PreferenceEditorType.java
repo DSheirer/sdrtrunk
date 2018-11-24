@@ -14,20 +14,19 @@
  *
  ******************************************************************************/
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.gui.preference;
 
 /**
- * Options for formatting of integer values.
+ * Preference editor tree node enumeration.
  */
-public enum IntegerFormat
+public enum PreferenceEditorType
 {
-    DECIMAL("Decimal"),
-    FORMATTED("Formatted"),
-    HEXADECIMAL("Hexadecimal");
+    CHANNEL_EVENT("Channel Events"),
+    TALKGROUP_FORMAT("Talkgroups");
 
     private String mLabel;
 
-    IntegerFormat(String label)
+    PreferenceEditorType(String label)
     {
         mLabel = label;
     }

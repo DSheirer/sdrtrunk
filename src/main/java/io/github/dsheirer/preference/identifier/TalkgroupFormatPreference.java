@@ -34,13 +34,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.prefs.Preferences;
 
 /**
  * Specifies and applies user preferences for formatting identifiers
  */
-public class IdentifierPreference extends Preference
+public class TalkgroupFormatPreference extends Preference
 {
-    private final static Logger mLog = LoggerFactory.getLogger(IdentifierPreference.class);
+    private final static Logger mLog = LoggerFactory.getLogger(TalkgroupFormatPreference.class);
+    private Preferences mPreferences = Preferences.userNodeForPackage(TalkgroupFormatPreference.class);
+
     public static final String TALKGROUP_FORMAT_PROPERTY = PROPERTY_PREFIX + "talkgroup.format.";
     public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = PROPERTY_PREFIX + "talkgroup.fixed.width.";
 
@@ -52,7 +55,7 @@ public class IdentifierPreference extends Preference
      * @param systemProperties instance
      * @param updateListener to be notified when this preference is updated
      */
-    public IdentifierPreference(SystemProperties systemProperties, Listener<PreferenceType> updateListener)
+    public TalkgroupFormatPreference(SystemProperties systemProperties, Listener<PreferenceType> updateListener)
     {
         super(systemProperties, updateListener);
         loadProperties();
@@ -94,15 +97,13 @@ public class IdentifierPreference extends Preference
      */
     private void loadProperties()
     {
-        SystemProperties properties = getSystemProperties();
-
         for(Protocol protocol: Protocol.TALKGROUP_PROTOCOLS)
         {
-            mTalkgroupFixedWidthProtocolMap.put(protocol, properties.get(getTalkgroupFixedWidthProperty(protocol), false));
+            mTalkgroupFixedWidthProtocolMap.put(protocol, mPreferences.getBoolean(getTalkgroupFixedWidthProperty(protocol), false));
 
             try
             {
-                String format = properties.get(getTalkgroupFormatProperty(protocol), IntegerFormat.DECIMAL.name());
+                String format = mPreferences.get(getTalkgroupFormatProperty(protocol), IntegerFormat.DECIMAL.name());
                 mTalkgroupFormatProtocolMap.put(protocol, IntegerFormat.valueOf(format));
             }
             catch(Exception e)
@@ -157,9 +158,22 @@ public class IdentifierPreference extends Preference
         if(existing == null || existing != talkgroupFormat)
         {
             mTalkgroupFormatProtocolMap.put(protocol, talkgroupFormat);
+            mPreferences.put(getTalkgroupFormatProperty(protocol), talkgroupFormat.name());
             notifyPreferenceUpdated();
-            getSystemProperties().set(getTalkgroupFormatProperty(protocol), talkgroupFormat.name());
         }
+    }
+
+    /**
+     * Sets the fixed-width for talkgroup identifiers by protocol
+     *
+     * @param protocol for the talkgroup
+     * @param fixedWidth
+     */
+    public void setTalkgroupFormat(Protocol protocol, boolean fixedWidth)
+    {
+        mTalkgroupFixedWidthProtocolMap.put(protocol, fixedWidth);
+        mPreferences.putBoolean(getTalkgroupFixedWidthProperty(protocol), fixedWidth);
+        notifyPreferenceUpdated();
     }
 
     /**
@@ -169,12 +183,14 @@ public class IdentifierPreference extends Preference
      */
     public boolean isTalkgroupFixedWidth(Protocol protocol)
     {
-        if(mTalkgroupFixedWidthProtocolMap.containsKey(protocol))
+        Boolean fixedWidth = mTalkgroupFixedWidthProtocolMap.get(protocol);
+
+        if(fixedWidth == null)
         {
-            return mTalkgroupFixedWidthProtocolMap.get(protocol);
+            fixedWidth = false;
         }
 
-        return false;
+        return fixedWidth;
     }
 
     /**
@@ -187,8 +203,8 @@ public class IdentifierPreference extends Preference
         if(isTalkgroupFixedWidth(protocol) != fixedWidth)
         {
             mTalkgroupFixedWidthProtocolMap.put(protocol, fixedWidth);
+            mPreferences.putBoolean(getTalkgroupFixedWidthProperty(protocol), fixedWidth);
             notifyPreferenceUpdated();
-            getSystemProperties().set(getTalkgroupFixedWidthProperty(protocol), fixedWidth);
         }
     }
 

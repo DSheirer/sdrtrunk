@@ -14,26 +14,26 @@
  *
  ******************************************************************************/
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.gui.preference;
+
+import io.github.dsheirer.preference.UserPreferences;
+import javafx.scene.Node;
 
 /**
- * Options for formatting of integer values.
+ * Creates an editor for the specified preference editor type
  */
-public enum IntegerFormat
+public class PreferenceEditorFactory
 {
-    DECIMAL("Decimal"),
-    FORMATTED("Formatted"),
-    HEXADECIMAL("Hexadecimal");
-
-    private String mLabel;
-
-    IntegerFormat(String label)
+    public static Node getEditor(PreferenceEditorType preferenceEditorType, UserPreferences userPreferences)
     {
-        mLabel = label;
-    }
+        switch(preferenceEditorType)
+        {
+            case TALKGROUP_FORMAT:
+                return new TalkgroupFormatPreferenceEditor(userPreferences);
+            case CHANNEL_EVENT:
+                return new DecodeEventViewPreferenceEditor(userPreferences);
+        }
 
-    public String toString()
-    {
-        return mLabel;
+        return null;
     }
 }
