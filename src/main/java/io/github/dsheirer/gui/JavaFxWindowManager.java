@@ -22,8 +22,6 @@ import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.gui.preference.PreferencesEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
 import javafx.stage.Stage;
@@ -32,7 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Java FX window manager.  Handles all secondary Java FX windows that are used within this primarily
+ * Swing application.
  */
 public class JavaFxWindowManager
 {
@@ -41,7 +40,6 @@ public class JavaFxWindowManager
     private static EventBus sEventBus = new EventBus();
     private UserPreferences mUserPreferences;
     private PreferencesEditor mPreferencesEditor;
-    private JFXPanel mJFXPanel;
 
     public JavaFxWindowManager(UserPreferences userPreferences)
     {
@@ -70,35 +68,47 @@ public class JavaFxWindowManager
     @Subscribe
     public void process(final PreferenceEditorViewRequest request)
     {
-        if(mJFXPanel == null)
-        {
-            mJFXPanel = new JFXPanel();
-        }
-
         if(mPreferencesEditor == null)
         {
-            mPreferencesEditor = new PreferencesEditor(mUserPreferences);
-
+            new JFXPanel();
+            Platform.setImplicitExit(false);
             Platform.runLater(() -> {
                 try
                 {
-                    mPreferencesEditor.start(new Stage());
+                    mPreferencesEditor = new PreferencesEditor(mUserPreferences);
+
+                    Stage stage = new Stage();
+                    stage.setOnHidden(new EventHandler<WindowEvent>()
+                    {
+                        @Override
+                        public void handle(WindowEvent event)
+                        {
+                            mPreferencesEditor = null;
+                        }
+                    });
+                    mPreferencesEditor.start(stage);
+                    mPreferencesEditor.showEditor(request);
                 }
-                catch(Exception e)
+                catch(Throwable e)
                 {
-                    mLog.error("Error launching user preferences window");
+                    mLog.error("Error launching user preferences window", e);
                 }
             });
         }
-
-        mLog.debug("Showing ....");
-
-        Platform.runLater(() -> {
-            mLog.debug("Pref Window - null:" + (mPreferencesEditor == null));
-            mLog.debug("Pref Window - showing:" + mPreferencesEditor.getStage().isShowing());
-            mPreferencesEditor.getStage().show();
-            mPreferencesEditor.getStage().toFront();
-            mPreferencesEditor.showEditor(request);
-        });
+        else
+        {
+            Platform.runLater(() -> {
+                try
+                {
+                    Stage stage = mPreferencesEditor.getStage();
+                    stage.show();
+                    mPreferencesEditor.showEditor(request);
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error showing existing preferences editor window", t);
+                }
+            });
+        }
     }
 }

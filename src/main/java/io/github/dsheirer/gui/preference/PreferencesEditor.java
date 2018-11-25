@@ -34,8 +34,12 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.ListIterator;
 import java.util.Map;
 
 /**
@@ -43,6 +47,8 @@ import java.util.Map;
  */
 public class PreferencesEditor extends Application
 {
+    private final static Logger mLog = LoggerFactory.getLogger(PreferencesEditor.class);
+
     private UserPreferences mUserPreferences;
     private BorderPane mBorderPane;
     private TreeView mEditorSelectionTreeView;
@@ -59,7 +65,21 @@ public class PreferencesEditor extends Application
 
     public Stage getStage()
     {
-        return (Stage) getBorderPane().getScene().getWindow();
+        try
+        {
+            Window window = getBorderPane().getScene().getWindow();
+
+            if(window instanceof Stage)
+            {
+                return (Stage)window;
+            }
+        }
+        catch(Throwable t)
+        {
+            mLog.debug("Error", t);
+        }
+
+        return null;
     }
 
     public PreferencesEditor(UserPreferences userPreferences)
@@ -91,15 +111,39 @@ public class PreferencesEditor extends Application
      */
     public void showEditor(PreferenceEditorViewRequest request)
     {
-        for(Object item: getEditorSelectionTreeView().getRoot().getChildren())
+        TreeItem toSelect = recursivelyFindEditorType(getEditorSelectionTreeView().getRoot(), request.getPreferenceType());
+
+        if(toSelect != null)
         {
-            if(item instanceof TreeItem &&
-                ((TreeItem)item).getValue() instanceof PreferenceEditorType &&
-                ((TreeItem)item).getValue() == request.getPreferenceType())
+            getEditorSelectionTreeView().getSelectionModel().select(toSelect);
+        }
+    }
+
+    private TreeItem recursivelyFindEditorType(TreeItem parent, PreferenceEditorType type)
+    {
+        ListIterator<TreeItem> li = parent.getChildren().listIterator();
+
+        while(li.hasNext())
+        {
+            TreeItem treeItem = li.next();
+
+            if(treeItem.getValue() instanceof PreferenceEditorType &&
+                ((PreferenceEditorType)treeItem.getValue()).equals(type))
             {
-                getEditorSelectionTreeView().getSelectionModel().select(item);
+                return treeItem;
+            }
+            else
+            {
+                TreeItem item = recursivelyFindEditorType(treeItem, type);
+
+                if(item != null)
+                {
+                    return item;
+                }
             }
         }
+
+        return null;
     }
 
 
@@ -182,7 +226,7 @@ public class PreferencesEditor extends Application
             mControlBox = new HBox();
             Button okButton = new Button("Ok");
             okButton.setOnAction(event -> {
-                Stage stage = (Stage) getBorderPane().getScene().getWindow();
+                Stage stage = (Stage)getBorderPane().getScene().getWindow();
                 stage.close();
             });
             HBox.setMargin(okButton, new Insets(5, 5, 5, 5));
@@ -200,7 +244,7 @@ public class PreferencesEditor extends Application
      */
     public class EditorTreeSelectionListener implements ChangeListener
     {
-        private Map<PreferenceEditorType, Node> mEditors = new HashMap<>();
+        private Map<PreferenceEditorType,Node> mEditors = new HashMap<>();
 
         @Override
         public void changed(ObservableValue observable, Object oldValue, Object newValue)
@@ -214,11 +258,11 @@ public class PreferencesEditor extends Application
         {
             if(treeNodeItem instanceof TreeItem)
             {
-                Object value = ((TreeItem) treeNodeItem).getValue();
+                Object value = ((TreeItem)treeNodeItem).getValue();
 
                 if(value instanceof PreferenceEditorType)
                 {
-                    PreferenceEditorType type = (PreferenceEditorType) value;
+                    PreferenceEditorType type = (PreferenceEditorType)value;
 
                     Node editor = mEditors.get(type);
 
