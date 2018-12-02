@@ -83,8 +83,8 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitDeRegi
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitRegistrationCommand;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitRegistrationResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitAnswerRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrantUpdate;
-import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceServiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnknownOSPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.unknown.isp.UnknownVendorISPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.unknown.osp.UnknownVendorOSPMessage;
@@ -259,7 +259,7 @@ public class TSBKMessageFactory
             case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                 return new UnitToUnitAnswerRequest(dataUnitID, message, nac, timestamp);
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                return new UnitToUnitVoiceServiceChannelGrant(dataUnitID, message, nac, timestamp);
+                return new UnitToUnitVoiceChannelGrant(dataUnitID, message, nac, timestamp);
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                 return new UnitToUnitVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
 

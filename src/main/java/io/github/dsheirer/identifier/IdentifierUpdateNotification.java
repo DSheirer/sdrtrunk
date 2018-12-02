@@ -58,8 +58,30 @@ public class IdentifierUpdateNotification
         return mOperation == Operation.REMOVE;
     }
 
+    /**
+     * Indicates that this update should not be rebroadcast by any of the consumers.
+     */
+    public boolean isSilentAdd()
+    {
+        return mOperation == Operation.SILENT_ADD;
+    }
+
+    /**
+     * Indicates that this update should not be rebroadcast by any of the consumers.
+     */
+    public boolean isSilentRemove()
+    {
+        return mOperation == Operation.SILENT_REMOVE;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mOperation.name() + " - " + mIdentifier;
+    }
+
     public enum Operation
     {
-        ADD, REMOVE;
+        ADD, REMOVE, SILENT_ADD, SILENT_REMOVE;
     }
 }

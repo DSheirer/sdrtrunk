@@ -46,7 +46,7 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements IFrequenc
         74, 75, 76, 77, 78, 79};
 
     private VoiceServiceOptions mVoiceServiceOptions;
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mSourceAddress;
     private PatchGroupIdentifier mPatchGroup;
     private List<Identifier> mIdentifiers;
@@ -99,7 +99,7 @@ public class PatchGroupVoiceChannelGrant extends OSPMessage implements IFrequenc
         return mSourceAddress;
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {

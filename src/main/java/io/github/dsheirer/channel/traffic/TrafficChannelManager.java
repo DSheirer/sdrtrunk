@@ -19,8 +19,6 @@ import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventListener;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
-import io.github.dsheirer.controller.channel.ChannelEvent;
-import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
@@ -50,7 +48,6 @@ public class TrafficChannelManager extends Module implements IDecodeEventProvide
     private List<Channel> mTrafficChannelPool = new ArrayList<Channel>();
     private Map<String,Channel> mTrafficChannelsInUse = new ConcurrentHashMap<String,Channel>();
 
-    private DecoderStateEventListener mEventListener = new DecoderStateEventListener();
     private Listener<IDecodeEvent> mDecodeEventListener;
 
     private ChannelModel mChannelModel;
@@ -97,7 +94,7 @@ public class TrafficChannelManager extends Module implements IDecodeEventProvide
     {
         for(Channel trafficChannel : mTrafficChannelPool)
         {
-            mChannelModel.broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
+//            mChannelModel.broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
         }
 
         mTrafficChannelPool.clear();
@@ -157,20 +154,20 @@ public class TrafficChannelManager extends Module implements IDecodeEventProvide
                 channel.setSite(mSite);
                 channel.setName(channelNumber);
 
-                mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_CONFIGURATION_CHANGE));
+//                mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_CONFIGURATION_CHANGE));
             }
         }
 
         return channel;
     }
 
-    /**
-     * Processes the event and creates a traffic channel is resources are
-     * available
-     */
-    private void process(TrafficChannelAllocationEvent event)
-    {
-
+//    /**
+//     * Processes the event and creates a traffic channel is resources are
+//     * available
+//     */
+//    private void process(TrafficChannelAllocationEvent event)
+//    {
+//
 //        CallEvent callEvent = event.getCallEvent();
 //
 //        /* Check for duplicate events and suppress */
@@ -258,7 +255,7 @@ public class TrafficChannelManager extends Module implements IDecodeEventProvide
 //                listener.receive(callEvent);
 //            }
 //        }
-    }
+//    }
 
     /**
      * Compares the call type, channel and to fields for equivalence and the
@@ -305,7 +302,7 @@ public class TrafficChannelManager extends Module implements IDecodeEventProvide
     @Override
     public Listener<DecoderStateEvent> getDecoderStateListener()
     {
-        return mEventListener;
+        return null;
     }
 
     @Override
@@ -362,29 +359,9 @@ public class TrafficChannelManager extends Module implements IDecodeEventProvide
             {
                 Channel channel = mTrafficChannelsInUse.get(channelNumber);
 
-                mChannelModel.broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
+//                mChannelModel.broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
 
                 mTrafficChannelsInUse.remove(channelNumber);
-            }
-        }
-    }
-
-    /**
-     * Wrapper class for the decoder state event listener interface to catch
-     * traffic channel allocation requests
-     */
-    public class DecoderStateEventListener implements Listener<DecoderStateEvent>
-    {
-        @Override
-        public void receive(DecoderStateEvent event)
-        {
-            switch(event.getEvent())
-            {
-                case TRAFFIC_CHANNEL_ALLOCATION:
-                    process((TrafficChannelAllocationEvent) event);
-                    break;
-                default:
-                    break;
             }
         }
     }

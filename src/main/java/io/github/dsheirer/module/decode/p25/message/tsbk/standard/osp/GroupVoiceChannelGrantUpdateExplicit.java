@@ -27,7 +27,7 @@ public class GroupVoiceChannelGrantUpdateExplicit extends OSPMessage implements 
     private static final int[] GROUP_ADDRESS = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
     private VoiceServiceOptions mVoiceServiceOptions;
-    private IChannelDescriptor mChannel;
+    private APCO25ExplicitChannel mChannel;
     private Identifier mGroupAddress;
     private List<Identifier> mIdentifiers;
 
@@ -62,7 +62,7 @@ public class GroupVoiceChannelGrantUpdateExplicit extends OSPMessage implements 
         return mVoiceServiceOptions;
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25ExplicitChannel getChannel()
     {
         if(mChannel == null)
         {

@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.p25.identifier.channel;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.Objects;
 
@@ -35,6 +36,12 @@ public class P25Channel implements IChannelDescriptor
     {
         mBandIdentifier = bandIdentifier;
         mChannelNumber = channelNumber;
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.APCO25;
     }
 
     /**

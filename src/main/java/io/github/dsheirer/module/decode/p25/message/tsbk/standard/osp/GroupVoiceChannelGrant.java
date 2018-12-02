@@ -27,7 +27,7 @@ public class GroupVoiceChannelGrant extends OSPMessage implements IFrequencyBand
             74, 75, 76, 77, 78, 79};
 
     private VoiceServiceOptions mVoiceServiceOptions;
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mGroupAddress;
     private Identifier mSourceAddress;
     private List<Identifier> mIdentifiers;
@@ -64,7 +64,7 @@ public class GroupVoiceChannelGrant extends OSPMessage implements IFrequencyBand
         return mVoiceServiceOptions;
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {

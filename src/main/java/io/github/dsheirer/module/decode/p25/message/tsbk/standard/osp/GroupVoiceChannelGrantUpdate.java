@@ -24,9 +24,9 @@ public class GroupVoiceChannelGrantUpdate extends OSPMessage implements IFrequen
     private static final int[] CHANNEL_NUMBER_B = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] GROUP_ADDRESS_B = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
-    private IChannelDescriptor mChannelA;
+    private APCO25Channel mChannelA;
     private Identifier mGroupAddressA;
-    private IChannelDescriptor mChannelB;
+    private APCO25Channel mChannelB;
     private Identifier mGroupAddressB;
     private List<Identifier> mIdentifiers;
 
@@ -52,7 +52,7 @@ public class GroupVoiceChannelGrantUpdate extends OSPMessage implements IFrequen
         return sb.toString();
     }
 
-    public IChannelDescriptor getChannelA()
+    public APCO25Channel getChannelA()
     {
         if(mChannelA == null)
         {
@@ -79,7 +79,7 @@ public class GroupVoiceChannelGrantUpdate extends OSPMessage implements IFrequen
             getMessage().getInt(GROUP_ADDRESS_B) != 0;
     }
 
-    public IChannelDescriptor getChannelB()
+    public APCO25Channel getChannelB()
     {
         if(mChannelB == null)
         {

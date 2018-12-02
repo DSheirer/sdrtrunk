@@ -1,20 +1,25 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.controller.channel;
 
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -42,7 +47,7 @@ public class ChannelAutoStartFrame extends JFrame
     private final static Logger mLog = LoggerFactory.getLogger(ChannelAutoStartFrame.class);
 
     private static final int COUNTDOWN_SECONDS = 10;
-    private ChannelEventListener mChannelEventListener;
+    private Listener<ChannelEvent> mChannelEventListener;
     private List<Channel> mChannels;
 
     private JLabel mCountdownLabel;
@@ -61,27 +66,22 @@ public class ChannelAutoStartFrame extends JFrame
      * @param listener to receive channel start/enable request(s)
      * @param channels to auto-start
      */
-    public ChannelAutoStartFrame(ChannelEventListener listener, List<Channel> channels)
+    public ChannelAutoStartFrame(Listener<ChannelEvent> listener, List<Channel> channels)
     {
         mChannelEventListener = listener;
         mChannels = channels;
         init();
 
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                setVisible(true);
-                startTimer();
-            }
+        EventQueue.invokeLater(() -> {
+            setVisible(true);
+            startTimer();
         });
     }
 
     private void init()
     {
         setTitle("Auto-Start Channels");
-        setSize(new Dimension(400,300));
+        setSize(new Dimension(400, 300));
         setLocationRelativeTo(null);
         addWindowListener(new WindowAdapter()
         {
@@ -95,7 +95,7 @@ public class ChannelAutoStartFrame extends JFrame
         });
 
         JPanel panel = new JPanel();
-        panel.setLayout(new MigLayout("","[grow,fill][grow,fill]",
+        panel.setLayout(new MigLayout("", "[grow,fill][grow,fill]",
             "[][][grow,fill][]"));
         panel.add(new JLabel("The following channels will be automatically"), "span");
 
@@ -138,6 +138,7 @@ public class ChannelAutoStartFrame extends JFrame
 
     /**
      * Updates the countdown text label on the swing event thread
+     *
      * @param value for the countdown
      */
     private void updateCountdownText(final int value)
@@ -180,9 +181,9 @@ public class ChannelAutoStartFrame extends JFrame
         {
             if(mChannelEventListener != null)
             {
-                for(Channel channel: mChannels)
+                for(Channel channel : mChannels)
                 {
-                    mChannelEventListener.channelChanged(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_ENABLE));
+                    mChannelEventListener.receive(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_ENABLE));
                 }
             }
         }
@@ -210,14 +211,7 @@ public class ChannelAutoStartFrame extends JFrame
             mTimerFuture = null;
         }
 
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                dispose();
-            }
-        });
+        EventQueue.invokeLater(() -> dispose());
     }
 
     /**

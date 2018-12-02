@@ -26,6 +26,7 @@ import io.github.dsheirer.module.decode.AuxDecodeConfigurationEditor;
 import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
 import io.github.dsheirer.module.log.EventLogConfigurationEditor;
 import io.github.dsheirer.record.RecordConfigurationEditor;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceConfigurationEditor;
 import io.github.dsheirer.source.SourceManager;
 import net.miginfocom.swing.MigLayout;
@@ -37,7 +38,7 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ChannelEditor extends Editor<Channel> implements ActionListener, ChannelEventListener
+public class ChannelEditor extends Editor<Channel> implements ActionListener, Listener<ChannelEvent>
 {
     private static final long serialVersionUID = 1L;
     private static final String ACTION_START = "Start";
@@ -56,17 +57,20 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     private JLabel mChannelName = new JLabel("Channel:");
 
     private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private ChannelMapModel mChannelMapModel;
     private SourceManager mSourceManager;
 
     private boolean mChannelStartRequested = false;
 
     public ChannelEditor(ChannelModel channelModel,
+                         ChannelProcessingManager channelProcessingManager,
                          ChannelMapModel channelMapModel,
                          SourceManager sourceManager,
                          AliasModel aliasModel)
     {
         mChannelModel = channelModel;
+        mChannelProcessingManager = channelProcessingManager;
         mChannelMapModel = channelMapModel;
         mSourceManager = sourceManager;
         mNameConfigurationEditor = new NameConfigurationEditor(aliasModel, mChannelModel);
@@ -126,7 +130,7 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     }
 
     @Override
-    public void channelChanged(ChannelEvent event)
+    public void receive(ChannelEvent event)
     {
         if(hasItem() && getItem() == event.getChannel())
         {
@@ -169,14 +173,14 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
                 save();
 
                 mChannelStartRequested = true;
-                mChannelModel.broadcast(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_ENABLE));
+                mChannelProcessingManager.receive(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_ENABLE));
             }
         }
         else if(command.contentEquals(ACTION_STOP))
         {
             if(hasItem())
             {
-                mChannelModel.broadcast(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_DISABLE));
+                mChannelProcessingManager.receive(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_DISABLE));
             }
         }
         else if(command.contentEquals(ACTION_SAVE))
@@ -246,9 +250,9 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
                 return;
             }
 
+            ChannelEvent update = new ChannelEvent(getItem(), ChannelEvent.Event.NOTIFICATION_CONFIGURATION_CHANGE);
 
-            mChannelModel.broadcast(new ChannelEvent(getItem(),
-                ChannelEvent.Event.NOTIFICATION_CONFIGURATION_CHANGE));
+            mChannelModel.receive(update);
         }
 
         setModified(false);

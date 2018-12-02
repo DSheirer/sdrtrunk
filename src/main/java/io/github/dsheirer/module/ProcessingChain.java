@@ -93,7 +93,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Optional: if you want to reuse the processing chain with a new sample source,
  * invoke the following method sequence:  stop(), setSource(), start()
  */
-public class ProcessingChain implements IChannelEventListener
+public class ProcessingChain implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ProcessingChain.class);
 
@@ -518,7 +518,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IChannelEventProvider)
         {
-            ((IChannelEventProvider)module).setChannelEventListener(null);
+            ((IChannelEventProvider)module).removeChannelEventListener();
         }
 
         if(module instanceof IDecoderStateEventProvider)
@@ -832,9 +832,22 @@ public class ProcessingChain implements IChannelEventListener
         mDemodulatedAudioBufferBroadcaster.removeListener(listener);
     }
 
+    /**
+     * Primary method for the channel processing manager to broadcast channel events, namely traffic channel processing
+     * stop events so that traffic channel manager(s) can maintain a correct state of traffic channels.
+     */
     @Override
-    public Listener<ChannelEvent> getChannelEventListener()
+    public void receive(ChannelEvent channelEvent)
     {
-        return mChannelEventBroadcaster;
+        mChannelEventBroadcaster.broadcast(channelEvent);
+    }
+
+    /**
+     * Broadcasts an identifier update notification to all modules
+     * @param updateNotification to broadcast
+     */
+    public void receive(IdentifierUpdateNotification updateNotification)
+    {
+        mIdentifierUpdateNotificationBroadcaster.broadcast(updateNotification);
     }
 }

@@ -45,8 +45,8 @@ public class PatchGroupVoiceChannelGrantUpdate extends OSPMessage implements IFr
 
     private PatchGroupIdentifier mPatchGroup1;
     private PatchGroupIdentifier mPatchGroup2;
-    private IChannelDescriptor mChannel1;
-    private IChannelDescriptor mChannel2;
+    private APCO25Channel mChannel1;
+    private APCO25Channel mChannel2;
     private List<Identifier> mIdentifiers;
 
     public PatchGroupVoiceChannelGrantUpdate(DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timestamp)
@@ -103,7 +103,7 @@ public class PatchGroupVoiceChannelGrantUpdate extends OSPMessage implements IFr
         return mPatchGroup2;
     }
 
-    public IChannelDescriptor getChannel1()
+    public APCO25Channel getChannel1()
     {
         if(mChannel1 == null)
         {
@@ -113,7 +113,7 @@ public class PatchGroupVoiceChannelGrantUpdate extends OSPMessage implements IFr
         return mChannel1;
     }
 
-    public IChannelDescriptor getChannel2()
+    public APCO25Channel getChannel2()
     {
         if(hasPatchGroup2() && mChannel2 == null)
         {

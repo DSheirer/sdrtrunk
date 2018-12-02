@@ -25,14 +25,17 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.channel.traffic.TrafficChannelAllocationEvent;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -77,6 +80,8 @@ import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacket
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.message.tdu.TDULinkControlMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
+import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
+import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp.CancelServiceRequest;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp.ExtendedFunctionResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp.GroupAffiliationQueryResponse;
@@ -101,18 +106,25 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.ExtendedFu
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.GroupAffiliationResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.GroupVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.GroupVoiceChannelGrantUpdate;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.GroupVoiceChannelGrantUpdateExplicit;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.LocationRegistrationResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.MessageUpdate;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.QueuedResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.RFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.RoamingAddressCommand;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.SNDCPDataChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.StatusUpdate;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.TelephoneInterconnectAnswerRequest;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.TelephoneInterconnectVoiceChannelGrant;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.TelephoneInterconnectVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitRegistrationResponse;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrant;
+import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.network.P25NetworkConfiguration;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
+import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,7 +136,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class P25DecoderState extends DecoderState
+public class P25DecoderState extends DecoderState implements IChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25DecoderState.class);
 
@@ -162,19 +174,33 @@ public class P25DecoderState extends DecoderState
 
     private ChannelType mChannelType;
     private P25Decoder.Modulation mModulation;
-    private boolean mIgnoreDataCalls;
     private boolean mControlChannelShutdownLogged;
 
     private List<String> mCallDetectTalkgroups = new ArrayList<>();
     private Map<String,P25ChannelGrantEvent> mChannelCallMap = new HashMap<>();
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private P25NetworkConfiguration mNetworkConfiguration = new P25NetworkConfiguration();
+    private P25TrafficChannelManager mTrafficChannelManager;
+    private Listener<ChannelEvent> mChannelEventListener;
+    private CurrentChannelConfigurationIdentifierListener mCurrentChannelConfigurationIdentifierListener =
+        new CurrentChannelConfigurationIdentifierListener();
 
-    public P25DecoderState(Channel channel, P25Decoder.Modulation modulation, boolean ignoreDataCalls)
+    public P25DecoderState(Channel channel, P25TrafficChannelManager trafficChannelManager)
     {
         mChannelType = channel.getChannelType();
-        mModulation = modulation;
-        mIgnoreDataCalls = ignoreDataCalls;
+        mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
+
+        if(trafficChannelManager != null)
+        {
+            mTrafficChannelManager = trafficChannelManager;
+            mChannelEventListener = trafficChannelManager.getChannelEventListener();
+        }
+        else
+        {
+            mChannelEventListener = channelEvent -> {
+                //do nothing with channel events if we're not configured to process traffic channels
+            };
+        }
 
         //TODO: update patch group manager to catch patch group add and delete and use
         //TODO: those when we have a patch group channel grant or update
@@ -190,6 +216,11 @@ public class P25DecoderState extends DecoderState
 //        mToTalkgroupMonitor.addIllegalValue("000000");
     }
 
+    public P25DecoderState(Channel channel)
+    {
+        this(channel, null);
+    }
+
     public P25Decoder.Modulation getModulation()
     {
         return mModulation;
@@ -199,6 +230,16 @@ public class P25DecoderState extends DecoderState
     public DecoderType getDecoderType()
     {
         return DecoderType.P25_PHASE1;
+    }
+
+    /**
+     * Implements the IChannelEventListener interface to receive traffic channel teardown notifications so that the
+     * traffic channel manager can manage traffic channel allocations.
+     */
+    @Override
+    public Listener<ChannelEvent> getChannelEventListener()
+    {
+        return mChannelEventListener;
     }
 
     /**
@@ -339,7 +380,7 @@ public class P25DecoderState extends DecoderState
         {
             mCurrentCallEvent = P25DecodeEvent.builder(timestamp)
                 .channel(mCurrentChannel)
-                .description(type.toString())
+                .eventDescription(type.toString())
                 .details(details)
                 .identifiers(getIdentifierCollection().copyOf())
                 .build();
@@ -418,7 +459,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("AUTHENTICATION:" + ar.getAuthenticationValue())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -427,7 +468,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_CALL_ALERT_REQUEST:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("CALL ALERT")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -435,7 +476,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_GROUP_AFFILIATION_REQUEST:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("GROUP AFFILIATION")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -447,7 +488,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("INDIVIDUAL DATA SERVICE " + idsr.getDataServiceOptions())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -460,7 +501,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("LOCATION REGISTRATION - UNIQUE ID:" + lrr.getSourceId())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -473,7 +514,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.SDM.toString())
+                            .eventDescription(DecodeEventType.SDM.toString())
                             .details("MESSAGE:" + mur.getShortDataMessage())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -482,7 +523,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_ROAMING_ADDRESS_REQUEST:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("ROAMING ADDRESS")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -490,7 +531,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_STATUS_QUERY_REQUEST:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("STATUS QUERY")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -501,7 +542,7 @@ public class P25DecoderState extends DecoderState
                         AMBTCStatusQueryResponse sqr = (AMBTCStatusQueryResponse)ambtc;
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.STATUS.toString())
+                            .eventDescription(DecodeEventType.STATUS.toString())
                             .details("UNIT:" + sqr.getUnitStatus() + " USER:" + sqr.getUserStatus())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -514,7 +555,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.STATUS.toString())
+                            .eventDescription(DecodeEventType.STATUS.toString())
                             .details("UNIT:" + sur.getUnitStatus() + " USER:" + sur.getUserStatus())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -527,7 +568,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("ACKNOWLEDGE:" + uar.getAcknowledgedService())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -540,7 +581,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("UNIT-2-UNIT VOICE SERVICE " + uuvsr.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -553,7 +594,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details(uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " +
                                 uuvsar.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
@@ -569,7 +610,7 @@ public class P25DecoderState extends DecoderState
                 //Channel grants
                 case OSP_GROUP_DATA_CHANNEL_GRANT:
                 case OSP_GROUP_VOICE_CHANNEL_GRANT:
-//                    return new AMBTCGroupVoiceChannelGrant(pduSequence, nac, timestamp);
+//                    AMBTCGroupVoiceChannelGrant gvcg = (AMBTCGroupVoiceChannelGrant)ambtc;
                 case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
 //                    return new AMBTCIndividualDataChannelGrant(pduSequence, nac, timestamp);
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
@@ -588,7 +629,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_CALL_ALERT:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.PAGE.toString())
+                        .eventDescription(DecodeEventType.PAGE.toString())
                         .details("CALL ALERT")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -596,7 +637,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_GROUP_AFFILIATION_QUERY:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.QUERY.toString())
+                        .eventDescription(DecodeEventType.QUERY.toString())
                         .details("GROUP AFFILIATION")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -608,7 +649,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("AFFILIATION GROUP:" + gar.getGroupId() +
                                 " ANNOUNCEMENT GROUP:" + gar.getAnnouncementGroupId())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
@@ -622,7 +663,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.SDM.toString())
+                            .eventDescription(DecodeEventType.SDM.toString())
                             .details("MESSAGE:" + mu.getShortDataMessage())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -635,7 +676,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("USE ENCRYPTION " + ppb.getEncryptionKey() +
                                 " OUTBOUND MI:" + ppb.getOutboundMessageIndicator() +
                                 " INBOUND MI:" + ppb.getInboundMessageIndicator())
@@ -646,7 +687,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_ROAMING_ADDRESS_UPDATE:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.RESPONSE.toString())
+                        .eventDescription(DecodeEventType.RESPONSE.toString())
                         .details("ROAMING ADDRESS UPDATE")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -654,7 +695,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_ROAMING_ADDRESS_COMMAND:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.COMMAND.toString())
+                        .eventDescription(DecodeEventType.COMMAND.toString())
                         .details("ROAMING ADDRESS")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -662,7 +703,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_STATUS_QUERY:
                     broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.QUERY.toString())
+                        .eventDescription(DecodeEventType.QUERY.toString())
                         .details("STATUS")
                         .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                         .build());
@@ -674,7 +715,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.STATUS.toString())
+                            .eventDescription(DecodeEventType.STATUS.toString())
                             .details("UNIT:" + su.getUnitStatus() + " USER:" + su.getUserStatus())
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -687,7 +728,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(ambtc.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REGISTER.toString())
+                            .eventDescription(DecodeEventType.REGISTER.toString())
                             .details(urr.getResponse() + " UNIT REGISTRATION")
                             .identifiers(new IdentifierCollection(ambtc.getIdentifiers()))
                             .build());
@@ -712,7 +753,7 @@ public class P25DecoderState extends DecoderState
 
             broadcast(P25DecodeEvent.builder(tired.getTimestamp())
                 .channel(mCurrentChannel)
-                .description(DecodeEventType.REQUEST.toString())
+                .eventDescription(DecodeEventType.REQUEST.toString())
                 .details("TELEPHONE INTERCONNECT:" + tired.getTelephoneNumber())
                 .identifiers(new IdentifierCollection(tired.getIdentifiers()))
                 .build());
@@ -767,7 +808,7 @@ public class P25DecoderState extends DecoderState
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE.toString())
+                            .eventDescription(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE.toString())
                             .identifiers(getIdentifierCollection().copyOf())
                             .details(arsPacket.toString() + " " + ipv4.toString())
                             .build();
@@ -778,7 +819,7 @@ public class P25DecoderState extends DecoderState
                     {
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.UDP_PACKET.toString())
+                            .eventDescription(DecodeEventType.UDP_PACKET.toString())
                             .identifiers(getIdentifierCollection().copyOf())
                             .details(ipv4.toString())
                             .build();
@@ -787,7 +828,7 @@ public class P25DecoderState extends DecoderState
                     }
 
                     //Once we broadcast the event, cleanup the identifier collection
-                    getIdentifierCollection().remove(IdentifierClass.USER);
+//                    getIdentifierCollection().remove(IdentifierClass.USER);
                 }
             }
         }
@@ -828,22 +869,16 @@ public class P25DecoderState extends DecoderState
                         //Make a copy of current identifiers and remove current user identifiers and replace from message
                         MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                         identifiers.remove(IdentifierClass.USER);
-                        for(Identifier identifier: gvcg.getIdentifiers())
+                        for(Identifier identifier : gvcg.getIdentifiers())
                         {
                             identifiers.update(mPatchGroupManager.update(identifier));
                         }
 
-                        DecodeEvent cge = P25ChannelGrantEvent.builder(tsbk.getTimestamp())
-                            .channel(gvcg.getChannel())
-                            .description(gvcg.getVoiceServiceOptions().isEncrypted() ?
-                                DecodeEventType.CALL_GROUP_ENCRYPTED.toString() :
-                                DecodeEventType.CALL_GROUP.toString())
-                            .details("GROUP VOICE CHANNEL GRANT " + gvcg.getVoiceServiceOptions())
-                            .identifiers(identifiers)
-                            .build();
-
-                        broadcast(cge);
-                        broadcast(new TrafficChannelAllocationEvent(this, cge));
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
+                                identifiers, tsbk.getOpcode(), gvcg.getTimestamp());
+                        }
                     }
                     break;
                 case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
@@ -852,46 +887,183 @@ public class P25DecoderState extends DecoderState
                         GroupVoiceChannelGrantUpdate gvcgu = (GroupVoiceChannelGrantUpdate)tsbk;
 
                         //Make a copy of current identifiers and remove current user identifiers and replace from message
-                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                        identifiers.remove(IdentifierClass.USER);
-                        identifiers.update(mPatchGroupManager.update(gvcgu.getGroupAddressA()));
+                        MutableIdentifierCollection identifiersA = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiersA.remove(IdentifierClass.USER);
+                        identifiersA.update(mPatchGroupManager.update(gvcgu.getGroupAddressA()));
 
-                        DecodeEvent callEventA = P25ChannelGrantEvent.builder(tsbk.getTimestamp())
-                            .channel(gvcgu.getChannelA())
-                            .description(DecodeEventType.CALL_GROUP.toString())
-                            .details("GROUP VOICE CHANNEL GRANT UPDATE")
-                            .identifiers(identifiers.copyOf())
-                            .build();
-
-                        broadcast(callEventA);
-//                        broadcast(new TrafficChannelAllocationEvent(this, callEventA));
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(gvcgu.getChannelA(), null, identifiersA,
+                                tsbk.getOpcode(), gvcgu.getTimestamp());
+                        }
 
                         if(gvcgu.hasGroupB())
                         {
-                            identifiers.remove(IdentifierClass.USER);
-                            identifiers.update(mPatchGroupManager.update(gvcgu.getGroupAddressB()));
+                            //Make a copy of current identifiers and remove current user identifiers and replace from message
+                            MutableIdentifierCollection identifiersB = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            identifiersB.remove(IdentifierClass.USER);
+                            identifiersB.update(mPatchGroupManager.update(gvcgu.getGroupAddressB()));
 
-                            DecodeEvent callEventB = P25ChannelGrantEvent.builder(tsbk.getTimestamp())
-                                .channel(gvcgu.getChannelB())
-                                .description(DecodeEventType.CALL_GROUP.toString())
-                                .details("GROUP VOICE CHANNEL GRANT UPDATE")
-                                .identifiers(identifiers.copyOf())
-                                .build();
-
-                            broadcast(callEventB);
-//                        broadcast(new TrafficChannelAllocationEvent(this, callEventA));
+                            if(mTrafficChannelManager != null)
+                            {
+                                mTrafficChannelManager.processChannelGrant(gvcgu.getChannelB(), null, identifiersB,
+                                    tsbk.getOpcode(), gvcgu.getTimestamp());
+                            }
                         }
                     }
                     break;
                 case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+                    if(tsbk instanceof GroupVoiceChannelGrantUpdateExplicit)
+                    {
+                        GroupVoiceChannelGrantUpdateExplicit gvcgue = (GroupVoiceChannelGrantUpdateExplicit)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        identifiers.update(mPatchGroupManager.update(gvcgue.getGroupAddress()));
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(gvcgue.getChannel(), gvcgue.getVoiceServiceOptions(),
+                                identifiers, tsbk.getOpcode(), gvcgue.getTimestamp());
+                        }
+                    }
+                    break;
                 case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+                    if(tsbk instanceof UnitToUnitVoiceChannelGrant)
+                    {
+                        UnitToUnitVoiceChannelGrant uuvcg = (UnitToUnitVoiceChannelGrant)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        identifiers.update(uuvcg.getIdentifiers());
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(uuvcg.getChannel(), null, identifiers,
+                                tsbk.getOpcode(), uuvcg.getTimestamp());
+                        }
+                    }
+                    break;
                 case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+                    if(tsbk instanceof UnitToUnitVoiceChannelGrantUpdate)
+                    {
+                        UnitToUnitVoiceChannelGrantUpdate uuvcgu = (UnitToUnitVoiceChannelGrantUpdate)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        identifiers.update(uuvcgu.getIdentifiers());
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(uuvcgu.getChannel(), null, identifiers,
+                                tsbk.getOpcode(), uuvcgu.getTimestamp());
+                        }
+                    }
+                    break;
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+                    if(tsbk instanceof TelephoneInterconnectVoiceChannelGrant)
+                    {
+                        TelephoneInterconnectVoiceChannelGrant tivcg = (TelephoneInterconnectVoiceChannelGrant)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        identifiers.update(tivcg.getIdentifiers());
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(tivcg.getChannel(), tivcg.getVoiceServiceOptions(),
+                                identifiers, tsbk.getOpcode(), tivcg.getTimestamp());
+                        }
+                    }
+                    break;
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+                    if(tsbk instanceof TelephoneInterconnectVoiceChannelGrantUpdate)
+                    {
+                        TelephoneInterconnectVoiceChannelGrantUpdate tivcgu = (TelephoneInterconnectVoiceChannelGrantUpdate)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        identifiers.update(tivcgu.getIdentifiers());
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(tivcgu.getChannel(), tivcgu.getVoiceServiceOptions(),
+                                identifiers, tsbk.getOpcode(), tivcgu.getTimestamp());
+                        }
+                    }
+                    break;
                 case OSP_SNDCP_DATA_CHANNEL_GRANT:
+                    if(tsbk instanceof SNDCPDataChannelGrant)
+                    {
+                        SNDCPDataChannelGrant dcg = (SNDCPDataChannelGrant)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        identifiers.update(dcg.getIdentifiers());
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(dcg.getChannel(), dcg.getServiceOptions(),
+                                identifiers, tsbk.getOpcode(), dcg.getTimestamp());
+                        }
+                    }
+                    break;
                 case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT:
+                    if(tsbk instanceof PatchGroupVoiceChannelGrant)
+                    {
+                        PatchGroupVoiceChannelGrant pgvcg = (PatchGroupVoiceChannelGrant)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiers = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiers.remove(IdentifierClass.USER);
+                        for(Identifier identifier : pgvcg.getIdentifiers())
+                        {
+                            identifiers.update(mPatchGroupManager.update(identifier));
+                        }
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(pgvcg.getChannel(), pgvcg.getVoiceServiceOptions(),
+                                identifiers, tsbk.getOpcode(), pgvcg.getTimestamp());
+                        }
+                    }
+                    break;
                 case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE:
-                    processTSBKChannelGrant(tsbk);
+                    if(tsbk instanceof PatchGroupVoiceChannelGrantUpdate)
+                    {
+                        PatchGroupVoiceChannelGrantUpdate pgvcgu = (PatchGroupVoiceChannelGrantUpdate)tsbk;
+
+                        //Make a copy of current identifiers and remove current user identifiers and replace from message
+                        MutableIdentifierCollection identifiersPG1 = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifiersPG1.remove(IdentifierClass.USER);
+                        identifiersPG1.update(mPatchGroupManager.update(pgvcgu.getPatchGroup1()));
+
+                        if(mTrafficChannelManager != null)
+                        {
+                            mTrafficChannelManager.processChannelGrant(pgvcgu.getChannel1(), null, identifiersPG1,
+                                tsbk.getOpcode(), pgvcgu.getTimestamp());
+                        }
+
+                        if(pgvcgu.hasPatchGroup2())
+                        {
+                            //Make a copy of current identifiers and remove current user identifiers and replace from message
+                            MutableIdentifierCollection identifiersPG2 = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            identifiersPG2.remove(IdentifierClass.USER);
+                            identifiersPG2.update(mPatchGroupManager.update(pgvcgu.getPatchGroup2()));
+
+                            if(mTrafficChannelManager != null)
+                            {
+                                mTrafficChannelManager.processChannelGrant(pgvcgu.getChannel2(), null,
+                                    identifiersPG2, tsbk.getOpcode(), pgvcgu.getTimestamp());
+                            }
+                        }
+                    }
                     break;
 
                 //Network Configuration Messages
@@ -919,7 +1091,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.PAGE.toString())
+                        .eventDescription(DecodeEventType.PAGE.toString())
                         .details("UNIT-TO-UNIT ANSWER REQUEST")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -930,7 +1102,7 @@ public class P25DecoderState extends DecoderState
                         TelephoneInterconnectAnswerRequest tiar = (TelephoneInterconnectAnswerRequest)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.PAGE.toString())
+                            .eventDescription(DecodeEventType.PAGE.toString())
                             .details("TELEPHONE ANSWER REQUEST: " + tiar.getTelephoneNumber())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -939,7 +1111,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_SNDCP_DATA_PAGE_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.PAGE.toString())
+                        .eventDescription(DecodeEventType.PAGE.toString())
                         .details("SNDCP DATA PAGE REQUEST")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -951,7 +1123,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.STATUS.toString())
+                            .eventDescription(DecodeEventType.STATUS.toString())
                             .details("UNIT:" + su.getUnitStatus() + " USER:" + su.getUserStatus())
                             .identifiers(new IdentifierCollection(su.getIdentifiers()))
                             .build());
@@ -960,7 +1132,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_STATUS_QUERY:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.QUERY.toString())
+                        .eventDescription(DecodeEventType.QUERY.toString())
                         .details("STATUS")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -971,7 +1143,7 @@ public class P25DecoderState extends DecoderState
                         MessageUpdate mu = (MessageUpdate)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.SDM.toString())
+                            .eventDescription(DecodeEventType.SDM.toString())
                             .details("MSG:" + mu.getShortDataMessage())
                             .identifiers(new IdentifierCollection(mu.getIdentifiers()))
                             .build());
@@ -980,7 +1152,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_RADIO_UNIT_MONITOR_COMMAND:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.COMMAND.toString())
+                        .eventDescription(DecodeEventType.COMMAND.toString())
                         .details("RADIO UNIT MONITOR")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -988,7 +1160,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_CALL_ALERT:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.PAGE.toString())
+                        .eventDescription(DecodeEventType.PAGE.toString())
                         .details("CALL ALERT")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -999,7 +1171,7 @@ public class P25DecoderState extends DecoderState
                         AcknowledgeResponse ar = (AcknowledgeResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("ACKNOWLEDGE " + ar.getAcknowledgedServiceType().getDescription())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1011,7 +1183,7 @@ public class P25DecoderState extends DecoderState
                         QueuedResponse qr = (QueuedResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("QUEUED: " + qr.getQueuedResponseServiceType().getDescription() +
                                 " REASON: " + qr.getQueuedResponseReason() +
                                 " INFO: " + qr.getAdditionalInfo())
@@ -1025,7 +1197,7 @@ public class P25DecoderState extends DecoderState
                         ExtendedFunctionCommand efc = (ExtendedFunctionCommand)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.COMMAND.toString())
+                            .eventDescription(DecodeEventType.COMMAND.toString())
                             .details("EXTENDED FUNCTION: " + efc.getExtendedFunction() +
                                 " ARGUMENTS:" + efc.getArguments())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1038,7 +1210,7 @@ public class P25DecoderState extends DecoderState
                         DenyResponse dr = (DenyResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("DENY: " + dr.getDeniedServiceType().getDescription() +
                                 " REASON: " + dr.getDenyReason() + " - INFO: " + dr.getAdditionalInfo())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1051,7 +1223,7 @@ public class P25DecoderState extends DecoderState
                         GroupAffiliationResponse gar = (GroupAffiliationResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details(gar.getAffiliationResponse() +
                                 " AFFILIATION GROUP: " + gar.getGroupAddress() +
                                 (gar.isGlobalAffiliation() ? " (GLOBAL)" : " (LOCAL)") +
@@ -1063,7 +1235,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_GROUP_AFFILIATION_QUERY:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.QUERY.toString())
+                        .eventDescription(DecodeEventType.QUERY.toString())
                         .details("GROUP AFFILIATION")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1074,7 +1246,7 @@ public class P25DecoderState extends DecoderState
                         LocationRegistrationResponse lrr = (LocationRegistrationResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REGISTER.toString())
+                            .eventDescription(DecodeEventType.REGISTER.toString())
                             .details(lrr.getResponse() + " LOCATION REGISTRATION - GROUP:" + lrr.getGroupAddress())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1086,7 +1258,7 @@ public class P25DecoderState extends DecoderState
                         UnitRegistrationResponse urr = (UnitRegistrationResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REGISTER.toString())
+                            .eventDescription(DecodeEventType.REGISTER.toString())
                             .details(urr.getResponse() + " UNIT REGISTRATION - UNIT ID:" + urr.getTargetUniqueId())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1095,7 +1267,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_UNIT_REGISTRATION_COMMAND:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.COMMAND.toString())
+                        .eventDescription(DecodeEventType.COMMAND.toString())
                         .details("UNIT REGISTRATION")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1103,7 +1275,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_AUTHENTICATION_COMMAND:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.COMMAND.toString())
+                        .eventDescription(DecodeEventType.COMMAND.toString())
                         .details("AUTHENTICATE")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1111,7 +1283,7 @@ public class P25DecoderState extends DecoderState
                 case OSP_UNIT_DEREGISTRATION_ACKNOWLEDGE:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.DEREGISTER.toString())
+                        .eventDescription(DecodeEventType.DEREGISTER.toString())
                         .details("ACKNOWLEDGE UNIT DE-REGISTRATION")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1123,7 +1295,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.COMMAND.toString())
+                            .eventDescription(DecodeEventType.COMMAND.toString())
                             .details(rac.getStackOperation() + " ROAMING ADDRESS")
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1145,7 +1317,7 @@ public class P25DecoderState extends DecoderState
                         GroupVoiceServiceRequest gvsr = (GroupVoiceServiceRequest)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("GROUP VOICE SERVICE " + gvsr.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1158,7 +1330,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("UNIT-2-UNIT VOICE SERVICE " + uuvsr.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1171,7 +1343,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details(uuvsar.getAnswerResponse() + " UNIT-2-UNIT VOICE SERVICE " + uuvsar.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1180,7 +1352,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_TELEPHONE_INTERCONNECT_PSTN_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("TELEPHONE INTERCONNECT")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1192,7 +1364,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details(tiar.getAnswerResponse() + " TELEPHONE INTERCONNECT " + tiar.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1205,7 +1377,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("INDIVIDUAL DATA SERVICE " + idsr.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1218,7 +1390,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("GROUP DATA SERVICE " + gdsr.getVoiceServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1231,7 +1403,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("SNDCP DATA CHANNEL " + sdcr.getDataServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1244,7 +1416,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details(sdpr.getAnswerResponse() + " SNDCP DATA " + sdpr.getDataServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1257,7 +1429,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("SNDCP RECONNECT " + (srr.hasDataToSend() ? "- DATA TO SEND " : "")
                                 + srr.getDataServiceOptions())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1270,7 +1442,7 @@ public class P25DecoderState extends DecoderState
                         StatusUpdateRequest sur = (StatusUpdateRequest)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.STATUS.toString())
+                            .eventDescription(DecodeEventType.STATUS.toString())
                             .details("UNIT:" + sur.getUnitStatus() + " USER:" + sur.getUserStatus())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1282,7 +1454,7 @@ public class P25DecoderState extends DecoderState
                         StatusQueryResponse sqr = (StatusQueryResponse)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.STATUS.toString())
+                            .eventDescription(DecodeEventType.STATUS.toString())
                             .details("UNIT:" + sqr.getUnitStatus() + " USER:" + sqr.getUserStatus())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1291,7 +1463,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_STATUS_QUERY_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.QUERY.toString())
+                        .eventDescription(DecodeEventType.QUERY.toString())
                         .details("UNIT AND USER STATUS")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1302,7 +1474,7 @@ public class P25DecoderState extends DecoderState
                         MessageUpdateRequest mur = (MessageUpdateRequest)tsbk;
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.SDM.toString())
+                            .eventDescription(DecodeEventType.SDM.toString())
                             .details("MESSAGE:" + mur.getShortDataMessage())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1311,7 +1483,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_RADIO_UNIT_MONITOR_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("RADIO UNIT MONITOR")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1319,7 +1491,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_CALL_ALERT_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("CALL ALERT")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1331,7 +1503,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("UNIT ACKNOWLEDGE:" + uar.getAcknowledgedServiceType().getDescription())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                             .build());
@@ -1344,7 +1516,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REQUEST.toString())
+                            .eventDescription(DecodeEventType.REQUEST.toString())
                             .details("CANCEL SERVICE:" + csr.getServiceType() +
                                 " REASON:" + csr.getCancelReason() + (csr.hasAdditionalInformation() ?
                                 " INFO:" + csr.getAdditionalInformation() : ""))
@@ -1359,7 +1531,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("EXTENDED FUNCTION:" + efr.getExtendedFunction() +
                                 " ARGUMENTS:" + efr.getArguments())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1369,7 +1541,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_EMERGENCY_ALARM_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("EMERGENCY ALARM")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1377,7 +1549,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_GROUP_AFFILIATION_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("GROUP AFFILIATION")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1389,7 +1561,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.RESPONSE.toString())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .details("AFFILIATION - GROUP:" + gaqr.getGroupAddress() +
                                 " ANNOUNCEMENT GROUP:" + gaqr.getAnnouncementGroupAddress())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1399,7 +1571,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_UNIT_DE_REGISTRATION_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.DEREGISTER.toString())
+                        .eventDescription(DecodeEventType.DEREGISTER.toString())
                         .details("UNIT DE-REGISTRATION REQUEST")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1411,7 +1583,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REGISTER.toString())
+                            .eventDescription(DecodeEventType.REGISTER.toString())
                             .details((urr.isEmergency() ? "EMERGENCY " : "") +
                                 "UNIT REGISTRATION REQUEST - CAPABILITY:" + urr.getCapability())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1425,7 +1597,7 @@ public class P25DecoderState extends DecoderState
 
                         broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                             .channel(mCurrentChannel)
-                            .description(DecodeEventType.REGISTER.toString())
+                            .eventDescription(DecodeEventType.REGISTER.toString())
                             .details((lrr.isEmergency() ? "EMERGENCY " : "") +
                                 "LOCATION REGISTRATION REQUEST - CAPABILITY:" + lrr.getCapability())
                             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
@@ -1435,7 +1607,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_PROTECTION_PARAMETER_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("ENCRYPTION PARAMETERS")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1443,7 +1615,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_IDENTIFIER_UPDATE_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("FREQUENCY BAND DETAILS")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1451,7 +1623,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_ROAMING_ADDRESS_REQUEST:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.REQUEST.toString())
+                        .eventDescription(DecodeEventType.REQUEST.toString())
                         .details("ROAMING ADDRESS")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1459,7 +1631,7 @@ public class P25DecoderState extends DecoderState
                 case ISP_ROAMING_ADDRESS_RESPONSE:
                     broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.RESPONSE.toString())
+                        .eventDescription(DecodeEventType.RESPONSE.toString())
                         .details("ROAMING ADDRESS")
                         .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))
                         .build());
@@ -1538,7 +1710,7 @@ public class P25DecoderState extends DecoderState
             case UNIT_TO_UNIT_ANSWER_REQUEST:
                 broadcast(P25DecodeEvent.builder(timestamp)
                     .channel(mCurrentChannel)
-                    .description(DecodeEventType.PAGE.toString())
+                    .eventDescription(DecodeEventType.PAGE.toString())
                     .details("Unit-to-Unit Answer Request")
                     .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                     .build());
@@ -1558,7 +1730,7 @@ public class P25DecoderState extends DecoderState
                     LCTelephoneInterconnectAnswerRequest tiar = (LCTelephoneInterconnectAnswerRequest)lcw;
                     broadcast(P25DecodeEvent.builder(timestamp)
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.PAGE.toString())
+                        .eventDescription(DecodeEventType.PAGE.toString())
                         .details("Telephone Call:" + tiar.getTelephoneNumber())
                         .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                         .build());
@@ -1573,7 +1745,7 @@ public class P25DecoderState extends DecoderState
             case GROUP_AFFILIATION_QUERY:
                 broadcast(P25DecodeEvent.builder(timestamp)
                     .channel(mCurrentChannel)
-                    .description(DecodeEventType.QUERY.toString())
+                    .eventDescription(DecodeEventType.QUERY.toString())
                     .details("Group Affiliation")
                     .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                     .build());
@@ -1581,7 +1753,7 @@ public class P25DecoderState extends DecoderState
             case UNIT_REGISTRATION_COMMAND:
                 broadcast(P25DecodeEvent.builder(timestamp)
                     .channel(mCurrentChannel)
-                    .description(DecodeEventType.COMMAND.toString())
+                    .eventDescription(DecodeEventType.COMMAND.toString())
                     .details("Unit Registration")
                     .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                     .build());
@@ -1589,7 +1761,7 @@ public class P25DecoderState extends DecoderState
             case UNIT_AUTHENTICATION_COMMAND:
                 broadcast(P25DecodeEvent.builder(timestamp)
                     .channel(mCurrentChannel)
-                    .description(DecodeEventType.COMMAND.toString())
+                    .eventDescription(DecodeEventType.COMMAND.toString())
                     .details("Authenticate Unit")
                     .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                     .build());
@@ -1597,7 +1769,7 @@ public class P25DecoderState extends DecoderState
             case STATUS_QUERY:
                 broadcast(P25DecodeEvent.builder(timestamp)
                     .channel(mCurrentChannel)
-                    .description(DecodeEventType.QUERY.toString())
+                    .eventDescription(DecodeEventType.QUERY.toString())
                     .details("Status")
                     .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                     .build());
@@ -1609,7 +1781,7 @@ public class P25DecoderState extends DecoderState
 
                     broadcast(P25DecodeEvent.builder(timestamp)
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.STATUS.toString())
+                        .eventDescription(DecodeEventType.STATUS.toString())
                         .details("UNIT:" + su.getUnitStatus() + " USER:" + su.getUserStatus())
                         .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                         .build());
@@ -1621,7 +1793,7 @@ public class P25DecoderState extends DecoderState
                     LCMessageUpdate mu = (LCMessageUpdate)lcw;
                     broadcast(P25DecodeEvent.builder(timestamp)
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.SDM.toString())
+                        .eventDescription(DecodeEventType.SDM.toString())
                         .details("MSG:" + mu.getShortDataMessage())
                         .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                         .build());
@@ -1630,7 +1802,7 @@ public class P25DecoderState extends DecoderState
             case CALL_ALERT:
                 broadcast(P25DecodeEvent.builder(timestamp)
                     .channel(mCurrentChannel)
-                    .description(DecodeEventType.PAGE.toString())
+                    .eventDescription(DecodeEventType.PAGE.toString())
                     .details("Call Alert")
                     .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
                     .build());
@@ -1641,7 +1813,7 @@ public class P25DecoderState extends DecoderState
                     LCExtendedFunctionCommand efc = (LCExtendedFunctionCommand)lcw;
                     broadcast(P25DecodeEvent.builder(timestamp)
                         .channel(mCurrentChannel)
-                        .description(DecodeEventType.COMMAND.toString())
+                        .eventDescription(DecodeEventType.COMMAND.toString())
                         .details("Extended Function: " + efc.getExtendedFunction() +
                             " Arguments:" + efc.getExtendedFunctionArguments())
                         .identifiers(new IdentifierCollection(lcw.getIdentifiers()))
@@ -1701,37 +1873,6 @@ public class P25DecoderState extends DecoderState
                 case UNKNOWN:
                     break;
             }
-        }
-    }
-
-
-    /**
-     * Process a traffic channel allocation message
-     */
-    private void processTSBKChannelGrant(TSBKMessage message)
-    {
-        switch(message.getOpcode())
-        {
-            case OSP_GROUP_VOICE_CHANNEL_GRANT:
-                break;
-            case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
-                break;
-            case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
-                break;
-            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                break;
-            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-                break;
-            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                break;
-            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-                break;
-            case OSP_SNDCP_DATA_CHANNEL_GRANT:
-                break;
-            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT:
-                break;
-            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE:
-                break;
         }
     }
 
@@ -1932,29 +2073,29 @@ public class P25DecoderState extends DecoderState
             case SOURCE_FREQUENCY:
                 mCurrentChannelFrequency = event.getFrequency();
                 break;
-            case TRAFFIC_CHANNEL_ALLOCATION:
-                if(event.getSource() != P25DecoderState.this)
-                {
-                    if(event instanceof TrafficChannelAllocationEvent)
-                    {
-                        TrafficChannelAllocationEvent allocationEvent = (TrafficChannelAllocationEvent)event;
-
+//            case TRAFFIC_CHANNEL_ALLOCATION:
+//                if(event.getSource() != P25DecoderState.this)
+//                {
+//                    if(event instanceof TrafficChannelAllocationEvent)
+//                    {
+//                        TrafficChannelAllocationEvent allocationEvent = (TrafficChannelAllocationEvent)event;
+//
 //                        mCurrentCallEvent = (P25CallEvent) allocationEvent.getCallEvent();
 //
 //                        mCurrentChannel = allocationEvent.getCallEvent().getChannel();
 //                        broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, mCurrentChannel));
-
+//
 //                        mCurrentChannelFrequency = allocationEvent.getCallEvent().getFrequency();
 //                        broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, mCurrentChannelFrequency));
-
+//
 //                        mFromTalkgroupMonitor.reset();
 //                        mFromTalkgroupMonitor.process(allocationEvent.getCallEvent().getFromID());
 //
 //                        mToTalkgroupMonitor.reset();
 //                        mToTalkgroupMonitor.process(allocationEvent.getCallEvent().getToID());
-                    }
-                }
-                break;
+//                    }
+//                }
+//                break;
             default:
                 break;
         }
@@ -1974,5 +2115,39 @@ public class P25DecoderState extends DecoderState
     public void stop()
     {
 
+    }
+
+    /**
+     * Overrides the parent decoder state method so that we can intercept channel descriptor configuration notifications.
+     * This local class also forwards all notifications to the parent decoder state.
+     */
+    @Override
+    public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
+    {
+        return mCurrentChannelConfigurationIdentifierListener;
+    }
+
+    /**
+     * Monitors identifier updates to capture a channel descriptor identifier and store it to use with decode events.
+     */
+    public class CurrentChannelConfigurationIdentifierListener implements Listener<IdentifierUpdateNotification>
+    {
+
+        @Override
+        public void receive(IdentifierUpdateNotification updateNotification)
+        {
+            //Pass the notification to the parent decoder state so that it can process it.
+            getConfigurationIdentifierListener().receive(updateNotification);
+
+            if(updateNotification.getOperation() == IdentifierUpdateNotification.Operation.ADD)
+            {
+                Identifier identifier = updateNotification.getIdentifier();
+
+                if(identifier instanceof ChannelDescriptorConfigurationIdentifier)
+                {
+                    mCurrentChannel = ((ChannelDescriptorConfigurationIdentifier)identifier).getValue();
+                }
+            }
+        }
     }
 }

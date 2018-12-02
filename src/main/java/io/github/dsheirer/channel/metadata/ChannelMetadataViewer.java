@@ -22,6 +22,7 @@ import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
@@ -44,13 +45,13 @@ public class ChannelMetadataViewer extends JPanel
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
      * messages, events, and spectral view.
      */
-    public ChannelMetadataViewer(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
-                                 AliasModel aliasModel, UserPreferences userPreferences)
+    public ChannelMetadataViewer(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
+                                 IconManager iconManager, AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
         mDecodeEventPanel = new DecodeEventPanel(iconManager, userPreferences, aliasModel);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
-        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager, aliasModel, userPreferences);
+        mChannelMetadataPanel = new ChannelMetadataPanel(channelModel, channelProcessingManager, iconManager, userPreferences);
 
         init();
     }

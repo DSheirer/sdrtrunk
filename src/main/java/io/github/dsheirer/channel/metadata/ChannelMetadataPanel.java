@@ -19,9 +19,9 @@
 package io.github.dsheirer.channel.metadata;
 
 import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.icon.IconManager;
@@ -55,6 +55,7 @@ import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
+    private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private IconManager mIconManager;
     private UserPreferences mUserPreferences;
@@ -66,11 +67,12 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     /**
      * Table view for currently decoding channel metadata
      */
-    public ChannelMetadataPanel(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
-                                AliasModel aliasModel, UserPreferences userPreferences)
+    public ChannelMetadataPanel(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
+                                IconManager iconManager, UserPreferences userPreferences)
     {
-        mIconManager = iconManager;
+        mChannelModel = channelModel;
         mChannelProcessingManager = channelProcessingManager;
+        mIconManager = iconManager;
         mUserPreferences = userPreferences;
         init();
     }
@@ -387,9 +389,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                             if(channel != null)
                             {
-                                popupMenu.add(ChannelUtils.getContextMenu(mChannelProcessingManager.getChannelModel(),
-                                    mChannelProcessingManager, channel, mTable));
-
+                                popupMenu.add(ChannelUtils.getContextMenu(mChannelModel, mChannelProcessingManager, channel, mTable));
                                 populated = true;
                             }
                         }

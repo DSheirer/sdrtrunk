@@ -28,7 +28,7 @@ import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
-import io.github.dsheirer.identifier.configuration.ChannelConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.ChannelNameConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
@@ -48,7 +48,7 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
 
     private SystemConfigurationIdentifier mSystemConfigurationIdentifier;
     private SiteConfigurationIdentifier mSiteConfigurationIdentifier;
-    private ChannelConfigurationIdentifier mChannelConfigurationIdentifier;
+    private ChannelNameConfigurationIdentifier mChannelNameConfigurationIdentifier;
     private FrequencyConfigurationIdentifier mFrequencyConfigurationIdentifier;
     private DecoderStateIdentifier mDecoderStateIdentifier = DecoderStateIdentifier.IDLE;
     private DecoderTypeConfigurationIdentifier mDecoderTypeConfigurationIdentifier;
@@ -101,14 +101,14 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     /**
      * Channel configuration identifier
      */
-    public ChannelConfigurationIdentifier getChannelConfigurationIdentifier()
+    public ChannelNameConfigurationIdentifier getChannelNameConfigurationIdentifier()
     {
-        return mChannelConfigurationIdentifier;
+        return mChannelNameConfigurationIdentifier;
     }
 
     public boolean hasChannelConfigurationIdentifier()
     {
-        return mChannelConfigurationIdentifier != null;
+        return mChannelNameConfigurationIdentifier != null;
     }
 
     /**
@@ -250,7 +250,7 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
                         }
                         break;
                     case CHANNEL:
-                        mChannelConfigurationIdentifier = update.isAdded() ? (ChannelConfigurationIdentifier)identifier : null;
+                        mChannelNameConfigurationIdentifier = update.isAdded() ? (ChannelNameConfigurationIdentifier)identifier : null;
                         broadcastUpdate(ChannelMetadataField.CONFIGURATION_CHANNEL);
                         break;
                     case CHANNEL_FREQUENCY:

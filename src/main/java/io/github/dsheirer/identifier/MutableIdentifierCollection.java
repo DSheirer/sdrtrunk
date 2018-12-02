@@ -83,8 +83,7 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
         setUpdated(true);
         if(mListener != null)
         {
-            mListener.receive(new IdentifierUpdateNotification(identifier,
-                IdentifierUpdateNotification.Operation.ADD));
+            mListener.receive(new IdentifierUpdateNotification(identifier, IdentifierUpdateNotification.Operation.ADD));
         }
     }
 
@@ -122,6 +121,26 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
     }
 
     /**
+     * Adds the identifier to this collection if not already contained in this collection.  Does NOT broadcast an
+     * update notification.
+     *
+     * @param identifier to add
+     */
+    private void silentAdd(Identifier identifier)
+    {
+        if(identifier.isValid() && !mIdentifiers.contains(identifier))
+        {
+            mIdentifiers.add(identifier);
+        }
+
+        //Retain a reference to the alias list identifier separately so that it can be accessed quickly.
+        if(identifier instanceof AliasListConfigurationIdentifier)
+        {
+            mAliasListConfigurationIdentifier = (AliasListConfigurationIdentifier)identifier;
+        }
+    }
+
+    /**
      * Removes the identifier from this collection
      */
     public void remove(Identifier identifier)
@@ -130,6 +149,20 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
         {
             notifyRemove(identifier);
         }
+
+        //Remove the reference to the alias list identifier.
+        if(identifier instanceof AliasListConfigurationIdentifier)
+        {
+            mAliasListConfigurationIdentifier = null;
+        }
+    }
+
+    /**
+     * Removes the identifier from this collection and does NOT broadcast an update notification
+     */
+    public void silentRemove(Identifier identifier)
+    {
+        mIdentifiers.remove(identifier);
 
         //Remove the reference to the alias list identifier.
         if(identifier instanceof AliasListConfigurationIdentifier)
@@ -163,6 +196,34 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
             else
             {
                 add(identifier);
+            }
+        }
+    }
+
+    /**
+     * Adds the identifier only if the value is different from the existing identifiers(s).  If
+     * there are multiple matching identifiers, then they are all removed and replaced by this
+     * single identifier.
+     *
+     * @param identifier
+     */
+    public void silentUpdate(Identifier identifier)
+    {
+        if(identifier != null)
+        {
+            Identifier existing = getIdentifier(identifier.getIdentifierClass(), identifier.getForm(), identifier.getRole());
+
+            if(existing != null)
+            {
+                if(!existing.equals(identifier))
+                {
+                    silentRemove(existing);
+                    silentAdd(identifier);
+                }
+            }
+            else
+            {
+                silentAdd(identifier);
             }
         }
     }
@@ -292,6 +353,14 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
         else if(identifierUpdateNotification.isRemoved())
         {
             remove(identifierUpdateNotification.getIdentifier());
+        }
+        else if(identifierUpdateNotification.isSilentAdd())
+        {
+            silentUpdate(identifierUpdateNotification.getIdentifier());
+        }
+        else if(identifierUpdateNotification.isSilentRemove())
+        {
+            silentRemove(identifierUpdateNotification.getIdentifier());
         }
     }
 

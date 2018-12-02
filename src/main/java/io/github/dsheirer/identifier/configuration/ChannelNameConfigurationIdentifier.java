@@ -25,14 +25,14 @@ import io.github.dsheirer.identifier.Form;
 /**
  * User specified channel name for a decode configuration.
  */
-public class ChannelConfigurationIdentifier extends ConfigurationStringIdentifier
+public class ChannelNameConfigurationIdentifier extends ConfigurationStringIdentifier
 {
-    public ChannelConfigurationIdentifier()
+    public ChannelNameConfigurationIdentifier()
     {
         this(null);
     }
 
-    public ChannelConfigurationIdentifier(String value)
+    public ChannelNameConfigurationIdentifier(String value)
     {
         super(value, Form.CHANNEL);
     }
@@ -43,8 +43,8 @@ public class ChannelConfigurationIdentifier extends ConfigurationStringIdentifie
         return getValue() != null && !getValue().isEmpty();
     }
 
-    public static ChannelConfigurationIdentifier create(String value)
+    public static ChannelNameConfigurationIdentifier create(String value)
     {
-        return new ChannelConfigurationIdentifier(value);
+        return new ChannelNameConfigurationIdentifier(value);
     }
 }

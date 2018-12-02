@@ -47,7 +47,7 @@ public class SNDCPDataChannelGrant extends OSPMessage implements IFrequencyBandR
     private static final int[] TARGET_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
 
     private DataServiceOptions mServiceOptions;
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mTargetAddress;
     private List<Identifier> mIdentifiers;
     private List<IChannelDescriptor> mChannels;
@@ -90,7 +90,7 @@ public class SNDCPDataChannelGrant extends OSPMessage implements IFrequencyBandR
         return mTargetAddress;
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {

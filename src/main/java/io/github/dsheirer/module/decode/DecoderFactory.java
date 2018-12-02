@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +15,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.audio.AudioModule;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
-import io.github.dsheirer.channel.traffic.TrafficChannelManager;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
-import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.AllPassFilter;
@@ -68,11 +67,11 @@ import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.P25Decoder.Modulation;
 import io.github.dsheirer.module.decode.p25.P25DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.P25DecoderEditor;
 import io.github.dsheirer.module.decode.p25.P25DecoderLSM;
 import io.github.dsheirer.module.decode.p25.P25DecoderState;
+import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
 import io.github.dsheirer.module.decode.p25.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
@@ -106,9 +105,9 @@ public class DecoderFactory
      *
      * @return list of configured decoders
      */
-    public static List<Module> getModules(ChannelModel channelModel, ChannelMapModel channelMapModel, Channel channel)
+    public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel)
     {
-        List<Module> modules = getPrimaryModules(channelModel, channelMapModel, channel);
+        List<Module> modules = getPrimaryModules(channelMapModel, channel);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
@@ -116,7 +115,7 @@ public class DecoderFactory
     /**
      * Constructs a primary decoder as specified in the decode configuration
      */
-    public static List<Module> getPrimaryModules(ChannelModel channelModel, ChannelMapModel channelMapModel, Channel channel)
+    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel)
     {
         List<Module> modules = new ArrayList<Module>();
 
@@ -176,12 +175,12 @@ public class DecoderFactory
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
 
-                if(channelType == ChannelType.STANDARD)
-                {
-                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        null, mptConfig.getTrafficChannelPoolSize()));
-                }
+//                if(channelType == ChannelType.STANDARD)
+//                {
+//                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
+//                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
+//                        null, mptConfig.getTrafficChannelPoolSize()));
+//                }
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, null));
@@ -195,27 +194,28 @@ public class DecoderFactory
             case P25_PHASE1:
                 DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)decodeConfig;
 
-                Modulation modulation = p25Config.getModulation();
-
-                switch(modulation)
+                switch(p25Config.getModulation())
                 {
                     case C4FM:
                         modules.add(new P25DecoderC4FM());
-                        modules.add(new P25DecoderState(channel, Modulation.C4FM, p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:
                         modules.add(new P25DecoderLSM());
-                        modules.add(new P25DecoderState(channel, Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
                         break;
                     default:
-                        throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + modulation + "]");
+                        throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
+                            p25Config.getModulation() + "]");
                 }
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        null, p25Config.getTrafficChannelPoolSize()));
+                    P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
+                    modules.add(trafficChannelManager);
+                    modules.add(new P25DecoderState(channel, trafficChannelManager));
+                }
+                else
+                {
+                    modules.add(new P25DecoderState(channel));
                 }
 
                 modules.add(new P25AudioModule());

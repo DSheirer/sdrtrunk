@@ -173,7 +173,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                 case COLUMN_CONFIGURATION_FREQUENCY:
                     return channelMetadata.getFrequencyConfigurationIdentifier();
                 case COLUMN_CONFIGURATION_CHANNEL:
-                    return channelMetadata.getChannelConfigurationIdentifier();
+                    return channelMetadata.getChannelNameConfigurationIdentifier();
                 case COLUMN_USER_TO:
                     return channelMetadata;
                 case COLUMN_USER_FROM:

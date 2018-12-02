@@ -39,6 +39,8 @@ import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 
+import java.util.Objects;
+
 @JacksonXmlRootElement(localName = "channel")
 public class Channel extends Configuration implements Listener<SourceEvent>
 {
@@ -187,6 +189,18 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public ChannelType getChannelType()
     {
         return mChannelType;
+    }
+
+    @JsonIgnore
+    public boolean isTrafficChannel()
+    {
+        return mChannelType == ChannelType.TRAFFIC;
+    }
+
+    @JsonIgnore
+    public boolean isStandardChannel()
+    {
+        return mChannelType == ChannelType.STANDARD;
     }
 
     /**
@@ -546,5 +560,26 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public void resetFrequencyCorrection()
     {
         mChannelFrequencyCorrection = 0;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        Channel channel = (Channel)o;
+        return getChannelID() == channel.getChannelID();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(getChannelID());
     }
 }

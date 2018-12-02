@@ -26,7 +26,7 @@ public class TelephoneInterconnectVoiceChannelGrantUpdate extends OSPMessage imp
             74, 75, 76, 77, 78, 79};
 
     private VoiceServiceOptions mVoiceServiceOptions;
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mAnyAddress;
     private List<Identifier> mIdentifiers;
 
@@ -70,7 +70,7 @@ public class TelephoneInterconnectVoiceChannelGrantUpdate extends OSPMessage imp
         return getMessage().getInt(CALL_TIMER) * 100l; //Convert from 100ms units to milliseconds
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {

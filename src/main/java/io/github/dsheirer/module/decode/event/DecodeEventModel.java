@@ -153,7 +153,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
                     case COLUMN_CHANNEL:
                         return event.getChannelDescriptor();
                     case COLUMN_FREQUENCY:
-                        return event.getIdentifierCollection();
+                        return event.getChannelDescriptor();
                     case COLUMN_DETAILS:
                         return event.getDetails();
                 }

@@ -17,30 +17,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.channel.traffic;
 
-import io.github.dsheirer.channel.state.DecoderStateEvent;
-import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.module.decode.event.DecodeEvent;
+package io.github.dsheirer.controller.channel;
+
+import io.github.dsheirer.channel.IChannelDescriptor;
 
 /**
- * Traffic channel allocation event wraps a call event indicating the channel
- * and frequency for a traffic channel allocation event, so that the traffic
- * channel manager can respond and allocate a decoder channel and source if
- * available, or change the wrapped call event to a call detect event and log it.
+ * Channel grant event with a channel descriptor that identifies the channel that is being created
  */
-public class TrafficChannelAllocationEvent extends DecoderStateEvent
+public class ChannelGrantEvent extends ChannelEvent
 {
-    private DecodeEvent mCallEvent;
+    private IChannelDescriptor mChannelDescriptor;
 
-    public TrafficChannelAllocationEvent(Object source, DecodeEvent callEvent)
+    /**
+     * Constructs a channel grant event
+     * @param channel with setup/configuration details
+     * @param event to convey for the channel
+     * @param channelDescriptor for the channel that is to be created
+     */
+    public ChannelGrantEvent(Channel channel, Event event, IChannelDescriptor channelDescriptor)
     {
-        super(source, Event.TRAFFIC_CHANNEL_ALLOCATION, State.CALL);
-        mCallEvent = callEvent;
+        super(channel, event);
+        mChannelDescriptor = channelDescriptor;
     }
 
-    public DecodeEvent getCallEvent()
+    /**
+     * Channel descriptor that contains uplink and downlink information
+     */
+    public IChannelDescriptor getChannelDescriptor()
     {
-        return mCallEvent;
+        return mChannelDescriptor;
     }
 }

@@ -1,5 +1,6 @@
 package io.github.dsheirer.channel.state;
 
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -23,9 +24,12 @@ import io.github.dsheirer.sample.Listener;
  *
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>, IDecodeEventProvider,
-    IDecoderStateEventListener, IDecoderStateEventProvider, IMessageListener, IdentifierUpdateProvider, IdentifierUpdateListener
+public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<IMessage>,
+    IDecodeEventProvider, IDecoderStateEventListener, IDecoderStateEventProvider, IMessageListener,
+    IdentifierUpdateProvider, IdentifierUpdateListener
 {
+//    private final static Logger mLog = LoggerFactory.getLogger(DecoderState.class);
+
     protected String DIVIDER1 = "======================================================\n";
     protected String DIVIDER2 = "------------------------------------------------------\n";
 
@@ -215,6 +219,14 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     }
 
     /**
+     * Configuration identifier listener.
+     */
+    public ConfigurationIdentifierListener getConfigurationIdentifierListener()
+    {
+        return mConfigurationIdentifierListener;
+    }
+
+    /**
      * Listener for configuration type identifier updates sent from the channel state.  Adds configuration
      * identifiers to this decoder state so that decode events will contain configuration details in the
      * event's identifier collection.
@@ -224,7 +236,9 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
         @Override
         public void receive(IdentifierUpdateNotification identifierUpdateNotification)
         {
-            if(identifierUpdateNotification.getIdentifier().getIdentifierClass() == IdentifierClass.CONFIGURATION)
+            if(identifierUpdateNotification.getIdentifier().getIdentifierClass() == IdentifierClass.CONFIGURATION &&
+               identifierUpdateNotification.getIdentifier().getForm() != Form.DECODER_TYPE &&
+               identifierUpdateNotification.getIdentifier().getForm() != Form.CHANNEL_DESCRIPTOR)
             {
                 getIdentifierCollection().update(identifierUpdateNotification.getIdentifier());
             }

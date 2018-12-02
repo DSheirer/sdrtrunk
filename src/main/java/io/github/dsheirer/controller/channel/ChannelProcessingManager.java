@@ -19,9 +19,12 @@
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
@@ -32,6 +35,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.binary.BinaryRecorder;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.Source;
@@ -40,21 +44,22 @@ import io.github.dsheirer.source.SourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ChannelProcessingManager implements ChannelEventListener
+public class ChannelProcessingManager implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelProcessingManager.class);
     private static final String TUNER_UNAVAILABLE_DESCRIPTION = "TUNER UNAVAILABLE";
-    private Map<Integer, ProcessingChain> mProcessingChains = new HashMap<>();
+    private Map<Channel, ProcessingChain> mProcessingChains = new HashMap<>();
 
     private List<Listener<ReusableAudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
     private List<Listener<IMessage>> mMessageListeners = new CopyOnWriteArrayList<>();
+    private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
-    private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
     private ChannelMetadataModel mChannelMetadataModel;
     private EventLogManager mEventLogManager;
@@ -62,15 +67,10 @@ public class ChannelProcessingManager implements ChannelEventListener
     private SourceManager mSourceManager;
     private AliasModel mAliasModel;
 
-    public ChannelProcessingManager(ChannelModel channelModel,
-                                    ChannelMapModel channelMapModel,
-                                    EventLogManager eventLogManager,
-                                    RecorderManager recorderManager,
-                                    SourceManager sourceManager,
-                                    AliasModel aliasModel,
+    public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
+                                    RecorderManager recorderManager, SourceManager sourceManager, AliasModel aliasModel,
                                     UserPreferences userPreferences)
     {
-        mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
         mRecorderManager = recorderManager;
@@ -88,21 +88,12 @@ public class ChannelProcessingManager implements ChannelEventListener
     }
 
     /**
-     * Channel model
-     */
-    public ChannelModel getChannelModel()
-    {
-        return mChannelModel;
-    }
-
-    /**
      * Indicates if a processing chain is constructed for the channel and that
      * the processing chain is currently processing.
      */
     private boolean isProcessing(Channel channel)
     {
-        return mProcessingChains.containsKey(channel.getChannelID()) &&
-                mProcessingChains.get(channel.getChannelID()).isProcessing();
+        return mProcessingChains.containsKey(channel) && mProcessingChains.get(channel).isProcessing();
     }
 
     /**
@@ -111,7 +102,7 @@ public class ChannelProcessingManager implements ChannelEventListener
      */
     public ProcessingChain getProcessingChain(Channel channel)
     {
-        return mProcessingChains.get(channel.getChannelID());
+        return mProcessingChains.get(channel);
     }
 
     /**
@@ -122,17 +113,9 @@ public class ChannelProcessingManager implements ChannelEventListener
      */
     public Channel getChannel(ProcessingChain processingChain)
     {
-        return mChannelModel.getChannelFromChannelID(getChannelID(processingChain));
-    }
-
-    /**
-     * Returns the channel ID associated with the processing chain
-     */
-    private Integer getChannelID(ProcessingChain processingChain)
-    {
         if(processingChain != null)
         {
-            for(Map.Entry<Integer, ProcessingChain> entry : mProcessingChains.entrySet())
+            for(Map.Entry<Channel, ProcessingChain> entry : mProcessingChains.entrySet())
             {
                 if(entry.getValue() == processingChain)
                 {
@@ -145,15 +128,14 @@ public class ChannelProcessingManager implements ChannelEventListener
     }
 
     @Override
-    public synchronized void channelChanged(ChannelEvent event)
+    public synchronized void receive(ChannelEvent event)
     {
         Channel channel = event.getChannel();
 
         switch(event.getEvent())
         {
             case REQUEST_ENABLE:
-                if(!mProcessingChains.containsKey(channel.getChannelID()) ||
-                        !mProcessingChains.get(channel.getChannelID()).isProcessing())
+                if(!isProcessing(channel))
                 {
                     startProcessing(event);
                 }
@@ -197,7 +179,7 @@ public class ChannelProcessingManager implements ChannelEventListener
     {
         Channel channel = event.getChannel();
 
-        ProcessingChain processingChain = mProcessingChains.get(channel.getChannelID());
+        ProcessingChain processingChain = mProcessingChains.get(channel);
 
         //If we're already processing, ignore the request
         if(processingChain != null && processingChain.isProcessing())
@@ -222,7 +204,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         {
             channel.setProcessing(false);
 
-            mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_START_PROCESSING_REJECTED,
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_START_PROCESSING_REJECTED,
                 TUNER_UNAVAILABLE_DESCRIPTION));
 
             return;
@@ -231,6 +213,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         if(processingChain == null)
         {
             processingChain = new ProcessingChain(channel, mAliasModel);
+            mChannelEventBroadcaster.addListener(processingChain);
 
             /* Register global listeners */
             for(Listener<ReusableAudioPacket> listener : mAudioPacketListeners)
@@ -243,11 +226,15 @@ public class ChannelProcessingManager implements ChannelEventListener
                 processingChain.addMessageListener(listener);
             }
 
+            //Register this manager to receive channel events from traffic channel manager modules within
+            //the processing chain
+            processingChain.addChannelEventListener(this);
+
             //Register channel to receive frequency correction events to show in the spectral display (hack!)
             processingChain.addFrequencyChangeListener(channel);
 
             /* Processing Modules */
-            List<Module> modules = DecoderFactory.getModules(mChannelModel, mChannelMapModel, channel);
+            List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel);
             processingChain.addModules(modules);
 
             /* Setup message activity model with filtering */
@@ -304,13 +291,18 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         processingChain.setSource(source);
 
-        if(event instanceof TrafficChannelEvent)
+        //Inject the channel identifier for traffic channels
+        if(channel.isTrafficChannel() && event instanceof ChannelGrantEvent)
         {
-            TrafficChannelEvent trafficChannelEvent = (TrafficChannelEvent) event;
+            IChannelDescriptor channelDescriptor = ((ChannelGrantEvent)event).getChannelDescriptor();
 
-            processingChain.getChannelState().configureAsTrafficChannel(
-                    trafficChannelEvent.getTrafficChannelManager(),
-                    trafficChannelEvent.getCallEvent());
+            if(channelDescriptor != null)
+            {
+                ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
+                IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
+                    IdentifierUpdateNotification.Operation.ADD);
+                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+            }
         }
 
         processingChain.start();
@@ -319,18 +311,18 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         channel.setProcessing(true);
 
-        mProcessingChains.put(channel.getChannelID(), processingChain);
+        mProcessingChains.put(channel, processingChain);
 
-        mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
+        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
     }
 
     private void stopProcessing(Channel channel, boolean remove)
     {
         channel.setProcessing(false);
 
-        if(mProcessingChains.containsKey(channel.getChannelID()))
+        if(mProcessingChains.containsKey(channel))
         {
-            ProcessingChain processingChain = mProcessingChains.get(channel.getChannelID());
+            ProcessingChain processingChain = mProcessingChains.get(channel);
 
             getChannelMetadataModel().remove(processingChain.getChannelState().getChannelMetadata());
 
@@ -344,12 +336,12 @@ public class ChannelProcessingManager implements ChannelEventListener
             processingChain.removeFrequencyChangeListener(channel);
             channel.resetFrequencyCorrection();
 
-            mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
 
             if(remove)
             {
-                mProcessingChains.remove(channel.getChannelID());
-
+                mChannelEventBroadcaster.removeListener(processingChain);
+                mProcessingChains.remove(channel);
                 processingChain.dispose();
             }
         }
@@ -361,13 +353,13 @@ public class ChannelProcessingManager implements ChannelEventListener
     public void shutdown()
     {
         mLog.debug("Stopping Channels ...");
-        for(Channel channel : mChannelModel.getChannels())
+
+        List<Channel> channelsToStop = new ArrayList<>(mProcessingChains.keySet());
+
+        for(Channel channel: channelsToStop)
         {
-            if(channel.isProcessing())
-            {
-                mLog.debug("Stopping channel: " + channel.toString());
-                stopProcessing(channel, true);
-            }
+            mLog.debug("Stopping channel: " + channel.toString());
+            stopProcessing(channel, true);
         }
     }
 
@@ -403,5 +395,21 @@ public class ChannelProcessingManager implements ChannelEventListener
     public void removeMessageListener(Listener<IMessage> listener)
     {
         mMessageListeners.remove(listener);
+    }
+
+    /**
+     * Adds a listener to receive channel events from this manager
+     */
+    public void addChannelEventListener(Listener<ChannelEvent> listener)
+    {
+        mChannelEventBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving channel events from this manager
+     */
+    public void removeChannelEventListener(Listener<ChannelEvent> listener)
+    {
+        mChannelEventBroadcaster.removeListener(listener);
     }
 }

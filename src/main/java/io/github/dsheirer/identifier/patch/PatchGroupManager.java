@@ -147,11 +147,16 @@ public class PatchGroupManager
                 case TALKGROUP:
                     if(identifier instanceof TalkgroupIdentifier)
                     {
-                        int talkgroupId = ((TalkgroupIdentifier)identifier).getValue();
+                        TalkgroupIdentifier tgi = (TalkgroupIdentifier)identifier;
 
-                        if(mPatchGroupMap.containsKey(talkgroupId))
+                        if(tgi.isGroup())
                         {
-                            return mPatchGroupMap.get(talkgroupId);
+                            int talkgroupId = ((TalkgroupIdentifier)identifier).getValue();
+
+                            if(mPatchGroupMap.containsKey(talkgroupId))
+                            {
+                                return mPatchGroupMap.get(talkgroupId);
+                            }
                         }
                     }
                     break;

@@ -89,7 +89,7 @@ public class IdentifierCollection
     }
 
     /**
-     * All identifiers contained in this collection
+     * Immutable list of identifiers contained in this collection
      */
     public List<Identifier> getIdentifiers()
     {
@@ -106,7 +106,7 @@ public class IdentifierCollection
     {
         List<Identifier> identifiers = new ArrayList<>();
 
-        for(Identifier identifier : getIdentifiers())
+        for(Identifier identifier : mIdentifiers)
         {
             if(identifier.getIdentifierClass() == identifierClass)
             {
@@ -127,7 +127,7 @@ public class IdentifierCollection
     {
         List<Identifier> identifiers = new ArrayList<>();
 
-        for(Identifier identifier : getIdentifiers())
+        for(Identifier identifier : mIdentifiers)
         {
             if(identifier.getForm() == form)
             {
@@ -148,7 +148,7 @@ public class IdentifierCollection
     {
         List<Identifier> identifiers = new ArrayList<>();
 
-        for(Identifier identifier : getIdentifiers())
+        for(Identifier identifier : mIdentifiers)
         {
             if(identifier.getRole() == role)
             {
@@ -170,7 +170,7 @@ public class IdentifierCollection
     {
         List<Identifier> identifiers = new ArrayList<>();
 
-        for(Identifier identifier : getIdentifiers())
+        for(Identifier identifier : mIdentifiers)
         {
             if(identifier.getIdentifierClass() == identifierClass && identifier.getRole() == role)
             {
@@ -192,7 +192,7 @@ public class IdentifierCollection
     {
         List<Identifier> identifiers = new ArrayList<>();
 
-        for(Identifier identifier : getIdentifiers())
+        for(Identifier identifier : mIdentifiers)
         {
             if(identifier.getIdentifierClass() == identifierClass && identifier.getForm() == form)
             {
@@ -213,7 +213,7 @@ public class IdentifierCollection
      */
     public Identifier getIdentifier(IdentifierClass identifierClass, Form form, Role role)
     {
-        for(Identifier identifier : getIdentifiers())
+        for(Identifier identifier : mIdentifiers)
         {
             if(identifier.getIdentifierClass() == identifierClass &&
                 identifier.getForm() == form &&

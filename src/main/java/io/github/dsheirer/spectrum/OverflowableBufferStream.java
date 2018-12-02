@@ -209,7 +209,6 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
     @Override
     protected void overflow(ReusableComplexBuffer reusableComplexBuffer)
     {
-        mLog.debug("*** Overflow - throwing away buffer: " + reusableComplexBuffer.name());
         reusableComplexBuffer.decrementUserCount();
     }
 

@@ -92,11 +92,33 @@ public class APCO25Channel extends Identifier<P25Channel> implements IChannelDes
         return getValue().getUplinkFrequency();
     }
 
+
     /**
      * Creates a new APCO-25 identifier
      */
     public static APCO25Channel create(int frequencyBand, int channelNumber)
     {
         return new APCO25Channel(new P25Channel(frequencyBand, channelNumber));
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+        if(o == null || !(o instanceof APCO25Channel) || ((APCO25Channel)o).getValue() == null)
+        {
+            return false;
+        }
+
+        return getValue().equals(((APCO25Channel)o).getValue());
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return getValue().hashCode();
     }
 }

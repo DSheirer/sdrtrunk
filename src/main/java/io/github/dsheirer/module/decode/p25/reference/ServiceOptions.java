@@ -71,6 +71,22 @@ public class ServiceOptions
     }
 
     /**
+     * Indicates if this session mode is for packet
+     */
+    public boolean isPacket()
+    {
+        return getSessionMode() == SessionMode.PACKET;
+    }
+
+    /**
+     * Indicates if this session mode is for voice
+     */
+    public boolean isVoice()
+    {
+        return getSessionMode() == SessionMode.CIRCUIT;
+    }
+
+    /**
      * Indicates if the bit(s) referenced by the mask is set in the service options value.
      *
      * @param mask to check for set bits

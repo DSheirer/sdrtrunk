@@ -35,7 +35,6 @@ import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
-import io.github.dsheirer.gui.preference.PreferencesEditor;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
@@ -56,8 +55,6 @@ import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
-import javafx.application.Platform;
-import javafx.stage.Stage;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
@@ -119,10 +116,10 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("****  website: https://github.com/dsheirer/sdrtrunk             ***");
         mLog.info("*******************************************************************");
         mLog.info("Memory Logging Format: [Used/Allocated PercentUsed%]");
-        mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
         mLog.info("Host OS Name:          " + System.getProperty("os.name"));
         mLog.info("Host OS Arch:          " + System.getProperty("os.arch"));
         mLog.info("Host OS Version:       " + System.getProperty("os.version"));
+        mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
         mLog.info("Host Max Java Memory:  " + FileUtils.byteCountToDisplaySize(Runtime.getRuntime().maxMemory()));
 
         //Setup the application home directory
@@ -164,13 +161,13 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
-        mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, eventLogManager,
-            recorderManager, mSourceManager, aliasModel, mUserPreferences);
+        mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, recorderManager,
+            mSourceManager, aliasModel, mUserPreferences);
 
         mChannelModel.addListener(mChannelProcessingManager);
+        mChannelProcessingManager.addChannelEventListener(mChannelModel);
 
-        ChannelSelectionManager channelSelectionManager =
-            new ChannelSelectionManager(mChannelModel);
+        ChannelSelectionManager channelSelectionManager = new ChannelSelectionManager(mChannelModel);
         mChannelModel.addListener(channelSelectionManager);
 
         AliasActionManager aliasActionManager = new AliasActionManager();

@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Unit to unit call channel grant.
  */
-public class UnitToUnitVoiceServiceChannelGrant extends OSPMessage implements IFrequencyBandReceiver
+public class UnitToUnitVoiceChannelGrant extends OSPMessage implements IFrequencyBandReceiver
 {
     private static final int[] FREQUENCY_BAND = {16, 17, 18, 19};
     private static final int[] CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
@@ -25,7 +25,7 @@ public class UnitToUnitVoiceServiceChannelGrant extends OSPMessage implements IF
     private static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
             74, 75, 76, 77, 78, 79};
 
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mTargetAddress;
     private Identifier mSourceAddress;
     private List<Identifier> mIdentifiers;
@@ -33,7 +33,7 @@ public class UnitToUnitVoiceServiceChannelGrant extends OSPMessage implements IF
     /**
      * Constructs a TSBK from the binary message sequence.
      */
-    public UnitToUnitVoiceServiceChannelGrant(DataUnitID dataUnitId, CorrectedBinaryMessage message, int nac, long timestamp)
+    public UnitToUnitVoiceChannelGrant(DataUnitID dataUnitId, CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(dataUnitId, message, nac, timestamp);
     }
@@ -48,7 +48,7 @@ public class UnitToUnitVoiceServiceChannelGrant extends OSPMessage implements IF
         return sb.toString();
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {

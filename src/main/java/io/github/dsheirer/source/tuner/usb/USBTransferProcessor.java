@@ -67,6 +67,8 @@ public class USBTransferProcessor implements TransferCallback
     private ScheduledFuture mRestartFuture;
     private String mDeviceName;
 
+    private int mTransferErrorLoggingCount = 0;
+
 
     /**
      * Manages stream of USB transfer buffers and converts buffers to complex buffer samples for distribution to
@@ -119,6 +121,7 @@ public class USBTransferProcessor implements TransferCallback
     {
         if(mRunning.compareAndSet(false, true))
         {
+
             prepareDeviceStart();
             prepareTransfers();
             mTransfersToSubmit = MAX_TRANSFERS_IN_PROGRESS_SIZE;
@@ -161,15 +164,6 @@ public class USBTransferProcessor implements TransferCallback
             //Unregister from LibUSB processor so that it auto-stops LibUSB processing
             TunerManager.LIBUSB_TRANSFER_PROCESSOR.unregisterTransferProcessor(this);
 
-            //Directly invoke the timeout handler to ensure that our cancelled transfer buffers are flushed.
-            int result = LibUsb.handleEventsTimeoutCompleted(null, USB_TIMEOUT_MS,
-                mLibUsbHandlerStatus.asIntBuffer());
-
-            if(result != LibUsb.SUCCESS)
-            {
-                mLog.error(mDeviceName + " - error while cancelling transfer buffers during shutdown/pause - error code:" + result);
-            }
-
             mLibUsbHandlerStatus.rewind();
 
             executeDeviceStop();
@@ -182,8 +176,10 @@ public class USBTransferProcessor implements TransferCallback
      */
     private void restart()
     {
+        mLog.debug("Stopping for a restart ....");
         stop();
 
+        mLog.debug("Attempting to clear halt condition ...");
         //Attempt to clear any halt condition
         LibUsb.clearHalt(mUsbBulkTransferDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
 
@@ -353,6 +349,31 @@ public class USBTransferProcessor implements TransferCallback
                 {
                     transfer.buffer().rewind();
                     mAvailableTransfers.add(transfer);
+                }
+                break;
+            case LibUsb.TRANSFER_ERROR:
+                if(transfer.actualLength() > 0)
+                {
+                    mCompletedTransfers.add(transfer);
+                }
+                else
+                {
+                    transfer.buffer().rewind();
+                    mAvailableTransfers.add(transfer);
+                }
+
+                mTransferErrorLoggingCount++;
+
+                if(mTransferErrorLoggingCount <= 5)
+                {
+                    //TODO: this error situation should be raised/highlighted to the user for action in the gui ...
+                    mLog.warn("USB buffer transfer error detected.  You should try using a different USB port for the usb-based tuner");
+
+                    //Handle integer overflow
+                    if(mTransferErrorLoggingCount < 0)
+                    {
+                        mTransferErrorLoggingCount = 1;
+                    }
                 }
                 break;
             case LibUsb.TRANSFER_CANCELLED:

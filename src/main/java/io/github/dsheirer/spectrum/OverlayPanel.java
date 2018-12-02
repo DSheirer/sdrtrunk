@@ -21,8 +21,9 @@ package io.github.dsheirer.spectrum;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
-import io.github.dsheirer.controller.channel.ChannelEventListener;
 import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.ColorSetting;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
@@ -52,8 +53,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class OverlayPanel extends JPanel implements ChannelEventListener, ISourceEventProcessor,
-        SettingChangeListener
+public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISourceEventProcessor, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
 
@@ -102,13 +102,14 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
 
     private SettingsManager mSettingsManager;
     private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
 
     /**
      * Translucent overlay panel for displaying channel configurations,
      * processing channels, selected channels, frequency labels and lines, and
      * a cursor with a frequency readout.
      */
-    public OverlayPanel(SettingsManager settingsManager, ChannelModel channelModel)
+    public OverlayPanel(SettingsManager settingsManager, ChannelModel channelModel, ChannelProcessingManager channelProcessingManager)
     {
         mSettingsManager = settingsManager;
 
@@ -121,7 +122,14 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
 
         if(mChannelModel != null)
         {
-            mChannelModel.addListener(this);
+            mChannelModel.addListener(this::receive);
+        }
+
+        mChannelProcessingManager = channelProcessingManager;
+
+        if(mChannelProcessingManager != null)
+        {
+            mChannelProcessingManager.addChannelEventListener(this::receive);
         }
 
         addComponentListener(mLabelSizeMonitor);
@@ -674,8 +682,7 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
      * Channel change event handler
      */
     @Override
-    @SuppressWarnings("incomplete-switch")
-    public void channelChanged(ChannelEvent event)
+    public void receive(ChannelEvent event)
     {
         Channel channel = event.getChannel();
 

@@ -19,6 +19,8 @@
 package io.github.dsheirer.record.wave;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
@@ -35,6 +37,8 @@ import java.util.regex.Pattern;
 
 public class WaveWriter implements AutoCloseable
 {
+    private final static Logger mLog = LoggerFactory.getLogger(WaveWriter.class);
+
     public static final String RIFF_ID = "RIFF";
     public static final int INITIAL_TOTAL_LENGTH = 4;
     public static final String WAVE_ID = "WAVE";
@@ -155,7 +159,15 @@ public class WaveWriter implements AutoCloseable
     {
         if(mFile != null && Files.exists(mFile) && path != null)
         {
-            Files.move(mFile, path);
+            if(Files.exists(path))
+            {
+                mLog.warn("Duplicate recording file detected - ignoring [" + path + "]");
+                Files.delete(mFile);
+            }
+            else
+            {
+                Files.move(mFile, path);
+            }
         }
     }
 

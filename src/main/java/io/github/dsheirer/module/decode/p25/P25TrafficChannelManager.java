@@ -19,30 +19,27 @@
  */
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.channel.state.DecoderStateEvent;
-import io.github.dsheirer.channel.state.IDecoderStateEventListener;
-import io.github.dsheirer.channel.traffic.TrafficChannelAllocationEvent;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
-import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelGrantEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
+import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.config.SourceConfigTuner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,42 +70,36 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * This manager monitors channel events watching for events related to managed traffic channels.
  */
 public class P25TrafficChannelManager extends Module implements IDecodeEventProvider, IChannelEventListener,
-    IDecoderStateEventListener
+    IChannelEventProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25TrafficChannelManager.class);
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
-    public static final String NO_TUNER_AVAILABLE = "NO TUNER AVAILABLE";
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
-    public static final String UNKNOWN_FREQUENCY = "UNKNOWN FREQUENCY";
 
-    private int mTrafficChannelPoolMaximumSize = DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private Queue<Channel> mAvailableTrafficChannelQueue = new ConcurrentLinkedQueue<>();
     private List<Channel> mManagedTrafficChannels;
-    private Map<IChannelDescriptor,DecodeEvent> mChannelGrantEventMap = new ConcurrentHashMap<>();
-    private Map<Channel,IChannelDescriptor> mAllocatedTrafficChannelMap = new ConcurrentHashMap<>();
+    private Map<APCO25Channel,P25ChannelGrantEvent> mChannelGrantEventMap = new ConcurrentHashMap<>();
+    private Map<APCO25Channel,Channel> mAllocatedTrafficChannelMap = new ConcurrentHashMap<>();
 
-    private ChannelModel mChannelModel;
+    private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
 
     private TrafficChannelTeardownMonitor mTrafficChannelTeardownMonitor = new TrafficChannelTeardownMonitor();
-    //TODO: why are we listening for these events?
-    private DecoderStateEventListener mEventListener = new DecoderStateEventListener();
+
+    private boolean mIgnoreDataCalls = false;
 
     /**
      * Monitors call events and allocates traffic decoder channels in response
      * to traffic channel allocation call events.  Manages a pool of reusable
      * traffic channel allocations.
      *
-     * @param channelModel containing channels currently in use
      * @param parentChannel that owns this traffic channel manager
-     * @param decodeEventListener to receive channel grant events
      */
-    public P25TrafficChannelManager(ChannelModel channelModel, Channel parentChannel,
-                                    Listener<IDecodeEvent> decodeEventListener)
+    public P25TrafficChannelManager(Channel parentChannel)
     {
-        mChannelModel = channelModel;
-        mDecodeEventListener = decodeEventListener;
         createTrafficChannels(parentChannel);
+        DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration();
+        mIgnoreDataCalls = p25Config.getIgnoreDataCalls();
     }
 
     /**
@@ -133,6 +124,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 trafficChannel.setAliasListName(parentChannel.getAliasListName());
                 trafficChannel.setSystem(parentChannel.getSystem());
                 trafficChannel.setSite(parentChannel.getSite());
+                trafficChannel.setDecodeConfiguration(p25DecodeConfig);
                 trafficChannelList.add(trafficChannel);
             }
         }
@@ -156,92 +148,130 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
      * Processes channel grants to allocate traffic channels and track overall channel usage.  Generates
      * decode events for each new channel that is allocated.
      *
-     * @param channelDescriptor for the traffic channel
-     * @param serviceOptions for the traffic channel
+     * @param apco25Channel for the traffic channel
+     * @param serviceOptions for the traffic channel - optional can be null
      * @param identifierCollection associated with the channel grant
      * @param opcode to identify the call type for the event description
      */
-    public void processChannelGrant(IChannelDescriptor channelDescriptor, ServiceOptions serviceOptions,
+    public void processChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
                                     IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
     {
-        if(isDuplicateChannelGrant(channelDescriptor, identifierCollection, timestamp))
+        P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
+
+        if(event != null && isSameTalkgroup(identifierCollection, event.getIdentifierCollection()))
         {
+            //update the ending timestamp so that the duration value is correctly calculated
+            event.end(timestamp);
             return;
         }
 
-        //Remove any existing channel grant for the channel descriptor
-        mChannelGrantEventMap.remove(channelDescriptor);
+        if(mIgnoreDataCalls && opcode == Opcode.OSP_SNDCP_DATA_CHANNEL_GRANT)
+        {
+            P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+                .channel(apco25Channel)
+                .eventDescription(getEventType(opcode, serviceOptions).toString())
+                .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+                .identifiers(identifierCollection)
+                .build();
 
-        createChannel(channelDescriptor, serviceOptions, identifierCollection, opcode, timestamp);
-    }
+            mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
 
-    /**
-     * Creates a traffic channel
-     *
-     * @param channelDescriptor
-     * @param serviceOptions
-     * @param identifierCollection
-     * @param opcode
-     * @param timestamp
-     */
-    private void createChannel(IChannelDescriptor channelDescriptor, ServiceOptions serviceOptions,
-                               IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
-    {
-        //Create a new channel grant event
-        DecodeEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp)
-            .channel(channelDescriptor)
-            .description(serviceOptions.isEncrypted() ?
-                DecodeEventType.CALL_GROUP_ENCRYPTED.toString() :
-                DecodeEventType.CALL_GROUP.toString())
-            .details("CHANNEL GRANT " + serviceOptions)
+            broadcast(channelGrantEvent);
+            return;
+        }
+
+        P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+            .channel(apco25Channel)
+            .eventDescription(getEventType(opcode, serviceOptions).toString())
+            .details("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
             .identifiers(identifierCollection)
             .build();
 
-        mChannelGrantEventMap.put(channelDescriptor, channelGrantEvent);
-        broadcast(channelGrantEvent);
+        mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
 
-        Channel trafficChannel = mAvailableTrafficChannelQueue.poll();
-
-        if(trafficChannel == null)
+        //Allocate a traffic channel for the downlink frequency is one isn't already allocated
+        //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
+        if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel))
         {
-            channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
-            channelGrantEvent.setEventDescription(DecodeEventType.CALL_DETECT.toString());
-            return;
+            Channel trafficChannel = mAvailableTrafficChannelQueue.poll();
+
+            if(trafficChannel == null)
+            {
+                channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
+                channelGrantEvent.setEventDescription("Detect:" + channelGrantEvent.getEventDescription());
+                return;
+            }
+
+            SourceConfigTuner sourceConfig = new SourceConfigTuner();
+            sourceConfig.setFrequency(apco25Channel.getDownlinkFrequency());
+            trafficChannel.setSourceConfiguration(sourceConfig);
+            mAllocatedTrafficChannelMap.put(apco25Channel, trafficChannel);
+            broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel));
         }
 
-        //TODO: create a traffic channel and enable it.  We have to update the traffic channel
-        //allocation event to the new decode event format and update it to accept the channel
-        //descriptor from the p25 event.
+        broadcast(channelGrantEvent);
     }
 
     /**
-     * Determines if a channel grant currently exists and the channel grant matches the new channel grant parameters.
-     *
-     * A channel grant matches when the TO talkgroup is the same and the channel grant start time is within
-     * 500 milliseconds of this channel grant.
-     *
-     * @param channelDescriptor for the channel grant
-     * @param identifierCollection for the channel grant
-     * @param timestamp of the channel grant message
-     * @return true if this is a duplicate channel grant
+     * Creates a call event type description for the specified opcode and service options
      */
-    private boolean isDuplicateChannelGrant(IChannelDescriptor channelDescriptor,
-                                            IdentifierCollection identifierCollection, long timestamp)
+    private DecodeEventType getEventType(Opcode opcode, ServiceOptions serviceOptions)
     {
-        DecodeEvent existingChannelGrantEvent = mChannelGrantEventMap.get(channelDescriptor);
+        boolean encrypted = serviceOptions != null ? serviceOptions.isEncrypted() : false;
 
-        if(existingChannelGrantEvent == null)
+        DecodeEventType type = null;
+
+        switch(opcode)
         {
-            return false;
+            case OSP_GROUP_VOICE_CHANNEL_GRANT:
+            case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+                type = encrypted ? DecodeEventType.CALL_GROUP_ENCRYPTED : DecodeEventType.CALL_GROUP;
+                break;
+
+            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+            case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+                type = encrypted ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED : DecodeEventType.CALL_UNIT_TO_UNIT;
+                break;
+
+            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+            case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+                type = encrypted ? DecodeEventType.CALL_INTERCONNECT_ENCRYPTED : DecodeEventType.CALL_INTERCONNECT;
+                break;
+
+            case OSP_SNDCP_DATA_CHANNEL_GRANT:
+                type = encrypted ? DecodeEventType.DATA_CALL_ENCRYPTED : DecodeEventType.DATA_CALL;
+                break;
+
+            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT:
+            case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE:
+                type = encrypted ? DecodeEventType.CALL_PATCH_GROUP_ENCRYPTED : DecodeEventType.CALL_PATCH_GROUP;
+                break;
         }
 
-        if(isSameTalkgroup(identifierCollection, existingChannelGrantEvent.getIdentifierCollection()) &&
-            (Math.abs(timestamp - existingChannelGrantEvent.getTimeStart()) < 500))
+        if(type == null)
         {
-            return true;
+            type = DecodeEventType.CALL;
         }
 
-        return false;
+        return type;
+    }
+
+    private String getMapContents()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        for(Map.Entry<APCO25Channel,P25ChannelGrantEvent> entry: mChannelGrantEventMap.entrySet())
+        {
+            sb.append("Channel [" + entry.getKey() + "] event [" +
+                getToIdentifier(entry.getValue().getIdentifierCollection()) + "]\n");
+        }
+
+        if(mChannelGrantEventMap.isEmpty())
+        {
+            sb.append("EMPTY MAP");
+        }
+
+        return sb.toString();
     }
 
     /**
@@ -256,10 +286,40 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         return mTrafficChannelTeardownMonitor;
     }
 
-//TODO: review/remove the code below
+    /**
+     * Broadcasts a channel event to a registered external listener (for action).
+     */
+    private void broadcast(ChannelEvent channelEvent)
+    {
+        if(mChannelEventListener != null)
+        {
+            mChannelEventListener.receive(channelEvent);
+        }
+    }
+
+    /**
+     * Sets the external channel event listener to receive channel events from this traffic channel manager
+     */
+    @Override
+    public void setChannelEventListener(Listener<ChannelEvent> listener)
+    {
+        mChannelEventListener = listener;
+    }
+
+    /**
+     * Removes the channel event listener
+     */
+    @Override
+    public void removeChannelEventListener()
+    {
+        mChannelEventListener = null;
+    }
+
+    //TODO: review/remove the code below
 
     /**
      * Compares the TO role identifier(s) from each collection for equality
+     *
      * @param collection1 containing a TO identifier
      * @param collection2 containing a TO identifier
      * @return true if both collections contain a TO identifier and the TO identifiers are the same value
@@ -268,12 +328,12 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     {
         Identifier toIdentifier1 = getToIdentifier(collection1);
         Identifier toIdentifier2 = getToIdentifier(collection2);
-
         return Objects.equals(toIdentifier1, toIdentifier2);
     }
 
     /**
      * Retrieves the first identifier with a TO role.
+     *
      * @param collection containing a TO identifier
      * @return TO identifier or null
      */
@@ -294,222 +354,26 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     {
         for(Channel trafficChannel : mAvailableTrafficChannelQueue)
         {
-            mChannelModel.broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
+            broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
         }
 
         mAvailableTrafficChannelQueue.clear();
 
 //        mTrafficChannelsInUse.clear();
-
-        mDecodeEventListener = null;
     }
 
     /**
-     * Provides a channel by either reusing an existing channel or constructing
-     * a new one, limited by the total number of constructed channels allowed.
-     *
-     * Note: you must enforce thread safety on the mTrafficChannelsInUse
-     * external to this method.
-     *
-     * @param channelNumber
-     * @param tunerChannel
-     * @return
+     * Implements the IDecodeEventProvider interface to provide channel events to an external listener.
      */
-    private Channel getChannel(String channelNumber, TunerChannel tunerChannel)
-    {
-        Channel channel = null;
-
-//        if(!mTrafficChannelsInUse.containsKey(channelNumber))
-//        {
-//            for(Channel configuredChannel : mAvailableTrafficChannelQueue)
-//            {
-//                if(!configuredChannel.isProcessing())
-//                {
-//                    channel = configuredChannel;
-//                    break;
-//                }
-//            }
-//
-//            if(channel == null && mAvailableTrafficChannelQueue.size() < mTrafficChannelPoolMaximumSize)
-//            {
-//                channel = new Channel("Traffic", ChannelType.TRAFFIC);
-//
-//                channel.setDecodeConfiguration(mDecodeConfiguration);
-//
-//                channel.setRecordConfiguration(mRecordConfiguration);
-//
-//                channel.setAliasListName(mAliasListName);
-//
-//                mChannelModel.addChannel(channel);
-//
-//                mAvailableTrafficChannelQueue.add(channel);
-//            }
-//
-//            /* If we have a configured channel, update metadata */
-//            if(channel != null)
-//            {
-//                channel.setSourceConfiguration(new SourceConfigTuner(tunerChannel));
-//                channel.setSystem(mSystem);
-//                channel.setSite(mSite);
-//                channel.setName(channelNumber);
-//
-//                mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_CONFIGURATION_CHANGE));
-//            }
-//        }
-
-        return channel;
-    }
-
-    /**
-     * Processes the event and creates a traffic channel is resources are
-     * available
-     */
-    private void process(TrafficChannelAllocationEvent event)
-    {
-
-//        CallEvent callEvent = event.getCallEvent();
-//
-//        /* Check for duplicate events and suppress */
-//        synchronized(mTrafficChannelsInUse)
-//        {
-//            if(mTrafficChannelsInUse.containsKey(callEvent.getChannel()))
-//            {
-//                return;
-//            }
-//
-//            long frequency = callEvent.getFrequency();
-//
-//            if(frequency > 0)
-//            {
-//                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(frequency,
-//                    mDecodeConfiguration.getChannelSpecification().getBandwidth()));
-//
-//                if(channel != null)
-//                {
-//                    TrafficChannelEvent trafficChannelEvent =
-//                        new TrafficChannelEvent(this, channel, Event.REQUEST_ENABLE, callEvent);
-//
-//                    //Request to enable the channel
-//                    mChannelModel.broadcast(trafficChannelEvent);
-//
-//                    if(channel.isProcessing())
-//                    {
-//                        mTrafficChannelsInUse.put(callEvent.getChannel(), channel);
-//                    }
-//                    else
-//                    {
-//                        callEvent.setCallEventType(CallEventType.CALL_DETECT);
-//
-//                        String details = callEvent.getDetails();
-//
-//                        if(details == null || details.isEmpty())
-//                        {
-//                            callEvent.setDetails(CHANNEL_START_REJECTED);
-//                        }
-//                        else if(!details.contains(CHANNEL_START_REJECTED))
-//                        {
-//                            callEvent.setDetails(new StringBuilder(CHANNEL_START_REJECTED).append(" : ")
-//                                .append(callEvent.getDetails()).toString());
-//                        }
-//                    }
-//                }
-//                else
-//                {
-//                    callEvent.setCallEventType(CallEventType.CALL_DETECT);
-//
-//                    String details = callEvent.getDetails();
-//
-//                    if(details == null || details.isEmpty())
-//                    {
-//                        callEvent.setDetails(NO_TUNER_AVAILABLE);
-//                    }
-//                    else if(!details.contains(NO_TUNER_AVAILABLE))
-//                    {
-//                        callEvent.setDetails(new StringBuilder(NO_TUNER_AVAILABLE).append(" : ")
-//                            .append(callEvent.getDetails()).toString());
-//                    }
-//                }
-//            }
-//            else
-//            {
-//                callEvent.setCallEventType(CallEventType.CALL_DETECT);
-//
-//                String details = callEvent.getDetails();
-//
-//                if(details == null || details.isEmpty())
-//                {
-//                    callEvent.setDetails(UNKNOWN_FREQUENCY);
-//                }
-//                else if(!details.contains(UNKNOWN_FREQUENCY))
-//                {
-//                    callEvent.setDetails(new StringBuilder(UNKNOWN_FREQUENCY).append(" : ")
-//                        .append(callEvent.getDetails()).toString());
-//                }
-//            }
-//
-//            final Listener<IDecodeEvent> listener = mDecodeEventListener;
-//
-//            if(listener != null)
-//            {
-//                listener.receive(callEvent);
-//            }
-//        }
-    }
-
-    /**
-     * Compares the call type, channel and to fields for equivalence and the
-     * from field for either both null, or equivalence.
-     *
-     * @param e1
-     * @param e2
-     * @return
-     */
-    public static boolean isSameCallEvent(CallEvent e1, CallEvent e2)
-    {
-        if(e1 == null || e2 == null)
-        {
-            return false;
-        }
-
-        if(e1.getCallEventType() != e2.getCallEventType())
-        {
-            return false;
-        }
-
-        if(e1.getChannel() == null || e2.getChannel() == null || !e1.getChannel().contentEquals(e2.getChannel()))
-        {
-            return false;
-        }
-
-        if(e1.getToID() == null || e2.getToID() == null || !e1.getToID().contentEquals(e2.getToID()))
-        {
-            return false;
-        }
-
-        if(e1.getFromID() == null || e2.getFromID() == null)
-        {
-            return (e1.getFromID() == null && e2.getFromID() == null);
-        }
-        else if(e1.getFromID().contentEquals(e2.getFromID()))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public Listener<DecoderStateEvent> getDecoderStateListener()
-    {
-        return mEventListener;
-    }
-
     @Override
     public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
         mDecodeEventListener = listener;
     }
 
+    /**
+     * Removes the external decode event listener
+     */
     @Override
     public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
     {
@@ -529,59 +393,13 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     @Override
     public void stop()
     {
-//        if(!mTrafficChannelsInUse.isEmpty())
-//        {
-//            List<String> channels = new ArrayList<>();
-//
-//            /* Copy the keyset so we don't get concurrent modification of the map */
-//            channels.addAll(mTrafficChannelsInUse.keySet());
-//
-//            for(String channel : channels)
-//            {
-//                callEnd(channel);
-//            }
-//        }
-    }
+        List<Channel> channels = new ArrayList<>(mAllocatedTrafficChannelMap.values());
 
-    /**
-     * Callback used by the TrafficChannelStatusListener class to signal the
-     * end of a an allocated traffic channel call event
-     *
-     * @param channelNumber - channel number from the call event that signaled
-     * the start of a traffic channel allocation
-     */
-    public void callEnd(String channelNumber)
-    {
-//        synchronized(mTrafficChannelsInUse)
-//        {
-//            if(channelNumber != null && mTrafficChannelsInUse.containsKey(channelNumber))
-//            {
-//                Channel channel = mTrafficChannelsInUse.get(channelNumber);
-//
-//                mChannelModel.broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
-//
-//                mTrafficChannelsInUse.remove(channelNumber);
-//            }
-//        }
-    }
-
-    /**
-     * Wrapper class for the decoder state event listener interface to catch
-     * traffic channel allocation requests
-     */
-    public class DecoderStateEventListener implements Listener<DecoderStateEvent>
-    {
-        @Override
-        public void receive(DecoderStateEvent event)
+        //Issue a disable request for each traffic channel
+        for(Channel channel: channels)
         {
-            switch(event.getEvent())
-            {
-                case TRAFFIC_CHANNEL_ALLOCATION:
-                    process((TrafficChannelAllocationEvent) event);
-                    break;
-                default:
-                    break;
-            }
+            mLog.debug("Stopping traffic channel: " + channel);
+            broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
         }
     }
 
@@ -592,12 +410,54 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     public class TrafficChannelTeardownMonitor implements Listener<ChannelEvent>
     {
         @Override
-        public void receive(ChannelEvent channelEvent)
+        public synchronized void receive(ChannelEvent channelEvent)
         {
-            if(channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_STOP &&
-                mManagedTrafficChannels.contains(channelEvent.getChannel()))
+            Channel channel = channelEvent.getChannel();
+
+            if(channel.isTrafficChannel() && mManagedTrafficChannels.contains(channel))
             {
-                mAvailableTrafficChannelQueue.add(channelEvent.getChannel());
+                switch(channelEvent.getEvent())
+                {
+                    case NOTIFICATION_PROCESSING_STOP:
+                        APCO25Channel toRemove = null;
+
+                        for(Map.Entry<APCO25Channel,Channel> entry: mAllocatedTrafficChannelMap.entrySet())
+                        {
+                            if(entry.getValue() == channel)
+                            {
+                                toRemove = entry.getKey();
+                                continue;
+                            }
+                        }
+
+                        if(toRemove != null)
+                        {
+                            mAllocatedTrafficChannelMap.remove(toRemove);
+                            mAvailableTrafficChannelQueue.add(channel);
+                            P25ChannelGrantEvent event = mChannelGrantEventMap.get(toRemove);
+
+                            if(event != null)
+                            {
+                                if(channelEvent.getEvent() == Event.NOTIFICATION_START_PROCESSING_REJECTED)
+                                {
+                                    String description = channelEvent.getDescription();
+
+                                    if(description == null)
+                                    {
+                                        description = CHANNEL_START_REJECTED;
+                                    }
+
+                                    event.setEventDescription(description);
+                                }
+
+                                broadcast(event);
+                            }
+                        }
+                        break;
+                    case NOTIFICATION_START_PROCESSING_REJECTED:
+                        mAvailableTrafficChannelQueue.add(channel);
+                        break;
+                }
             }
         }
     }

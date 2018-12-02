@@ -234,7 +234,7 @@ public class DecodeEvent implements IDecodeEvent
          * Sets the event description text
          * @param description of the event
          */
-        public DecodeEventBuilder description(String description)
+        public DecodeEventBuilder eventDescription(String description)
         {
             mEventDescription = description;
             return this;

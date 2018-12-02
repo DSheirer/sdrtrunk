@@ -27,7 +27,6 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.channel.traffic.TrafficChannelAllocationEvent;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.message.IMessage;
@@ -517,16 +516,16 @@ public class MPT1327DecoderState extends DecoderState
                 mFrequency = event.getFrequency();
 //                broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, event.getFrequency()));
                 break;
-            case TRAFFIC_CHANNEL_ALLOCATION:
-                if(event.getSource() != MPT1327DecoderState.this)
-                {
-                    if(event instanceof TrafficChannelAllocationEvent)
-                    {
-                        TrafficChannelAllocationEvent allocationEvent =
-                            (TrafficChannelAllocationEvent)event;
-
+//            case TRAFFIC_CHANNEL_ALLOCATION:
+//                if(event.getSource() != MPT1327DecoderState.this)
+//                {
+//                    if(event instanceof TrafficChannelAllocationEvent)
+//                    {
+//                        TrafficChannelAllocationEvent allocationEvent =
+//                            (TrafficChannelAllocationEvent)event;
+//
 //                        String channel = allocationEvent.getCallEvent().getChannel();
-
+//
 //                        if(channel != null)
 //                        {
 //                            try
@@ -545,9 +544,9 @@ public class MPT1327DecoderState extends DecoderState
 //
 //                        mFromAttribute.process(allocationEvent.getCallEvent().getFromID());
 //                        mToAttribute.process(allocationEvent.getCallEvent().getToID());
-                    }
-                }
-                break;
+//                    }
+//                }
+//                break;
             default:
                 break;
         }

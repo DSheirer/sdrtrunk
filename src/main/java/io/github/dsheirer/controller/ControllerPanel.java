@@ -78,15 +78,18 @@ public class ControllerPanel extends JPanel
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
 
-        mAudioPanel = new AudioPanel(iconManager, userPreferences, settingsManager, sourceManager, audioPlaybackManager, aliasModel);
+        mAudioPanel = new AudioPanel(iconManager, userPreferences, settingsManager, sourceManager, audioPlaybackManager,
+            aliasModel);
 
-        mChannelMetadataViewer = new ChannelMetadataViewer(channelProcessingManager, iconManager, aliasModel, userPreferences);
+        mChannelMetadataViewer = new ChannelMetadataViewer(channelModel, channelProcessingManager, iconManager,
+            aliasModel, userPreferences);
 
         mMapPanel = new MapPanel(mapService, iconManager, settingsManager);
 
         mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, iconManager);
 
-        mChannelController = new ChannelController(channelModel, channelMapModel, sourceManager, aliasModel);
+        mChannelController = new ChannelController(channelModel, channelProcessingManager, channelMapModel,
+            sourceManager, aliasModel);
 
         mAliasController = new AliasController(aliasModel, broadcastModel, iconManager);
 

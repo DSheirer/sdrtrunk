@@ -22,13 +22,11 @@ package io.github.dsheirer.module.decode.event;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
@@ -102,6 +100,8 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
             .setCellRenderer(new IdentifierCellRenderer(Role.TO));
         mTable.getColumnModel().getColumn(DecodeEventModel.COLUMN_TO_ALIAS)
             .setCellRenderer(new AliasedIdentifierCellRenderer(Role.TO));
+        mTable.getColumnModel().getColumn(DecodeEventModel.COLUMN_CHANNEL)
+            .setCellRenderer(new ChannelDescriptorCellRenderer());
         mTable.getColumnModel().getColumn(DecodeEventModel.COLUMN_FREQUENCY)
             .setCellRenderer(new FrequencyCellRenderer());
     }
@@ -109,17 +109,12 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     @Override
     public void receive(ProcessingChain processingChain)
     {
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                mTable.setModel(processingChain != null ? processingChain.getDecodeEventModel() : mEmptyDecodeEventModel);
+        EventQueue.invokeLater(() -> {
+            mTable.setModel(processingChain != null ? processingChain.getDecodeEventModel() : mEmptyDecodeEventModel);
 
-                if(processingChain != null)
-                {
-                    updateCellRenderers();
-                }
+            if(processingChain != null)
+            {
+                updateCellRenderers();
             }
         });
     }
@@ -303,7 +298,8 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
     public class DurationCellRenderer extends DefaultTableCellRenderer
     {
-        private SimpleDateFormat mDurationFormatter = new SimpleDateFormat("s.SSS");
+        private DecimalFormat mDecimalFormat = new DecimalFormat("0.#");
+//        private SimpleDateFormat mDurationFormatter = new SimpleDateFormat("s.SSS");
 
         public DurationCellRenderer()
         {
@@ -323,7 +319,8 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
                 if(duration > 0)
                 {
-                    formatted = mDurationFormatter.format(new Date(duration));
+//                    formatted = mDurationFormatter.format(new Date(duration));
+                    formatted = mDecimalFormat.format((double)duration / 1e3d);
                 }
             }
 
@@ -333,9 +330,17 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         }
     }
 
+    /**
+     * Frequency value cell renderer
+     */
     public class FrequencyCellRenderer extends DefaultTableCellRenderer
     {
-        private DecimalFormat mFrequencyFormatter = new DecimalFormat("0.000000 MHz");
+        private DecimalFormat mFrequencyFormatter = new DecimalFormat("0.00000 MHz");
+
+        public FrequencyCellRenderer()
+        {
+            setHorizontalAlignment(JLabel.CENTER);
+        }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
@@ -344,24 +349,47 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
             String formatted = null;
 
-            if(value instanceof IdentifierCollection)
+            if(value instanceof IChannelDescriptor)
             {
-                IdentifierCollection identifierCollection = (IdentifierCollection)value;
+                IChannelDescriptor channelDescriptor = (IChannelDescriptor)value;
 
-                Identifier identifier = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
+                long frequency = channelDescriptor.getDownlinkFrequency();
 
-                if(identifier != null)
+                if(frequency > 0)
                 {
-                    long frequency = ((FrequencyConfigurationIdentifier)identifier).getValue();
-
-                    if(frequency > 0)
-                    {
-                        formatted = mFrequencyFormatter.format(frequency / 1e6d);
-                    }
+                    formatted = mFrequencyFormatter.format(frequency / 1e6d);
                 }
             }
 
             label.setText(formatted);
+
+            return label;
+        }
+    }
+
+    /**
+     * Channel descriptor value cell renderer
+     */
+    public class ChannelDescriptorCellRenderer extends DefaultTableCellRenderer
+    {
+        public ChannelDescriptorCellRenderer()
+        {
+            setHorizontalAlignment(JLabel.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if(value instanceof IChannelDescriptor)
+            {
+                label.setText(value.toString());
+            }
+            else
+            {
+                label.setText(null);
+            }
 
             return label;
         }

@@ -20,6 +20,7 @@
 package io.github.dsheirer.channel;
 
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
+import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Channel descriptor
@@ -59,5 +60,8 @@ public interface IChannelDescriptor
      */
     int getTimeslotCount();
 
-
+    /**
+     * Protocol associated with the channel
+     */
+    Protocol getProtocol();
 }

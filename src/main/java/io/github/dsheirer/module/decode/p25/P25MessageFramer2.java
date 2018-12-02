@@ -31,6 +31,8 @@ import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.UMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
+import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
+import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -422,6 +424,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         boolean mbtcOnly = false;
         boolean sndcpOnly = false;
         boolean ippacketOnly = false;
+        boolean patchOnly = false;
 
         P25MessageFramer2 messageFramer = new P25MessageFramer2(null, DecoderType.P25_PHASE1.getBitRate());
         messageFramer.setListener(new Listener<Message>()
@@ -461,6 +464,13 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                     if(s.contains("IPPKT") || s.contains("SNDCP") || s.contains(" PDU  "))
                     {
                         mLog.debug(s);
+                    }
+                }
+                else if(patchOnly)
+                {
+                    if(message instanceof PatchGroupVoiceChannelGrant || message instanceof PatchGroupVoiceChannelGrantUpdate)
+                    {
+                        mLog.debug(message.toString());
                     }
                 }
                 else
@@ -508,7 +518,8 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_134948_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144312_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits"); //Interesting UDP port 231 packets (oswego LCN 4)
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144429_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144437_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
+//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144437_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
+        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181202_064827_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
 
 
 

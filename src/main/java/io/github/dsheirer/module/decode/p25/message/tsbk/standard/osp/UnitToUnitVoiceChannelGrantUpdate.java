@@ -25,7 +25,7 @@ public class UnitToUnitVoiceChannelGrantUpdate extends OSPMessage implements IFr
     private static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
             74, 75, 76, 77, 78, 79};
 
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mTargetAddress;
     private Identifier mSourceAddress;
     private List<Identifier> mIdentifiers;
@@ -48,7 +48,7 @@ public class UnitToUnitVoiceChannelGrantUpdate extends OSPMessage implements IFr
         return sb.toString();
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {
