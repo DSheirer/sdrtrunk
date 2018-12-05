@@ -17,9 +17,14 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.event;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -29,6 +34,7 @@ import java.util.List;
 public class DecodeEventModel extends AbstractTableModel implements Listener<IDecodeEvent>
 {
     private static final long serialVersionUID = 1L;
+    private final static Logger mLog = LoggerFactory.getLogger(DecodeEventModel.class);
 
     public static final int COLUMN_TIME = 0;
     public static final int COLUMN_DURATION = 1;
@@ -49,10 +55,37 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
 
     public DecodeEventModel()
     {
+        MyEventBus.getEventBus().register(this);
     }
+
+    /**
+     * Receives preference update notifications via the event bus
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.DECODE_EVENT)
+        {
+            for(int row = 0; row < mEvents.size(); row++)
+            {
+                fireTableCellUpdated(row, COLUMN_TIME);
+            }
+        }
+        else if(preferenceType == PreferenceType.IDENTIFIER)
+        {
+            for(int row = 0; row < mEvents.size(); row++)
+            {
+                fireTableCellUpdated(row, COLUMN_FROM_ID);
+                fireTableCellUpdated(row, COLUMN_TO_ID);
+            }
+        }
+    }
+
 
     public void dispose()
     {
+        MyEventBus.getEventBus().unregister(this);
         Iterator<IDecodeEvent> it = mEvents.iterator();
 
         while(it.hasNext())

@@ -17,37 +17,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.alias.id;
 
-public enum AliasIDType
+package io.github.dsheirer.alias.id.record;
+
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.alias.id.AliasIDType;
+
+/**
+ * Alias identifier to flag an alias for audio recording
+ */
+public class Record extends AliasID
 {
-    ESN("ESN"),
-    FLEETSYNC("Fleetsync"),
-    LEGACY_TALKGROUP("Legacy Talkgroup"),
-    LOJACK("LoJack"),
-    LTR_NET_UID("LTR-Net UID"),
-    MDC1200("MDC-1200"),
-    MIN("Passport MIN"),
-    MPT1327("MPT-1327"),
-    RECORD("Record"),
-    SITE("Site"),
-    STATUS("Status"),
-    TALKGROUP("Talkgroup"),
-    TALKGROUP_RANGE("Talkgroup Range"),
-    INVERT("Audio Inversion"),
-    PRIORITY("Audio Priority"),
-    NON_RECORDABLE("Audio Non-Recordable"),
-    BROADCAST_CHANNEL("Audio Broadcast Channel");
-
-    private String mLabel;
-
-    private AliasIDType(String label)
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    @Override
+    public AliasIDType getType()
     {
-        mLabel = label;
+        return AliasIDType.RECORD;
     }
 
+    @Override
+    public boolean isValid()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean matches(AliasID id)
+    {
+        return false;
+    }
+
+    @Override
     public String toString()
     {
-        return mLabel;
+        return "Record Audio";
     }
 }

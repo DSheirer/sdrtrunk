@@ -380,6 +380,14 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     }
 
     /**
+     * Indicates if this channel has a non-null, non-empty alias list name specified.
+     */
+    public boolean hasAliasList()
+    {
+        return mAliasListName != null && !mAliasListName.isEmpty();
+    }
+
+    /**
      * Gets the primary decoder configuration used by this channel
      */
     @JacksonXmlProperty(isAttribute = false, localName = "decode_configuration")

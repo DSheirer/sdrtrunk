@@ -16,16 +16,14 @@
 
 package io.github.dsheirer.gui;
 
-import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.gui.preference.PreferencesEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
-import javafx.event.EventHandler;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +35,6 @@ public class JavaFxWindowManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(JavaFxWindowManager.class);
 
-    private static EventBus sEventBus = new EventBus();
     private UserPreferences mUserPreferences;
     private PreferencesEditor mPreferencesEditor;
 
@@ -46,15 +43,7 @@ public class JavaFxWindowManager
         mUserPreferences = userPreferences;
 
         //Register this class to receive events via each method annotated with @Subscribe
-        sEventBus.register(this);
-    }
-
-    /**
-     * Event bus for requesting java fx window coordination.
-     */
-    public static EventBus getEventBus()
-    {
-        return sEventBus;
+        MyEventBus.getEventBus().register(this);
     }
 
     /**
@@ -78,14 +67,7 @@ public class JavaFxWindowManager
                     mPreferencesEditor = new PreferencesEditor(mUserPreferences);
 
                     Stage stage = new Stage();
-                    stage.setOnHidden(new EventHandler<WindowEvent>()
-                    {
-                        @Override
-                        public void handle(WindowEvent event)
-                        {
-                            mPreferencesEditor = null;
-                        }
-                    });
+                    stage.setOnHidden(event -> mPreferencesEditor = null);
                     mPreferencesEditor.start(stage);
                     mPreferencesEditor.showEditor(request);
                 }

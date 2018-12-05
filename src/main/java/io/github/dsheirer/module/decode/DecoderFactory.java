@@ -19,6 +19,9 @@
  */
 package io.github.dsheirer.module.decode;
 
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AudioModule;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.controller.channel.Channel;
@@ -105,9 +108,9 @@ public class DecoderFactory
      *
      * @return list of configured decoders
      */
-    public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel)
+    public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel)
     {
-        List<Module> modules = getPrimaryModules(channelMapModel, channel);
+        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
@@ -115,9 +118,20 @@ public class DecoderFactory
     /**
      * Constructs a primary decoder as specified in the decode configuration
      */
-    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel)
+    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel)
     {
         List<Module> modules = new ArrayList<Module>();
+
+        //Adds an alias action manager when there are alias actions specified
+        if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
+        {
+            AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
+
+            if(aliasList != null && aliasList.hasAliasActions())
+            {
+                modules.add(new AliasActionManager(aliasList));
+            }
+        }
 
         ChannelType channelType = channel.getChannelType();
 

@@ -19,10 +19,12 @@
  */
 package io.github.dsheirer.module.decode.event;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -60,7 +62,6 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     private IconManager mIconManager;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
-    private PreferenceUpdater mPreferenceUpdater = new PreferenceUpdater();
     private TimestampCellRenderer mTimestampCellRenderer;
 
     /**
@@ -69,22 +70,36 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
      */
     public DecodeEventPanel(IconManager iconManager, UserPreferences userPreferences, AliasModel aliasModel)
     {
+        MyEventBus.getEventBus().register(this);
+
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
         mIconManager = iconManager;
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
-        mUserPreferences.addPreferenceUpdateListener(mPreferenceUpdater);
+        mTimestampCellRenderer = new TimestampCellRenderer();
         mEmptyDecodeEventModel = new DecodeEventModel();
         mTable = new JTable(mEmptyDecodeEventModel);
         mTable.setAutoCreateRowSorter(true);
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-
-        mTimestampCellRenderer = new TimestampCellRenderer();
         updateCellRenderers();
 
         mEmptyScroller = new JScrollPane(mTable);
         add(mEmptyScroller);
     }
+
+    /**
+     * Receives preference update notifications via the event bus
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.IDENTIFIER)
+        {
+            EventQueue.invokeLater(() -> mTimestampCellRenderer.updatePreferences());
+        }
+    }
+
 
     private void updateCellRenderers()
     {
@@ -186,6 +201,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                 {
                     sb.append(",");
                 }
+
                 sb.append(mUserPreferences.getTalkgroupFormatPreference().format(identifier));
             }
 
@@ -392,21 +408,6 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
             }
 
             return label;
-        }
-    }
-
-    /**
-     * Updates cell renderer(s) when user preferences change.
-     */
-    public class PreferenceUpdater implements Listener<PreferenceType>
-    {
-        @Override
-        public void receive(PreferenceType preferenceType)
-        {
-            if(preferenceType == PreferenceType.DECODE_EVENT)
-            {
-                mTimestampCellRenderer.updatePreferences();
-            }
         }
     }
 }

@@ -22,6 +22,7 @@ package io.github.dsheirer.playlist;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.mpt1327.MPT1327ID;
@@ -37,6 +38,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Playlist updater will automatically update a playlist from version 1 up to the current version specified by the
+ * Playlist manager
+ */
 public class PlaylistUpdater
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaylistUpdater.class);
@@ -65,12 +70,54 @@ public class PlaylistUpdater
     {
         boolean updated = false;
 
-        updated |= updateLegacyTalkgroups(playlist);
+        switch(playlist.getVersion())
+        {
+            case 1:
+                mLog.info("Updating playlist from version 1 to version 2");
+                updateVersion1Talkgroups(playlist);
+                removeVersion1NonRecordableAliasIdentifiers(playlist);
+                updated = true;
+                break;
+        }
+
 
         return updated;
     }
 
-    private static boolean updateLegacyTalkgroups(PlaylistV2 playlist)
+    /**
+     * Removes non-recordable alias identifiers from all aliases.  These have been replaced with the 'Record' alias
+     * identifier.
+     */
+    private static void removeVersion1NonRecordableAliasIdentifiers(PlaylistV2 playlist)
+    {
+        int removed = 0;
+
+        for(Alias alias: playlist.getAliases())
+        {
+            Iterator<AliasID> it = alias.getId().iterator();
+
+            while(it.hasNext())
+            {
+                if(it.next().getType() == AliasIDType.NON_RECORDABLE)
+                {
+                    it.remove();
+                    removed++;
+                }
+            }
+        }
+
+        if(removed > 0)
+        {
+            mLog.info("Removed [" + removed + "] non-recordable alias identifiers from aliases");
+        }
+    }
+
+    /**
+     * Converts legacy version 1talkgroups to the new talkgroup format.  Previously, each protocol had a talkgroup
+     * flavor and now there is a generic talkgroup identifier with a protocol specifier.
+     * @param playlist to update
+     */
+    private static void updateVersion1Talkgroups(PlaylistV2 playlist)
     {
         int updated = 0;
         int notUpdated = 0;
@@ -332,7 +379,5 @@ public class PlaylistUpdater
         {
             mLog.info("Unable to update [" + notUpdated + "] legacy talkgroup identifiers - please edit and convert to new talkgroup format");
         }
-
-        return updated > 0;
     }
 }

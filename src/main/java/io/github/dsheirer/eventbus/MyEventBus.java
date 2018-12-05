@@ -17,37 +17,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.alias.id;
 
-public enum AliasIDType
+package io.github.dsheirer.eventbus;
+
+import com.google.common.eventbus.EventBus;
+
+/**
+ * System wide event bus for dispatching/broadcasting system wide events or objects
+ */
+public class MyEventBus
 {
-    ESN("ESN"),
-    FLEETSYNC("Fleetsync"),
-    LEGACY_TALKGROUP("Legacy Talkgroup"),
-    LOJACK("LoJack"),
-    LTR_NET_UID("LTR-Net UID"),
-    MDC1200("MDC-1200"),
-    MIN("Passport MIN"),
-    MPT1327("MPT-1327"),
-    RECORD("Record"),
-    SITE("Site"),
-    STATUS("Status"),
-    TALKGROUP("Talkgroup"),
-    TALKGROUP_RANGE("Talkgroup Range"),
-    INVERT("Audio Inversion"),
-    PRIORITY("Audio Priority"),
-    NON_RECORDABLE("Audio Non-Recordable"),
-    BROADCAST_CHANNEL("Audio Broadcast Channel");
+    private static final EventBus EVENT_BUS = new EventBus();
 
-    private String mLabel;
-
-    private AliasIDType(String label)
+    public static EventBus getEventBus()
     {
-        mLabel = label;
-    }
-
-    public String toString()
-    {
-        return mLabel;
+        return EVENT_BUS;
     }
 }

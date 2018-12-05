@@ -86,7 +86,7 @@ public class PatchGroupAdd extends OSPMessage
         {
             mPatchedTalkgroups = new ArrayList<>();
 
-            if(hasAddress1())
+            if(hasGroupAddress1())
             {
                 mPatchedTalkgroups.add(getGroupAddress1());
             }
@@ -115,14 +115,14 @@ public class PatchGroupAdd extends OSPMessage
         return mGroupAddress1;
     }
 
+    public boolean hasGroupAddress1()
+    {
+        return getPatchAddress() != getAddress1();
+    }
+
     private int getAddress1()
     {
         return getMessage().getInt(GROUP_ADDRESS_1);
-    }
-
-    private boolean hasAddress1()
-    {
-        return getPatchAddress() != getAddress1();
     }
 
     public TalkgroupIdentifier getGroupAddress2()
@@ -142,8 +142,7 @@ public class PatchGroupAdd extends OSPMessage
 
     public boolean hasGroupAddress2()
     {
-        return getPatchAddress() != getAddress2() &&
-            getAddress1() != getAddress2();
+        return getPatchAddress() != getAddress2() && getAddress1() != getAddress2();
     }
 
     public TalkgroupIdentifier getGroupAddress3()
@@ -163,9 +162,7 @@ public class PatchGroupAdd extends OSPMessage
 
     public boolean hasGroupAddress3()
     {
-        return getPatchAddress() != getAddress2() &&
-            getAddress1() != getAddress3() &&
-            getAddress2() != getAddress3();
+        return getPatchAddress() != getAddress3() && getAddress1() != getAddress3() && getAddress2() != getAddress3();
     }
 
     @Override

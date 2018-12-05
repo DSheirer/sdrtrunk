@@ -26,33 +26,52 @@ import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
- * Integer talkgroup identifier with protocol.
+ * Integer talkgroup identifier range of values with protocol.
  */
-public class Talkgroup extends AliasID
+public class TalkgroupRange extends AliasID
 {
     private Protocol mProtocol;
-    private int mValue;
+    private int mMinTalkgroup;
+    private int mMaxTalkgroup;
 
-    public Talkgroup()
+    public TalkgroupRange()
     {
         //No arg JAXB constructor
     }
 
-    public Talkgroup(Protocol protocol, int value)
+    /**
+     * Creates a talkgroup range of from - to talkgroup values (inclusive) for the specified protocol
+     * @param protocol for the talkgroup range
+     * @param minTalkgroup starting or minimum talkgroup value
+     * @param maxTalkgroup ending or maximum talkgroup value
+     */
+    public TalkgroupRange(Protocol protocol, int minTalkgroup, int maxTalkgroup)
     {
         mProtocol = protocol;
-        mValue = value;
+        mMinTalkgroup = minTalkgroup;
+        mMaxTalkgroup = maxTalkgroup;
     }
 
-    @JacksonXmlProperty(isAttribute = true, localName = "value")
-    public int getValue()
+    @JacksonXmlProperty(isAttribute = true, localName = "min")
+    public int getMinTalkgroup()
     {
-        return mValue;
+        return mMinTalkgroup;
     }
 
-    public void setValue(int value)
+    public void setMinTalkgroup(int minTalkgroup)
     {
-        mValue = value;
+        mMinTalkgroup = minTalkgroup;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "max")
+    public int getMaxTalkgroup()
+    {
+        return mMaxTalkgroup;
+    }
+
+    public void setMaxTalkgroup(int maxTalkgroup)
+    {
+        mMaxTalkgroup = maxTalkgroup;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -69,14 +88,15 @@ public class Talkgroup extends AliasID
     @Override
     public boolean isValid()
     {
-        return mValue != 0;
+        return mProtocol != null && mMinTalkgroup != 0 && mMaxTalkgroup != 0 && mMinTalkgroup <= mMaxTalkgroup;
     }
 
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Talkgroup:").append(mValue).append(" Protocol:").append((mProtocol != null ? mProtocol : "(unspecified)"));
+        sb.append("Talkgroup Range:").append(mMinTalkgroup).append(" to ").append(mMaxTalkgroup)
+            .append(" Protocol:").append(mProtocol == null ? "unspecified" : mProtocol);
 
         if(!isValid())
         {
@@ -89,10 +109,12 @@ public class Talkgroup extends AliasID
     @Override
     public boolean matches(AliasID id)
     {
-        if(id instanceof Talkgroup)
+        if(id instanceof TalkgroupRange)
         {
-            Talkgroup tgid = (Talkgroup)id;
-            return (getProtocol() == tgid.getProtocol()) && (getValue() == tgid.getValue());
+            TalkgroupRange tgid = (TalkgroupRange)id;
+            return (getProtocol() == tgid.getProtocol()) &&
+                (getMinTalkgroup() == tgid.getMinTalkgroup()) &&
+                (getMaxTalkgroup() == tgid.getMaxTalkgroup());
         }
 
         return false;
@@ -102,6 +124,6 @@ public class Talkgroup extends AliasID
     @Override
     public AliasIDType getType()
     {
-        return AliasIDType.TALKGROUP;
+        return AliasIDType.TALKGROUP_RANGE;
     }
 }

@@ -21,6 +21,7 @@
 package io.github.dsheirer.preference.identifier;
 
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.IntegerFormat;
 import io.github.dsheirer.preference.Preference;
@@ -79,6 +80,11 @@ public class TalkgroupFormatPreference extends Preference
                 if(identifier instanceof TalkgroupIdentifier)
                 {
                     return formatTalkgroupIdentifier((TalkgroupIdentifier)identifier);
+                }
+            case PATCH_GROUP:
+                if(identifier instanceof PatchGroupIdentifier)
+                {
+                    return formatPatchGroupIdentifier((PatchGroupIdentifier)identifier);
                 }
                 break;
         }
@@ -223,6 +229,24 @@ public class TalkgroupFormatPreference extends Preference
                     isTalkgroupFixedWidth(Protocol.APCO25));
             default:
                 return talkgroupIdentifier.toString();
+        }
+    }
+
+    /**
+     * Formats the identifier according to user specified preferences for number format and length.
+     *
+     * @param patchGroupIdentifier to format
+     * @return formatted talkgroups
+     */
+    private String formatPatchGroupIdentifier(PatchGroupIdentifier patchGroupIdentifier)
+    {
+        switch(patchGroupIdentifier.getProtocol())
+        {
+            case APCO25:
+                return APCO25TalkgroupFormatter.format(patchGroupIdentifier, getTalkgroupFormat(Protocol.APCO25),
+                    isTalkgroupFixedWidth(Protocol.APCO25));
+            default:
+                return patchGroupIdentifier.toString();
         }
     }
 }

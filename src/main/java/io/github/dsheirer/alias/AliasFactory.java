@@ -47,6 +47,8 @@ import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.nonrecordable.NonRecordableEditor;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.priority.PriorityEditor;
+import io.github.dsheirer.alias.id.record.Record;
+import io.github.dsheirer.alias.id.record.RecordEditor;
 import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.siteID.SiteIDEditor;
 import io.github.dsheirer.alias.id.status.StatusID;
@@ -55,6 +57,8 @@ import io.github.dsheirer.alias.id.talkgroup.LegacyTalkgroupID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupEditor;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupIDEditor;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRangeEditor;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
 import io.github.dsheirer.alias.id.uniqueID.UniqueIDEditor;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
@@ -77,11 +81,6 @@ public class AliasFactory
                 Esn copyESN = new Esn();
                 copyESN.setEsn(originalESN.getEsn());
                 return copyESN;
-            case FLEETSYNC:
-                FleetsyncID originalFleetsyncID = (FleetsyncID)id;
-                FleetsyncID copyFleetsyncID = new FleetsyncID();
-                copyFleetsyncID.setIdent(originalFleetsyncID.getIdent());
-                return copyFleetsyncID;
             case LTR_NET_UID:
                 UniqueID originalUniqueID = (UniqueID)id;
                 UniqueID copyUniqueID = new UniqueID();
@@ -93,43 +92,44 @@ public class AliasFactory
                 copyLoJackFunctionAndID.setFunction(originalLoJackFunctionAndID.getFunction());
                 copyLoJackFunctionAndID.setID(originalLoJackFunctionAndID.getID());
                 return copyLoJackFunctionAndID;
-            case MDC1200:
-                MDC1200ID originalMDC1200ID = (MDC1200ID)id;
-                MDC1200ID copyMDC1200ID = new MDC1200ID();
-                copyMDC1200ID.setIdent(originalMDC1200ID.getIdent());
-                return copyMDC1200ID;
             case MIN:
                 Min originalMin = (Min)id;
                 Min copyMin = new Min();
                 copyMin.setMin(originalMin.getMin());
                 return copyMin;
-            case MPT1327:
-                MPT1327ID originalMPT1327ID = (MPT1327ID)id;
-                MPT1327ID copyMPT1327ID = new MPT1327ID();
-                copyMPT1327ID.setIdent(originalMPT1327ID.getIdent());
-                return copyMPT1327ID;
-            case NON_RECORDABLE:
-                return new NonRecordable();
             case PRIORITY:
                 Priority originalPriority = (Priority)id;
                 Priority copyPriority = new Priority();
                 copyPriority.setPriority(originalPriority.getPriority());
                 return copyPriority;
+            case RECORD:
+                return new Record();
             case SITE:
                 SiteID originalSiteID = (SiteID)id;
                 SiteID copySiteID = new SiteID();
                 copySiteID.setSite(originalSiteID.getSite());
                 return copySiteID;
-            case LEGACY_TALKGROUP:
-                LegacyTalkgroupID originalTalkgroupID = (LegacyTalkgroupID)id;
-                LegacyTalkgroupID copyTalkgroupID = new LegacyTalkgroupID();
-                copyTalkgroupID.setTalkgroup(originalTalkgroupID.getTalkgroup());
-                return copyTalkgroupID;
             case STATUS:
                 StatusID originalStatusID = (StatusID)id;
                 StatusID copyStatusID = new StatusID();
                 copyStatusID.setStatus(originalStatusID.getStatus());
                 return copyStatusID;
+            case TALKGROUP:
+                Talkgroup originalTalkgroup = (Talkgroup)id;
+                Talkgroup copyTalkgroup = new Talkgroup(originalTalkgroup.getProtocol(), originalTalkgroup.getValue());
+                return copyTalkgroup;
+            case TALKGROUP_RANGE:
+                TalkgroupRange originalRange = (TalkgroupRange)id;
+                TalkgroupRange copyRange = new TalkgroupRange(originalRange.getProtocol(), originalRange.getMinTalkgroup(),
+                    originalRange.getMaxTalkgroup());
+                return copyRange;
+
+            //Legacy identifiers ... not supported
+            case FLEETSYNC:
+            case LEGACY_TALKGROUP:
+            case MDC1200:
+            case MPT1327:
+            case NON_RECORDABLE:
             default:
         }
 
@@ -205,30 +205,35 @@ public class AliasFactory
                     return new BroadcastChannelEditor(aliasID, broadcastModel);
                 case ESN:
                     return new ESNEditor(aliasID);
-                case FLEETSYNC:
-                    return new FleetsyncIDEditor(aliasID);
                 case LTR_NET_UID:
                     return new UniqueIDEditor(aliasID);
                 case LOJACK:
                     return new LoJackIDEditor(aliasID);
-                case MDC1200:
-                    return new MDC1200IDEditor(aliasID);
                 case MIN:
                     return new MINEditor(aliasID);
-                case MPT1327:
-                    return new MPT1327IDEditor(aliasID);
-                case NON_RECORDABLE:
-                    return new NonRecordableEditor(aliasID);
                 case PRIORITY:
                     return new PriorityEditor(aliasID);
-                case TALKGROUP:
-                    return new TalkgroupEditor(aliasID);
+                case RECORD:
+                    return new RecordEditor(aliasID);
                 case SITE:
                     return new SiteIDEditor(aliasID);
                 case STATUS:
                     return new StatusIDEditor(aliasID);
+                case TALKGROUP:
+                    return new TalkgroupEditor(aliasID);
+                case TALKGROUP_RANGE:
+                    return new TalkgroupRangeEditor(aliasID);
+
+                case FLEETSYNC:
+                    return new FleetsyncIDEditor(aliasID);
                 case LEGACY_TALKGROUP:
                     return new TalkgroupIDEditor(aliasID);
+                case MDC1200:
+                    return new MDC1200IDEditor(aliasID);
+                case MPT1327:
+                    return new MPT1327IDEditor(aliasID);
+                case NON_RECORDABLE:
+                    return new NonRecordableEditor(aliasID);
                 default:
                     break;
             }
@@ -281,8 +286,12 @@ public class AliasFactory
                 return new NonRecordable();
             case PRIORITY:
                 return new Priority();
+            case RECORD:
+                return new Record();
             case TALKGROUP:
                 return new Talkgroup();
+            case TALKGROUP_RANGE:
+                return new TalkgroupRange();
             case SITE:
                 return new SiteID();
             case STATUS:

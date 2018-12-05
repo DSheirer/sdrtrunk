@@ -38,21 +38,22 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
+public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
-
+    private final static Logger mLog = LoggerFactory.getLogger(TalkgroupRangeEditor.class);
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT =
-        "<html><h3>Talkgroup Identifier</h3></html>";
+        "<html><h3>Talkgroup Range Identifier</h3>Identifies a range of talkgroup values</html>";
 
     private JComboBox<Protocol> mComboProtocol;
-    private JFormattedTextField mTalkgroupField;
+    private JFormattedTextField mMinTalkgroupField;
+    private JFormattedTextField mMaxTalkgroupField;
 
-    public TalkgroupEditor(AliasID aliasID)
+    public TalkgroupRangeEditor(AliasID aliasID)
     {
         initGUI();
+
         setItem(aliasID);
     }
 
@@ -86,14 +87,23 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         add(mComboProtocol);
 
-        add(new JLabel("Value:"));
+        add(new JLabel("Min:"));
 
-        mTalkgroupField = new JFormattedTextField();
-        mTalkgroupField.setColumns(10);
-        mTalkgroupField.setValue(new Integer(0));
-        mTalkgroupField.getDocument().addDocumentListener(this);
-        mTalkgroupField.setToolTipText(HELP_TEXT);
-        add(mTalkgroupField, "growx,push");
+        mMinTalkgroupField = new JFormattedTextField();
+        mMinTalkgroupField.setColumns(10);
+        mMinTalkgroupField.setValue(new Integer(0));
+        mMinTalkgroupField.getDocument().addDocumentListener(this);
+        mMinTalkgroupField.setToolTipText(HELP_TEXT);
+        add(mMinTalkgroupField, "growx,push");
+
+        add(new JLabel("Max:"));
+
+        mMaxTalkgroupField = new JFormattedTextField();
+        mMaxTalkgroupField.setColumns(10);
+        mMaxTalkgroupField.setValue(new Integer(0));
+        mMaxTalkgroupField.getDocument().addDocumentListener(this);
+        mMaxTalkgroupField.setToolTipText(HELP_TEXT);
+        add(mMaxTalkgroupField, "growx,push");
 
         JLabel help = new JLabel("Help ...");
         help.setForeground(Color.BLUE.brighter());
@@ -103,18 +113,18 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                JOptionPane.showMessageDialog(TalkgroupEditor.this,
+                JOptionPane.showMessageDialog(TalkgroupRangeEditor.this,
                     HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         add(help, "align left");
     }
 
-    public Talkgroup getTalkgroup()
+    public TalkgroupRange getTalkgroupRange()
     {
-        if(getItem() instanceof Talkgroup)
+        if(getItem() instanceof TalkgroupRange)
         {
-            return (Talkgroup)getItem();
+            return (TalkgroupRange)getItem();
         }
 
         return null;
@@ -125,12 +135,13 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
     {
         super.setItem(aliasID);
 
-        Talkgroup talkgroup = getTalkgroup();
+        TalkgroupRange talkgroupRange = getTalkgroupRange();
 
-        if(talkgroup != null)
+        if(talkgroupRange != null)
         {
-            mComboProtocol.setSelectedItem(talkgroup.getProtocol());
-            mTalkgroupField.setValue(new Integer(talkgroup.getValue()));
+            mComboProtocol.setSelectedItem(talkgroupRange.getProtocol());
+            mMinTalkgroupField.setValue(new Integer(talkgroupRange.getMinTalkgroup()));
+            mMaxTalkgroupField.setValue(new Integer(talkgroupRange.getMaxTalkgroup()));
         }
 
         setModified(false);
@@ -141,21 +152,31 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
     @Override
     public void save()
     {
-        Talkgroup talkgroup = getTalkgroup();
+        TalkgroupRange talkgroupRange = getTalkgroupRange();
 
-        if(talkgroup != null)
+        if(talkgroupRange != null)
         {
             Protocol selected = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
-            talkgroup.setProtocol(selected);
+            talkgroupRange.setProtocol(selected);
 
             try
             {
-                int value = ((Number)mTalkgroupField.getValue()).intValue();
-                talkgroup.setValue(value);
+                int minTalkgroup = ((Number)mMinTalkgroupField.getValue()).intValue();
+                talkgroupRange.setMinTalkgroup(minTalkgroup);
             }
             catch(Exception e)
             {
-                mLog.error("Error parsing minimum talkgroup value from [" + mTalkgroupField.getValue() + "]");
+                mLog.error("Error parsing minimum talkgroup value from [" + mMinTalkgroupField.getText() + "]");
+            }
+
+            try
+            {
+                int maxTalkgroup = ((Number)mMaxTalkgroupField.getValue()).intValue();
+                talkgroupRange.setMaxTalkgroup(maxTalkgroup);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error parsing maximum talkgroup value from [" + mMaxTalkgroupField.getText() + "]");
             }
         }
 

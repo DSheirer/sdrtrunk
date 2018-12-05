@@ -26,7 +26,7 @@ import io.github.dsheirer.module.decode.lj1200.LJ1200Message;
 public class LoJackFunctionAndID extends AliasID
 {
     private LJ1200Message.Function mFunction = LJ1200Message.Function.F0_UNKNOWN;
-    private String mID = "*****";
+    private String mID = null;
 
     public LoJackFunctionAndID()
     {
@@ -62,7 +62,8 @@ public class LoJackFunctionAndID extends AliasID
 
     public String toString()
     {
-        return "LoJack FUNC: " + mFunction.getLabel() + " ID:" + (mID == null ? "" : mID);
+        return "LoJack FUNCTION: " + mFunction.getLabel() +
+            " ID:" + (mID == null ? "" : mID) + (isValid() ? "" : " **NOT VALID**");
     }
 
     /**

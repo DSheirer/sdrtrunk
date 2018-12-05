@@ -51,6 +51,8 @@ public class PlaylistManager implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaylistManager.class);
 
+    public static final int PLAYLIST_CURRENT_VERSION = 2;
+
     private AliasModel mAliasModel;
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
@@ -270,6 +272,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         playlist.setBroadcastConfigurations(mBroadcastModel.getBroadcastConfigurations());
         playlist.setChannels(mChannelModel.getChannels());
         playlist.setChannelMaps(mChannelMapModel.getChannelMaps());
+        playlist.setVersion(PLAYLIST_CURRENT_VERSION);
 
         //Create a backup copy of the current playlist
         if(Files.exists(getPlaylistPath()))
@@ -381,6 +384,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         if(PlaylistUpdater.update(playlist))
         {
             mLog.info("Playlist was updated ... saving");
+            mLog.debug("Playlist version: " + playlist.getVersion());
             schedulePlaylistSave();
         }
 

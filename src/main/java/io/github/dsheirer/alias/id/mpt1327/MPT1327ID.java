@@ -50,7 +50,7 @@ public class MPT1327ID extends AliasID
 
     public String toString()
     {
-        return "MPT-1327: " + mID;
+        return "MPT-1327: " + (mID != null ? mID : "(empty)") + " **INVALID - USE TALKGROUP INSTEAD**";
     }
 
     @Override

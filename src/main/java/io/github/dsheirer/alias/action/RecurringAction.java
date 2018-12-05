@@ -1,13 +1,33 @@
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
+
 package io.github.dsheirer.alias.action;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.util.ThreadPool;
 
-import javax.swing.*;
-import java.awt.*;
-import java.util.concurrent.ScheduledExecutorService;
+import javax.swing.JOptionPane;
+import java.awt.EventQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,19 +38,15 @@ public abstract class RecurringAction extends AliasAction
     protected AtomicBoolean mRunning = new AtomicBoolean(false);
     @JsonIgnore
     private ScheduledFuture<?> mPerpetualAction;
-    @JsonIgnore
-    protected ScheduledExecutorService mScheduledExecutorService;
 
     protected Interval mInterval = Interval.ONCE;
     protected int mPeriod = 5;
 
-    public abstract void performAction(Alias alias, Message message);
+    public abstract void performAction(Alias alias, IMessage message);
 
     @Override
-    public void execute(ScheduledExecutorService scheduledExecutorService, Alias alias, Message message)
+    public void execute(Alias alias, IMessage message)
     {
-        mScheduledExecutorService = scheduledExecutorService;
-
         if(mRunning.compareAndSet(false, true))
         {
             switch(mInterval)
@@ -41,10 +57,10 @@ public abstract class RecurringAction extends AliasAction
                     break;
                 case DELAYED_RESET:
                     performThreadedAction(alias, message);
-                    mScheduledExecutorService.schedule(new ResetTask(), mPeriod, TimeUnit.SECONDS);
+                    ThreadPool.SCHEDULED.schedule(new ResetTask(), mPeriod, TimeUnit.SECONDS);
                     break;
                 case UNTIL_DISMISSED:
-                    mPerpetualAction = mScheduledExecutorService.scheduleAtFixedRate(
+                    mPerpetualAction = ThreadPool.SCHEDULED.scheduleAtFixedRate(
                         new PerformActionTask(alias, message), mPeriod, mPeriod, TimeUnit.SECONDS);
 
                     StringBuilder sb = new StringBuilder();
@@ -56,18 +72,13 @@ public abstract class RecurringAction extends AliasAction
 
                     final String text = sb.toString();
 
-                    EventQueue.invokeLater(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            JOptionPane.showMessageDialog(null, text,
-                                "Alias Alert", JOptionPane.INFORMATION_MESSAGE);
+                    EventQueue.invokeLater(() -> {
+                        JOptionPane.showMessageDialog(null, text,
+                            "Alias Alert", JOptionPane.INFORMATION_MESSAGE);
 
-                            dismiss(false);
+                        dismiss(false);
 
-                            mScheduledExecutorService.schedule(new ResetTask(), 15, TimeUnit.SECONDS);
-                        }
+                        ThreadPool.SCHEDULED.schedule(new ResetTask(), 15, TimeUnit.SECONDS);
                     });
                     break;
                 default:
@@ -79,16 +90,9 @@ public abstract class RecurringAction extends AliasAction
      * Spawns the performAction() event into a new thread so that it doesn't
      * delay any decoder actions.
      */
-    private void performThreadedAction(final Alias alias, final Message message)
+    private void performThreadedAction(final Alias alias, final IMessage message)
     {
-        mScheduledExecutorService.schedule(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                performAction(alias, message);
-            }
-        }, 0, TimeUnit.SECONDS);
+        ThreadPool.SCHEDULED.schedule(() -> performAction(alias, message), 0, TimeUnit.SECONDS);
     }
 
     @Override
@@ -139,7 +143,7 @@ public abstract class RecurringAction extends AliasAction
 
         private String mLabel;
 
-        private Interval(String label)
+        Interval(String label)
         {
             mLabel = label;
         }
@@ -153,9 +157,9 @@ public abstract class RecurringAction extends AliasAction
     public class PerformActionTask implements Runnable
     {
         private Alias mAlias;
-        private Message mMessage;
+        private IMessage mMessage;
 
-        public PerformActionTask(Alias alias, Message message)
+        public PerformActionTask(Alias alias, IMessage message)
         {
             mAlias = alias;
             mMessage = message;

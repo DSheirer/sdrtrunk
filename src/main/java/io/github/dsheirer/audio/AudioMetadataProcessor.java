@@ -70,8 +70,8 @@ public class AudioMetadataProcessor
 
             if(aliasList != null)
             {
-                audioPacket.setRecordable(aliasList.isRecordable(audioPacket.getIdentifierCollection()));
                 audioPacket.addBroadcastChannels(aliasList.getBroadcastChannels(audioPacket.getIdentifierCollection()));
+                audioPacket.setRecordable(aliasList.isRecordable(audioPacket.getIdentifierCollection()));
                 audioPacket.setMonitoringPriority(aliasList.getAudioPlaybackPriority(audioPacket.getIdentifierCollection()));
             }
         }

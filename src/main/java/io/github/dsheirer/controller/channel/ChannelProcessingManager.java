@@ -31,7 +31,6 @@ import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.binary.BinaryRecorder;
@@ -68,15 +67,14 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private AliasModel mAliasModel;
 
     public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    RecorderManager recorderManager, SourceManager sourceManager, AliasModel aliasModel,
-                                    UserPreferences userPreferences)
+                                    RecorderManager recorderManager, SourceManager sourceManager, AliasModel aliasModel)
     {
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
         mRecorderManager = recorderManager;
         mSourceManager = sourceManager;
         mAliasModel = aliasModel;
-        mChannelMetadataModel = new ChannelMetadataModel(userPreferences);
+        mChannelMetadataModel = new ChannelMetadataModel();
     }
 
     /**
@@ -234,7 +232,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.addFrequencyChangeListener(channel);
 
             /* Processing Modules */
-            List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel);
+            List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel);
             processingChain.addModules(modules);
 
             /* Setup message activity model with filtering */

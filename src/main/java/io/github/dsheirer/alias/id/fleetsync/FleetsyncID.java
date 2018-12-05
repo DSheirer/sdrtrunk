@@ -49,7 +49,7 @@ public class FleetsyncID extends AliasID
 
 	public String toString()
 	{
-		return "Fleetsync: " + mID;
+		return "Fleetsync: " + (mID != null ? mID : "(empty)") + " **INVALID - USE TALKGROUP INSTEAD";
 	}
 
 	@Override

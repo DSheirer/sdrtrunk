@@ -19,10 +19,12 @@
  */
 package io.github.dsheirer.audio.playback;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -71,7 +73,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private SettingsManager mSettingsManager;
     private UserPreferences mUserPreferences;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
-    private PreferenceUpdateListener mPreferenceUpdateListener = new PreferenceUpdateListener();
     private AudioOutput mAudioOutput;
 
     private JLabel mMutedLabel = new JLabel("M");
@@ -93,7 +94,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
         mTalkgroupFormatPreference = mUserPreferences.getTalkgroupFormatPreference();
-        mUserPreferences.addPreferenceUpdateListener(mPreferenceUpdateListener);
         mAudioOutput = audioOutput;
 
         if(mAudioOutput != null)
@@ -110,14 +110,30 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         init();
     }
 
+    /**
+     * Receives preference update notifications via the event bus
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.IDENTIFIER)
+        {
+            updateLabels();
+        }
+    }
+
     public void dispose()
     {
         //Deregister from receiving preference update notifications
-        mUserPreferences.removePreferenceUpdateListener(mPreferenceUpdateListener);
+        MyEventBus.getEventBus().unregister(this);
     }
 
     private void init()
     {
+        //Register to receive preference updates
+        MyEventBus.getEventBus().register(this);
+
         setLayout(new MigLayout("align center center, insets 0 0 0 0",
             "[][][align right]0[grow,fill]", ""));
         setBackground(mBackgroundColor);
@@ -272,20 +288,5 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     @Override
     public void settingDeleted(Setting setting)
     {
-    }
-
-    /**
-     * Receives notifications when preferences have been updated.
-     */
-    public class PreferenceUpdateListener implements Listener<PreferenceType>
-    {
-        @Override
-        public void receive(PreferenceType preferenceType)
-        {
-            if(preferenceType == PreferenceType.IDENTIFIER)
-            {
-                updateLabels();
-            }
-        }
     }
 }

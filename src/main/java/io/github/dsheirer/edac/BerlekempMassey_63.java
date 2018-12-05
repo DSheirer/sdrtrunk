@@ -55,7 +55,7 @@ public class BerlekempMassey_63
 	private static final int NN = 63;
 	
 	/* Hamming distance between codewords: NN - KK + 1 = 2 * TT + 1 */
-	private static int KK;
+	private int KK;
 
 	/* Maximum number of errors that can be corrected */
 	int TT;

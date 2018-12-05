@@ -18,59 +18,87 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.action;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.IMessageListener;
+import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
- * Manages all alias action events.  Each received message is interrogated for
- * any alias entries and then each alias is interrogated for any alias actions.
+ * Manages all alias action events.  Each received message is interrogated for any identifiers that may be aliasable
+ * and have associated alias actions.
  *
- * Each alias action is executed and provided a copy of the source message so
- * that the contents of the message can be used as part of the action.
+ * Each alias action is executed and provided a copy of the source message so that the contents of the message can be
+ * used as part of the action.
  */
-public class AliasActionManager implements Listener<IMessage>
+public class AliasActionManager extends Module implements IMessageListener, Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasActionManager.class);
-    private int mLogCounter;
+    private AliasList mAliasList;
 
-    public AliasActionManager()
+    public AliasActionManager(AliasList aliasList)
     {
-        //TODO: add support for multiple alias lists and merge in the changes for alias in the new alias branch
+        mAliasList = aliasList;
     }
 
     @Override
     public void receive(IMessage message)
     {
-        if(message.isValid())
+        if(mAliasList != null && message.isValid())
         {
-            if(mLogCounter < 5)
+            List<Identifier> identifiers = message.getIdentifiers();
+
+            for(Identifier identifier: identifiers)
             {
-                mLog.debug("Update alias action manager to support new alias list construct");
-                mLogCounter++;
+                Alias alias = mAliasList.getAlias(identifier);
+
+                if(alias != null && alias.hasActions())
+                {
+                    for(AliasAction action: alias.getAction())
+                    {
+                        action.execute(alias, message);
+                    }
+                }
             }
-//            List<Alias> aliases = message.getAliases();
-//
-//            if(aliases != null)
-//            {
-//                for(Alias alias : aliases)
-//                {
-//                    if(alias.hasActions())
-//                    {
-//                        List<AliasAction> actions = alias.getAction();
-//
-//                        for(AliasAction action : actions)
-//                        {
-//                            /* Provide access to the thread pool manager in case the
-//							 * action needs to setup a timer, and provide the original
-//							 * message to be used as part of the action (e.g. sending
-//							 * the message as a text message to a cell phone */
-//                            action.execute(ThreadPool.SCHEDULED, alias, message);
-//                        }
-//                    }
-//                }
-//            }
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        //No actions neeeded
+    }
+
+    @Override
+    public void start()
+    {
+        //No actions neeeded
+    }
+
+    @Override
+    public void stop()
+    {
+        //No actions neeeded
+    }
+
+    @Override
+    public void dispose()
+    {
+        //No actions neeeded
+    }
+
+    /**
+     * IMessageListener interface ... delegates to this class implementation of Listener<Message>
+     */
+    @Override
+    public Listener<IMessage> getMessageListener()
+    {
+        return this;
     }
 }

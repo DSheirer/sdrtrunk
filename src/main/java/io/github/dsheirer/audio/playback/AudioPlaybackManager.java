@@ -483,6 +483,7 @@ public class AudioPlaybackManager implements Listener<ReusableAudioPacket>, IAud
 
         public void receive(ReusableAudioPacket packet)
         {
+            mLog.debug("Processing Audio for Channel [" + packet.getAudioChannelId() + "] for audio output [" + mAudioOutput.getChannelName() + "]");
             if(packet.hasIdentifierCollection() && packet.getAudioChannelId() == mAudioChannelId)
             {
                 int priority = packet.getMonitoringPriority();

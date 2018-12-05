@@ -48,7 +48,13 @@ public class Esn extends AliasID
 	
 	public String toString()
 	{
-		return "ESN: " + mEsn;
+		StringBuilder sb = new StringBuilder();
+		sb.append("ESN: ").append(mEsn != null ? mEsn : "(empty)");
+		if(!isValid())
+		{
+			sb.append(" **NOT VALID**");
+		}
+		return sb.toString();
 	}
 
 	@Override

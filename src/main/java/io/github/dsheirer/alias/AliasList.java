@@ -74,6 +74,7 @@ public class AliasList implements Listener<AliasEvent>
     private List<WildcardID> mMPT1327Wildcards = new ArrayList<>();
     private List<WildcardID> mSiteWildcards = new ArrayList<>();
     private List<WildcardID> mTalkgroupWildcards = new ArrayList<>();
+    private boolean mHasAliasActions = false;
 
     private Map<Protocol,Map<Integer,Alias>> mTalkgroupProtocolMap = new HashMap<>();
 
@@ -101,6 +102,11 @@ public class AliasList implements Listener<AliasEvent>
             {
                 addAliasID(aliasID, alias);
             }
+        }
+
+        if(alias.hasActions())
+        {
+            mHasAliasActions = true;
         }
     }
 
@@ -755,13 +761,21 @@ public class AliasList implements Listener<AliasEvent>
         {
             Alias alias = getAlias(identifier);
 
-            if(alias != null && alias.isStreamable())
+            if(alias != null && alias.isRecordable())
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Indicates if any of the aliases in this list have an associated alias action
+     */
+    public boolean hasAliasActions()
+    {
+        return mHasAliasActions;
     }
 
     /**

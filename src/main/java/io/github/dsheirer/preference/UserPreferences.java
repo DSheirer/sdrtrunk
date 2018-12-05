@@ -20,10 +20,10 @@
 
 package io.github.dsheirer.preference;
 
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.properties.SystemProperties;
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -31,7 +31,6 @@ import io.github.dsheirer.sample.Listener;
  */
 public class UserPreferences implements Listener<PreferenceType>
 {
-    private Broadcaster<PreferenceType> mPreferenceTypeBroadcaster = new Broadcaster<>();
     private DecodeEventPreference mDecodeEventPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
 
@@ -73,24 +72,6 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
-     * Adds a listener to be notified when a preference has been updated
-     *
-     * @param listener to receive preference type notifications.
-     */
-    public void addPreferenceUpdateListener(Listener<PreferenceType> listener)
-    {
-        mPreferenceTypeBroadcaster.addListener(listener);
-    }
-
-    /**
-     * Removes the listener from receiving preference update notifications
-     */
-    public void removePreferenceUpdateListener(Listener<PreferenceType> listener)
-    {
-        mPreferenceTypeBroadcaster.removeListener(listener);
-    }
-
-    /**
      * Primary method for receiving notification from a managed preference that a preference type
      * has been changed/updated.
      *
@@ -99,6 +80,6 @@ public class UserPreferences implements Listener<PreferenceType>
     @Override
     public void receive(PreferenceType preferenceType)
     {
-        mPreferenceTypeBroadcaster.broadcast(preferenceType);
+        MyEventBus.getEventBus().post(preferenceType);
     }
 }

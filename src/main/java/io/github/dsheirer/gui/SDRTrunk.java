@@ -21,7 +21,6 @@ package io.github.dsheirer.gui;
 
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AudioPacketManager;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
@@ -33,6 +32,7 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.icon.IconManager;
@@ -162,16 +162,13 @@ public class SDRTrunk implements Listener<TunerEvent>
         mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
         mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, recorderManager,
-            mSourceManager, aliasModel, mUserPreferences);
+            mSourceManager, aliasModel);
 
         mChannelModel.addListener(mChannelProcessingManager);
         mChannelProcessingManager.addChannelEventListener(mChannelModel);
 
         ChannelSelectionManager channelSelectionManager = new ChannelSelectionManager(mChannelModel);
         mChannelModel.addListener(channelSelectionManager);
-
-        AliasActionManager aliasActionManager = new AliasActionManager();
-        mChannelProcessingManager.addMessageListener(aliasActionManager);
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSourceManager.getMixerManager());
 
@@ -357,7 +354,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         viewMenu.add(new JSeparator());
         JMenuItem preferencesItem = new JMenuItem("Preferences");
-        preferencesItem.addActionListener(e -> JavaFxWindowManager.getEventBus()
+        preferencesItem.addActionListener(e -> MyEventBus.getEventBus()
                 .post(new PreferenceEditorViewRequest(PreferenceEditorType.CHANNEL_EVENT)));
         viewMenu.add(preferencesItem);
 

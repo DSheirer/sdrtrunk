@@ -69,11 +69,14 @@ public abstract class AMBTCMessage extends P25Message implements IBitErrorProvid
 
     public UnconfirmedDataBlock getDataBlock(int index)
     {
-        DataBlock dataBlock = getPDUSequence().getDataBlocks().get(index);
-
-        if(dataBlock instanceof UnconfirmedDataBlock)
+        if(index < getPDUSequence().getDataBlocks().size())
         {
-            return (UnconfirmedDataBlock)dataBlock;
+            DataBlock dataBlock = getPDUSequence().getDataBlocks().get(index);
+
+            if(dataBlock instanceof UnconfirmedDataBlock)
+            {
+                return (UnconfirmedDataBlock)dataBlock;
+            }
         }
 
         return null;

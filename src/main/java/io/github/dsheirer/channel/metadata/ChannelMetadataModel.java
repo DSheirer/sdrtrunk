@@ -15,12 +15,12 @@
  ******************************************************************************/
 package io.github.dsheirer.channel.metadata;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.preference.PreferenceType;
-import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,21 +50,28 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     private List<ChannelMetadata> mChannelMetadata = new ArrayList();
     private Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap();
 
-    public ChannelMetadataModel(UserPreferences userPreferences)
+    public ChannelMetadataModel()
     {
-        userPreferences.addPreferenceUpdateListener(new Listener<PreferenceType>()
-        {
-            @Override
-            public void receive(PreferenceType preferenceType)
-            {
-                if(preferenceType == PreferenceType.IDENTIFIER)
-                {
-                    //If the identifier format changed, update the entire table
-                    fireTableDataChanged();
-                }
-            }
-        });
+        MyEventBus.getEventBus().register(this);
     }
+
+    /**
+     * Receives preference update notifications via the event bus
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.IDENTIFIER)
+        {
+            for(int row = 0; row < mChannelMetadata.size(); row++)
+            {
+                fireTableCellUpdated(row, COLUMN_USER_FROM);
+                fireTableCellUpdated(row, COLUMN_USER_TO);
+            }
+        }
+    }
+
 
     public void add(ChannelMetadata channelMetadata, Channel channel)
     {

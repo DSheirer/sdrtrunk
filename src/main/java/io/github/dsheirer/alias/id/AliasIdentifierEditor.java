@@ -123,6 +123,7 @@ public class AliasIdentifierEditor extends Editor<Alias>
                 JPopupMenu menu = new JPopupMenu();
 
                 menu.add(new AddAliasIdentifierItem(AliasIDType.TALKGROUP));
+                menu.add(new AddAliasIdentifierItem(AliasIDType.TALKGROUP_RANGE));
                 menu.add(new AddAliasIdentifierItem(AliasIDType.ESN));
                 menu.add(new AddAliasIdentifierItem(AliasIDType.LOJACK));
                 menu.add(new AddAliasIdentifierItem(AliasIDType.LTR_NET_UID));
@@ -139,9 +140,9 @@ public class AliasIdentifierEditor extends Editor<Alias>
                 {
                     Alias alias = getItem();
 
-                    if(alias.isRecordable())
+                    if(!alias.isRecordable())
                     {
-                        menu.add(new AddAliasIdentifierItem(AliasIDType.NON_RECORDABLE));
+                        menu.add(new AddAliasIdentifierItem(AliasIDType.RECORD));
                     }
 
                     if(!alias.hasCallPriority())

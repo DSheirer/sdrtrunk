@@ -20,6 +20,8 @@
 
 package io.github.dsheirer.preference.identifier.talkgroup;
 
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.IntegerFormat;
 
@@ -30,6 +32,9 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
     public static final int GROUP_HEXADECIMAL_WIDTH = 4;
     public static final int UNIT_HEXADECIMAL_WIDTH = 6;
 
+    /**
+     * Formats the individual or group identifier to the specified format and width.
+     */
     public static String format(TalkgroupIdentifier identifier, IntegerFormat format, boolean fixedWidth)
     {
         if(fixedWidth)
@@ -51,6 +56,7 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
             switch(format)
             {
                 case DECIMAL:
+                case FORMATTED:
                     return identifier.getValue().toString();
                 case HEXADECIMAL:
                     return toHex(identifier.getValue());
@@ -58,5 +64,35 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
         }
+    }
+
+    /**
+     * Formats the patch group to the specified format and width
+     */
+    public static String format(PatchGroupIdentifier identifier, IntegerFormat format, boolean fixedWidth)
+    {
+        PatchGroup patchGroup = identifier.getValue();
+
+        if(patchGroup != null)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("P:");
+            sb.append(format(patchGroup.getPatchGroup(), format, fixedWidth));
+            sb.append("[");
+
+            int counter = 0;
+            for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
+            {
+                sb.append(format(patchedGroup, format, fixedWidth));
+                if(counter++ < patchGroup.getPatchedGroupIdentifiers().size() - 1)
+                {
+                    sb.append(",");
+                }
+            }
+            sb.append("]");
+            return sb.toString();
+        }
+
+        return identifier.toString();
     }
 }

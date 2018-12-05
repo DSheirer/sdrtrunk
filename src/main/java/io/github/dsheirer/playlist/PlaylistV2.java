@@ -30,6 +30,7 @@ import java.util.List;
 @JacksonXmlRootElement(localName = "playlist")
 public class PlaylistV2
 {
+    private int mVersion = 1;
     private List<Alias> mAliases = new ArrayList<>();
     private List<BroadcastConfiguration> mBroadcastConfigurations = new ArrayList<>();
     private List<Channel> mChannels = new ArrayList<>();
@@ -37,6 +38,23 @@ public class PlaylistV2
 
     public PlaylistV2()
     {
+    }
+
+    /**
+     * Version number for this playlist
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "version")
+    public int getVersion()
+    {
+        return mVersion;
+    }
+
+    /**
+     * Sets the version for this playlist.
+     */
+    public void setVersion(int version)
+    {
+        mVersion = version;
     }
 
     @JacksonXmlProperty(isAttribute = false, localName = "alias")
