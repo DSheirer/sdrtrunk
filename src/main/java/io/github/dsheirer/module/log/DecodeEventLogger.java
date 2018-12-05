@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.module.log;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -40,9 +41,9 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
     private SimpleDateFormat mTimestampFormat = TimestampFormat.TIMESTAMP_COLONS.getFormatter();
     private DecimalFormat mFrequencyFormat = new DecimalFormat("0.000000");
 
-    public DecodeEventLogger(Path logDirectory, String fileNameSuffix)
+    public DecodeEventLogger(Path logDirectory, String fileNameSuffix, long frequency)
     {
-        super(logDirectory, fileNameSuffix);
+        super(logDirectory, fileNameSuffix, frequency);
     }
 
     @Override
@@ -86,7 +87,10 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         sb.append("\"").append(mTimestampFormat.format(new Date(event.getTimeStart()))).append("\"");
         sb.append(",\"").append(event.getDuration() > 0 ? event.getDuration() : "").append("\"");
         sb.append(",\"").append(event.getProtocol()).append("\"");
-        sb.append(",\"").append(event.getEventDescription()).append("\"");
+
+        String description = event.getEventDescription();
+
+        sb.append(",\"").append(description != null ? description : "").append("\"");
 
         List<Identifier> fromIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.FROM);
         if(fromIdentifiers != null && !fromIdentifiers.isEmpty())
@@ -108,7 +112,9 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
             sb.append(",\"\"");
         }
 
-        sb.append(",\"").append(event.getChannelDescriptor()).append("\"");
+        IChannelDescriptor descriptor = event.getChannelDescriptor();
+
+        sb.append(",\"").append(descriptor != null ? descriptor : "").append("\"");
 
         Identifier frequency = event.getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
 
@@ -121,7 +127,9 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
             sb.append(",\"\"");
         }
 
-        sb.append(",\"").append(event.getDetails()).append("\"\n");
+        String details = event.getDetails();
+
+        sb.append(",\"").append(details != null ? details : "").append("\"");
 
         return sb.toString();
     }

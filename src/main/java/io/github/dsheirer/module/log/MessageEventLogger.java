@@ -19,7 +19,6 @@ package io.github.dsheirer.module.log;
 
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.TimeStamp;
 
@@ -34,9 +33,9 @@ public class MessageEventLogger extends EventLogger implements IMessageListener,
 
     private Type mType;
 
-    public MessageEventLogger(Path logDirectory, String fileNameSuffix, Type type)
+    public MessageEventLogger(Path logDirectory, String fileNameSuffix, Type type, long frequency)
     {
-        super(logDirectory, fileNameSuffix);
+        super(logDirectory, fileNameSuffix, frequency);
         mType = type;
     }
 

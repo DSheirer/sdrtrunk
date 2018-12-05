@@ -243,7 +243,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         }
 
         /* Setup event logging */
-        List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), channel.getName());
+        List<Module> loggers = mEventLogManager.getLoggers(channel);
 
         if(!loggers.isEmpty())
         {

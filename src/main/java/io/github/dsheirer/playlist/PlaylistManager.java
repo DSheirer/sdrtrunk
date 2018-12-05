@@ -383,8 +383,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         //Perform any updates that may be needed for the playist.
         if(PlaylistUpdater.update(playlist))
         {
-            mLog.info("Playlist was updated ... saving");
-            mLog.debug("Playlist version: " + playlist.getVersion());
+            mLog.info("Playlist was updated to version [" + PLAYLIST_CURRENT_VERSION + "] - saving");
             schedulePlaylistSave();
         }
 

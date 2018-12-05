@@ -125,6 +125,8 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 trafficChannel.setSystem(parentChannel.getSystem());
                 trafficChannel.setSite(parentChannel.getSite());
                 trafficChannel.setDecodeConfiguration(p25DecodeConfig);
+                trafficChannel.setEventLogConfiguration(parentChannel.getEventLogConfiguration());
+                trafficChannel.setRecordConfiguration(parentChannel.getRecordConfiguration());
                 trafficChannelList.add(trafficChannel);
             }
         }

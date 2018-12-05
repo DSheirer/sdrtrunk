@@ -17,37 +17,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.alias.id.mdc;
+package io.github.dsheirer.alias.id.legacy.nonrecordable;
 
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JTextField;
-import javax.swing.text.MaskFormatter;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-@Deprecated //Use Talkgroup instead
-public class MDC1200IDEditor extends DocumentListenerEditor<AliasID>
+public class NonRecordableEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-        + "<h3>MDC-1200 Identifier</h3>"
-        + "<b>MDC-1200:</b> four digit [0-9] value (e.g. <u>1234</u>)<br>"
-        + "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
-        + "digits (e.g. <u>123*</u> or <u>**34</u>)"
-        + "</html>";
+        + "<h3>Audio Non-Recordable</h3>"
+        + "This identifies an alias as non-recordable.<br><br>"
+        + "The alias can still be monitored but associated audio will<br>"
+        + "not be recorded.<br><br>"
+        + "The default behavior when audio recording is enabled for a<br>"
+        + "channel is to record all aliases except any alias with a<br>"
+        + "non-recordable identifier";
 
-    private JTextField mTextField;
-
-    public MDC1200IDEditor(AliasID aliasID)
+    public NonRecordableEditor(AliasID aliasID)
     {
         initGUI();
 
@@ -56,26 +52,9 @@ public class MDC1200IDEditor extends DocumentListenerEditor<AliasID>
 
     private void initGUI()
     {
-        setLayout(new MigLayout("fill,wrap 2", "[right][left]", "[][]"));
+        setLayout(new MigLayout("fill,wrap 1", "[]", "[][]"));
 
-        add(new JLabel("MDC-1200 ID:"));
-
-        MaskFormatter formatter = null;
-
-        try
-        {
-            //Mask: 4 digits
-            formatter = new MaskFormatter("####");
-        }
-        catch(Exception e)
-        {
-            //Do nothing, the mask was invalid
-        }
-
-        mTextField = new JFormattedTextField(formatter);
-        mTextField.getDocument().addDocumentListener(this);
-        mTextField.setToolTipText(HELP_TEXT);
-        add(mTextField, "growx,push");
+        add(new JLabel("Non-Recordable"), "wrap");
 
         JLabel help = new JLabel("Help ...");
         help.setForeground(Color.BLUE.brighter());
@@ -85,50 +64,15 @@ public class MDC1200IDEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                JOptionPane.showMessageDialog(MDC1200IDEditor.this,
+                JOptionPane.showMessageDialog(NonRecordableEditor.this,
                     HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         add(help, "align left");
     }
 
-    public MDC1200ID getMDC1200ID()
-    {
-        if(getItem() instanceof MDC1200ID)
-        {
-            return (MDC1200ID)getItem();
-        }
-
-        return null;
-    }
-
-    @Override
-    public void setItem(AliasID aliasID)
-    {
-        super.setItem(aliasID);
-
-        MDC1200ID mdc = getMDC1200ID();
-
-        if(mdc != null)
-        {
-            mTextField.setText(mdc.getIdent());
-        }
-
-        setModified(false);
-
-        repaint();
-    }
-
     @Override
     public void save()
     {
-        MDC1200ID mdc = getMDC1200ID();
-
-        if(mdc != null)
-        {
-            mdc.setIdent(mTextField.getText());
-        }
-
-        setModified(false);
     }
 }

@@ -29,7 +29,6 @@ public class RecordConfigurationEditor extends Editor<Channel>
 {
     private static final long serialVersionUID = 1L;
 
-    private JCheckBox mAudioRecorder;
     private JCheckBox mBasebandRecorder;
     private JCheckBox mTrafficBasebandRecorder;
     private JCheckBox mBitstreamRecorder;
@@ -43,18 +42,6 @@ public class RecordConfigurationEditor extends Editor<Channel>
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 2", "", "[][][][grow]"));
-
-        mAudioRecorder = new JCheckBox("Audio");
-        mAudioRecorder.setEnabled(false);
-        mAudioRecorder.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                setModified(true);
-            }
-        });
-        add(mAudioRecorder, "wrap");
 
         mBasebandRecorder = new JCheckBox("Baseband I/Q");
         mBasebandRecorder.setEnabled(false);
@@ -107,11 +94,6 @@ public class RecordConfigurationEditor extends Editor<Channel>
 
     private void setControlsEnabled(boolean enabled)
     {
-        if(mAudioRecorder.isEnabled() != enabled)
-        {
-            mAudioRecorder.setEnabled(enabled);
-        }
-
         if(mBasebandRecorder.isEnabled() != enabled)
         {
             mBasebandRecorder.setEnabled(enabled);
@@ -141,11 +123,6 @@ public class RecordConfigurationEditor extends Editor<Channel>
             RecordConfiguration config = getItem().getRecordConfiguration();
 
             config.clearRecorders();
-
-            if(mAudioRecorder.isSelected())
-            {
-                config.addRecorder(RecorderType.AUDIO);
-            }
 
             if(mBasebandRecorder.isSelected())
             {
@@ -181,7 +158,6 @@ public class RecordConfigurationEditor extends Editor<Channel>
             setControlsEnabled(true);
 
             List<RecorderType> recorders = getItem().getRecordConfiguration().getRecorders();
-            mAudioRecorder.setSelected(recorders.contains(RecorderType.AUDIO));
             mBasebandRecorder.setSelected(recorders.contains(RecorderType.BASEBAND));
             mTrafficBasebandRecorder.setSelected(recorders.contains(RecorderType.TRAFFIC_BASEBAND));
             mBitstreamRecorder.setSelected(recorders.contains(RecorderType.DEMODULATED_BIT_STREAM));

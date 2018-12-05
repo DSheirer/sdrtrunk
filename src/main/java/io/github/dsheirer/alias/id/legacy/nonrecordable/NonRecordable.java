@@ -17,39 +17,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.alias.id;
 
-public enum AliasIDType
+package io.github.dsheirer.alias.id.legacy.nonrecordable;
+
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.alias.id.AliasIDType;
+
+public class NonRecordable extends AliasID
 {
-    BROADCAST_CHANNEL("Audio Broadcast Channel"),
-    ESN("ESN"),
-    INVERT("Audio Inversion"),
-    LOJACK("LoJack"),
-    LTR_NET_UID("LTR-Net UID"),
-    MIN("Passport MIN"),
-    PRIORITY("Audio Priority"),
-    RECORD("Record"),
-    SITE("Site"),
-    STATUS("Status"),
-    TALKGROUP("Talkgroup"),
-    TALKGROUP_RANGE("Talkgroup Range"),
-
-    //Legacy identifier types - no longer used
-    FLEETSYNC("Fleetsync"),
-    LEGACY_TALKGROUP("Legacy Talkgroup"),
-    MDC1200("MDC-1200"),
-    MPT1327("MPT-1327"),
-    NON_RECORDABLE("Audio Non-Recordable");
-
-    private String mLabel;
-
-    AliasIDType(String label)
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    @Override
+    public AliasIDType getType()
     {
-        mLabel = label;
+        return AliasIDType.NON_RECORDABLE;
     }
 
+    @Override
+    public boolean isValid()
+    {
+        return true;
+    }
+
+    @Override
+    public boolean matches(AliasID id)
+    {
+        return false;
+    }
+
+    @Override
     public String toString()
     {
-        return mLabel;
+        return "Audio Non-Recordable - **INVALID - USE RECORD INSTEAD**";
     }
 }

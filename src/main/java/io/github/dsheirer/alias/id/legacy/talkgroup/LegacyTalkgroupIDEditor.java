@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.alias.id.talkgroup;
+package io.github.dsheirer.alias.id.legacy.talkgroup;
 
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
@@ -31,8 +31,7 @@ import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-@Deprecated //Deprecated and replaced by TalkgroupEditor
-public class TalkgroupIDEditor extends DocumentListenerEditor<AliasID>
+public class LegacyTalkgroupIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
@@ -47,7 +46,7 @@ public class TalkgroupIDEditor extends DocumentListenerEditor<AliasID>
 
     private JTextField mTextField;
 
-    public TalkgroupIDEditor(AliasID aliasID)
+    public LegacyTalkgroupIDEditor(AliasID aliasID)
     {
         initGUI();
 
@@ -73,7 +72,7 @@ public class TalkgroupIDEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                JOptionPane.showMessageDialog(TalkgroupIDEditor.this,
+                JOptionPane.showMessageDialog(LegacyTalkgroupIDEditor.this,
                     HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE);
             }
         });

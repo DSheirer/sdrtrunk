@@ -23,12 +23,17 @@ package io.github.dsheirer.playlist;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.alias.id.fleetsync.FleetsyncID;
-import io.github.dsheirer.alias.id.mdc.MDC1200ID;
-import io.github.dsheirer.alias.id.mpt1327.MPT1327ID;
-import io.github.dsheirer.alias.id.talkgroup.LegacyTalkgroupID;
+import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
+import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
+import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
+import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
+import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.module.log.EventLogType;
+import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.record.RecorderType;
+import io.github.dsheirer.record.config.RecordConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,15 +78,82 @@ public class PlaylistUpdater
         switch(playlist.getVersion())
         {
             case 1:
-                mLog.info("Updating playlist from version 1 to version 2");
-                updateVersion1Talkgroups(playlist);
+                mLog.info("Updating playlist from version [1] to version [" + PlaylistManager.PLAYLIST_CURRENT_VERSION + "]");
+                removeVersion1AudioRecordType(playlist);
+                removeVersion1BinaryMessageLogger(playlist);
                 removeVersion1NonRecordableAliasIdentifiers(playlist);
+                updateVersion1Talkgroups(playlist);
                 updated = true;
                 break;
         }
 
 
         return updated;
+    }
+
+    /**
+     * Removes version 1 AUDIO record type from the record configuration
+     */
+    private static void removeVersion1AudioRecordType(PlaylistV2 playlist)
+    {
+        int removed = 0;
+
+        for(Channel channel: playlist.getChannels())
+        {
+            RecordConfiguration recordConfiguration = channel.getRecordConfiguration();
+
+            if(recordConfiguration.contains(RecorderType.AUDIO))
+            {
+                Iterator<RecorderType> it = recordConfiguration.getRecorders().iterator();
+
+                while(it.hasNext())
+                {
+                    if(it.next() == RecorderType.AUDIO)
+                    {
+                        it.remove();
+                        removed++;
+                    }
+                }
+            }
+        }
+
+        if(removed > 0)
+        {
+            mLog.info("Removed audio-record setting from [" + removed + "] channels. Audio recording is now a setting for each individual alias");
+        }
+    }
+
+    /**
+     * Removes version 1 BINARY message event logger
+     */
+    private static void removeVersion1BinaryMessageLogger(PlaylistV2 playlist)
+    {
+        int removed = 0;
+
+        for(Channel channel: playlist.getChannels())
+        {
+            EventLogConfiguration eventLogConfiguration = channel.getEventLogConfiguration();
+
+            if(eventLogConfiguration.getLoggers().contains(EventLogType.BINARY_MESSAGE))
+            {
+                Iterator<EventLogType> it = eventLogConfiguration.getLoggers().iterator();
+
+                while(it.hasNext())
+                {
+                    if(it.next() == EventLogType.BINARY_MESSAGE)
+                    {
+                        it.remove();
+                        removed++;
+                    }
+                }
+            }
+        }
+
+        if(removed > 0)
+        {
+            mLog.info("Removed binary message event logging from [" + removed +
+                "] channels. Use demodulated bitstream recorder instead");
+        }
     }
 
     /**

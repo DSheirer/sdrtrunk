@@ -40,12 +40,14 @@ public abstract class EventLogger extends Module
     private Path mLogDirectory;
     private String mFileNameSuffix;
     private String mLogFileName;
+    private long mFrequency;
     protected Writer mLogFile;
 
-    public EventLogger(Path logDirectory, String fileNameSuffix)
+    public EventLogger(Path logDirectory, String fileNameSuffix, long frequency)
     {
         mLogDirectory = logDirectory;
         mFileNameSuffix = fileNameSuffix;
+        mFrequency = frequency;
     }
 
     public String toString()
@@ -72,8 +74,10 @@ public abstract class EventLogger extends Module
                 StringBuilder sb = new StringBuilder();
                 sb.append(mLogDirectory);
                 sb.append(File.separator);
-                sb.append(TimeStamp.getTimeStamp("_"));
+                sb.append(TimeStamp.getLongTimeStamp("_"));
                 sb.append("_");
+                sb.append(mFrequency);
+                sb.append("_Hz_");
                 sb.append(replaceIllegalCharacters(mFileNameSuffix));
 
                 mLogFileName = sb.toString();

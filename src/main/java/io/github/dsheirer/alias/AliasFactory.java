@@ -33,18 +33,20 @@ import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannelEditor;
 import io.github.dsheirer.alias.id.esn.ESNEditor;
 import io.github.dsheirer.alias.id.esn.Esn;
-import io.github.dsheirer.alias.id.fleetsync.FleetsyncID;
-import io.github.dsheirer.alias.id.fleetsync.FleetsyncIDEditor;
+import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
+import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncIDEditor;
+import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
+import io.github.dsheirer.alias.id.legacy.mdc.MDC1200IDEditor;
+import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
+import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327IDEditor;
+import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordable;
+import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordableEditor;
+import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
+import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupIDEditor;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.lojack.LoJackIDEditor;
-import io.github.dsheirer.alias.id.mdc.MDC1200ID;
-import io.github.dsheirer.alias.id.mdc.MDC1200IDEditor;
 import io.github.dsheirer.alias.id.mobileID.MINEditor;
 import io.github.dsheirer.alias.id.mobileID.Min;
-import io.github.dsheirer.alias.id.mpt1327.MPT1327ID;
-import io.github.dsheirer.alias.id.mpt1327.MPT1327IDEditor;
-import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
-import io.github.dsheirer.alias.id.nonrecordable.NonRecordableEditor;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.priority.PriorityEditor;
 import io.github.dsheirer.alias.id.record.Record;
@@ -53,10 +55,8 @@ import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.siteID.SiteIDEditor;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.status.StatusIDEditor;
-import io.github.dsheirer.alias.id.talkgroup.LegacyTalkgroupID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupEditor;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupIDEditor;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRangeEditor;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
@@ -227,7 +227,7 @@ public class AliasFactory
                 case FLEETSYNC:
                     return new FleetsyncIDEditor(aliasID);
                 case LEGACY_TALKGROUP:
-                    return new TalkgroupIDEditor(aliasID);
+                    return new LegacyTalkgroupIDEditor(aliasID);
                 case MDC1200:
                     return new MDC1200IDEditor(aliasID);
                 case MPT1327:

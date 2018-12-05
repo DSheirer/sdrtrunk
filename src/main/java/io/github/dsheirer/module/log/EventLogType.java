@@ -20,10 +20,16 @@ package io.github.dsheirer.module.log;
 
 public enum EventLogType
 {
+    /**
+     * Legacy logging type - do not use - superceded by bitstream recorder
+     */
     BINARY_MESSAGE( "Binary Messages", "_binary_messages" ),
+
     DECODED_MESSAGE( "Decoded Messages", "_decoded_messages" ),
-    CALL_EVENT( "Call Events", "_call_events" );
-    
+    TRAFFIC_DECODED_MESSAGE( "Traffic Channel Decoded Messages", "_decoded_messages" ),
+    CALL_EVENT( "Call Events", "_call_events" ),
+    TRAFFIC_CALL_EVENT( "Traffic Channel Call Events", "_call_events" );
+
     private String mDisplayString;
     private String mFileSuffix;
     
