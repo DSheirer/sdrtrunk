@@ -27,7 +27,6 @@ import io.github.dsheirer.preference.IntegerFormat;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -45,20 +44,19 @@ public class TalkgroupFormatPreference extends Preference
     private final static Logger mLog = LoggerFactory.getLogger(TalkgroupFormatPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(TalkgroupFormatPreference.class);
 
-    public static final String TALKGROUP_FORMAT_PROPERTY = PROPERTY_PREFIX + "talkgroup.format.";
-    public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = PROPERTY_PREFIX + "talkgroup.fixed.width.";
+    public static final String TALKGROUP_FORMAT_PROPERTY = "talkgroup.format.";
+    public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = "talkgroup.fixed.width.";
 
     private Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new HashMap<>();
     private Map<Protocol, Boolean> mTalkgroupFixedWidthProtocolMap = new HashMap<>();
 
     /**
      * Constructs an instance of identifier formatting preference.
-     * @param systemProperties instance
      * @param updateListener to be notified when this preference is updated
      */
-    public TalkgroupFormatPreference(SystemProperties systemProperties, Listener<PreferenceType> updateListener)
+    public TalkgroupFormatPreference(Listener<PreferenceType> updateListener)
     {
-        super(systemProperties, updateListener);
+        super(updateListener);
         loadProperties();
     }
 

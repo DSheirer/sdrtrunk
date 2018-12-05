@@ -105,7 +105,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private JFrame mMainGui = new JFrame();
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
-    private UserPreferences mUserPreferences;
+    private UserPreferences mUserPreferences = new UserPreferences();
 
     private String mTitle;
 
@@ -154,8 +154,6 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventLogManager eventLogManager = new EventLogManager();
 
         RecorderManager recorderManager = new RecorderManager(aliasModel);
-
-        mUserPreferences = new UserPreferences(SystemProperties.getInstance());
 
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
 

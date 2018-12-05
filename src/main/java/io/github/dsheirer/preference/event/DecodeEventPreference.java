@@ -23,7 +23,6 @@ package io.github.dsheirer.preference.event;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.TimestampFormat;
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +39,9 @@ public class DecodeEventPreference extends Preference
     private TimestampFormat mTimestampFormat = TimestampFormat.TIMESTAMP_COLONS;
     private static final String TIMESTAMP_FORMAT_KEY = "timestamp.format";
 
-    public DecodeEventPreference(SystemProperties systemProperties, Listener<PreferenceType> updateListener)
+    public DecodeEventPreference(Listener<PreferenceType> updateListener)
     {
-        super(systemProperties, updateListener);
+        super(updateListener);
         loadSettings();
     }
 

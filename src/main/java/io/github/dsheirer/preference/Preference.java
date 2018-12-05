@@ -20,7 +20,6 @@
 
 package io.github.dsheirer.preference;
 
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -28,22 +27,11 @@ import io.github.dsheirer.sample.Listener;
  */
 public abstract class Preference
 {
-    public static final String PROPERTY_PREFIX = "user.preference.";
     private Listener<PreferenceType> mPreferenceUpdateListener;
-    private SystemProperties mSystemProperties;
 
-    public Preference(SystemProperties systemProperties, Listener<PreferenceType> updateListener)
+    public Preference(Listener<PreferenceType> updateListener)
     {
-        mSystemProperties = systemProperties;
         mPreferenceUpdateListener = updateListener;
-    }
-
-    /**
-     * System properties for storing/retrieving preference values
-     */
-    protected SystemProperties getSystemProperties()
-    {
-        return mSystemProperties;
     }
 
     /**
