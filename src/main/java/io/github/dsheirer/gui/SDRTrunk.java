@@ -182,7 +182,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mChannelProcessingManager.addAudioPacketListener(mAudioPacketManager);
 
         MapService mapService = new MapService(mIconManager);
-        mChannelProcessingManager.addMessageListener(mapService);
+        mChannelProcessingManager.addDecodeEventListener(mapService);
 
         mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,

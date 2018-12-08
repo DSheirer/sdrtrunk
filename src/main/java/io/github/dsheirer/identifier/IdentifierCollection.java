@@ -225,4 +225,35 @@ public class IdentifierCollection
 
         return null;
     }
+
+    /**
+     * Returns the first identifier in this collection that is assigned a FROM role
+     */
+    public Identifier getFromIdentifier()
+    {
+        List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
+
+        if(!fromIdentifiers.isEmpty())
+        {
+            return fromIdentifiers.get(0);
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the first identifier in this collection that is assigned a FROM role
+     */
+    public Identifier getToIdentifier()
+    {
+        List<Identifier> toIdentifiers = getIdentifiers(Role.TO);
+
+        if(!toIdentifiers.isEmpty())
+        {
+            return toIdentifiers.get(0);
+        }
+
+        return null;
+    }
+
 }

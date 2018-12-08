@@ -1,8 +1,29 @@
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.fleetsync2;
 
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.fleetsync2.message.Fleetsync2Message;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,8 +31,8 @@ import java.util.List;
 
 public class FleetsyncMessageFilter extends Filter<IMessage>
 {
-    private HashMap<FleetsyncMessageType, FilterElement<FleetsyncMessageType>> mElements =
-            new HashMap<FleetsyncMessageType, FilterElement<FleetsyncMessageType>>();
+    private HashMap<FleetsyncMessageType,FilterElement<FleetsyncMessageType>> mElements =
+        new HashMap<FleetsyncMessageType,FilterElement<FleetsyncMessageType>>();
 
     public FleetsyncMessageFilter()
     {
@@ -31,7 +52,7 @@ public class FleetsyncMessageFilter extends Filter<IMessage>
     {
         if(mEnabled && canProcess(message))
         {
-            FleetsyncMessage fleet = (FleetsyncMessage) message;
+            Fleetsync2Message fleet = (Fleetsync2Message)message;
 
             if(mElements.containsKey(fleet.getMessageType()))
             {
@@ -45,7 +66,7 @@ public class FleetsyncMessageFilter extends Filter<IMessage>
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof FleetsyncMessage;
+        return message instanceof Fleetsync2Message;
     }
 
     @Override

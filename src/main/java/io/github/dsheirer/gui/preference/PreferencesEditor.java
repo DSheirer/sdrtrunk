@@ -17,7 +17,6 @@
 package io.github.dsheirer.gui.preference;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.properties.SystemProperties;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -91,7 +90,7 @@ public class PreferencesEditor extends Application
     {
         if(mUserPreferences == null)
         {
-            mUserPreferences = new UserPreferences(SystemProperties.getInstance());
+            mUserPreferences = new UserPreferences();
         }
 
         return mUserPreferences;

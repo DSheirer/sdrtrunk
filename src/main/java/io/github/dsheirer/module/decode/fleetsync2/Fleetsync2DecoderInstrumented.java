@@ -29,7 +29,7 @@ public class Fleetsync2DecoderInstrumented extends Fleetsync2Decoder implements 
 
     public Fleetsync2DecoderInstrumented()
     {
-        super(new AFSK1200DecoderInstrumented(false), null);
+        super(new AFSK1200DecoderInstrumented(false));
     }
 
     @Override

@@ -89,7 +89,7 @@ public class MessageItem
     {
         if(mProtocol == null)
         {
-            mProtocol = getMessage().getProtocol();
+            mProtocol = getMessage().getProtocol().toString();
         }
 
         return mProtocol;

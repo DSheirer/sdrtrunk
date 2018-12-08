@@ -15,6 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.message;
 
+import io.github.dsheirer.protocol.Protocol;
+
 /**
  * IMessage implementation.
  */
@@ -62,5 +64,5 @@ public abstract class Message implements IMessage
     /**
      * Decoded protocol
      */
-    public abstract String getProtocol();
+    public abstract Protocol getProtocol();
 }

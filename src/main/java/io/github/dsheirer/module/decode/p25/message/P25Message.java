@@ -23,6 +23,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.protocol.Protocol;
 
 public abstract class P25Message extends Message
 {
@@ -120,9 +121,9 @@ public abstract class P25Message extends Message
     }
 
     @Override
-    public String getProtocol()
+    public Protocol getProtocol()
     {
-        return "P25 Phase 1";
+        return Protocol.APCO25;
     }
 
     /**

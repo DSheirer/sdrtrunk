@@ -16,6 +16,7 @@
 package io.github.dsheirer.message;
 
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public interface IMessage
     /**
      * Protocol name associated with the message
      */
-    String getProtocol();
+    Protocol getProtocol();
 
     /**
      * List of identifiers present in the message

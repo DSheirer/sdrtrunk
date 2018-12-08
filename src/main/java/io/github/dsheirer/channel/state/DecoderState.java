@@ -1,11 +1,14 @@
 package io.github.dsheirer.channel.state;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
@@ -39,6 +42,7 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private ConfigurationIdentifierListener mConfigurationIdentifierListener = new ConfigurationIdentifierListener();
+    private IChannelDescriptor mCurrentChannel;
 
     protected CallEvent mCurrentCallEvent;
 
@@ -103,6 +107,7 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     protected void resetState()
     {
         mIdentifierCollection.remove(IdentifierClass.USER);
+        mCurrentChannel = null;
     }
 
     /**
@@ -227,6 +232,14 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     }
 
     /**
+     * Optional current channel descriptor
+     */
+    protected IChannelDescriptor getCurrentChannel()
+    {
+        return mCurrentChannel;
+    }
+
+    /**
      * Listener for configuration type identifier updates sent from the channel state.  Adds configuration
      * identifiers to this decoder state so that decode events will contain configuration details in the
      * event's identifier collection.
@@ -241,6 +254,16 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
                identifierUpdateNotification.getIdentifier().getForm() != Form.CHANNEL_DESCRIPTOR)
             {
                 getIdentifierCollection().update(identifierUpdateNotification.getIdentifier());
+            }
+
+            if(identifierUpdateNotification.getOperation() == IdentifierUpdateNotification.Operation.ADD)
+            {
+                Identifier identifier = identifierUpdateNotification.getIdentifier();
+
+                if(identifier instanceof ChannelDescriptorConfigurationIdentifier)
+                {
+                    mCurrentChannel = ((ChannelDescriptorConfigurationIdentifier)identifier).getValue();
+                }
             }
         }
     }

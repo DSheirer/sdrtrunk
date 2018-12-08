@@ -29,6 +29,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.record.RecorderManager;
@@ -56,7 +57,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private Map<Channel, ProcessingChain> mProcessingChains = new HashMap<>();
 
     private List<Listener<ReusableAudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
-    private List<Listener<IMessage>> mMessageListeners = new CopyOnWriteArrayList<>();
+    private List<Listener<IDecodeEvent>> mDecodeEventListeners = new CopyOnWriteArrayList<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
     private ChannelMapModel mChannelMapModel;
@@ -219,9 +220,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 processingChain.addAudioPacketListener(listener);
             }
 
-            for(Listener<IMessage> listener : mMessageListeners)
+            for(Listener<IDecodeEvent> listener : mDecodeEventListeners)
             {
-                processingChain.addMessageListener(listener);
+                processingChain.addDecodeEventListener(listener);
             }
 
             //Register this manager to receive channel events from traffic channel manager modules within
@@ -382,17 +383,17 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * Adds a message listener that will be added to all channels to receive
      * any messages.
      */
-    public void addMessageListener(Listener<IMessage> listener)
+    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mMessageListeners.add(listener);
+        mDecodeEventListeners.add(listener);
     }
 
     /**
      * Removes a message listener.
      */
-    public void removeMessageListener(Listener<IMessage> listener)
+    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        mMessageListeners.remove(listener);
+        mDecodeEventListeners.remove(listener);
     }
 
     /**

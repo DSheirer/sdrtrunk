@@ -1,7 +1,8 @@
 
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +16,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.map;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.icon.IconManager;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.painter.AbstractPainter;
 
-import java.awt.*;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,21 +34,21 @@ import java.util.Set;
 public class PlottableEntityPainter extends AbstractPainter<JXMapViewer>
 {
     private PlottableEntityRenderer mRenderer;
-    private Set<PlottableEntity> mEntities = new HashSet<PlottableEntity>();
+    private Set<PlottableEntityHistory> mEntities = new HashSet<>();
 
-    public PlottableEntityPainter(IconManager iconManager)
+    public PlottableEntityPainter(AliasModel aliasModel, IconManager iconManager)
     {
-        mRenderer = new PlottableEntityRenderer(iconManager);
+        mRenderer = new PlottableEntityRenderer(aliasModel, iconManager);
         setAntialiasing(true);
         setCacheable(false);
     }
 
-    public void addEntity(PlottableEntity entity)
+    public void addEntity(PlottableEntityHistory entity)
     {
         mEntities.add(entity);
     }
 
-    public void removeEntity(PlottableEntity entity)
+    public void removeEntity(PlottableEntityHistory entity)
     {
         mEntities.remove(entity);
     }
@@ -55,7 +58,7 @@ public class PlottableEntityPainter extends AbstractPainter<JXMapViewer>
         mEntities.clear();
     }
 
-    private Set<PlottableEntity> getEntities()
+    private Set<PlottableEntityHistory> getEntities()
     {
         return Collections.unmodifiableSet(mEntities);
     }
@@ -67,9 +70,9 @@ public class PlottableEntityPainter extends AbstractPainter<JXMapViewer>
 
         g.translate(-viewportBounds.getX(), -viewportBounds.getY());
 
-        Set<PlottableEntity> entities = getEntities();
+        Set<PlottableEntityHistory> entities = getEntities();
 
-        for(PlottableEntity entity : entities)
+        for(PlottableEntityHistory entity : entities)
         {
             mRenderer.paintPlottableEntity(g, map, entity, true);
         }

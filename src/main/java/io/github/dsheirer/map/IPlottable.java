@@ -5,5 +5,6 @@ package io.github.dsheirer.map;
  */
 public interface IPlottable
 {
+
     Plottable getPlottable();
 }
