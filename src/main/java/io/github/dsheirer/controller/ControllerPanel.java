@@ -84,7 +84,7 @@ public class ControllerPanel extends JPanel
         mChannelMetadataViewer = new ChannelMetadataViewer(channelModel, channelProcessingManager, iconManager,
             aliasModel, userPreferences);
 
-        mMapPanel = new MapPanel(mapService, iconManager, settingsManager);
+        mMapPanel = new MapPanel(mapService, aliasModel, iconManager, settingsManager);
 
         mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, iconManager);
 

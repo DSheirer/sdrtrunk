@@ -1,20 +1,22 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.mpt1327;
 
 import io.github.dsheirer.alias.Alias;
@@ -24,6 +26,7 @@ import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCFleetsync;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -261,14 +264,14 @@ public class MPT1327Message extends Message
     public boolean isValid()
     {
         return mCRC[0] == CRC.PASSED ||
-                mCRC[0] == CRC.CORRECTED;
+            mCRC[0] == CRC.CORRECTED;
     }
 
     public boolean isValidCall()
     {
         return getPrefix() != 0 &&
-                getIdent1() != 0 &&
-                getIdent2() != 0;
+            getIdent1() != 0 &&
+            getIdent2() != 0;
     }
 
     /**
@@ -354,7 +357,7 @@ public class MPT1327Message extends Message
     public String getMaintMessageIDENT1Value()
     {
         return (mMessage.get(B1_IDENT1_ID_VALUE) ? "GROUP ADDRESS" :
-                "INDIVIDUAL ADDRESS");
+            "INDIVIDUAL ADDRESS");
     }
 
     public int getChannel()
@@ -416,9 +419,9 @@ public class MPT1327Message extends Message
             return mMessage.getInt(B1_IDENT2_GTC);
         }
         else if(type == MPTMessageType.HEAD_PLUS1 ||
-                type == MPTMessageType.HEAD_PLUS2 ||
-                type == MPTMessageType.HEAD_PLUS3 ||
-                type == MPTMessageType.HEAD_PLUS4)
+            type == MPTMessageType.HEAD_PLUS2 ||
+            type == MPTMessageType.HEAD_PLUS3 ||
+            type == MPTMessageType.HEAD_PLUS4)
         {
             return mMessage.getInt(B1_IDENT2_HEAD);
         }
@@ -761,10 +764,10 @@ public class MPT1327Message extends Message
         return sb.toString();
     }
 
-   @Override
-    public String getProtocol()
+    @Override
+    public Protocol getProtocol()
     {
-        return "MPT-1327";
+        return Protocol.MPT1327;
     }
 
     /**
@@ -1016,7 +1019,7 @@ public class MPT1327Message extends Message
     public SDMFormat getSDMFormat()
     {
         return SDMFormat.valueOf(mMessage.get(B2_SDM_SEGMENT_TRANSACTION_FLAG),
-                mMessage.getInt(B2_SDM_GENERAL_FORMAT));
+            mMessage.getInt(B2_SDM_GENERAL_FORMAT));
     }
 
     public String getSDM()
@@ -1107,104 +1110,104 @@ public class MPT1327Message extends Message
                 if(format == SDMFormat.MPT1327)
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                            B2_SDM_STF0_END,
-                            12));
+                        B2_SDM_STF0_END,
+                        12));
                 }
                 else
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                            B2_SDM_STF1_END,
-                            12));
+                        B2_SDM_STF1_END,
+                        12));
                 }
                 break;
             case HEAD_PLUS2:
                 if(format == SDMFormat.MPT1327)
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                            B2_SDM_STF0_END,
-                            12));
+                        B2_SDM_STF0_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B3_SDM_START,
-                            B3_SDM_END,
-                            12));
+                        B3_SDM_END,
+                        12));
                 }
                 else
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                            B2_SDM_STF1_END,
-                            12));
+                        B2_SDM_STF1_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B3_SDM_START,
-                            B3_SDM_END,
-                            12));
+                        B3_SDM_END,
+                        12));
                 }
                 break;
             case HEAD_PLUS3:
                 if(format == SDMFormat.MPT1327)
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                            B2_SDM_STF0_END,
-                            12));
+                        B2_SDM_STF0_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B3_SDM_START,
-                            B3_SDM_END,
-                            12));
+                        B3_SDM_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B4_SDM_STF0_START,
-                            B4_SDM_STF0_END,
-                            12));
+                        B4_SDM_STF0_END,
+                        12));
                 }
                 else
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                            B2_SDM_STF1_END,
-                            12));
+                        B2_SDM_STF1_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B3_SDM_START,
-                            B3_SDM_END,
-                            12));
+                        B3_SDM_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B4_SDM_STF1_START,
-                            B4_SDM_STF1_END,
-                            12));
+                        B4_SDM_STF1_END,
+                        12));
                 }
                 break;
             case HEAD_PLUS4:
                 if(format == SDMFormat.MPT1327)
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                            B2_SDM_STF0_END,
-                            12));
+                        B2_SDM_STF0_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B3_SDM_START,
-                            B3_SDM_END,
-                            12));
+                        B3_SDM_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B4_SDM_STF0_START,
-                            B4_SDM_STF0_END,
-                            12));
+                        B4_SDM_STF0_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B5_SDM_START,
-                            B5_SDM_END,
-                            12));
+                        B5_SDM_END,
+                        12));
                 }
                 else
                 {
                     sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                            B2_SDM_STF1_END,
-                            12));
+                        B2_SDM_STF1_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B3_SDM_START,
-                            B3_SDM_END,
-                            12));
+                        B3_SDM_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B4_SDM_STF1_START,
-                            B4_SDM_STF1_END,
-                            12));
+                        B4_SDM_STF1_END,
+                        12));
                     sb.append(" ");
                     sb.append(mMessage.getHex(B5_SDM_START,
-                            B5_SDM_END,
-                            12));
+                        B5_SDM_END,
+                        12));
                 }
                 break;
             default:
@@ -1240,46 +1243,46 @@ public class MPT1327Message extends Message
 
         if(blocks >= 1)
         {
-            sb.append((char) mMessage.getInt(91, 97));
-            sb.append((char) mMessage.getInt(98, 104));
-            sb.append((char) mMessage.getInt(105, 111));
-            sb.append((char) mMessage.getInt(112, 118));
-            sb.append((char) mMessage.getInt(119, 125));
+            sb.append((char)mMessage.getInt(91, 97));
+            sb.append((char)mMessage.getInt(98, 104));
+            sb.append((char)mMessage.getInt(105, 111));
+            sb.append((char)mMessage.getInt(112, 118));
+            sb.append((char)mMessage.getInt(119, 125));
         }
 
         if(blocks >= 2)
         {
-            sb.append((char) mMessage.getInt(
-                    new int[]{126, 127, 128, 129, 130, 131, 150}));
-            sb.append((char) mMessage.getInt(151, 157));
-            sb.append((char) mMessage.getInt(158, 164));
-            sb.append((char) mMessage.getInt(165, 171));
-            sb.append((char) mMessage.getInt(172, 178));
-            sb.append((char) mMessage.getInt(179, 185));
-            sb.append((char) mMessage.getInt(186, 192));
+            sb.append((char)mMessage.getInt(
+                new int[]{126, 127, 128, 129, 130, 131, 150}));
+            sb.append((char)mMessage.getInt(151, 157));
+            sb.append((char)mMessage.getInt(158, 164));
+            sb.append((char)mMessage.getInt(165, 171));
+            sb.append((char)mMessage.getInt(172, 178));
+            sb.append((char)mMessage.getInt(179, 185));
+            sb.append((char)mMessage.getInt(186, 192));
         }
 
         if(blocks >= 3)
         {
-            sb.append((char) mMessage.getInt(
-                    new int[]{193, 194, 195, 218, 219, 220, 221}));
-            sb.append((char) mMessage.getInt(222, 228));
-            sb.append((char) mMessage.getInt(229, 235));
-            sb.append((char) mMessage.getInt(236, 242));
-            sb.append((char) mMessage.getInt(243, 249));
-            sb.append((char) mMessage.getInt(250, 256));
+            sb.append((char)mMessage.getInt(
+                new int[]{193, 194, 195, 218, 219, 220, 221}));
+            sb.append((char)mMessage.getInt(222, 228));
+            sb.append((char)mMessage.getInt(229, 235));
+            sb.append((char)mMessage.getInt(236, 242));
+            sb.append((char)mMessage.getInt(243, 249));
+            sb.append((char)mMessage.getInt(250, 256));
         }
 
         if(blocks == 4)
         {
-            sb.append((char) mMessage.getInt(
-                    new int[]{257, 258, 259, 278, 279, 280, 281}));
-            sb.append((char) mMessage.getInt(282, 288));
-            sb.append((char) mMessage.getInt(289, 295));
-            sb.append((char) mMessage.getInt(296, 302));
-            sb.append((char) mMessage.getInt(303, 309));
-            sb.append((char) mMessage.getInt(310, 316));
-            sb.append((char) mMessage.getInt(317, 323));
+            sb.append((char)mMessage.getInt(
+                new int[]{257, 258, 259, 278, 279, 280, 281}));
+            sb.append((char)mMessage.getInt(282, 288));
+            sb.append((char)mMessage.getInt(289, 295));
+            sb.append((char)mMessage.getInt(296, 302));
+            sb.append((char)mMessage.getInt(303, 309));
+            sb.append((char)mMessage.getInt(310, 316));
+            sb.append((char)mMessage.getInt(317, 323));
         }
 
         return sb.toString();
@@ -1326,7 +1329,7 @@ public class MPT1327Message extends Message
         if(blocks >= 2)
         {
             sb.append(getBCD(mMessage.getInt(
-                    new int[]{130, 131, 150, 151})));
+                new int[]{130, 131, 150, 151})));
             sb.append(getBCD(mMessage.getInt(152, 155)));
             sb.append(getBCD(mMessage.getInt(156, 159)));
             sb.append(getBCD(mMessage.getInt(160, 163)));
@@ -1357,7 +1360,7 @@ public class MPT1327Message extends Message
         if(blocks == 4)
         {
             sb.append(getBCD(mMessage.getInt(
-                    new int[]{258, 259, 278, 279})));
+                new int[]{258, 259, 278, 279})));
             sb.append(getBCD(mMessage.getInt(280, 283)));
             sb.append(getBCD(mMessage.getInt(284, 287)));
             sb.append(getBCD(mMessage.getInt(288, 291)));
@@ -1425,7 +1428,7 @@ public class MPT1327Message extends Message
         if(blocks >= 2)
         {
             values.add(mMessage.getInt(
-                    new int[]{131, 150, 151, 152, 153}));
+                new int[]{131, 150, 151, 152, 153}));
             values.add(mMessage.getInt(154, 158));
             values.add(mMessage.getInt(159, 163));
             values.add(mMessage.getInt(164, 168));
@@ -1439,7 +1442,7 @@ public class MPT1327Message extends Message
         if(blocks >= 3)
         {
             values.add(mMessage.getInt(
-                    new int[]{194, 195, 218, 219, 220}));
+                new int[]{194, 195, 218, 219, 220}));
             values.add(mMessage.getInt(221, 225));
             values.add(mMessage.getInt(226, 230));
             values.add(mMessage.getInt(231, 235));
@@ -1451,7 +1454,7 @@ public class MPT1327Message extends Message
         if(blocks == 4)
         {
             values.add(mMessage.getInt(
-                    new int[]{251, 252, 253, 254, 278}));
+                new int[]{251, 252, 253, 254, 278}));
             values.add(mMessage.getInt(279, 283));
             values.add(mMessage.getInt(284, 288));
             values.add(mMessage.getInt(289, 293));
@@ -1685,7 +1688,7 @@ public class MPT1327Message extends Message
                         return USER;
                     }
                     else if((8104 <= ident && ident <= 8120) ||
-                            (8136 <= ident && ident <= 8180))
+                        (8136 <= ident && ident <= 8180))
                     {
                         return SPARE;
                     }
@@ -1700,8 +1703,8 @@ public class MPT1327Message extends Message
     public enum Descriptor
     {
         DESC0("EXTENDED ADDRESSING INFORMATION",
-                "ESN",
-                "SINGLE SEGMENT TRANSACTIONS (SST) ONLY"),
+            "ESN",
+            "SINGLE SEGMENT TRANSACTIONS (SST) ONLY"),
         DESC1("PSTN DIALED DIGITS", "RESERVED", "N/A"),
         DESC2("PABX EXTENSION", "RESERVED", "N/A"),
         DESC3("N/A", "N/A", "N/A"),

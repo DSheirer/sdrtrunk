@@ -49,29 +49,31 @@ public class AutomaticNumberIdentification extends Fleetsync2Message
     {
         StringBuilder sb = new StringBuilder();
 
+        sb.append("FROM:").append(getFromIdentifier().formatted());
+
         if(hasEmergencyFlag(getMessage()))
         {
-            sb.append("EMERGENCY ");
+            sb.append(" EMERGENCY");
         }
 
         if(hasLoneWorkerFlag(getMessage()))
         {
-            sb.append("LONE WORKER ");
+            sb.append(" LONE WORKER");
         }
 
         if(hasPagingFlag(getMessage()))
         {
-            sb.append("PAGING ");
+            sb.append(" PAGING");
         }
 
         if(hasAcknowledgeFlag(getMessage()))
         {
-            sb.append("ACKNOWLEDGE ");
+            sb.append(" ACKNOWLEDGE");
         }
 
         if(hasANIFlag(getMessage()))
         {
-            sb.append("AUTOMATIC NUMBER IDENTIFICATION");
+            sb.append(" ANI");
         }
 
         return sb.toString().trim();
@@ -84,7 +86,6 @@ public class AutomaticNumberIdentification extends Fleetsync2Message
         {
             mIdentifers = new ArrayList<>();
             mIdentifers.add(getFromIdentifier());
-            mIdentifers.add(getToIdentifier());
         }
 
         return mIdentifers;

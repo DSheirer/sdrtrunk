@@ -27,11 +27,11 @@ import io.github.dsheirer.protocol.Protocol;
 /**
  * Fleetsync talkgroup identifier
  */
-public class FleetsyncIdentifier extends TalkgroupIdentifier
+public class FleetsyncIdentifier extends TalkgroupIdentifier implements Comparable<FleetsyncIdentifier>
 {
-    public FleetsyncIdentifier(Integer talkgroup, Role role, boolean isGroup)
+    public FleetsyncIdentifier(Integer talkgroup, Role role)
     {
-        super(talkgroup, role, isGroup);
+        super(talkgroup, role, false);
     }
 
     @Override
@@ -45,7 +45,7 @@ public class FleetsyncIdentifier extends TalkgroupIdentifier
      */
     public String formatted()
     {
-        return String.format("%03d:$04d", getFleet(), getIdent());
+        return String.format("%03d:%04d", getFleet(), getIdent());
     }
 
     /**
@@ -69,7 +69,7 @@ public class FleetsyncIdentifier extends TalkgroupIdentifier
      */
     public static FleetsyncIdentifier createFromUser(int talkgroup)
     {
-        return new FleetsyncIdentifier(talkgroup, Role.FROM, false);
+        return new FleetsyncIdentifier(talkgroup, Role.FROM);
     }
 
     /**
@@ -77,6 +77,12 @@ public class FleetsyncIdentifier extends TalkgroupIdentifier
      */
     public static FleetsyncIdentifier createToUser(int talkgroup)
     {
-        return new FleetsyncIdentifier(talkgroup, Role.TO, false);
+        return new FleetsyncIdentifier(talkgroup, Role.TO);
+    }
+
+    @Override
+    public int compareTo(FleetsyncIdentifier o)
+    {
+        return getValue().compareTo(o.getValue());
     }
 }

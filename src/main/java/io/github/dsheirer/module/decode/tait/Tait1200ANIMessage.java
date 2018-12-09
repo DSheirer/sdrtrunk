@@ -1,20 +1,22 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.tait;
 
 import io.github.dsheirer.alias.Alias;
@@ -23,6 +25,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,12 +50,12 @@ public class Tait1200ANIMessage extends Message
     public static int[] FROM_DIGIT_7 = {84, 85, 86, 87, 88, 89, 90, 91};
     public static int[] FROM_DIGIT_8 = {92, 93, 94, 95, 96, 97, 98, 99};
     public static int[] CHECKSUM_1 = {100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
-            110, 111, 112, 113, 114, 115};
+        110, 111, 112, 113, 114, 115};
 
     public static int[] REVS_2 = {116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
-            128, 129, 130, 131};
+        128, 129, 130, 131};
     public static int[] SIZE_2 = {188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198,
-            199, 200, 201, 202, 203};
+        199, 200, 201, 202, 203};
     public static int[] TO_DIGIT_1 = {204, 205, 206, 207, 208, 209, 210, 211};
     public static int[] TO_DIGIT_2 = {212, 213, 214, 215, 216, 217, 218, 219};
     public static int[] TO_DIGIT_3 = {220, 221, 222, 223, 224, 225, 226, 227};
@@ -63,7 +66,7 @@ public class Tait1200ANIMessage extends Message
     public static int[] TO_DIGIT_8 = {260, 261, 262, 263, 264, 265, 266, 267};
     public static int[] UNKNOWN_1 = {268, 269, 270, 271, 272, 273, 274, 275};
     public static int[] CHECKSUM_2 = {276, 277, 278, 279, 280, 281, 282, 283, 284, 285,
-            286, 287, 288, 289, 290, 291};
+        286, 287, 288, 289, 290, 291};
 
     private static SimpleDateFormat mSDF = new SimpleDateFormat("yyyyMMdd HHmmss");
 
@@ -148,7 +151,7 @@ public class Tait1200ANIMessage extends Message
     {
         int value = mMessage.getInt(bits);
 
-        return (char) value;
+        return (char)value;
     }
 
     public boolean isValid()
@@ -207,9 +210,9 @@ public class Tait1200ANIMessage extends Message
     }
 
     @Override
-    public String getProtocol()
+    public Protocol getProtocol()
     {
-        return "Tait-1200";
+        return Protocol.TAIT1200;
     }
 
     public String getEventType()

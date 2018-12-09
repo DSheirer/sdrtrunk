@@ -58,6 +58,11 @@ public class IdentifierCollection
         }
     }
 
+    public IdentifierCollection(Identifier identifier)
+    {
+        mIdentifiers.add(identifier);
+    }
+
     /**
      * Indicates if this identifier collection contains an updated list of identifiers.
      */

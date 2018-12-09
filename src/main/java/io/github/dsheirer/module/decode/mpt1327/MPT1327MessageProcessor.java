@@ -18,13 +18,13 @@
 package io.github.dsheirer.module.decode.mpt1327;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MPT1327MessageProcessor implements Listener<BinaryMessage>
+public class MPT1327MessageProcessor implements Listener<CorrectedBinaryMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327MessageProcessor.class);
 
@@ -43,7 +43,7 @@ public class MPT1327MessageProcessor implements Listener<BinaryMessage>
     }
 
     @Override
-    public void receive(BinaryMessage buffer)
+    public void receive(CorrectedBinaryMessage buffer)
     {
         if(mMessageListener != null)
         {

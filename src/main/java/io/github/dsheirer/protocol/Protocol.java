@@ -42,7 +42,7 @@ public enum Protocol
         mLabel = label;
     }
 
-    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, FLEETSYNC, LTR, MDC1200,
+    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, FLEETSYNC, LTR_NET, LTR_STANDARD, MDC1200,
         MPT1327, PASSPORT, TAIT1200);
 
     @Override

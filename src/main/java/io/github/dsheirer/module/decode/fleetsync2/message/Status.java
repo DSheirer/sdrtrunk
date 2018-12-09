@@ -51,7 +51,37 @@ public class Status extends Fleetsync2Message
     @Override
     public String toString()
     {
-        return "STATUS: " + getStatus();
+        StringBuilder sb = new StringBuilder();
+        sb.append("FROM:").append(getFromIdentifier()).append(" TO:").append(getToIdentifier());
+
+        sb.append(" STATUS:").append(getStatus());
+
+        if(hasEmergencyFlag(getMessage()))
+        {
+            sb.append(" EMERGENCY");
+        }
+
+        if(hasLoneWorkerFlag(getMessage()))
+        {
+            sb.append(" LONE WORKER");
+        }
+
+        if(hasPagingFlag(getMessage()))
+        {
+            sb.append(" PAGING");
+        }
+
+        if(hasAcknowledgeFlag(getMessage()))
+        {
+            sb.append(" ACKNOWLEDGE");
+        }
+
+        if(hasANIFlag(getMessage()))
+        {
+            sb.append(" ANI");
+        }
+
+        return sb.toString();
     }
 
     public FleetsyncStatus getStatus()

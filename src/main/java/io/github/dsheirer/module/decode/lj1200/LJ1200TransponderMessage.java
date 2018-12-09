@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.lj1200;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,14 +39,12 @@ public class LJ1200TransponderMessage extends Message
 
     private static SimpleDateFormat mSDF = new SimpleDateFormat("yyyyMMdd HHmmss");
 
-    private BinaryMessage mMessage;
-    private AliasList mAliasList;
+    private CorrectedBinaryMessage mMessage;
     private CRC mCRC;
 
-    public LJ1200TransponderMessage(BinaryMessage message, AliasList list)
+    public LJ1200TransponderMessage(CorrectedBinaryMessage message)
     {
         mMessage = message;
-        mAliasList = list;
 
         checkCRC();
 
@@ -134,16 +132,10 @@ public class LJ1200TransponderMessage extends Message
     }
 
     @Override
-    public String getProtocol()
+    public Protocol getProtocol()
     {
-        return "LJ-1200";
+        return Protocol.LOJACK;
     }
-
-    public String getEventType()
-    {
-        return "TRANSPONDER";
-    }
-
 
     @Override
     public List<Identifier> getIdentifiers()

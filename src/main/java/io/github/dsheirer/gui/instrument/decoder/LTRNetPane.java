@@ -72,7 +72,7 @@ public class LTRNetPane extends RealDecoderPane
         {
             DecodeConfigLTRNet config = new DecodeConfigLTRNet();
             config.setMessageDirection(MessageDirection.OSW);
-            mDecoder = new LTRNetDecoderInstrumented(config, null);
+            mDecoder = new LTRNetDecoderInstrumented(config);
             mDecoder.setMessageListener(new Listener<IMessage>()
             {
                 @Override

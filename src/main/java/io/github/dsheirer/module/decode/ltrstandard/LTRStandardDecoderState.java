@@ -121,7 +121,7 @@ public class LTRStandardDecoderState extends DecoderState
                             if(mLCNTracker.isCurrentChannel(channel))
                             {
                                 String talkgroup = start.getToID();
-                                mTalkgroupAttribute.process(talkgroup);
+//                                mTalkgroupAttribute.process(talkgroup);
                                 processTalkgroup(talkgroup);
                             }
                         }
@@ -141,7 +141,7 @@ public class LTRStandardDecoderState extends DecoderState
                     if(mLCNTracker.isCurrentChannel(repeater))
                     {
                         String talkgroup = end.getToID();
-                        mTalkgroupAttribute.process(talkgroup);
+//                        mTalkgroupAttribute.process(talkgroup);
                         processTalkgroup(talkgroup);
 
                         LTRCallEvent event = mActiveCalls.remove(repeater);
@@ -232,7 +232,7 @@ public class LTRStandardDecoderState extends DecoderState
 
         mActiveCalls.clear();
 
-        mTalkgroupAttribute.reset();
+//        mTalkgroupAttribute.reset();
     }
 
     public boolean hasChannelNumber()

@@ -34,6 +34,7 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -414,7 +415,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
 
         if(bitsProcessed > 0 && mMessageListener != null)
         {
-            mMessageListener.receive(new SyncLossMessage(getTimestamp(), bitsProcessed));
+            mMessageListener.receive(new SyncLossMessage(getTimestamp(), bitsProcessed, Protocol.APCO25));
         }
     }
 

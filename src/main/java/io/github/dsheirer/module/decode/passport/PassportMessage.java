@@ -1,20 +1,22 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.passport;
 
 
@@ -26,7 +28,7 @@ import io.github.dsheirer.edac.CRCPassport;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageType;
-import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -84,8 +86,8 @@ public class PassportMessage extends Message
     public boolean isValid()
     {
         return mCRC != CRC.FAILED_CRC &&
-                mCRC != CRC.FAILED_PARITY &&
-                mCRC != CRC.UNKNOWN;
+            mCRC != CRC.FAILED_PARITY &&
+            mCRC != CRC.UNKNOWN;
     }
 
     public CRC getCRC()
@@ -197,7 +199,7 @@ public class PassportMessage extends Message
 
     public String getLCNFrequencyFormatted()
     {
-        return mDecimalFormatter.format((double) getLCNFrequency() / 1000000.0d);
+        return mDecimalFormatter.format((double)getLCNFrequency() / 1000000.0d);
     }
 
     public PassportBand getSiteBand()
@@ -222,7 +224,7 @@ public class PassportMessage extends Message
 
     public String getFreeFrequencyFormatted()
     {
-        return mDecimalFormatter.format((double) getFreeFrequency() / 1000000.0d);
+        return mDecimalFormatter.format((double)getFreeFrequency() / 1000000.0d);
     }
 
     public long getNeighborFrequency()
@@ -329,9 +331,9 @@ public class PassportMessage extends Message
     }
 
     @Override
-    public String getProtocol()
+    public Protocol getProtocol()
     {
-        return DecoderType.PASSPORT.getDisplayString();
+        return Protocol.PASSPORT;
     }
 
     public String getEventType()

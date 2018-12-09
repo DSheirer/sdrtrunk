@@ -25,7 +25,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.message.MessageType;
-import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.protocol.Protocol;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
@@ -182,9 +182,9 @@ public abstract class LTRStandardMessage extends Message
     }
 
     @Override
-    public String getProtocol()
+    public Protocol getProtocol()
     {
-        return DecoderType.LTR_STANDARD.getDisplayString();
+        return Protocol.LTR;
     }
 
     public String getEventType()

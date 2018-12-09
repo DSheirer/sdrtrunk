@@ -17,134 +17,106 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.ltrnet;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
-import io.github.dsheirer.message.MessageType;
+import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
+import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessageFactory;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.RegistrationRequestEsnHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.RegistrationRequestEsnLow;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.ReceiveFrequencyHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.ReceiveFrequencyLow;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.TransmitFrequencyHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.TransmitFrequencyLow;
 import io.github.dsheirer.sample.Listener;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class LTRNetMessageProcessor implements Listener<BinaryMessage>
+public class LTRNetMessageProcessor implements Listener<CorrectedBinaryMessage>
 {
     private Listener<IMessage> mMessageListener;
 
-    private Map<Integer, LTRNetOSWMessage> mReceiveHighAuxMessages = new HashMap<Integer, LTRNetOSWMessage>();
-    private Map<Integer, LTRNetOSWMessage> mReceiveLowAuxMessages = new HashMap<Integer, LTRNetOSWMessage>();
-    private Map<Integer, LTRNetOSWMessage> mTransmitHighAuxMessages = new HashMap<Integer, LTRNetOSWMessage>();
-    private Map<Integer, LTRNetOSWMessage> mTransmitLowAuxMessages = new HashMap<Integer, LTRNetOSWMessage>();
+    private Map<Integer,ReceiveFrequencyHigh> mReceiveHighMessageMap = new HashMap<>();
+    private Map<Integer,ReceiveFrequencyLow> mReceiveLowMessageMap = new HashMap<>();
+    private Map<Integer,TransmitFrequencyHigh> mTransmitHighMessageMap = new HashMap<>();
+    private Map<Integer,TransmitFrequencyLow> mTransmitLowMessageMap = new HashMap<>();
 
-    private LTRNetISWMessage mESNHighMessage;
-    private LTRNetISWMessage mESNLowMessage;
+    private RegistrationRequestEsnHigh mRegistrationRequestEsnHighMessage;
+    private RegistrationRequestEsnLow mRegistrationRequestEsnLowMessage;
 
     private MessageDirection mDirection;
-    private AliasList mAliasList;
 
-    public LTRNetMessageProcessor(MessageDirection direction, AliasList list)
+    public LTRNetMessageProcessor(MessageDirection direction)
     {
         mDirection = direction;
-        mAliasList = list;
     }
 
     @Override
-    public void receive(BinaryMessage buffer)
+    public void receive(CorrectedBinaryMessage buffer)
     {
-        if(mMessageListener != null)
+        LtrNetMessage message = LtrNetMessageFactory.create(mDirection, buffer, System.currentTimeMillis());
+
+        if(message.isValid())
         {
-            LTRNetMessage message;
-
-            if(mDirection == MessageDirection.OSW)
+            switch(message.getLtrNetMessageType())
             {
-                message = new LTRNetOSWMessage(buffer, mAliasList);
-
-                if(message.isValid())
-                {
-                    if(message.getMessageType() == MessageType.FQ_TXHI)
+                case OSW_TRANSMIT_FREQUENCY_HIGH:
+                    if(message instanceof TransmitFrequencyHigh)
                     {
-                        mTransmitHighAuxMessages.put(message.getHomeRepeater(), (LTRNetOSWMessage) message);
-
-                        message.setAuxiliaryMessage(mTransmitLowAuxMessages.get(message.getHomeRepeater()));
+                        TransmitFrequencyHigh transmitFrequencyHigh = (TransmitFrequencyHigh)message;
+                        mTransmitHighMessageMap.put(transmitFrequencyHigh.getChannel(), transmitFrequencyHigh);
+                        transmitFrequencyHigh.setFrequencyLow(mTransmitLowMessageMap.get(transmitFrequencyHigh.getChannel()));
                     }
-                    else if(message.getMessageType() == MessageType.FQ_TXLO)
+                    break;
+                case OSW_TRANSMIT_FREQUENCY_LOW:
+                    if(message instanceof TransmitFrequencyLow)
                     {
-                        mTransmitLowAuxMessages.put(message.getHomeRepeater(),
-                                (LTRNetOSWMessage) message);
-
-                        message.setAuxiliaryMessage(mTransmitHighAuxMessages.get(
-                                message.getHomeRepeater()));
+                        TransmitFrequencyLow transmitFrequencyLow = (TransmitFrequencyLow)message;
+                        mTransmitLowMessageMap.put(transmitFrequencyLow.getChannel(), transmitFrequencyLow);
+                        transmitFrequencyLow.setFrequencyHigh(mTransmitHighMessageMap.get(transmitFrequencyLow.getChannel()));
                     }
-                    else if(message.getMessageType() == MessageType.FQ_RXHI)
+                    break;
+                case OSW_RECEIVE_FREQUENCY_HIGH:
+                    if(message instanceof ReceiveFrequencyHigh)
                     {
-                        mReceiveHighAuxMessages.put(message.getHomeRepeater(),
-                                (LTRNetOSWMessage) message);
-
-                        message.setAuxiliaryMessage(mReceiveLowAuxMessages.get(
-                                message.getHomeRepeater()));
+                        ReceiveFrequencyHigh receiveFrequencyHigh = (ReceiveFrequencyHigh)message;
+                        mReceiveHighMessageMap.put(receiveFrequencyHigh.getChannel(), receiveFrequencyHigh);
+                        receiveFrequencyHigh.setFrequencyLow(mReceiveLowMessageMap.get(receiveFrequencyHigh.getChannel()));
                     }
-                    else if(message.getMessageType() == MessageType.FQ_RXLO)
+                    break;
+                case OSW_RECEIVE_FREQUENCY_LOW:
+                    if(message instanceof ReceiveFrequencyLow)
                     {
-                        mReceiveLowAuxMessages.put(message.getHomeRepeater(),
-                                (LTRNetOSWMessage) message);
-                        message.setAuxiliaryMessage(mReceiveHighAuxMessages.get(
-                                message.getHomeRepeater()));
+                        ReceiveFrequencyLow receiveFrequencyLow = (ReceiveFrequencyLow)message;
+                        mReceiveLowMessageMap.put(receiveFrequencyLow.getChannel(), receiveFrequencyLow);
+                        receiveFrequencyLow.setFrequencyHigh(mReceiveHighMessageMap.get(receiveFrequencyLow.getChannel()));
                     }
-                }
-            }
-            else
-            {
-                buffer.flip(0, 40);
-
-                message = new LTRNetISWMessage(buffer, mAliasList);
-
-                if(message.isValid())
-                {
-                    /**
-                     * Catch ESN High messages to marry up with ESN Low messages.  Purge
-                     * the ESN high message after 2 messages, so that it doesn't get
-                     * paired with the wrong esn low message
-                     */
-                    if(message.getMessageType() == MessageType.ID_ESNH)
+                    break;
+                case ISW_REGISTRATION_REQUEST_ESN_HIGH:
+                    if(message instanceof RegistrationRequestEsnHigh)
                     {
-                        mESNHighMessage = (LTRNetISWMessage) message;
-
-                        if(mESNLowMessage != null)
-                        {
-                            /* Check that the stored message is not older than
-                             * 5 seconds */
-                            if(System.currentTimeMillis() -
-                                    mESNLowMessage.getTimestamp() < 5000)
-                            {
-                                ((LTRNetISWMessage) message).setAuxiliaryMessage(mESNLowMessage);
-                            }
-                            else
-                            {
-                                mESNLowMessage = null;
-                            }
-                        }
+                        ((RegistrationRequestEsnHigh)message).setEsnLowMessage(mRegistrationRequestEsnLowMessage);
                     }
-                    else if(message.getMessageType() == MessageType.ID_ESNL)
+                    break;
+                case ISW_REGISTRATION_REQUEST_ESN_LOW:
+                    if(message instanceof RegistrationRequestEsnLow)
                     {
-                        mESNLowMessage = (LTRNetISWMessage) message;
-
-                        if(mESNHighMessage != null)
-                        {
-                            /* Check that the stored message is not older than 5 seconds */
-                            if(System.currentTimeMillis() - mESNHighMessage.getTimestamp() < 5000)
-                            {
-                                ((LTRNetISWMessage) message).setAuxiliaryMessage(mESNHighMessage);
-                            }
-                            else
-                            {
-                                mESNHighMessage = null;
-                            }
-                        }
+                        ((RegistrationRequestEsnLow)message).setESNHighMessage(mRegistrationRequestEsnHighMessage);
                     }
-                }
+                    break;
+                case ISW_CALL_START:
+                case ISW_CALL_END:
+                    //Reset the esn messages
+                    mRegistrationRequestEsnHighMessage = null;
+                    mRegistrationRequestEsnLowMessage = null;
+                    break;
             }
 
-            mMessageListener.receive(message);
+            if(mMessageListener != null)
+            {
+                mMessageListener.receive(message);
+            }
         }
     }
 

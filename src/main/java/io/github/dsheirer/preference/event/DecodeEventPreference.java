@@ -36,7 +36,7 @@ public class DecodeEventPreference extends Preference
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecodeEventPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(DecodeEventPreference.class);
-    private TimestampFormat mTimestampFormat = TimestampFormat.TIMESTAMP_COLONS;
+    private TimestampFormat mTimestampFormat = TimestampFormat.TIMESTAMP_DEFAULT;
     private static final String TIMESTAMP_FORMAT_KEY = "timestamp.format";
 
     public DecodeEventPreference(Listener<PreferenceType> updateListener)

@@ -18,14 +18,14 @@
 package io.github.dsheirer.module.decode.tait;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Tait1200ANIMessageProcessor implements Listener<BinaryMessage>
+public class Tait1200ANIMessageProcessor implements Listener<CorrectedBinaryMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Tait1200ANIMessageProcessor.class);
 
@@ -45,7 +45,7 @@ public class Tait1200ANIMessageProcessor implements Listener<BinaryMessage>
     }
 
     @Override
-    public void receive(BinaryMessage buffer)
+    public void receive(CorrectedBinaryMessage buffer)
     {
         if(mMessageListener != null)
         {

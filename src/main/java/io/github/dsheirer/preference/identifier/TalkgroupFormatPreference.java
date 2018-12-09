@@ -27,6 +27,8 @@ import io.github.dsheirer.preference.IntegerFormat;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.LtrNetTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -48,10 +50,11 @@ public class TalkgroupFormatPreference extends Preference
     public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = "talkgroup.fixed.width.";
 
     private Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new HashMap<>();
-    private Map<Protocol, Boolean> mTalkgroupFixedWidthProtocolMap = new HashMap<>();
+    private Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new HashMap<>();
 
     /**
      * Constructs an instance of identifier formatting preference.
+     *
      * @param updateListener to be notified when this preference is updated
      */
     public TalkgroupFormatPreference(Listener<PreferenceType> updateListener)
@@ -62,6 +65,7 @@ public class TalkgroupFormatPreference extends Preference
 
     /**
      * Formats an identifier
+     *
      * @param identifier to format
      * @return formatted string representing the identifier or null if the identifier is null
      */
@@ -79,6 +83,7 @@ public class TalkgroupFormatPreference extends Preference
                 {
                     return formatTalkgroupIdentifier((TalkgroupIdentifier)identifier);
                 }
+                break;
             case PATCH_GROUP:
                 if(identifier instanceof PatchGroupIdentifier)
                 {
@@ -101,20 +106,88 @@ public class TalkgroupFormatPreference extends Preference
      */
     private void loadProperties()
     {
-        for(Protocol protocol: Protocol.TALKGROUP_PROTOCOLS)
+        for(Protocol protocol : Protocol.TALKGROUP_PROTOCOLS)
         {
-            mTalkgroupFixedWidthProtocolMap.put(protocol, mPreferences.getBoolean(getTalkgroupFixedWidthProperty(protocol), false));
+            mTalkgroupFixedWidthProtocolMap.put(protocol, mPreferences.getBoolean(getTalkgroupFixedWidthProperty(protocol),
+                getDefaultFixedWidth(protocol)));
 
             try
             {
-                String format = mPreferences.get(getTalkgroupFormatProperty(protocol), IntegerFormat.DECIMAL.name());
+                String format = mPreferences.get(getTalkgroupFormatProperty(protocol), getDefaultFormat(protocol).name());
                 mTalkgroupFormatProtocolMap.put(protocol, IntegerFormat.valueOf(format));
             }
             catch(Exception e)
             {
                 //If there is a problem parsing the enum entry, default to DECIMAL
-                mTalkgroupFormatProtocolMap.put(protocol, IntegerFormat.DECIMAL);
+                mTalkgroupFormatProtocolMap.put(protocol, getDefaultFormat(protocol));
             }
+        }
+    }
+
+    /**
+     * Default format for each protocol
+     */
+    private IntegerFormat getDefaultFormat(Protocol protocol)
+    {
+        switch(protocol)
+        {
+            case APCO25:
+                return IntegerFormat.DECIMAL;
+            case FLEETSYNC:
+                return IntegerFormat.FORMATTED;
+            case IPV4:
+                return IntegerFormat.DECIMAL;
+            case LOJACK:
+                return IntegerFormat.DECIMAL;
+            case LTR:
+                return IntegerFormat.FORMATTED;
+            case LTR_NET:
+                return IntegerFormat.FORMATTED;
+            case LTR_STANDARD:
+                return IntegerFormat.FORMATTED;
+            case MDC1200:
+                return IntegerFormat.DECIMAL;
+            case MPT1327:
+                return IntegerFormat.FORMATTED;
+            case PASSPORT:
+                return IntegerFormat.DECIMAL;
+            case TAIT1200:
+                return IntegerFormat.DECIMAL;
+            case UNKNOWN:
+            default:
+                return IntegerFormat.DECIMAL;
+        }
+    }
+
+    private boolean getDefaultFixedWidth(Protocol protocol)
+    {
+        switch(protocol)
+        {
+            case APCO25:
+                return true;
+            case FLEETSYNC:
+                return true;
+            case IPV4:
+                return true;
+            case LOJACK:
+                return true;
+            case LTR:
+                return true;
+            case LTR_NET:
+                return true;
+            case LTR_STANDARD:
+                return true;
+            case MDC1200:
+                return false;
+            case MPT1327:
+                return true;
+            case PASSPORT:
+                return false;
+            case TAIT1200:
+                return false;
+            case UNKNOWN:
+            default:
+                return true;
         }
     }
 
@@ -136,6 +209,7 @@ public class TalkgroupFormatPreference extends Preference
 
     /**
      * User preference for formatting talkgroups for the specified protocol
+     *
      * @param protocol specified
      * @return format
      */
@@ -182,6 +256,7 @@ public class TalkgroupFormatPreference extends Preference
 
     /**
      * Indicates if talkgroups for the specified protocol should be prepadded to a fixed length using '0' padding characters
+     *
      * @param protocol to prepad
      * @return true if the talkgroups should be fixed length/prepadded.
      */
@@ -199,6 +274,7 @@ public class TalkgroupFormatPreference extends Preference
 
     /**
      * Sets the talkgroup for the specified protocol to the fixed width argument.
+     *
      * @param protocol to set
      * @param fixedWidth true for prepadded (0) fixed width values or false for no prepadding.
      */
@@ -225,6 +301,12 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
                 return APCO25TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.APCO25),
                     isTalkgroupFixedWidth(Protocol.APCO25));
+            case FLEETSYNC:
+                return FleetsyncTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.FLEETSYNC),
+                    isTalkgroupFixedWidth(Protocol.FLEETSYNC));
+            case LTR_NET:
+                return LtrNetTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_NET),
+                    isTalkgroupFixedWidth(Protocol.LTR_NET));
             default:
                 return talkgroupIdentifier.toString();
         }

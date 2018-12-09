@@ -33,6 +33,7 @@ import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdent
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -51,6 +52,7 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     private ChannelNameConfigurationIdentifier mChannelNameConfigurationIdentifier;
     private FrequencyConfigurationIdentifier mFrequencyConfigurationIdentifier;
     private DecoderStateIdentifier mDecoderStateIdentifier = DecoderStateIdentifier.IDLE;
+    private DecoderLogicalChannelNameIdentifier mDecoderLogicalChannelNameIdentifier;
     private DecoderTypeConfigurationIdentifier mDecoderTypeConfigurationIdentifier;
     private Identifier mFromIdentifier;
     private Alias mFromIdentifierAlias;
@@ -109,6 +111,19 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     public boolean hasChannelConfigurationIdentifier()
     {
         return mChannelNameConfigurationIdentifier != null;
+    }
+
+    /**
+     * Logical channel name/number expoded by the decoder
+     */
+    public DecoderLogicalChannelNameIdentifier getDecoderLogicalChannelNameIdentifier()
+    {
+        return mDecoderLogicalChannelNameIdentifier;
+    }
+
+    public boolean hasDecoderLogicalChannelNameIdentifier()
+    {
+        return mDecoderLogicalChannelNameIdentifier != null;
     }
 
     /**
@@ -274,6 +289,10 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
             case DECODER:
                 switch(identifier.getForm())
                 {
+                    case CHANNEL_NAME:
+                        mDecoderLogicalChannelNameIdentifier = update.isAdded() ? (DecoderLogicalChannelNameIdentifier)identifier : null;
+                        broadcastUpdate(ChannelMetadataField.DECODER_CHANNEL_NAME);
+                        break;
                     case STATE:
                         mDecoderStateIdentifier = update.isAdded() ? (DecoderStateIdentifier)identifier : null;
                         broadcastUpdate(ChannelMetadataField.DECODER_STATE);

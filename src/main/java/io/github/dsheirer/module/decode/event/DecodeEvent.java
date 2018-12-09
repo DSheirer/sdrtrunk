@@ -67,6 +67,14 @@ public class DecodeEvent implements IDecodeEvent
     }
 
     /**
+     * Updates the current in-progress call with the latest timestamp
+     */
+    public void update(long timestamp)
+    {
+        end(timestamp);
+    }
+
+    /**
      * Event start in milliseconds
      */
     @Override

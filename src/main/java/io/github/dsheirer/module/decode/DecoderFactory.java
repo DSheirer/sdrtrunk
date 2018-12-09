@@ -169,8 +169,8 @@ public class DecoderFactory
                 }
                 break;
             case LTR_NET:
-                modules.add(new LTRNetDecoder((DecodeConfigLTRNet)decodeConfig, null));
-                modules.add(new LTRNetDecoderState(null));
+                modules.add(new LTRNetDecoder((DecodeConfigLTRNet)decodeConfig));
+                modules.add(new LTRNetDecoderState());
                 modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
@@ -258,24 +258,23 @@ public class DecoderFactory
                 switch(auxDecoder)
                 {
                     case FLEETSYNC2:
-                        modules.add(new Fleetsync2Decoder(null));
-                        modules.add(new Fleetsync2DecoderState(null));
+                        modules.add(new Fleetsync2Decoder());
+                        modules.add(new Fleetsync2DecoderState());
                         break;
                     case MDC1200:
                         modules.add(new MDCDecoder(null));
                         modules.add(new MDCDecoderState(null));
                         break;
                     case LJ_1200:
-                        modules.add(new LJ1200Decoder(null));
-                        modules.add(new LJ1200DecoderState(null));
+                        modules.add(new LJ1200Decoder());
+                        modules.add(new LJ1200DecoderState());
                         break;
                     case TAIT_1200:
                         modules.add(new Tait1200Decoder(null));
                         modules.add(new Tait1200DecoderState(null));
                         break;
                     default:
-                        throw new IllegalArgumentException("Unrecognized auxiliary "
-                            + "decoder type [" + auxDecoder + "]");
+                        throw new IllegalArgumentException("Unrecognized auxiliary decoder type [" + auxDecoder + "]");
                 }
             }
         }

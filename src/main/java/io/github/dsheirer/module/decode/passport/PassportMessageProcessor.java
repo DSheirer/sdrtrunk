@@ -18,14 +18,14 @@
 package io.github.dsheirer.module.decode.passport;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.sample.Listener;
 
 import java.util.HashMap;
 
-public class PassportMessageProcessor implements Listener<BinaryMessage>
+public class PassportMessageProcessor implements Listener<CorrectedBinaryMessage>
 {
     private Listener<IMessage> mMessageListener;
     private IdleMessageFinder mIdleFinder = new IdleMessageFinder();
@@ -38,7 +38,7 @@ public class PassportMessageProcessor implements Listener<BinaryMessage>
     }
 
     @Override
-    public void receive(BinaryMessage buffer)
+    public void receive(CorrectedBinaryMessage buffer)
     {
         if(mMessageListener != null)
         {

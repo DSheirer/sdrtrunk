@@ -42,8 +42,8 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private ConfigurationIdentifierListener mConfigurationIdentifierListener = new ConfigurationIdentifierListener();
-    private IChannelDescriptor mCurrentChannel;
 
+    private IChannelDescriptor mCurrentChannel;
     protected CallEvent mCurrentCallEvent;
 
     public DecoderState()

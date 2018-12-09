@@ -27,6 +27,7 @@ import java.text.SimpleDateFormat;
  */
 public enum TimestampFormat
 {
+    TIMESTAMP_DEFAULT("yyyy-MM-dd HH:mm:ss", "Timestamp: yyyy-MM-dd HH:mm:ss"),
     TIMESTAMP_COLONS("yyyy:MM:dd:HH:mm:ss", "Timestamp Colons: yyyy:MM:dd:HH:mm:ss"),
     TIMESTAMP_MILLIS("yyyy:MM:dd:HH:mm:ss.SSS", "Timestamp Milliseconds: yyyy:MM:dd:HH:mm:ss.SSS"),
     TIMESTAMP_COMPACT("yyyyMMddHHmmss", "Timestamp Compact: yyyyMMddHHmmss"),

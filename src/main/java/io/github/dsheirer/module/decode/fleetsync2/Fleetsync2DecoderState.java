@@ -20,6 +20,7 @@ package io.github.dsheirer.module.decode.fleetsync2;
 
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
+import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -88,22 +89,31 @@ public class Fleetsync2DecoderState extends DecoderState
 
             switch(fleetsync.getMessageType())
             {
-                case ACKNOWLEDGE:
                 case ANI:
                 case EMERGENCY:
                 case LONE_WORKER_EMERGENCY:
-                case PAGING:
-                case STATUS:
-                case UNKNOWN:
-
-                    DecodeEvent event = DecodeEvent.builder(fleetsync.getTimestamp())
+                    DecodeEvent aniEvent = DecodeEvent.builder(fleetsync.getTimestamp())
                         .channel(getCurrentChannel())
                         .eventDescription(fleetsync.getMessageType().toString())
                         .details(fleetsync.toString())
                         .identifiers(getIdentifierCollection().copyOf())
                         .build();
 
-                    broadcast(event);
+                    broadcast(aniEvent);
+                    broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.CALL));
+                    break;
+                case ACKNOWLEDGE:
+                case PAGING:
+                case STATUS:
+                case UNKNOWN:
+                    DecodeEvent statusEvent = DecodeEvent.builder(fleetsync.getTimestamp())
+                        .channel(getCurrentChannel())
+                        .eventDescription(fleetsync.getMessageType().toString())
+                        .details(fleetsync.toString())
+                        .identifiers(getIdentifierCollection().copyOf())
+                        .build();
+                    broadcast(statusEvent);
+                    broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.DATA));
                     break;
                 case GPS:
                     PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(fleetsync.getTimestamp())
@@ -113,8 +123,8 @@ public class Fleetsync2DecoderState extends DecoderState
                         .identifiers(getIdentifierCollection().copyOf())
                         .protocol(Protocol.FLEETSYNC)
                         .build();
-
                     broadcast(plottableDecodeEvent);
+                    broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.DATA));
                     break;
             }
 

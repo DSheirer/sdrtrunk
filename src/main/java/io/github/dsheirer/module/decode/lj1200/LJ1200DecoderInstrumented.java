@@ -29,7 +29,7 @@ public class LJ1200DecoderInstrumented extends LJ1200Decoder implements IInstrum
 
     public LJ1200DecoderInstrumented()
     {
-        super(new AFSK1200DecoderInstrumented(false), null);
+        super(new AFSK1200DecoderInstrumented(false));
     }
 
     @Override

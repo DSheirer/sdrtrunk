@@ -36,7 +36,10 @@ import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.lj1200.FunctionAndReplyCode;
+import io.github.dsheirer.module.decode.lj1200.FunctionAndReplyCodeIdentifier;
 import io.github.dsheirer.module.decode.lj1200.LJ1200Message;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
@@ -722,6 +725,19 @@ public class AliasList implements Listener<AliasEvent>
                     if(protocolMap != null)
                     {
                         return protocolMap.get(talkgroup.getValue());
+                    }
+                    break;
+                case ESN:
+                    if(identifier instanceof ESNIdentifier)
+                    {
+                        return getESNAlias(((ESNIdentifier)identifier).getValue());
+                    }
+                    break;
+                case LOJACK:
+                    if(identifier instanceof FunctionAndReplyCodeIdentifier)
+                    {
+                        FunctionAndReplyCode functionAndReplyCode = ((FunctionAndReplyCodeIdentifier)identifier).getValue();
+                        return getLoJackAlias(functionAndReplyCode.getFunction(), functionAndReplyCode.getReplyCode());
                     }
                     break;
             }

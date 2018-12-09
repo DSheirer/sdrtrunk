@@ -307,8 +307,8 @@ public class MPT1327DecoderState extends DecoderState
     protected void resetState()
     {
         super.resetState();
-        mFromAttribute.reset();
-        mToAttribute.reset();
+//        mFromAttribute.reset();
+//        mToAttribute.reset();
 
         /**
          * If this is a standard channel, reset the fade timeout to the default

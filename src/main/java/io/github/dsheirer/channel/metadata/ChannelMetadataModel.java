@@ -41,7 +41,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     public static final int COLUMN_USER_FROM_ALIAS = 3;
     public static final int COLUMN_USER_TO = 4;
     public static final int COLUMN_USER_TO_ALIAS = 5;
-    public static final int COLUMN_DECODER_CHANNEL = 6;
+    public static final int COLUMN_DECODER_LOGICAL_CHANNEL_NAME = 6;
     public static final int COLUMN_CONFIGURATION_FREQUENCY = 7;
     public static final int COLUMN_CONFIGURATION_CHANNEL = 8;
 
@@ -175,8 +175,8 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                     return channelMetadata.getDecoderStateIdentifier();
                 case COLUMN_DECODER_TYPE:
                     return channelMetadata.getDecoderTypeConfigurationIdentifier();
-                case COLUMN_DECODER_CHANNEL:
-                    return null;
+                case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
+                    return channelMetadata.getDecoderLogicalChannelNameIdentifier();
                 case COLUMN_CONFIGURATION_FREQUENCY:
                     return channelMetadata.getFrequencyConfigurationIdentifier();
                 case COLUMN_CONFIGURATION_CHANNEL:
@@ -215,6 +215,9 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                             break;
                         case CONFIGURATION_FREQUENCY:
                             fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_FREQUENCY);
+                            break;
+                        case DECODER_CHANNEL_NAME:
+                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_LOGICAL_CHANNEL_NAME);
                             break;
                         case DECODER_TYPE:
                             fireTableCellUpdated(rowIndex, COLUMN_DECODER_TYPE);

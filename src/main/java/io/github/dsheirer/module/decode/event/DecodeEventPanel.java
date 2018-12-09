@@ -161,16 +161,16 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
             {
                 List<Identifier> identifiers = ((IdentifierCollection)value).getIdentifiers(mRole);
 
-                if(identifiers.size() > 1)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("Multiple Identifiers:\n");
-                    for(Identifier identifier: identifiers)
-                    {
-                        sb.append("ID:").append(identifier.debug()).append("\n");
-                    }
-                    mLog.debug(sb.toString());
-                }
+//                if(identifiers.size() > 1)
+//                {
+//                    StringBuilder sb = new StringBuilder();
+//                    sb.append("Multiple Identifiers:\n");
+//                    for(Identifier identifier: identifiers)
+//                    {
+//                        sb.append("ID:").append(identifier.debug()).append("\n");
+//                    }
+//                    mLog.debug(sb.toString());
+//                }
                 label.setText(format(identifiers));
             }
             else

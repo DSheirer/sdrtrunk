@@ -16,6 +16,7 @@
 package io.github.dsheirer.message;
 
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.List;
 public class SyncLossMessage extends Message
 {
     private int mBitsProcessed;
+    private Protocol mProtocol;
 
     /**
      * Constructs a sync loss message.
@@ -35,10 +37,11 @@ public class SyncLossMessage extends Message
      * @param timestamp of the message
      * @param bitsProcessed without a sync pattern detection of message decode
      */
-    public SyncLossMessage(long timestamp, int bitsProcessed)
+    public SyncLossMessage(long timestamp, int bitsProcessed, Protocol protocol)
     {
         super(timestamp);
         mBitsProcessed = bitsProcessed;
+        mProtocol = protocol;
     }
 
     /**
@@ -62,9 +65,9 @@ public class SyncLossMessage extends Message
     }
 
     @Override
-    public String getProtocol()
+    public Protocol getProtocol()
     {
-        return "NONE";
+        return mProtocol;
     }
 
     @Override
