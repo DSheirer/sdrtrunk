@@ -17,64 +17,48 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.module.decode.ltrnet.message.osw;
+package io.github.dsheirer.module.decode.ltrstandard.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.ltrnet.LtrNetMessageType;
+import io.github.dsheirer.message.MessageDirection;
+import io.github.dsheirer.module.decode.ltrstandard.LtrStandardMessageType;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Call End Message.
+ * Indicates the repeater is IDLE and available for use
  */
-public class OswCallEnd extends LtrNetOswMessage
+public class Idle extends LTRStandardMessage
 {
-    private List<Identifier> mIdentifiers;
-
-    /**
-     * Constructs a message
-     */
-    public OswCallEnd(CorrectedBinaryMessage message, long timestamp)
+    public Idle(CorrectedBinaryMessage message, MessageDirection direction, CRC crc)
     {
-        super(message, timestamp);
+        super(message, direction, crc);
     }
 
     @Override
-    public LtrNetMessageType getLtrNetMessageType()
+    public LtrStandardMessageType getMessageType()
     {
-        return LtrNetMessageType.OSW_CALL_END;
+        return LtrStandardMessageType.IDLE;
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("CALL END TALKGROUP:").append(getTalkgroup().formatted());
-        sb.append(" AREA:").append(getArea(getMessage()));
-        sb.append(" LCN:").append(getChannel(getMessage()));
-        sb.append(" FREE:").append(getFree(getMessage()));
+        sb.append("IDLE AREA:").append(getArea());
+        sb.append(" LCN:").append(getChannel());
+        sb.append(" HOME:").append(getHomeRepeater());
+        sb.append(" GRP:").append(getGroup());
+        sb.append(" FREE:").append(getFree());
         return sb.toString();
-    }
-
-    /**
-     * LCN for the call
-     */
-    public int getChannel()
-    {
-        return getChannel(getMessage());
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        if(mIdentifiers == null)
-        {
-            mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getTalkgroup());
-        }
-
-        return mIdentifiers;
+        return Collections.EMPTY_LIST;
     }
 }

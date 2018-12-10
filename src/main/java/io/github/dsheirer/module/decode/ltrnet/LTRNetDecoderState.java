@@ -29,12 +29,12 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
+import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.ltrnet.channel.LtrNetChannel;
-import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetIdentifier;
 import io.github.dsheirer.module.decode.ltrnet.identifier.UniqueIdentifier;
 import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
 import io.github.dsheirer.module.decode.ltrnet.message.isw.IswCallEnd;
@@ -79,11 +79,11 @@ public class LTRNetDecoderState extends DecoderState
     private Map<Integer,NeighborId> mNeighborMap = new HashMap<>();
     private SiteId mCurrentSite;
     private int mCurrentChannelNumber;
-    private Set<LtrNetIdentifier> mTalkgroups = new TreeSet<>();
+    private Set<LTRTalkgroup> mTalkgroups = new TreeSet<>();
     private Set<UniqueIdentifier> mUniqueIdentifiers = new TreeSet<>();
     private Set<ESNIdentifier> mESNIdentifiers = new TreeSet<>();
     private DecodeEvent mCurrentCallEvent;
-    private LtrNetIdentifier mCurrentCallTalkgroup;
+    private LTRTalkgroup mCurrentCallTalkgroup;
 
     public LTRNetDecoderState()
     {
@@ -124,7 +124,7 @@ public class LTRNetDecoderState extends DecoderState
         resetState();
     }
 
-    private void processCallEnd(int channel, LtrNetIdentifier talkgroup, long timestamp)
+    private void processCallEnd(int channel, LTRTalkgroup talkgroup, long timestamp)
     {
         setCurrentChannelNumber(channel);
 
@@ -140,7 +140,7 @@ public class LTRNetDecoderState extends DecoderState
         if(talkgroup.getTalkgroup() == 254)
         {
             //Process CW Station ID broadcasts as an active state
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
         }
         else
         {
@@ -148,7 +148,7 @@ public class LTRNetDecoderState extends DecoderState
         }
     }
 
-    private void processCallStart(int channel, LtrNetIdentifier talkgroup, long timestamp, MessageDirection direction)
+    private void processCallStart(int channel, LTRTalkgroup talkgroup, long timestamp, MessageDirection direction)
     {
         if(direction == MessageDirection.ISW)
         {
@@ -226,7 +226,7 @@ public class LTRNetDecoderState extends DecoderState
 
             decodeEvent.update(timestamp);
             broadcast(decodeEvent);
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
         }
     }
 
@@ -329,7 +329,7 @@ public class LTRNetDecoderState extends DecoderState
                             .protocol(Protocol.LTR_NET)
                             .build());
 
-                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_REGISTRATION_REQUEST_ESN_LOW:
@@ -351,7 +351,7 @@ public class LTRNetDecoderState extends DecoderState
                             .protocol(Protocol.LTR_NET)
                             .build());
 
-                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_REQUEST_ACCESS:
@@ -370,7 +370,7 @@ public class LTRNetDecoderState extends DecoderState
                             .protocol(Protocol.LTR_NET)
                             .build());
 
-                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_UNIQUE_ID:
@@ -380,11 +380,11 @@ public class LTRNetDecoderState extends DecoderState
                         getIdentifierCollection().update(iswUniqueId.getUniqueID());
                         mUniqueIdentifiers.add(iswUniqueId.getUniqueID());
                         updateCurrentCallIdentifiers();
-                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_UNKNOWN:
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_CALL_END:
                     if(message instanceof OswCallEnd)
@@ -408,21 +408,21 @@ public class LTRNetDecoderState extends DecoderState
                     {
                         mChannelMapHigh = (ChannelMapHigh)message;
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_CHANNEL_MAP_LOW:
                     if(message instanceof ChannelMapLow)
                     {
                         mChannelMapLow = (ChannelMapLow)message;
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_SYSTEM_IDLE:
                     if(message instanceof SystemIdle)
                     {
                         setCurrentChannelNumber(((SystemIdle)message).getChannel());
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_NEIGHBOR_ID:
                     if(message instanceof NeighborId)
@@ -430,7 +430,7 @@ public class LTRNetDecoderState extends DecoderState
                         NeighborId neighborId = (NeighborId)message;
                         mNeighborMap.put(neighborId.getNeighborRank(), neighborId);
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_RECEIVE_FREQUENCY_HIGH:
                     if(message instanceof ReceiveFrequencyHigh)
@@ -438,7 +438,7 @@ public class LTRNetDecoderState extends DecoderState
                         ReceiveFrequencyHigh receiveFrequency = (ReceiveFrequencyHigh)message;
                         updateReceiveFrequency(receiveFrequency.getChannel(), receiveFrequency.getFrequency());
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_RECEIVE_FREQUENCY_LOW:
                     if(message instanceof ReceiveFrequencyLow)
@@ -446,7 +446,7 @@ public class LTRNetDecoderState extends DecoderState
                         ReceiveFrequencyLow receiveFrequency = (ReceiveFrequencyLow)message;
                         updateReceiveFrequency(receiveFrequency.getChannel(), receiveFrequency.getFrequency());
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_REGISTRATION_ACCEPT:
                     if(message instanceof RegistrationAccept)
@@ -467,7 +467,7 @@ public class LTRNetDecoderState extends DecoderState
                     {
                         mCurrentSite = (SiteId)message;
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_TRANSMIT_FREQUENCY_HIGH:
                     if(message instanceof TransmitFrequencyHigh)
@@ -475,7 +475,7 @@ public class LTRNetDecoderState extends DecoderState
                         TransmitFrequencyHigh transmitFrequency = (TransmitFrequencyHigh)message;
                         updateTransmitFrequency(transmitFrequency.getChannel(), transmitFrequency.getFrequency());
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_TRANSMIT_FREQUENCY_LOW:
                     if(message instanceof TransmitFrequencyLow)
@@ -483,10 +483,10 @@ public class LTRNetDecoderState extends DecoderState
                         TransmitFrequencyLow transmitFrequency = (TransmitFrequencyLow)message;
                         updateTransmitFrequency(transmitFrequency.getChannel(), transmitFrequency.getFrequency());
                     }
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_UNKNOWN:
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
             }
         }
@@ -555,10 +555,10 @@ public class LTRNetDecoderState extends DecoderState
         }
         else
         {
-            List<LtrNetIdentifier> talkgroups = new ArrayList<>(mTalkgroups);
+            List<LTRTalkgroup> talkgroups = new ArrayList<>(mTalkgroups);
             Collections.sort(talkgroups, Comparator.comparingInt(Identifier::getValue));
 
-            for(LtrNetIdentifier talkgroup: talkgroups)
+            for(LTRTalkgroup talkgroup: talkgroups)
             {
                 sb.append("  ").append(talkgroup.formatted()).append("\n");
             }

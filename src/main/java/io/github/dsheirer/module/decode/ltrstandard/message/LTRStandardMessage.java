@@ -1,44 +1,37 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.ltrstandard.message;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
-import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageDirection;
-import io.github.dsheirer.message.MessageType;
+import io.github.dsheirer.module.decode.ltrstandard.LtrStandardMessageType;
 import io.github.dsheirer.protocol.Protocol;
-import org.apache.commons.lang3.StringUtils;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
+/**
+ * LTR Standard Base Message
+ */
 public abstract class LTRStandardMessage extends Message
 {
-    protected SimpleDateFormat mDatestampFormatter =
-            new SimpleDateFormat("yyyyMMdd HHmmss");
-
     public static final int[] SYNC = {0, 1, 2, 3, 4, 5, 6, 7, 8};
     public static final int[] AREA = {9};
     public static final int[] CHANNEL = {10, 11, 12, 13, 14};
@@ -47,153 +40,109 @@ public abstract class LTRStandardMessage extends Message
     public static final int[] FREE = {28, 29, 30, 31, 32};
     public static final int[] CHECKSUM = {33, 34, 35, 36, 37, 38, 39};
 
-    protected BinaryMessage mMessage;
-    protected MessageDirection mMessageDirection;
-    protected AliasList mAliasList;
-    protected CRC mCRC;
+    private CorrectedBinaryMessage mMessage;
+    private MessageDirection mMessageDirection;
+    private CRC mCRC;
+    private LTRTalkgroup mTalkgroup;
 
-    public LTRStandardMessage(BinaryMessage message,
-                              MessageDirection direction,
-                              AliasList list,
-                              CRC crc)
+    /**
+     * Constructs the message
+     * @param message containing the raw bits
+     * @param direction of the messsage, ISW or OSW
+     * @param crc error check
+     */
+    public LTRStandardMessage(CorrectedBinaryMessage message, MessageDirection direction, CRC crc)
     {
         mMessage = message;
         mMessageDirection = direction;
-        mAliasList = list;
         mCRC = crc;
     }
 
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.EMPTY_LIST;
-    }
+    /**
+     * Identifies the type of message
+     */
+    public abstract LtrStandardMessageType getMessageType();
 
-    public abstract MessageType getMessageType();
-
+    /**
+     * Indicates if this message passes the CRC check
+     */
     public boolean isValid()
     {
-        return mCRC != CRC.FAILED_CRC && mCRC != CRC.FAILED_PARITY;
+        return mCRC.passes();
     }
 
-    @Override
-    public String toString()
+    /**
+     * Raw binary message
+     */
+    public CorrectedBinaryMessage getMessage()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append(mDatestampFormatter.format(
-                new Date(System.currentTimeMillis())));
-        sb.append(" LTR ");
-        sb.append(mMessageDirection.name());
-        sb.append(" [");
-        sb.append(mCRC.getAbbreviation());
-        sb.append("] ");
-        sb.append(getMessage());
-
-        return sb.toString();
+        return mMessage;
     }
 
-    public abstract String getMessage();
-
+    /**
+     * CRC error check stats
+     */
     public CRC getCRC()
     {
         return mCRC;
     }
 
+    /**
+     * Area: 0 or 1
+     */
     public int getArea()
     {
         return mMessage.getInt(AREA);
     }
 
+    /**
+     * Logical Channel Number (LCN) for the repeater
+     */
     public int getChannel()
     {
         return mMessage.getInt(CHANNEL);
     }
 
-    public String getChannelFormatted()
-    {
-        return StringUtils.leftPad(String.valueOf(getChannel()), 2, "0");
-    }
-
+    /**
+     * Home repeater number for the talkgroup
+     */
     public int getHomeRepeater()
     {
         return mMessage.getInt(HOME_REPEATER);
     }
 
-    public String getHomeRepeaterFormatted()
-    {
-        return StringUtils.leftPad(String.valueOf(getHomeRepeater()), 2, "0");
-    }
-
+    /**
+     * Talkgroup number
+     */
     public int getGroup()
     {
         return mMessage.getInt(GROUP);
     }
 
-    public String getGroupFormatted()
-    {
-        return StringUtils.leftPad(String.valueOf(getGroup()), 3, "0");
-    }
-
+    /**
+     * Free or available repeater channel for other subscribers to use when this repeater channel is busy
+     */
     public int getFree()
     {
         return mMessage.getInt(FREE);
     }
 
-    public String getFreeFormatted()
+    /**
+     * Talkgroup identifier
+     */
+    public LTRTalkgroup getTalkgroup()
     {
-        return StringUtils.leftPad(String.valueOf(getFree()), 2, "0");
-    }
-
-    public String getToID()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getArea());
-        sb.append("-");
-        sb.append(getHomeRepeaterFormatted());
-        sb.append("-");
-        sb.append(getGroupFormatted());
-
-        return sb.toString();
-    }
-
-    public Alias getToIDAlias()
-    {
-        return mAliasList.getTalkgroupAlias(getToID());
-    }
-
-    public List<Alias> getAliases()
-    {
-        List<Alias> aliases = new ArrayList<>();
-
-        Alias talkgroupAlias = getToIDAlias();
-
-        if(talkgroupAlias != null)
+        if(mTalkgroup == null)
         {
-            aliases.add(talkgroupAlias);
+            mTalkgroup = LTRTalkgroup.create((getHomeRepeater() << 8) + getGroup());
         }
 
-        return aliases;
-    }
-
-    public int getCRCChecksum()
-    {
-        return mMessage.getInt(CHECKSUM);
+        return mTalkgroup;
     }
 
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.LTR;
-    }
-
-    public String getEventType()
-    {
-        return getMessageType().getDisplayText();
-    }
-
-    public String getErrorStatus()
-    {
-        return mCRC.getDisplayText();
+        return Protocol.LTR_STANDARD;
     }
 }

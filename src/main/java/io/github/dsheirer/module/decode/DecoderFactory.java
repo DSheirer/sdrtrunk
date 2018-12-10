@@ -161,7 +161,7 @@ public class DecoderFactory
             case LTR_STANDARD:
                 MessageDirection direction = ((DecodeConfigLTRStandard)decodeConfig).getMessageDirection();
                 modules.add(new LTRStandardDecoder(null, direction));
-                modules.add(new LTRStandardDecoderState(null));
+                modules.add(new LTRStandardDecoderState());
                 modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {

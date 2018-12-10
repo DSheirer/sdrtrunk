@@ -240,6 +240,14 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     }
 
     /**
+     * Sets the current channel descriptor
+     */
+    protected void setCurrentChannel(IChannelDescriptor channel)
+    {
+        mCurrentChannel = channel;
+    }
+
+    /**
      * Listener for configuration type identifier updates sent from the channel state.  Adds configuration
      * identifiers to this decoder state so that decode events will contain configuration details in the
      * event's identifier collection.

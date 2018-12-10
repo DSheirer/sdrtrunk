@@ -18,18 +18,17 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.ltrnet.identifier;
+package io.github.dsheirer.identifier.talkgroup;
 
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
- * LTR-Net talkgroup identifier
+ * LTR talkgroup identifier
  */
-public class LtrNetIdentifier extends TalkgroupIdentifier implements Comparable<LtrNetIdentifier>
+public class LTRTalkgroup extends TalkgroupIdentifier implements Comparable<LTRTalkgroup>
 {
-    public LtrNetIdentifier(Integer talkgroup, Role role)
+    public LTRTalkgroup(Integer talkgroup, Role role)
     {
         super(talkgroup, role, true);
     }
@@ -67,13 +66,13 @@ public class LtrNetIdentifier extends TalkgroupIdentifier implements Comparable<
     /**
      * Creates an LTR-Net identifier from the integer value that contains both the fleet and the ident with a TO role
      */
-    public static LtrNetIdentifier create(int talkgroup)
+    public static LTRTalkgroup create(int talkgroup)
     {
-        return new LtrNetIdentifier(talkgroup, Role.TO);
+        return new LTRTalkgroup(talkgroup, Role.TO);
     }
 
     @Override
-    public int compareTo(LtrNetIdentifier o)
+    public int compareTo(LTRTalkgroup o)
     {
         return getValue().compareTo(o.getValue());
     }

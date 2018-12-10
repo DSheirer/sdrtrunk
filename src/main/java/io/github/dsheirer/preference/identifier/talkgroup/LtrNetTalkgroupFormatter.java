@@ -20,8 +20,8 @@
 
 package io.github.dsheirer.preference.identifier.talkgroup;
 
+import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetIdentifier;
 import io.github.dsheirer.preference.IntegerFormat;
 
 /**
@@ -40,9 +40,9 @@ public class LtrNetTalkgroupFormatter extends IntegerFormatter
      */
     public static String format(TalkgroupIdentifier identifier, IntegerFormat format, boolean fixedWidth)
     {
-        if(identifier instanceof LtrNetIdentifier)
+        if(identifier instanceof LTRTalkgroup)
         {
-            LtrNetIdentifier ltrnet = (LtrNetIdentifier)identifier;
+            LTRTalkgroup ltrnet = (LTRTalkgroup)identifier;
 
             if(fixedWidth)
             {

@@ -1,56 +1,64 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.ltrstandard.message;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.MessageDirection;
-import io.github.dsheirer.message.MessageType;
+import io.github.dsheirer.module.decode.ltrstandard.LtrStandardMessageType;
 
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Unknown message type
+ */
 public class UnknownMessage extends LTRStandardMessage
 {
-	public UnknownMessage(BinaryMessage message, MessageDirection direction, AliasList list, CRC crc )
+    public UnknownMessage(CorrectedBinaryMessage message, MessageDirection direction, CRC crc)
     {
-    	super( message, direction, list, crc );
+        super(message, direction, crc);
     }
 
-	@Override
-	public MessageType getMessageType()
-	{
-		return MessageType.UN_KNWN;
-	}
-
-    public String getMessage()
+    @Override
+    public LtrStandardMessageType getMessageType()
     {
-		StringBuilder sb = new StringBuilder();
+        return LtrStandardMessageType.UNKNOWN;
+    }
 
-		sb.append( "UNKNOWN AREA:" );
-		sb.append( getArea() );
-		sb.append( " LCN:" );
-		sb.append( getChannelFormatted() );
-		sb.append( " HOME:" );
-		sb.append( getHomeRepeaterFormatted() );
-		sb.append( " GRP:" );
-		sb.append( getGroupFormatted() );
-		sb.append( " FREE:" );
-		sb.append( getFreeFormatted() );
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("UNKNOWN AREA:").append(getArea());
+        sb.append(" LCN:").append(getChannel());
+        sb.append(" HOME:").append(getHomeRepeater());
+        sb.append(" GRP:").append(getGroup());
+        sb.append(" FREE:").append(getFree());
+        return sb.toString();
+    }
 
-		return sb.toString();
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

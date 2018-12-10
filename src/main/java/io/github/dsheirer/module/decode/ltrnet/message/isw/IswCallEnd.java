@@ -51,7 +51,7 @@ public class IswCallEnd extends LtrNetIswMessage
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("CALL END TALKGROUP:").append(getTalkgroup());
+        sb.append("CALL END TALKGROUP:").append(getTalkgroup().formatted());
         sb.append(" AREA:").append(getArea(getMessage()));
         sb.append(" LCN:").append(getChannel(getMessage()));
         sb.append(" FREE:").append(getFree(getMessage()));

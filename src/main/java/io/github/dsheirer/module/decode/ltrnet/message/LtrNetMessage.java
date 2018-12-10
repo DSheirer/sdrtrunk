@@ -22,11 +22,10 @@ package io.github.dsheirer.module.decode.ltrnet.message;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCLTR;
+import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageDirection;
-import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.ltrnet.LtrNetMessageType;
-import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 public abstract class LtrNetMessage extends Message
@@ -39,12 +38,10 @@ public abstract class LtrNetMessage extends Message
     protected static final int[] FREE = {28, 29, 30, 31, 32};
     protected static final int[] CRC_FIELD = {33, 34, 35, 36, 37, 38, 39};
     protected static final int[] SIXTEEN_BITS = {17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
-    protected static final int[] MANUFACTURER_ID = {17, 18, 19, 20, 21, 22, 23};
 
     protected CorrectedBinaryMessage mMessage;
-    protected MessageType mMessageType;
     protected CRC mCRC;
-    private LtrNetIdentifier mTalkgroup;
+    private LTRTalkgroup mTalkgroup;
 
     public LtrNetMessage(CorrectedBinaryMessage message, MessageDirection direction, long timestamp)
     {
@@ -72,11 +69,11 @@ public abstract class LtrNetMessage extends Message
     /**
      * Talkgroup identifier
      */
-    public LtrNetIdentifier getTalkgroup()
+    public LTRTalkgroup getTalkgroup()
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = LtrNetIdentifier.create((getHomeRepeater(getMessage()) << 8) + getGroup(getMessage()));
+            mTalkgroup = LTRTalkgroup.create((getHomeRepeater(getMessage()) << 8) + getGroup(getMessage()));
         }
 
         return mTalkgroup;
@@ -115,10 +112,5 @@ public abstract class LtrNetMessage extends Message
     public static int getFree(CorrectedBinaryMessage message)
     {
         return message.getInt(FREE);
-    }
-
-    public static int getCRCChecksum(CorrectedBinaryMessage message)
-    {
-        return message.getInt(CRC_FIELD);
     }
 }
