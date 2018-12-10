@@ -22,7 +22,6 @@ package io.github.dsheirer.module.decode.fleetsync2.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.map.Plottable;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import java.util.ArrayList;
@@ -72,7 +71,6 @@ public class LocationReport extends Fleetsync2Message
     private Double mGPSHeading;
     private Double mGPSSpeed;
     private List<Identifier> mIdentifers;
-    private Plottable mPlottable;
 
     public LocationReport(CorrectedBinaryMessage message, long timestamp)
     {

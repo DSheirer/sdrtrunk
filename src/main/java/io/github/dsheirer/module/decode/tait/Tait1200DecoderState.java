@@ -98,6 +98,8 @@ public class Tait1200DecoderState extends DecoderState
     @Override
     public void receive(IMessage message)
     {
+//TODO: tait message must be updated to use the new PlottableDecodeEvent to get results to the map ...
+
         if(message instanceof Tait1200GPSMessage)
         {
             Tait1200GPSMessage gps = (Tait1200GPSMessage)message;

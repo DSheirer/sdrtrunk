@@ -24,8 +24,6 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.map.IPlottable;
-import io.github.dsheirer.map.Plottable;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.protocol.Protocol;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
@@ -41,7 +39,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
-public class Tait1200GPSMessage extends Message implements IPlottable
+public class Tait1200GPSMessage extends Message //implements IPlottable
 {
     private final static Logger mLog = LoggerFactory.getLogger(Tait1200GPSMessage.class);
 
@@ -360,11 +358,11 @@ public class Tait1200GPSMessage extends Message implements IPlottable
         return "GPS";
     }
 
-    @Override
-    public Plottable getPlottable()
-    {
-        return new Plottable(getGPSTime(), getGPSLocation(), getFromID(), getFromIDAlias());
-    }
+//    @Override
+//    public Plottable getPlottable()
+//    {
+//        return new Plottable(getGPSTime(), getGPSLocation(), getFromID(), getFromIDAlias());
+//    }
 
     /**
      * Provides a listing of aliases contained in the message.
