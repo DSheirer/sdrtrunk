@@ -20,7 +20,7 @@ public class MPT1327MessageFilter extends Filter<IMessage>
 
         for(MPTMessageType type : MPT1327Message.MPTMessageType.values())
         {
-            if(type != MPTMessageType.UNKN)
+            if(type != MPTMessageType.UNKNOWN)
             {
                 mFilterElements.put(type,
                         new FilterElement<MPTMessageType>(type));

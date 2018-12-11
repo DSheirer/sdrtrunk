@@ -134,7 +134,7 @@ public class MPT1327Message extends Message
                     break;
                 /* 2 data block messages */
                 case AHYQ:
-                case ALH:
+                case ALH_ALOHA:
                 case HEAD_PLUS1:
                     checkParity(1, BLOCK_2_START, BLOCK_3_START);
                     break;
@@ -174,7 +174,7 @@ public class MPT1327Message extends Message
                 case ALHS:
                 case ALHX:
                 case BCAST:
-                case GTC:
+                case GTC_GO_TO_CHANNEL:
                 case MARK:
                 case DACKD:
                 case DACKZ:
@@ -195,14 +195,14 @@ public class MPT1327Message extends Message
                 case SAMIU:
                 case SAMO:
                 case SITH:
-                case UNKN:
+                case UNKNOWN:
                 default:
                     break;
             }
         }
         else
         {
-            mMessageType = MPTMessageType.UNKN;
+            mMessageType = MPTMessageType.UNKNOWN;
         }
     }
 
@@ -314,7 +314,7 @@ public class MPT1327Message extends Message
         {
             return String.valueOf(mMessage.getInt(B1_SYSTEM_ID));
         }
-        else if(mMessageType == MPTMessageType.ALH)
+        else if(mMessageType == MPTMessageType.ALH_ALOHA)
         {
             return String.valueOf(mMessage.getInt(B2_SYSTEM_ID));
         }
@@ -366,7 +366,7 @@ public class MPT1327Message extends Message
         {
             case CLEAR:
                 return mMessage.getInt(B1_TRAFFIC_CHANNEL);
-            case GTC:
+            case GTC_GO_TO_CHANNEL:
                 return mMessage.getInt(B1_GTC_CHAN);
             default:
                 return mMessage.getInt(B1_CHANNEL);
@@ -414,7 +414,7 @@ public class MPT1327Message extends Message
     {
         MPTMessageType type = getMessageType();
 
-        if(type == MPTMessageType.GTC)
+        if(type == MPTMessageType.GTC_GO_TO_CHANNEL)
         {
             return mMessage.getInt(B1_IDENT2_GTC);
         }
@@ -660,7 +660,7 @@ public class MPT1327Message extends Message
                 sb.append(" ");
                 sb.append(getStatusMessage());
                 break;
-            case ALH:
+            case ALH_ALOHA:
             case ALHD:
             case ALHS:
             case ALHE:
@@ -726,7 +726,7 @@ public class MPT1327Message extends Message
                 sb.append(" RETURN TO CONTROL CHANNEL:");
                 sb.append(getReturnToChannel());
                 break;
-            case GTC:
+            case GTC_GO_TO_CHANNEL:
                 if(hasFromID())
                 {
                     sb.append(" FROM:");
@@ -1855,221 +1855,6 @@ public class MPT1327Message extends Message
         }
     }
 
-    public enum MPTMessageType
-    {
-        UNKN("Unknown"),
-        GTC("GTC - Goto Channel"),                    //0
-        ALH("ALH - Aloha"),                           //256
-        ALHS("ALHS - Standard Data Excluded"),         //257
-        ALHD("ALHD - Simple Calls Excluded"),          //258
-        ALHE("ALHE - Emergency Calls Only"),           //259
-        ALHR("ALHR - Emergency or Registration"),      //260
-        ALHX("ALHX - Registration Excluded"),          //261
-        ALHF("ALHF - Fallback Mode"),                  //262
-        //263
-        ACK("ACK - Acknowledge"),                     //264
-        ACKI("ACKI - More To Follow"),                 //265
-        ACKQ("ACKQ - Call Queued"),                    //266
-        ACKX("ACKX - Message Rejected"),               //267
-        ACKV("ACKV - Called Unit Unavailable"),        //268
-        ACKE("ACKE - Emergency"),                      //269
-        ACKT("ACKT - Try On Given Address"),           //270
-        ACKB("ACKB - Call Back/Negative Ack"),         //271
-        AHOY("AHOY - General Availability Check"),     //272
-        AHYX("AHYX - Cancel Alert/Waiting Status"),    //274
-        AHYP("AHYP - Called Unit Presence Monitoring"),//277
-        AHYQ("AHYQ - Status Message"),                 //278
-        AHYC("AHYC - Short Data Message"),             //279
-        MARK("MARK - Control Channel Marker"),         //280
-        MAINT("MAINT - Call Maintenance Message"),      //281
-        CLEAR("CLEAR - Down From Allocated Channel"),  //282
-        MOVE("MOVE - To Specified Channel"),           //283
-        BCAST("BCAST - System Parameters"),            //284
-        //285 - 287
-        SAMO("SAMO - Outbound Single Address"),        //288 - 303
-        SAMIS("SAMIS - Inbound Solicited Single Address"),   //288 - 295
-        SAMIU("SAMIU - Inbound Unsolicited Single Address"), //296 - 303
-        HEAD_PLUS1("HEAD - 1 DATA CODEWORD"),          //304 - 307
-        HEAD_PLUS2("HEAD - 2 DATA CODEWORDS"),         //308 - 311
-        HEAD_PLUS3("HEAD - 3 DATA CODEWORDS"),         //312 - 315
-        HEAD_PLUS4("HEAD - 4 DATA CODEWORDS"),         //316 - 319
-        GTT("GTT - Go To Transaction"),                //320 - 335
-        SACK("SACK - Standard Data Selective Ack Header"), //416 - 423
-        DACK_DAL("DACK - Data Ack + DAL"),             //416
-        DACK_DALG("DACK - Data Ack + DALG"),           //417
-        DACK_DALN("DACK - Data Ack + DALN"),           //418
-        DACK_GO("DACK - GO Fragment Transmit Invitation"),   //419
-        DACKZ("DACKZ - Data Ack For Expedited Data"),   //420
-        DACKD("DACKD - Data Ack For Standard Data"),   //421
-        DAHY("DAHY - Standard Data Ahoy"),             //424
-        DRQG("DRQG - Repeat Group Message"),           //426
-        DRQZ("DRQZ - Request Containing Expedited Data"), //428
-        DAHYZ("DAHYZ - Expedited Data Ahoy"),          //428
-        DAHYX("DAHYX - Standard Data For Closing TRANS"),//430
-        DRQX("DRQX - Request To Close A Transaction"),   //430
-        RLA("RLA - Repeat Last ACK"), //431
-        SITH("SITH - Standard Data Address Codeword Data Item"); //440 - 443
-
-        private String mDescription;
-
-        private MPTMessageType(String description)
-        {
-            mDescription = description;
-        }
-
-        public String getDescription()
-        {
-            return mDescription;
-        }
-
-        public String toString()
-        {
-            return getDescription();
-        }
-
-        public static MPTMessageType fromNumber(int number)
-        {
-            if(number < 256)
-            {
-                return GTC;
-            }
-
-            switch(number)
-            {
-                case 256:
-                    return ALH;
-                case 257:
-                    return ALHS;
-                case 258:
-                    return ALHD;
-                case 259:
-                    return ALHE;
-                case 260:
-                    return ALHR;
-                case 261:
-                    return ALHX;
-                case 262:
-                    return ALHF;
-                case 264:
-                    return ACK;
-                case 265:
-                    return ACKI;
-                case 266:
-                    return ACKQ;
-                case 267:
-                    return ACKX;
-                case 268:
-                    return ACKV;
-                case 269:
-                    return ACKE;
-                case 270:
-                    return ACKT;
-                case 271:
-                    return ACKB;
-                case 272:
-                    return AHOY;
-                case 274:
-                    return AHYX;
-                case 277:
-                    return AHYP;
-                case 278:
-                    return AHYQ;
-                case 279:
-                    return AHYC;
-                case 280:
-                    return MARK;
-                case 281:
-                    return MAINT;
-                case 282:
-                    return CLEAR;
-                case 283:
-                    return MOVE;
-                case 284:
-                    return BCAST;
-                case 288:
-                case 289:
-                case 290:
-                case 291:
-                case 292:
-                case 293:
-                case 294:
-                case 295:
-                case 296:
-                case 297:
-                case 298:
-                case 299:
-                case 300:
-                case 301:
-                case 302:
-                case 303:
-                    return SAMO;
-                case 304:
-                case 305:
-                case 306:
-                case 307:
-                    return HEAD_PLUS1;
-                case 308:
-                case 309:
-                case 310:
-                case 311:
-                    return HEAD_PLUS2;
-                case 312:
-                case 313:
-                case 314:
-                case 315:
-                    return HEAD_PLUS3;
-                case 316:
-                case 317:
-                case 318:
-                case 319:
-                    return HEAD_PLUS4;
-                case 320:
-                case 321:
-                case 322:
-                case 323:
-                case 324:
-                case 325:
-                case 326:
-                case 327:
-                case 328:
-                case 329:
-                case 330:
-                case 331:
-                case 332:
-                case 333:
-                case 334:
-                case 335:
-                    return GTT;
-                case 416:
-                    return DACK_DAL;
-                case 417:
-                    return DACK_DALG;
-                case 418:
-                    return DACK_DALN;
-                case 419:
-                    return DACK_GO;
-                case 420:
-                    return DACKZ;
-                case 421:
-                    return DACKD;
-                case 424:
-                    return DAHY;
-                case 426:
-                    return DRQG;
-                case 428:
-                    return DAHYZ;
-                case 430:
-                    return DAHYX;
-                case 440:
-                case 441:
-                case 442:
-                case 443:
-                    return SITH;
-                default:
-                    return UNKN;
-            }
-        }
-    }
 
     @Override
     public List<Identifier> getIdentifiers()

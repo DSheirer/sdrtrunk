@@ -164,11 +164,11 @@ public class MPT1327DecoderState extends DecoderState
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
                         break;
-                    case ALH:
+                    case ALH_ALOHA:
                         setSite(mpt.getSiteID());
                         broadcast(new DecoderStateEvent(this, Event.START, State.CONTROL));
                         break;
-                    case GTC:
+                    case GTC_GO_TO_CHANNEL:
                         String from = mpt.getFromID();
                         String to = mpt.getToID();
 
