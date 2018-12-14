@@ -44,7 +44,7 @@ public class LTRTalkgroup extends TalkgroupIdentifier implements Comparable<LTRT
      */
     public String formatted()
     {
-        return String.format("%02d:%03d", getHomeChannel(), getTalkgroup());
+        return String.format("%02d-%03d", getHomeChannel(), getTalkgroup());
     }
 
     /**

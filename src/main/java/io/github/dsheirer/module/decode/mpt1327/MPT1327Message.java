@@ -174,7 +174,7 @@ public class MPT1327Message extends Message
                 case ALHS:
                 case ALHX:
                 case BCAST:
-                case GTC_GO_TO_CHANNEL:
+                case GTC_GO_TO_TRAFFIC_CHANNEL:
                 case MARK:
                 case DACKD:
                 case DACKZ:
@@ -302,7 +302,7 @@ public class MPT1327Message extends Message
     {
         int value = mMessage.getInt(B1_MESSAGE_TYPE);
 
-        return MPTMessageType.fromNumber(value);
+        return MPTMessageType.fromValue(value);
     }
 
     /**
@@ -366,7 +366,7 @@ public class MPT1327Message extends Message
         {
             case CLEAR:
                 return mMessage.getInt(B1_TRAFFIC_CHANNEL);
-            case GTC_GO_TO_CHANNEL:
+            case GTC_GO_TO_TRAFFIC_CHANNEL:
                 return mMessage.getInt(B1_GTC_CHAN);
             default:
                 return mMessage.getInt(B1_CHANNEL);
@@ -414,7 +414,7 @@ public class MPT1327Message extends Message
     {
         MPTMessageType type = getMessageType();
 
-        if(type == MPTMessageType.GTC_GO_TO_CHANNEL)
+        if(type == MPTMessageType.GTC_GO_TO_TRAFFIC_CHANNEL)
         {
             return mMessage.getInt(B1_IDENT2_GTC);
         }
@@ -726,7 +726,7 @@ public class MPT1327Message extends Message
                 sb.append(" RETURN TO CONTROL CHANNEL:");
                 sb.append(getReturnToChannel());
                 break;
-            case GTC_GO_TO_CHANNEL:
+            case GTC_GO_TO_TRAFFIC_CHANNEL:
                 if(hasFromID())
                 {
                     sb.append(" FROM:");
