@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.record.wave;
 
+import io.github.dsheirer.util.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import javax.sound.sampled.AudioFormat;
@@ -155,7 +156,8 @@ public class WaveWriter implements AutoCloseable
             {
                 String renamedWithSuffix = mFile.getFileName().toString();
                 renamedWithSuffix = renamedWithSuffix.replace(".tmp", "_" + suffix + ".wav");
-                Path renamedWithSuffixPath = mFile.resolveSibling(renamedWithSuffix);
+                String cleaned = StringUtils.replaceIllegalCharacters(renamedWithSuffix);
+                Path renamedWithSuffixPath = mFile.resolveSibling(cleaned);
                 renamedPath = mFile.resolveSibling(renamedWithSuffixPath);
                 suffix++;
             }

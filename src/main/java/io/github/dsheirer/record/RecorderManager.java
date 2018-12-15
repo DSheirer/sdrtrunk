@@ -23,6 +23,7 @@ import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -225,7 +226,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
             }
         }
 
-        return sb.toString();
+        return StringUtils.replaceIllegalCharacters(sb.toString());
     }
 
     public Path getRecordingBasePath()

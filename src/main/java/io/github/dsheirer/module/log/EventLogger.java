@@ -19,6 +19,7 @@
 package io.github.dsheirer.module.log;
 
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +35,6 @@ import java.nio.file.Path;
 public abstract class EventLogger extends Module
 {
     private final static Logger mLog = LoggerFactory.getLogger(EventLogger.class);
-
-    private static final String[] ILLEGAL_FILENAME_CHARACTERS = {"#", "%", "&", "{", "}", "\\", "<", ">",
-        "*", "?", "/", " ", "$", "!", "'", "\"", ":", "@", "+", "`", "|", "="};
 
     private Path mLogDirectory;
     private String mFileNameSuffix;
@@ -75,7 +73,7 @@ public abstract class EventLogger extends Module
                 sb.append(File.separator);
                 sb.append(TimeStamp.getTimeStamp("_"));
                 sb.append("_");
-                sb.append(replaceIllegalCharacters(mFileNameSuffix));
+                sb.append(StringUtils.replaceIllegalCharacters(mFileNameSuffix));
 
                 mLogFileName = sb.toString();
 
@@ -90,19 +88,6 @@ public abstract class EventLogger extends Module
                 mLog.error("Couldn't create log file in directory:" + mLogDirectory);
             }
         }
-    }
-
-    /**
-     * Replaces any illegal filename characters in the proposed filename
-     */
-    private String replaceIllegalCharacters(String filename)
-    {
-        for(String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS)
-        {
-            filename = filename.replace(illegalCharacter, "_");
-        }
-
-        return filename;
     }
 
     public void stop()
