@@ -93,7 +93,7 @@ public abstract class AbstractReusableBuffer
      *
      * This method is thread-safe.
      */
-    public void decrementUserCount()
+    public synchronized void decrementUserCount()
     {
         if(mUserCount.decrementAndGet() <= 0)
         {
