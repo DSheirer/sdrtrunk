@@ -19,7 +19,6 @@
 package io.github.dsheirer.module.log;
 
 import io.github.dsheirer.module.Module;
-import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +72,7 @@ public abstract class EventLogger extends Module
                 sb.append(File.separator);
                 sb.append(TimeStamp.getTimeStamp("_"));
                 sb.append("_");
-                sb.append(StringUtils.replaceIllegalCharacters(mFileNameSuffix));
+                sb.append(mFileNameSuffix);
 
                 mLogFileName = sb.toString();
 

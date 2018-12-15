@@ -204,14 +204,11 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
      */
     private String getFilePrefix(ReusableAudioPacket packet)
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(SystemProperties.getInstance().getApplicationFolder("recordings"));
-
-        sb.append(File.separator);
+        Path baseFilePath = SystemProperties.getInstance().getApplicationFolder("recordings");
 
         Metadata metadata = packet.getMetadata();
 
+        StringBuilder sb = new StringBuilder();
         sb.append(metadata.hasChannelConfigurationSystem() ? metadata.getChannelConfigurationSystem() + "_" : "");
         sb.append(metadata.hasChannelConfigurationSite() ? metadata.getChannelConfigurationSite() + "_" : "");
         sb.append(metadata.hasChannelConfigurationName() ? metadata.getChannelConfigurationName() + "_" : "");
@@ -226,7 +223,8 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
             }
         }
 
-        return StringUtils.replaceIllegalCharacters(sb.toString());
+        String cleanedFileName = StringUtils.replaceIllegalCharacters(sb.toString());
+        return baseFilePath.resolve(cleanedFileName).toString();
     }
 
     public Path getRecordingBasePath()
@@ -241,7 +239,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getRecordingBasePath());
-        sb.append(File.separator).append(channelName).append("_baseband");
+        sb.append(File.separator).append(StringUtils.replaceIllegalCharacters(channelName)).append("_baseband");
 
         return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }

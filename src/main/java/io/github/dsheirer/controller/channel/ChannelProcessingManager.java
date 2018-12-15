@@ -41,6 +41,7 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -286,7 +287,8 @@ public class ChannelProcessingManager implements ChannelEventListener
                 channel.getDecodeConfiguration().getDecoderType()));
 
         /* Setup event logging */
-        List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), channel.getName());
+        String cleanedChannelName = StringUtils.replaceIllegalCharacters(channel.getName());
+        List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), cleanedChannelName);
 
         if(!loggers.isEmpty())
         {

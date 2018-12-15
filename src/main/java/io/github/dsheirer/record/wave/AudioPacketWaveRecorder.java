@@ -23,7 +23,6 @@ import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
-import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -111,7 +110,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
                 sb.append(TimeStamp.getLongTimeStamp("_"));
                 sb.append(".tmp");
 
-                mFile = Paths.get(StringUtils.replaceIllegalCharacters(sb.toString()));
+                mFile = Paths.get(sb.toString());
 
                 mWriter = new WaveWriter(mAudioFormat, mFile);
 

@@ -23,7 +23,6 @@ import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -90,8 +89,7 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
                 sb.append("_");
                 sb.append(TimeStamp.getTimeStamp("_"));
                 sb.append(".wav");
-                String cleaned = StringUtils.replaceIllegalCharacters(sb.toString());
-                mFile = Paths.get(cleaned);
+                mFile = Paths.get(sb.toString());
 
                 mWriter = new ReusableBufferWaveWriter(mAudioFormat, mFile);
 
