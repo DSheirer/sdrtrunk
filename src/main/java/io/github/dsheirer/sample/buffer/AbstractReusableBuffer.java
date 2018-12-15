@@ -93,7 +93,7 @@ public abstract class AbstractReusableBuffer
      *
      * This method is thread-safe.
      */
-    public synchronized void decrementUserCount()
+    public void decrementUserCount()
     {
         if(mUserCount.decrementAndGet() <= 0)
         {
@@ -104,7 +104,7 @@ public abstract class AbstractReusableBuffer
     /**
      * Sends this buffer back to the owning buffer queue for reuse
      */
-    private void recycle()
+    private synchronized void recycle()
     {
         prepareForRecycle();
 
