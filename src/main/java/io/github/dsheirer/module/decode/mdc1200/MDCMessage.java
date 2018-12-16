@@ -19,44 +19,68 @@
  */
 package io.github.dsheirer.module.decode.mdc1200;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.mdc1200.identifier.MDC1200Identifier;
 import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class MDCMessage extends Message
 {
-    private static int[] sSYNC1 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-        20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
-        30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
+    private static int[] SYNC1 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+        23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
 
-    private static int[] sOPCODE = {47, 46, 45, 44, 43, 42, 41, 40};
-    private static int sANI_FLAG = 40;
-    private static int sDIRECTION_FLAG = 45;
-    private static int sACKNOWLEDGE_REQUIRED_FLAG = 46;
-    private static int sPACKET_TYPE_FLAG = 47;
-    private static int sEMERGENCY_FLAG = 48;
-    private static int[] sARGUMENT = {49, 50, 51, 52, 53, 54};
-    private static int sBOT_EOT_FLAG = 55;
-    private static int[] sDIGIT_2 = {59, 58, 57, 56};
-    private static int[] sDIGIT_1 = {63, 62, 61, 60};
-    private static int[] sDIGIT_4 = {67, 66, 65, 64};
-    private static int[] sDIGIT_3 = {71, 70, 69, 68};
+    private static int[] OPCODE = {47, 46, 45, 44, 43, 42, 41, 40};
+    private static int ANI_FLAG = 40;
+    private static int DIRECTION_FLAG = 45;
+    private static int ACKNOWLEDGE_REQUIRED_FLAG = 46;
+    private static int PACKET_TYPE_FLAG = 47;
+    private static int EMERGENCY_FLAG = 48;
+    private static int[] ARGUMENT = {49, 50, 51, 52, 53, 54};
+    private static int BOT_EOT_FLAG = 55;
+    private static int[] DIGIT_2 = {59, 58, 57, 56};
+    private static int[] DIGIT_1 = {63, 62, 61, 60};
+    private static int[] DIGIT_4 = {67, 66, 65, 64};
+    private static int[] DIGIT_3 = {71, 70, 69, 68};
+    private static int[] IDENTITY = {63, 62, 61, 60, 59, 58, 57, 56, 71, 70, 69, 68, 67, 66, 65, 64};
 
-    private BinaryMessage mMessage;
-    private AliasList mAliasList;
+    private CorrectedBinaryMessage mMessage;
+    private MDC1200Identifier mFromIdentifier;
+    private List<Identifier> mIdentifiers;
 
-    public MDCMessage(BinaryMessage message, AliasList list)
+    public MDCMessage(CorrectedBinaryMessage message)
     {
         mMessage = message;
-        mAliasList = list;
+    }
+
+    public CorrectedBinaryMessage getMessage()
+    {
+        return mMessage;
+    }
+
+    public MDC1200Identifier getFromIdentifier()
+    {
+        if(mFromIdentifier == null)
+        {
+            mFromIdentifier = MDC1200Identifier.createFrom(getMessage().getInt(IDENTITY));
+        }
+
+        return mFromIdentifier;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getFromIdentifier());
+        }
+
+        return mIdentifiers;
     }
 
     public boolean isValid()
@@ -67,7 +91,7 @@ public class MDCMessage extends Message
 
     public PacketType getPacketType()
     {
-        if(mMessage.get(sPACKET_TYPE_FLAG))
+        if(mMessage.get(PACKET_TYPE_FLAG))
         {
             return PacketType.DATA;
         }
@@ -79,7 +103,7 @@ public class MDCMessage extends Message
 
     public Acknowledge getResponse()
     {
-        if(mMessage.get(sACKNOWLEDGE_REQUIRED_FLAG))
+        if(mMessage.get(ACKNOWLEDGE_REQUIRED_FLAG))
         {
             return Acknowledge.YES;
         }
@@ -91,7 +115,7 @@ public class MDCMessage extends Message
 
     public Direction getDirection()
     {
-        if(mMessage.get(sDIRECTION_FLAG))
+        if(mMessage.get(DIRECTION_FLAG))
         {
             return Direction.OUT;
         }
@@ -103,45 +127,33 @@ public class MDCMessage extends Message
 
     public int getOpcode()
     {
-        return mMessage.getInt(sOPCODE);
+        return mMessage.getInt(OPCODE);
     }
 
     public int getArgument()
     {
-        return mMessage.getInt(sARGUMENT);
+        return mMessage.getInt(ARGUMENT);
     }
 
     public boolean isEmergency()
     {
-        return mMessage.get(sEMERGENCY_FLAG);
+        return mMessage.get(EMERGENCY_FLAG);
     }
 
 
     public boolean isANI()
     {
-        return mMessage.get(sANI_FLAG);
+        return mMessage.get(ANI_FLAG);
     }
 
     public boolean isBOT()
     {
-        return mMessage.get(sBOT_EOT_FLAG);
+        return mMessage.get(BOT_EOT_FLAG);
     }
 
     public boolean isEOT()
     {
-        return !mMessage.get(sBOT_EOT_FLAG);
-    }
-
-    public String getUnitID()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(Integer.toHexString(mMessage.getInt(sDIGIT_1)).toUpperCase());
-        sb.append(Integer.toHexString(mMessage.getInt(sDIGIT_2)).toUpperCase());
-        sb.append(Integer.toHexString(mMessage.getInt(sDIGIT_3)).toUpperCase());
-        sb.append(Integer.toHexString(mMessage.getInt(sDIGIT_4)).toUpperCase());
-
-        return sb.toString();
+        return !mMessage.get(BOT_EOT_FLAG);
     }
 
     public MDCMessageType getMessageType()
@@ -158,18 +170,6 @@ public class MDCMessage extends Message
             default:
                 return MDCMessageType.UNKNOWN;
         }
-    }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getMessage());
-
-        sb.append(" [" + mMessage.toString() + "]");
-
-        return sb.toString();
     }
 
     /**
@@ -208,43 +208,18 @@ public class MDCMessage extends Message
         return sb.toString();
     }
 
-    @SuppressWarnings("unused")
-    private int getInt(int[] bits)
-    {
-        int retVal = 0;
-
-        for(int x = 0; x < bits.length; x++)
-        {
-            if(mMessage.get(bits[x]))
-            {
-                retVal += 1 << x;
-            }
-        }
-
-        return retVal;
-    }
-
     @Override
     public Protocol getProtocol()
     {
         return Protocol.MDC1200;
     }
 
-    public String getFromID()
-    {
-        return getUnitID();
-    }
-
-    public Alias getFromIDAlias()
-    {
-        return mAliasList.getMDC1200Alias(getFromID());
-    }
-
-    public String getMessage()
+    @Override
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("MDC1200 UNIT:" + getUnitID());
+        sb.append("MDC1200 UNIT:" + getFromIdentifier());
         if(isEmergency())
         {
             sb.append(" **EMERGENCY**");
@@ -269,23 +244,6 @@ public class MDCMessage extends Message
         return sb.toString();
     }
 
-    /**
-     * Provides a listing of aliases contained in the message.
-     */
-    public List<Alias> getAliases()
-    {
-        List<Alias> aliases = new ArrayList<>();
-
-        Alias from = getFromIDAlias();
-
-        if(from != null)
-        {
-            aliases.add(from);
-        }
-
-        return aliases;
-    }
-
     private enum PacketType
     {
         CMND, DATA
@@ -299,12 +257,5 @@ public class MDCMessage extends Message
     private enum Direction
     {
         IN, OUT
-    }
-
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.EMPTY_LIST;
     }
 }

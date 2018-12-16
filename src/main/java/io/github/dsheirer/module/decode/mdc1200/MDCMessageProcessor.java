@@ -19,7 +19,6 @@
  */
 package io.github.dsheirer.module.decode.mdc1200;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
@@ -31,11 +30,9 @@ public class MDCMessageProcessor implements Listener<CorrectedBinaryMessage>
     private static int sMESSAGE_LENGTH = 112;
 
     private Broadcaster<IMessage> mBroadcaster = new Broadcaster<>();
-    private AliasList mAliasList;
 
-    public MDCMessageProcessor(AliasList aliasList)
+    public MDCMessageProcessor()
     {
-        mAliasList = aliasList;
     }
 
     public void dispose()
@@ -63,7 +60,7 @@ public class MDCMessageProcessor implements Listener<CorrectedBinaryMessage>
          * Wrap the buffer in a message along with the designated alias list
          * and send it on its merry way
          */
-        MDCMessage message = new MDCMessage(buffer, mAliasList);
+        MDCMessage message = new MDCMessage(buffer);
 
         mBroadcaster.receive(message);
     }

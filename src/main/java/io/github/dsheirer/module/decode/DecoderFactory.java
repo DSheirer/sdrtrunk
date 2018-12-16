@@ -268,8 +268,8 @@ public class DecoderFactory
                         modules.add(new Fleetsync2DecoderState());
                         break;
                     case MDC1200:
-                        modules.add(new MDCDecoder(null));
-                        modules.add(new MDCDecoderState(null));
+                        modules.add(new MDCDecoder());
+                        modules.add(new MDCDecoderState());
                         break;
                     case LJ_1200:
                         modules.add(new LJ1200Decoder());
