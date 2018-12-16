@@ -1,19 +1,25 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode;
+
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,29 +30,29 @@ import java.util.EnumSet;
 public enum DecoderType
 {
     //Primary Decoders
-    AM("AM", "AM", 0),
-    LTR_STANDARD("LTR-Standard", "LTR", 300),
-    LTR_NET("LTR-Net", "LTR-Net", 300),
-    MPT1327("MPT1327", "MPT1327", 1200),
-    NBFM("NBFM", "NBFM", 0),
-    PASSPORT("Passport", "Passport", 300),
-    P25_PHASE1("P25 Phase I", "P25-1", 9600),
+    AM("AM", "AM", Protocol.UNKNOWN),
+    LTR_STANDARD("LTR-Standard", "LTR", Protocol.LTR_STANDARD),
+    LTR_NET("LTR-Net", "LTR-Net", Protocol.LTR_NET),
+    MPT1327("MPT1327", "MPT1327", Protocol.MPT1327),
+    NBFM("NBFM", "NBFM", Protocol.UNKNOWN),
+    PASSPORT("Passport", "Passport", Protocol.PASSPORT),
+    P25_PHASE1("P25 Phase I", "P25-1", Protocol.APCO25),
 
     //Auxiliary Decoders
-    FLEETSYNC2("Fleetsync II", "Fleetsync2", 1200),
-    LJ_1200("LJ1200 173.075", "LJ1200", 1200),
-    MDC1200("MDC1200", "MDC1200", 1200),
-    TAIT_1200("Tait 1200", "Tait 1200", 1200);
+    FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
+    LJ_1200("LJ1200 173.075", "LJ1200", Protocol.LOJACK),
+    MDC1200("MDC1200", "MDC1200", Protocol.MDC1200),
+    TAIT_1200("Tait 1200", "Tait 1200", Protocol.TAIT1200);
 
     private String mDisplayString;
     private String mShortDisplayString;
-    private int mBitRate;
+    private Protocol mProtocol;
 
-    DecoderType(String displayString, String shortDisplayString, int bitRate)
+    DecoderType(String displayString, String shortDisplayString, Protocol protocol)
     {
         mDisplayString = displayString;
         mShortDisplayString = shortDisplayString;
-        mBitRate = bitRate;
+        mProtocol = protocol;
     }
 
     /**
@@ -78,6 +84,11 @@ public enum DecoderType
         return decoders;
     }
 
+    public Protocol getProtocol()
+    {
+        return mProtocol;
+    }
+
     public String getDisplayString()
     {
         return mDisplayString;
@@ -92,10 +103,5 @@ public enum DecoderType
     public String toString()
     {
         return mDisplayString;
-    }
-
-    public int getBitRate()
-    {
-        return mBitRate;
     }
 }

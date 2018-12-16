@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.alias;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
@@ -23,9 +24,7 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.WildcardID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
-import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
-import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.mobileID.Min;
@@ -60,11 +59,9 @@ public class AliasList implements Listener<AliasEvent>
     public static final String REGEX_WILDCARD = ".";
 
     private Map<String,Alias> mESN = new HashMap<>();
-    private Map<String,Alias> mFleetsync = new HashMap<>();
     private Map<LoJackFunctionAndID,Alias> mLoJack = new HashMap<>();
     private Map<String,Alias> mMDC1200 = new HashMap<>();
     private Map<String,Alias> mMobileID = new HashMap<>();
-    private Map<String,Alias> mMPT1327 = new HashMap<>();
     private Map<String,Alias> mSiteID = new HashMap<>();
     private Map<Integer,Alias> mStatus = new HashMap<>();
     private Map<String,Alias> mTalkgroup = new HashMap<>();
@@ -72,9 +69,7 @@ public class AliasList implements Listener<AliasEvent>
 
     private List<WildcardID> mESNWildcards = new ArrayList<>();
     private List<WildcardID> mMobileIDWildcards = new ArrayList<>();
-    private List<WildcardID> mFleetsyncWildcards = new ArrayList<>();
     private List<WildcardID> mMDC1200Wildcards = new ArrayList<>();
-    private List<WildcardID> mMPT1327Wildcards = new ArrayList<>();
     private List<WildcardID> mSiteWildcards = new ArrayList<>();
     private List<WildcardID> mTalkgroupWildcards = new ArrayList<>();
     private boolean mHasAliasActions = false;
@@ -151,20 +146,6 @@ public class AliasList implements Listener<AliasEvent>
                             mESN.put(esn, alias);
                         }
                         break;
-                    case FLEETSYNC:
-                        String fleetsync = ((FleetsyncID) id).getIdent();
-
-                        if(fleetsync != null)
-                        {
-                            if(fleetsync.contains(WILDCARD))
-                            {
-                                mFleetsyncWildcards.add(new WildcardID(fleetsync));
-                                Collections.sort(mFleetsyncWildcards);
-                            }
-
-                            mFleetsync.put(fleetsync, alias);
-                        }
-                        break;
                     case LOJACK:
                         mLoJack.put((LoJackFunctionAndID) id, alias);
                         break;
@@ -180,20 +161,6 @@ public class AliasList implements Listener<AliasEvent>
                             }
 
                             mMDC1200.put(mdc, alias);
-                        }
-                        break;
-                    case MPT1327:
-                        String mpt = ((MPT1327ID) id).getIdent();
-
-                        if(mpt != null)
-                        {
-                            if(mpt.contains(WILDCARD))
-                            {
-                                mMPT1327Wildcards.add(new WildcardID(mpt));
-                                Collections.sort(mMPT1327Wildcards);
-                            }
-
-                            mMPT1327.put(mpt, alias);
                         }
                         break;
                     case MIN:
@@ -311,19 +278,6 @@ public class AliasList implements Listener<AliasEvent>
 
                     mESN.remove(esn);
                     break;
-                case FLEETSYNC:
-                    String fleetsync = ((FleetsyncID) id).getIdent();
-
-                    if(fleetsync != null)
-                    {
-                        if(fleetsync.contains(WILDCARD))
-                        {
-                            removeWildcard(fleetsync, mFleetsyncWildcards);
-                        }
-
-                        mFleetsync.remove(fleetsync);
-                    }
-                    break;
                 case LOJACK:
                     mLoJack.remove((LoJackFunctionAndID) id);
                     break;
@@ -338,19 +292,6 @@ public class AliasList implements Listener<AliasEvent>
                         }
 
                         mMDC1200.remove(mdc);
-                    }
-                    break;
-                case MPT1327:
-                    String mpt = ((MPT1327ID) id).getIdent();
-
-                    if(mpt != null)
-                    {
-                        if(mpt.contains(WILDCARD))
-                        {
-                            removeWildcard(mpt, mMPT1327Wildcards);
-                        }
-
-                        mMPT1327.remove(mpt);
                     }
                     break;
                 case MIN:
@@ -491,31 +432,6 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
-     * Lookup alias by fleetsync ID
-     */
-    public Alias getFleetsyncAlias(String ident)
-    {
-        Alias alias = null;
-
-        if(ident != null)
-        {
-            alias = mFleetsync.get(ident);
-
-            if(alias == null)
-            {
-                String wildcard = getWildcardMatch(ident, mFleetsyncWildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mFleetsync.get(wildcard);
-                }
-            }
-        }
-
-        return alias;
-    }
-
-    /**
      * Lookup alias by lojack function and ID
      */
     public Alias getLoJackAlias(LJ1200Message.Function function, String id)
@@ -552,31 +468,6 @@ public class AliasList implements Listener<AliasEvent>
                 if(wildcard != null)
                 {
                     alias = mMDC1200.get(wildcard);
-                }
-            }
-        }
-
-        return alias;
-    }
-
-    /**
-     * Lookup alias by MPT1327 Ident
-     */
-    public Alias getMPT1327Alias(String ident)
-    {
-        Alias alias = null;
-
-        if(ident != null)
-        {
-            alias = mMPT1327.get(ident);
-
-            if(alias == null)
-            {
-                String wildcard = getWildcardMatch(ident, mMPT1327Wildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mMPT1327.get(wildcard);
                 }
             }
         }

@@ -78,8 +78,8 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
     private Queue<Channel> mAvailableTrafficChannelQueue = new ConcurrentLinkedQueue<>();
     private List<Channel> mManagedTrafficChannels;
-    private Map<APCO25Channel,P25ChannelGrantEvent> mChannelGrantEventMap = new ConcurrentHashMap<>();
     private Map<APCO25Channel,Channel> mAllocatedTrafficChannelMap = new ConcurrentHashMap<>();
+    private Map<APCO25Channel,P25ChannelGrantEvent> mChannelGrantEventMap = new ConcurrentHashMap<>();
 
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
@@ -191,7 +191,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
         mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
 
-        //Allocate a traffic channel for the downlink frequency is one isn't already allocated
+        //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
         if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel))
         {
@@ -316,8 +316,6 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     {
         mChannelEventListener = null;
     }
-
-    //TODO: review/remove the code below
 
     /**
      * Compares the TO role identifier(s) from each collection for equality

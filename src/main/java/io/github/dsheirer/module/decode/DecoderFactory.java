@@ -65,6 +65,7 @@ import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderEditor;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderState;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327MessageFilter;
+import io.github.dsheirer.module.decode.mpt1327.MPT1327TrafficChannelManager;
 import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
@@ -181,20 +182,25 @@ public class DecoderFactory
                 DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)decodeConfig;
                 ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
                 Sync sync = mptConfig.getSync();
-                modules.add(new MPT1327Decoder(null, sync));
-                modules.add(new MPT1327DecoderState(null, channelMap, channelType, mptConfig.getCallTimeout() * 1000));
+                modules.add(new MPT1327Decoder(sync));
                 modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
 
-//                if(channelType == ChannelType.STANDARD)
-//                {
-//                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
-//                        channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-//                        null, mptConfig.getTrafficChannelPoolSize()));
-//                }
+                long timeout = mptConfig.getCallTimeout() * 1000;
+
+                if(channelType == ChannelType.STANDARD)
+                {
+                    MPT1327TrafficChannelManager trafficChannelManager = new MPT1327TrafficChannelManager(channel, channelMap);
+                    modules.add(trafficChannelManager);
+                    modules.add(new MPT1327DecoderState(trafficChannelManager, channelType, timeout));
+                }
+                else
+                {
+                    modules.add(new MPT1327DecoderState(channelType, timeout));
+                }
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, null));
@@ -413,9 +419,7 @@ public class DecoderFactory
             switch(config.getDecoderType())
             {
                 case AM:
-                    DecodeConfigAM originalAM = (DecodeConfigAM)config;
-                    DecodeConfigAM copyAM = new DecodeConfigAM();
-                    return copyAM;
+                    return new DecodeConfigAM();
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
@@ -435,9 +439,7 @@ public class DecoderFactory
                     copyMPT.setTrafficChannelPoolSize(originalMPT.getTrafficChannelPoolSize());
                     return copyMPT;
                 case NBFM:
-                    DecodeConfigNBFM originalNBFM = (DecodeConfigNBFM)config;
-                    DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
-                    return copyNBFM;
+                    return new DecodeConfigNBFM();
                 case P25_PHASE1:
                     DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;
                     DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();
@@ -446,9 +448,7 @@ public class DecoderFactory
                     copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
                     return copyP25;
                 case PASSPORT:
-                    DecodeConfigPassport originalPass = (DecodeConfigPassport)config;
-                    DecodeConfigPassport copyPass = new DecodeConfigPassport();
-                    return copyPass;
+                    return new DecodeConfigPassport();
                 default:
                     throw new IllegalArgumentException("Unrecognized decoder configuration type:" + config.getDecoderType());
             }
@@ -458,12 +458,12 @@ public class DecoderFactory
     }
 
     /**
-     * Decoder(s) that support bitstreams.
+     * Decoder(s) that support bitstreams indicating that they produce ReusableByteBuffers of decoded bits.
      *
      * @return set of decoders that support bitstreams.
      */
     public static EnumSet<DecoderType> getBitstreamDecoders()
     {
-        return EnumSet.of(DecoderType.P25_PHASE1);
+        return EnumSet.of(DecoderType.P25_PHASE1, DecoderType.MPT1327);
     }
 }

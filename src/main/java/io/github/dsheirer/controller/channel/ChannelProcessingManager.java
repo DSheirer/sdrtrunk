@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
@@ -275,7 +276,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                         channel.getChannelType() == Channel.ChannelType.STANDARD))
                 {
                     processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
+                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
                 }
 
                 /* Add traffic channel decoded bit stream recorder */
@@ -283,7 +284,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                         channel.getChannelType() == Channel.ChannelType.TRAFFIC)
                 {
                     processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getBitRate()));
+                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
                 }
             }
         }

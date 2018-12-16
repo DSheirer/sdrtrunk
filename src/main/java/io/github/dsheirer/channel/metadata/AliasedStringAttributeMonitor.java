@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.channel.metadata;
 
 import io.github.dsheirer.alias.Alias;
@@ -94,17 +95,11 @@ public class AliasedStringAttributeMonitor extends AttributeMonitor<String>
                     case ESN:
                         alias = mAliasList.getESNAlias(getValue());
                         break;
-                    case FLEETSYNC:
-                        alias = mAliasList.getFleetsyncAlias(getValue());
-                        break;
                     case MDC1200:
                         alias = mAliasList.getMDC1200Alias(getValue());
                         break;
                     case MIN:
                         alias = mAliasList.getMobileIDNumberAlias(getValue());
-                        break;
-                    case MPT1327:
-                        alias = mAliasList.getMPT1327Alias(getValue());
                         break;
                     case SITE:
                         alias = mAliasList.getSiteID(getValue());

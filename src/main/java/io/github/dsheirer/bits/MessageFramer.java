@@ -70,7 +70,7 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
         mMessageAssemblers.clear();
     }
 
-    public void receive(boolean bit)
+    public void process(boolean bit)
     {
         mMatcher.receive(bit);
 
@@ -112,7 +112,7 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
     @Override
     public void receive(Boolean bit)
     {
-        receive(bit);
+        process(bit);
     }
 
     /**

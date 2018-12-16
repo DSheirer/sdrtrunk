@@ -77,10 +77,10 @@ public class LJ1200Decoder extends AbstractAFSKDecoder implements IBinarySymbolP
     }
 
     @Override
-    public void receive(boolean symbol)
+    public void process(boolean symbol)
     {
-        mTowerMessageFramer.receive(symbol);
-        mTransponderMessageFramer.receive(symbol);
+        mTowerMessageFramer.process(symbol);
+        mTransponderMessageFramer.process(symbol);
     }
 
     public MessageFramer getTowerMessageFramer()

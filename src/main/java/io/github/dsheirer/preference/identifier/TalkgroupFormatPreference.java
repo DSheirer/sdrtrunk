@@ -29,6 +29,7 @@ import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.LtrNetTalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -307,6 +308,9 @@ public class TalkgroupFormatPreference extends Preference
             case LTR_NET:
                 return LtrNetTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_NET),
                     isTalkgroupFixedWidth(Protocol.LTR_NET));
+            case MPT1327:
+                return MPT1327TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MPT1327),
+                    isTalkgroupFixedWidth(Protocol.MPT1327));
             default:
                 return talkgroupIdentifier.toString();
         }
