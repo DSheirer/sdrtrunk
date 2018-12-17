@@ -19,7 +19,6 @@
  */
 package io.github.dsheirer.module.decode.tait;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
@@ -32,7 +31,6 @@ import io.github.dsheirer.module.decode.afsk.AbstractAFSKDecoder;
  */
 public class Tait1200Decoder extends AbstractAFSKDecoder implements IBinarySymbolProcessor
 {
-    /* Message length ... */
     private static final int MESSAGE_LENGTH = 440;
 
     private MessageFramer mMessageFramerGPS;
@@ -40,27 +38,27 @@ public class Tait1200Decoder extends AbstractAFSKDecoder implements IBinarySymbo
     private Tait1200GPSMessageProcessor mMessageAProcessor;
     private Tait1200ANIMessageProcessor mMessageBProcessor;
 
-    protected Tait1200Decoder(AFSK1200Decoder decoder, AliasList aliasList)
+    protected Tait1200Decoder(AFSK1200Decoder decoder)
     {
         super(decoder);
-        init(aliasList);
+        init();
     }
 
-    public Tait1200Decoder(AliasList aliasList)
+    public Tait1200Decoder()
     {
         super(AFSK1200Decoder.Output.NORMAL);
-        init(aliasList);
+        init();
     }
 
-    private void init(AliasList aliasList)
+    private void init()
     {
         getDecoder().setSymbolProcessor(this);
 
         mMessageFramerGPS = new MessageFramer(SyncPattern.TAIT_CCDI_GPS_MESSAGE.getPattern(), MESSAGE_LENGTH);
         mMessageFramerANI = new MessageFramer(SyncPattern.TAIT_SELCAL_MESSAGE.getPattern(), MESSAGE_LENGTH);
 
-        mMessageAProcessor = new Tait1200GPSMessageProcessor(aliasList);
-        mMessageBProcessor = new Tait1200ANIMessageProcessor(aliasList);
+        mMessageAProcessor = new Tait1200GPSMessageProcessor();
+        mMessageBProcessor = new Tait1200ANIMessageProcessor();
 
         mMessageFramerGPS.addMessageListener(mMessageAProcessor);
         mMessageFramerANI.addMessageListener(mMessageBProcessor);

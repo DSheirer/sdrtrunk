@@ -20,74 +20,100 @@
 package io.github.dsheirer.module.decode.passport;
 
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCPassport;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageType;
+import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.protocol.Protocol;
 
-import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class PassportMessage extends Message
 {
-    private static final String sUNKNOWN = "**UNKNOWN**";
-    private SimpleDateFormat mSDF = new SimpleDateFormat("yyyyMMdd HHmmss");
-    private DecimalFormat mDecimalFormatter = new DecimalFormat("0.00000");
+    private static final int[] SYNC = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+    private static final int[] DIGITAL_COLOR_CODE = {9, 10};
+    private static final int[] CHANNEL_NUMBER = {11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
+    private static final int[] SITE = {22, 23, 24, 25, 26, 27, 28};
+    private static final int[] GROUP = {29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44};
+    private static final int[] RADIO_ID = {22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44};
+    private static final int[] NEIGHBOR_BAND = {33, 34, 35, 36};
+    private static final int[] SITE_BAND = {41, 42, 43, 44};
+    private static final int[] TYPE = {45, 46, 47, 48};
+    private static final int[] FREE = {49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59};
+    private static final int[] CHECKSUM = {60, 61, 62, 63, 64, 65, 66, 67};
 
-    @SuppressWarnings("unused")
-    private static final int[] sSYNC = {8, 7, 6, 5, 4, 3, 2, 1, 0};
-    private static final int[] sDCC = {10, 9}; //Digital Color Code
-    private static final int[] sLCN = {21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11};
-    private static final int[] sSITE = {28, 27, 26, 25, 24, 23, 22};
-    private static final int[] sGROUP = {44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29};
-    private static final int[] sRADIO_ID = {44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22};
-    //    private static final int[] sNEIGHBOR_OFFSET = { 32,31,30 };
-    private static final int[] sNEIGHBOR_BAND = {36, 35, 34, 33};
-    private static final int[] sNEIGHBOR_REGISTRATION = {29};
-    private static final int[] sSITE_OFFSET = {40, 39, 38};
-    private static final int[] sSITE_BAND = {44, 43, 42, 41};
-    private static final int[] sSITE_REGISTRATION = {37};
-    private static final int[] sTYPE = {48, 47, 46, 45};
-    private static final int[] sFREE = {59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49};
-    private static final int[] sCHECKSUM = {67, 66, 65, 64, 63, 62, 61, 60};
-    private BinaryMessage mMessage;
+    private CorrectedBinaryMessage mMessage;
     private CRC mCRC;
-    private AliasList mAliasList;
     private PassportMessage mIdleMessage;
+    private PassportTalkgroup mFromIdentifier;
+    private PassportTalkgroup mToIdentifier;
+    private List<Identifier> mIdentifiers;
 
-    public PassportMessage(BinaryMessage message,
-                           PassportMessage idleMessage,
-                           AliasList list)
+    public PassportMessage(CorrectedBinaryMessage message, PassportMessage idleMessage)
     {
         mMessage = CRCPassport.correct(message);
         mIdleMessage = idleMessage;
         mCRC = CRCPassport.check(mMessage);
-        mAliasList = list;
     }
 
-    public PassportMessage(BinaryMessage message, AliasList list)
+    public PassportMessage(CorrectedBinaryMessage message)
     {
-        this(message, null, list);
+        this(message, null);
     }
 
-    public BinaryMessage getBitSetBuffer()
+    public CorrectedBinaryMessage getMessage()
     {
         return mMessage;
     }
 
+    public PassportTalkgroup getToIdentifier()
+    {
+        if(mToIdentifier == null)
+        {
+            mToIdentifier = PassportTalkgroup.createTo(getMessage().getInt(GROUP));
+        }
+
+        return mToIdentifier;
+    }
+
+    public PassportTalkgroup getFromIdentifier()
+    {
+        if(mFromIdentifier == null)
+        {
+            mFromIdentifier = PassportTalkgroup.createFrom(getMessage().getInt(RADIO_ID));
+        }
+
+        return mFromIdentifier;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+
+            if(hasFromIdentifier())
+            {
+                mIdentifiers.add(getFromIdentifier());
+            }
+
+            if(hasToIdentifier())
+            {
+                mIdentifiers.add(getToIdentifier());
+            }
+        }
+
+        return mIdentifiers;
+    }
+
     public boolean isValid()
     {
-        return mCRC != CRC.FAILED_CRC &&
-            mCRC != CRC.FAILED_PARITY &&
-            mCRC != CRC.UNKNOWN;
+        return mCRC.passes();
     }
 
     public CRC getCRC()
@@ -148,48 +174,29 @@ public class PassportMessage extends Message
     }
 
 
-    public int getDCC()
+    public int getColorCode()
     {
-        return getInt(sDCC);
+        return getMessage().getInt(DIGITAL_COLOR_CODE);
     }
 
     public int getSite()
     {
-        return getInt(sSITE);
+        return getMessage().getInt(SITE);
     }
 
     public int getMessageTypeNumber()
     {
-        return getInt(sTYPE);
+        return getMessage().getInt(TYPE);
     }
 
-    public int getTalkgroupID()
+    public boolean hasToIdentifier()
     {
-        if(getMessageType() == MessageType.SY_IDLE)
-        {
-            return 0;
-        }
-        else
-        {
-            return getInt(sGROUP);
-        }
-    }
-
-    public Alias getTalkgroupIDAlias()
-    {
-        int tg = getTalkgroupID();
-
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(String.valueOf(tg));
-        }
-
-        return null;
+        return getMessageType() != MessageType.SY_IDLE;
     }
 
     public int getLCN()
     {
-        return getInt(sLCN);
+        return getMessage().getInt(CHANNEL_NUMBER);
     }
 
     public long getLCNFrequency()
@@ -197,34 +204,24 @@ public class PassportMessage extends Message
         return getSiteFrequency(getLCN());
     }
 
-    public String getLCNFrequencyFormatted()
-    {
-        return mDecimalFormatter.format((double)getLCNFrequency() / 1000000.0d);
-    }
-
     public PassportBand getSiteBand()
     {
-        return PassportBand.lookup(getInt(sSITE_BAND));
+        return PassportBand.lookup(getMessage().getInt(SITE_BAND));
     }
 
     public PassportBand getNeighborBand()
     {
-        return PassportBand.lookup(getInt(sNEIGHBOR_BAND));
+        return PassportBand.lookup(getMessage().getInt(NEIGHBOR_BAND));
     }
 
     public int getFree()
     {
-        return getInt(sFREE);
+        return getMessage().getInt(FREE);
     }
 
     public long getFreeFrequency()
     {
         return getSiteFrequency(getFree());
-    }
-
-    public String getFreeFrequencyFormatted()
-    {
-        return mDecimalFormatter.format((double)getFreeFrequency() / 1000000.0d);
     }
 
     public long getNeighborFrequency()
@@ -239,36 +236,9 @@ public class PassportMessage extends Message
         return 0;
     }
 
-    /**
-     * Returns the radio id in hex format, or null if not the correct message
-     * type
-     *
-     * @return - radio id or null
-     */
-    public String getMobileID()
+    public boolean hasFromIdentifier()
     {
-        if(getMessageType() == MessageType.ID_RDIO)
-        {
-            int radioId = getInt(sRADIO_ID);
-
-            return String.format("%06X", radioId & 0xFFFFFF);
-        }
-        else
-        {
-            return null;
-        }
-    }
-
-    public Alias getMobileIDAlias()
-    {
-        String min = getMobileID();
-
-        if(mAliasList != null && min != null)
-        {
-            return mAliasList.getMobileIDNumberAlias(min);
-        }
-
-        return null;
+        return getMessageType() == MessageType.ID_RDIO;
     }
 
     /**
@@ -280,21 +250,6 @@ public class PassportMessage extends Message
         {
             sb.append(" ");
         }
-    }
-
-    private int getInt(int[] bits)
-    {
-        int retVal = 0;
-
-        for(int x = 0; x < bits.length; x++)
-        {
-            if(mMessage.get(bits[x]))
-            {
-                retVal += 1 << x;
-            }
-        }
-
-        return retVal;
     }
 
     /**
@@ -336,22 +291,6 @@ public class PassportMessage extends Message
         return Protocol.PASSPORT;
     }
 
-    public String getEventType()
-    {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    public String getToID()
-    {
-        return String.valueOf(getTalkgroupID());
-    }
-
-    public Alias getToIDAlias()
-    {
-        return getTalkgroupIDAlias();
-    }
-
     public long getSiteFrequency(int channel)
     {
         if(mIdleMessage != null && 0 < channel && channel < 1792)
@@ -367,244 +306,75 @@ public class PassportMessage extends Message
         return 0;
     }
 
-    public String getMessage()
+    @Override
+    public String toString()
     {
         StringBuilder sb = new StringBuilder();
+        sb.append("DCC:").append(getColorCode());
 
         switch(getMessageType())
         {
             case SY_IDLE:
-                sb.append("IDLE SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" NEIGHBOR:");
-                sb.append(format(getFree(), 3));
-                sb.append("/");
-                sb.append(getFreeFrequencyFormatted());
+                sb.append(" IDLE SITE:").append(format(getSite(), 3));
+                sb.append(" NEIGHBOR:").append(format(getFree(), 3)).append("/").append(getFreeFrequency());
                 break;
             case CA_PAGE:
-                sb.append("PAGING TG:");
-                sb.append(format(getTalkgroupID(), 5));
-                sb.append("/");
-                Alias pageAlias = getTalkgroupIDAlias();
-                if(pageAlias != null)
-                {
-                    sb.append(pageAlias.getName());
-                }
-                else
-                {
-                    sb.append(sUNKNOWN);
-                }
-                sb.append(" SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" CHAN:");
-                sb.append(format(getLCN(), 4));
-                sb.append("/");
-                sb.append(getLCNFrequencyFormatted());
-                sb.append(" FREE:");
-                sb.append(format(getFree(), 3));
-                sb.append("/");
-                sb.append(getFreeFrequencyFormatted());
+                sb.append(" PAGING TG:").append(getToIdentifier());
+                sb.append(" SITE:").append(format(getSite(), 3));
+                sb.append(" CHAN:").append(format(getLCN(), 4)).append("/").append(getLCNFrequency());
+                sb.append(" FREE:").append(format(getFree(), 3)).append("/").append(getFreeFrequency());
                 break;
             case CA_STRT:
-                sb.append("CALL TG:");
-                sb.append(format(getTalkgroupID(), 5));
-                sb.append("/");
-                Alias startAlias = getTalkgroupIDAlias();
-                if(startAlias != null)
-                {
-                    sb.append(startAlias.getName());
-                }
-                else
-                {
-                    sb.append(sUNKNOWN);
-                }
-                sb.append(" SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" CHAN:");
-                sb.append(format(getLCN(), 4));
-                sb.append("/");
-                sb.append(getLCNFrequencyFormatted());
-                sb.append(" FREE:");
-                sb.append(format(getFree(), 3));
-                sb.append("/");
-                sb.append(getFreeFrequencyFormatted());
+                sb.append(" CALL TG:").append(getToIdentifier());
+                sb.append(" SITE:").append(format(getSite(), 3));
+                sb.append(" CHAN:").append(format(getLCN(), 4)).append("/").append(getLCNFrequency());
+                sb.append(" FREE:").append(format(getFree(), 3)).append("/").append(getFreeFrequency());
                 break;
             case DA_STRT:
-                sb.append("** DATA TG:");
-                sb.append(format(getTalkgroupID(), 5));
-                sb.append("/");
-                Alias dataStartAlias = getTalkgroupIDAlias();
-                if(dataStartAlias != null)
-                {
-                    sb.append(dataStartAlias.getName());
-                }
-                else
-                {
-                    sb.append(sUNKNOWN);
-                }
-                sb.append(" SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" CHAN:");
-                sb.append(format(getLCN(), 4));
-                sb.append("/");
-                sb.append(getLCNFrequencyFormatted());
-                sb.append(" FREE:");
-                sb.append(format(getFree(), 3));
-                sb.append("/");
-                sb.append(getFreeFrequencyFormatted());
+                sb.append(" ** DATA TG:").append(getToIdentifier());
+                sb.append(" SITE:").append(format(getSite(), 3));
+                sb.append(" CHAN:").append(format(getLCN(), 4)).append("/").append(getLCNFrequency());
+                sb.append(" FREE:").append(format(getFree(), 3)).append("/").append(getFreeFrequency());
                 break;
             case CA_ENDD:
-                sb.append("END  TG:");
-                sb.append(format(getTalkgroupID(), 5));
-                sb.append("/");
-                Alias endAlias = getTalkgroupIDAlias();
-                if(endAlias != null)
-                {
-                    sb.append(endAlias.getName());
-                }
-                else
-                {
-                    sb.append(sUNKNOWN);
-                }
-                sb.append(" SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" CHAN:");
-                sb.append(format(getLCN(), 4));
-                sb.append("/");
-                sb.append(getLCNFrequencyFormatted());
-                sb.append(" FREE:");
-                sb.append(format(getFree(), 3));
-                sb.append("/");
-                sb.append(getFreeFrequencyFormatted());
+                sb.append(" END  TG:").append(getToIdentifier());
+                sb.append(" SITE:").append(format(getSite(), 3));
+                sb.append(" CHAN:").append(format(getLCN(), 4)).append("/").append(getLCNFrequency());
+                sb.append(" FREE:").append(format(getFree(), 3)).append("/").append(getFreeFrequency());
                 break;
             case ID_RDIO:
-                sb.append("MOBILE ID MIN:");
-                sb.append(getMobileID());
-                sb.append("/");
-                Alias mobileIDAlias = getMobileIDAlias();
-
-                if(mobileIDAlias != null)
-                {
-                    sb.append(mobileIDAlias.getName());
-                }
-                else
-                {
-                    sb.append("UNKNOWN");
-                }
-                sb.append(" FREE:");
-                sb.append(format(getFree(), 3));
-                sb.append("/");
-                sb.append(getFreeFrequencyFormatted());
+                sb.append(" MOBILE ID MIN:").append(getFromIdentifier());
+                sb.append(" FREE:").append(format(getFree(), 3)).append("/").append(getFreeFrequency());
                 break;
             case ID_TGAS:
-                sb.append("ASSIGN TALKGROUP:");
-                sb.append(format(getTalkgroupID(), 5));
-                sb.append("/");
-                Alias assignAlias = getTalkgroupIDAlias();
-                if(assignAlias != null)
-                {
-                    sb.append(assignAlias.getName());
-                }
-                else
-                {
-                    sb.append(sUNKNOWN);
-                }
-                sb.append(" SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" CHAN:");
-                sb.append(format(getLCN(), 4));
-                sb.append("/");
-                sb.append(getLCNFrequencyFormatted());
+                sb.append(" ASSIGN TALKGROUP:").append(getToIdentifier());
+                sb.append(" SITE:").append(format(getSite(), 3));
+                sb.append(" CHAN:").append(format(getLCN(), 4)).append("/").append(getLCNFrequency());
                 break;
             case RA_REGI:
-                sb.append("RADIO REGISTER TG: ");
-                sb.append(format(getTalkgroupID(), 5));
-                sb.append("/");
-                Alias regAlias = getTalkgroupIDAlias();
-                if(regAlias != null)
-                {
-                    sb.append(regAlias.getName());
-                }
-                else
-                {
-                    sb.append(sUNKNOWN);
-                }
+                sb.append(" RADIO REGISTER TG: ").append(getToIdentifier());
                 break;
             default:
-                sb.append("UNKNOWN SITE:");
-                sb.append(format(getSite(), 3));
-                sb.append(" CHAN:");
-                sb.append(format(getLCN(), 4));
-                sb.append("/");
-                sb.append(getLCNFrequencyFormatted());
+                sb.append(" UNKNOWN SITE:").append(format(getSite(), 3));
+                sb.append(" CHAN:").append(format(getLCN(), 4)).append("/").append(getLCNFrequency());
                 sb.append(" FREE:");
                 int free = getFree();
                 sb.append(format(free, 3));
                 if(free > 0 && free < 896)
                 {
                     sb.append("/");
-                    sb.append(getFreeFrequencyFormatted());
+                    sb.append(getFreeFrequency());
                 }
-                sb.append(" TYP:");
-                sb.append(format(getMessageTypeNumber(), 2));
-                sb.append(" TG:");
-                sb.append(format(getTalkgroupID(), 5));
+                sb.append(" TYP:").append(format(getMessageTypeNumber(), 2));
+                sb.append(" TG:").append(getToIdentifier());
                 break;
         }
 
         return sb.toString();
     }
 
-    @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(mSDF.format(getTimestamp()));
-        sb.append(" ");
-        sb.append(getMessage());
-        pad(sb, 100);
-        sb.append(mCRC.toString());
-        pad(sb, 110);
-        sb.append(" [");
-        sb.append(mMessage);
-        sb.append("]");
-
-        return sb.toString();
-    }
-
     public boolean matches(PassportMessage otherMessage)
     {
-        return this.getBitSetBuffer().equals(otherMessage.getBitSetBuffer());
-    }
-
-    /**
-     * Provides a listing of aliases contained in the message.
-     */
-    public List<Alias> getAliases()
-    {
-        List<Alias> aliases = new ArrayList<>();
-
-        Alias talkgroup = getTalkgroupIDAlias();
-
-        if(talkgroup != null)
-        {
-            aliases.add(talkgroup);
-        }
-
-        Alias mid = getMobileIDAlias();
-
-        if(mid != null)
-        {
-            aliases.add(mid);
-        }
-
-        return aliases;
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.EMPTY_LIST;
+        return this.getMessage().equals(otherMessage.getMessage());
     }
 }

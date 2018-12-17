@@ -1,40 +1,40 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.passport;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.sample.Listener;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class PassportMessageProcessor implements Listener<CorrectedBinaryMessage>
 {
     private Listener<IMessage> mMessageListener;
     private IdleMessageFinder mIdleFinder = new IdleMessageFinder();
-    private AliasList mAliasList;
     private PassportMessage mIdleMessage;
 
-    public PassportMessageProcessor(AliasList list)
+    public PassportMessageProcessor()
     {
-        mAliasList = list;
     }
 
     @Override
@@ -46,11 +46,11 @@ public class PassportMessageProcessor implements Listener<CorrectedBinaryMessage
 
             if(mIdleMessage != null)
             {
-                message = new PassportMessage(buffer, mIdleMessage, mAliasList);
+                message = new PassportMessage(buffer, mIdleMessage);
             }
             else
             {
-                message = new PassportMessage(buffer, mAliasList);
+                message = new PassportMessage(buffer);
                 mIdleFinder.receive(message);
             }
 
@@ -70,8 +70,7 @@ public class PassportMessageProcessor implements Listener<CorrectedBinaryMessage
 
     public class IdleMessageFinder
     {
-        public HashMap<String, Integer> mMessageCounts =
-                new HashMap<String, Integer>();
+        public Map<String,Integer> mMessageCounts = new HashMap<String,Integer>();
 
         public boolean mIdleMessageFound = false;
 
@@ -82,8 +81,8 @@ public class PassportMessageProcessor implements Listener<CorrectedBinaryMessage
         public void receive(PassportMessage message)
         {
             if(!mIdleMessageFound &&
-                    message.isValid() &&
-                    message.getMessageType() == MessageType.SY_IDLE)
+                message.isValid() &&
+                message.getMessageType() == MessageType.SY_IDLE)
             {
                 if(mMessageCounts.containsKey(message.toString()))
                 {

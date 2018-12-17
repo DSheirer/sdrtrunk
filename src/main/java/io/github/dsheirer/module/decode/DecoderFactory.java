@@ -203,8 +203,8 @@ public class DecoderFactory
                 }
                 break;
             case PASSPORT:
-                modules.add(new PassportDecoder(decodeConfig, null));
-                modules.add(new PassportDecoderState(null));
+                modules.add(new PassportDecoder(decodeConfig));
+                modules.add(new PassportDecoderState());
                 modules.add(new AudioModule());
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
@@ -276,8 +276,8 @@ public class DecoderFactory
                         modules.add(new LJ1200DecoderState());
                         break;
                     case TAIT_1200:
-                        modules.add(new Tait1200Decoder(null));
-                        modules.add(new Tait1200DecoderState(null));
+                        modules.add(new Tait1200Decoder());
+                        modules.add(new Tait1200DecoderState());
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized auxiliary decoder type [" + auxDecoder + "]");

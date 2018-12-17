@@ -45,6 +45,7 @@ public enum Form
     SYSTEM,
     TALKGROUP,
     TELEPHONE_NUMBER,
+    UNIT_IDENTIFIER,
     UNIT_STATUS,
     USER_STATUS,
     UNIQUE_ID,

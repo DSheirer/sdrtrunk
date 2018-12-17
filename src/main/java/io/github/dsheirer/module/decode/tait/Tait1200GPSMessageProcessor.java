@@ -19,7 +19,6 @@
  */
 package io.github.dsheirer.module.decode.tait;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.sample.Listener;
@@ -32,17 +31,13 @@ public class Tait1200GPSMessageProcessor implements Listener<CorrectedBinaryMess
 
     private Listener<IMessage> mMessageListener;
 
-    private AliasList mAliasList;
-
-    public Tait1200GPSMessageProcessor(AliasList list)
+    public Tait1200GPSMessageProcessor()
     {
-        mAliasList = list;
     }
 
     public void dispose()
     {
         mMessageListener = null;
-        mAliasList = null;
     }
 
     @Override
@@ -50,7 +45,7 @@ public class Tait1200GPSMessageProcessor implements Listener<CorrectedBinaryMess
     {
         if(mMessageListener != null)
         {
-            mMessageListener.receive(new Tait1200GPSMessage(buffer, mAliasList));
+            mMessageListener.receive(new Tait1200GPSMessage(buffer));
         }
     }
 

@@ -19,19 +19,17 @@
  */
 package io.github.dsheirer.module.decode.tait;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.tait.identifier.TaitIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Tait1200ANIMessage extends Message
@@ -70,81 +68,57 @@ public class Tait1200ANIMessage extends Message
 
     private static SimpleDateFormat mSDF = new SimpleDateFormat("yyyyMMdd HHmmss");
 
-    private BinaryMessage mMessage;
-    private AliasList mAliasList;
+    private CorrectedBinaryMessage mMessage;
     private CRC mCRC;
+    private TaitIdentifier mFromIdentifier;
+    private TaitIdentifier mToIdentifier;
+    private List<Identifier> mIdentifiers;
 
-    public Tait1200ANIMessage(BinaryMessage message, AliasList list)
+    public Tait1200ANIMessage(CorrectedBinaryMessage message)
     {
         mMessage = message;
-        mAliasList = list;
-
-//        checkCRC();
-//
-//        switch( mCRC )
-//        {
-//			case CORRECTED:
-//	        	mLog.debug( "CORR:" + message.toString() );
-//				break;
-//			case FAILED_CRC:
-//	        	mLog.debug( "FAIL:" + message.toString() );
-//				break;
-//			case PASSED:
-//	        	mLog.debug( "PASS:" + message.toString() );
-//				break;
-//        }
     }
 
-    public String getFromID()
+    public TaitIdentifier getFromIdentifier()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getCharacter(FROM_DIGIT_1));
-        sb.append(getCharacter(FROM_DIGIT_2));
-        sb.append(getCharacter(FROM_DIGIT_3));
-        sb.append(getCharacter(FROM_DIGIT_4));
-        sb.append(getCharacter(FROM_DIGIT_5));
-        sb.append(getCharacter(FROM_DIGIT_6));
-        sb.append(getCharacter(FROM_DIGIT_7));
-        sb.append(getCharacter(FROM_DIGIT_8));
-
-        return sb.toString();
-    }
-
-    public Alias getFromIDAlias()
-    {
-        if(mAliasList != null)
+        if(mFromIdentifier == null)
         {
-            return mAliasList.getTalkgroupAlias(getFromID());
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(getCharacter(FROM_DIGIT_1));
+            sb.append(getCharacter(FROM_DIGIT_2));
+            sb.append(getCharacter(FROM_DIGIT_3));
+            sb.append(getCharacter(FROM_DIGIT_4));
+            sb.append(getCharacter(FROM_DIGIT_5));
+            sb.append(getCharacter(FROM_DIGIT_6));
+            sb.append(getCharacter(FROM_DIGIT_7));
+            sb.append(getCharacter(FROM_DIGIT_8));
+
+            mFromIdentifier = TaitIdentifier.createFrom(sb.toString().trim());
         }
 
-        return null;
+        return mFromIdentifier;
     }
 
-    public String getToID()
+    public TaitIdentifier getToIdentifier()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getCharacter(TO_DIGIT_1));
-        sb.append(getCharacter(TO_DIGIT_2));
-        sb.append(getCharacter(TO_DIGIT_3));
-        sb.append(getCharacter(TO_DIGIT_4));
-        sb.append(getCharacter(TO_DIGIT_5));
-        sb.append(getCharacter(TO_DIGIT_6));
-        sb.append(getCharacter(TO_DIGIT_7));
-        sb.append(getCharacter(TO_DIGIT_8));
-
-        return sb.toString();
-    }
-
-    public Alias getToIDAlias()
-    {
-        if(mAliasList != null)
+        if(mToIdentifier == null)
         {
-            return mAliasList.getTalkgroupAlias(getToID());
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(getCharacter(TO_DIGIT_1));
+            sb.append(getCharacter(TO_DIGIT_2));
+            sb.append(getCharacter(TO_DIGIT_3));
+            sb.append(getCharacter(TO_DIGIT_4));
+            sb.append(getCharacter(TO_DIGIT_5));
+            sb.append(getCharacter(TO_DIGIT_6));
+            sb.append(getCharacter(TO_DIGIT_7));
+            sb.append(getCharacter(TO_DIGIT_8));
+
+            mToIdentifier = TaitIdentifier.createTo(sb.toString().trim());
         }
 
-        return null;
+        return mToIdentifier;
     }
 
     public char getCharacter(int[] bits)
@@ -165,46 +139,8 @@ public class Tait1200ANIMessage extends Message
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("ANI FROM:");
-        sb.append(getFromID());
-        sb.append(" TO:");
-        sb.append(getToID());
-
-        return sb.toString();
-    }
-
-    /**
-     * Pads spaces onto the end of the value to make it 'places' long
-     */
-    public String pad(String value, int places, String padCharacter)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(value);
-
-        while(sb.length() < places)
-        {
-            sb.append(padCharacter);
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Pads an integer value with additional zeroes to make it decimalPlaces long
-     */
-    public String format(int number, int decimalPlaces)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        int paddingRequired = decimalPlaces - (String.valueOf(number).length());
-
-        for(int x = 0; x < paddingRequired; x++)
-        {
-            sb.append("0");
-        }
-
-        sb.append(number);
+        sb.append("ANI FROM:").append(getFromIdentifier());
+        sb.append(" TO:").append(getToIdentifier());
 
         return sb.toString();
     }
@@ -215,38 +151,16 @@ public class Tait1200ANIMessage extends Message
         return Protocol.TAIT1200;
     }
 
-    public String getEventType()
-    {
-        return "ANI";
-    }
-
-    /**
-     * Provides a listing of aliases contained in the message.
-     */
-    public List<Alias> getAliases()
-    {
-        List<Alias> aliases = new ArrayList<Alias>();
-
-        Alias from = getFromIDAlias();
-
-        if(from != null)
-        {
-            aliases.add(from);
-        }
-
-        Alias to = getToIDAlias();
-
-        if(to != null)
-        {
-            aliases.add(to);
-        }
-
-        return aliases;
-    }
-
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.EMPTY_LIST;
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getFromIdentifier());
+            mIdentifiers.add(getToIdentifier());
+        }
+
+        return mIdentifiers;
     }
 }

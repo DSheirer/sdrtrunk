@@ -19,12 +19,11 @@
  */
 package io.github.dsheirer.module.decode.tait;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.tait.identifier.TaitIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
@@ -33,13 +32,12 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
-public class Tait1200GPSMessage extends Message //implements IPlottable
+public class Tait1200GPSMessage extends Message
 {
     private final static Logger mLog = LoggerFactory.getLogger(Tait1200GPSMessage.class);
 
@@ -118,13 +116,69 @@ public class Tait1200GPSMessage extends Message //implements IPlottable
     private static SimpleDateFormat mSDF = new SimpleDateFormat("yyyyMMdd HHmmss");
 
     private BinaryMessage mMessage;
-    private AliasList mAliasList;
     private CRC mCRC;
+    private TaitIdentifier mFromIdentifier;
+    private TaitIdentifier mToIdentifier;
+    private List<Identifier> mIdentifiers;
 
-    public Tait1200GPSMessage(BinaryMessage message, AliasList list)
+    public Tait1200GPSMessage(BinaryMessage message)
     {
         mMessage = message;
-        mAliasList = list;
+    }
+
+    public TaitIdentifier getFromIdentifier()
+    {
+        if(mFromIdentifier == null)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(getCharacter(FROM_DIGIT_1));
+            sb.append(getCharacter(FROM_DIGIT_2));
+            sb.append(getCharacter(FROM_DIGIT_3));
+            sb.append(getCharacter(FROM_DIGIT_4));
+            sb.append(getCharacter(FROM_DIGIT_5));
+            sb.append(getCharacter(FROM_DIGIT_6));
+            sb.append(getCharacter(FROM_DIGIT_7));
+            sb.append(getCharacter(FROM_DIGIT_8));
+
+            mFromIdentifier = TaitIdentifier.createFrom(sb.toString().trim());
+        }
+
+        return mFromIdentifier;
+    }
+
+    public TaitIdentifier getToIdentifier()
+    {
+        if(mToIdentifier == null)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(getCharacter(TO_DIGIT_1));
+            sb.append(getCharacter(TO_DIGIT_2));
+            sb.append(getCharacter(TO_DIGIT_3));
+            sb.append(getCharacter(TO_DIGIT_4));
+            sb.append(getCharacter(TO_DIGIT_5));
+            sb.append(getCharacter(TO_DIGIT_6));
+            sb.append(getCharacter(TO_DIGIT_7));
+            sb.append(getCharacter(TO_DIGIT_8));
+
+            mToIdentifier = TaitIdentifier.createTo(sb.toString().trim());
+        }
+
+        return mToIdentifier;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getFromIdentifier());
+            mIdentifiers.add(getToIdentifier());
+        }
+
+        return mIdentifiers;
     }
 
     public boolean isValid()
@@ -148,10 +202,8 @@ public class Tait1200GPSMessage extends Message //implements IPlottable
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("GPS FROM:");
-        sb.append(getFromID());
-        sb.append(" TO:");
-        sb.append(getToID());
+        sb.append("GPS FROM:").append(getFromIdentifier());
+        sb.append(" TO:").append(getToIdentifier());
         sb.append(" LOCATION:");
 
         GeoPosition location = getGPSLocation();
@@ -160,10 +212,7 @@ public class Tait1200GPSMessage extends Message //implements IPlottable
         sb.append(" ");
         sb.append(location.getLongitude());
 
-        sb.append(" SPEED:");
-        sb.append(getSpeed());
-        sb.append("KPH");
-
+        sb.append(" SPEED:").append(getSpeed()).append("KPH");
         sb.append(" GPS TIME:");
         sb.append(mSDF.format(new Date(getGPSTime())));
 
@@ -233,17 +282,25 @@ public class Tait1200GPSMessage extends Message //implements IPlottable
         return cal.getTimeInMillis();
     }
 
-    public String getSpeed()
+    public double getSpeed()
     {
         StringBuilder sb = new StringBuilder();
-
         sb.append(getDigit(SPEED_HUNDREDS));
         sb.append(getDigit(SPEED_TENS));
         sb.append(getDigit(SPEED_ONES));
         sb.append(".");
         sb.append(getDigit(SPEED_TENTHS));
 
-        return sb.toString();
+        try
+        {
+            return Double.parseDouble(sb.toString());
+        }
+        catch(Exception e)
+        {
+            //Do nothing, we couldn't parse the value
+        }
+
+        return 0;
     }
 
     private String getDigit(int[] field)
@@ -252,145 +309,15 @@ public class Tait1200GPSMessage extends Message //implements IPlottable
         return (0 <= value && value <= 9) ? String.valueOf(value) : "?";
     }
 
-    public String getFromID()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getCharacter(FROM_DIGIT_1));
-        sb.append(getCharacter(FROM_DIGIT_2));
-        sb.append(getCharacter(FROM_DIGIT_3));
-        sb.append(getCharacter(FROM_DIGIT_4));
-        sb.append(getCharacter(FROM_DIGIT_5));
-        sb.append(getCharacter(FROM_DIGIT_6));
-        sb.append(getCharacter(FROM_DIGIT_7));
-        sb.append(getCharacter(FROM_DIGIT_8));
-
-        return sb.toString();
-    }
-
-    public Alias getFromIDAlias()
-    {
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(getFromID());
-        }
-
-        return null;
-    }
-
-    public String getToID()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(getCharacter(TO_DIGIT_1));
-        sb.append(getCharacter(TO_DIGIT_2));
-        sb.append(getCharacter(TO_DIGIT_3));
-        sb.append(getCharacter(TO_DIGIT_4));
-        sb.append(getCharacter(TO_DIGIT_5));
-        sb.append(getCharacter(TO_DIGIT_6));
-        sb.append(getCharacter(TO_DIGIT_7));
-        sb.append(getCharacter(TO_DIGIT_8));
-
-        return sb.toString();
-    }
-
-    public Alias getToIDAlias()
-    {
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(getToID());
-        }
-
-        return null;
-    }
-
     public char getCharacter(int[] bits)
     {
         int value = mMessage.getInt(bits);
-
         return (char)value;
-    }
-
-    /**
-     * Pads spaces onto the end of the value to make it 'places' long
-     */
-    public String pad(String value, int places, String padCharacter)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(value);
-
-        while(sb.length() < places)
-        {
-            sb.append(padCharacter);
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Pads an integer value with additional zeroes to make it decimalPlaces long
-     */
-    public String format(int number, int decimalPlaces)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        int paddingRequired = decimalPlaces - (String.valueOf(number).length());
-
-        for(int x = 0; x < paddingRequired; x++)
-        {
-            sb.append("0");
-        }
-
-        sb.append(number);
-
-        return sb.toString();
     }
 
     @Override
     public Protocol getProtocol()
     {
         return Protocol.TAIT1200;
-    }
-
-    public String getEventType()
-    {
-        return "GPS";
-    }
-
-//    @Override
-//    public Plottable getPlottable()
-//    {
-//        return new Plottable(getGPSTime(), getGPSLocation(), getFromID(), getFromIDAlias());
-//    }
-
-    /**
-     * Provides a listing of aliases contained in the message.
-     */
-    public List<Alias> getAliases()
-    {
-        List<Alias> aliases = new ArrayList<Alias>();
-
-        Alias from = getFromIDAlias();
-
-        if(from != null)
-        {
-            aliases.add(from);
-        }
-
-        Alias to = getToIDAlias();
-
-        if(to != null)
-        {
-            aliases.add(to);
-        }
-
-        return aliases;
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        return Collections.EMPTY_LIST;
     }
 }

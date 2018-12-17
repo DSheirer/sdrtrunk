@@ -19,39 +19,26 @@
  */
 package io.github.dsheirer.module.decode.tait;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.util.StringUtils;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.tait.identifier.TaitIdentifier;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.TreeSet;
 
 public class Tait1200DecoderState extends DecoderState
 {
-    private TreeSet<String> mIdents = new TreeSet<String>();
+    private TreeSet<TaitIdentifier> mIdents = new TreeSet<>();
 
-    private AliasedStringAttributeMonitor mFromAttribute;
-    private AliasedStringAttributeMonitor mToAttribute;
-    private String mMessage;
-    private String mMessageType;
-
-    public Tait1200DecoderState(AliasList aliasList)
+    public Tait1200DecoderState()
     {
-//        super(aliasList);
-//
-//        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
-//        mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-//                getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -64,7 +51,6 @@ public class Tait1200DecoderState extends DecoderState
     public void reset()
     {
         mIdents.clear();
-
         resetState();
     }
 
@@ -86,59 +72,43 @@ public class Tait1200DecoderState extends DecoderState
 
     }
 
-    protected void resetState()
-    {
-        super.resetState();
-        mFromAttribute.reset();
-        mToAttribute.reset();
-        mMessage = null;
-        mMessageType = null;
-    }
-
     @Override
     public void receive(IMessage message)
     {
-//TODO: tait message must be updated to use the new PlottableDecodeEvent to get results to the map ...
-
         if(message instanceof Tait1200GPSMessage)
         {
             Tait1200GPSMessage gps = (Tait1200GPSMessage)message;
 
-            mFromAttribute.process(gps.getFromID());
-            mIdents.add(gps.getFromID());
-
-            mToAttribute.process(gps.getToID());
-            mIdents.add(gps.getToID());
+            mIdents.add(gps.getFromIdentifier());
+            mIdents.add(gps.getToIdentifier());
 
             GeoPosition position = gps.getGPSLocation();
 
             if(position != null)
             {
-                setMessage(gps.getGPSLocation().toString().replace("[", "")
-                    .replace("]", ""));
+                PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(gps.getTimestamp())
+                    .eventDescription("GPS")
+                    .identifiers(new IdentifierCollection(gps.getIdentifiers()))
+                    .location(position)
+                    .speed(gps.getSpeed())
+                    .build();
+
+                broadcast(event);
             }
-
-            setMessageType("GPS");
-
-//            broadcast(new Tait1200CallEvent(CallEvent.CallEventType.GPS, null,
-//                gps.getFromID(), gps.getToID(), gps.getGPSLocation().toString()));
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
         }
         else if(message instanceof Tait1200ANIMessage)
         {
             Tait1200ANIMessage ani = (Tait1200ANIMessage)message;
-            mFromAttribute.process(ani.getFromID());
-            mIdents.add(ani.getFromID());
+            mIdents.add(ani.getFromIdentifier());
+            mIdents.add(ani.getToIdentifier());
 
-            mToAttribute.process(ani.getToID());
-            mIdents.add(ani.getToID());
-
-            setMessage(null);
-            setMessageType("ANI");
-
-//            broadcast(new Tait1200CallEvent(CallEvent.CallEventType.ID_ANI, null,
-//                ani.getFromID(), ani.getToID(), "ANI"));
+            broadcast(DecodeEvent.builder(ani.getTimestamp())
+                .eventDescription("ANI")
+                .identifiers(new IdentifierCollection(ani.getIdentifiers()))
+                .details("Automatic Number Identification")
+                .build());
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL));
         }
@@ -156,26 +126,9 @@ public class Tait1200DecoderState extends DecoderState
         {
             sb.append("Radio Identifiers:\n");
 
-            List<String> idents = new ArrayList<String>(mIdents);
-
-            Collections.sort(idents);
-
-            for(String ident : idents)
+            for(TaitIdentifier taitIdentifier : mIdents)
             {
-                sb.append("\t");
-                sb.append(ident);
-
-//                if(hasAliasList())
-//                {
-//                    Alias alias = getAliasList().getTalkgroupAlias(ident);
-//
-//                    if(alias != null)
-//                    {
-//                        sb.append("\t");
-//                        sb.append(alias.getName());
-//                    }
-//                }
-                sb.append("\n");
+                sb.append("\t").append(taitIdentifier).append("\n");
             }
         }
 
@@ -195,34 +148,6 @@ public class Tait1200DecoderState extends DecoderState
                 break;
             default:
                 break;
-        }
-    }
-
-    public String getMessage()
-    {
-        return mMessage;
-    }
-
-    public void setMessage(String message)
-    {
-        if(!StringUtils.isEqual(mMessage, message))
-        {
-            mMessage = message;
-//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, getMessage()));
-        }
-    }
-
-    public String getMessageType()
-    {
-        return mMessageType;
-    }
-
-    public void setMessageType(String type)
-    {
-        if(!StringUtils.isEqual(mMessageType, type))
-        {
-            mMessageType = type;
-//            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, getMessageType()));
         }
     }
 }
