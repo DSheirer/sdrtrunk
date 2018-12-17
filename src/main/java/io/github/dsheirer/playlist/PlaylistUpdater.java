@@ -27,6 +27,7 @@ import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
+import io.github.dsheirer.alias.id.mobileID.Min;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.log.EventLogType;
@@ -56,14 +57,12 @@ public class PlaylistUpdater
     private static final String LTR_TALKGROUP = "([\\d\\*]{1})-([\\d\\*]{2})-([\\d\\*]{3})";
     private static final String LTR_TALKGROUP_WILDCARD = "\\*-\\*{2}-([\\d]{3})";
     private static final String MDC1200_TALKGROUP = "[A-Fa-f\\d\\*]{4}";
+    private static final String MOBILE_ID_NUMBER = "[A-Fa-f\\d\\*]{6}";
     private static final String MPT1327_TALKGROUP = "(\\d{3})-(\\d{4})";
-    private static final String MPT1327_TALKGROUP_PREFIX_WILDCARD = "(\\d{3})-\\*{4}";
     private static final String PASSPORT_TALKGROUP = "[\\d\\*]{5}";
-
     private static final Pattern FLEETSYNC_PATTERN = Pattern.compile(FLEETSYNC_TALKGROUP);
     private static final Pattern LTR_PATTERN = Pattern.compile(LTR_TALKGROUP);
     private static final Pattern MPT1327_PATTERN = Pattern.compile(MPT1327_TALKGROUP);
-    private static final Pattern MPT1327_PREFIX_WILDCARD_PATTERN = Pattern.compile(MPT1327_TALKGROUP_PREFIX_WILDCARD);
 
     /**
      * Updates the playlist as necessary.
@@ -98,7 +97,7 @@ public class PlaylistUpdater
     {
         int removed = 0;
 
-        for(Channel channel: playlist.getChannels())
+        for(Channel channel : playlist.getChannels())
         {
             RecordConfiguration recordConfiguration = channel.getRecordConfiguration();
 
@@ -130,7 +129,7 @@ public class PlaylistUpdater
     {
         int removed = 0;
 
-        for(Channel channel: playlist.getChannels())
+        for(Channel channel : playlist.getChannels())
         {
             EventLogConfiguration eventLogConfiguration = channel.getEventLogConfiguration();
 
@@ -164,7 +163,7 @@ public class PlaylistUpdater
     {
         int removed = 0;
 
-        for(Alias alias: playlist.getAliases())
+        for(Alias alias : playlist.getAliases())
         {
             Iterator<AliasID> it = alias.getId().iterator();
 
@@ -187,6 +186,7 @@ public class PlaylistUpdater
     /**
      * Converts legacy version 1talkgroups to the new talkgroup format.  Previously, each protocol had a talkgroup
      * flavor and now there is a generic talkgroup identifier with a protocol specifier.
+     *
      * @param playlist to update
      */
     private static void updateVersion1Talkgroups(PlaylistV2 playlist)
@@ -399,42 +399,39 @@ public class PlaylistUpdater
                                 notUpdated++;
                             }
                         }
-//                        else if(mpt != null && mpt.matches(MPT1327_TALKGROUP_PREFIX_WILDCARD))
-//                        {
-//                            try
-//                            {
-//                                Matcher matcher = MPT1327_PREFIX_WILDCARD_PATTERN.matcher(mpt);
-//
-//                                if(matcher.matches())
-//                                {
-//                                    int value = (Integer.valueOf(matcher.group(1)) << 13);
-//
-//                                    //TODO: use a talkgroup range here
-//
-//                                    toAdd.add(new Talkgroup(Protocol.MPT1327, value));
-//                                    it.remove();
-//                                    updated++;
-//
-//                                    mLog.debug("MPT-1327 Talkgroup [" + mpt + "] updated to [" + value + "]");
-//                                }
-//                                else
-//                                {
-//                                    notUpdated++;
-//                                }
-//                            }
-//                            catch(Exception e)
-//                            {
-//                                notUpdated++;
-//                            }
-//                        }
+                        break;
+                    case MIN:
+                        String min = ((Min)next).getMin();
 
+                        if(min.matches(MOBILE_ID_NUMBER))
+                        {
+                            if(min.contains("*"))
+                            {
+                                notUpdated++;
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    Integer value = Integer.parseInt(min, 16);
+                                    it.remove();
+                                    toAdd.add(new Talkgroup(Protocol.PASSPORT, value));
+                                    updated++;
+                                }
+                                catch(Exception e)
+                                {
+                                    //Unable to parse integer value from talkgroup .. do nothing
+                                    notUpdated++;
+                                }
+                            }
+                        }
                         break;
                 }
             }
 
             //Add any alias identifiers that were converted.  We have to do this here in order
             //to avoid concurrent modification errors on the alias id list.
-            for(AliasID aliasID: toAdd)
+            for(AliasID aliasID : toAdd)
             {
                 alias.addAliasID(aliasID);
             }

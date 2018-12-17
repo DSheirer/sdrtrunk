@@ -54,7 +54,11 @@ public class PassportMessageProcessor implements Listener<CorrectedBinaryMessage
                 mIdleFinder.receive(message);
             }
 
-            mMessageListener.receive(message);
+            if(message.isValid())
+            {
+                mMessageListener.receive(message);
+            }
+
         }
     }
 

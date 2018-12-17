@@ -24,10 +24,6 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.WildcardID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
-import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
-import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
-import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
-import io.github.dsheirer.alias.id.mobileID.Min;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
@@ -37,9 +33,6 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.lj1200.FunctionAndReplyCode;
-import io.github.dsheirer.module.decode.lj1200.FunctionAndReplyCodeIdentifier;
-import io.github.dsheirer.module.decode.lj1200.LJ1200Message;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -56,22 +49,14 @@ public class AliasList implements Listener<AliasEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
     public static final String WILDCARD = "*";
-    public static final String REGEX_WILDCARD = ".";
 
     private Map<String,Alias> mESN = new HashMap<>();
-    private Map<LoJackFunctionAndID,Alias> mLoJack = new HashMap<>();
-    private Map<String,Alias> mMDC1200 = new HashMap<>();
-    private Map<String,Alias> mMobileID = new HashMap<>();
     private Map<String,Alias> mSiteID = new HashMap<>();
     private Map<Integer,Alias> mStatus = new HashMap<>();
-    private Map<String,Alias> mTalkgroup = new HashMap<>();
     private Map<Integer,Alias> mUniqueID = new HashMap<>();
 
     private List<WildcardID> mESNWildcards = new ArrayList<>();
-    private List<WildcardID> mMobileIDWildcards = new ArrayList<>();
-    private List<WildcardID> mMDC1200Wildcards = new ArrayList<>();
     private List<WildcardID> mSiteWildcards = new ArrayList<>();
-    private List<WildcardID> mTalkgroupWildcards = new ArrayList<>();
     private boolean mHasAliasActions = false;
 
     private Map<Protocol,Map<Integer,Alias>> mTalkgroupProtocolMap = new HashMap<>();
@@ -146,37 +131,6 @@ public class AliasList implements Listener<AliasEvent>
                             mESN.put(esn, alias);
                         }
                         break;
-                    case LOJACK:
-                        mLoJack.put((LoJackFunctionAndID) id, alias);
-                        break;
-                    case MDC1200:
-                        String mdc = ((MDC1200ID) id).getIdent();
-
-                        if(mdc != null)
-                        {
-                            if(mdc.contains(WILDCARD))
-                            {
-                                mMDC1200Wildcards.add(new WildcardID(mdc));
-                                Collections.sort(mMDC1200Wildcards);
-                            }
-
-                            mMDC1200.put(mdc, alias);
-                        }
-                        break;
-                    case MIN:
-                        String min = ((Min) id).getMin();
-
-                        if(min != null)
-                        {
-                            if(min.contains(WILDCARD))
-                            {
-                                mMobileIDWildcards.add(new WildcardID(min));
-                                Collections.sort(mMobileIDWildcards);
-                            }
-
-                            mMobileID.put(min, alias);
-                        }
-                        break;
                     case LTR_NET_UID:
                         mUniqueID.put(((UniqueID) id).getUid(), alias);
                         break;
@@ -196,20 +150,6 @@ public class AliasList implements Listener<AliasEvent>
                         break;
                     case STATUS:
                         mStatus.put(((StatusID) id).getStatus(), alias);
-                        break;
-                    case LEGACY_TALKGROUP:
-                        String tgid = ((LegacyTalkgroupID) id).getTalkgroup();
-
-                        if(tgid != null)
-                        {
-                            if(tgid.contains(WILDCARD))
-                            {
-                                mTalkgroupWildcards.add(new WildcardID(tgid));
-                                Collections.sort(mTalkgroupWildcards);
-                            }
-
-                            mTalkgroup.put(tgid, alias);
-                        }
                         break;
                     case BROADCAST_CHANNEL:
                     case NON_RECORDABLE:
@@ -278,35 +218,6 @@ public class AliasList implements Listener<AliasEvent>
 
                     mESN.remove(esn);
                     break;
-                case LOJACK:
-                    mLoJack.remove((LoJackFunctionAndID) id);
-                    break;
-                case MDC1200:
-                    String mdc = ((MDC1200ID) id).getIdent();
-
-                    if(mdc != null)
-                    {
-                        if(mdc.contains(WILDCARD))
-                        {
-                            removeWildcard(mdc, mMDC1200Wildcards);
-                        }
-
-                        mMDC1200.remove(mdc);
-                    }
-                    break;
-                case MIN:
-                    String min = ((Min) id).getMin();
-
-                    if(min != null)
-                    {
-                        if(min.contains(WILDCARD))
-                        {
-                            removeWildcard(min, mMobileIDWildcards);
-                        }
-
-                        mMobileID.remove(min);
-                    }
-                    break;
                 case LTR_NET_UID:
                     mUniqueID.remove(((UniqueID) id).getUid());
                     break;
@@ -315,19 +226,6 @@ public class AliasList implements Listener<AliasEvent>
                     break;
                 case STATUS:
                     mStatus.remove(((StatusID) id).getStatus());
-                    break;
-                case LEGACY_TALKGROUP:
-                    String tgid = ((LegacyTalkgroupID) id).getTalkgroup();
-
-                    if(tgid != null)
-                    {
-                        if(tgid.contains(WILDCARD))
-                        {
-                            removeWildcard(tgid, mTalkgroupWildcards);
-                        }
-
-                        mTalkgroup.remove(tgid);
-                    }
                     break;
                 case NON_RECORDABLE:
                 case PRIORITY:
@@ -432,112 +330,6 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
-     * Lookup alias by lojack function and ID
-     */
-    public Alias getLoJackAlias(LJ1200Message.Function function, String id)
-    {
-        if(id != null)
-        {
-            for(LoJackFunctionAndID lojack : mLoJack.keySet())
-            {
-                if(lojack.matches(function, id))
-                {
-                    return mLoJack.get(lojack);
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Lookup alias by MDC1200 ID
-     */
-    public Alias getMDC1200Alias(String ident)
-    {
-        Alias alias = null;
-
-        if(ident != null)
-        {
-            alias = mMDC1200.get(ident);
-
-            if(alias == null)
-            {
-                String wildcard = getWildcardMatch(ident, mMDC1200Wildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mMDC1200.get(wildcard);
-                }
-            }
-        }
-
-        return alias;
-    }
-
-    /**
-     * Lookup alias by Mobile ID Number (MIN)
-     */
-    public Alias getMobileIDNumberAlias(String ident)
-    {
-        Alias alias = null;
-
-        if(ident != null)
-        {
-            alias = mMobileID.get(ident);
-
-            if(alias == null)
-            {
-                String wildcard = getWildcardMatch(ident, mMobileIDWildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mMobileID.get(wildcard);
-                }
-            }
-        }
-
-        return alias;
-    }
-
-    /**
-     * Lookup alias by talkgroup
-     *
-     * @param tgid to use when searching for an alias
-     * @param includeWildcards true if you want to additionally search for a matching alias that contains wildcard(s)
-     * when there is not a direct match to the TGID.
-     */
-    public Alias getTalkgroupAlias(String tgid, boolean includeWildcards)
-    {
-        Alias alias = null;
-
-        if(tgid != null)
-        {
-            alias = mTalkgroup.get(tgid);
-
-            if(alias == null && includeWildcards)
-            {
-                String wildcard = getWildcardMatch(tgid, mTalkgroupWildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mTalkgroup.get(wildcard);
-                }
-            }
-        }
-
-        return alias;
-    }
-
-    /**
-     * Lookup alias by talkgroup.  Defaults to matching to wildcard talkgroups.
-     */
-    public Alias getTalkgroupAlias(String tgid)
-    {
-        return getTalkgroupAlias(tgid, true);
-    }
-
-    /**
      * Alias list name
      */
     public String toString()
@@ -622,13 +414,6 @@ public class AliasList implements Listener<AliasEvent>
                     if(identifier instanceof ESNIdentifier)
                     {
                         return getESNAlias(((ESNIdentifier)identifier).getValue());
-                    }
-                    break;
-                case LOJACK:
-                    if(identifier instanceof FunctionAndReplyCodeIdentifier)
-                    {
-                        FunctionAndReplyCode functionAndReplyCode = ((FunctionAndReplyCodeIdentifier)identifier).getValue();
-                        return getLoJackAlias(functionAndReplyCode.getFunction(), functionAndReplyCode.getReplyCode());
                     }
                     break;
             }
