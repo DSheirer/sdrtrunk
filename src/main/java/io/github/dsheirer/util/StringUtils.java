@@ -20,6 +20,9 @@ package io.github.dsheirer.util;
 
 public class StringUtils
 {
+    private static final String[] ILLEGAL_FILENAME_CHARACTERS = {"#", "%", "&", "{", "}", "\\", "<", ">",
+            "*", "?", "/", " ", "$", "!", "'", "\"", ":", "@", "+", "`", "|", "="};
+
     /**
      * Compares string a to b and returns true if a is non-null and non-empty, b is non-null and non-empty, and
      * a is equal to b.
@@ -37,5 +40,16 @@ public class StringUtils
     public static boolean isEmpty(String a)
     {
         return a == null || a.isEmpty();
+    }
+
+    /**
+     * Replaces any illegal filename characters in the proposed filename
+     */
+    public static String replaceIllegalCharacters(String filename) {
+        for (String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS) {
+            filename = filename.replace(illegalCharacter, "_");
+        }
+
+        return filename;
     }
 }

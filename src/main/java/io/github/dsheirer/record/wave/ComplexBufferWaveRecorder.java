@@ -89,7 +89,6 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
                 sb.append("_");
                 sb.append(TimeStamp.getTimeStamp("_"));
                 sb.append(".wav");
-
                 mFile = Paths.get(sb.toString());
 
                 mWriter = new ReusableBufferWaveWriter(mAudioFormat, mFile);
