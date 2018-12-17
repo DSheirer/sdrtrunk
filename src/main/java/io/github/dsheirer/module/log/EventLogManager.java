@@ -24,6 +24,7 @@ import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,7 @@ public class EventLogManager
     public List<Module> getLoggers(Channel channel)
     {
         EventLogConfiguration config = channel.getEventLogConfiguration();
-        String prefix = channel.getName();
+        String prefix = StringUtils.replaceIllegalCharacters(channel.getName());
         long frequency = 0;
 
         if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
