@@ -34,9 +34,6 @@ public abstract class EventLogger extends Module
 {
     private final static Logger mLog = LoggerFactory.getLogger(EventLogger.class);
 
-    private static final String[] ILLEGAL_FILENAME_CHARACTERS = {"#", "%", "&", "{", "}", "\\", "<", ">",
-        "*", "?", "/", " ", "$", "!", "'", "\"", ":", "@", "+", "`", "|", "="};
-
     private Path mLogDirectory;
     private String mFileNameSuffix;
     private String mLogFileName;
@@ -78,7 +75,7 @@ public abstract class EventLogger extends Module
                 sb.append("_");
                 sb.append(mFrequency);
                 sb.append("_Hz_");
-                sb.append(replaceIllegalCharacters(mFileNameSuffix));
+                sb.append(mFileNameSuffix);
 
                 mLogFileName = sb.toString();
 
@@ -93,19 +90,6 @@ public abstract class EventLogger extends Module
                 mLog.error("Couldn't create log file in directory:" + mLogDirectory);
             }
         }
-    }
-
-    /**
-     * Replaces any illegal filename characters in the proposed filename
-     */
-    private String replaceIllegalCharacters(String filename)
-    {
-        for(String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS)
-        {
-            filename = filename.replace(illegalCharacter, "_");
-        }
-
-        return filename;
     }
 
     public void stop()

@@ -32,6 +32,7 @@ import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -292,7 +293,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         sbFinal.append(TimeStamp.getTimeStamp("_"));
 
         //Remove any illegal filename characters
-        sbFinal.append(sb.toString().replaceAll("[^\\w.-]", "_"));
+        sbFinal.append(StringUtils.replaceIllegalCharacters(sb.toString()));
         sbFinal.append(".wav");
 
         return getRecordingBasePath().resolve(sbFinal.toString());
@@ -311,7 +312,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getRecordingBasePath());
-        sb.append(File.separator).append(channelName).append("_baseband");
+        sb.append(File.separator).append(StringUtils.replaceIllegalCharacters(channelName)).append("_baseband");
 
         return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }

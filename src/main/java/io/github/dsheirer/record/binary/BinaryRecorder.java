@@ -25,6 +25,7 @@ import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
+import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,8 +130,8 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
         sb.append(mProtocol.getFileNameLabel()).append("_");
         sb.append(mRecordingIdentifier.trim());
         sb.append(".bits");
-
-        return mBaseRecordingPath.resolve(sb.toString());
+        String cleaned = StringUtils.replaceIllegalCharacters(sb.toString());
+        return mBaseRecordingPath.resolve(cleaned);
     }
 
     @Override
