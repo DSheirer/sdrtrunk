@@ -314,8 +314,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
     public class DurationCellRenderer extends DefaultTableCellRenderer
     {
-        private DecimalFormat mDecimalFormat = new DecimalFormat("0.#");
-//        private SimpleDateFormat mDurationFormatter = new SimpleDateFormat("s.SSS");
+        private DecimalFormat mDecimalFormat = new DecimalFormat("0.0");
 
         public DurationCellRenderer()
         {
@@ -335,7 +334,6 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
                 if(duration > 0)
                 {
-//                    formatted = mDurationFormatter.format(new Date(duration));
                     formatted = mDecimalFormat.format((double)duration / 1e3d);
                 }
             }

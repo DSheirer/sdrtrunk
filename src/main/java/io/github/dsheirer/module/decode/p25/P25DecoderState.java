@@ -33,6 +33,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -162,10 +163,6 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
 
     private APCO25Nac mNAC;
     private String mSystem;
-    //    private AliasedStringAttributeMonitor mSiteAttributeMonitor;
-//    private AliasedStringAttributeMonitor mFromTalkgroupMonitor;
-//    private AliasedStringAttributeMonitor mToTalkgroupMonitor;
-//    private String mCurrentChannel = "CURRENT";
     private long mCurrentChannelFrequency = 0;
 
     private ChannelType mChannelType;
@@ -316,7 +313,7 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
      */
     private void processTDULC(P25Message message)
     {
-        endCurrentCall(message.getTimestamp());
+        closeCurrentCallEvent(message.getTimestamp());
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
 
         if(message instanceof TDULinkControlMessage)
@@ -341,7 +338,7 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
 
             if(headerData.isValid())
             {
-                endCurrentCall(message.getTimestamp());
+                closeCurrentCallEvent(message.getTimestamp());
 
                 for(Identifier identifier : headerData.getIdentifiers())
                 {
@@ -395,28 +392,29 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
     }
 
     /**
-     * Ends the current call event.
+     * Ends/closes the current call event.
      *
      * @param timestamp of the message that indicates the event has ended.
      */
-    private void endCurrentCall(long timestamp)
+    private void closeCurrentCallEvent(long timestamp)
     {
         if(mCurrentCallEvent != null)
         {
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
-            broadcast(new DecoderStateEvent(this, Event.END, State.CALL));
 
-            //Clear any temporal user or device identifiers
-//TODO: this is being handled by the resetState() method ... do we need it here also?
-            getIdentifierCollection().remove(IdentifierClass.USER);
+            //Only clear the from identifier at this point ... the channel may still be allocated to the TO talkgroup
+            getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
         }
     }
 
+    /**
+     * Terminator Data Unit (TDU).
+     */
     private void processTDU(P25Message message)
     {
-        endCurrentCall(message.getTimestamp());
+        closeCurrentCallEvent(message.getTimestamp());
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
     }
 

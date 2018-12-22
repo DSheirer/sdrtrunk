@@ -134,7 +134,7 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                 sourceConfig.setFrequency(mpt1327Channel.getDownlinkFrequency());
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelMap.put(mpt1327Channel, trafficChannel);
-                broadcast(new ChannelGrantEvent(trafficChannel, ChannelEvent.Event.REQUEST_ENABLE, mpt1327Channel));
+                broadcast(new ChannelGrantEvent(trafficChannel, ChannelEvent.Event.REQUEST_ENABLE, mpt1327Channel, identifierCollection));
             }
 
             broadcast(channelGrantEvent);

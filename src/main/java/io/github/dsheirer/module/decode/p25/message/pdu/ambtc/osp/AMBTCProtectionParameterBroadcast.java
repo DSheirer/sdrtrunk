@@ -117,9 +117,6 @@ public class AMBTCProtectionParameterBroadcast extends AMBTCMessage
     {
         if(mOutboundMessageIndicator == null && hasDataBlock(0) && hasDataBlock(1))
         {
-            ;
-        }
-        {
             mOutboundMessageIndicator = getDataBlock(0).getMessage().getHex(BLOCK_0_OUTBOUND_MESSAGE_INDICATOR_1, 2) +
                 getDataBlock(1).getMessage().getHex(BLOCK_1_OUTBOUND_MESSAGE_INDICATOR_2, 8) +
                 getDataBlock(1).getMessage().getHex(BLOCK_1_OUTBOUND_MESSAGE_INDICATOR_3, 8);

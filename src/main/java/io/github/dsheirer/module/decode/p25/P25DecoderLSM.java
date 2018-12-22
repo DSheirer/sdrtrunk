@@ -36,6 +36,8 @@ import java.util.Map;
 
 public class P25DecoderLSM extends P25Decoder
 {
+//    private final static Logger mLog = LoggerFactory.getLogger(P25DecoderLSM.class);
+
     protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
 
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
@@ -101,6 +103,8 @@ public class P25DecoderLSM extends P25Decoder
 
         //AGC will decrement the user count when finished
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
+
+        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
 
         //Decoder will decrement the user count when finished
         mQPSKDemodulator.receive(gainApplied);

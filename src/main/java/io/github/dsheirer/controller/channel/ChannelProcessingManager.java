@@ -24,6 +24,9 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
 import io.github.dsheirer.message.IMessage;
@@ -291,15 +294,25 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         processingChain.setSource(source);
 
-        //Inject the channel identifier for traffic channels
+        //Inject the channel identifier for traffic channels and preload user identifiers
         if(channel.isTrafficChannel() && event instanceof ChannelGrantEvent)
         {
-            IChannelDescriptor channelDescriptor = ((ChannelGrantEvent)event).getChannelDescriptor();
+            ChannelGrantEvent channelGrantEvent = (ChannelGrantEvent)event;
+            IChannelDescriptor channelDescriptor = channelGrantEvent.getChannelDescriptor();
 
             if(channelDescriptor != null)
             {
                 ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
                 IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
+                    IdentifierUpdateNotification.Operation.ADD);
+                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+            }
+
+            IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
+
+            for(Identifier userIdentifier: identifierCollection.getIdentifiers(IdentifierClass.USER))
+            {
+                IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
                     IdentifierUpdateNotification.Operation.ADD);
                 processingChain.getChannelState().updateChannelStateIdentifiers(notification);
             }

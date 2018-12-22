@@ -55,7 +55,7 @@ public class DeviceRegistration extends ARSHeader
                 sb.append(isInitialEvent() ? "-INITIAL " : "-REFRESH ");
             }
 
-            sb.append(getPayload());
+            sb.append(" ").append(getPayload());
         }
         else
         {

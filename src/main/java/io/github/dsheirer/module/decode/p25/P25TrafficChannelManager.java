@@ -160,10 +160,53 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     {
         P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
 
-        if(event != null && isSameTalkgroup(identifierCollection, event.getIdentifierCollection()))
+        if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
         {
+            Identifier from = getIdentifier(identifierCollection, Role.FROM);
+
+            if(from != null)
+            {
+                Identifier currentFrom = getIdentifier(event.getIdentifierCollection(), Role.FROM);
+                if(currentFrom != null && !Objects.equals(from, currentFrom))
+                {
+                    event.end(timestamp);
+
+                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+                        .channel(apco25Channel)
+                        .eventDescription(getEventType(opcode, serviceOptions).toString() + " - Continue")
+                        .details("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+                        .identifiers(identifierCollection)
+                        .build();
+
+                    mChannelGrantEventMap.put(apco25Channel, continuationGrantEvent);
+                    broadcast(continuationGrantEvent);
+                }
+            }
+
             //update the ending timestamp so that the duration value is correctly calculated
-            event.end(timestamp);
+            event.update(timestamp);
+            broadcast(event);
+
+            //Even though we have an event, the initial channel grant may have been rejected.  Check to see if there
+            //is a traffic channel allocated.  If not, allocate one and update the event description.
+            if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel) &&
+               !(mIgnoreDataCalls && opcode == Opcode.OSP_SNDCP_DATA_CHANNEL_GRANT))
+            {
+                Channel trafficChannel = mAvailableTrafficChannelQueue.poll();
+
+                if(trafficChannel != null)
+                {
+                    event.setEventDescription(getEventType(opcode, serviceOptions).toString());
+                    event.setDetails("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"));
+                    broadcast(event);
+                    SourceConfigTuner sourceConfig = new SourceConfigTuner();
+                    sourceConfig.setFrequency(apco25Channel.getDownlinkFrequency());
+                    trafficChannel.setSourceConfiguration(sourceConfig);
+                    mAllocatedTrafficChannelMap.put(apco25Channel, trafficChannel);
+                    broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel, identifierCollection));
+                }
+            }
+
             return;
         }
 
@@ -171,7 +214,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         {
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                 .channel(apco25Channel)
-                .eventDescription(getEventType(opcode, serviceOptions).toString())
+                .eventDescription(getEventType(opcode, serviceOptions).toString() + " - Ignored")
                 .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
                 .identifiers(identifierCollection)
                 .build();
@@ -200,7 +243,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             if(trafficChannel == null)
             {
                 channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
-                channelGrantEvent.setEventDescription("Detect:" + channelGrantEvent.getEventDescription());
+                channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
                 return;
             }
 
@@ -208,7 +251,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             sourceConfig.setFrequency(apco25Channel.getDownlinkFrequency());
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(apco25Channel, trafficChannel);
-            broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel));
+            broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel, identifierCollection));
         }
 
         broadcast(channelGrantEvent);
@@ -226,6 +269,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         switch(opcode)
         {
             case OSP_GROUP_VOICE_CHANNEL_GRANT:
+            case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
             case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
                 type = encrypted ? DecodeEventType.CALL_GROUP_ENCRYPTED : DecodeEventType.CALL_GROUP;
                 break;
@@ -252,28 +296,11 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
         if(type == null)
         {
+            mLog.debug("Unrecognized opcode for determining decode event type: " + opcode.name());
             type = DecodeEventType.CALL;
         }
 
         return type;
-    }
-
-    private String getMapContents()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        for(Map.Entry<APCO25Channel,P25ChannelGrantEvent> entry: mChannelGrantEventMap.entrySet())
-        {
-            sb.append("Channel [" + entry.getKey() + "] event [" +
-                getToIdentifier(entry.getValue().getIdentifierCollection()) + "]\n");
-        }
-
-        if(mChannelGrantEventMap.isEmpty())
-        {
-            sb.append("EMPTY MAP");
-        }
-
-        return sb.toString();
     }
 
     /**
@@ -324,10 +351,10 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
      * @param collection2 containing a TO identifier
      * @return true if both collections contain a TO identifier and the TO identifiers are the same value
      */
-    private boolean isSameTalkgroup(IdentifierCollection collection1, IdentifierCollection collection2)
+    private boolean isSameCall(IdentifierCollection collection1, IdentifierCollection collection2)
     {
-        Identifier toIdentifier1 = getToIdentifier(collection1);
-        Identifier toIdentifier2 = getToIdentifier(collection2);
+        Identifier toIdentifier1 = getIdentifier(collection1, Role.TO);
+        Identifier toIdentifier2 = getIdentifier(collection2, Role.TO);
         return Objects.equals(toIdentifier1, toIdentifier2);
     }
 
@@ -337,9 +364,9 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
      * @param collection containing a TO identifier
      * @return TO identifier or null
      */
-    private Identifier getToIdentifier(IdentifierCollection collection)
+    private Identifier getIdentifier(IdentifierCollection collection, Role role)
     {
-        List<Identifier> identifiers = collection.getIdentifiers(Role.TO);
+        List<Identifier> identifiers = collection.getIdentifiers(role);
 
         if(identifiers.size() >= 1)
         {
@@ -434,28 +461,49 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                         {
                             mAllocatedTrafficChannelMap.remove(toRemove);
                             mAvailableTrafficChannelQueue.add(channel);
-                            P25ChannelGrantEvent event = mChannelGrantEventMap.get(toRemove);
+                            P25ChannelGrantEvent event = mChannelGrantEventMap.remove(toRemove);
 
                             if(event != null)
                             {
-                                if(channelEvent.getEvent() == Event.NOTIFICATION_START_PROCESSING_REJECTED)
-                                {
-                                    String description = channelEvent.getDescription();
-
-                                    if(description == null)
-                                    {
-                                        description = CHANNEL_START_REJECTED;
-                                    }
-
-                                    event.setEventDescription(description);
-                                }
-
+                                event.end(System.currentTimeMillis());
                                 broadcast(event);
                             }
                         }
                         break;
                     case NOTIFICATION_START_PROCESSING_REJECTED:
-                        mAvailableTrafficChannelQueue.add(channel);
+                        APCO25Channel rejected = null;
+
+                        for(Map.Entry<APCO25Channel,Channel> entry: mAllocatedTrafficChannelMap.entrySet())
+                        {
+                            if(entry.getValue() == channel)
+                            {
+                                rejected = entry.getKey();
+                                continue;
+                            }
+                        }
+
+                        if(rejected != null)
+                        {
+                            mAllocatedTrafficChannelMap.remove(rejected);
+                            mAvailableTrafficChannelQueue.add(channel);
+                            P25ChannelGrantEvent event = mChannelGrantEventMap.get(rejected);
+
+                            if(event != null)
+                            {
+                                event.setEventDescription(event.getEventDescription() + " - Rejected");
+
+                                if(channelEvent.getDescription() != null)
+                                {
+                                    event.setDetails(channelEvent.getDescription() + " - " + event.getDetails());
+                                }
+                                else
+                                {
+                                    event.setDetails(CHANNEL_START_REJECTED + " - " + event.getDetails());
+                                }
+
+                                broadcast(event);
+                            }
+                        }
                         break;
                 }
             }

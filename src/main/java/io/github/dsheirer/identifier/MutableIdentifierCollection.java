@@ -338,6 +338,27 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
     }
 
     /**
+     * Removes all identifiers of the specified identifier class and role
+     */
+    public void remove(IdentifierClass identifierClass, Role role)
+    {
+        Iterator<Identifier> it = mIdentifiers.iterator();
+
+        Identifier next = null;
+
+        while(it.hasNext())
+        {
+            next = it.next();
+
+            if(next.getIdentifierClass() == identifierClass && next.getRole() == role)
+            {
+                it.remove();
+                notifyRemove(next);
+            }
+        }
+    }
+
+    /**
      * Implements the listener interface to receive notifications of identifier updates.  This allows an
      * identifier collection to maintain a synchronized state with a remote identifier collection.
      *

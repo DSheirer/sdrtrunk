@@ -102,6 +102,8 @@ public class P25DecoderC4FM extends P25Decoder
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
+        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
+
         //User accounting of the filtered buffer is handled by the demodulator
         mQPSKDemodulator.receive(gainApplied);
     }

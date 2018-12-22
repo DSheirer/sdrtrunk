@@ -21,6 +21,7 @@
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.identifier.IdentifierCollection;
 
 /**
  * Channel grant event with a channel descriptor that identifies the channel that is being created
@@ -28,17 +29,21 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 public class ChannelGrantEvent extends ChannelEvent
 {
     private IChannelDescriptor mChannelDescriptor;
+    private IdentifierCollection mIdentifierCollection;
 
     /**
      * Constructs a channel grant event
      * @param channel with setup/configuration details
      * @param event to convey for the channel
      * @param channelDescriptor for the channel that is to be created
+     * @param identifierCollection containing identifiers to preload into the channel
      */
-    public ChannelGrantEvent(Channel channel, Event event, IChannelDescriptor channelDescriptor)
+    public ChannelGrantEvent(Channel channel, Event event, IChannelDescriptor channelDescriptor,
+                             IdentifierCollection identifierCollection)
     {
         super(channel, event);
         mChannelDescriptor = channelDescriptor;
+        mIdentifierCollection = identifierCollection;
     }
 
     /**
@@ -47,5 +52,13 @@ public class ChannelGrantEvent extends ChannelEvent
     public IChannelDescriptor getChannelDescriptor()
     {
         return mChannelDescriptor;
+    }
+
+    /**
+     * Identifier collection to use in preloading the channel state for the allocated channel
+     */
+    public IdentifierCollection getIdentifierCollection()
+    {
+        return mIdentifierCollection;
     }
 }

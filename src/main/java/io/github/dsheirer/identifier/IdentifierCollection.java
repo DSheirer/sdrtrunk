@@ -21,6 +21,8 @@
 package io.github.dsheirer.identifier;
 
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,6 +36,7 @@ import java.util.List;
  */
 public class IdentifierCollection
 {
+    private final static Logger mLog = LoggerFactory.getLogger(IdentifierCollection.class);
     protected List<Identifier> mIdentifiers = new ArrayList<>();
     protected AliasListConfigurationIdentifier mAliasListConfigurationIdentifier;
     private boolean mUpdated = false;
@@ -155,9 +158,16 @@ public class IdentifierCollection
 
         for(Identifier identifier : mIdentifiers)
         {
-            if(identifier.getRole() == role)
+            try
             {
-                identifiers.add(identifier);
+                if(identifier.getRole() == role)
+                {
+                    identifiers.add(identifier);
+                }
+            }
+            catch(NullPointerException npe)
+            {
+                mLog.warn("Identifier Class has a null Roll value: " + identifier.getClass());
             }
         }
 
