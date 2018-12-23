@@ -198,6 +198,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 {
                     event.setEventDescription(getEventType(opcode, serviceOptions).toString());
                     event.setDetails("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"));
+                    event.setChannelDescriptor(apco25Channel);
                     broadcast(event);
                     SourceConfigTuner sourceConfig = new SourceConfigTuner();
                     sourceConfig.setFrequency(apco25Channel.getDownlinkFrequency());
@@ -470,7 +471,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                             }
                         }
                         break;
-                    case NOTIFICATION_START_PROCESSING_REJECTED:
+                    case NOTIFICATION_PROCESSING_START_REJECTED:
                         APCO25Channel rejected = null;
 
                         for(Map.Entry<APCO25Channel,Channel> entry: mAllocatedTrafficChannelMap.entrySet())

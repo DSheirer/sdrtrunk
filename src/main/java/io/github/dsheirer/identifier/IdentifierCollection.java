@@ -167,7 +167,19 @@ public class IdentifierCollection
             }
             catch(NullPointerException npe)
             {
-                mLog.warn("Identifier Class has a null Roll value: " + identifier.getClass());
+                StringBuilder sb = new StringBuilder();
+                for(Identifier i : mIdentifiers)
+                {
+                    if(i == null)
+                    {
+                        sb.append("Identifier: (null)").append("\n");
+                    }
+                    else
+                    {
+                        sb.append("Identifier: ").append(i).append(" Class:").append(i.getClass()).append("\n");
+                    }
+                }
+                mLog.warn("An identifier in a collection is somehow null ...\n" + sb.toString());
             }
         }
 

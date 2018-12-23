@@ -46,11 +46,11 @@ public class UserRegistration extends ARSHeader
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ARS USER REGISTRATION");
+        sb.append("USER REGISTRATION");
 
         if(isValid())
         {
-            sb.append(getPayload());
+            sb.append(" ").append(getPayload());
         }
         else
         {

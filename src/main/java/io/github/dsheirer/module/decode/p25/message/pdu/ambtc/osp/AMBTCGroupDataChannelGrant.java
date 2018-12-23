@@ -30,7 +30,7 @@ import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.block.UnconfirmedDataBlock;
-import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
+import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +46,8 @@ public class AMBTCGroupDataChannelGrant extends AMBTCMessage implements IFrequen
     private static final int[] BLOCK_0_UPLINK_CHANNEL_NUMBER = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] BLOCK_0_GROUP_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
 
-    private VoiceServiceOptions mVoiceServiceOptions;
-    private IChannelDescriptor mChannel;
+    private DataServiceOptions mDataServiceOptions;
+    private APCO25Channel mChannel;
     private Identifier mSourceAddress;
     private Identifier mGroupAddress;
     private List<Identifier> mIdentifiers;
@@ -65,18 +65,18 @@ public class AMBTCGroupDataChannelGrant extends AMBTCMessage implements IFrequen
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" TO:").append(getGroupAddress());
         sb.append(" CHAN:").append(getChannel());
-        sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
+        sb.append(" SERVICE OPTIONS:").append(getDataServiceOptions());
         return sb.toString();
     }
 
-    public VoiceServiceOptions getVoiceServiceOptions()
+    public DataServiceOptions getDataServiceOptions()
     {
-        if(mVoiceServiceOptions == null)
+        if(mDataServiceOptions == null)
         {
-            mVoiceServiceOptions = new VoiceServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
+            mDataServiceOptions = new DataServiceOptions(getHeader().getMessage().getInt(HEADER_SERVICE_OPTIONS));
         }
 
-        return mVoiceServiceOptions;
+        return mDataServiceOptions;
     }
 
     public Identifier getSourceAddress()
@@ -106,7 +106,7 @@ public class AMBTCGroupDataChannelGrant extends AMBTCMessage implements IFrequen
                 getDataBlock(0).getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null && hasDataBlock(0))
         {

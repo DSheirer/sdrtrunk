@@ -46,7 +46,7 @@ public class DeviceRegistration extends ARSHeader
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ARS DEVICE REGISTRATION");
+        sb.append("DEVICE REGISTRATION");
 
         if(isValid())
         {

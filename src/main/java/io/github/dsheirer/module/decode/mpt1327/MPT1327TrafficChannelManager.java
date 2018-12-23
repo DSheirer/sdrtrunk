@@ -345,7 +345,7 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
 
                             if(event != null)
                             {
-                                if(channelEvent.getEvent() == ChannelEvent.Event.NOTIFICATION_START_PROCESSING_REJECTED)
+                                if(channelEvent.getEvent() == ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED)
                                 {
                                     String description = channelEvent.getDescription();
 
@@ -361,7 +361,7 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                             }
                         }
                         break;
-                    case NOTIFICATION_START_PROCESSING_REJECTED:
+                    case NOTIFICATION_PROCESSING_START_REJECTED:
                         mAvailableTrafficChannelQueue.add(channel);
                         break;
                 }

@@ -130,7 +130,7 @@ public class SecondaryControlChannelBroadcast extends OSPMessage implements IFre
     {
         if(hasChannelB() && mChannelB == null)
         {
-            mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_A), getMessage().getInt(CHANNEL_NUMBER_B));
+            mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_B), getMessage().getInt(CHANNEL_NUMBER_B));
         }
 
         return mChannelB;

@@ -46,7 +46,7 @@ public class AMBTCTelephoneInterconnectChannelGrant extends AMBTCMessage impleme
     private static final int[] BLOCK_0_RESERVED = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
 
     private VoiceServiceOptions mVoiceServiceOptions;
-    private IChannelDescriptor mChannel;
+    private APCO25Channel mChannel;
     private Identifier mAnyAddress;
     private List<Identifier> mIdentifiers;
     private List<IChannelDescriptor> mChannels;
@@ -107,23 +107,31 @@ public class AMBTCTelephoneInterconnectChannelGrant extends AMBTCMessage impleme
                 getDataBlock(0).getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
-        if(mChannel == null && hasDataBlock(0))
+        if(mChannel == null)
         {
-            UnconfirmedDataBlock block = getDataBlock(0);
+            if(hasDataBlock(0))
+            {
+                UnconfirmedDataBlock block = getDataBlock(0);
 
-            if(isExtendedChannel())
-            {
-                mChannel = APCO25ExplicitChannel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
-                    block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER),
-                    block.getMessage().getInt(BLOCK_0_UPLINK_FREQUENCY_BAND),
-                    block.getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
+                if(isExtendedChannel())
+                {
+                    mChannel = APCO25ExplicitChannel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
+                        block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER),
+                        block.getMessage().getInt(BLOCK_0_UPLINK_FREQUENCY_BAND),
+                        block.getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
+                }
+                else
+                {
+                    mChannel = APCO25Channel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
+                        block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER));
+                }
             }
-            else
+
+            if(mChannel == null)
             {
-                mChannel = APCO25Channel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
-                    block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER));
+                mChannel = APCO25Channel.create(-1, 0);
             }
         }
 

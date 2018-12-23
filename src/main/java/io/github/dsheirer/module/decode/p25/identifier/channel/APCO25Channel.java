@@ -33,7 +33,7 @@ import io.github.dsheirer.protocol.Protocol;
  * This class supports inserting a band identifier message that allows the uplink and downlink freuqencies
  * for the channel to be calculated.
  */
-public class APCO25Channel extends Identifier<P25Channel> implements IChannelDescriptor
+public class APCO25Channel extends Identifier<P25Channel> implements IChannelDescriptor, Comparable<IChannelDescriptor>
 {
     /**
      * Creates an APCO-25 channel identifier
@@ -120,5 +120,16 @@ public class APCO25Channel extends Identifier<P25Channel> implements IChannelDes
     public int hashCode()
     {
         return getValue().hashCode();
+    }
+
+    @Override
+    public int compareTo(IChannelDescriptor o)
+    {
+        if(o == null)
+        {
+            return -1;
+        }
+
+        return Long.compare(getDownlinkFrequency(), o.getDownlinkFrequency());
     }
 }

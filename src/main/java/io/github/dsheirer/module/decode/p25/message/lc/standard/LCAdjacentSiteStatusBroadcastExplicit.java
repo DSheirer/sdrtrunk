@@ -69,15 +69,15 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" RFSS:" + getRFSS());
+        sb.append(" RFSS:" + getRfss());
         sb.append(" SITE:" + getSite());
-        sb.append(" LRA:").append(getLRA());
+        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" CHAN:" + getChannel());
         sb.append(" SERVICE OPTIONS:").append(getVoiceServiceOptions());
         return sb.toString();
     }
 
-    public Identifier getLRA()
+    public Identifier getLocationRegistrationArea()
     {
         if(mLRA == null)
         {
@@ -87,7 +87,7 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
         return mLRA;
     }
 
-    public Identifier getRFSS()
+    public Identifier getRfss()
     {
         if(mRFSS == null)
         {
@@ -139,8 +139,8 @@ public class LCAdjacentSiteStatusBroadcastExplicit extends LinkControlWord imple
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getLRA());
-            mIdentifiers.add(getRFSS());
+            mIdentifiers.add(getLocationRegistrationArea());
+            mIdentifiers.add(getRfss());
             mIdentifiers.add(getSite());
         }
 

@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.spectrum;
 
 import io.github.dsheirer.controller.channel.Channel;
@@ -32,8 +33,6 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -51,13 +50,14 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISourceEventProcessor, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
 
-    private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
+//    private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
     private final DecimalFormat PPM_FORMATTER = new DecimalFormat( "#.0" );
 
     private final static RenderingHints RENDERING_HINTS = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
@@ -92,7 +92,9 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
     private Color mColorSpectrumLine;
 
     //Currently visible/displayable channels
-    private CopyOnWriteArrayList<Channel> mVisibleChannels = new CopyOnWriteArrayList<Channel>();
+    private List<Channel> mVisibleChannels = new CopyOnWriteArrayList<>();
+    private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
+
     private ChannelDisplay mChannelDisplay = ChannelDisplay.ALL;
 
     //Defines the offset at the bottom of the spectral display to account for
@@ -676,6 +678,14 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
          */
         mVisibleChannels.clear();
         mVisibleChannels.addAll(mChannelModel.getChannelsInFrequencyRange(getMinFrequency(), getMaxFrequency()));
+
+        for(Channel trafficChannel: mTrafficChannels)
+        {
+            if(trafficChannel.isWithin(getMinFrequency(), getMaxFrequency()))
+            {
+                mVisibleChannels.add(trafficChannel);
+            }
+        }
     }
 
     /**
@@ -690,6 +700,10 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
         {
             case NOTIFICATION_ADD:
             case NOTIFICATION_PROCESSING_START:
+                if(channel.getChannelType() == ChannelType.TRAFFIC && !mTrafficChannels.contains(channel))
+                {
+                    mTrafficChannels.add(channel);
+                }
                 if(!mVisibleChannels.contains(channel) && channel.isWithin(getMinFrequency(), getMaxFrequency()))
                 {
                     mVisibleChannels.add(channel);
@@ -699,9 +713,11 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
                 mVisibleChannels.remove(channel);
                 break;
             case NOTIFICATION_PROCESSING_STOP:
+            case NOTIFICATION_PROCESSING_START_REJECTED:
                 if(channel.getChannelType() == ChannelType.TRAFFIC)
                 {
                     mVisibleChannels.remove(channel);
+                    mTrafficChannels.remove(channel);
                 }
                 break;
             case NOTIFICATION_CONFIGURATION_CHANGE:

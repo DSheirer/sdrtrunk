@@ -69,14 +69,14 @@ public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IF
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLRA());
-        sb.append(" SITE:" + getRFSS() + "-" + getSite());
+        sb.append(" LRA:").append(getLocationRegistrationArea());
+        sb.append(" SITE:" + getRfss() + "-" + getSite());
         sb.append(" CHAN:" + getChannel());
         sb.append(" SERVICE OPTIONS:" + getVoiceServiceOptions());
         return sb.toString();
     }
 
-    public Identifier getLRA()
+    public Identifier getLocationRegistrationArea()
     {
         if(mLRA == null)
         {
@@ -86,7 +86,7 @@ public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IF
         return mLRA;
     }
 
-    public Identifier getRFSS()
+    public Identifier getRfss()
     {
         if(mRFSS == null)
         {
@@ -137,8 +137,8 @@ public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IF
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getLRA());
-            mIdentifiers.add(getRFSS());
+            mIdentifiers.add(getLocationRegistrationArea());
+            mIdentifiers.add(getRfss());
             mIdentifiers.add(getSite());
         }
 

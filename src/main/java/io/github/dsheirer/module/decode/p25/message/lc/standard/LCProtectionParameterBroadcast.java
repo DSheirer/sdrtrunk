@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Echo of the status update from a subscriber when the destination of the update is another subscriber unit.
  */
-public class LCEncryptionParameterBroadcast extends LinkControlWord
+public class LCProtectionParameterBroadcast extends LinkControlWord
 {
     private static final int[] RESERVED = {8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] ALGORITHM_ID = {24, 25, 26, 27, 28, 29, 30, 31};
@@ -49,7 +49,7 @@ public class LCEncryptionParameterBroadcast extends LinkControlWord
      *
      * @param message
      */
-    public LCEncryptionParameterBroadcast(BinaryMessage message)
+    public LCProtectionParameterBroadcast(BinaryMessage message)
     {
         super(message);
     }

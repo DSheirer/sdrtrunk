@@ -1,3 +1,23 @@
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.p25.message.lc;
 
 import io.github.dsheirer.bits.BinaryMessage;
@@ -11,7 +31,6 @@ import io.github.dsheirer.module.decode.p25.message.lc.standard.LCAdjacentSiteSt
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCAdjacentSiteStatusBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCCallAlert;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCCallTermination;
-import io.github.dsheirer.module.decode.p25.message.lc.standard.LCEncryptionParameterBroadcast;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCExtendedFunctionCommand;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCFrequencyBandUpdate;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCFrequencyBandUpdateExplicit;
@@ -22,6 +41,7 @@ import io.github.dsheirer.module.decode.p25.message.lc.standard.LCGroupVoiceChan
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCMessageUpdate;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCNetworkStatusBroadcastExplicit;
+import io.github.dsheirer.module.decode.p25.message.lc.standard.LCProtectionParameterBroadcast;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCRFSSStatusBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCSecondaryControlChannelBroadcast;
@@ -80,7 +100,7 @@ public class LinkControlWordFactory
             case NETWORK_STATUS_BROADCAST_EXPLICIT:
                 return new LCNetworkStatusBroadcastExplicit(binaryMessage);
             case PROTECTION_PARAMETER_BROADCAST:
-                return new LCEncryptionParameterBroadcast(binaryMessage);
+                return new LCProtectionParameterBroadcast(binaryMessage);
             case RFSS_STATUS_BROADCAST:
                 return new LCRFSSStatusBroadcast(binaryMessage);
             case RFSS_STATUS_BROADCAST_EXPLICIT:

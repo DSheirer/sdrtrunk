@@ -92,7 +92,7 @@ public class ChannelEvent
         //Channel is deleted/removed
         NOTIFICATION_DELETE,
         //Channel enable request was rejected
-        NOTIFICATION_START_PROCESSING_REJECTED,
+        NOTIFICATION_PROCESSING_START_REJECTED,
         //Channel has started processing/decoding
         NOTIFICATION_PROCESSING_START,
         //Channel has stopped processing/decoding

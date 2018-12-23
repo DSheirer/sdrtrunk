@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Secondary control channel broadcast information.
+ * RF SubSystem broadcast information.
  */
 public class LCRFSSStatusBroadcast extends LinkControlWord implements IFrequencyBandReceiver
 {
@@ -70,15 +70,15 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements IFrequency
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLRA());
+        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" SYSTEM:").append(getSystem());
-        sb.append(" SITE:" + getRFSS() + "-" + getSite());
+        sb.append(" SITE:" + getRfss() + "-" + getSite());
         sb.append(" CHAN:" + getChannel());
         sb.append(" SERVICE OPTIONS:" + getVoiceServiceOptions());
         return sb.toString();
     }
 
-    public Identifier getLRA()
+    public Identifier getLocationRegistrationArea()
     {
         if(mLRA == null)
         {
@@ -98,7 +98,7 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements IFrequency
         return mSystem;
     }
 
-    public Identifier getRFSS()
+    public Identifier getRfss()
     {
         if(mRFSS == null)
         {
@@ -149,9 +149,9 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements IFrequency
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getLRA());
+            mIdentifiers.add(getLocationRegistrationArea());
             mIdentifiers.add(getSystem());
-            mIdentifiers.add(getRFSS());
+            mIdentifiers.add(getRfss());
             mIdentifiers.add(getSite());
         }
 
