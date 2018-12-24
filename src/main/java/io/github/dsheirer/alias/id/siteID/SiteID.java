@@ -48,7 +48,7 @@ public class SiteID extends AliasID
 
     public String toString()
     {
-        return "Site: " + mSite;
+        return "Site: " + (mSite != null ? mSite : "(empty)") + (isValid() ? "" : " **NOT VALID**");
     }
 
     @Override

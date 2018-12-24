@@ -46,7 +46,7 @@ public class SyncDetector implements ISyncProcessor
         {
             if(mListener != null)
             {
-                mListener.syncDetected();
+                mListener.syncDetected(0);
             }
 
             return true;

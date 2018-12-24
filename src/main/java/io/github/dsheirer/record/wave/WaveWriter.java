@@ -19,6 +19,8 @@
 package io.github.dsheirer.record.wave;
 
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
@@ -35,6 +37,8 @@ import java.util.regex.Pattern;
 
 public class WaveWriter implements AutoCloseable
 {
+    private final static Logger mLog = LoggerFactory.getLogger(WaveWriter.class);
+
     public static final String RIFF_ID = "RIFF";
     public static final int INITIAL_TOTAL_LENGTH = 4;
     public static final String WAVE_ID = "WAVE";
@@ -127,40 +131,43 @@ public class WaveWriter implements AutoCloseable
     }
 
     /**
-     * Closes the file
+     * Implements the auto-closeable interface.  Closes the recording without any renaming operation.
+     * @throws IOException if there is an error closing the file channel.
      */
     public void close() throws IOException
+    {
+        close(null);
+    }
+
+    /**
+     * Closes the file and renames/moves the contents to the specified path
+     */
+    public void close(Path path) throws IOException
     {
         mFileChannel.force(true);
         mFileChannel.close();
 
-        rename();
+        rename(path);
     }
 
     /**
-     * Renames the file from *.tmp to *.wav after file has been closed.
+     * Renames the file to the specified filename moving it to the from *.tmp to *.wav after file has been closed.
+     *
      * @throws IOException
      */
-    private void rename() throws IOException
+    private void rename(Path path) throws IOException
     {
-        if(mFile != null && Files.exists(mFile))
+        if(mFile != null && Files.exists(mFile) && path != null)
         {
-            String renamed = mFile.getFileName().toString();
-            renamed = renamed.replace(".tmp", ".wav");
-            Path renamedPath = mFile.resolveSibling(renamed);
-
-            int suffix = 1;
-
-            while(Files.exists(renamedPath) && suffix < 4)
+            if(Files.exists(path))
             {
-                String renamedWithSuffix = mFile.getFileName().toString();
-                renamedWithSuffix = renamedWithSuffix.replace(".tmp", "_" + suffix + ".wav");
-                Path renamedWithSuffixPath = mFile.resolveSibling(renamedWithSuffix);
-                renamedPath = mFile.resolveSibling(renamedWithSuffixPath);
-                suffix++;
+                mLog.warn("Duplicate recording file detected - ignoring [" + path + "]");
+                Files.delete(mFile);
             }
-
-            Files.move(mFile, renamedPath);
+            else
+            {
+                Files.move(mFile, path);
+            }
         }
     }
 

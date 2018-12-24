@@ -4,6 +4,6 @@ import io.github.dsheirer.sample.Listener;
 
 public interface IChannelEventProvider
 {
-	public void setChannelEventListener( Listener<ChannelEvent> listener );
-	public void removeChannelEventListener();
+	void setChannelEventListener( Listener<ChannelEvent> listener );
+	void removeChannelEventListener();
 }

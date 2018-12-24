@@ -74,7 +74,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
     private int mAveraging = 4;
 
     //Smoothing across bins in the same DFT result set
-    private SmoothingFilter mSmoothingFilter = new GaussianSmoothingFilter();
+    private SmoothingFilter mSmoothingFilter = new NoSmoothingFilter();
 
     //Reference dB value set according to the source sample size
     private float mDBScale;

@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +15,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.gui;
 
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.alias.action.AliasActionManager;
-import io.github.dsheirer.audio.AudioManager;
+import io.github.dsheirer.audio.AudioPacketManager;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
+import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.controller.ControllerPanel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
@@ -31,10 +32,14 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
+import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
@@ -87,6 +92,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
     private boolean mBroadcastStatusVisible;
 
+    private AudioPacketManager mAudioPacketManager;
     private IconManager mIconManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private BroadcastModel mBroadcastModel;
@@ -98,6 +104,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private SpectralDisplayPanel mSpectralPanel;
     private JFrame mMainGui = new JFrame();
     private JideSplitPane mSplitPane;
+    private JavaFxWindowManager mJavaFxWindowManager;
+    private UserPreferences mUserPreferences = new UserPreferences();
 
     private String mTitle;
 
@@ -108,10 +116,10 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("****  website: https://github.com/dsheirer/sdrtrunk             ***");
         mLog.info("*******************************************************************");
         mLog.info("Memory Logging Format: [Used/Allocated PercentUsed%]");
-        mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
         mLog.info("Host OS Name:          " + System.getProperty("os.name"));
         mLog.info("Host OS Arch:          " + System.getProperty("os.arch"));
         mLog.info("Host OS Version:       " + System.getProperty("os.version"));
+        mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
         mLog.info("Host Max Java Memory:  " + FileUtils.byteCountToDisplaySize(Runtime.getRuntime().maxMemory()));
 
         //Setup the application home directory
@@ -145,36 +153,40 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         EventLogManager eventLogManager = new EventLogManager();
 
-        RecorderManager recorderManager = new RecorderManager();
+        RecorderManager recorderManager = new RecorderManager(aliasModel);
+
+        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
 
         mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
-        mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, aliasModel,
-            eventLogManager, recorderManager, mSourceManager);
-        mChannelProcessingManager.addAudioPacketListener(recorderManager);
+        mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, recorderManager,
+            mSourceManager, aliasModel);
 
         mChannelModel.addListener(mChannelProcessingManager);
+        mChannelProcessingManager.addChannelEventListener(mChannelModel);
 
-        ChannelSelectionManager channelSelectionManager =
-            new ChannelSelectionManager(mChannelModel);
+        ChannelSelectionManager channelSelectionManager = new ChannelSelectionManager(mChannelModel);
         mChannelModel.addListener(channelSelectionManager);
 
-        AliasActionManager aliasActionManager = new AliasActionManager();
-        mChannelProcessingManager.addMessageListener(aliasActionManager);
+        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSourceManager.getMixerManager());
 
-        AudioManager audioManager = new AudioManager(mSourceManager.getMixerManager());
-        mChannelProcessingManager.addAudioPacketListener(audioManager);
+        mBroadcastModel = new BroadcastModel(aliasModel, mIconManager);
 
-        mBroadcastModel = new BroadcastModel(mIconManager);
-
-        mChannelProcessingManager.addAudioPacketListener(mBroadcastModel);
+        //Audio packets are routed through the audio packet manager for metadata enrichment and then
+        //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
+        mAudioPacketManager = new AudioPacketManager(aliasModel);
+        mAudioPacketManager.addListener(recorderManager);
+        mAudioPacketManager.addListener(audioPlaybackManager);
+        mAudioPacketManager.addListener(mBroadcastModel);
+        mAudioPacketManager.start();
+        mChannelProcessingManager.addAudioPacketListener(mAudioPacketManager);
 
         MapService mapService = new MapService(mIconManager);
-        mChannelProcessingManager.addMessageListener(mapService);
+        mChannelProcessingManager.addDecodeEventListener(mapService);
 
-        mControllerPanel = new ControllerPanel(audioManager, aliasModel, mBroadcastModel,
+        mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, mSourceManager, tunerModel);
+            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager, tunerModel);
@@ -185,7 +197,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         tunerModel.addListener(this);
 
         PlaylistManager playlistManager = new PlaylistManager(aliasModel, mBroadcastModel, mChannelModel,
-            channelMapModel);
+            channelMapModel, mUserPreferences);
 
         playlistManager.init();
 
@@ -338,6 +350,12 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new JSeparator());
         viewMenu.add(new ClearTunerMenuItem(mSpectralPanel));
 
+        viewMenu.add(new JSeparator());
+        JMenuItem preferencesItem = new JMenuItem("Preferences");
+        preferencesItem.addActionListener(e -> MyEventBus.getEventBus()
+                .post(new PreferenceEditorViewRequest(PreferenceEditorType.CHANNEL_EVENT)));
+        viewMenu.add(preferencesItem);
+
         menuBar.add(viewMenu);
 
         JMenuItem screenCaptureItem = new JMenuItem("Screen Capture");
@@ -414,14 +432,16 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void processShutdown()
     {
-        mLog.debug("Application shutdown started ...");
-        mLog.debug("Stopping channels ...");
+        mLog.info("Application shutdown started ...");
+        mJavaFxWindowManager.shutdown();
+        mLog.info("Stopping channels ...");
         mChannelProcessingManager.shutdown();
-        mLog.debug("Stopping spectral display ...");
+        mAudioPacketManager.stop();
+        mLog.info("Stopping spectral display ...");
         mSpectralPanel.clearTuner();
-        mLog.debug("Releasing tuners ...");
+        mLog.info("Releasing tuners ...");
         mSourceManager.shutdown();
-        mLog.debug("Shutdown complete.");
+        mLog.info("Shutdown complete.");
     }
 
     /**

@@ -15,44 +15,65 @@
  ******************************************************************************/
 package io.github.dsheirer.channel.metadata;
 
-import io.github.dsheirer.channel.state.State;
+import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.preference.PreferenceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ChannelMetadataModel extends AbstractTableModel implements Listener<MutableMetadataChangeEvent>
+public class ChannelMetadataModel extends AbstractTableModel implements IChannelMetadataUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataModel.class);
 
-    private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.00000" );
+    public static final int COLUMN_DECODER_STATE = 0;
+    public static final int COLUMN_DECODER_TYPE = 1;
+    public static final int COLUMN_USER_FROM = 2;
+    public static final int COLUMN_USER_FROM_ALIAS = 3;
+    public static final int COLUMN_USER_TO = 4;
+    public static final int COLUMN_USER_TO_ALIAS = 5;
+    public static final int COLUMN_DECODER_LOGICAL_CHANNEL_NAME = 6;
+    public static final int COLUMN_CONFIGURATION_FREQUENCY = 7;
+    public static final int COLUMN_CONFIGURATION_CHANNEL = 8;
 
-    public static final int COLUMN_STATE = 0;
-    public static final int COLUMN_DECODER = 1;
-    public static final int COLUMN_CHANNEL = 2;
-    public static final int COLUMN_FREQUENCY = 3;
-    public static final int COLUMN_PRIMARY_FROM = 4;
-    public static final int COLUMN_PRIMARY_TO = 5;
-    public static final int COLUMN_SECONDARY_FROM = 6;
-    public static final int COLUMN_SECONDARY_TO = 7;
-    public static final int COLUMN_CONFIGURATION_NAME = 8;
-    public static final int COLUMN_MESSAGE = 9;
+    private static final String[] COLUMNS = {"Status", "Decoder", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Channel Name"};
 
-    private static final String[] COLUMNS = {"Status", "Decoder", "Channel", "Frequency", "Primary From", "Primary To",
-         "Secondary From", "Secondary To", "Channel Name", "Message"};
+    private List<ChannelMetadata> mChannelMetadata = new ArrayList();
+    private Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap();
 
-    private List<MutableMetadata> mChannelMetadata = new ArrayList();
-    private Map<MutableMetadata,Channel> mMetadataChannelMap = new HashMap();
+    public ChannelMetadataModel()
+    {
+        MyEventBus.getEventBus().register(this);
+    }
 
-    public void add(MutableMetadata metadata, Channel channel)
+    /**
+     * Receives preference update notifications via the event bus
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.IDENTIFIER)
+        {
+            for(int row = 0; row < mChannelMetadata.size(); row++)
+            {
+                fireTableCellUpdated(row, COLUMN_USER_FROM);
+                fireTableCellUpdated(row, COLUMN_USER_TO);
+            }
+        }
+    }
+
+
+    public void add(ChannelMetadata channelMetadata, Channel channel)
     {
         //Execute on the swing thread to avoid threading issues
         EventQueue.invokeLater(new Runnable()
@@ -60,19 +81,16 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
             @Override
             public void run()
             {
-                mChannelMetadata.add(metadata);
-                mMetadataChannelMap.put(metadata, channel);
-
-                int index = mChannelMetadata.indexOf(metadata);
-
+                mChannelMetadata.add(channelMetadata);
+                mMetadataChannelMap.put(channelMetadata, channel);
+                int index = mChannelMetadata.indexOf(channelMetadata);
                 fireTableRowsInserted(index, index);
-
-                metadata.addListener(ChannelMetadataModel.this);
+                channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
             }
         });
     }
 
-    public void remove(MutableMetadata metadata)
+    public void remove(ChannelMetadata channelMetadata)
     {
         //Execute on the swing thread to avoid threading issues
         EventQueue.invokeLater(new Runnable()
@@ -80,13 +98,10 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
             @Override
             public void run()
             {
-                metadata.removeListener(ChannelMetadataModel.this);
-
-                int index = mChannelMetadata.indexOf(metadata);
-
-                mChannelMetadata.remove(metadata);
-                mMetadataChannelMap.remove(metadata);
-
+                channelMetadata.removeUpdateEventListener();
+                int index = mChannelMetadata.indexOf(channelMetadata);
+                mChannelMetadata.remove(channelMetadata);
+                mMetadataChannelMap.remove(channelMetadata);
                 fireTableRowsDeleted(index, index);
             }
         });
@@ -95,7 +110,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     /**
      * Get the channel metadata at the specified model row index
      */
-    public Metadata getMetadata(int row)
+    public ChannelMetadata getChannelMetadata(int row)
     {
         if(row < mChannelMetadata.size())
         {
@@ -108,9 +123,9 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     /**
      * Returns the channel that matches the metadata or null
      */
-    public Channel getChannelFromMetadata(Metadata metadata)
+    public Channel getChannelFromMetadata(ChannelMetadata channelMetadata)
     {
-        return mMetadataChannelMap.get(metadata);
+        return mMetadataChannelMap.get(channelMetadata);
     }
 
     @Override
@@ -136,24 +151,14 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     {
         switch(columnIndex)
         {
-            case COLUMN_STATE:
-                return State.class;
-
-            case COLUMN_DECODER:
-            case COLUMN_CHANNEL:
-            case COLUMN_FREQUENCY:
-            case COLUMN_MESSAGE:
-            case COLUMN_CONFIGURATION_NAME:
-                return String.class;
-
-            case COLUMN_PRIMARY_TO:
-            case COLUMN_PRIMARY_FROM:
-            case COLUMN_SECONDARY_TO:
-            case COLUMN_SECONDARY_FROM:
-                return MutableMetadata.class;
-
+            case COLUMN_USER_FROM:
+            case COLUMN_USER_TO:
+                return ChannelMetadata.class;
+            case COLUMN_USER_FROM_ALIAS:
+            case COLUMN_USER_TO_ALIAS:
+                return Alias.class;
             default:
-                return String.class;
+                return Identifier.class;
         }
     }
 
@@ -162,60 +167,28 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     {
         if(rowIndex <= mChannelMetadata.size())
         {
-            Metadata metadata = mChannelMetadata.get(rowIndex);
+            ChannelMetadata channelMetadata = mChannelMetadata.get(rowIndex);
 
             switch(columnIndex)
             {
-                case COLUMN_STATE:
-                    return metadata.getState();
-                case COLUMN_DECODER:
-                    if(metadata.hasPrimaryDecoderType())
-                    {
-                        return metadata.getPrimaryDecoderType().getShortDisplayString();
-                    }
-
-                    return null;
-                case COLUMN_CHANNEL:
-                    return metadata.getChannelFrequencyLabel();
-                case COLUMN_FREQUENCY:
-                    if(metadata.hasChannelFrequency())
-                    {
-                        return FREQUENCY_FORMATTER.format((double)metadata.getChannelFrequency() / 1E6d);
-                    }
-
-                    return null;
-                case COLUMN_MESSAGE:
-                    if(metadata.isBufferOverflow())
-                    {
-                        return "**OVERFLOW**";
-                    }
-                    else if(metadata.hasMessageType() || metadata.hasMessage())
-                    {
-                        StringBuilder sb = new StringBuilder();
-                        if(metadata.hasMessageType())
-                        {
-                            sb.append(metadata.getMessageType()).append(" ");
-                        }
-
-                        if(metadata.hasMessage())
-                        {
-                            sb.append(metadata.getMessage());
-                        }
-
-                        return sb.toString();
-                    }
-
-                    return null;
-                case COLUMN_CONFIGURATION_NAME:
-                    return metadata.getChannelConfigurationName();
-                case COLUMN_PRIMARY_TO:
-                case COLUMN_PRIMARY_FROM:
-                case COLUMN_SECONDARY_TO:
-                case COLUMN_SECONDARY_FROM:
-                    return metadata;
-
-                default:
-                    return String.class;
+                case COLUMN_DECODER_STATE:
+                    return channelMetadata.getDecoderStateIdentifier();
+                case COLUMN_DECODER_TYPE:
+                    return channelMetadata.getDecoderTypeConfigurationIdentifier();
+                case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
+                    return channelMetadata.getDecoderLogicalChannelNameIdentifier();
+                case COLUMN_CONFIGURATION_FREQUENCY:
+                    return channelMetadata.getFrequencyConfigurationIdentifier();
+                case COLUMN_CONFIGURATION_CHANNEL:
+                    return channelMetadata.getChannelNameConfigurationIdentifier();
+                case COLUMN_USER_TO:
+                    return channelMetadata;
+                case COLUMN_USER_FROM:
+                    return channelMetadata;
+                case COLUMN_USER_FROM_ALIAS:
+                    return channelMetadata.getFromIdentifierAlias();
+                case COLUMN_USER_TO_ALIAS:
+                    return channelMetadata.getToIdentifierAlias();
             }
         }
 
@@ -223,59 +196,46 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     }
 
     @Override
-    public void receive(MutableMetadataChangeEvent mutableMetadataChangeEvent)
+    public void updated(ChannelMetadata channelMetadata, ChannelMetadataField channelMetadataField)
     {
-        //Execute on the swing thread to avoid threading issues
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                int rowIndex = mChannelMetadata.indexOf(mutableMetadataChangeEvent.getMetadata());
+        final int rowIndex = mChannelMetadata.indexOf(channelMetadata);
 
-                if(rowIndex >= 0)
+        if(rowIndex >= 0)
+        {
+            //Execute on the swing thread to avoid threading issues
+            EventQueue.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    switch(mutableMetadataChangeEvent.getAttribute())
+                    switch(channelMetadataField)
                     {
-                        case CHANNEL_CONFIGURATION_SYSTEM:
+                        case CONFIGURATION_CHANNEL:
+                            fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_CHANNEL);
                             break;
-                        case CHANNEL_CONFIGURATION_SITE:
+                        case CONFIGURATION_FREQUENCY:
+                            fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_FREQUENCY);
                             break;
-                        case CHANNEL_CONFIGURATION_NAME:
-                            fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_NAME);
+                        case DECODER_CHANNEL_NAME:
+                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_LOGICAL_CHANNEL_NAME);
                             break;
-                        case CHANNEL_FREQUENCY:
-                            fireTableCellUpdated(rowIndex, COLUMN_FREQUENCY);
+                        case DECODER_TYPE:
+                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_TYPE);
                             break;
-                        case CHANNEL_FREQUENCY_LABEL:
-                            fireTableCellUpdated(rowIndex, COLUMN_CHANNEL);
+                        case DECODER_STATE:
+                            fireTableCellUpdated(rowIndex, COLUMN_DECODER_STATE);
                             break;
-                        case CHANNEL_STATE:
-                            fireTableCellUpdated(rowIndex, COLUMN_STATE);
+                        case USER_FROM:
+                            fireTableCellUpdated(rowIndex, COLUMN_USER_FROM);
+                            fireTableCellUpdated(rowIndex, COLUMN_USER_FROM_ALIAS);
                             break;
-                        case BUFFER_OVERFLOW:
-                        case MESSAGE:
-                        case MESSAGE_TYPE:
-                            fireTableCellUpdated(rowIndex, COLUMN_MESSAGE);
-                            break;
-                        case PRIMARY_ADDRESS_FROM:
-                            fireTableCellUpdated(rowIndex, COLUMN_PRIMARY_FROM);
-                            break;
-                        case PRIMARY_ADDRESS_TO:
-                            fireTableCellUpdated(rowIndex, COLUMN_PRIMARY_TO);
-                            break;
-                        case PRIMARY_DECODER_TYPE:
-                            fireTableCellUpdated(rowIndex, COLUMN_DECODER);
-                            break;
-                        case SECONDARY_ADDRESS_FROM:
-                            fireTableCellUpdated(rowIndex, COLUMN_SECONDARY_FROM);
-                            break;
-                        case SECONDARY_ADDRESS_TO:
-                            fireTableCellUpdated(rowIndex, COLUMN_SECONDARY_TO);
+                        case USER_TO:
+                            fireTableCellUpdated(rowIndex, COLUMN_USER_TO);
+                            fireTableCellUpdated(rowIndex, COLUMN_USER_TO_ALIAS);
                             break;
                     }
                 }
-            }
-        });
+            });
+        }
     }
 }

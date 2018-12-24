@@ -1,21 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
@@ -25,6 +28,7 @@ import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -42,7 +46,7 @@ public class P25DecoderC4FM extends P25Decoder
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected AdaptivePLLGainMonitor mPLLGainMonitor;
-    protected P25MessageFramer mMessageFramer;
+    protected P25MessageFramer2 mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
@@ -50,12 +54,10 @@ public class P25DecoderC4FM extends P25Decoder
     /**
      * P25 Phase 1 - standard C4FM modulation decoder.  Uses Differential QPSK decoding with a Costas PLL and a
      * decision-directed phase and timing error detector.
-     *
-     * @param aliasList
      */
-    public P25DecoderC4FM(AliasList aliasList)
+    public P25DecoderC4FM()
     {
-        super(4800.0, aliasList);
+        super(4800.0);
         setSampleRate(25000.0);
     }
 
@@ -74,12 +76,12 @@ public class P25DecoderC4FM extends P25Decoder
         if(mMessageFramer != null)
         {
             getDibitBroadcaster().removeListener(mMessageFramer);
-            mMessageFramer.dispose();
         }
 
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
-        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
+        mMessageFramer = new P25MessageFramer2(mCostasLoop, DecoderType.P25_PHASE1.getProtocol().getBitRate());
+        mMessageFramer.setSyncDetectListener(mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
 
@@ -99,6 +101,8 @@ public class P25DecoderC4FM extends P25Decoder
 
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
+
+        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
 
         //User accounting of the filtered buffer is handled by the demodulator
         mQPSKDemodulator.receive(gainApplied);
@@ -164,7 +168,6 @@ public class P25DecoderC4FM extends P25Decoder
         mBasebandFilter.dispose();
         mBasebandFilter = null;
 
-        mMessageFramer.dispose();
         mMessageFramer = null;
     }
 

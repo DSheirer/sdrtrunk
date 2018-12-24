@@ -62,7 +62,6 @@ public class DecoderStateEvent
 		END,
 		RESET,
 		SOURCE_FREQUENCY,
-		START,
-		TRAFFIC_CHANNEL_ALLOCATION;
+		START;
 	}
 }

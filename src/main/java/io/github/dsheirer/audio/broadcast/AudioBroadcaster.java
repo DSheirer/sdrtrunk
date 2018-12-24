@@ -19,7 +19,7 @@
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -99,15 +99,15 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     /**
      * Broadcasts the next song's audio metadata prior to streaming the next song.
      *
-     * @param metadata for the next recording that will be streamed
+     * @param identifierCollection for the next recording that will be streamed
      */
-    protected void broadcastMetadata(Metadata metadata)
+    protected void broadcastMetadata(IdentifierCollection identifierCollection)
     {
         IBroadcastMetadataUpdater metadataUpdater = getMetadataUpdater();
 
         if(metadataUpdater != null)
         {
-            metadataUpdater.update(metadata);
+            metadataUpdater.update(identifierCollection);
         }
     }
 
@@ -442,7 +442,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
                             if(connected())
                             {
-                                broadcastMetadata(nextRecording.getMetadata());
+                                broadcastMetadata(nextRecording.getIdentifierCollection());
                             }
 
                             metadataUpdateRequired = false;

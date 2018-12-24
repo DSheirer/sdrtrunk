@@ -2,55 +2,83 @@ package io.github.dsheirer.module.decode.p25.reference;
 
 public enum PDUType
 {
-	/* Outbound */
-	SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT( "SNDCP-ACTIVATE TDS CONTEXT ACCEPT", 0 ),
-	SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT( "SNDCP-DEACTIVATE TDS CONTEXT ACCEPT", 1 ),
-	SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST( "SNDCP-DEACTIVATE TDS CONTEXT REQUEST", 2 ),
-	SNDCP_ACTIVATE_TDS_CONTEXT_REJECT( "SNDCP-ACTIVATE TDS CONTEXT REJECT", 3 ),
-	SNDCP_RF_UNCONFIRMED_DATA( "SNDCP-RF UNCONFIRMED DATA", 4 ),
-	SNDCP_RF_CONFIRMED_DATA( "SNDCP-RF CONFIRMED DATA", 5 ),
-	PDU_TYPE_6( "PDU TYPE 6 UNKNOWN", 6 ),
-	PDU_TYPE_7( "PDU TYPE 7 UNKNOWN", 7 ),
-	PDU_TYPE_8( "PDU TYPE 8 UNKNOWN", 8 ),
-	PDU_TYPE_9( "PDU TYPE 9 UNKNOWN", 9 ),
-	PDU_TYPE_10( "PDU TYPE 10 UNKNOWN", 10 ),
-	PDU_TYPE_11( "PDU TYPE 11 UNKNOWN", 11 ),
-	
-	/* Inbound */
-	SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST( "SNDCP-ACTIVATE TDS CONTEXT REQUEST", 0 ),
+    /* Outbound */
+    OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT("ACTIVATE TDS CONTEXT ACCEPT", 0),
+    OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT("DEACTIVATE TDS CONTEXT ACCEPT", 1),
+    OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST("DEACTIVATE TDS CONTEXT REQUEST", 2),
+    OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REJECT("ACTIVATE TDS CONTEXT REJECT", 3),
+    OUTBOUND_SNDCP_RF_UNCONFIRMED_DATA("RF UNCONFIRMED DATA", 4),
+    OUTBOUND_SNDCP_RF_CONFIRMED_DATA("RF CONFIRMED DATA", 5),
+    OUTBOUND_UNKNOWN("OUTBOUND UNKNOWN PDU TYPE", -1),
 
-	UNKNOWN( "UNKNOWN", -1 );
-	
-	private String mLabel;
-	private int mValue;
-	
-	private PDUType( String label, int value )
-	{
-		mLabel = label;
-		mValue = value;
-	}
-	
-	public String getLabel()
-	{
-		return mLabel;
-	}
-	
-	public int getValue()
-	{
-		return mValue;
-	}
-	
-	public static PDUType fromValue( int value, boolean outbound )
-	{
-		if( outbound && 0 <= value && value <= 11 )
-		{
-			return values()[ value ];
-		}
-		else if( value == 0 && !outbound )
-		{
-			return SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST;
-		}
-		
-		return UNKNOWN;
-	}
+    INBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST("ACTIVATE TDS CONTEXT REQUEST", 0),
+    INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT("DEACTIVATE TDS CONTEXT ACCEPT", 1),
+    INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST("DEACTIVATE TDS CONTEXT REQUEST", 2),
+    INBOUND_SNDCP_RF_CONFIRMED_DATA("RF CONFIRMED DATA", 5),
+    INBOUND_UNKNOWN("INBOUND UNKNOWN PDU TYPE", -1);
+
+    private String mLabel;
+    private int mValue;
+
+    PDUType(String label, int value)
+    {
+        mLabel = label;
+        mValue = value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
+    }
+
+    public String getLabel()
+    {
+        return mLabel;
+    }
+
+    public int getValue()
+    {
+        return mValue;
+    }
+
+    public static PDUType fromValue(int value, boolean outbound)
+    {
+        if(outbound)
+        {
+            switch(value)
+            {
+                case 0:
+                    return OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT;
+                case 1:
+                    return OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT;
+                case 2:
+                    return OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST;
+                case 3:
+                    return OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REJECT;
+                case 4:
+                    return OUTBOUND_SNDCP_RF_UNCONFIRMED_DATA;
+                case 5:
+                    return OUTBOUND_SNDCP_RF_CONFIRMED_DATA;
+                default:
+                    return OUTBOUND_UNKNOWN;
+            }
+        }
+        else
+        {
+            switch(value)
+            {
+                case 0:
+                    return INBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST;
+                case 1:
+                    return INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT;
+                case 2:
+                    return INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST;
+                case 5:
+                    return INBOUND_SNDCP_RF_CONFIRMED_DATA;
+                default:
+                    return INBOUND_UNKNOWN;
+            }
+        }
+    }
 }

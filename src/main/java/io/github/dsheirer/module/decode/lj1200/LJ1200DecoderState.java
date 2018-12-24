@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,20 +15,19 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.lj1200;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,14 +43,8 @@ public class LJ1200DecoderState extends DecoderState
 
     private Set<String> mAddresses = new TreeSet<String>();
 
-    private AliasedStringAttributeMonitor mAddressAttribute;
-
-    public LJ1200DecoderState(AliasList aliasList)
+    public LJ1200DecoderState()
     {
-        super(aliasList);
-
-        mAddressAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
     }
 
     @Override
@@ -60,27 +54,49 @@ public class LJ1200DecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message instanceof LJ1200Message)
         {
-            LJ1200Message lj = (LJ1200Message) message;
+            LJ1200Message lj = (LJ1200Message)message;
 
             if(lj.isValid())
             {
                 String address = lj.getAddress();
 
-                mAddressAttribute.process(address);
                 mAddresses.add(address);
 
-                broadcast(LJ1200CallEvent.getLJ1200Event(lj));
+                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                ic.remove(IdentifierClass.USER);
+                ic.update(lj.getIdentifiers());
 
+                DecodeEvent event = DecodeEvent.builder(System.currentTimeMillis())
+                    .identifiers(ic)
+                    .channel(getCurrentChannel())
+                    .details("LOJACK")
+                    .eventDescription(lj.toString())
+                    .build();
+
+                broadcast(event);
                 broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
             }
         }
         else if(message instanceof LJ1200TransponderMessage)
         {
+            LJ1200TransponderMessage transponder = (LJ1200TransponderMessage)message;
 
+            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            ic.remove(IdentifierClass.USER);
+            ic.update(transponder.getIdentifiers());
+
+            DecodeEvent transponderEvent = DecodeEvent.builder(System.currentTimeMillis())
+                .identifiers(ic)
+                .channel(getCurrentChannel())
+                .details("LOJACK TRANSPONDER")
+                .eventDescription(transponder.toString())
+                .build();
+
+            broadcast(transponderEvent);
         }
     }
 
@@ -120,9 +136,9 @@ public class LJ1200DecoderState extends DecoderState
         }
     }
 
-    private void resetState()
+    protected void resetState()
     {
-        mAddressAttribute.reset();
+        super.resetState();
     }
 
     @Override

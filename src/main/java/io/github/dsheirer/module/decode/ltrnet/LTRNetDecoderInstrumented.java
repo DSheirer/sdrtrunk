@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.ltrnet;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.fsk.LTRDecoderInstrumented;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -24,9 +23,9 @@ public class LTRNetDecoderInstrumented extends LTRNetDecoder
 {
     public SimpleIntegerProperty bufferCount = new SimpleIntegerProperty();
 
-    public LTRNetDecoderInstrumented(DecodeConfigLTRNet config, AliasList aliasList)
+    public LTRNetDecoderInstrumented(DecodeConfigLTRNet config)
     {
-        super(config, aliasList, new LTRDecoderInstrumented(LTR_NET_MESSAGE_LENGTH));
+        super(config, new LTRDecoderInstrumented(LTR_NET_MESSAGE_LENGTH));
     }
 
     public LTRDecoderInstrumented getLTRDecoder()

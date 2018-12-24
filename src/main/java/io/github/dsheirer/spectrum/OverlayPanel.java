@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +15,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.spectrum;
 
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
-import io.github.dsheirer.controller.channel.ChannelEventListener;
 import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.ColorSetting;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
@@ -31,8 +33,6 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -50,14 +50,14 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class OverlayPanel extends JPanel implements ChannelEventListener, ISourceEventProcessor,
-        SettingChangeListener
+public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISourceEventProcessor, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
 
-    private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
+//    private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
     private final DecimalFormat PPM_FORMATTER = new DecimalFormat( "#.0" );
 
     private final static RenderingHints RENDERING_HINTS = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
@@ -92,7 +92,9 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
     private Color mColorSpectrumLine;
 
     //Currently visible/displayable channels
-    private CopyOnWriteArrayList<Channel> mVisibleChannels = new CopyOnWriteArrayList<Channel>();
+    private List<Channel> mVisibleChannels = new CopyOnWriteArrayList<>();
+    private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
+
     private ChannelDisplay mChannelDisplay = ChannelDisplay.ALL;
 
     //Defines the offset at the bottom of the spectral display to account for
@@ -102,13 +104,14 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
 
     private SettingsManager mSettingsManager;
     private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
 
     /**
      * Translucent overlay panel for displaying channel configurations,
      * processing channels, selected channels, frequency labels and lines, and
      * a cursor with a frequency readout.
      */
-    public OverlayPanel(SettingsManager settingsManager, ChannelModel channelModel)
+    public OverlayPanel(SettingsManager settingsManager, ChannelModel channelModel, ChannelProcessingManager channelProcessingManager)
     {
         mSettingsManager = settingsManager;
 
@@ -121,7 +124,14 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
 
         if(mChannelModel != null)
         {
-            mChannelModel.addListener(this);
+            mChannelModel.addListener(this::receive);
+        }
+
+        mChannelProcessingManager = channelProcessingManager;
+
+        if(mChannelProcessingManager != null)
+        {
+            mChannelProcessingManager.addChannelEventListener(this::receive);
         }
 
         addComponentListener(mLabelSizeMonitor);
@@ -668,14 +678,21 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
          */
         mVisibleChannels.clear();
         mVisibleChannels.addAll(mChannelModel.getChannelsInFrequencyRange(getMinFrequency(), getMaxFrequency()));
+
+        for(Channel trafficChannel: mTrafficChannels)
+        {
+            if(trafficChannel.isWithin(getMinFrequency(), getMaxFrequency()))
+            {
+                mVisibleChannels.add(trafficChannel);
+            }
+        }
     }
 
     /**
      * Channel change event handler
      */
     @Override
-    @SuppressWarnings("incomplete-switch")
-    public void channelChanged(ChannelEvent event)
+    public void receive(ChannelEvent event)
     {
         Channel channel = event.getChannel();
 
@@ -683,6 +700,10 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
         {
             case NOTIFICATION_ADD:
             case NOTIFICATION_PROCESSING_START:
+                if(channel.getChannelType() == ChannelType.TRAFFIC && !mTrafficChannels.contains(channel))
+                {
+                    mTrafficChannels.add(channel);
+                }
                 if(!mVisibleChannels.contains(channel) && channel.isWithin(getMinFrequency(), getMaxFrequency()))
                 {
                     mVisibleChannels.add(channel);
@@ -692,9 +713,11 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
                 mVisibleChannels.remove(channel);
                 break;
             case NOTIFICATION_PROCESSING_STOP:
+            case NOTIFICATION_PROCESSING_START_REJECTED:
                 if(channel.getChannelType() == ChannelType.TRAFFIC)
                 {
                     mVisibleChannels.remove(channel);
+                    mTrafficChannels.remove(channel);
                 }
                 break;
             case NOTIFICATION_CONFIGURATION_CHANGE:

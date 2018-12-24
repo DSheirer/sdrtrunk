@@ -1,42 +1,41 @@
 package io.github.dsheirer.module.decode.p25.message.vselp;
 
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
+import java.util.Collections;
+import java.util.List;
+
 public class VSELP1Message extends P25Message
 {
-	/**
-	 * Motorola VSELP audio message 1.
-	 * 
-	 * @param message
-	 * @param duid
-	 * @param aliasList
-	 */
-	public VSELP1Message( BinaryMessage message, DataUnitID duid, AliasList aliasList )
-	{
-		super( message, duid, aliasList );
-	}
-
-	@Override
-	public String getMessage()
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( getMessageStub() );
-		sb.append( " " );
-		sb.append( mMessage.toString() );
-		
-		return sb.toString();
-	}
-	
-    public String getMessageStub()
+    /**
+     * Motorola VSELP audio message 1 - not implemented.
+     */
+    public VSELP1Message(CorrectedBinaryMessage message, int nac, long timestamp)
     {
-		StringBuilder sb = new StringBuilder();
+        super(message, nac, timestamp);
+    }
 
-		sb.append( "VSELP 1 VOICE FRAME" );
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getMessageStub());
+        sb.append(" MSG:").append(getMessage().toHexString());
+        return sb.toString();
+    }
 
-	    return sb.toString();
+    @Override
+    public DataUnitID getDUID()
+    {
+        return DataUnitID.VSELP1;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.EMPTY_LIST;
     }
 }

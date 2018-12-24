@@ -18,54 +18,36 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.fleetsync2;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
-import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.util.StringUtils;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.fleetsync2.identifier.FleetsyncIdentifier;
+import io.github.dsheirer.module.decode.fleetsync2.message.Fleetsync2Message;
+import io.github.dsheirer.protocol.Protocol;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.TreeSet;
 
 public class Fleetsync2DecoderState extends DecoderState
 {
-    private TreeSet<String> mIdents = new TreeSet<String>();
-    private TreeSet<String> mEmergencyIdents = new TreeSet<String>();
+    private Set<FleetsyncIdentifier> mIdents = new TreeSet<>();
 
-    private AliasedStringAttributeMonitor mFromAttribute;
-    private AliasedStringAttributeMonitor mToAttribute;
-    private String mMessage;
-    private String mMessageType;
-    private long mFrequency;
-
-    public Fleetsync2DecoderState(AliasList aliasList)
+    public Fleetsync2DecoderState()
     {
-        super(aliasList);
-
-        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
-        mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
+        super();
     }
 
     @Override
     public DecoderType getDecoderType()
     {
         return DecoderType.FLEETSYNC2;
-    }
-
-    @Override
-    public void dispose()
-    {
-        super.dispose();
     }
 
     /**
@@ -75,21 +57,16 @@ public class Fleetsync2DecoderState extends DecoderState
     public void reset()
     {
         mIdents.clear();
-        mEmergencyIdents.clear();
-
-        resetState();
     }
 
     @Override
     public void start()
     {
-
     }
 
     @Override
     public void stop()
     {
-
     }
 
     @Override
@@ -98,110 +75,60 @@ public class Fleetsync2DecoderState extends DecoderState
 
     }
 
-    /**
-     * Resets this decoder state
-     */
-    public void resetState()
-    {
-        mFromAttribute.reset();
-        mToAttribute.reset();
-        mMessage = null;
-        mMessageType = null;
-    }
-
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
-        if(message instanceof FleetsyncMessage)
+        if(message.isValid() && message instanceof Fleetsync2Message)
         {
-            FleetsyncMessage fleetsync = (FleetsyncMessage) message;
+            Fleetsync2Message fleetsync = (Fleetsync2Message)message;
 
-            if(fleetsync.isValid())
+            getIdentifierCollection().update(fleetsync.getIdentifiers());
+
+            mIdents.add(fleetsync.getFromIdentifier());
+            mIdents.add(fleetsync.getToIdentifier());
+
+            switch(fleetsync.getMessageType())
             {
-                State state = State.CALL;
+                case ANI:
+                case EMERGENCY:
+                case LONE_WORKER_EMERGENCY:
+                    DecodeEvent aniEvent = DecodeEvent.builder(fleetsync.getTimestamp())
+                        .channel(getCurrentChannel())
+                        .eventDescription(fleetsync.getMessageType().toString())
+                        .details(fleetsync.toString())
+                        .identifiers(getIdentifierCollection().copyOf())
+                        .build();
 
-                mFromAttribute.process(fleetsync.getFromID());
-                mIdents.add(fleetsync.getFromID());
-
-                FleetsyncMessageType type = fleetsync.getMessageType();
-
-                if(type != FleetsyncMessageType.ANI)
-                {
-                    mToAttribute.process(fleetsync.getToID());
-                    mIdents.add(fleetsync.getToID());
-                }
-
-                setMessageType(type.getLabel());
-
-                switch(type)
-                {
-                    case GPS:
-                        setMessage(fleetsync.getGPSLocation());
-                        state = State.DATA;
-                        break;
-                    case STATUS:
-                        StringBuilder sb = new StringBuilder();
-                        sb.append(fleetsync.getStatus());
-
-                        Alias status = fleetsync.getStatusAlias();
-
-                        if(status != null)
-                        {
-                            sb.append("/");
-                            sb.append(status.getName());
-                        }
-
-                        setMessage(sb.toString());
-                        state = State.DATA;
-                        break;
-                    case EMERGENCY:
-                    case LONE_WORKER_EMERGENCY:
-                        mEmergencyIdents.add(fleetsync.getFromID());
-                        state = State.DATA;
-                        break;
-                    default:
-                        break;
-                }
-
-                FleetsyncCallEvent fsCallEvent =
-                    FleetsyncCallEvent.getFleetsync2Event(fleetsync, mFrequency);
-
-                fsCallEvent.setAliasList(getAliasList());
-
-                broadcast(fsCallEvent);
-
-			    /* Broadcast decode event so that the channel state will
-                 * kick in and reset everything after a short delay */
-                broadcast(new DecoderStateEvent(this, Event.DECODE, state));
+                    broadcast(aniEvent);
+                    broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.CALL));
+                    break;
+                case ACKNOWLEDGE:
+                case PAGING:
+                case STATUS:
+                case UNKNOWN:
+                    DecodeEvent statusEvent = DecodeEvent.builder(fleetsync.getTimestamp())
+                        .channel(getCurrentChannel())
+                        .eventDescription(fleetsync.getMessageType().toString())
+                        .details(fleetsync.toString())
+                        .identifiers(getIdentifierCollection().copyOf())
+                        .build();
+                    broadcast(statusEvent);
+                    broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.DATA));
+                    break;
+                case GPS:
+                    PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(fleetsync.getTimestamp())
+                        .channel(getCurrentChannel())
+                        .eventDescription(DecodeEventType.GPS.toString())
+                        .details(fleetsync.toString())
+                        .identifiers(getIdentifierCollection().copyOf())
+                        .protocol(Protocol.FLEETSYNC)
+                        .build();
+                    broadcast(plottableDecodeEvent);
+                    broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.DATA));
+                    break;
             }
-        }
-    }
 
-    public String getMessage()
-    {
-        return mMessage;
-    }
-
-    public void setMessage(String message)
-    {
-        if(!StringUtils.isEqual(mMessage, message))
-        {
-            mMessage = message;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
-        }
-    }
-
-    public String getMessageType()
-    {
-        return "Fleetsync " + mMessageType;
-    }
-
-    public void setMessageType(String type)
-    {
-        if(!StringUtils.isEqual(mMessageType, type))
-        {
-            mMessageType = type;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, getMessageType()));
+            getIdentifierCollection().remove(IdentifierClass.USER);
         }
     }
 
@@ -214,10 +141,7 @@ public class Fleetsync2DecoderState extends DecoderState
         switch(event.getEvent())
         {
             case RESET:
-                resetState();
-                break;
-            case SOURCE_FREQUENCY:
-                mFrequency = event.getFrequency();
+                reset();
                 break;
             default:
                 break;
@@ -239,80 +163,14 @@ public class Fleetsync2DecoderState extends DecoderState
         }
         else
         {
-            Iterator<String> it = mIdents.iterator();
+            Iterator<FleetsyncIdentifier> it = mIdents.iterator();
 
             while(it.hasNext())
             {
-                String ident = it.next();
-
-                sb.append("  ");
-                sb.append(formatIdent(ident));
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getFleetsyncAlias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(" ");
-                        sb.append(alias.getName());
-                    }
-                }
-
-                sb.append("\n");
-            }
-        }
-
-        sb.append("\nFleetsync Emergency Activations\n");
-
-        if(mEmergencyIdents.isEmpty())
-        {
-            sb.append("  None\n");
-        }
-        else
-        {
-            Iterator<String> it = mEmergencyIdents.iterator();
-
-            while(it.hasNext())
-            {
-                String ident = it.next();
-
-                sb.append("  ");
-                sb.append(formatIdent(ident));
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getFleetsyncAlias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(" ");
-                        sb.append(alias.getName());
-                    }
-
-                    sb.append("\n");
-                }
+                sb.append("  ").append(it.next().formatted()).append("\n");
             }
         }
 
         return sb.toString();
-    }
-
-    public static String formatIdent(String ident)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        if(ident.length() == 7)
-        {
-            sb.append(ident.substring(0, 3));
-            sb.append("-");
-            sb.append(ident.substring(3, 7));
-
-            return sb.toString();
-        }
-        else
-        {
-            return ident;
-        }
     }
 }

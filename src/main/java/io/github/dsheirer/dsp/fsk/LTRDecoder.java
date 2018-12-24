@@ -1,18 +1,22 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.dsp.fsk;
 
 import io.github.dsheirer.bits.MessageFramer;
@@ -129,9 +133,9 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
      * synchronization has been achieved.
      */
     @Override
-    public void syncDetected()
+    public void syncDetected(int bitErrors)
     {
-        mSynchronizationMonitor.syncDetected();
+        mSynchronizationMonitor.syncDetected(bitErrors);
     }
 
     @Override
@@ -164,7 +168,7 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
             {
                 if(mMessageFramer != null)
                 {
-                    mMessageFramer.receive(mSampleBuffer.getSymbol());
+                    mMessageFramer.process(mSampleBuffer.getSymbol());
                 }
 
                 mSampleBuffer.resetAndAdjust(-mTimingErrorDetector.getError());

@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.ltrnet;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
 import io.github.dsheirer.dsp.fsk.LTRDecoder;
@@ -37,7 +36,7 @@ public class LTRNetDecoder extends Decoder implements IReusableBufferListener, L
      * LTR-Net Decoder.  Decodes unfiltered (e.g. demodulated but with no DC or
      * audio filtering) samples and produces LTR-Net messages.
      */
-    public LTRNetDecoder(DecodeConfigLTRNet config, AliasList aliasList, LTRDecoder ltrDecoder)
+    public LTRNetDecoder(DecodeConfigLTRNet config, LTRDecoder ltrDecoder)
     {
         mLTRDecoder = ltrDecoder;
 
@@ -52,7 +51,7 @@ public class LTRNetDecoder extends Decoder implements IReusableBufferListener, L
 
         mLTRDecoder.setMessageFramer(mLTRMessageFramer);
         mLTRMessageFramer.setSyncDetectListener(mLTRDecoder);
-        mLTRMessageProcessor = new LTRNetMessageProcessor(config.getMessageDirection(), aliasList);
+        mLTRMessageProcessor = new LTRNetMessageProcessor(config.getMessageDirection());
         mLTRMessageFramer.addMessageListener(mLTRMessageProcessor);
         mLTRMessageProcessor.setMessageListener(getMessageListener());
     }
@@ -61,9 +60,9 @@ public class LTRNetDecoder extends Decoder implements IReusableBufferListener, L
      * LTR-Net Decoder.  Decodes unfiltered (e.g. demodulated but with no DC or
      * audio filtering) samples and produces LTR-Net messages.
      */
-    public LTRNetDecoder(DecodeConfigLTRNet config, AliasList aliasList)
+    public LTRNetDecoder(DecodeConfigLTRNet config)
     {
-        this(config, aliasList, new LTRDecoder(LTR_NET_MESSAGE_LENGTH));
+        this(config, new LTRDecoder(LTR_NET_MESSAGE_LENGTH));
     }
 
     @Override

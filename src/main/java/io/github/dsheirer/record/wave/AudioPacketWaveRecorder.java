@@ -17,21 +17,19 @@
 package io.github.dsheirer.record.wave;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
-import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
@@ -46,30 +44,36 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
     private final static Logger mLog = LoggerFactory.getLogger(AudioPacketWaveRecorder.class);
 
     private WaveWriter mWriter;
-    private String mFilePrefix;
-    private Path mFile;
+    private Path mPath;
     private AudioFormat mAudioFormat;
 
     private OverflowableReusableBufferTransferQueue<ReusableAudioPacket> mTransferQueue =
         new OverflowableReusableBufferTransferQueue<>(500, 100);
     private BufferProcessor mBufferProcessor;
     private ScheduledFuture<?> mProcessorHandle;
-    private Metadata mMetadata;
     private long mLastBufferReceived;
     private List<ReusableAudioPacket> mAudioPacketsToProcess = new ArrayList<>();
-
+    private IdentifierCollection mIdentifierCollection;
     private AtomicBoolean mRunning = new AtomicBoolean();
 
     /**
      * Wave audio recorder for AudioPackets
-     * @param filePrefix
-     * @param metadata
+     *
+     * @param path for the recording file
      */
-    public AudioPacketWaveRecorder(String filePrefix, Metadata metadata)
+    public AudioPacketWaveRecorder(Path path)
     {
-        mMetadata = metadata;
-        mFilePrefix = filePrefix;
+        mPath = path;
         mAudioFormat = AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO;
+    }
+
+    /**
+     * Identifier collection harvested from the most recent audio packet.
+     * @return identifier collection or null.
+     */
+    public IdentifierCollection getIdentifierCollection()
+    {
+        return mIdentifierCollection;
     }
 
     /**
@@ -88,9 +92,9 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
         return mLastBufferReceived;
     }
 
-    public Path getFile()
+    public Path getPath()
     {
-        return mFile;
+        return mPath;
     }
 
     public void start()
@@ -104,15 +108,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
 
             try
             {
-                StringBuilder sb = new StringBuilder();
-                sb.append(mFilePrefix);
-                sb.append("_");
-                sb.append(TimeStamp.getLongTimeStamp("_"));
-                sb.append(".tmp");
-
-                mFile = Paths.get(sb.toString());
-
-                mWriter = new WaveWriter(mAudioFormat, mFile);
+                mWriter = new WaveWriter(mAudioFormat, mPath);
 
 				/* Schedule the processor to run every 500 milliseconds */
                 mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
@@ -124,25 +120,46 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
         }
     }
 
+    @Override
     public void stop()
+    {
+        stop(null, null);
+    }
+
+    /**
+     * Stops the recorder and optionally renames the file to the specified path argument and/or writes
+     * the metadata to the recording.
+     *
+     * Note: both renaming path and wave metadata can be null.  If no renaming path is specified, the
+     * original path name will remain for the audio file.
+     *
+     * @param path (optional) to rename the audio file.
+     * @param waveMetadata (optional) to include in the recording
+     */
+    public void stop(Path path, WaveMetadata waveMetadata)
     {
         if(mRunning.compareAndSet(true, false))
         {
+            if(mProcessorHandle != null)
+            {
+                mProcessorHandle.cancel(false);
+                mProcessorHandle = null;
+            }
+
             try
             {
                 //Finish writing any residual audio buffers
                 write();
 
                 //Append the LIST and ID3 metadata to the end
-                if(mMetadata != null)
+                if(waveMetadata != null)
                 {
-                    mWriter.writeMetadata(WaveMetadata.createFrom(mMetadata));
-                    mMetadata = null;
+                    mWriter.writeMetadata(waveMetadata);
                 }
 
                 if(mWriter != null)
                 {
-                    mWriter.close();
+                    mWriter.close(path);
                     mWriter = null;
                 }
             }
@@ -187,7 +204,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
      *
      * @throws IOException if there are any errors writing the audio
      */
-    private void write() throws IOException
+    private synchronized void write() throws IOException
     {
         mTransferQueue.drainTo(mAudioPacketsToProcess);
 
@@ -195,15 +212,22 @@ public class AudioPacketWaveRecorder extends Module implements Listener<Reusable
         {
             if(audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
             {
-                if(audioPacket.hasMetadata())
+                if(audioPacket.hasIdentifierCollection())
                 {
-                    mMetadata = audioPacket.getMetadata();
+                    mIdentifierCollection = audioPacket.getIdentifierCollection();
                 }
 
                 mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples()));
             }
 
-            audioPacket.decrementUserCount();
+            try
+            {
+                audioPacket.decrementUserCount();
+            }
+            catch(IllegalStateException ise)
+            {
+                mLog.error("Error while decrementing user count on audio packet while writing data to recording file", ise);
+            }
         }
 
         mAudioPacketsToProcess.clear();

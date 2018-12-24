@@ -2,34 +2,34 @@ package io.github.dsheirer.module.decode.p25.message.filter;
 
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
-import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.message.tdu.lc.TDULinkControlMessage;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.p25.message.tdu.TDULinkControlMessage;
 
 import java.util.Collections;
 import java.util.List;
 
-public class TDULCMessageFilter extends Filter<Message>
+public class TDULCMessageFilter extends Filter<IMessage>
 {
-	public TDULCMessageFilter()
-	{
-		super( "TDU Terminator Data Unit with Link Control" );
-	}
-	
-	@Override
-    public boolean passes( Message message )
+    public TDULCMessageFilter()
     {
-		return mEnabled && canProcess( message );
+        super("TDU Terminator Data Unit with Link Control");
     }
 
-	@Override
-    public boolean canProcess( Message message )
+    @Override
+    public boolean passes(IMessage message)
     {
-	    return message instanceof TDULinkControlMessage;
+        return mEnabled && canProcess(message);
     }
 
-	@Override
+    @Override
+    public boolean canProcess(IMessage message)
+    {
+        return message instanceof TDULinkControlMessage;
+    }
+
+    @Override
     public List<FilterElement<?>> getFilterElements()
     {
-		return Collections.EMPTY_LIST;
+        return Collections.EMPTY_LIST;
     }
 }

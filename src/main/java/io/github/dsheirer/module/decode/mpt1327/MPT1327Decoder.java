@@ -1,33 +1,40 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.mpt1327;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.dsp.afsk.AFSK1200Decoder;
+import io.github.dsheirer.dsp.symbol.BinaryToByteBufferAssembler;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.afsk.AbstractAFSKDecoder;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
+import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Instrumented version of the MPT1327 decoder.  Exposes properties for instrumented manual decoding of a signal.
  */
-public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbolProcessor
+public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbolProcessor, IReusableByteBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327Decoder.class);
 
@@ -38,20 +45,21 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
     private MessageFramer mControlMessageFramer;
     private MessageFramer mTrafficMessageFramer;
     private MPT1327MessageProcessor mMessageProcessor;
+    private BinaryToByteBufferAssembler mBinaryToByteBufferAssembler = new BinaryToByteBufferAssembler(512);
 
-    protected MPT1327Decoder(AFSK1200Decoder decoder, AliasList aliasList, Sync sync)
+    protected MPT1327Decoder(AFSK1200Decoder decoder, Sync sync)
     {
         super(decoder);
-        init(aliasList, sync);
+        init(sync);
     }
 
-    public MPT1327Decoder(AliasList aliasList, Sync sync)
+    public MPT1327Decoder(Sync sync)
     {
         super((sync == Sync.NORMAL ? AFSK1200Decoder.Output.NORMAL : AFSK1200Decoder.Output.INVERTED));
-        init(aliasList, sync);
+        init(sync);
     }
 
-    private void init(AliasList aliasList, Sync sync)
+    private void init(Sync sync)
     {
         getDecoder().setSymbolProcessor(this);
 
@@ -62,17 +70,18 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
         mTrafficMessageFramer = new MessageFramer(sync.getTrafficSyncPattern().getPattern(), MESSAGE_LENGTH);
 
         //Fully decoded and framed messages processor
-        mMessageProcessor = new MPT1327MessageProcessor(aliasList);
+        mMessageProcessor = new MPT1327MessageProcessor();
         mMessageProcessor.setMessageListener(getMessageListener());
 
         mControlMessageFramer.addMessageListener(mMessageProcessor);
         mTrafficMessageFramer.addMessageListener(mMessageProcessor);
     }
 
-    public void receive(boolean symbol)
+    public void process(boolean symbol)
     {
-        mControlMessageFramer.receive(symbol);
-        mTrafficMessageFramer.receive(symbol);
+        mControlMessageFramer.process(symbol);
+        mTrafficMessageFramer.process(symbol);
+        mBinaryToByteBufferAssembler.process(symbol);
     }
 
     @Override
@@ -84,6 +93,12 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
     @Override
     public void reset()
     {
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
         mControlMessageFramer.reset();
         mTrafficMessageFramer.reset();
     }
@@ -108,5 +123,23 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
     public MessageFramer getTrafficMessageFramer()
     {
         return mTrafficMessageFramer;
+    }
+
+    @Override
+    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    {
+        mBinaryToByteBufferAssembler.setBufferListener(listener);
+    }
+
+    @Override
+    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    {
+        mBinaryToByteBufferAssembler.removeBufferListener(listener);
+    }
+
+    @Override
+    public boolean hasBufferListeners()
+    {
+        return mBinaryToByteBufferAssembler.hasBufferListeners();
     }
 }

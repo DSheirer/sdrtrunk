@@ -18,14 +18,14 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.IdentifierCollection;
 
 public interface IBroadcastMetadataUpdater
 {
     /**
      * Updates broadcast audio metadata
      *
-     * @param metadata containing metadata attributes
+     * @param identifierCollection containing metadata attributes
      */
-    void update(Metadata metadata);
+    void update(IdentifierCollection identifierCollection);
 }

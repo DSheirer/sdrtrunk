@@ -80,7 +80,6 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         if(mChannelResultsQueue != null)
         {
             mChannelResultsQueue.dispose();
-            mChannelResultsQueue = null;
         }
     }
 

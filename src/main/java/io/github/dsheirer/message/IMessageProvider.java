@@ -4,6 +4,6 @@ import io.github.dsheirer.sample.Listener;
 
 public interface IMessageProvider
 {
-	public void setMessageListener( Listener<Message> listener );
-	public void removeMessageListener();
+    void setMessageListener(Listener<IMessage> listener);
+    void removeMessageListener();
 }

@@ -19,7 +19,7 @@
 package io.github.dsheirer.record;
 
 import io.github.dsheirer.audio.IAudioPacketListener;
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
@@ -49,7 +49,7 @@ public abstract class AudioRecorder extends Module implements Listener<ReusableA
     private AtomicBoolean mRunning = new AtomicBoolean();
 
     protected Path mPath;
-    protected Metadata mMetadata;
+    protected IdentifierCollection mIdentifierCollection;
     protected long mTimeRecordingStart;
     protected long mTimeLastPacketReceived;
     private BufferProcessor mBufferProcessor;
@@ -77,11 +77,11 @@ public abstract class AudioRecorder extends Module implements Listener<ReusableA
     }
 
     /**
-     * Latest audio metadata received for this recording
+     * Latest audio identifier collection received for this recording
      */
-    public Metadata getMetadata()
+    public IdentifierCollection getIdentifierCollection()
     {
-        return mMetadata;
+        return mIdentifierCollection;
     }
 
     /**
@@ -129,9 +129,9 @@ public abstract class AudioRecorder extends Module implements Listener<ReusableA
             mTimeRecordingStart = System.currentTimeMillis();
             mTimeLastPacketReceived = mTimeRecordingStart;
 
-            if(audioPacket.hasMetadata())
+            if(audioPacket.hasIdentifierCollection())
             {
-                mMetadata = audioPacket.getMetadata();
+                mIdentifierCollection = audioPacket.getIdentifierCollection();
             }
 
             boolean success = mAudioPacketQueue.offer(audioPacket);
@@ -214,7 +214,7 @@ public abstract class AudioRecorder extends Module implements Listener<ReusableA
             {
                 mFileOutputStream = new FileOutputStream(mPath.toFile());
 
-				/* Schedule the handler to run every half second */
+                /* Schedule the handler to run every half second */
                 mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
             catch(IOException io)

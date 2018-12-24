@@ -1,147 +1,147 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.edac.CRC;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.CRCP25;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.P25Utils;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.MotorolaOpcode;
-import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
-public class TSBKMessage extends P25Message
+import java.util.List;
+
+/**
+ * APCO 25 Trunking Signalling Block (TSBK)
+ */
+public abstract class TSBKMessage extends P25Message
 {
-	public static final int MESSAGE_START = 64;
-	public static final int LAST_BLOCK_FLAG = 64;
-	public static final int ENCRYPTED_FLAG = 65;
-	public static final int[] OPCODE = { 66,67,68,69,70,71 };
-	public static final int[] VENDOR_ID = { 72,73,74,75,76,77,78,79 };
-	
-	public static final int[] BLOCK1 = { 64,65,66,67,68,69,70,71 };
-	public static final int[] BLOCK2 = { 72,73,74,75,76,77,78,79 };
-	public static final int[] BLOCK3 = { 80,81,82,83,84,85,86,87 };
-	public static final int[] BLOCK4 = { 88,89,90,91,92,93,94,95 };
-	public static final int[] BLOCK5 = { 96,97,98,99,100,101,102,103 };
-	public static final int[] BLOCK6 = { 104,105,106,107,108,109,110,111 };
-	public static final int[] BLOCK7 = { 112,113,114,115,116,117,118,119 };
-	public static final int[] BLOCK8 = { 120,121,122,123,124,125,126,127 };
-	public static final int[] BLOCK9 = { 128,129,130,131,132,133,134,135 };
-	public static final int[] BLOCK10 = { 136,137,138,139,140,141,142,143 };
-	public static final int[] BLOCK11 = { 144,145,146,147,148,149,150,151 };
-	public static final int[] BLOCK12 = { 152,153,154,155,156,157,158,159 };
-	public static final int CRC_START = 144;
+    private static final int LAST_BLOCK_FLAG = 0;
+    private static final int ENCRYPTION_FLAG = 1;
+    private static final int[] OPCODE = {2, 3, 4, 5, 6, 7};
+    private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
 
-    public TSBKMessage( BinaryMessage message, DataUnitID duid, AliasList aliasList )
+    private DataUnitID mDataUnitID;
+
+    /**
+     * Constructs a TSBK from the binary message sequence.
+     *
+     * @param dataUnitID TSBK1/2/3
+     * @param message binary sequence
+     * @param nac decoded from the NID
+     * @param timestamp for the message
+     */
+    public TSBKMessage(DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timestamp)
     {
-	    super( message, duid, aliasList );
+        super(message, nac, timestamp);
+        mDataUnitID = dataUnitID;
 
-	    /* Since CRC is checked before construction, mark it as passed */
-    	mCRC = new CRC[ 1 ];
-    	mCRC[ 0 ] = CRC.PASSED;
+        //The CRC-CCITT can correct up to 1 bit error or detect 2 or more errors.  We mark the message as
+        //invalid if the algorithm detects more than 1 correctable error.
+        int errors = CRCP25.correctCCITT80(message, 0, 80);
+        if(errors > 1)
+        {
+            setValid(false);
+        }
     }
-	
-	public boolean isLastBlock()
-	{
-		return mMessage.get( LAST_BLOCK_FLAG );
-	}
-	
-	public boolean isEncrypted()
-	{
-		return mMessage.get( ENCRYPTED_FLAG );
-	}
-	
-	public Vendor getVendor()
-	{
-		return Vendor.fromValue( mMessage.getInt( VENDOR_ID ) );
-	}
-	
-	public Opcode getOpcode()
-	{
-		return Opcode.fromValue( mMessage.getInt( OPCODE ) );
-	}
-	
-	public MotorolaOpcode getMotorolaOpcode()
-	{
-		return MotorolaOpcode.fromValue( mMessage.getInt( OPCODE ) );
-	}
-	
-	public VendorOpcode getVendorOpcode()
-	{
-		return VendorOpcode.fromValue( mMessage.getInt( OPCODE ) );
-	}
-	
-	@Override
-    public String getMessage()
+
+    @Override
+    public DataUnitID getDUID()
     {
-		StringBuilder sb = new StringBuilder();
-
-		sb.append( getMessageStub() );
-		
-		sb.append( " - " + getMessageHex() );
-		
-	    return sb.toString();
+        return mDataUnitID;
     }
-	
-	protected String getMessageStub()
-	{
-		StringBuilder sb = new StringBuilder();
 
-		Vendor vendor = getVendor();
-		
-		sb.append( "NAC:" );
-		sb.append( getNAC() );
-		sb.append( " " );
-		sb.append( getDUID().getLabel() );
+    /**
+     * Indicates if this is an encrypted LCW
+     */
+    public boolean isEncrypted()
+    {
+        return getMessage().get(ENCRYPTION_FLAG);
+    }
 
-		if( vendor == Vendor.STANDARD )
-		{
-			if( isEncrypted() )
-			{
-				sb.append( " ENCRYPTED" );
-			}
-			else
-			{
-				sb.append( " " );
-				sb.append( getOpcode().getLabel() );
-			}
-		}
-		else
-		{
-			sb.append( " " );
-			sb.append( vendor.getLabel() );
+    /**
+     * Indicates if this is the last TSBK in a sequence (1-3 blocks)
+     */
+    public boolean isLastBlock()
+    {
+        return isLastBlock(getMessage());
+    }
 
-			if( isEncrypted() )
-			{
-				sb.append( " ENCRYPTED" );
-			}
-			else
-			{
-				sb.append( " OPCD:" );
-				sb.append( mMessage.getHex( OPCODE, 2 ) );
-			}
-		}
-		
-	    return sb.toString();
-	}
-	
-	public String getMessageHex()
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( mMessage.getHex( BLOCK1, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK2, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK3, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK4, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK5, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK6, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK7, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK8, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK9, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK10, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK11, 2 ) + " " );
-		sb.append( mMessage.getHex( BLOCK12, 2 ) + " " );
-		
-		return sb.toString();
-	}
+    /**
+     * Indicates if this is the last TSBK in a sequence (1-3 blocks)
+     */
+    public static boolean isLastBlock(BinaryMessage binaryMessage)
+    {
+        return binaryMessage.get(LAST_BLOCK_FLAG);
+    }
+
+    /**
+     * Vendor format for this TSBK.
+     */
+    public Vendor getVendor()
+    {
+        return getVendor(getMessage());
+    }
+
+    /**
+     * Lookup the Vendor format for the specified LCW
+     */
+    public static Vendor getVendor(BinaryMessage binaryMessage)
+    {
+        return Vendor.fromValue(binaryMessage.getInt(VENDOR));
+    }
+
+    /**
+     * Opcode for this TSBK
+     */
+    public Opcode getOpcode()
+    {
+        return getOpcode(getMessage(), getDirection(), getVendor());
+    }
+
+    /**
+     * Opcode for this TSBK
+     */
+    public static Opcode getOpcode(BinaryMessage binaryMessage, Direction direction, Vendor vendor)
+    {
+        return Opcode.fromValue(binaryMessage.getInt(OPCODE), direction, vendor);
+    }
+
+    /**
+     * Direction - inbound (ISP) or outbound (OSP)
+     */
+    public abstract Direction getDirection();
+
+    /**
+     * List of identifiers provided by the message
+     */
+    public abstract List<Identifier> getIdentifiers();
+
+    /**
+     * Creates a string with the basic TSBK information
+     */
+    public String getMessageStub()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(super.getMessageStub());
+
+        if(isValid())
+        {
+            sb.append(" ").append(getOpcode().getLabel());
+
+            P25Utils.pad(sb, 30);
+
+            if(isEncrypted())
+            {
+                sb.append(" ENCRYPTED");
+            }
+        }
+        else
+        {
+            sb.append("**CRC-FAILED**");
+        }
+
+        return sb.toString();
+    }
 }

@@ -26,9 +26,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.action.beep.BeepAction;
 import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
-import io.github.dsheirer.message.Message;
-
-import java.util.concurrent.ScheduledExecutorService;
+import io.github.dsheirer.message.IMessage;
 
 /**
  * Alias action defines an action to execute when an alias is detected active.
@@ -56,7 +54,7 @@ public abstract class AliasAction
      * action attached.  The alias argument is the parent alias containing the
      * alias action.
      */
-    public abstract void execute(ScheduledExecutorService scheduledExecutorService, Alias alias, Message message);
+    public abstract void execute(Alias alias, IMessage message);
 
     /**
      * Dismiss a persistent alias action

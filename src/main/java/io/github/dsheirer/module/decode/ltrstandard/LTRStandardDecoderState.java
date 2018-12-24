@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,28 +15,30 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.ltrstandard;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
+import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.module.decode.ltrnet.LTRCallEvent;
-import io.github.dsheirer.module.decode.ltrstandard.message.CallEndMessage;
-import io.github.dsheirer.module.decode.ltrstandard.message.CallMessage;
-import io.github.dsheirer.module.decode.ltrstandard.message.IdleMessage;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.ltrstandard.channel.LtrChannel;
+import io.github.dsheirer.module.decode.ltrstandard.message.Call;
+import io.github.dsheirer.module.decode.ltrstandard.message.CallEnd;
+import io.github.dsheirer.module.decode.ltrstandard.message.Idle;
 import io.github.dsheirer.module.decode.ltrstandard.message.LTRStandardMessage;
+import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,23 +52,17 @@ import java.util.TreeSet;
 
 public class LTRStandardDecoderState extends DecoderState
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(LTRStandardDecoderState.class);
+    private final static Logger mLog = LoggerFactory.getLogger(LTRStandardDecoderState.class);
 
-    private Map<Integer,LTRCallEvent> mActiveCalls = new HashMap<>();
-    private Set<String> mTalkgroupsFirstHeard = new HashSet<>();
-    private Set<String> mTalkgroups = new TreeSet<>();
-
-    private AliasedStringAttributeMonitor mTalkgroupAttribute;
-    private long mFrequency;
+    private Map<Integer,DecodeEvent> mActiveCalls = new HashMap<>();
+    private Set<LTRTalkgroup> mTalkgroupsFirstHeard = new HashSet<>();
+    private Set<LTRTalkgroup> mTalkgroups = new TreeSet<>();
     private LCNTracker mLCNTracker = new LCNTracker();
+    private DecodeEvent mCurrentCallEvent;
+    private LTRTalkgroup mCurrentTalkgroup;
 
-    public LTRStandardDecoderState(AliasList aliasList)
+    public LTRStandardDecoderState()
     {
-        super(aliasList);
-
-        mTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -75,113 +72,73 @@ public class LTRStandardDecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message.isValid() && message instanceof LTRStandardMessage)
         {
-            switch(((LTRStandardMessage) message).getMessageType())
+            switch(((LTRStandardMessage)message).getMessageType())
             {
-                case CA_STRT:
-                    CallMessage start = (CallMessage) message;
-
-                    int channel = start.getChannel();
-
-                    setChannelNumber(channel);
-
-                    mLCNTracker.processFreeChannel(start.getFree());
-
-                    //Only process calls on this LCN, or call detects for
-                    //talkgroups that are homed on this LCN
-                    if(mLCNTracker.isValidChannel(channel) &&
-                        (mLCNTracker.isCurrentChannel(channel) ||
-                            mLCNTracker.isCurrentChannel(start.getHomeRepeater())))
+                case CALL:
+                    if(message instanceof Call)
                     {
-                        LTRCallEvent event = mActiveCalls.get(channel);
+                        Call start = (Call)message;
 
-                        if(event == null || !event.isMatchingTalkgroup(start.getToID()))
+                        int channel = start.getChannel();
+                        setChannelNumber(channel);
+                        mLCNTracker.processFreeChannel(start.getFree());
+
+                        //Only process calls or call detects for valid channels
+                        if(mLCNTracker.isValidChannel(channel) && mLCNTracker.isCurrentChannel(channel))
                         {
-                            //Check for different talkgroup
-                            if(event != null)
+                            if(mCurrentTalkgroup == null || !mCurrentTalkgroup.equals(start.getTalkgroup()))
                             {
-                                event.end();
-                                mActiveCalls.remove(channel);
+                                mCurrentTalkgroup = start.getTalkgroup();
+                                getIdentifierCollection().remove(IdentifierClass.USER);
+                                getIdentifierCollection().update(start.getTalkgroup());
+                                mCurrentCallEvent = DecodeEvent.builder(start.getTimestamp())
+                                    .protocol(Protocol.LTR_STANDARD)
+                                    .identifiers(getIdentifierCollection().copyOf())
+                                    .channel(getCurrentChannel())
+                                    .eventDescription("Call")
+                                    .build();
                             }
-
-                            boolean current = mLCNTracker.isCurrentChannel(channel);
-
-                            event = new LTRCallEvent.Builder(
-                                DecoderType.LTR_STANDARD,
-                                current ? CallEvent.CallEventType.CALL : CallEvent.CallEventType.CALL_DETECT)
-                                .to(start.getToID())
-                                .aliasList(getAliasList())
-                                .channel(start.getChannelFormatted())
-                                .frequency(current ? mFrequency : 0)
-                                .build();
-
-                            mActiveCalls.put(channel, event);
-
-                            broadcast(event);
-
-                            if(mLCNTracker.isCurrentChannel(channel))
+                            else
                             {
-                                String talkgroup = start.getToID();
-                                mTalkgroupAttribute.process(talkgroup);
-                                processTalkgroup(talkgroup);
+                                mCurrentCallEvent.update(start.getTimestamp());
                             }
+                            broadcast(mCurrentCallEvent);
+                            broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
                         }
-
-                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
                     }
                     break;
-                case CA_ENDD:
-                    CallEndMessage end = (CallEndMessage) message;
-
-                    //Home channel is 31 for call end -- use the free channel
-                    //as the call end channel
-                    int repeater = end.getFree();
-
-                    setChannelNumber(repeater);
-
-                    if(mLCNTracker.isCurrentChannel(repeater))
+                case CALL_END:
+                    if(message instanceof CallEnd)
                     {
-                        String talkgroup = end.getToID();
-                        mTalkgroupAttribute.process(talkgroup);
-                        processTalkgroup(talkgroup);
+                        CallEnd end = (CallEnd)message;
 
-                        LTRCallEvent event = mActiveCalls.remove(repeater);
-
-                        if(event != null)
+                        //Home channel is 31 for call end -- use the free channel as the call end channel
+                        int repeater = end.getFree();
+                        setChannelNumber(repeater);
+                        if(mLCNTracker.isCurrentChannel(repeater))
                         {
-                            event.end();
-                            broadcast(event);
+                            if(mCurrentCallEvent != null)
+                            {
+                                mCurrentCallEvent.end(end.getTimestamp());
+                            }
+
                             broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
                         }
                     }
                     break;
-                case SY_IDLE:
-                    IdleMessage idle = (IdleMessage) message;
-
-                    int lcn = idle.getChannel();
-
-                    mLCNTracker.processCallChannel(lcn);
-
+                case IDLE:
+                    if(message instanceof Idle)
+                    {
+                        mLCNTracker.processCallChannel(((Idle)message).getChannel());
+                    }
                     break;
-                case UN_KNWN:
                 default:
                     break;
             }
-        }
-    }
-
-    private void processTalkgroup(String talkgroup)
-    {
-        if(mTalkgroupsFirstHeard.contains(talkgroup))
-        {
-            mTalkgroups.add(talkgroup);
-        }
-        else
-        {
-            mTalkgroupsFirstHeard.add(talkgroup);
         }
     }
 
@@ -201,41 +158,25 @@ public class LTRStandardDecoderState extends DecoderState
     @Override
     public void start()
     {
-
     }
 
     @Override
     public void stop()
     {
-
     }
 
     @Override
     public void init()
     {
-
     }
 
     /**
      * Performs a temporal reset following a call or other decode event
      */
-    private void resetState()
+    protected void resetState()
     {
-        for(Integer key : mActiveCalls.keySet())
-        {
-            LTRCallEvent event = mActiveCalls.get(key);
-
-            if(event != null)
-            {
-                event.end();
-
-                broadcast(event);
-            }
-        }
-
+        super.resetState();
         mActiveCalls.clear();
-
-        mTalkgroupAttribute.reset();
     }
 
     public boolean hasChannelNumber()
@@ -256,8 +197,20 @@ public class LTRStandardDecoderState extends DecoderState
 
         if(mLCNTracker.getCurrentChannel() != original)
         {
-            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
-                "LCN:" + mLCNTracker.getCurrentChannel()));
+            getIdentifierCollection().update(DecoderLogicalChannelNameIdentifier
+                .create(String.valueOf(mLCNTracker.getCurrentChannel()), Protocol.LTR_STANDARD));
+
+            LtrChannel ltrChannel = new LtrChannel(mLCNTracker.getCurrentChannel());
+
+            Identifier identifier = getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION,
+                Form.CHANNEL_FREQUENCY, Role.ANY);
+
+            if(identifier instanceof FrequencyConfigurationIdentifier)
+            {
+                ltrChannel.setDownlink(((FrequencyConfigurationIdentifier)identifier).getValue());
+            }
+
+            setCurrentChannel(ltrChannel);
         }
     }
 
@@ -268,11 +221,6 @@ public class LTRStandardDecoderState extends DecoderState
         {
             case RESET:
                 resetState();
-                break;
-            case SOURCE_FREQUENCY:
-                mFrequency = event.getFrequency();
-                break;
-            default:
                 break;
         }
     }
@@ -321,22 +269,10 @@ public class LTRStandardDecoderState extends DecoderState
         }
         else
         {
-            for(String talkgroup : mTalkgroups)
+            for(LTRTalkgroup talkgroup : mTalkgroups)
             {
                 sb.append("  ");
-                sb.append(talkgroup);
-                sb.append(" ");
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getTalkgroupAlias(talkgroup);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
-
+                sb.append(talkgroup.formatted());
                 sb.append("\n");
 
             }
@@ -425,7 +361,7 @@ public class LTRStandardDecoderState extends DecoderState
 
             int count = mFreeLCNCounts[channel];
 
-            int threshold = (int) ((double) mFreeHighestCount * 0.2);
+            int threshold = (int)((double)mFreeHighestCount * 0.2);
 
             return count >= threshold;
         }

@@ -121,7 +121,7 @@ public class SynchronizationMonitor implements ISyncDetectListener
      * sync word in the symbol stream.
      */
     @Override
-    public void syncDetected()
+    public void syncDetected(int bitErrors)
     {
         mSymbolCount = 0;
         mSyncCount++;

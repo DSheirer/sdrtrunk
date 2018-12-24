@@ -23,7 +23,7 @@ import java.util.EnumSet;
 public enum RecorderType
 {
     /**
-     * Audio - 8kHz PCM
+     * Audio - 8kHz PCM -- **DO NOT USE - DEPRECATED - AUDIO RECORDING IS NOT MANAGED BY ALIASES
      */
 	AUDIO( "Audio (.wav)"),
 
@@ -52,7 +52,7 @@ public enum RecorderType
     /**
      * Recorders available to all decoders
      */
-    public static final EnumSet<RecorderType> DEFAULT_RECORDER_TYPES = EnumSet.of(AUDIO, BASEBAND, TRAFFIC_BASEBAND);
+    public static final EnumSet<RecorderType> DEFAULT_RECORDER_TYPES = EnumSet.of(BASEBAND, TRAFFIC_BASEBAND);
 
     RecorderType( String displayString )
     {

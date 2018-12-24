@@ -60,7 +60,7 @@ public class BroadcastFactory
      * @param configuration describing the server and audio types
      * @return configured broadcaster or null
      */
-    public static AudioBroadcaster getBroadcaster(BroadcastConfiguration configuration)
+    public static AudioBroadcaster getBroadcaster(BroadcastConfiguration configuration, AliasModel aliasModel)
     {
         if(configuration != null)
         {
@@ -71,15 +71,15 @@ public class BroadcastFactory
                 switch(configuration.getBroadcastServerType())
                 {
                     case BROADCASTIFY:
-                        return new IcecastTCPAudioBroadcaster((BroadcastifyConfiguration) configuration);
+                        return new IcecastTCPAudioBroadcaster((BroadcastifyConfiguration) configuration, aliasModel);
                     case ICECAST_TCP:
-                        return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration);
+                        return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration, aliasModel);
                     case ICECAST_HTTP:
-                        return new IcecastHTTPAudioBroadcaster((IcecastHTTPConfiguration) configuration);
+                        return new IcecastHTTPAudioBroadcaster((IcecastHTTPConfiguration) configuration, aliasModel);
                     case SHOUTCAST_V1:
-                        return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration);
+                        return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration, aliasModel);
                     case SHOUTCAST_V2:
-                        return new ShoutcastV2AudioBroadcaster((ShoutcastV2Configuration) configuration);
+                        return new ShoutcastV2AudioBroadcaster((ShoutcastV2Configuration) configuration, aliasModel);
                     case UNKNOWN:
                     default:
                         mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());

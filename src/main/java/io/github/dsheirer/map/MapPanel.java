@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.map;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.settings.MapViewSetting;
 import io.github.dsheirer.settings.SettingsManager;
@@ -30,10 +31,10 @@ import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import java.awt.EventQueue;
 
-public class MapPanel extends JPanel implements PlottableUpdateListener
+public class MapPanel extends JPanel implements IPlottableUpdateListener
 {
     private static final long serialVersionUID = 1L;
 
@@ -42,11 +43,11 @@ public class MapPanel extends JPanel implements PlottableUpdateListener
     private JXMapViewer mMapViewer = new JXMapViewer();
     private PlottableEntityPainter mMapPainter;
 
-    public MapPanel(MapService mapService, IconManager iconManager, SettingsManager settingsManager)
+    public MapPanel(MapService mapService, AliasModel aliasModel, IconManager iconManager, SettingsManager settingsManager)
     {
         mSettingsManager = settingsManager;
         mMapService = mapService;
-        mMapPainter = new PlottableEntityPainter(iconManager);
+        mMapPainter = new PlottableEntityPainter(aliasModel, iconManager);
 
         init();
     }
@@ -115,29 +116,20 @@ public class MapPanel extends JPanel implements PlottableUpdateListener
     @Override
     public void entitiesUpdated()
     {
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                mMapViewer.repaint();
-            }
-        });
+        EventQueue.invokeLater(() -> mMapViewer.repaint());
     }
 
     @Override
-    public void addPlottableEntity(PlottableEntity entity)
+    public void addPlottableEntity(PlottableEntityHistory entity)
     {
         mMapPainter.addEntity(entity);
-
         entitiesUpdated();
     }
 
     @Override
-    public void removePlottableEntity(PlottableEntity entity)
+    public void removePlottableEntity(PlottableEntityHistory entity)
     {
         mMapPainter.removeEntity(entity);
-
         entitiesUpdated();
     }
 }

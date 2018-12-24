@@ -21,7 +21,7 @@ import io.github.dsheirer.gui.instrument.chart.EyeDiagramChart;
 import io.github.dsheirer.gui.instrument.chart.PhaseLineChart;
 import io.github.dsheirer.gui.instrument.chart.SamplesPerSymbolChart;
 import io.github.dsheirer.gui.instrument.chart.SymbolChart;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25DecoderLSMInstrumented;
 import io.github.dsheirer.sample.Listener;
@@ -44,7 +44,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     private DoubleLineChart mPLLFrequencyLineChart;
     private SamplesPerSymbolChart mSamplesPerSymbolLineChart;
     private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
-    private P25DecoderLSMInstrumented mDecoder = new P25DecoderLSMInstrumented(null);
+    private P25DecoderLSMInstrumented mDecoder = new P25DecoderLSMInstrumented();
 
     public P25Phase1LSMPane()
     {
@@ -68,12 +68,12 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         HBox.setHgrow(getBottomChartBox(), Priority.ALWAYS);
         getChildren().addAll(getTopChartBox(), getBottomChartBox());
 
-        mDecoder.setMessageListener(new Listener<Message>()
+        mDecoder.setMessageListener(new Listener<IMessage>()
         {
             @Override
-            public void receive(Message message)
+            public void receive(IMessage message)
             {
-                mLog.debug(message.getMessage());
+                mLog.debug(message.toString());
             }
         });
 
@@ -87,7 +87,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         mDecoder.setSampleRate(sampleRate);
         double samplesPerSymbol = sampleRate / 4800.0;
 
-        getDifferentialDemodulatedSamplesChartBox().setSamplesPerSymbol((int)samplesPerSymbol);
+        getDifferentialDemodulatedSamplesChartBox().setSamplesPerSymbol((int) samplesPerSymbol);
         getSamplesPerSymbolLineChart().setSamplesPerSymbol(samplesPerSymbol);
     }
 
@@ -119,7 +119,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
             HBox.setHgrow(getPLLPhaseErrorLineChart(), Priority.ALWAYS);
             HBox.setHgrow(getPLLFrequencyLineChart(), Priority.ALWAYS);
             mBottomChartBox.getChildren().addAll(getSymbolConstellationChart(), getPLLPhaseErrorLineChart(),
-                getPLLFrequencyLineChart());
+                    getPLLFrequencyLineChart());
         }
 
         return mBottomChartBox;
@@ -138,7 +138,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
             HBox.setHgrow(getEyeDiagramChart(), Priority.ALWAYS);
             HBox.setHgrow(getSamplesPerSymbolLineChart(), Priority.ALWAYS);
             mTopChartBox.getChildren().addAll(getDifferentialDemodulatedSamplesChartBox(), getEyeDiagramChart(),
-                getSamplesPerSymbolLineChart());
+                    getSamplesPerSymbolLineChart());
         }
 
         return mTopChartBox;
@@ -178,7 +178,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     {
         if(mPLLFrequencyLineChart == null)
         {
-            mPLLFrequencyLineChart = new DoubleLineChart( "PLL Frequency", -2500, 2500, 200, 40);
+            mPLLFrequencyLineChart = new DoubleLineChart("PLL Frequency", -2500, 2500, 200, 40);
         }
 
         return mPLLFrequencyLineChart;

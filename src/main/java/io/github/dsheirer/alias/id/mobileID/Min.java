@@ -52,7 +52,7 @@ public class Min extends AliasID
 
     public String toString()
     {
-        return "MIN: " + mMin;
+        return "MIN: " + (mMin != null ? mMin : "(empty)") + (isValid() ? "" : " **NOT VALID**");
     }
 
     @Override

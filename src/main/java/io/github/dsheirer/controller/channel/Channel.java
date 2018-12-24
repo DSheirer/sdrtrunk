@@ -1,4 +1,5 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.controller.channel;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -38,10 +39,16 @@ import io.github.dsheirer.source.config.SourceConfigRecording;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
 
 @JacksonXmlRootElement(localName = "channel")
 public class Channel extends Configuration implements Listener<SourceEvent>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(Channel.class);
+
     // Standard channels are persisted and traffic channels are temporary
     public enum ChannelType
     {
@@ -187,6 +194,18 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public ChannelType getChannelType()
     {
         return mChannelType;
+    }
+
+    @JsonIgnore
+    public boolean isTrafficChannel()
+    {
+        return mChannelType == ChannelType.TRAFFIC;
+    }
+
+    @JsonIgnore
+    public boolean isStandardChannel()
+    {
+        return mChannelType == ChannelType.STANDARD;
     }
 
     /**
@@ -363,6 +382,14 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public void setAliasListName(String name)
     {
         mAliasListName = name;
+    }
+
+    /**
+     * Indicates if this channel has a non-null, non-empty alias list name specified.
+     */
+    public boolean hasAliasList()
+    {
+        return mAliasListName != null && !mAliasListName.isEmpty();
     }
 
     /**
@@ -546,5 +573,26 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public void resetFrequencyCorrection()
     {
         mChannelFrequencyCorrection = 0;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
+        Channel channel = (Channel)o;
+        return getChannelID() == channel.getChannelID();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(getChannelID());
     }
 }

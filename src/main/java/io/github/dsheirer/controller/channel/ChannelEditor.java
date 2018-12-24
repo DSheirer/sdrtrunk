@@ -1,20 +1,22 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.controller.channel;
 
 import com.jidesoft.swing.JideTabbedPane;
@@ -26,6 +28,7 @@ import io.github.dsheirer.module.decode.AuxDecodeConfigurationEditor;
 import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
 import io.github.dsheirer.module.log.EventLogConfigurationEditor;
 import io.github.dsheirer.record.RecordConfigurationEditor;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceConfigurationEditor;
 import io.github.dsheirer.source.SourceManager;
 import net.miginfocom.swing.MigLayout;
@@ -37,7 +40,7 @@ import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ChannelEditor extends Editor<Channel> implements ActionListener, ChannelEventListener
+public class ChannelEditor extends Editor<Channel> implements ActionListener, Listener<ChannelEvent>
 {
     private static final long serialVersionUID = 1L;
     private static final String ACTION_START = "Start";
@@ -56,17 +59,20 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     private JLabel mChannelName = new JLabel("Channel:");
 
     private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private ChannelMapModel mChannelMapModel;
     private SourceManager mSourceManager;
 
     private boolean mChannelStartRequested = false;
 
     public ChannelEditor(ChannelModel channelModel,
+                         ChannelProcessingManager channelProcessingManager,
                          ChannelMapModel channelMapModel,
                          SourceManager sourceManager,
                          AliasModel aliasModel)
     {
         mChannelModel = channelModel;
+        mChannelProcessingManager = channelProcessingManager;
         mChannelMapModel = channelMapModel;
         mSourceManager = sourceManager;
         mNameConfigurationEditor = new NameConfigurationEditor(aliasModel, mChannelModel);
@@ -126,7 +132,7 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     }
 
     @Override
-    public void channelChanged(ChannelEvent event)
+    public void receive(ChannelEvent event)
     {
         if(hasItem() && getItem() == event.getChannel())
         {
@@ -141,7 +147,7 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
                 case NOTIFICATION_DELETE:
                     setItem(null);
                     break;
-                case NOTIFICATION_START_PROCESSING_REJECTED:
+                case NOTIFICATION_PROCESSING_START_REJECTED:
                     if(mChannelStartRequested)
                     {
                         JOptionPane.showMessageDialog(ChannelEditor.this, "Channel could not be "
@@ -169,14 +175,14 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
                 save();
 
                 mChannelStartRequested = true;
-                mChannelModel.broadcast(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_ENABLE));
+                mChannelProcessingManager.receive(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_ENABLE));
             }
         }
         else if(command.contentEquals(ACTION_STOP))
         {
             if(hasItem())
             {
-                mChannelModel.broadcast(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_DISABLE));
+                mChannelProcessingManager.receive(new ChannelEvent(getItem(), ChannelEvent.Event.REQUEST_DISABLE));
             }
         }
         else if(command.contentEquals(ACTION_SAVE))
@@ -246,9 +252,9 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
                 return;
             }
 
+            ChannelEvent update = new ChannelEvent(getItem(), ChannelEvent.Event.NOTIFICATION_CONFIGURATION_CHANGE);
 
-            mChannelModel.broadcast(new ChannelEvent(getItem(),
-                ChannelEvent.Event.NOTIFICATION_CONFIGURATION_CHANGE));
+            mChannelModel.receive(update);
         }
 
         setModified(false);

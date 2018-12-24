@@ -18,51 +18,64 @@
  ******************************************************************************/
 package io.github.dsheirer.channel.state;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
 import io.github.dsheirer.audio.squelch.SquelchState;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
-import io.github.dsheirer.channel.metadata.IAttributeChangeRequestListener;
-import io.github.dsheirer.channel.metadata.MutableMetadata;
+import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
-import io.github.dsheirer.channel.traffic.TrafficChannelManager;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.ChannelEvent;
+import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.identifier.IdentifierUpdateListener;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.IdentifierUpdateProvider;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.ChannelNameConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
 import io.github.dsheirer.module.Module;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.module.decode.event.ICallEventProvider;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.SourceType;
+import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, ISourceEventListener, ISourceEventProvider, IHeartbeatListener,
-    ISquelchStateProvider, IAttributeChangeRequestListener, IOverflowListener
+public class ChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider,
+    IDecoderStateEventListener, IDecoderStateEventProvider, ISourceEventListener, ISourceEventProvider,
+    IHeartbeatListener, ISquelchStateProvider, IOverflowListener, IdentifierUpdateListener, IdentifierUpdateProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
 
     public static final long FADE_TIMEOUT_DELAY = 1200;
     public static final long RESET_TIMEOUT_DELAY = 2000;
 
-    private MutableMetadata mMutableMetadata = new MutableMetadata();
     private State mState = State.IDLE;
-    private Listener<CallEvent> mCallEventListener;
+    private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
+    private Listener<ChannelEvent> mChannelEventListener;
+    private Listener<IDecodeEvent> mDecodeEventListener;
     private Listener<DecoderStateEvent> mDecoderStateListener;
     private Listener<SquelchState> mSquelchStateListener;
     private Listener<SourceEvent> mExternalSourceEventListener;
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
     private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
-    private ChannelType mChannelType;
-    private TrafficChannelManager mTrafficChannelEndListener;
-    private CallEvent mTrafficChannelCallEvent;
+    private Channel mChannel;
     private SourceEventListener mInternalSourceEventListener;
+    private ChannelMetadata mChannelMetadata;
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
@@ -87,25 +100,85 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
      * IDLE:  Normal state. No voice or data call activity
      * CALL/DATA/ENCRYPTED/CONTROL:  Decoding states.
      * FADE:  The phase after a voice or data call when either an explicit call end has been received, or when no new
-     *     signalling updates have been received, and the fade timer has expired.  This phase allows for gui updates to
-     *     signal to the user that the call is ended, while continuing to display the call details for the user
+     * signalling updates have been received, and the fade timer has expired.  This phase allows for gui updates to
+     * signal to the user that the call is ended, while continuing to display the call details for the user
      * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
      */
-    public ChannelState(ChannelType channelType)
+    public ChannelState(Channel channel, AliasModel aliasModel)
     {
-        mChannelType = channelType;
+        mChannel = channel;
+        mChannelMetadata = new ChannelMetadata(aliasModel);
+        createConfigurationIdentifiers(channel);
     }
 
+    /**
+     * Creates configuration identifiers for the channel name, system, site and alias list name.
+     */
+    private void createConfigurationIdentifiers(Channel channel)
+    {
+        mIdentifierCollection.update(DecoderTypeConfigurationIdentifier.create(channel.getDecodeConfiguration().getDecoderType()));
+
+        if(channel.hasSystem())
+        {
+            mIdentifierCollection.update(SystemConfigurationIdentifier.create(channel.getSystem()));
+        }
+        if(channel.hasSite())
+        {
+            mIdentifierCollection.update(SiteConfigurationIdentifier.create(channel.getSite()));
+        }
+        if(channel.getName() != null && !channel.getName().isEmpty())
+        {
+            mIdentifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName()));
+        }
+        if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
+        {
+            mIdentifierCollection.update(AliasListConfigurationIdentifier.create(channel.getAliasListName()));
+        }
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            TunerChannel tunerChannel = ((SourceConfigTuner)channel.getSourceConfiguration()).getTunerChannel();
+            mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(tunerChannel.getFrequency()));
+        }
+    }
 
     /**
-     * Metadata for this channel containing channel details, primary and secondary entities for call events and any
-     * decoded messages.  This metadata is primarily intended to be used by graphical components to convey the
-     * details of the current channel state and to provide metadata backing any decoded audio packets produced by
-     * any audio streams for this channel.
+     * Interface to receive channel identifier updates from this channel state and from any
+     * decoder states.
      */
-    public MutableMetadata getMutableMetadata()
+    @Override
+    public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
     {
-        return mMutableMetadata;
+        return mChannelMetadata;
+    }
+
+    /**
+     * Updates the channel state identifier collection using the update notification.  This update will be reflected
+     * in the internal channel state and will also be broadcast to any listeners, including the channel metadata for
+     * this channel state.
+     */
+    public void updateChannelStateIdentifiers(IdentifierUpdateNotification notification)
+    {
+        mIdentifierCollection.receive(notification);
+    }
+
+    @Override
+    public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
+    {
+        mIdentifierCollection.setIdentifierUpdateListener(listener);
+    }
+
+    @Override
+    public void removeIdentifierUpdateListener()
+    {
+        mIdentifierCollection.removeIdentifierUpdateListener();
+    }
+
+    /**
+     * Channel metadata for this channel.
+     */
+    public ChannelMetadata getChannelMetadata()
+    {
+        return mChannelMetadata;
     }
 
     /**
@@ -114,21 +187,18 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     @Override
     public void reset()
     {
-        getMutableMetadata().resetTemporalAttributes();
-
-        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
-
         mState = State.IDLE;
-        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
+        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
+        mIdentifierCollection.update(DecoderStateIdentifier.IDLE);
         mSourceOverflow = false;
     }
 
     @Override
     public void start()
     {
-        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
+        mIdentifierCollection.broadcastIdentifiers();
 
-        if(mTrafficChannelEndListener != null)
+        if(mChannel.getChannelType() == ChannelType.TRAFFIC)
         {
             setState(State.CALL);
         }
@@ -143,7 +213,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
     public void dispose()
     {
-        mCallEventListener = null;
+        mDecodeEventListener = null;
         mDecoderStateListener = null;
         mSquelchStateListener = null;
     }
@@ -159,21 +229,11 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         return mInternalSourceEventListener;
     }
 
-    private boolean isStandardChannel()
-    {
-        return mChannelType == ChannelType.STANDARD;
-    }
-
-    private boolean isTrafficChannel()
-    {
-        return mChannelType == ChannelType.TRAFFIC;
-    }
-
     public void setStandardChannelTimeout(long milliseconds)
     {
         mStandardChannelFadeTimeout = milliseconds;
 
-        if(mChannelType == ChannelType.STANDARD)
+        if(mChannel.isStandardChannel())
         {
             mFadeTimeout = mStandardChannelFadeTimeout;
         }
@@ -183,7 +243,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     {
         mTrafficChannelFadeTimeout = milliseconds;
 
-        if(mChannelType == ChannelType.TRAFFIC)
+        if(mChannel.isTrafficChannel())
         {
             mFadeTimeout = System.currentTimeMillis() + mTrafficChannelFadeTimeout;
         }
@@ -209,7 +269,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
      */
     private void updateFadeTimeout()
     {
-        if(isTrafficChannel())
+        if(mChannel.isTrafficChannel())
         {
             mFadeTimeout = System.currentTimeMillis() + mTrafficChannelFadeTimeout;
         }
@@ -225,7 +285,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
      */
     private void updateResetTimeout()
     {
-        if(isTrafficChannel())
+        if(mChannel.isTrafficChannel())
         {
             mEndTimeout = System.currentTimeMillis();
         }
@@ -298,26 +358,35 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                     broadcast(SquelchState.SQUELCH);
                     updateFadeTimeout();
                     mState = state;
+                    mIdentifierCollection.update(DecoderStateIdentifier.ACTIVE);
                     break;
                 case CONTROL:
                     //Don't allow traffic channels to be control channels, otherwise they can't transition to teardown
-                    if(isStandardChannel())
+                    if(mChannel.isStandardChannel())
                     {
                         broadcast(SquelchState.SQUELCH);
                         updateFadeTimeout();
                         mState = state;
+                        mIdentifierCollection.update(DecoderStateIdentifier.CONTROL);
                     }
                     break;
                 case DATA:
+                    broadcast(SquelchState.SQUELCH);
+                    updateFadeTimeout();
+                    mState = state;
+                    mIdentifierCollection.update(DecoderStateIdentifier.DATA);
+                    break;
                 case ENCRYPTED:
                     broadcast(SquelchState.SQUELCH);
                     updateFadeTimeout();
                     mState = state;
+                    mIdentifierCollection.update(DecoderStateIdentifier.ENCRYPTED);
                     break;
                 case CALL:
                     broadcast(SquelchState.UNSQUELCH);
                     updateFadeTimeout();
                     mState = state;
+                    mIdentifierCollection.update(DecoderStateIdentifier.CALL);
                     break;
                 case FADE:
                     processFadeState();
@@ -330,12 +399,11 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                     break;
                 case RESET:
                     mState = State.IDLE;
+                    mIdentifierCollection.update(DecoderStateIdentifier.IDLE);
                     break;
                 default:
                     break;
             }
-
-            mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
         }
     }
 
@@ -351,14 +419,13 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     /**
      * This method is invoked if the source buffer provider goes into overflow state.  Since this is an external state,
      * we use the mSourceOverflow variable to override the internal state reported to external listeners.
+     *
      * @param overflow true to indicate an overflow state
      */
     @Override
     public void sourceOverflow(boolean overflow)
     {
         mSourceOverflow = overflow;
-
-        mMutableMetadata.receive(new AttributeChangeRequest<Boolean>(Attribute.BUFFER_OVERFLOW, mSourceOverflow));
     }
 
     /**
@@ -380,9 +447,9 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     {
         updateResetTimeout();
         mState = State.FADE;
+        mIdentifierCollection.update(DecoderStateIdentifier.FADE);
 
         broadcast(SquelchState.SQUELCH);
-        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
     }
 
     private void processIdleState()
@@ -391,12 +458,11 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
         if(mState == State.FADE)
         {
-            getMutableMetadata().resetTemporalAttributes();
             broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
         }
 
         mState = State.IDLE;
-        getMutableMetadata().receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
+        mIdentifierCollection.update(DecoderStateIdentifier.IDLE);
     }
 
     private void processTeardownState()
@@ -404,48 +470,58 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         broadcast(SquelchState.SQUELCH);
 
         mState = State.TEARDOWN;
+        mIdentifierCollection.update(DecoderStateIdentifier.TEARDOWN);
 
-        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
-
-        if(mTrafficChannelEndListener != null && mTrafficChannelCallEvent != null)
+        if(mChannel.isTrafficChannel())
         {
-            mTrafficChannelCallEvent.end();
-            broadcast(mTrafficChannelCallEvent);
-            mTrafficChannelEndListener.callEnd(mTrafficChannelCallEvent.getChannel());
-            mTrafficChannelEndListener = null;
-            mTrafficChannelCallEvent = null;
+            broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
         }
     }
 
     /**
      * Broadcasts the call event to the registered listener
      */
-    protected void broadcast(CallEvent event)
+    protected void broadcast(IDecodeEvent event)
     {
-        if(mCallEventListener != null)
+        if(mDecodeEventListener != null)
         {
-            mCallEventListener.receive(event);
+            mDecodeEventListener.receive(event);
+        }
+    }
+
+    /**
+     * Broadcasts the channel event to a registered listener
+     */
+    private void broadcast(ChannelEvent channelEvent)
+    {
+        if(mChannelEventListener != null)
+        {
+            mChannelEventListener.receive(channelEvent);
         }
     }
 
     @Override
-    public void addCallEventListener(Listener<CallEvent> listener)
+    public void setChannelEventListener(Listener<ChannelEvent> listener)
     {
-        mCallEventListener = listener;
+        mChannelEventListener = listener;
     }
 
     @Override
-    public void removeCallEventListener(Listener<CallEvent> listener)
+    public void removeChannelEventListener()
     {
-        mCallEventListener = null;
+        mChannelEventListener = null;
     }
 
-
-    //NEW:
     @Override
-    public Listener<AttributeChangeRequest> getAttributeChangeRequestListener()
+    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
     {
-        return mMutableMetadata;
+        mDecodeEventListener = listener;
+    }
+
+    @Override
+    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
+    {
+        mDecodeEventListener = null;
     }
 
     /**
@@ -481,57 +557,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     public Listener<DecoderStateEvent> getDecoderStateListener()
     {
         return mDecoderStateEventReceiver;
-    }
-
-    /**
-     * Registers a listener to be notified when a traffic channel call event is
-     * completed, so that the listener can perform call tear-down
-     */
-    public void configureAsTrafficChannel(TrafficChannelManager manager, CallEvent callEvent)
-    {
-        mTrafficChannelEndListener = manager;
-
-        mTrafficChannelCallEvent = callEvent;
-
-		/* Broadcast the call event details as metadata for the audio manager */
-        String channel = mTrafficChannelCallEvent.getChannel();
-
-        if(channel != null)
-        {
-            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, channel));
-        }
-
-        long frequency = mTrafficChannelCallEvent.getFrequency();
-
-        if(frequency > 0)
-        {
-            mMutableMetadata.receive(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
-        }
-
-        mMutableMetadata.receive(new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
-            mTrafficChannelCallEvent.getDecoderType()));
-
-        mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, "TRAFFIC"));
-
-        String from = mTrafficChannelCallEvent.getFromID();
-
-        if(from != null)
-        {
-            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, from,
-                mTrafficChannelCallEvent.getFromIDAlias()));
-        }
-
-        String to = mTrafficChannelCallEvent.getToID();
-
-        if(to != null)
-        {
-            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, to,
-                mTrafficChannelCallEvent.getToIDAlias()));
-        }
-
-		/* Rebroadcast the allocation event so that the internal decoder states
-		 * can self-configure with the call event details */
-        broadcast(mTrafficChannelCallEvent);
     }
 
     /**
@@ -572,7 +597,8 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                     //in an active (ie sync locked) state.
                     if(getState().isActiveState())
                     {
-                        broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(), mChannelType.name()));
+                        broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
+                            mChannel.getChannelType().name()));
                     }
                     break;
             }
@@ -598,7 +624,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                     case CHANGE_CALL_TIMEOUT:
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
-                            ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent) event;
+                            ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
 
                             if(timeout.getChannelType() == ChannelType.STANDARD)
                             {
@@ -618,7 +644,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                         }
                         break;
                     case END:
-                        if(isTrafficChannel())
+                        if(mChannel.isTrafficChannel())
                         {
                             setState(State.TEARDOWN);
                         }
@@ -628,7 +654,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                         }
                         break;
                     case RESET:
-						/* Channel State does not respond to reset events */
+                        /* Channel State does not respond to reset events */
                         break;
                     default:
                         break;
@@ -660,7 +686,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                 }
                 else if(mState == State.FADE && mEndTimeout <= System.currentTimeMillis())
                 {
-                    if(isTrafficChannel())
+                    if(mChannel.isTrafficChannel())
                     {
                         processTeardownState();
                     }

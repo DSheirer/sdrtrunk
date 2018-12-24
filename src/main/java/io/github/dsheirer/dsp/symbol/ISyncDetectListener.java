@@ -21,7 +21,16 @@ package io.github.dsheirer.dsp.symbol;
  */
 public interface ISyncDetectListener
 {
-    void syncDetected();
+    /**
+     * Indicates that a sync pattern has been detected.
+     *
+     * @param bitErrors count for soft sync matching to indicate the number of bit positions
+     * of the sequence that didn't fully match the sync pattern
+     */
+    void syncDetected(int bitErrors);
 
+    /**
+     * Indicates that sync has been lost
+     */
     void syncLost();
 }

@@ -15,95 +15,94 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
-import io.github.dsheirer.module.decode.p25.message.ldu.LDUMessage;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
+import io.github.dsheirer.module.decode.p25.message.IFrequencyBandReceiver;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class P25MessageProcessor implements Listener<Message>
 {
-	private final static Logger mLog = LoggerFactory.getLogger( P25MessageProcessor.class );
+    private final static Logger mLog = LoggerFactory.getLogger(P25MessageProcessor.class);
 
-	private Listener<Message> mMessageListener;
+    private Listener<IMessage> mMessageListener;
 
-	/* Map of up to 16 band identifiers per RFSS.  These identifier update 
-	 * messages are inserted into any message that conveys channel information
-	 * so that the uplink/downlink frequencies can be calculated */
-	private HashMap<Integer,IBandIdentifier> mBandIdentifierMap =
-			new HashMap<Integer,IBandIdentifier>();
-	
-	private AliasList mAliasList;
-	
-	public P25MessageProcessor( AliasList aliasList )
-	{
-		mAliasList = aliasList;
-	}
-	
-	@Override
-    public void receive( Message message )
+    /* Map of up to 16 band identifiers per RFSS.  These identifier update
+     * messages are inserted into any message that conveys channel information
+     * so that the uplink/downlink frequencies can be calculated */
+    private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<Integer,IFrequencyBand>();
+
+    public P25MessageProcessor()
     {
-		/**
-		 * Capture frequency band identifier messages and inject them into any
-		 * messages that require band information in order to calculate the 
-		 * up-link and down-link frequencies for any numeric channel references
-		 * contained within the message.
-		 */
-		if( message.isValid() )
-		{
-			/* Insert band identifier update messages into channel-type messages */
-			if( message instanceof IdentifierReceiver )
-			{
-				IdentifierReceiver receiver = (IdentifierReceiver)message;
-				
-				int[] identifiers = receiver.getIdentifiers();
-				
-				for( int identifier: identifiers )
-				{
-					receiver.setIdentifierMessage( identifier, 
-									mBandIdentifierMap.get( identifier ) );
-				}
-			}
-
-			/* Store band identifiers so that they can be injected into channel
-			 * type messages */
-			if( message instanceof IBandIdentifier )
-			{
-				IBandIdentifier bandIdentifier = (IBandIdentifier)message;
-				
-				mBandIdentifierMap.put( bandIdentifier.getIdentifier(), 
-									bandIdentifier );
-			}
-		}
-
-		/**
-		 * Broadcast all valid messages and any LDU voice messages regardless if
-		 * they are valid or not, so that we don't miss any voice frames
-		 */
-		if( mMessageListener != null && message.isValid() || message instanceof LDUMessage)
-		{
-			mMessageListener.receive( message );
-		}
     }
-	
-	public void dispose()
-	{
-		mBandIdentifierMap.clear();
-		mMessageListener = null;
-	}
-	
-    public void setMessageListener( Listener<Message> listener )
+
+    @Override
+    public void receive(Message message)
     {
-    	mMessageListener = listener;
+        /**
+         * Capture frequency band identifier messages and inject them into any
+         * messages that require band information in order to calculate the
+         * up-link and down-link frequencies for any numeric channel references
+         * contained within the message.
+         */
+        if(message.isValid())
+        {
+            /* Insert frequency band identifier update messages into channel-type messages */
+            if(message instanceof IFrequencyBandReceiver)
+            {
+                IFrequencyBandReceiver receiver = (IFrequencyBandReceiver)message;
+
+                List<IChannelDescriptor> channels = receiver.getChannels();
+
+                for(IChannelDescriptor channel : channels)
+                {
+                    int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
+
+                    for(int id : frequencyBandIdentifiers)
+                    {
+                        if(mFrequencyBandMap.containsKey(id))
+                        {
+                            channel.setFrequencyBand(mFrequencyBandMap.get(id));
+                        }
+                    }
+                }
+            }
+
+            /* Store band identifiers so that they can be injected into channel
+             * type messages */
+            if(message instanceof IFrequencyBand)
+            {
+                IFrequencyBand bandIdentifier = (IFrequencyBand)message;
+                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
+            }
+        }
+
+        if(mMessageListener != null)
+        {
+            mMessageListener.receive(message);
+        }
+    }
+
+    public void dispose()
+    {
+        mFrequencyBandMap.clear();
+        mMessageListener = null;
+    }
+
+    public void setMessageListener(Listener<IMessage> listener)
+    {
+        mMessageListener = listener;
     }
 
     public void removeMessageListener()
     {
-    	mMessageListener = null;
+        mMessageListener = null;
     }
 }

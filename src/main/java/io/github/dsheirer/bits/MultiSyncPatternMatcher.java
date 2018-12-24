@@ -88,7 +88,6 @@ public class MultiSyncPatternMatcher
         {
             if(processor.checkSync(mBits))
             {
-                mSyncDetectListener.syncDetected();
                 mBitCount = 0;
             }
         }
@@ -98,6 +97,15 @@ public class MultiSyncPatternMatcher
             mBitCount = 0;
             mSyncDetectListener.syncLost();
         }
+    }
+
+    /**
+     * Returns the number of bit errors for the current value against the sync pattern.
+     * @return
+     */
+    public long getCurrentValue()
+    {
+        return mBits;
     }
 
     /**

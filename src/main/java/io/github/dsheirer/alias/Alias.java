@@ -1,20 +1,22 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.alias;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -24,10 +26,10 @@ import io.github.dsheirer.alias.action.AliasAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.alias.id.record.Record;
 
-import java.awt.*;
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -187,7 +189,7 @@ public class Alias
      * Returns the priority level of this alias, if defined, or the default priority
      */
     @JsonIgnore
-    public int getCallPriority()
+    public int getPlaybackPriority()
     {
         for(AliasID id : mAliasIDs)
         {
@@ -245,27 +247,39 @@ public class Alias
     {
         for(AliasID id : getId())
         {
-            if(id.getType() == AliasIDType.NON_RECORDABLE)
+            if(id.getType() == AliasIDType.RECORD)
             {
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
-     * Sets or removes the non-recordable alias ID for this alias.
+     * Sets or removes the record alias ID for this alias.
      */
     public void setRecordable(boolean recordable)
     {
         if(recordable)
         {
+            for(AliasID id : getId())
+            {
+                if(id.getType() == AliasIDType.RECORD)
+                {
+                    return;
+                }
+            }
+
+            addAliasID(new Record());
+        }
+        else
+        {
             AliasID toRemove = null;
 
             for(AliasID id : getId())
             {
-                if(id.getType() == AliasIDType.NON_RECORDABLE)
+                if(id.getType() == AliasIDType.RECORD)
                 {
                     toRemove = id;
                     break;
@@ -276,18 +290,6 @@ public class Alias
             {
                 removeAliasID(toRemove);
             }
-        }
-        else
-        {
-            for(AliasID id : getId())
-            {
-                if(id.getType() == AliasIDType.NON_RECORDABLE)
-                {
-                    return;
-                }
-            }
-
-            addAliasID(new NonRecordable());
         }
     }
 

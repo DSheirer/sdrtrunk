@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +15,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.log;
 
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,46 +34,73 @@ import java.util.List;
 
 public class EventLogManager
 {
-	private final static Logger mLog = LoggerFactory.getLogger(EventLogManager.class);
+    private final static Logger mLog = LoggerFactory.getLogger(EventLogManager.class);
 
-	private Path mDirectory;
-	
-	public EventLogManager()
-	{
-		mDirectory = SystemProperties.getInstance()
-				.getApplicationFolder( "event_logs" );
-	}
+    private Path mDirectory;
 
-	public List<Module> getLoggers(EventLogConfiguration config, String prefix )
-	{
-		List<Module> loggers = new ArrayList<Module>();
+    public EventLogManager()
+    {
+        mDirectory = SystemProperties.getInstance()
+            .getApplicationFolder("event_logs");
+    }
 
-		for( EventLogType type: config.getLoggers() )
-		{
-			loggers.add( getLogger( type, prefix ) );
-		}
+    public List<Module> getLoggers(Channel channel)
+    {
+        EventLogConfiguration config = channel.getEventLogConfiguration();
+        String prefix = StringUtils.replaceIllegalCharacters(channel.getName());
+        long frequency = 0;
 
-		return loggers;
-	}
-	
-	public EventLogger getLogger( EventLogType eventLogType, String prefix )
-	{
-		StringBuilder sb = new StringBuilder();
+        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+        {
+            frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+        }
 
-		sb.append( prefix );
-		sb.append( eventLogType.getFileSuffix() );
-		sb.append( ".log" );
+        List<Module> loggers = new ArrayList<Module>();
 
-		switch( eventLogType )
-		{
-			case BINARY_MESSAGE:
-				return new MessageEventLogger( mDirectory, sb.toString(), MessageEventLogger.Type.BINARY );
-			case DECODED_MESSAGE:
-				return new MessageEventLogger( mDirectory, sb.toString(), MessageEventLogger.Type.DECODED );
-			case CALL_EVENT:
-				return new CallEventLogger( mDirectory, sb.toString() );
-			default:
-				return null;
-		}
-	}
+        for(EventLogType type : config.getLoggers())
+        {
+            switch(type)
+            {
+                case CALL_EVENT:
+                case DECODED_MESSAGE:
+                    if(channel.getChannelType() == Channel.ChannelType.STANDARD)
+                    {
+                        loggers.add(getLogger(type, prefix, frequency));
+                    }
+                    break;
+                case TRAFFIC_CALL_EVENT:
+                case TRAFFIC_DECODED_MESSAGE:
+                    if(channel.getChannelType() == Channel.ChannelType.TRAFFIC)
+                    {
+                        loggers.add(getLogger(type, prefix, frequency));
+                    }
+                    break;
+            }
+        }
+
+        return loggers;
+    }
+
+    public EventLogger getLogger(EventLogType eventLogType, String prefix, long frequency)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(prefix);
+        sb.append(eventLogType.getFileSuffix());
+        sb.append(".log");
+
+        switch(eventLogType)
+        {
+            case CALL_EVENT:
+                return new DecodeEventLogger(mDirectory, sb.toString(), frequency);
+            case DECODED_MESSAGE:
+                return new MessageEventLogger(mDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
+            case TRAFFIC_CALL_EVENT:
+                return new DecodeEventLogger(mDirectory, sb.toString(), frequency);
+            case TRAFFIC_DECODED_MESSAGE:
+                return new MessageEventLogger(mDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
+            default:
+                return null;
+        }
+    }
 }

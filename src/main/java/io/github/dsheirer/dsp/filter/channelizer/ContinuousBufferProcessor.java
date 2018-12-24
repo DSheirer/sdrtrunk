@@ -33,10 +33,11 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ContinuousBufferProcessor.class);
 
-    private OverflowableTransferQueue<E> mQueue;
+    protected OverflowableTransferQueue<E> mQueue;
     private Listener<List<E>> mListener;
     private ScheduledFuture<?> mScheduledFuture;
     private AtomicBoolean mRunning = new AtomicBoolean();
+    private long mProcessingPeriod = 5; //milliseconds
 
     /**
      * Scheduled Buffer Processor combines an internal overflowable buffer with a scheduled runnable processing task
@@ -55,6 +56,24 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     public ContinuousBufferProcessor(int maximumSize, int resetThreshold)
     {
         this(new OverflowableTransferQueue<>(maximumSize, resetThreshold));
+    }
+
+    /**
+     * Listener to receive the queued buffers each time this processor runs.
+     */
+    protected Listener<List<E>> getListener()
+    {
+        return mListener;
+    }
+
+    /**
+     * Sets the processing periodicity or run interval for how often the buffer queue is processed.
+     *
+     * @param milliseconds (default = 5 milliseconds)
+     */
+    public void setProcessingPeriod(long milliseconds)
+    {
+        mProcessingPeriod = milliseconds;
     }
 
     /**
@@ -115,7 +134,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(false, true))
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0, 5, TimeUnit.MILLISECONDS);
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0, mProcessingPeriod, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -157,7 +176,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     /**
      * Distributes queued buffers to the listener
      */
-    private void process()
+    protected void process()
     {
         List<E> buffers = new ArrayList<>();
 

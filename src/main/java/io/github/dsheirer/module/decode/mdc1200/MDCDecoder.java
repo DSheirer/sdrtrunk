@@ -1,21 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.mdc1200;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
 import io.github.dsheirer.dsp.NRZDecoder;
@@ -34,25 +37,25 @@ public class MDCDecoder extends AbstractAFSKDecoder
     private MessageFramer mMessageFramer;
     private MDCMessageProcessor mMessageProcessor;
 
-    public MDCDecoder(AliasList aliasList)
+    public MDCDecoder()
     {
         super(AFSK1200Decoder.Output.INVERTED);
-        init(aliasList);
+        init();
     }
 
-    protected MDCDecoder(AFSK1200Decoder decoder, AliasList aliasList)
+    protected MDCDecoder(AFSK1200Decoder decoder)
     {
         super(decoder);
-        init(aliasList);
+        init();
     }
 
-    private void init(AliasList aliasList)
+    private void init()
     {
         mNRZDecoder = new NRZDecoder(NRZDecoder.MODE_INVERTED);
         getDecoder().setSymbolProcessor(mNRZDecoder);
         mMessageFramer = new MessageFramer(SyncPattern.MDC1200.getPattern(), MESSAGE_LENGTH);
         mNRZDecoder.setListener(mMessageFramer);
-        mMessageProcessor = new MDCMessageProcessor(aliasList);
+        mMessageProcessor = new MDCMessageProcessor();
         mMessageFramer.addMessageListener(mMessageProcessor);
         mMessageProcessor.addMessageListener(getMessageListener());
     }

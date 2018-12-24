@@ -55,7 +55,7 @@ public class BerlekempMassey_63
 	private static final int NN = 63;
 	
 	/* Hamming distance between codewords: NN - KK + 1 = 2 * TT + 1 */
-	private static int KK;
+	private int KK;
 
 	/* Maximum number of errors that can be corrected */
 	int TT;
@@ -222,7 +222,7 @@ public class BerlekempMassey_63
     	/* put recd[i] into index form (ie as powers of alpha) */
         for( int i = 0; i < NN; i++ )
         {
-        	output[ i ] = index_of[ input[ i ] ]; 
+            output[ i ] = index_of[ input[ i ] ];
         }
         
         /* first form the syndromes */

@@ -40,7 +40,7 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
      * @param encodedMessage to decode that has already been deinterleaved.
      * @return decoded message
      */
-    public BinaryMessage decode(BinaryMessage encodedMessage)
+    public CorrectedBinaryMessage decode(BinaryMessage encodedMessage)
     {
         int[] symbols = getSymbols(encodedMessage);
 
@@ -132,7 +132,7 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     @Override
     protected Node createNode(int inputValue, int transmittedOutputValue)
     {
-        return new DMRNode(inputValue, transmittedOutputValue);
+        return new DMR_3_4_Node(inputValue, transmittedOutputValue);
     }
 
     /**
@@ -145,7 +145,7 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     @Override
     protected Node createFlushingNode(int transmittedOutputValue)
     {
-        return new DMRNode(0, transmittedOutputValue);
+        return new DMR_3_4_Node(0, transmittedOutputValue);
     }
 
     /**
@@ -154,6 +154,6 @@ public class ViterbiDecoder_3_4_DMR extends ViterbiDecoder
     @Override
     protected Node createStartingNode()
     {
-        return new DMRNode(0,0);
+        return new DMR_3_4_Node(0,0);
     }
 }

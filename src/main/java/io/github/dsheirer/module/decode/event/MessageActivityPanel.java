@@ -23,7 +23,7 @@ import com.jidesoft.swing.JideSplitButton;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.filter.FilterEditorPanel;
 import io.github.dsheirer.filter.FilterSet;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
@@ -80,6 +80,10 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
             public void run()
             {
                 mTable.setModel(processingChain != null ? processingChain.getMessageActivityModel() : EMPTY_MODEL);
+
+                mTable.getColumnModel().getColumn(0).setPreferredWidth(18);
+                mTable.getColumnModel().getColumn(1).setPreferredWidth(15);
+                mTable.getColumnModel().getColumn(2).setPreferredWidth(600);
 
                 if(processingChain != null)
                 {
@@ -170,13 +174,13 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
                 }
             });
 
-            slider.setValue(((MessageActivityModel)mTable.getModel()).getMaxMessageCount());
+            slider.setValue(((MessageActivityModel) mTable.getModel()).getMaxMessageCount());
             slider.addChangeListener(new ChangeListener()
             {
                 @Override
                 public void stateChanged(ChangeEvent arg0)
                 {
-                    ((MessageActivityModel)mTable.getModel()).setMaxMessageCount(slider.getValue());
+                    ((MessageActivityModel) mTable.getModel()).setMaxMessageCount(slider.getValue());
                 }
             });
 
@@ -184,13 +188,13 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
 
             add(historyPanel);
 
-        	/* Clear messages */
+            /* Clear messages */
             addActionListener(new ActionListener()
             {
                 @Override
                 public void actionPerformed(ActionEvent e)
                 {
-                    ((MessageActivityModel)mTable.getModel()).clear();
+                    ((MessageActivityModel) mTable.getModel()).clear();
                 }
             });
         }
@@ -216,12 +220,13 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
                     editor.setLocationRelativeTo(MessageFilterButton.this);
                     editor.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
                     editor.setLayout(new MigLayout("", "[grow,fill]",
-                        "[grow,fill][][]"));
+                            "[grow,fill][][]"));
 
                     @SuppressWarnings("unchecked")
-                    FilterSet<Message> filter = (FilterSet<Message>) ((MessageActivityModel)mTable.getModel()).getMessageFilter();
+                    FilterSet<IMessage> filter = (FilterSet<IMessage>) ((MessageActivityModel) mTable.getModel())
+                            .getMessageFilter();
 
-                    FilterEditorPanel<Message> panel = new FilterEditorPanel<Message>(filter);
+                    FilterEditorPanel<IMessage> panel = new FilterEditorPanel<>(filter);
 
                     JScrollPane scroller = new JScrollPane(panel);
                     scroller.setViewportView(panel);

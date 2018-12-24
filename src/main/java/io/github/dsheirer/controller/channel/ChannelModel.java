@@ -21,6 +21,8 @@ package io.github.dsheirer.controller.channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -32,7 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * Channel Model
  */
-public class ChannelModel extends AbstractTableModel implements IChannelEventBroadcaster
+public class ChannelModel extends AbstractTableModel implements Listener<ChannelEvent>
 {
     private static final long serialVersionUID = 1L;
 
@@ -51,7 +53,7 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
 
     private List<Channel> mChannels = new CopyOnWriteArrayList<>();
     private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
-    private List<ChannelEventListener> mListeners = new CopyOnWriteArrayList<>();
+    private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
     public ChannelModel()
     {
@@ -70,25 +72,6 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
         if(row < mChannels.size())
         {
             return mChannels.get(row);
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns the channel identified by the id argument
-     */
-    public Channel getChannelFromChannelID(Integer id)
-    {
-        if(id != null)
-        {
-            for(Channel channel: mChannels)
-            {
-                if(channel.getChannelID() == id)
-                {
-                    return channel;
-                }
-            }
         }
 
         return null;
@@ -144,24 +127,30 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
     /**
      * Broadcasts the channel event to all registered listeners
      */
-    @Override
-    public void broadcast(ChannelEvent event)
+    public void receive(ChannelEvent event)
     {
-        for(ChannelEventListener listener : mListeners)
-        {
-            listener.channelChanged(event);
-        }
-
         if(event.getChannel().getChannelType() == ChannelType.STANDARD)
         {
+            int index;
             switch(event.getEvent())
             {
                 case NOTIFICATION_CONFIGURATION_CHANGE:
+                case NOTIFICATION_SELECTION_CHANGE:
+                    index = mChannels.indexOf(event.getChannel());
+                    if(index > 0)
+                    {
+                        fireTableRowsUpdated(index, index);
+                    }
+                    //rebroadcast this event to any listeners
+                    mChannelEventBroadcaster.broadcast(event);
+                    break;
                 case NOTIFICATION_PROCESSING_START:
                 case NOTIFICATION_PROCESSING_STOP:
-                case NOTIFICATION_SELECTION_CHANGE:
-                    int index = mChannels.indexOf(event.getChannel());
-                    fireTableRowsUpdated(index, index);
+                    index = mChannels.indexOf(event.getChannel());
+                    if(index > 0)
+                    {
+                        fireTableRowsUpdated(index, index);
+                    }
                     break;
                 default:
                     break;
@@ -210,7 +199,7 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
                 break;
         }
 
-        broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
+        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
 
         return index;
     }
@@ -241,7 +230,7 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
                     break;
             }
 
-            broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
         }
     }
 
@@ -317,14 +306,20 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
         return channels;
     }
 
-    public void addListener(ChannelEventListener listener)
+    /**
+     * Adds a listener to receive channel events
+     */
+    public void addListener(Listener<ChannelEvent> listener)
     {
-        mListeners.add(listener);
+        mChannelEventBroadcaster.addListener(listener);
     }
 
-    public void removeListener(ChannelEventListener listener)
+    /**
+     * Removes listener from receiving channel events
+     */
+    public void removeListener(Listener<ChannelEvent> listener)
     {
-        mListeners.remove(listener);
+        mChannelEventBroadcaster.removeListener(listener);
     }
 
     //Table Model Interface Methods - standard channels only

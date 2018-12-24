@@ -1,18 +1,22 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.bits;
 
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
@@ -37,9 +41,9 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
     private boolean[] mSyncPattern;
     private int mMessageLength;
     private ISyncDetectListener mSyncDetectListener;
-    private Broadcaster<BinaryMessage> mBroadcaster = new Broadcaster<BinaryMessage>();
-    private List<MessageAssembler> mMessageAssemblers = new ArrayList<MessageAssembler>();
-    private List<MessageAssembler> mCompletedMessageAssemblers = new ArrayList<MessageAssembler>();
+    private Broadcaster<CorrectedBinaryMessage> mBroadcaster = new Broadcaster<>();
+    private List<MessageAssembler> mMessageAssemblers = new ArrayList<>();
+    private List<MessageAssembler> mCompletedMessageAssemblers = new ArrayList<>();
     private SyncPatternMatcher mMatcher;
 
     public MessageFramer(boolean[] syncPattern, int messageLength)
@@ -63,10 +67,9 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
     {
         mBroadcaster.dispose();
         mCompletedMessageAssemblers.clear();
-        mMessageAssemblers.clear();
     }
 
-    public void receive(boolean bit)
+    public void process(boolean bit)
     {
         mMatcher.receive(bit);
 
@@ -99,7 +102,7 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
             /* Notify any sync detect listener(s) */
             if(mSyncDetectListener != null)
             {
-                mSyncDetectListener.syncDetected();
+                mSyncDetectListener.syncDetected(0);
             }
         }
     }
@@ -108,20 +111,7 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
     @Override
     public void receive(Boolean bit)
     {
-        receive(bit);
-    }
-
-    /**
-     * Causes all messages currently under assembly to be forcibly
-     * sent (ie flushed) to all registered message listeners, and
-     * subsequently, all assemblers to be deleted
-     */
-    public void flush()
-    {
-        for(MessageAssembler assembler : mMessageAssemblers)
-        {
-            assembler.flush();
-        }
+        process(bit);
     }
 
     @Override
@@ -134,12 +124,12 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
      * Allow a message listener to register with this framer to receive
      * all framed messages
      */
-    public void addMessageListener(Listener<BinaryMessage> listener)
+    public void addMessageListener(Listener<CorrectedBinaryMessage> listener)
     {
         mBroadcaster.addListener(listener);
     }
 
-    public void removeMessageListener(Listener<BinaryMessage> listener)
+    public void removeMessageListener(Listener<CorrectedBinaryMessage> listener)
     {
         mBroadcaster.removeListener(listener);
     }
@@ -152,7 +142,6 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
         mMessageAssemblers.add(assembler);
     }
 
-    @SuppressWarnings("unused")
     private void removeMessageAssembler(MessageAssembler assembler)
     {
         mMessageAssemblers.remove(assembler);
@@ -169,12 +158,12 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
      */
     private class MessageAssembler implements Listener<Boolean>
     {
-        BinaryMessage mMessage;
+        CorrectedBinaryMessage mMessage;
         boolean mComplete = false;
 
         MessageAssembler(int messageLength)
         {
-            mMessage = new BinaryMessage(messageLength);
+            mMessage = new CorrectedBinaryMessage(messageLength);
         }
 
         MessageAssembler(int messageLength, boolean[] initialFill)

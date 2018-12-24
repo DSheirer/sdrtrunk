@@ -126,7 +126,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         mTunerModel = tunerModel;
 
         mSpectrumPanel = new SpectrumPanel(mSettingsManager);
-        mOverlayPanel = new OverlayPanel(mSettingsManager, mChannelModel);
+        mOverlayPanel = new OverlayPanel(mSettingsManager, mChannelModel, mChannelProcessingManager);
         mWaterfallPanel = new WaterfallPanel(mSettingsManager);
 
         init();

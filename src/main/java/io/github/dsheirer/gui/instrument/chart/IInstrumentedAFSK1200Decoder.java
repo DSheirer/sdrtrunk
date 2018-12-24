@@ -16,15 +16,15 @@
 package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.sample.Listener;
 import javafx.beans.property.SimpleIntegerProperty;
 
 public interface IInstrumentedAFSK1200Decoder
 {
-    public SimpleIntegerProperty getBufferCountProperty();
+    SimpleIntegerProperty getBufferCountProperty();
 
-    public AFSK1200DecoderInstrumented getAFSK1200Decoder();
+    AFSK1200DecoderInstrumented getAFSK1200Decoder();
 
-    public void setMessageListener(Listener<Message> listener);
+    void setMessageListener(Listener<IMessage> listener);
 }

@@ -20,7 +20,7 @@ public enum Digit
     D13( "HOOK FLASH", "-" ),
     D14( "PAUSE", "-" ),
     D15( "ESC", "NULL" ),
-    DUNK( "?", "?" );
+    UNKNOWN( "?", "?" );
     
     private String mValue;
     private String mEscapedValue;
@@ -48,7 +48,7 @@ public enum Digit
             return values()[ value ];
         }
         
-        return DUNK;
+        return UNKNOWN;
     }
     
     public static String decode( List<Integer> values )

@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,21 +15,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.channel.metadata;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
-import org.apache.commons.lang3.Validate;
 
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -44,13 +50,16 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
+    private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private IconManager mIconManager;
+    private UserPreferences mUserPreferences;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
     private Map<State,Color> mBackgroundColors = new HashMap<>();
@@ -59,11 +68,13 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     /**
      * Table view for currently decoding channel metadata
      */
-    public ChannelMetadataPanel(ChannelProcessingManager channelProcessingManager, IconManager iconManager)
+    public ChannelMetadataPanel(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
+                                IconManager iconManager, UserPreferences userPreferences)
     {
-        mIconManager = iconManager;
+        mChannelModel = channelModel;
         mChannelProcessingManager = channelProcessingManager;
-
+        mIconManager = iconManager;
+        mUserPreferences = userPreferences;
         init();
     }
 
@@ -82,16 +93,18 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mTable.getSelectionModel().addListSelectionListener(this);
         mTable.addMouseListener(new MouseSupport());
 
-        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_STATE)
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_DECODER_STATE)
             .setCellRenderer(new ColoredStateCellRenderer());
-        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_PRIMARY_TO)
-            .setCellRenderer(new AliasedValueCellRenderer(Attribute.PRIMARY_ADDRESS_TO));
-        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_PRIMARY_FROM)
-            .setCellRenderer(new AliasedValueCellRenderer(Attribute.PRIMARY_ADDRESS_FROM));
-        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_SECONDARY_TO)
-            .setCellRenderer(new AliasedValueCellRenderer(Attribute.SECONDARY_ADDRESS_TO));
-        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_SECONDARY_FROM)
-            .setCellRenderer(new AliasedValueCellRenderer(Attribute.SECONDARY_ADDRESS_FROM));
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_FROM)
+            .setCellRenderer(new FromCellRenderer(mUserPreferences.getTalkgroupFormatPreference()));
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_TO)
+            .setCellRenderer(new ToCellRenderer(mUserPreferences.getTalkgroupFormatPreference()));
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_FROM_ALIAS)
+            .setCellRenderer(new AliasCellRenderer());
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_USER_TO_ALIAS)
+            .setCellRenderer(new AliasCellRenderer());
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_CONFIGURATION_FREQUENCY)
+            .setCellRenderer(new FrequencyCellRenderer());
 
         JScrollPane scrollPane = new JScrollPane(mTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -139,13 +152,15 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             {
                 int selectedModelRow = mTable.convertRowIndexToModel(selectedViewRow);
 
-                Metadata selectedMetadata = mChannelProcessingManager.getChannelMetadataModel()
-                    .getMetadata(selectedModelRow);
+                ChannelMetadata selectedMetadata = mChannelProcessingManager.getChannelMetadataModel()
+                    .getChannelMetadata(selectedModelRow);
 
                 if(selectedMetadata != null)
                 {
                     Channel selectedChannel = mChannelProcessingManager.getChannelMetadataModel()
                         .getChannelFromMetadata(selectedMetadata);
+
+
 
                     processingChain = mChannelProcessingManager.getProcessingChain(selectedChannel);
                 }
@@ -164,32 +179,145 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         mSelectedProcessingChainBroadcaster.addListener(listener);
     }
 
-    public class AliasedValueCellRenderer extends DefaultTableCellRenderer
+    /**
+     * Cell renderer for frequency values
+     */
+    public class FrequencyCellRenderer extends DefaultTableCellRenderer
     {
-        private Attribute mAttribute;
+        private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.00000" );
 
-        public AliasedValueCellRenderer(Attribute attribute)
+        public FrequencyCellRenderer()
         {
-            Validate.isTrue(attribute != null);
-            mAttribute = attribute;
             setHorizontalAlignment(JLabel.CENTER);
         }
 
         @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-                                                       int row, int column)
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
         {
             JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            Metadata metadata = (Metadata)value;
-            String value1 = metadata.getValue(mAttribute);
-            Alias alias = metadata.getAlias(mAttribute);
-
-            label.setText(alias != null ? alias.getName() : value1);
-            label.setIcon(alias != null ? mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE) : null);
-            label.setForeground(alias != null ? alias.getDisplayColor() : table.getForeground());
+            if(value instanceof FrequencyConfigurationIdentifier)
+            {
+                long frequency = ((FrequencyConfigurationIdentifier)value).getValue();
+                label.setText(FREQUENCY_FORMATTER.format(frequency / 1e6d));
+            }
+            else
+            {
+                label.setText(null);
+            }
 
             return label;
+        }
+    }
+
+    /**
+     * Alias cell renderer
+     */
+    public class AliasCellRenderer extends DefaultTableCellRenderer
+    {
+        public AliasCellRenderer()
+        {
+            setHorizontalAlignment(JLabel.LEFT);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if(value instanceof Alias)
+            {
+                Alias alias = (Alias)value;
+
+                label.setText(alias.getName());
+                label.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
+                label.setForeground(alias.getDisplayColor());
+
+            }
+            else
+            {
+                label.setText(null);
+                label.setIcon(null);
+                label.setForeground(table.getForeground());
+            }
+
+            return label;
+        }
+    }
+
+    /**
+     * Abstract cell renderer for identifiers
+     */
+    public abstract class IdentifierCellRenderer extends DefaultTableCellRenderer
+    {
+        private final static String EMPTY_VALUE = "-----";
+        private TalkgroupFormatPreference mTalkgroupFormatPreference;
+
+        public IdentifierCellRenderer(TalkgroupFormatPreference talkgroupFormatPreference)
+        {
+            mTalkgroupFormatPreference = talkgroupFormatPreference;
+            setHorizontalAlignment(JLabel.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if(value instanceof ChannelMetadata)
+            {
+                ChannelMetadata channelMetadata = (ChannelMetadata)value;
+                Identifier identifier = getIdentifier(channelMetadata);
+                String text = mTalkgroupFormatPreference.format(identifier);
+                if(text == null || text.isEmpty())
+                {
+                    text = EMPTY_VALUE;
+                }
+
+                label.setText(text);
+            }
+            else
+            {
+                label.setText(EMPTY_VALUE);
+            }
+
+            return label;
+        }
+
+        public abstract Identifier getIdentifier(ChannelMetadata channelMetadata);
+    }
+
+    /**
+     * Cell renderer for the FROM identifier
+     */
+    public class FromCellRenderer extends IdentifierCellRenderer
+    {
+        public FromCellRenderer(TalkgroupFormatPreference talkgroupFormatPreference)
+        {
+            super(talkgroupFormatPreference);
+        }
+
+        @Override
+        public Identifier getIdentifier(ChannelMetadata channelMetadata)
+        {
+            return channelMetadata.getFromIdentifier();
+        }
+    }
+
+    /**
+     * Cell renderer for the TO identifier
+     */
+    public class ToCellRenderer extends IdentifierCellRenderer
+    {
+        public ToCellRenderer(TalkgroupFormatPreference talkgroupFormatPreference)
+        {
+            super(talkgroupFormatPreference);
+        }
+
+        @Override
+        public Identifier getIdentifier(ChannelMetadata channelMetadata)
+        {
+            return channelMetadata.getToIdentifier();
         }
     }
 
@@ -209,9 +337,9 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             Color background = table.getBackground();
             Color foreground = table.getForeground();
 
-            if(value instanceof State)
+            if(value instanceof DecoderStateIdentifier)
             {
-                State state = (State)value;
+                State state = ((DecoderStateIdentifier)value).getValue();
                 label.setText(state.getDisplayValue());
 
                 if(mBackgroundColors.containsKey(state))
@@ -226,7 +354,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             }
             else
             {
-                setText("");
+                setText("----");
             }
 
             setBackground(background);
@@ -255,7 +383,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                     if(modelRowIndex >= 0)
                     {
-                        Metadata metadata = mChannelProcessingManager.getChannelMetadataModel().getMetadata(modelRowIndex);
+                        ChannelMetadata metadata = mChannelProcessingManager.getChannelMetadataModel().getChannelMetadata(modelRowIndex);
 
                         if(metadata != null)
                         {
@@ -264,9 +392,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                             if(channel != null)
                             {
-                                popupMenu.add(ChannelUtils.getContextMenu(mChannelProcessingManager.getChannelModel(),
-                                    mChannelProcessingManager, channel, mTable));
-
+                                popupMenu.add(ChannelUtils.getContextMenu(mChannelModel, mChannelProcessingManager, channel, mTable));
                                 populated = true;
                             }
                         }

@@ -20,9 +20,12 @@ package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.DecoderType;
 
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 
 public abstract class CallEvent implements Comparable<CallEvent>
@@ -40,8 +43,31 @@ public abstract class CallEvent implements Comparable<CallEvent>
     protected String mToID;
     protected String mDetails;
 
+    //New call event format member variables
+    protected IChannelDescriptor mChannelDescriptor;
+    protected Collection<Identifier> mIdentifiers;
+
     private boolean mValid = true;
 
+    /**
+     * Constructs a call event
+     * @param decoder type
+     * @param callEventType description
+     * @param channelDescriptor that identifies the channel and frequency value(s)
+     * @param identifiers for to, from, comments, etc.
+     */
+    public CallEvent(DecoderType decoder, CallEventType callEventType, IChannelDescriptor channelDescriptor, Collection<Identifier> identifiers)
+    {
+        mDecoderType = decoder;
+        mCallEventType = callEventType;
+        mChannelDescriptor = channelDescriptor;
+        mIdentifiers = identifiers;
+    }
+
+    /**
+     * Legacy call event constructor
+     */
+    @Deprecated //Remove once all decoder states have been updated to new constructor
     public CallEvent(DecoderType decoder, CallEventType callEventType, AliasList aliasList, String fromID,
                      String toID, String details)
     {
@@ -51,6 +77,14 @@ public abstract class CallEvent implements Comparable<CallEvent>
         mFromID = fromID;
         mToID = toID;
         mDetails = details;
+    }
+
+    /**
+     * Identifier collection for this call event
+     */
+    public Collection<Identifier> getIdentifiers()
+    {
+        return mIdentifiers;
     }
 
     /**
@@ -168,7 +202,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
 
     public static String getCSVHeader()
     {
-        return "START_DATE,START_TIME,END_DATE,END_TIME,DECODER,EVENT,FROM,FROM_ALIAS,TO,TO_ALIAS,CHANNEL," +
+        return "START_DATE,START_TIME,END_DATE,END_TIME,DECODER,EVENT,FROM,FROM_ALIAS,TO,TO_ALIAS,CHANNEL_NUMBER," +
             "FREQUENCY,DETAILS";
     }
 
@@ -252,6 +286,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
     public enum CallEventType
     {
         ANNOUNCEMENT("Announcement"),
+        AUTOMATIC_REGISTRATION_SERVICE("Motorola ARS"),
         CALL("Call"),
         CALL_ALERT("Call Alert"),
         CALL_DETECT("Call Detect"),
@@ -262,6 +297,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
         CALL_TIMEOUT("Call Timeout"),
         COMMAND("Command"),
         DATA_CALL("Data Call"),
+        DATA_PACKET("Data Packet"),
         DEREGISTER("Deregister"),
         EMERGENCY("EMERGENCY"),
         ENCRYPTED_CALL("Encrypted Call"),
@@ -270,6 +306,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
         GROUP_CALL("Group Call"),
         ID_ANI("ANI"),
         ID_UNIQUE("Unique ID"),
+        IP_PACKET("IP Packet"),
         NOTIFICATION("Notification"),
         PAGE("Page"),
         PATCH_GROUP_ADD("Patch Group Add"),
@@ -279,10 +316,14 @@ public abstract class CallEvent implements Comparable<CallEvent>
         REGISTER("Register"),
         REGISTER_ESN("ESN"),
         RESPONSE("Response"),
+        RESPONSE_PACKET("Response Packet"),
         SDM("Short Data Message"),
+        SNDCP_PACKET("SNDCP Packet"),
         STATION_ID("Station ID"),
         STATUS("Status"),
+        TCP_PACKET("TCP/IP Packet"),
         TELEPHONE_INTERCONNECT("Telephone Interconnect"),
+        UDP_PACKET("UDP/IP Packet"),
         UNIT_TO_UNIT_CALL("Unit To Unit Call"),
         UNKNOWN("Unknown"),
         INVALID("Invalid");

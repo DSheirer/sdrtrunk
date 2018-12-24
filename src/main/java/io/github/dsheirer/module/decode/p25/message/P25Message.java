@@ -18,81 +18,97 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.edac.CRC;
-import io.github.dsheirer.map.Plottable;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.protocol.Protocol;
 
-import java.text.SimpleDateFormat;
-
-public class P25Message extends Message
+public abstract class P25Message extends Message
 {
-    public enum DuplexMode {HALF, FULL};
-    public enum SessionMode {PACKET, CIRCUIT};
-
-    public static final int[] NAC = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-    public static final int[] DUID = {12, 13, 14, 15};
-    public static final int[] BCH = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
-        36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
-
-    protected SimpleDateFormat mTimeDurationFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
-    protected BinaryMessage mMessage;
-    protected DataUnitID mDUID;
-    protected AliasList mAliasList;
-
-    protected CRC[] mCRC;
-
-    public P25Message(BinaryMessage message, DataUnitID duid, AliasList aliasList)
+    public enum DuplexMode
     {
-        super();
+        HALF, FULL
+    }
 
+    public enum SessionMode
+    {
+        PACKET, CIRCUIT
+    }
+
+    private CorrectedBinaryMessage mMessage;
+    private boolean mValid = true;
+    private Identifier mNAC;
+
+    /**
+     * Constructs a P25 message.
+     *
+     * @param message containing the binary message and optional corrected bit count
+     * @param nac Network Access Code (NAC) for the message
+     * @param timestamp when the message was transmitted
+     */
+    public P25Message(CorrectedBinaryMessage message, int nac, long timestamp)
+    {
+        super(timestamp);
         mMessage = message;
-        mDUID = duid;
-        mAliasList = aliasList;
+        mNAC = APCO25Nac.create(nac);
     }
 
-    public CRC[] getCRCResults()
+    /**
+     * Constructs a P25 message using current system time for when the message was transmitted.
+     *
+     * @param message containing the binary message and optional corrected bit count
+     * @param nac Network Access Code (NAC) for the message
+     */
+    public P25Message(CorrectedBinaryMessage message, int nac)
     {
-        return mCRC;
+        this(message, nac, System.currentTimeMillis());
     }
 
-    public BinaryMessage getSourceMessage()
+    /**
+     * Constructs a P25 message where the binary message will be created/updated after construction.
+     * @param nac Network Access Code (NAC) for the message
+     * @param timestamp when the message was transmitted
+     */
+    protected P25Message(int nac, long timestamp)
+    {
+        super(timestamp);
+        mNAC = APCO25Nac.create(nac);
+    }
+
+    /**
+     * Establishes the message binary sequence.
+     */
+    protected void setMessage(CorrectedBinaryMessage message)
+    {
+        mMessage = message;
+    }
+
+    /**
+     * The transmitted binary message
+     */
+    protected CorrectedBinaryMessage getMessage()
     {
         return mMessage;
     }
 
-    public AliasList getAliasList()
+    public Identifier getNAC()
     {
-        return mAliasList;
+        return mNAC;
     }
 
-    public String getNAC()
+    /**
+     * Data Unit ID indicates the type of P25 message
+     */
+    public abstract DataUnitID getDUID();
+
+    public String toString()
     {
-        return mMessage.getHex(NAC, 3);
+        return getMessageStub();
     }
 
-    public DataUnitID getDUID()
-    {
-        return mDUID;
-    }
-
-    @Override
-    public String getErrorStatus()
-    {
-        if(mCRC == null)
-        {
-            return "UNKNOWN";
-        }
-
-        return CRC.format(mCRC);
-    }
-
-    @Override
-    public String getMessage()
+    protected String getMessageStub()
     {
         StringBuilder sb = new StringBuilder();
 
@@ -100,89 +116,30 @@ public class P25Message extends Message
         sb.append(getNAC());
         sb.append(" ");
         sb.append(getDUID().getLabel());
-        sb.append(" DATA UNIT ID:" + mMessage.getInt(DUID));
 
         return sb.toString();
     }
 
     @Override
-    public String getBinaryMessage()
+    public Protocol getProtocol()
     {
-        return mMessage.toString();
+        return Protocol.APCO25;
     }
 
-    @Override
-    public String getProtocol()
-    {
-        return "P25 Phase 1";
-    }
-
-    @Override
-    public String getEventType()
-    {
-        return mDUID.name();
-    }
-
-    @Override
-    public String getFromID()
-    {
-        return null;
-    }
-
-    @Override
-    public Alias getFromIDAlias()
-    {
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(getFromID());
-        }
-
-        return null;
-    }
-
-    @Override
-    public String getToID()
-    {
-        return null;
-    }
-
-    @Override
-    public Alias getToIDAlias()
-    {
-        if(mAliasList != null)
-        {
-            return mAliasList.getTalkgroupAlias(getToID());
-        }
-
-        return null;
-    }
-
-    @Override
-    public Plottable getPlottable()
-    {
-        return null;
-    }
-
-    @Override
-    public String toString()
-    {
-        return getMessage();
-    }
-
+    /**
+     * Indicates if this message is valid and has passed all error detection and correction routines.
+     */
     @Override
     public boolean isValid()
     {
-        if(mCRC != null)
-        {
-            for(CRC crc : mCRC)
-            {
-                if(crc == CRC.FAILED_CRC)
-                {
-                    return false;
-                }
-            }
-        }
+        return mValid;
+    }
 
-        return true;
+    /**
+     * Sets this message to the valid/invalid state.  The default state is valid (true).
+     */
+    protected void setValid(boolean valid)
+    {
+        mValid = valid;
     }
 }

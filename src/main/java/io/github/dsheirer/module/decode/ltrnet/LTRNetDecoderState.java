@@ -1,84 +1,94 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.ltrnet;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.channel.metadata.AliasedIntegerAttributeMonitor;
-import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
+import io.github.dsheirer.identifier.esn.ESNIdentifier;
+import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.util.StringUtils;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.ltrnet.channel.LtrNetChannel;
+import io.github.dsheirer.module.decode.ltrnet.identifier.UniqueIdentifier;
+import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.IswCallEnd;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.IswCallStart;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.IswUniqueId;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.RegistrationRequestEsnHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.RegistrationRequestEsnLow;
+import io.github.dsheirer.module.decode.ltrnet.message.isw.RequestAccess;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.ChannelMapHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.ChannelMapLow;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.NeighborId;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.OswCallEnd;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.OswCallStart;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.ReceiveFrequencyHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.ReceiveFrequencyLow;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.RegistrationAccept;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.SiteId;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.SystemIdle;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.TransmitFrequencyHigh;
+import io.github.dsheirer.module.decode.ltrnet.message.osw.TransmitFrequencyLow;
+import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 public class LTRNetDecoderState extends DecoderState
 {
     private final static Logger mLog = LoggerFactory.getLogger(LTRNetDecoderState.class);
 
-    private DecimalFormat mDecimalFormatter = new DecimalFormat("0.00000");
+    private ChannelMapHigh mChannelMapHigh;
+    private ChannelMapLow mChannelMapLow;
+    private Map<Integer,LtrNetChannel> mChannelMap = new HashMap<>();
+    private Map<Integer,DecodeEvent> mCallDetectMap = new HashMap<>();
+    private Map<Integer,NeighborId> mNeighborMap = new HashMap<>();
+    private SiteId mCurrentSite;
+    private int mCurrentChannelNumber;
+    private Set<LTRTalkgroup> mTalkgroups = new TreeSet<>();
+    private Set<UniqueIdentifier> mUniqueIdentifiers = new TreeSet<>();
+    private Set<ESNIdentifier> mESNIdentifiers = new TreeSet<>();
+    private DecodeEvent mCurrentCallEvent;
+    private LTRTalkgroup mCurrentCallTalkgroup;
 
-    private TreeSet<String> mTalkgroups = new TreeSet<String>();
-    private TreeSet<String> mTalkgroupsFirstHeard = new TreeSet<String>();
-    private TreeSet<String> mESNs = new TreeSet<String>();
-    private TreeSet<Integer> mUniqueIDs = new TreeSet<Integer>();
-    private TreeSet<String> mNeighborIDs = new TreeSet<String>();
-    private TreeSet<String> mSiteIDs = new TreeSet<String>();
-    private HashMap<Integer,Long> mReceiveFrequencies =
-        new HashMap<Integer,Long>();
-    private HashMap<Integer,Long> mTransmitFrequencies =
-        new HashMap<Integer,Long>();
-    private HashMap<Integer,String> mActiveCalls = new HashMap<Integer,String>();
-
-    private AliasedStringAttributeMonitor mToAttribute;
-    private AliasedIntegerAttributeMonitor mFromUIDAttribute;
-    private AliasedStringAttributeMonitor mESNAttribute;
-    private String mMessage;
-    private String mMessageType;
-    private int mChannelNumber;
-    private long mFrequency = 0;
-
-    public LTRNetDecoderState(AliasList aliasList)
+    public LTRNetDecoderState()
     {
-        super(aliasList);
-
-        mToAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
-        mToAttribute.addIllegalValue("0-00-000");
-
-        mFromUIDAttribute = new AliasedIntegerAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.LTR_NET_UID);
-
-        mESNAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.ESN);
     }
 
     @Override
@@ -88,235 +98,412 @@ public class LTRNetDecoderState extends DecoderState
     }
 
     @Override
-    public void receive(Message message)
+    protected IChannelDescriptor getCurrentChannel()
     {
-        if(message.isValid())
+        if(mCurrentChannelNumber > 0)
         {
-            State state = State.IDLE;
+            return mChannelMap.get(mCurrentChannelNumber);
+        }
 
-            if(message instanceof LTRNetOSWMessage)
+        return null;
+    }
+
+    /**
+     * Performs a full reset
+     */
+    public void reset()
+    {
+        mChannelMapHigh = null;
+        mChannelMapLow = null;
+        mChannelMap.clear();
+        mCallDetectMap.clear();
+        mNeighborMap.clear();
+        mCurrentSite = null;
+        mCurrentChannelNumber = 0;
+        mTalkgroups.clear();
+        mUniqueIdentifiers.clear();
+        mESNIdentifiers.clear();
+        resetState();
+    }
+
+    private void processCallEnd(int channel, LTRTalkgroup talkgroup, long timestamp)
+    {
+        setCurrentChannelNumber(channel);
+
+        if(mCurrentCallTalkgroup != null && mCurrentCallTalkgroup.equals(talkgroup))
+        {
+            mCurrentCallEvent.end(timestamp);
+            broadcast(mCurrentCallEvent);
+            mCurrentCallEvent = null;
+            mCurrentCallTalkgroup = null;
+            getIdentifierCollection().remove(IdentifierClass.USER);
+        }
+
+        if(talkgroup.getTalkgroup() == 254)
+        {
+            //Process CW Station ID broadcasts as an active state
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+        }
+        else
+        {
+            broadcast(new DecoderStateEvent(this, Event.END, State.CALL));
+        }
+    }
+
+    private void processCallStart(int channel, LTRTalkgroup talkgroup, long timestamp, MessageDirection direction)
+    {
+        if(direction == MessageDirection.ISW)
+        {
+            setCurrentChannelNumber(channel);
+        }
+
+        if(channel == mCurrentChannelNumber || mCurrentChannelNumber == 0)
+        {
+            setCurrentChannelNumber(channel);
+
+            if(mCurrentCallTalkgroup == null || !mCurrentCallTalkgroup.equals(talkgroup))
             {
-                LTRNetOSWMessage ltr = (LTRNetOSWMessage) message;
+                getIdentifierCollection().remove(IdentifierClass.USER);
+                getIdentifierCollection().update(talkgroup);
+                mCurrentCallEvent = DecodeEvent.builder(timestamp)
+                    .protocol(Protocol.LTR_NET)
+                    .channel(getCurrentChannel())
+                    .identifiers(getIdentifierCollection().copyOf())
+                    .build();
+                mCurrentCallTalkgroup = talkgroup;
+            }
 
-                switch(ltr.getMessageType())
+            //This updates the timestamp
+            mCurrentCallEvent.update(timestamp);
+
+            if(talkgroup.getTalkgroup() == 253)
+            {
+                mCurrentCallEvent.setEventDescription("Register");
+                broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
+            }
+            else if(talkgroup.getTalkgroup() == 254)
+            {
+                mCurrentCallEvent.setEventDescription("FCC CWID");
+                broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
+            }
+            else
+            {
+                mCurrentCallEvent.setEventDescription("Call");
+                broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+            }
+
+            broadcast(mCurrentCallEvent);
+        }
+        else
+        {
+            DecodeEvent decodeEvent = mCallDetectMap.get(channel);
+
+            if(decodeEvent == null)
+            {
+                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                ic.remove(IdentifierClass.USER);
+                ic.update(talkgroup);
+
+                decodeEvent = DecodeEvent.builder(timestamp)
+                    .eventDescription("Call Detect")
+                    .channel(mChannelMap.get(channel))
+                    .protocol(Protocol.LTR_NET)
+                    .identifiers(ic)
+                    .build();
+                mCallDetectMap.put(channel, decodeEvent);
+            }
+            else
+            {
+                Identifier eventTalkgroup = decodeEvent.getIdentifierCollection()
+                    .getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
+
+                if(eventTalkgroup == null || !eventTalkgroup.equals(talkgroup) ||
+                    (timestamp - decodeEvent.getTimeStart() - decodeEvent.getDuration() > 2000))
                 {
-                    case CA_ENDD:
-                        if(mChannelNumber == 0)
-                        {
-                            setChannelNumber(ltr.getChannel());
-                        }
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    ic.remove(IdentifierClass.USER);
+                    ic.update(talkgroup);
 
-						/* Process FCC Station ID Events */
-                        if(ltr.getGroup() == 254)
-                        {
-                            if(mCurrentCallEvent == null ||
-                                mCurrentCallEvent.getCallEventType() !=
-                                    CallEvent.CallEventType.STATION_ID)
-                            {
-                                mCurrentCallEvent = new LTRCallEvent.Builder(
-                                    DecoderType.LTR_NET, CallEvent.CallEventType.STATION_ID)
-                                    .aliasList(getAliasList())
-                                    .channel(String.valueOf(mChannelNumber))
-                                    .frequency(mFrequency)
-                                    .to(ltr.getTalkgroupID())
-                                    .build();
-
-                                broadcast(mCurrentCallEvent);
-
-                                broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
-                            }
-                            else
-                            {
-                                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
-                            }
-                        }
-                        else
-                        {
-                            processCallEndMessage(ltr);
-                        }
-                        break;
-                    case CA_STRT:
-                        if(mChannelNumber == 0)
-                        {
-                            setChannelNumber(ltr.getChannel());
-                        }
-
-						/* If the call event channel matches our current channel
-                         * then it's a call, otherwise it's a call detect. */
-                        if(ltr.getChannel() == mChannelNumber)
-                        {
-                            processCallMessage(ltr);
-                        }
-                        else
-                        {
-                            processCallDetectMessage(ltr);
-                        }
-
-                        break;
-                    case SY_IDLE:
-                        if(mChannelNumber != ltr.getChannel())
-                        {
-                            setChannelNumber(ltr.getChannel());
-                        }
-                        break;
-                    case MA_CHNH:
-                        break;
-                    case MA_CHNL:
-                        break;
-                    case FQ_RXHI:
-                    case FQ_RXLO:
-                        if(ltr.getFrequency() > 0)
-                        {
-                            mReceiveFrequencies.put(ltr.getHomeRepeater(), ltr.getFrequency());
-                        }
-                        break;
-                    case FQ_TXHI:
-                    case FQ_TXLO:
-                        if(ltr.getFrequency() > 0)
-                        {
-                            mTransmitFrequencies.put(ltr.getHomeRepeater(), ltr.getFrequency());
-                        }
-                        break;
-                    case ID_NBOR:
-                        String neighborID = ltr.getNeighborID();
-
-                        if(neighborID != null)
-                        {
-                            mNeighborIDs.add(neighborID);
-                        }
-                        break;
-                    case ID_UNIQ:
-                        state = State.DATA;
-
-                        int uniqueID = ltr.getRadioUniqueID();
-
-                        if(uniqueID != LTRNetOSWMessage.INT_NULL_VALUE)
-                        {
-                            mUniqueIDs.add(uniqueID);
-                        }
-
-                        if(getCurrentLTRCallEvent() == null)
-                        {
-                            mCurrentCallEvent = new LTRCallEvent.Builder(
-                                DecoderType.LTR_NET, CallEvent.CallEventType.REGISTER)
-                                .aliasList(getAliasList())
-                                .channel(String.valueOf(mChannelNumber))
-                                .frequency(mFrequency)
-                                .from(String.valueOf(uniqueID))
-                                .build();
-                        }
-                        else
-                        {
-                            mCurrentCallEvent.setFromID(
-                                String.valueOf(ltr.getRadioUniqueID()));
-                            mCurrentCallEvent.setDetails("Unique ID");
-
-                            broadcast(mCurrentCallEvent);
-                        }
-
-                        mFromUIDAttribute.process(uniqueID);
-                        break;
-                    case ID_SITE:
-                        String siteID = ltr.getSiteID();
-
-                        if(siteID != null)
-                        {
-                            mSiteIDs.add(siteID);
-                        }
-                        break;
-                    default:
-                        break;
+                    decodeEvent = DecodeEvent.builder(timestamp)
+                        .eventDescription("Call Detect")
+                        .channel(mChannelMap.get(channel))
+                        .protocol(Protocol.LTR_NET)
+                        .identifiers(ic)
+                        .build();
+                    mCallDetectMap.put(channel, decodeEvent);
                 }
             }
-            else if(message instanceof LTRNetISWMessage)
+
+            decodeEvent.update(timestamp);
+            broadcast(decodeEvent);
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+        }
+    }
+
+    /**
+     * Updates the current call event whenever any identifiers related to the call change
+     */
+    private void updateCurrentCallIdentifiers()
+    {
+        if(mCurrentCallEvent != null)
+        {
+            mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
+            broadcast(mCurrentCallEvent);
+        }
+    }
+
+    /**
+     * Updates the uplink or receive frequency for the repeater identified by the Logical Channel Number (LCN).
+     */
+    private void updateReceiveFrequency(int channel, long frequency)
+    {
+        if(0 < channel && channel <= 20 && frequency > 0)
+        {
+            LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
+
+            if(ltrNetChannel == null)
             {
-                LTRNetISWMessage ltr = ((LTRNetISWMessage) message);
-
-                switch(ltr.getMessageType())
-                {
-                    case CA_STRT:
-                        processCallMessage(ltr);
-                        break;
-                    case CA_ENDD:
-                        processCallEndMessage(ltr);
-                        break;
-                    case ID_ESNH:
-                    case ID_ESNL:
-                        state = State.DATA;
-
-                        String esn = ltr.getESN();
-
-                        if(!esn.contains("xxxx"))
-                        {
-                            mESNs.add(ltr.getESN());
-                        }
-
-                        setMessageType("ESN");
-                        mESNAttribute.process(ltr.getESN());
-
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
-
-                        if(mCurrentCallEvent == null)
-                        {
-                            mCurrentCallEvent = new LTRCallEvent.Builder(
-                                DecoderType.LTR_NET, CallEvent.CallEventType.REGISTER_ESN)
-                                .aliasList(getAliasList())
-                                .details("ESN:" + ltr.getESN())
-                                .frequency(mFrequency)
-                                .from(ltr.getESN())
-                                .build();
-
-                            broadcast(mCurrentCallEvent);
-                        }
-
-                        break;
-                    case ID_UNIQ:
-                        state = State.DATA;
-
-                        int uniqueid = ltr.getRadioUniqueID();
-
-                        if(uniqueid != LTRNetISWMessage.INT_NULL_VALUE)
-                        {
-                            mUniqueIDs.add(uniqueid);
-
-                            setMessageType("REGISTER UID");
-                            mFromUIDAttribute.process(uniqueid);
-
-                            if(getCurrentLTRCallEvent() == null)
-                            {
-                                mCurrentCallEvent = new LTRCallEvent.Builder(
-                                    DecoderType.LTR_NET, CallEvent.CallEventType.REGISTER)
-                                    .aliasList(getAliasList())
-                                    .channel(String.valueOf(mChannelNumber))
-                                    .frequency(mFrequency)
-                                    .from(String.valueOf(uniqueid))
-                                    .build();
-                            }
-                            else
-                            {
-                                mCurrentCallEvent.setFromID(
-                                    String.valueOf(ltr.getRadioUniqueID()));
-                                mCurrentCallEvent.setDetails("Unique ID");
-
-                                broadcast(mCurrentCallEvent);
-                            }
-                        }
-                        break;
-                    default:
-                        break;
-                }
+                ltrNetChannel = new LtrNetChannel(channel);
+                ltrNetChannel.setUplink(frequency);
+                mChannelMap.put(channel, ltrNetChannel);
+            }
+            else
+            {
+                ltrNetChannel.setUplink(frequency);
             }
         }
     }
 
-    public LTRCallEvent getCurrentLTRCallEvent()
+    /**
+     * Updates the downlink or transmit frequency for the repeater identified by the Logical Channel Number (LCN).
+     */
+    private void updateTransmitFrequency(int channel, long frequency)
     {
-        if(mCurrentCallEvent != null)
+        if(0 < channel && channel <= 20 && frequency > 0)
         {
-            return (LTRCallEvent) mCurrentCallEvent;
-        }
+            LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
 
-        return null;
+            if(ltrNetChannel == null)
+            {
+                ltrNetChannel = new LtrNetChannel(channel);
+                ltrNetChannel.setDownlink(frequency);
+                mChannelMap.put(channel, ltrNetChannel);
+            }
+            else
+            {
+                ltrNetChannel.setDownlink(frequency);
+            }
+        }
+    }
+
+    @Override
+    public void receive(IMessage message)
+    {
+        if(message.isValid() && message instanceof LtrNetMessage)
+        {
+            switch(((LtrNetMessage)message).getLtrNetMessageType())
+            {
+                case ISW_CALL_END:
+                    if(message instanceof IswCallEnd)
+                    {
+                        IswCallEnd callEnd = (IswCallEnd)message;
+                        mTalkgroups.add(callEnd.getTalkgroup());
+                        processCallEnd(callEnd.getChannel(), callEnd.getTalkgroup(), callEnd.getTimestamp());
+                    }
+                    break;
+                case ISW_CALL_START:
+                    if(message instanceof IswCallStart)
+                    {
+                        IswCallStart callStart = (IswCallStart)message;
+                        mTalkgroups.add(callStart.getTalkgroup());
+                        processCallStart(callStart.getChannel(), callStart.getTalkgroup(), callStart.getTimestamp(),
+                            MessageDirection.ISW);
+                    }
+                    break;
+                case ISW_REGISTRATION_REQUEST_ESN_HIGH:
+                    if(message instanceof RegistrationRequestEsnHigh)
+                    {
+                        RegistrationRequestEsnHigh registrationRequestEsn = (RegistrationRequestEsnHigh)message;
+
+                        if(registrationRequestEsn.isCompleteEsn())
+                        {
+                            getIdentifierCollection().update(registrationRequestEsn.getESN());
+                            mESNIdentifiers.add(registrationRequestEsn.getESN());
+                        }
+
+                        broadcast(DecodeEvent.builder(message.getTimestamp())
+                            .eventDescription("Registration Request")
+                            .details(registrationRequestEsn.toString())
+                            .identifiers(getIdentifierCollection().copyOf())
+                            .channel(getCurrentChannel())
+                            .protocol(Protocol.LTR_NET)
+                            .build());
+
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
+                    }
+                    break;
+                case ISW_REGISTRATION_REQUEST_ESN_LOW:
+                    if(message instanceof RegistrationRequestEsnLow)
+                    {
+                        RegistrationRequestEsnLow registrationRequestEsn = (RegistrationRequestEsnLow)message;
+
+                        if(registrationRequestEsn.isCompleteEsn())
+                        {
+                            getIdentifierCollection().update(registrationRequestEsn.getESN());
+                            mESNIdentifiers.add(registrationRequestEsn.getESN());
+                        }
+
+                        broadcast(DecodeEvent.builder(message.getTimestamp())
+                            .eventDescription("Registration Request")
+                            .details(registrationRequestEsn.toString())
+                            .identifiers(getIdentifierCollection().copyOf())
+                            .channel(getCurrentChannel())
+                            .protocol(Protocol.LTR_NET)
+                            .build());
+
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
+                    }
+                    break;
+                case ISW_REQUEST_ACCESS:
+                    if(message instanceof RequestAccess)
+                    {
+                        RequestAccess requestAccess = (RequestAccess)message;
+
+                        getIdentifierCollection().update(requestAccess.getTalkgroup());
+                        mTalkgroups.add(requestAccess.getTalkgroup());
+
+                        broadcast(DecodeEvent.builder(message.getTimestamp())
+                            .eventDescription("Access Request")
+                            .details(requestAccess.toString())
+                            .identifiers(getIdentifierCollection().copyOf())
+                            .channel(getCurrentChannel())
+                            .protocol(Protocol.LTR_NET)
+                            .build());
+
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
+                    }
+                    break;
+                case ISW_UNIQUE_ID:
+                    if(message instanceof IswUniqueId)
+                    {
+                        IswUniqueId iswUniqueId = (IswUniqueId)message;
+                        getIdentifierCollection().update(iswUniqueId.getUniqueID());
+                        mUniqueIdentifiers.add(iswUniqueId.getUniqueID());
+                        updateCurrentCallIdentifiers();
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
+                    }
+                    break;
+                case ISW_UNKNOWN:
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_CALL_END:
+                    if(message instanceof OswCallEnd)
+                    {
+                        OswCallEnd callEnd = (OswCallEnd)message;
+                        mTalkgroups.add(callEnd.getTalkgroup());
+                        processCallEnd(callEnd.getChannel(), callEnd.getTalkgroup(), callEnd.getTimestamp());
+                    }
+                    break;
+                case OSW_CALL_START:
+                    if(message instanceof OswCallStart)
+                    {
+                        OswCallStart callStart = (OswCallStart)message;
+                        mTalkgroups.add(callStart.getTalkgroup());
+                        processCallStart(callStart.getChannel(), callStart.getTalkgroup(), callStart.getTimestamp(),
+                            MessageDirection.OSW);
+                    }
+                    break;
+                case OSW_CHANNEL_MAP_HIGH:
+                    if(message instanceof ChannelMapHigh)
+                    {
+                        mChannelMapHigh = (ChannelMapHigh)message;
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_CHANNEL_MAP_LOW:
+                    if(message instanceof ChannelMapLow)
+                    {
+                        mChannelMapLow = (ChannelMapLow)message;
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_SYSTEM_IDLE:
+                    if(message instanceof SystemIdle)
+                    {
+                        setCurrentChannelNumber(((SystemIdle)message).getChannel());
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_NEIGHBOR_ID:
+                    if(message instanceof NeighborId)
+                    {
+                        NeighborId neighborId = (NeighborId)message;
+                        mNeighborMap.put(neighborId.getNeighborRank(), neighborId);
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_RECEIVE_FREQUENCY_HIGH:
+                    if(message instanceof ReceiveFrequencyHigh)
+                    {
+                        ReceiveFrequencyHigh receiveFrequency = (ReceiveFrequencyHigh)message;
+                        updateReceiveFrequency(receiveFrequency.getChannel(), receiveFrequency.getFrequency());
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_RECEIVE_FREQUENCY_LOW:
+                    if(message instanceof ReceiveFrequencyLow)
+                    {
+                        ReceiveFrequencyLow receiveFrequency = (ReceiveFrequencyLow)message;
+                        updateReceiveFrequency(receiveFrequency.getChannel(), receiveFrequency.getFrequency());
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_REGISTRATION_ACCEPT:
+                    if(message instanceof RegistrationAccept)
+                    {
+                        RegistrationAccept registrationAccept = (RegistrationAccept)message;
+                        mUniqueIdentifiers.add(registrationAccept.getUniqueID());
+                        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        ic.remove(IdentifierClass.USER);
+                        ic.update(message.getIdentifiers());
+
+                        broadcast(DecodeEvent.builder(message.getTimestamp())
+                            .protocol(Protocol.LTR_NET)
+                            .channel(getCurrentChannel())
+                            .identifiers(ic)
+                            .eventDescription("Registration Accept")
+                            .details(registrationAccept.toString())
+                            .build());
+                    }
+                    break;
+                case OSW_SITE_ID:
+                    if(message instanceof SiteId)
+                    {
+                        mCurrentSite = (SiteId)message;
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_TRANSMIT_FREQUENCY_HIGH:
+                    if(message instanceof TransmitFrequencyHigh)
+                    {
+                        TransmitFrequencyHigh transmitFrequency = (TransmitFrequencyHigh)message;
+                        updateTransmitFrequency(transmitFrequency.getChannel(), transmitFrequency.getFrequency());
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_TRANSMIT_FREQUENCY_LOW:
+                    if(message instanceof TransmitFrequencyLow)
+                    {
+                        TransmitFrequencyLow transmitFrequency = (TransmitFrequencyLow)message;
+                        updateTransmitFrequency(transmitFrequency.getChannel(), transmitFrequency.getFrequency());
+                    }
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+                case OSW_UNKNOWN:
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
+                    break;
+            }
+        }
     }
 
     @Override
@@ -326,102 +513,55 @@ public class LTRNetDecoderState extends DecoderState
 
         sb.append("Activity Summary\n");
         sb.append("Decoder:\tLTR-Net\n\n");
+        sb.append("Site:\t").append(mCurrentSite != null ? mCurrentSite.getSiteID() : "Unknown").append("\n");
 
-        if(mSiteIDs.isEmpty())
+        sb.append("\nLCNs (transmit / receive)\n");
+
+        if(mChannelMapLow != null)
         {
-            sb.append("Site:\tUnknown\n");
+            for(int channel: mChannelMapLow.getChannels())
+            {
+                LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
+                sb.append("  ").append(channel).append(": ").append(ltrNetChannel != null ? ltrNetChannel.description() :
+                    "Unknown").append(mCurrentChannelNumber == channel ? " (Current)\n" : "\n");
+            }
         }
         else
         {
-            Iterator<String> it = mSiteIDs.iterator();
-
-            while(it.hasNext())
-            {
-                sb.append("Site:\t");
-
-                String siteID = it.next();
-
-                sb.append(siteID);
-
-                if(hasAliasList())
-                {
-                    Alias siteAlias = getAliasList().getSiteID(String.valueOf(siteID));
-
-                    if(siteAlias != null)
-                    {
-                        sb.append(" ");
-                        sb.append(siteAlias.getName());
-                    }
-                }
-
-                sb.append("\n");
-            }
+            sb.append("Channel Map 1-10: Unknown\n");
         }
 
-        sb.append("\nLCNs (transmit | receive)\n");
+        if(mChannelMapHigh != null)
+        {
+            for(int channel: mChannelMapHigh.getChannels())
+            {
+                LtrNetChannel ltrNetChannel = mChannelMap.get(channel);
+                sb.append("  ").append(channel).append(": ").append(ltrNetChannel != null ? ltrNetChannel.description() :
+                    "Unknown").append(mCurrentChannelNumber == channel ? " (Current)\n" : "\n");
+            }
+        }
+        else
+        {
+            sb.append("Channel Map 11-20: Unknown\n");
+        }
 
-        if(mReceiveFrequencies.isEmpty() && mTransmitFrequencies.isEmpty())
+        sb.append("\nNeighbor Sites (Rank: ID)\n");
+
+        if(mNeighborMap.isEmpty())
         {
             sb.append("  None\n");
         }
         else
         {
-            for(int x = 1; x < 21; x++)
+            List<Integer> ranks = new ArrayList<>(mNeighborMap.keySet());
+            Collections.sort(ranks);
+            for(Integer rank: ranks)
             {
-                long rcv = 0;
-
-                if(mReceiveFrequencies.containsKey(x))
-                {
-                    rcv = mReceiveFrequencies.get(x);
-                }
-
-                long xmt = 0;
-
-                if(mTransmitFrequencies.containsKey(x))
-                {
-                    xmt = mTransmitFrequencies.get(x);
-                }
-
-                if(rcv > 0 || xmt > 0)
-                {
-                    if(x < 10)
-                    {
-                        sb.append(" ");
-                    }
-
-                    sb.append(x);
-                    sb.append(": ");
-
-                    if(xmt == 0)
-                    {
-                        sb.append("---.-----");
-                    }
-                    else
-                    {
-                        sb.append(mDecimalFormatter.format((double) xmt / 1E6d));
-                    }
-                    sb.append(" | ");
-
-                    if(rcv == 0)
-                    {
-                        sb.append("---.-----");
-                    }
-                    else
-                    {
-                        sb.append(mDecimalFormatter.format((double) rcv / 1E6d));
-                    }
-
-                    if(x == mChannelNumber)
-                    {
-                        sb.append(" **");
-                    }
-
-                    sb.append("\n");
-                }
+                sb.append("  ").append(rank).append(": ").append(mNeighborMap.get(rank).getNeighborID()).append("\n");
             }
         }
 
-        sb.append("\nTalkgroups\n");
+        sb.append("\nActive Talkgroups\n");
 
         if(mTalkgroups.isEmpty())
         {
@@ -429,355 +569,90 @@ public class LTRNetDecoderState extends DecoderState
         }
         else
         {
-            Iterator<String> it = mTalkgroups.iterator();
+            List<LTRTalkgroup> talkgroups = new ArrayList<>(mTalkgroups);
+            Collections.sort(talkgroups, Comparator.comparingInt(Identifier::getValue));
 
-            while(it.hasNext())
+            for(LTRTalkgroup talkgroup: talkgroups)
             {
-                String tgid = it.next();
-
-                sb.append("  ");
-                sb.append(tgid);
-                sb.append(" ");
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getTalkgroupAlias(tgid);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
-
-                sb.append("\n");
+                sb.append("  ").append(talkgroup.formatted()).append("\n");
             }
         }
 
-        sb.append("\nRadio Unique IDs\n");
+        sb.append("\nActive Radio Unique IDs\n");
 
-        if(mUniqueIDs.isEmpty())
+        if(mUniqueIdentifiers.isEmpty())
         {
             sb.append("  None\n");
         }
         else
         {
-            Iterator<Integer> it = mUniqueIDs.iterator();
+            List<UniqueIdentifier> uniqueIdentifiers = new ArrayList<>(mUniqueIdentifiers);
+            Collections.sort(uniqueIdentifiers, Comparator.comparingInt(Identifier::getValue));
 
-            while(it.hasNext())
+            for(UniqueIdentifier uniqueIdentifier: uniqueIdentifiers)
             {
-                int uid = it.next();
-
-                sb.append("  ");
-                sb.append(uid);
-                sb.append(" ");
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getUniqueID(uid);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
-
-                sb.append("\n");
+                sb.append("  ").append(uniqueIdentifier).append("\n");
             }
         }
 
-        sb.append("\nESNs\n");
+        sb.append("\nActive ESNs\n");
 
-        if(mESNs.isEmpty())
+        if(mESNIdentifiers.isEmpty())
         {
             sb.append("  None\n");
         }
         else
         {
-            Iterator<String> it = mESNs.iterator();
+            List<ESNIdentifier> esnIdentifiers = new ArrayList<>(mESNIdentifiers);
+            Collections.sort(esnIdentifiers);
 
-            while(it.hasNext())
+            for(ESNIdentifier esnIdentifier: esnIdentifiers)
             {
-                String esn = it.next();
-
-                sb.append("  ");
-                sb.append(esn);
-                sb.append(" ");
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getESNAlias(esn);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
-
-                sb.append("\n");
-            }
-        }
-
-        sb.append("\nNeighbor Sites\n");
-
-        if(mNeighborIDs.isEmpty())
-        {
-            sb.append("  None\n");
-        }
-        else
-        {
-            Iterator<String> it = mNeighborIDs.iterator();
-
-            while(it.hasNext())
-            {
-                String neighbor = it.next();
-
-                sb.append("  ");
-                sb.append(neighbor);
-                sb.append(" ");
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getSiteID(String.valueOf(neighbor));
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
-
-                sb.append("\n");
+                sb.append("  ").append(esnIdentifier).append("\n");
             }
         }
 
         return sb.toString();
     }
 
-    /**
-     * Call Detect - current channel messages indicate a call on another channel
-     */
-    private void processCallDetectMessage(LTRNetMessage message)
-    {
-        if(!mActiveCalls.containsKey(message.getChannel()) ||
-            !mActiveCalls.get(message.getChannel()).contentEquals(message.getTalkgroupID()))
-        {
-            mActiveCalls.put(message.getChannel(), message.getTalkgroupID());
-
-            int channel = message.getChannel();
-
-            long frequency = 0;
-
-            if(mTransmitFrequencies.containsKey(channel))
-            {
-                frequency = mTransmitFrequencies.get(channel);
-            }
-
-            broadcast(new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEvent.CallEventType.CALL_DETECT)
-                .aliasList(getAliasList())
-                .channel(String.valueOf(message.getChannel()))
-                .frequency(frequency)
-                .to(message.getTalkgroupID())
-                .build());
-        }
-
-        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
-    }
-
-    /**
-     * Indicates if the talkgroup is different than the talkgroup specified in
-     * the current call event
-     */
-    private boolean isDifferentTalkgroup(String talkgroup)
-    {
-        return talkgroup != null &&
-            mCurrentCallEvent != null &&
-            mCurrentCallEvent.getToID() != null &&
-            !mCurrentCallEvent.getToID().contentEquals(talkgroup);
-    }
-
-    private boolean isValidTalkgroup(String talkgroup)
-    {
-        return talkgroup != null && !talkgroup.matches("0-00-000");
-    }
-
-    private void processCallMessage(LTRNetMessage message)
-    {
-        int group = message.getGroup();
-
-		/* Process call registration */
-        if(group == 253)
-        {
-            setMessageType("REGISTER");
-            broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
-        }
-        /* Process call */
-        else
-        {
-            String talkgroup = message.getTalkgroupID();
-
-            if(isValidTalkgroup(talkgroup))
-            {
-                mToAttribute.process(talkgroup);
-
-                final LTRCallEvent current = getCurrentLTRCallEvent();
-
-    			//If this is a new call or the talkgroup is different from the current call, create a new call event
-                if(current == null || isDifferentTalkgroup(talkgroup))
-                {
-    				/* Invalidate the current call */
-                    if(current != null)
-                    {
-                        current.setValid(false);
-                        broadcast(current);
-                    }
-
-                    /* A talkgroup must be seen at least once before it will be added
-                     * to the mTalkgroups list that is used in the activity summary,
-                     * so that we don't pollute the summary with one-off error talkgroups */
-                    if(mTalkgroupsFirstHeard.contains(talkgroup))
-                    {
-                        mTalkgroups.add(talkgroup);
-                    }
-                    else
-                    {
-                        mTalkgroupsFirstHeard.add(talkgroup);
-                    }
-
-                    CallEvent callEvent = new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEvent.CallEventType.CALL)
-                        .aliasList(getAliasList())
-                        .channel(String.valueOf(message.getChannel()))
-                        .frequency(mFrequency)
-                        .to(message.getTalkgroupID())
-                        .build();
-
-                    broadcast(callEvent);
-
-                    mCurrentCallEvent = callEvent;
-
-                    broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
-                }
-
-                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
-            }
-        }
-    }
-
-    private void processCallEndMessage(LTRNetMessage message)
-    {
-        if(mCurrentCallEvent != null &&
-            mCurrentCallEvent.getCallEventType() == CallEvent.CallEventType.CALL)
-        {
-            mCurrentCallEvent.setEnd(System.currentTimeMillis());
-            broadcast(mCurrentCallEvent);
-        }
-
-        mCurrentCallEvent = null;
-
-        broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
-    }
-
-    /**
-     * Performs a full reset
-     */
-    public void reset()
-    {
-        mChannelNumber = 0;
-
-        mActiveCalls.clear();
-        mESNs.clear();
-        mNeighborIDs.clear();
-        mReceiveFrequencies.clear();
-        mSiteIDs.clear();
-        mTalkgroups.clear();
-        mTransmitFrequencies.clear();
-        mUniqueIDs.clear();
-
-        resetState();
-    }
-
     @Override
     public void start()
     {
-
     }
 
     @Override
     public void stop()
     {
-
     }
 
     @Override
     public void init()
     {
-
     }
 
     /**
      * Resets the decoder state after a call or other decode event
      */
-    private void resetState()
+    protected void resetState()
     {
-        if(mCurrentCallEvent != null && mCurrentCallEvent
-            .getCallEventType() == CallEvent.CallEventType.CALL)
-        {
-            mCurrentCallEvent.end();
-            broadcast(mCurrentCallEvent);
-        }
-
+        super.resetState();
         mCurrentCallEvent = null;
-
-        mToAttribute.reset();
-        mESNAttribute.reset();
-        mFromUIDAttribute.reset();
-        mMessage = null;
-        mMessageType = null;
+        mCurrentCallTalkgroup = null;
     }
 
-    public String getMessage()
+    public void setCurrentChannelNumber(int channelNumber)
     {
-        return mMessage;
-    }
-
-    public void setMessage(String message)
-    {
-        if(!StringUtils.isEqual(mMessage, message))
+        if(0 < channelNumber && channelNumber <= 20)
         {
-            mMessage = message;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessageType));
-        }
-    }
+            mCurrentChannelNumber = channelNumber;
 
-    public String getMessageType()
-    {
-        return mMessageType;
-    }
+            LtrNetChannel currentChannel = mChannelMap.get(mCurrentChannelNumber);
 
-    private void setMessageType(String messageType)
-    {
-        if(!StringUtils.isEqual(mMessageType, messageType))
-        {
-            mMessageType = messageType;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, mMessageType));
-        }
-    }
-
-    public boolean hasChannelNumber()
-    {
-        return mChannelNumber != 0;
-    }
-
-    public int getChannelNumber()
-    {
-        return mChannelNumber;
-    }
-
-    public void setChannelNumber(int channelNumber)
-    {
-        if(mChannelNumber != channelNumber)
-        {
-            mChannelNumber = channelNumber;
-            broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
-                "LCN:" + getChannelNumber()));
+            if(currentChannel != null)
+            {
+                getIdentifierCollection().update(DecoderLogicalChannelNameIdentifier
+                    .create(String.valueOf(mCurrentChannelNumber), Protocol.LTR_NET));
+            }
         }
     }
 
@@ -788,9 +663,6 @@ public class LTRNetDecoderState extends DecoderState
         {
             case RESET:
                 resetState();
-                break;
-            case SOURCE_FREQUENCY:
-                mFrequency = event.getFrequency();
                 break;
             default:
                 break;

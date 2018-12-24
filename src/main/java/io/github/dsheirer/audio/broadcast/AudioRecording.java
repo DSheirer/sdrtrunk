@@ -18,7 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,20 +33,20 @@ public class AudioRecording implements Comparable<AudioRecording>
     private long mStartTime;
     private long mRecordingLength;
     private AtomicInteger mPendingReplayCount = new AtomicInteger();
-    private Metadata mMetadata;
+    private IdentifierCollection mIdentifierCollection;
 
     /**
      * Audio recording that is ready to be streamed
      *
      * @param path to the audio recording file
-     * @param metadata associated with the recording
+     * @param identifierCollection associated with the recording
      * @param start time of recording in milliseconds since epoch
      * @param recordingLength in milliseconds
      */
-    public AudioRecording(Path path, Metadata metadata, long start, long recordingLength)
+    public AudioRecording(Path path, IdentifierCollection identifierCollection, long start, long recordingLength)
     {
         mPath = path;
-        mMetadata = metadata;
+        mIdentifierCollection = identifierCollection;
         mStartTime = start;
         mRecordingLength = recordingLength;
     }
@@ -60,11 +60,19 @@ public class AudioRecording implements Comparable<AudioRecording>
     }
 
     /**
-     * Optional audio metadata for the recording.
+     * Optional audio metadata/identifiers for the recording.
      */
-    public Metadata getMetadata()
+    public IdentifierCollection getIdentifierCollection()
     {
-        return mMetadata;
+        return mIdentifierCollection;
+    }
+
+    /**
+     * Indicates if this recording contains an optional identifier collection.
+     */
+    public boolean hasIdentifierCollection()
+    {
+        return mIdentifierCollection != null;
     }
 
     /**

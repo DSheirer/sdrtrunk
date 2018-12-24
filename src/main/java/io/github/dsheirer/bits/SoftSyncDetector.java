@@ -16,22 +16,19 @@
 package io.github.dsheirer.bits;
 
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import org.apache.commons.lang3.Validate;
 
 public class SoftSyncDetector implements ISyncProcessor
 {
     private ISyncDetectListener mListener;
     private long mPattern;
     private int mThreshold;
+    private int mBitErrorCount;
 
-    public SoftSyncDetector(ISyncDetectListener listener, long pattern, int threshold)
+    public SoftSyncDetector(long pattern, int threshold, ISyncDetectListener listener)
     {
-        this(pattern, threshold);
-
+        Validate.notNull(listener, "Sync detect listener cannot be null");
         mListener = listener;
-    }
-
-    public SoftSyncDetector(long pattern, int threshold)
-    {
         mPattern = pattern;
         mThreshold = threshold;
     }
@@ -46,11 +43,20 @@ public class SoftSyncDetector implements ISyncProcessor
     {
         long difference = value ^ mPattern;
 
-        if((difference == 0 || Long.bitCount(difference) <= mThreshold) &&
-            mListener != null)
+        if(difference == 0)
         {
-            mListener.syncDetected();
+            mListener.syncDetected(0);
             return true;
+        }
+        else
+        {
+            mBitErrorCount = Long.bitCount(difference);
+
+            if(mBitErrorCount <= mThreshold)
+            {
+                mListener.syncDetected(mBitErrorCount);
+                return true;
+            }
         }
 
         return false;

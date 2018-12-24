@@ -79,6 +79,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
     private JCheckBox mLNAAGC;
     private JCheckBox mMixerAGC;
 
+    private FrequencyCorrectionChangeListener mFrequencyCorrectionChangeListener = new FrequencyCorrectionChangeListener();
     private AirspyTunerController mController;
     private boolean mLoading;
 
@@ -194,26 +195,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
         format.setMinimumFractionDigits(1);
         editor.getTextField().setHorizontalAlignment(SwingConstants.CENTER);
 
-        mFrequencyCorrection.addChangeListener(new ChangeListener()
-        {
-            @Override
-            public void stateChanged(ChangeEvent e)
-            {
-                final double value = ((SpinnerNumberModel)mFrequencyCorrection
-                    .getModel()).getNumber().doubleValue();
-
-                try
-                {
-                    mController.setFrequencyCorrection(value);
-                }
-                catch(SourceException e1)
-                {
-                    mLog.error("Error setting frequency correction value", e1);
-                }
-
-                save();
-            }
-        });
+        mFrequencyCorrection.addChangeListener(mFrequencyCorrectionChangeListener);
 
         add(new JLabel("PPM:"));
         add(mFrequencyCorrection);
@@ -713,7 +695,9 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
             //Update enabled state to reflect when frequency and sample rate controls are locked
             mSampleRateCombo.setEnabled(!mController.isLocked());
 
+            mFrequencyCorrection.removeChangeListener(mFrequencyCorrectionChangeListener);
             mFrequencyCorrection.setValue(airspy.getFrequencyCorrection());
+            mFrequencyCorrection.addChangeListener(mFrequencyCorrectionChangeListener);
 
             GainMode mode = Gain.getGainMode(airspy.getGain());
 
@@ -792,5 +776,27 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
         sb.append("<br>");
 
         return sb.toString();
+    }
+
+    private class FrequencyCorrectionChangeListener implements ChangeListener
+    {
+
+        @Override
+        public void stateChanged(ChangeEvent e)
+        {
+            final double value = ((SpinnerNumberModel)mFrequencyCorrection
+                .getModel()).getNumber().doubleValue();
+
+            try
+            {
+                mController.setFrequencyCorrection(value);
+            }
+            catch(SourceException e1)
+            {
+                mLog.error("Error setting frequency correction value", e1);
+            }
+
+            save();
+        }
     }
 }

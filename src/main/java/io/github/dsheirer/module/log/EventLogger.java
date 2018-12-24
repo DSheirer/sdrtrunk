@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
@@ -38,12 +37,14 @@ public abstract class EventLogger extends Module
     private Path mLogDirectory;
     private String mFileNameSuffix;
     private String mLogFileName;
+    private long mFrequency;
     protected Writer mLogFile;
 
-    public EventLogger(Path logDirectory, String fileNameSuffix)
+    public EventLogger(Path logDirectory, String fileNameSuffix, long frequency)
     {
         mLogDirectory = logDirectory;
         mFileNameSuffix = fileNameSuffix;
+        mFrequency = frequency;
     }
 
     public String toString()
@@ -70,8 +71,10 @@ public abstract class EventLogger extends Module
                 StringBuilder sb = new StringBuilder();
                 sb.append(mLogDirectory);
                 sb.append(File.separator);
-                sb.append(TimeStamp.getTimeStamp("_"));
+                sb.append(TimeStamp.getLongTimeStamp("_"));
                 sb.append("_");
+                sb.append(mFrequency);
+                sb.append("_Hz_");
                 sb.append(mFileNameSuffix);
 
                 mLogFileName = sb.toString();
@@ -110,10 +113,13 @@ public abstract class EventLogger extends Module
     {
         try
         {
-            mLogFile.write(eventLogEntry + "\n");
-            mLogFile.flush();
+            if(mLogFile != null)
+            {
+                mLogFile.write((eventLogEntry != null ? eventLogEntry : "") + "\n");
+                mLogFile.flush();
+            }
         }
-        catch(IOException e)
+        catch(Exception e)
         {
             mLog.error("Error writing entry to event log file", e);
         }

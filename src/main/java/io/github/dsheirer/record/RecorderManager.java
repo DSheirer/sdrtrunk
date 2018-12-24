@@ -15,16 +15,26 @@
  ******************************************************************************/
 package io.github.dsheirer.record;
 
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.string.StringIdentifier;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.wave.AudioPacketWaveRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
+import io.github.dsheirer.record.wave.WaveMetadata;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.ThreadPool;
+import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,10 +55,12 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     public static final float BASEBAND_SAMPLE_RATE = 25000.0f; //Default sample rate - source can override
     public static final long IDLE_RECORDER_REMOVAL_THRESHOLD = 6000; //6 seconds
 
-    private Map<String,AudioPacketWaveRecorder> mRecorders = new HashMap<>();
+    private Map<Integer,AudioPacketWaveRecorder> mRecorders = new HashMap<>();
     private OverflowableTransferQueue<ReusableAudioPacket> mAudioPacketQueue = new OverflowableTransferQueue<>(1000, 100);
     private List<ReusableAudioPacket> mAudioPackets = new ArrayList<>();
     private ScheduledFuture<?> mBufferProcessorFuture;
+    private AliasModel mAliasModel;
+    private int mUnknownAudioRecordingIndex = 1;
 
     private boolean mCanStartNewRecorders = true;
 
@@ -59,8 +71,9 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
      * indicating that the call is complete.  A separate recording monitor periodically checks for idled recorders to
      * be stopped for cases when the channel fails to send an end-call audio packet.
      */
-    public RecorderManager()
+    public RecorderManager(AliasModel aliasModel)
     {
+        mAliasModel = aliasModel;
         mAudioPacketQueue.setOverflowListener(new IOverflowListener()
         {
             @Override
@@ -78,7 +91,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         });
 
         mBufferProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferProcessor(), 0,
-            1, TimeUnit.SECONDS);
+            500, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -100,7 +113,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     @Override
     public void receive(ReusableAudioPacket audioPacket)
     {
-        if(audioPacket.hasMetadata() && audioPacket.getMetadata().isRecordable())
+        if(audioPacket.hasIdentifierCollection() && audioPacket.isRecordable())
         {
             mAudioPacketQueue.offer(audioPacket);
         }
@@ -121,11 +134,11 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         {
             for(ReusableAudioPacket audioPacket : mAudioPackets)
             {
-                String identifier = audioPacket.getMetadata().getUniqueIdentifier();
+                int audioChannelId = audioPacket.getAudioChannelId();
 
-                if(mRecorders.containsKey(identifier))
+                if(mRecorders.containsKey(audioChannelId))
                 {
-                    AudioPacketWaveRecorder recorder = mRecorders.get(identifier);
+                    AudioPacketWaveRecorder recorder = mRecorders.get(audioChannelId);
 
                     if(audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
                     {
@@ -134,27 +147,25 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
                     }
                     else if(audioPacket.getType() == ReusableAudioPacket.Type.END)
                     {
-                        AudioPacketWaveRecorder finished = mRecorders.remove(identifier);
-                        finished.stop();
+                        AudioPacketWaveRecorder finished = mRecorders.remove(audioChannelId);
+                        stopRecorder(finished);
                     }
                 }
                 else if(audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
                 {
                     if(mCanStartNewRecorders)
                     {
-                        String filePrefix = getFilePrefix(audioPacket);
-
                         AudioPacketWaveRecorder recorder = null;
 
                         try
                         {
-                            recorder = new AudioPacketWaveRecorder(filePrefix, audioPacket.getMetadata());
+                            recorder = new AudioPacketWaveRecorder(getTemporaryFilePath(audioPacket));
 
                             recorder.start();
 
                             audioPacket.incrementUserCount();
                             recorder.receive(audioPacket);
-                            mRecorders.put(identifier, recorder);
+                            mRecorders.put(audioPacket.getAudioChannelId(), recorder);
                         }
                         catch(Exception ioe)
                         {
@@ -165,7 +176,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
 
                             if(recorder != null)
                             {
-                                recorder.stop();
+                                stopRecorder(recorder);
                             }
                         }
                     }
@@ -179,53 +190,115 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         }
     }
 
+    private void stopRecorder(AudioPacketWaveRecorder recorder)
+    {
+        Path rename = getFinalFileName(recorder.getIdentifierCollection());
+
+        AliasList aliasList = null;
+
+        if(recorder.getIdentifierCollection() != null)
+        {
+            aliasList = mAliasModel.getAliasList(recorder.getIdentifierCollection());
+        }
+
+        WaveMetadata waveMetadata = WaveMetadata.createFrom(recorder.getIdentifierCollection(), aliasList);
+        recorder.stop(rename, waveMetadata);
+    }
+
     /**
      * Removes recorders that have not received any new audio buffers in the last 6 seconds.
      */
     private void removeIdleRecorders()
     {
-        Iterator<Map.Entry<String,AudioPacketWaveRecorder>> it = mRecorders.entrySet().iterator();
+        Iterator<Map.Entry<Integer,AudioPacketWaveRecorder>> it = mRecorders.entrySet().iterator();
 
         while(it.hasNext())
         {
-            Map.Entry<String,AudioPacketWaveRecorder> entry = it.next();
+            Map.Entry<Integer,AudioPacketWaveRecorder> entry = it.next();
 
             if(entry.getValue().getLastBufferReceived() + IDLE_RECORDER_REMOVAL_THRESHOLD < System.currentTimeMillis())
             {
-                mLog.info("Removing idle recorder [" + entry.getKey() + "]");
                 it.remove();
-                entry.getValue().stop();
+                stopRecorder(entry.getValue());
             }
         }
+    }
+
+    private Path getTemporaryFilePath(ReusableAudioPacket packet)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(TimeStamp.getTimeStamp("-"));
+        sb.append("_audio_channel_");
+        sb.append(packet.getAudioChannelId());
+        sb.append(".tmp");
+        return getRecordingBasePath().resolve(sb.toString());
     }
 
     /**
-     * Constructs a file name and path for an audio recording
+     * Provides a formatted audio recording filename to use as the final audio filename.
+     * @return
      */
-    private String getFilePrefix(ReusableAudioPacket packet)
+    private Path getFinalFileName(IdentifierCollection identifierCollection)
     {
-        Path baseFilePath = SystemProperties.getInstance().getApplicationFolder("recordings");
-
-        Metadata metadata = packet.getMetadata();
-
         StringBuilder sb = new StringBuilder();
-        sb.append(metadata.hasChannelConfigurationSystem() ? metadata.getChannelConfigurationSystem() + "_" : "");
-        sb.append(metadata.hasChannelConfigurationSite() ? metadata.getChannelConfigurationSite() + "_" : "");
-        sb.append(metadata.hasChannelConfigurationName() ? metadata.getChannelConfigurationName() + "_" : "");
 
-        if(metadata.getPrimaryAddressTo().hasIdentifier())
+        if(identifierCollection != null)
         {
-            sb.append("_TO_").append(metadata.getPrimaryAddressTo().getIdentifier());
+            Identifier system = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
 
-            if(metadata.getPrimaryAddressFrom().hasIdentifier())
+            if(system != null)
             {
-                sb.append("_FROM_").append(metadata.getPrimaryAddressFrom().getIdentifier());
+                sb.append(((StringIdentifier)system).getValue()).append("_");
+            }
+
+            Identifier site = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SITE, Role.ANY);
+
+            if(site != null)
+            {
+                sb.append(((StringIdentifier)site).getValue()).append("_");
+            }
+
+            Identifier channel = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL, Role.ANY);
+
+            if(channel != null)
+            {
+                sb.append(((StringIdentifier)channel).getValue()).append("_");
+            }
+
+            Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
+
+            if(to != null)
+            {
+                sb.append("_TO_").append(((IntegerIdentifier)to).getValue());
+            }
+
+            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
+
+            if(from != null)
+            {
+                sb.append("_FROM_").append(((IntegerIdentifier)from).getValue());
+            }
+        }
+        else
+        {
+            sb.append("audio_recording_no_metadata_").append(mUnknownAudioRecordingIndex++);
+
+            if(mUnknownAudioRecordingIndex < 0)
+            {
+                mUnknownAudioRecordingIndex = 1;
             }
         }
 
-        String cleanedFileName = StringUtils.replaceIllegalCharacters(sb.toString());
-        return baseFilePath.resolve(cleanedFileName).toString();
+        StringBuilder sbFinal = new StringBuilder();
+        sbFinal.append(TimeStamp.getTimeStamp("_"));
+
+        //Remove any illegal filename characters
+        sbFinal.append(StringUtils.replaceIllegalCharacters(sb.toString()));
+        sbFinal.append(".wav");
+
+        return getRecordingBasePath().resolve(sbFinal.toString());
     }
+
 
     public Path getRecordingBasePath()
     {
@@ -253,8 +326,15 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         @Override
         public void run()
         {
-            processBuffers();
-            removeIdleRecorders();
+            try
+            {
+                processBuffers();
+                removeIdleRecorders();
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error while processing audio buffers", t);
+            }
         }
     }
 }

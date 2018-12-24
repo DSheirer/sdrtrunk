@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,42 +15,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.mdc1200;
 
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
-import io.github.dsheirer.channel.metadata.Attribute;
-import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.util.StringUtils;
+import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.mdc1200.identifier.MDC1200Identifier;
 
 import java.util.Iterator;
+import java.util.Set;
 import java.util.TreeSet;
 
 public class MDCDecoderState extends DecoderState
 {
-    private TreeSet<String> mIdents = new TreeSet<String>();
-    private TreeSet<String> mEmergencyIdents = new TreeSet<String>();
+    private Set<MDC1200Identifier> mIdents = new TreeSet<>();
+    private Set<MDC1200Identifier> mEmergencyIdents = new TreeSet<>();
 
-    private AliasedStringAttributeMonitor mFromAttribute;
-    private String mMessage;
-    private String mMessageType;
-
-    public MDCDecoderState(AliasList aliasList)
+    public MDCDecoderState()
     {
-        super(aliasList);
-
-        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MDC1200);
     }
 
     @Override
@@ -85,37 +76,26 @@ public class MDCDecoderState extends DecoderState
 
     }
 
-    private void resetState()
-    {
-        mFromAttribute.reset();
-        mMessage = null;
-        mMessageType = null;
-    }
-
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
         if(message instanceof MDCMessage)
         {
-            MDCMessage mdc = (MDCMessage) message;
+            MDCMessage mdc = (MDCMessage)message;
 
-            mIdents.add(mdc.getUnitID());
+            mIdents.add(mdc.getFromIdentifier());
 
             if(mdc.isEmergency())
             {
-                mEmergencyIdents.add(mdc.getUnitID());
+                mEmergencyIdents.add(mdc.getFromIdentifier());
             }
 
-            mFromAttribute.process(mdc.getFromID());
-
             MDCMessageType type = mdc.getMessageType();
-
-            setMessageType(type.getLabel());
 
             StringBuilder sb = new StringBuilder();
 
             sb.append("OPCODE ");
-            sb.append(String.valueOf(mdc.getOpcode()));
+            sb.append(mdc.getOpcode());
 
             if(mdc.isBOT())
             {
@@ -127,11 +107,15 @@ public class MDCDecoderState extends DecoderState
                 sb.append(" TYPE:EOT");
             }
 
-            setMessage(sb.toString());
+            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            ic.remove(IdentifierClass.USER);
+            ic.update(message.getIdentifiers());
 
-            MDCCallEvent event = MDCCallEvent.getMDCCallEvent(mdc);
-            event.setAliasList(getAliasList());
-            broadcast(event);
+            broadcast(DecodeEvent.builder(mdc.getTimestamp())
+                .eventDescription(type.getLabel())
+                .details(mdc.toString())
+                .identifiers(ic)
+                .build());
 
             switch(type)
             {
@@ -150,34 +134,6 @@ public class MDCDecoderState extends DecoderState
         }
     }
 
-    public String getMessage()
-    {
-        return mMessage;
-    }
-
-    public void setMessage(String message)
-    {
-        if(!StringUtils.isEqual(mMessage, message))
-        {
-            mMessage = message;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
-        }
-    }
-
-    public String getMessageType()
-    {
-        return mMessageType;
-    }
-
-    public void setMessageType(String type)
-    {
-        if(!StringUtils.isEqual(mMessageType, type))
-        {
-            mMessageType = type;
-            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, "MDC:" + mMessageType));
-        }
-    }
-
     @Override
     public String getActivitySummary()
     {
@@ -193,27 +149,11 @@ public class MDCDecoderState extends DecoderState
         }
         else
         {
-            Iterator<String> it = mIdents.iterator();
+            Iterator<MDC1200Identifier> it = mIdents.iterator();
 
             while(it.hasNext())
             {
-                String ident = it.next();
-
-                sb.append("  ");
-                sb.append(ident);
-                sb.append(" ");
-
-                if(hasAliasList())
-                {
-                    Alias alias = getAliasList().getMDC1200Alias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
-                }
-
-                sb.append("\n");
+                sb.append("  ").append(it.next()).append("\n");
             }
         }
 
@@ -225,27 +165,16 @@ public class MDCDecoderState extends DecoderState
         }
         else
         {
-            Iterator<String> it = mEmergencyIdents.iterator();
+            Iterator<MDC1200Identifier> it = mEmergencyIdents.iterator();
 
             while(it.hasNext())
             {
-                String ident = it.next();
+                Iterator<MDC1200Identifier> it2 = mIdents.iterator();
 
-                sb.append("  ");
-                sb.append(ident);
-                sb.append(" ");
-
-                if(hasAliasList())
+                while(it2.hasNext())
                 {
-                    Alias alias = getAliasList().getMDC1200Alias(ident);
-
-                    if(alias != null)
-                    {
-                        sb.append(alias.getName());
-                    }
+                    sb.append("  ").append(it2.next()).append("\n");
                 }
-
-                sb.append("\n");
             }
         }
 

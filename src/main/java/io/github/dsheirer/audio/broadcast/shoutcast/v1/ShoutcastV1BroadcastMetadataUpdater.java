@@ -18,8 +18,15 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
-import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -50,7 +57,7 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
     private final static String UTF8 = "UTF-8";
 
     private ShoutcastV1Configuration mShoutcastV1Configuration;
-
+    private AliasModel mAliasModel;
     private NioSocketConnector mSocketConnector;
     private AtomicBoolean mUpdating = new AtomicBoolean();
     private Queue<String> mMetadataQueue = new LinkedTransferQueue<>();
@@ -62,9 +69,10 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
      * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
      * sequence, those updates will be queued and processed in the order received.
      */
-    public ShoutcastV1BroadcastMetadataUpdater(ShoutcastV1Configuration shoutcastV1Configuration)
+    public ShoutcastV1BroadcastMetadataUpdater(ShoutcastV1Configuration shoutcastV1Configuration, AliasModel aliasModel)
     {
         mShoutcastV1Configuration = shoutcastV1Configuration;
+        mAliasModel = aliasModel;
     }
 
     /**
@@ -111,9 +119,9 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
      * and will remain in the update queue until the next metadata update is requested.  However, this is a design
      * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
      */
-    public void update(Metadata metadata)
+    public void update(IdentifierCollection identifierCollection)
     {
-        mMetadataQueue.offer(getSong(metadata));
+        mMetadataQueue.offer(getSong(identifierCollection));
 
         if(mUpdating.compareAndSet(false, true))
         {
@@ -177,45 +185,52 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
     /**
      * Creates the song information for a metadata update
      */
-    private static String getSong(Metadata metadata)
+    private String getSong(IdentifierCollection identifierCollection)
     {
         StringBuilder sb = new StringBuilder();
 
-        if(metadata != null)
+        if(identifierCollection != null)
         {
-            String to = metadata.getPrimaryAddressTo().getIdentifier();
+            AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
 
-            sb.append("TO:");
+            Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
 
-            if(metadata.getPrimaryAddressTo().hasAlias())
+            if(to == null)
             {
-                sb.append(metadata.getPrimaryAddressTo().getAlias().getName());
-            }
-            else if(metadata.getPrimaryAddressTo().hasIdentifier())
-            {
-                sb.append(metadata.getPrimaryAddressTo().getIdentifier());
-            }
-            else
-            {
-                sb.append("UNKNOWN");
+                to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
             }
 
+            Alias toAlias = aliasList != null ? aliasList.getAlias(to) : null;
 
-            sb.append(" FROM:");
-
-            if(metadata.getPrimaryAddressFrom().hasAlias())
+            if(toAlias != null)
             {
-                sb.append(metadata.getPrimaryAddressFrom().getAlias().getName());
+                sb.append("TO:").append(toAlias.getName());
             }
-            else if(metadata.getPrimaryAddressFrom().hasIdentifier())
+            else if(to != null)
             {
-                sb.append(metadata.getPrimaryAddressFrom().getIdentifier());
+                sb.append("TO:").append(to.toString());
             }
             else
             {
-                sb.append("UNKNOWN");
+                sb.append("TO:UNKNOWN");
             }
 
+            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
+
+            Alias fromAlias = aliasList != null ? aliasList.getAlias(from) : null;
+
+            if(fromAlias != null)
+            {
+                sb.append(" FROM:").append(fromAlias.getName());
+            }
+            else if(from != null)
+            {
+                sb.append(" FROM:").append(from.toString());
+            }
+            else
+            {
+                sb.append(" FROM:UNKNOWN");
+            }
         }
         else
         {

@@ -1,22 +1,27 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.record.binary;
 
 import io.github.dsheirer.dsp.filter.channelizer.ContinuousReusableBufferProcessor;
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -56,18 +61,21 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     private String mRecordingIdentifier;
     private BinaryWriter mBinaryWriter = new BinaryWriter();
     private int mBytesRecordedCounter;
+    private Protocol mProtocol;
 
     /**
      * Constructs a binary recorder.
      *
      * @param baseRecordingPath where the recording should be created
      * @param recordingIdentifier to include in the recording file name.
+     * @param protocol to include as a values in the recording file name
      */
-    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier)
+    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier, Protocol protocol)
     {
         mBaseRecordingPath = baseRecordingPath;
         mRecordingIdentifier = recordingIdentifier;
         mBufferProcessor.setListener(mBinaryWriter);
+        mProtocol = protocol;
     }
 
     public void start()
@@ -118,6 +126,8 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
         StringBuilder sb = new StringBuilder();
         sb.append(TimeStamp.getTimeStamp("_"));
         sb.append("_");
+        sb.append(mProtocol.getBitRate()).append("BPS_");
+        sb.append(mProtocol.getFileNameLabel()).append("_");
         sb.append(mRecordingIdentifier.trim());
         sb.append(".bits");
         String cleaned = StringUtils.replaceIllegalCharacters(sb.toString());
@@ -156,7 +166,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
                 mCurrentPath = path;
                 mWritableByteChannel = Files.newByteChannel(path,
                     EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
-                mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
+//                mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
             }
         }
 
