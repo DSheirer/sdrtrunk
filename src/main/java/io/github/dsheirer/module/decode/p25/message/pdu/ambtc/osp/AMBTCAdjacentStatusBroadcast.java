@@ -158,8 +158,14 @@ public class AMBTCAdjacentStatusBroadcast extends AMBTCMessage implements IFrequ
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getRfss());
-            mIdentifiers.add(getSite());
+            if(getRfss() != null)
+            {
+                mIdentifiers.add(getRfss());
+            }
+            if(getSite() != null)
+            {
+                mIdentifiers.add(getSite());
+            }
         }
 
         return mIdentifiers;

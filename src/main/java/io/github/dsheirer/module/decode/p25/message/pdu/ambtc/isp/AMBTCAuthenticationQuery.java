@@ -120,15 +120,22 @@ public class AMBTCAuthenticationQuery extends AMBTCMessage
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceAddress());
+
+            if(getSourceAddress() != null)
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
+
             if(getWacn() != null)
             {
                 mIdentifiers.add(getWacn());
             }
+
             if(getSystem() != null)
             {
                 mIdentifiers.add(getSystem());
             }
+
             if(getTargetId() != null)
             {
                 mIdentifiers.add(getTargetId());

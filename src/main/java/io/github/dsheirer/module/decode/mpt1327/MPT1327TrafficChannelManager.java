@@ -345,24 +345,43 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
 
                             if(event != null)
                             {
-                                if(channelEvent.getEvent() == ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED)
-                                {
-                                    String description = channelEvent.getDescription();
-
-                                    if(description == null)
-                                    {
-                                        description = CHANNEL_START_REJECTED;
-                                    }
-
-                                    event.setEventDescription(description);
-                                }
-
+                                event.end(System.currentTimeMillis());
                                 broadcast(event);
                             }
                         }
                         break;
                     case NOTIFICATION_PROCESSING_START_REJECTED:
-                        mAvailableTrafficChannelQueue.add(channel);
+                        MPT1327Channel rejected = null;
+
+                        for(Map.Entry<MPT1327Channel,Channel> entry : mAllocatedTrafficChannelMap.entrySet())
+                        {
+                            if(entry.getValue() == channel)
+                            {
+                                rejected = entry.getKey();
+                                continue;
+                            }
+                        }
+
+                        if(rejected != null)
+                        {
+                            mAllocatedTrafficChannelMap.remove(rejected);
+                            mAvailableTrafficChannelQueue.add(channel);
+
+                            MPT1327ChannelGrantEvent event = mChannelGrantEventMap.get(rejected);
+
+                            if(event != null)
+                            {
+                                if(channelEvent.getDescription() != null)
+                                {
+                                    event.setDetails(channelEvent.getDescription() + " - " + event.getDetails());
+                                }
+                                else
+                                {
+                                    event.setDetails(channelEvent.getDescription() + " - " + CHANNEL_START_REJECTED);
+                                }
+                                broadcast(event);
+                            }
+                        }
                         break;
                 }
             }

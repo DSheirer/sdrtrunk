@@ -22,7 +22,7 @@ package io.github.dsheirer.preference.identifier.talkgroup;
 
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.fleetsync2.identifier.FleetsyncIdentifier;
-import io.github.dsheirer.preference.IntegerFormat;
+import io.github.dsheirer.preference.identifier.IntegerFormat;
 
 /**
  * Formats Fleetsync 20-bit identifiers into either an integer value or an 8-bit fleet and 12-bit ident

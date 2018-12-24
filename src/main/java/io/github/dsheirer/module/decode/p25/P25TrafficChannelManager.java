@@ -286,6 +286,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 break;
 
             case OSP_SNDCP_DATA_CHANNEL_GRANT:
+            case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
                 type = encrypted ? DecodeEventType.DATA_CALL_ENCRYPTED : DecodeEventType.DATA_CALL;
                 break;
 

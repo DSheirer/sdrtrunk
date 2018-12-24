@@ -1,20 +1,22 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.ltrnet;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
@@ -25,7 +27,7 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
@@ -198,11 +200,15 @@ public class LTRNetDecoderState extends DecoderState
 
             if(decodeEvent == null)
             {
+                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                ic.remove(IdentifierClass.USER);
+                ic.update(talkgroup);
+
                 decodeEvent = DecodeEvent.builder(timestamp)
                     .eventDescription("Call Detect")
                     .channel(mChannelMap.get(channel))
                     .protocol(Protocol.LTR_NET)
-                    .identifiers(new IdentifierCollection(talkgroup))
+                    .identifiers(ic)
                     .build();
                 mCallDetectMap.put(channel, decodeEvent);
             }
@@ -214,11 +220,15 @@ public class LTRNetDecoderState extends DecoderState
                 if(eventTalkgroup == null || !eventTalkgroup.equals(talkgroup) ||
                     (timestamp - decodeEvent.getTimeStart() - decodeEvent.getDuration() > 2000))
                 {
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    ic.remove(IdentifierClass.USER);
+                    ic.update(talkgroup);
+
                     decodeEvent = DecodeEvent.builder(timestamp)
                         .eventDescription("Call Detect")
                         .channel(mChannelMap.get(channel))
                         .protocol(Protocol.LTR_NET)
-                        .identifiers(new IdentifierCollection(talkgroup))
+                        .identifiers(ic)
                         .build();
                     mCallDetectMap.put(channel, decodeEvent);
                 }
@@ -453,10 +463,14 @@ public class LTRNetDecoderState extends DecoderState
                     {
                         RegistrationAccept registrationAccept = (RegistrationAccept)message;
                         mUniqueIdentifiers.add(registrationAccept.getUniqueID());
+                        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        ic.remove(IdentifierClass.USER);
+                        ic.update(message.getIdentifiers());
+
                         broadcast(DecodeEvent.builder(message.getTimestamp())
                             .protocol(Protocol.LTR_NET)
                             .channel(getCurrentChannel())
-                            .identifiers(new IdentifierCollection(registrationAccept.getUniqueID()))
+                            .identifiers(ic)
                             .eventDescription("Registration Accept")
                             .details(registrationAccept.toString())
                             .build());

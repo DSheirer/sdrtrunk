@@ -143,7 +143,10 @@ public class AMBTCGroupVoiceChannelGrant extends AMBTCMessage implements IFreque
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceAddress());
+            if(getSourceAddress() != null)
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
             if(getGroupAddress() != null)
             {
                 mIdentifiers.add(getGroupAddress());

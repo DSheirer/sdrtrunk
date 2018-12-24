@@ -67,7 +67,6 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
     {
         mBroadcaster.dispose();
         mCompletedMessageAssemblers.clear();
-        mMessageAssemblers.clear();
     }
 
     public void process(boolean bit)
@@ -115,19 +114,6 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
         process(bit);
     }
 
-    /**
-     * Causes all messages currently under assembly to be forcibly
-     * sent (ie flushed) to all registered message listeners, and
-     * subsequently, all assemblers to be deleted
-     */
-    public void flush()
-    {
-        for(MessageAssembler assembler : mMessageAssemblers)
-        {
-            assembler.flush();
-        }
-    }
-
     @Override
     public void setSyncDetectListener(ISyncDetectListener listener)
     {
@@ -156,7 +142,6 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
         mMessageAssemblers.add(assembler);
     }
 
-    @SuppressWarnings("unused")
     private void removeMessageAssembler(MessageAssembler assembler)
     {
         mMessageAssemblers.remove(assembler);

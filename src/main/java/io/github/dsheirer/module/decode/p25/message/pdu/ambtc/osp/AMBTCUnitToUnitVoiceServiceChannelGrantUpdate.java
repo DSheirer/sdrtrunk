@@ -154,7 +154,10 @@ public class AMBTCUnitToUnitVoiceServiceChannelGrantUpdate extends AMBTCMessage 
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceAddress());
+            if(getSourceAddress() != null)
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
             if(getTargetAddress() != null)
             {
                 mIdentifiers.add(getTargetAddress());

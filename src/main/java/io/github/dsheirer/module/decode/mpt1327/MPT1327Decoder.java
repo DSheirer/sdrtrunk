@@ -93,6 +93,12 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
     @Override
     public void reset()
     {
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
         mControlMessageFramer.reset();
         mTrafficMessageFramer.reset();
     }

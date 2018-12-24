@@ -23,7 +23,8 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -86,9 +87,13 @@ public class Tait1200DecoderState extends DecoderState
 
             if(position != null)
             {
+                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                ic.remove(IdentifierClass.USER);
+                ic.update(message.getIdentifiers());
+
                 PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(gps.getTimestamp())
                     .eventDescription("GPS")
-                    .identifiers(new IdentifierCollection(gps.getIdentifiers()))
+                    .identifiers(ic)
                     .location(position)
                     .speed(gps.getSpeed())
                     .build();
@@ -104,9 +109,13 @@ public class Tait1200DecoderState extends DecoderState
             mIdents.add(ani.getFromIdentifier());
             mIdents.add(ani.getToIdentifier());
 
+            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            ic.remove(IdentifierClass.USER);
+            ic.update(message.getIdentifiers());
+
             broadcast(DecodeEvent.builder(ani.getTimestamp())
                 .eventDescription("ANI")
-                .identifiers(new IdentifierCollection(ani.getIdentifiers()))
+                .identifiers(ic)
                 .details("Automatic Number Identification")
                 .build());
 

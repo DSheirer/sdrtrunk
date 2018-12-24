@@ -198,7 +198,10 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getTargetAddress());
+            if(getTargetAddress() != null)
+            {
+                mIdentifiers.add(getTargetAddress());
+            }
             if(getSourceWacn() != null)
             {
                 mIdentifiers.add(getSourceWacn());

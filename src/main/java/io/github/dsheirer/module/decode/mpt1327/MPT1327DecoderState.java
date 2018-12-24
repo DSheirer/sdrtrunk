@@ -25,7 +25,8 @@ import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
-import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
@@ -112,19 +113,27 @@ public class MPT1327DecoderState extends DecoderState
 
                         if(identType == MPT1327Message.IdentType.REGI)
                         {
+                            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            ic.remove(IdentifierClass.USER);
+                            ic.update(mpt.getIdentifiers());
+
                             broadcast(DecodeEvent.builder(message.getTimestamp())
                                 .protocol(Protocol.MPT1327)
                                 .eventDescription("Register")
-                                .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                                .identifiers(ic)
                                 .build());
                         }
                         else
                         {
+                            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            ic.remove(IdentifierClass.USER);
+                            ic.update(mpt.getIdentifiers());
+
                             broadcast(DecodeEvent.builder(message.getTimestamp())
                                 .protocol(Protocol.MPT1327)
                                 .eventDescription("Response")
                                 .details("ACK " + identType.getLabel())
-                                .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                                .identifiers(ic)
                                 .build());
                         }
 
@@ -137,32 +146,43 @@ public class MPT1327DecoderState extends DecoderState
                     case ACKT:
                     case ACKV:
                     case ACKX:
+                        MutableIdentifierCollection icACK = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        icACK.remove(IdentifierClass.USER);
+                        icACK.update(mpt.getIdentifiers());
+
                         broadcast(DecodeEvent.builder(message.getTimestamp())
                             .protocol(Protocol.MPT1327)
                             .eventDescription("Acknowledge")
                             .details(mpt.getMessageType().getDescription())
-                            .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                            .identifiers(icACK)
                             .build());
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
                         break;
                     case AHYC:
+                        MutableIdentifierCollection icAHY = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        icAHY.remove(IdentifierClass.USER);
+                        icAHY.update(mpt.getIdentifiers());
 
                         broadcast(DecodeEvent.builder(message.getTimestamp())
                             .protocol(Protocol.MPT1327)
                             .eventDescription("Command")
                             .details("Send Short Data Message")
-                            .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                            .identifiers(icAHY)
                             .build());
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
                         break;
                     case AHYQ:
+                        MutableIdentifierCollection icAHYQ = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        icAHYQ.remove(IdentifierClass.USER);
+                        icAHYQ.update(mpt.getIdentifiers());
+
                         broadcast(DecodeEvent.builder(message.getTimestamp())
                             .protocol(Protocol.MPT1327)
                             .eventDescription("Command")
                             .details("Send Status Message")
-                            .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                            .identifiers(icAHYQ)
                             .build());
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
@@ -185,11 +205,15 @@ public class MPT1327DecoderState extends DecoderState
                         else
                         {
                             MPT1327Channel channel = MPT1327Channel.create(mpt.getChannel());
+                            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            ic.remove(IdentifierClass.USER);
+                            ic.update(mpt.getIdentifiers());
+
                             broadcast(DecodeEvent.builder(mpt.getTimestamp())
                                 .eventDescription("Call Detect")
                                 .details(mpt.getMessage())
                                 .channel(channel)
-                                .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                                .identifiers(ic)
                                 .build());
                         }
                         break;
@@ -197,11 +221,15 @@ public class MPT1327DecoderState extends DecoderState
                     case HEAD_PLUS2:
                     case HEAD_PLUS3:
                     case HEAD_PLUS4:
+                        MutableIdentifierCollection icHEAD = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        icHEAD.remove(IdentifierClass.USER);
+                        icHEAD.update(mpt.getIdentifiers());
+
                         broadcast(DecodeEvent.builder(message.getTimestamp())
                             .protocol(Protocol.MPT1327)
                             .eventDescription("Short Data Message")
                             .details(mpt.getMessage())
-                            .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                            .identifiers(icHEAD)
                             .build());
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
@@ -214,13 +242,20 @@ public class MPT1327DecoderState extends DecoderState
                         broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
                         break;
                     case MAINT:
+                        getIdentifierCollection().update(mpt.getToIdentifier());
+
                         if(mChannelType == ChannelType.STANDARD)
                         {
                             //When we receive a MAINT message and we're configured as a standard channel, apply the call
                             // timeout specified by the user.  Otherwise we'll be using the shorter default call timeout
                             broadcast(new ChangeChannelTimeoutEvent(this, mChannelType, mCallTimeout));
+
+                            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            ic.remove(IdentifierClass.USER);
+                            ic.update(mpt.getIdentifiers());
+
                             broadcast(DecodeEvent.builder(mpt.getTimestamp())
-                                .identifiers(new IdentifierCollection(mpt.getIdentifiers()))
+                                .identifiers(ic)
                                 .eventDescription("Call In Progress")
                                 .build());
                             broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
@@ -326,7 +361,7 @@ public class MPT1327DecoderState extends DecoderState
 
         if(mSite != null)
         {
-            sb.append(mSite);
+            sb.append(mSite).append("\n");
 
         }
         else

@@ -23,7 +23,7 @@ package io.github.dsheirer.preference.identifier.talkgroup;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.preference.IntegerFormat;
+import io.github.dsheirer.preference.identifier.IntegerFormat;
 
 public class APCO25TalkgroupFormatter extends IntegerFormatter
 {

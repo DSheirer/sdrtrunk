@@ -137,7 +137,11 @@ public class AMBTCAuthenticationResponse extends AMBTCMessage
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getTargetAddress());
+
+            if(getTargetAddress() != null)
+            {
+                mIdentifiers.add(getTargetAddress());
+            }
             if(getWacn() != null)
             {
                 mIdentifiers.add(getWacn());

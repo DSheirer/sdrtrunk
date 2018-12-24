@@ -32,7 +32,8 @@ import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapEvent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.playlist.FilePreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -42,7 +43,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,12 +57,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
-
-    private Path mPlaylistFolderPath;
-    private Path mPlaylistCurrentPath;
-    private Path mPlaylistBackupPath;
-    private Path mPlaylistLockPath;
-
+    private UserPreferences mUserPreferences;
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
     private boolean mPlaylistLoading = false;
 
@@ -75,12 +70,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
      *
      * @param channelModel
      */
-    public PlaylistManager(AliasModel aliasModel, BroadcastModel broadcastModel, ChannelModel channelModel, ChannelMapModel channelMapModel)
+    public PlaylistManager(AliasModel aliasModel, BroadcastModel broadcastModel, ChannelModel channelModel,
+                           ChannelMapModel channelMapModel, UserPreferences userPreferences)
     {
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
+        mUserPreferences = userPreferences;
 
         //Register for alias, channel and channel map events so that we can
         //save the playlist when there are any changes
@@ -185,87 +182,12 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
-     * Folder where playlist, backup and lock file are stored
-     */
-    private Path getPlaylistFolderPath()
-    {
-        if(mPlaylistFolderPath == null)
-        {
-            SystemProperties props = SystemProperties.getInstance();
-
-            mPlaylistFolderPath = props.getApplicationFolder("playlist");
-        }
-
-        return mPlaylistFolderPath;
-    }
-
-    /**
-     * Path to current playlist
-     */
-    private Path getPlaylistPath()
-    {
-        if(mPlaylistCurrentPath == null)
-        {
-            //Temporarily removed and hard-coding the V2 playlist name.  Will be reimplemented with future
-            //enhancement that allows multiple playlists.
-//            SystemProperties props = SystemProperties.getInstance();
-//            String playlistDefault = props.get("playlist.defaultfilename", "playlist_v2.xml");
-//            String playlistCurrent = props.get("playlist.currentfilename", playlistDefault);
-
-            mPlaylistCurrentPath = getPlaylistFolderPath().resolve("playlist_v2.xml");
-        }
-
-        return mPlaylistCurrentPath;
-    }
-
-    /**
-     * Path to most recent playlist backup
-     */
-    private Path getPlaylistBackupPath()
-    {
-        if(mPlaylistBackupPath == null)
-        {
-            SystemProperties props = SystemProperties.getInstance();
-
-            String playlistDefault = props.get("playlist.defaultfilename", "playlist_v2.xml");
-
-            String playlistCurrent = props.get("playlist.currentfilename", playlistDefault);
-
-            String playlistBackup = playlistCurrent.replace(".xml", ".bak");
-
-            mPlaylistBackupPath = getPlaylistFolderPath().resolve(playlistBackup);
-        }
-
-        return mPlaylistBackupPath;
-    }
-
-    /**
-     * Path to playlist lock file that is created prior to saving a playlist and removed immediately thereafter.
-     * Presence of a lock file indicates an incomplete or corrupt playlist file on startup.
-     */
-    private Path getPlaylistLockPath()
-    {
-        if(mPlaylistLockPath == null)
-        {
-            SystemProperties props = SystemProperties.getInstance();
-
-            String playlistDefault = props.get("playlist.defaultfilename", "playlist_v2.xml");
-
-            String playlistCurrent = props.get("playlist.currentfilename", playlistDefault);
-
-            String playlistLock = playlistCurrent.replace(".xml", ".lock");
-
-            mPlaylistLockPath = getPlaylistFolderPath().resolve(playlistLock);
-        }
-
-        return mPlaylistLockPath;
-    }
-
-    /**
      * Saves the current playlist
      */
     private void save()
     {
+        FilePreferences files = mUserPreferences.getFilePreferences();
+
         PlaylistV2 playlist = new PlaylistV2();
 
         playlist.setAliases(mAliasModel.getAliases());
@@ -275,34 +197,34 @@ public class PlaylistManager implements Listener<ChannelEvent>
         playlist.setVersion(PLAYLIST_CURRENT_VERSION);
 
         //Create a backup copy of the current playlist
-        if(Files.exists(getPlaylistPath()))
+        if(Files.exists(files.getPlaylist()))
         {
             try
             {
-                Files.copy(getPlaylistPath(), getPlaylistBackupPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(files.getPlaylist(), files.getPlaylistBackup(), StandardCopyOption.REPLACE_EXISTING);
             }
             catch(Exception e)
             {
                 mLog.error("Error creating backup copy of current playlist prior to saving updates [" +
-                    getPlaylistPath().toString() + "]", e);
+                    files.getPlaylist().toString() + "]", e);
             }
         }
 
         //Create a temporary lock file to signify that we're in the process of updating the playlist
-        if(!Files.exists(getPlaylistLockPath()))
+        if(!Files.exists(files.getPlaylistLock()))
         {
             try
             {
-                Files.createFile(getPlaylistLockPath());
+                Files.createFile(files.getPlaylistLock());
             }
             catch(IOException e)
             {
                 mLog.error("Error creating temporary lock file prior to saving playlist [" +
-                    getPlaylistLockPath().toString() + "]", e);
+                    files.getPlaylistLock().toString() + "]", e);
             }
         }
 
-        try(OutputStream out = Files.newOutputStream(getPlaylistPath()))
+        try(OutputStream out = Files.newOutputStream(files.getPlaylist()))
         {
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
@@ -312,18 +234,20 @@ public class PlaylistManager implements Listener<ChannelEvent>
             out.flush();
 
             //Remove the playlist lock file to indicate that we successfully saved the file
-            if(Files.exists(getPlaylistLockPath()))
+            if(Files.exists(files.getPlaylistLock()))
             {
-                Files.delete(getPlaylistLockPath());
+                Files.delete(files.getPlaylistLock());
             }
+
+            mUserPreferences.getFilePreferences().setPlaylistLastAccessedPath(files.getPlaylist());
         }
         catch(IOException ioe)
         {
-            mLog.error("IO error while writing the playlist to a file [" + getPlaylistPath().toString() + "]", ioe);
+            mLog.error("IO error while writing the playlist to a file [" + files.getPlaylist().toString() + "]", ioe);
         }
         catch(Exception e)
         {
-            mLog.error("Error while saving playlist [" + getPlaylistPath().toString() + "]", e);
+            mLog.error("Error while saving playlist [" + files.getPlaylist().toString() + "]", e);
         }
     }
 
@@ -332,26 +256,28 @@ public class PlaylistManager implements Listener<ChannelEvent>
      */
     public PlaylistV2 load()
     {
-        mLog.info("Loading version 2 playlist file [" + getPlaylistPath().toString() + "]");
+        FilePreferences files = mUserPreferences.getFilePreferences();
 
         PlaylistV2 playlist = null;
 
         //Check for a lock file that indicates the previous save attempt was incomplete or had an error
-        if(Files.exists(getPlaylistLockPath()))
+        if(Files.exists(files.getPlaylistLock()))
         {
+            mLog.info("Previous playlist save was incomplete -- restoring from backup file (if possible)");
+
             try
             {
                 //Remove the previous playlist
-                Files.delete(getPlaylistPath());
+                Files.delete(files.getPlaylist());
 
                 //Copy the backup file to restore the previous playlist
-                if(Files.exists(getPlaylistBackupPath()))
+                if(Files.exists(files.getPlaylistBackup()))
                 {
-                    Files.copy(getPlaylistBackupPath(), getPlaylistPath());
+                    Files.copy(files.getPlaylistBackup(), files.getPlaylist());
                 }
 
                 //Remove the lock file
-                Files.delete(getPlaylistLockPath());
+                Files.delete(files.getPlaylistLock());
             }
             catch(IOException ioe)
             {
@@ -360,13 +286,15 @@ public class PlaylistManager implements Listener<ChannelEvent>
             }
         }
 
-        if(Files.exists(getPlaylistPath()))
+        if(Files.exists(files.getPlaylist()))
         {
+            mLog.info("Loading playlist file [" + files.getPlaylist().toString() + "]");
+
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
             ObjectMapper objectMapper = new XmlMapper(xmlModule);
 
-            try(InputStream in = Files.newInputStream(getPlaylistPath()))
+            try(InputStream in = Files.newInputStream(files.getPlaylist()))
             {
                 playlist = objectMapper.readValue(in, PlaylistV2.class);
             }
@@ -375,15 +303,38 @@ public class PlaylistManager implements Listener<ChannelEvent>
                 mLog.error("IO error while reading playlist file", ioe);
             }
         }
+        else if(Files.exists(files.getLegacyPlaylist()))
+        {
+            mLog.info("Loading legacy playlist file [" + files.getLegacyPlaylist().toString() + "]");
+
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+
+            try(InputStream in = Files.newInputStream(files.getLegacyPlaylist()))
+            {
+                playlist = objectMapper.readValue(in, PlaylistV2.class);
+
+                //Perform any updates that may be needed for the playist.
+                if(PlaylistUpdater.update(playlist))
+                {
+                    mLog.info("Legacy playlist was updated to version [" + PLAYLIST_CURRENT_VERSION + "] - saving");
+                    schedulePlaylistSave();
+                }
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("IO error while reading playlist file", ioe);
+            }
+        }
         else
         {
-            mLog.info("PlaylistManager - playlist not found at [" + getPlaylistPath().toString() + "]");
+            mLog.info("PlaylistManager - playlist not found at [" + files.getPlaylist().toString() + "] - creating new (empty) playlist");
         }
 
-        //Perform any updates that may be needed for the playist.
-        if(PlaylistUpdater.update(playlist))
+        if(playlist == null)
         {
-            mLog.info("Playlist was updated to version [" + PLAYLIST_CURRENT_VERSION + "] - saving");
+            playlist = new PlaylistV2();
             schedulePlaylistSave();
         }
 

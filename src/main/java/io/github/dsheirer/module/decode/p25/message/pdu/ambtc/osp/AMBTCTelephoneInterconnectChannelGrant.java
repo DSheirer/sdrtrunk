@@ -144,7 +144,10 @@ public class AMBTCTelephoneInterconnectChannelGrant extends AMBTCMessage impleme
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getAnyAddress());
+            if(getAnyAddress() != null)
+            {
+                mIdentifiers.add(getAnyAddress());
+            }
         }
 
         return mIdentifiers;

@@ -26,7 +26,7 @@ import io.github.dsheirer.sample.Listener;
 
 /**
  * Processes P25 status dibits to determine if the channel being monitored is the output of a repeater or if
- * the channel is from a mobile subcriber.
+ * the channel is from a mobile subscriber.
  *
  * Dibit 00 is used by the subscriber
  * Dibits 01 and 11 are used by the repeater.

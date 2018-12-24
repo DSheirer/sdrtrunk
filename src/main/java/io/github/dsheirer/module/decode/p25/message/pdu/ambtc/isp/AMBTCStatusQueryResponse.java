@@ -142,7 +142,10 @@ public class AMBTCStatusQueryResponse extends AMBTCMessage
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSourceAddress());
+            if(getSourceAddress() != null)
+            {
+                mIdentifiers.add(getSourceAddress());
+            }
             if(getWacn() != null)
             {
                 mIdentifiers.add(getWacn());

@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +15,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.lj1200;
 
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -64,8 +66,12 @@ public class LJ1200DecoderState extends DecoderState
 
                 mAddresses.add(address);
 
+                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                ic.remove(IdentifierClass.USER);
+                ic.update(lj.getIdentifiers());
+
                 DecodeEvent event = DecodeEvent.builder(System.currentTimeMillis())
-                    .identifiers(new IdentifierCollection(lj.getIdentifiers()))
+                    .identifiers(ic)
                     .channel(getCurrentChannel())
                     .details("LOJACK")
                     .eventDescription(lj.toString())
@@ -79,8 +85,12 @@ public class LJ1200DecoderState extends DecoderState
         {
             LJ1200TransponderMessage transponder = (LJ1200TransponderMessage)message;
 
+            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            ic.remove(IdentifierClass.USER);
+            ic.update(transponder.getIdentifiers());
+
             DecodeEvent transponderEvent = DecodeEvent.builder(System.currentTimeMillis())
-                .identifiers(new IdentifierCollection(transponder.getIdentifiers()))
+                .identifiers(ic)
                 .channel(getCurrentChannel())
                 .details("LOJACK TRANSPONDER")
                 .eventDescription(transponder.toString())

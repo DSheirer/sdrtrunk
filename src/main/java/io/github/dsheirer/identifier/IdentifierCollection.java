@@ -50,10 +50,15 @@ public class IdentifierCollection
 
     public IdentifierCollection(Collection<Identifier> identifiers)
     {
-        mIdentifiers.addAll(identifiers);
-
         for(Identifier identifier: identifiers)
         {
+            if(identifier == null)
+            {
+                throw new IllegalArgumentException("Identifier cannot be null");
+            }
+
+            mIdentifiers.add(identifier);
+
             if(identifier instanceof AliasListConfigurationIdentifier)
             {
                 mAliasListConfigurationIdentifier = (AliasListConfigurationIdentifier)identifier;
@@ -63,6 +68,11 @@ public class IdentifierCollection
 
     public IdentifierCollection(Identifier identifier)
     {
+        if(identifier == null)
+        {
+            throw new IllegalArgumentException("Identifier cannot be null");
+        }
+
         mIdentifiers.add(identifier);
     }
 

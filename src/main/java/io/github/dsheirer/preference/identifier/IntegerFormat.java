@@ -18,14 +18,26 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.preference.identifier;
 
 /**
- * Types of preferences
+ * Options for formatting of integer values.
  */
-public enum PreferenceType
+public enum IntegerFormat
 {
-    DECODE_EVENT,
-    IDENTIFIER,
-    FILES;
+    DECIMAL("Decimal"),
+    FORMATTED("Formatted"),
+    HEXADECIMAL("Hexadecimal");
+
+    private String mLabel;
+
+    IntegerFormat(String label)
+    {
+        mLabel = label;
+    }
+
+    public String toString()
+    {
+        return mLabel;
+    }
 }

@@ -182,6 +182,9 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             catch(BitSetFullException bsfe)
             {
                 mLog.debug("Message full exception - unexpected");
+
+                //Reset so that we can start over again
+                reset(0);
             }
 
             if(mBinaryMessage.isFull())

@@ -23,6 +23,7 @@ package io.github.dsheirer.preference;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
+import io.github.dsheirer.preference.playlist.FilePreferences;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -31,6 +32,7 @@ import io.github.dsheirer.sample.Listener;
 public class UserPreferences implements Listener<PreferenceType>
 {
     private DecodeEventPreference mDecodeEventPreference;
+    private FilePreferences mFilePreferences;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
 
     /**
@@ -42,14 +44,6 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
-     * Identifier preferences
-     */
-    public TalkgroupFormatPreference getTalkgroupFormatPreference()
-    {
-        return mTalkgroupFormatPreference;
-    }
-
-    /**
      * Decode Event preferences
      */
     public DecodeEventPreference getDecodeEventPreference()
@@ -58,11 +52,28 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Playlist preferences
+     */
+    public FilePreferences getFilePreferences()
+    {
+        return mFilePreferences;
+    }
+
+    /**
+     * Identifier preferences
+     */
+    public TalkgroupFormatPreference getTalkgroupFormatPreference()
+    {
+        return mTalkgroupFormatPreference;
+    }
+
+    /**
      * Loads the managed preferences
      */
     private void loadPreferenceTypes()
     {
         mDecodeEventPreference = new DecodeEventPreference(this);
+        mFilePreferences = new FilePreferences(this::receive);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this);
     }
 
