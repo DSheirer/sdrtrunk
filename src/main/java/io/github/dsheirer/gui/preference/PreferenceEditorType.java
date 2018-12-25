@@ -25,9 +25,10 @@ package io.github.dsheirer.gui.preference;
  */
 public enum PreferenceEditorType
 {
-    CHANNEL_EVENT("Channel Event"),
-    TALKGROUP_FORMAT("Talkgroup Display"),
-    TUNER("Tuner");
+    CHANNEL_EVENT("Channel Events"),
+    DIRECTORY("Directories"),
+    TALKGROUP_FORMAT("Talkgroups"),
+    TUNER("Tuners");
 
     private String mLabel;
 

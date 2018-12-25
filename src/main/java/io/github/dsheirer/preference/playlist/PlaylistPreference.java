@@ -22,6 +22,7 @@ package io.github.dsheirer.preference.playlist;
 
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,39 +35,37 @@ import java.util.prefs.Preferences;
 /**
  * User preferences for playlists
  */
-public class FilePreferences extends Preference
+public class PlaylistPreference extends Preference
 {
-    private final static Logger mLog = LoggerFactory.getLogger(FilePreferences.class);
-    private Preferences mPreferences = Preferences.userNodeForPackage(FilePreferences.class);
+    private final static Logger mLog = LoggerFactory.getLogger(PlaylistPreference.class);
+    private Preferences mPreferences = Preferences.userNodeForPackage(PlaylistPreference.class);
 
-    private static final String FOLDER_APPLICATION_ROOT = "SDRTrunk";
-    private static final String FOLDER_PLAYLIST = "playlist";
     private static final String FILE_PLAYLIST = "default.xml";
     private static final String FILE_LEGACY_PLAYLIST = "playlist_v2.xml";
 
-    private static final String PREFERENCE_KEY_PLAYLIST_FOLDER = "playlist.folder";
     private static final String PREFERENCE_KEY_PLAYLIST_LAST_ACCESSED = "playlist.last.accessed";
     private static final String PREFERENCE_KEY_PLAYLIST_STARTUP = "playlist.default";
     private static final String PREFERENCE_KEY_PLAYLIST_USE_LAST_ACCESSED = "playlist.use.last.accessed";
-
     private Path mPlaylistFolder;
     private Path mPlaylistStartupPath;
     private Path mPlaylistLastAccessedPath;
     private Boolean mUsePlaylistLastAccessedByDefault = true;
+    private DirectoryPreference mDirectoryPreference;
 
     /**
      * Constructs this preference with an update listener
      * @param updateListener to receive notifications whenever these preferences change
      */
-    public FilePreferences(Listener<PreferenceType> updateListener)
+    public PlaylistPreference(Listener<PreferenceType> updateListener, DirectoryPreference directoryPreference)
     {
         super(updateListener);
+        mDirectoryPreference = directoryPreference;
     }
 
     @Override
     public PreferenceType getPreferenceType()
     {
-        return PreferenceType.FILES;
+        return PreferenceType.DIRECTORY;
     }
 
 
@@ -90,7 +89,7 @@ public class FilePreferences extends Preference
      */
     public Path getLegacyPlaylist()
     {
-        return getPlaylistFolder().resolve(FILE_LEGACY_PLAYLIST);
+        return mDirectoryPreference.getDirectoryPlaylist().resolve(FILE_LEGACY_PLAYLIST);
     }
 
     /**
@@ -158,29 +157,6 @@ public class FilePreferences extends Preference
     }
 
     /**
-     * Path to the folder for storing playlist
-     */
-    public Path getPlaylistFolder()
-    {
-        if(mPlaylistFolder == null)
-        {
-            mPlaylistFolder = getPath(PREFERENCE_KEY_PLAYLIST_FOLDER, getDefaultPlaylistFolder());
-        }
-
-        return mPlaylistFolder;
-    }
-
-    /**
-     * Sets the path to the playlist folder
-     */
-    public void setPlaylistFolder(Path path)
-    {
-        mPlaylistFolder = path;
-        mPreferences.put(PREFERENCE_KEY_PLAYLIST_FOLDER, path.toString());
-        notifyPreferenceUpdated();
-    }
-
-    /**
      * Indicates the playlist to load on startup, either the last accessed playlist (true) or the default playlist (false).
      */
     public boolean usePlaylistLastAccessedByDefault()
@@ -205,31 +181,11 @@ public class FilePreferences extends Preference
 
 
     /**
-     * Default application root path
-     */
-    private Path getDefaultApplicationFolder()
-    {
-        Path defaultApplicationPath = Paths.get(System.getProperty("user.home"), FOLDER_APPLICATION_ROOT);
-        createDirectory(defaultApplicationPath);
-        return defaultApplicationPath;
-    }
-
-    /**
-     * Default playlist folder
-     */
-    public Path getDefaultPlaylistFolder()
-    {
-        Path defaultPlaylistFolder = getDefaultApplicationFolder().resolve(FOLDER_PLAYLIST);
-        createDirectory(defaultPlaylistFolder);
-        return defaultPlaylistFolder;
-    }
-
-    /**
      * Default playlist
      */
     private Path getDefaultPlaylistPath()
     {
-        return getDefaultPlaylistFolder().resolve(FILE_PLAYLIST);
+        return mDirectoryPreference.getDefaultPlaylistFolder().resolve(FILE_PLAYLIST);
     }
 
     /**
@@ -244,7 +200,7 @@ public class FilePreferences extends Preference
      */
     private Path getPath(String key, Path defaultPath)
     {
-        String stringPath = mPreferences.get(PREFERENCE_KEY_PLAYLIST_STARTUP, defaultPath.toString());
+        String stringPath = mPreferences.get(key, defaultPath.toString());
 
         if(stringPath != null && !stringPath.isEmpty())
         {
@@ -256,24 +212,5 @@ public class FilePreferences extends Preference
         }
 
         return defaultPath;
-    }
-
-    /**
-     * Creates a directory if it does not already exist
-     */
-    private void createDirectory(Path directory)
-    {
-        if(!Files.exists(directory) && Files.isDirectory(directory))
-        {
-            try
-            {
-                Files.createDirectory(directory);
-                mLog.info("Created directory [" + directory.toString() + "]");
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error creating directory [" + directory.toString() + "]");
-            }
-        }
     }
 }

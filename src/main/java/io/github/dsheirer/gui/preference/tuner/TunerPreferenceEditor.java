@@ -68,6 +68,7 @@ public class TunerPreferenceEditor extends HBox
             GridPane.setMargin(getChannelizerLabel(), new Insets(0, 10, 0, 0));
             GridPane.setHalignment(getChannelizerLabel(), HPos.LEFT);
             mEditorPane.add(getChannelizerLabel(), 0, 0);
+            GridPane.setMargin(getChannelizerTypeChoiceBox(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getChannelizerTypeChoiceBox(), 1, 0);
             mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, 1, 2, 1);
             mEditorPane.add(getPolyphaseLabel(), 0, 2, 2, 1);

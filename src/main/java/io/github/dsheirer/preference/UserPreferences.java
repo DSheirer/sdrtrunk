@@ -21,9 +21,10 @@
 package io.github.dsheirer.preference;
 
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
-import io.github.dsheirer.preference.playlist.FilePreferences;
+import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.tuner.TunerPreference;
 import io.github.dsheirer.sample.Listener;
 
@@ -33,7 +34,8 @@ import io.github.dsheirer.sample.Listener;
 public class UserPreferences implements Listener<PreferenceType>
 {
     private DecodeEventPreference mDecodeEventPreference;
-    private FilePreferences mFilePreferences;
+    private DirectoryPreference mDirectoryPreference;
+    private PlaylistPreference mPlaylistPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
 
@@ -54,11 +56,19 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Directory preferences
+     */
+    public DirectoryPreference getDirectoryPreference()
+    {
+        return mDirectoryPreference;
+    }
+
+    /**
      * Playlist preferences
      */
-    public FilePreferences getFilePreferences()
+    public PlaylistPreference getPlaylistPreference()
     {
-        return mFilePreferences;
+        return mPlaylistPreference;
     }
 
     /**
@@ -83,7 +93,8 @@ public class UserPreferences implements Listener<PreferenceType>
     private void loadPreferenceTypes()
     {
         mDecodeEventPreference = new DecodeEventPreference(this);
-        mFilePreferences = new FilePreferences(this::receive);
+        mDirectoryPreference = new DirectoryPreference(this::receive);
+        mPlaylistPreference = new PlaylistPreference(this, mDirectoryPreference);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this);
         mTunerPreference = new TunerPreference(this);
     }

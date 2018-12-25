@@ -192,9 +192,18 @@ public class PreferencesEditor extends Application
             TreeItem<String> displayItem = new TreeItem<>("Display");
             displayItem.getChildren().add(new TreeItem(PreferenceEditorType.CHANNEL_EVENT));
             displayItem.getChildren().add(new TreeItem(PreferenceEditorType.TALKGROUP_FORMAT));
-            displayItem.getChildren().add(new TreeItem(PreferenceEditorType.TUNER));
             treeRoot.getChildren().add(displayItem);
             displayItem.setExpanded(true);
+
+            TreeItem<String> storageItem = new TreeItem<>("File Storage");
+            storageItem.getChildren().add(new TreeItem(PreferenceEditorType.DIRECTORY));
+            treeRoot.getChildren().add(storageItem);
+            storageItem.setExpanded(true);
+
+            TreeItem<String> sourceItem = new TreeItem<>("Source");
+            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.TUNER));
+            treeRoot.getChildren().add(sourceItem);
+            sourceItem.setExpanded(true);
 
             mEditorSelectionTreeView = new TreeView();
             mEditorSelectionTreeView.setShowRoot(false);
