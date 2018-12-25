@@ -26,9 +26,11 @@ import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.protocol.Protocol;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 
@@ -58,6 +60,7 @@ public class TalkgroupFormatPreferenceEditor extends HBox
 
             mEditorPane.add(new Label("Protocol"), 0, row);
             mEditorPane.add(new Label("Display Format"), 1, row++);
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row++, 3, 1);
 
             for(Protocol protocol : Protocol.TALKGROUP_PROTOCOLS)
             {

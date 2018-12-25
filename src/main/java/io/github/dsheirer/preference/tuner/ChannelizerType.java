@@ -18,15 +18,25 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.preference.tuner;
 
 /**
- * Types of preferences
+ * Channelizer Type - identifies the type of channelizer that the tuner will use to provide DDR channels
  */
-public enum PreferenceType
+public enum ChannelizerType
 {
-    DECODE_EVENT,
-    FILES,
-    IDENTIFIER,
-    TUNER;
+    POLYPHASE("Polyphase"),
+    HETERODYNE(" Heterodyne");
+
+    private String mLabel;
+
+    ChannelizerType(String label)
+    {
+        mLabel = label;
+    }
+
+    public String toString()
+    {
+        return mLabel;
+    }
 }
