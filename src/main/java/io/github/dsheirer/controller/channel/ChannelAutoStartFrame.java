@@ -74,6 +74,7 @@ public class ChannelAutoStartFrame extends JFrame
 
         EventQueue.invokeLater(() -> {
             setVisible(true);
+            toFront();
             startTimer();
         });
     }
