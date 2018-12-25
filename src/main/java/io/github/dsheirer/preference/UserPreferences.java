@@ -24,6 +24,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.playlist.FilePreferences;
+import io.github.dsheirer.preference.tuner.TunerPreference;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -34,6 +35,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private DecodeEventPreference mDecodeEventPreference;
     private FilePreferences mFilePreferences;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
+    private TunerPreference mTunerPreference;
 
     /**
      * Constructs a new user preferences instance
@@ -68,6 +70,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Tuner preferences
+     */
+    public TunerPreference getTunerPreference()
+    {
+        return mTunerPreference;
+    }
+
+    /**
      * Loads the managed preferences
      */
     private void loadPreferenceTypes()
@@ -75,6 +85,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mDecodeEventPreference = new DecodeEventPreference(this);
         mFilePreferences = new FilePreferences(this::receive);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this);
+        mTunerPreference = new TunerPreference(this);
     }
 
     /**

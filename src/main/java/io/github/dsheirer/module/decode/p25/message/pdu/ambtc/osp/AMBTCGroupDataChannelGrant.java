@@ -126,6 +126,11 @@ public class AMBTCGroupDataChannelGrant extends AMBTCMessage implements IFrequen
             }
         }
 
+        if(mChannel == null)
+        {
+            mChannel = APCO25Channel.create(-1, 0);
+        }
+
         return mChannel;
     }
 

@@ -2145,7 +2145,8 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                         .build());
                     break;
                 default:
-                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name());
+                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
+                        " OPCODE:" + tsbk.getOpcodeNumber());
                     break;
             }
         }
@@ -2378,7 +2379,8 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                     .build());
                 break;
             default:
-                mLog.info("Unrecognized/Unprocessed Link Control Word Opcode: " + lcw.getOpcode().name());
+                mLog.debug("Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
+                    " OPCODE:" + lcw.getOpcodeNumber());
                 break;
         }
     }

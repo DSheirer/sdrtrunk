@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source;
 
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
@@ -34,12 +36,12 @@ public class SourceManager
     private TunerManager mTunerManager;
     private TunerModel mTunerModel;
 
-    public SourceManager(TunerModel tunerModel, SettingsManager settingsManager)
+    public SourceManager(TunerModel tunerModel, SettingsManager settingsManager, UserPreferences userPreferences)
     {
         mTunerModel = tunerModel;
         mMixerManager = new MixerManager();
         mRecordingSourceManager = new RecordingSourceManager(settingsManager);
-        mTunerManager = new TunerManager(mMixerManager, tunerModel);
+        mTunerManager = new TunerManager(mMixerManager, tunerModel, userPreferences);
 
         //TODO: change mixer & recording managers to be models and hand them
         //in via the constructor.  Perform loading outside of this class.

@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.test;
 
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -34,9 +36,9 @@ public class TestTuner extends Tuner
     private static int mInstanceCounter = 1;
     private final int mInstanceID = mInstanceCounter++;
 
-    public TestTuner()
+    public TestTuner(UserPreferences userPreferences)
     {
-        super("Test Tuner", new TestTunerController());
+        super("Test Tuner", new TestTunerController(), userPreferences);
     }
 
     /**

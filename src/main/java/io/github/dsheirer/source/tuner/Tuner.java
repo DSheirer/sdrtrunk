@@ -1,26 +1,33 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.tuner;
 
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.tuner.ChannelizerType;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.PolyphaseChannelSourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,15 +51,28 @@ public abstract class Tuner implements ISourceEventProcessor
      * @param name of the tuner
      * @param tunerController for the tuner
      */
-    public Tuner(String name, TunerController tunerController)
+    public Tuner(String name, TunerController tunerController, UserPreferences userPreferences)
     {
         mName = name;
         mTunerController = tunerController;
         //Register to receive frequency and sample rate change notifications
         mTunerController.addListener(this::process);
 
-        mChannelSourceManager = new PolyphaseChannelSourceManager(mTunerController);
-//        mChannelSourceManager = new HeterodyneChannelSourceManager(mTunerController);
+        ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
+
+        if(channelizerType == ChannelizerType.POLYPHASE)
+        {
+            mChannelSourceManager = new PolyphaseChannelSourceManager(mTunerController);
+        }
+        else if(channelizerType == ChannelizerType.HETERODYNE)
+        {
+            mChannelSourceManager = new HeterodyneChannelSourceManager(mTunerController);
+        }
+        else
+        {
+            throw new IllegalArgumentException("Unrecognized channelizer type: " + channelizerType);
+        }
+
 
         //Register to receive channel count change notifications
         mChannelSourceManager.addSourceEventListener(this::process);

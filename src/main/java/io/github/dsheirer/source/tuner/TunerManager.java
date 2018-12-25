@@ -1,20 +1,25 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.tuner;
 
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.MixerManager;
 import io.github.dsheirer.source.tuner.airspy.AirspyTuner;
@@ -44,7 +49,7 @@ public class TunerManager
 
     private MixerManager mMixerManager;
     private TunerModel mTunerModel;
-
+    private UserPreferences mUserPreferences;
 
     /**
      * Application-wide LibUSB timeout processor for transfer buffers.  All classes that need to use USB transfer
@@ -58,10 +63,11 @@ public class TunerManager
         LIBUSB_TRANSFER_PROCESSOR = new USBMasterProcessor();
     }
 
-    public TunerManager(MixerManager mixerManager, TunerModel tunerModel)
+    public TunerManager(MixerManager mixerManager, TunerModel tunerModel, UserPreferences userPreferences)
     {
         mMixerManager = mixerManager;
         mTunerModel = tunerModel;
+        mUserPreferences = userPreferences;
 
         initTuners();
     }
@@ -251,7 +257,7 @@ public class TunerManager
 
             airspyController.init();
 
-            AirspyTuner tuner = new AirspyTuner(airspyController);
+            AirspyTuner tuner = new AirspyTuner(airspyController, mUserPreferences);
 
             return new TunerInitStatus(tuner, "LOADED");
         }
@@ -286,7 +292,7 @@ public class TunerManager
             {
                 controller.init();
 
-                FCDTuner tuner = new FCDTuner(controller);
+                FCDTuner tuner = new FCDTuner(controller, mUserPreferences);
 
                 return new TunerInitStatus(tuner, "LOADED");
             }
@@ -320,7 +326,7 @@ public class TunerManager
             {
                 controller.init();
 
-                FCDTuner tuner = new FCDTuner(controller);
+                FCDTuner tuner = new FCDTuner(controller, mUserPreferences);
 
                 return new TunerInitStatus(tuner, "LOADED");
             }
@@ -349,7 +355,7 @@ public class TunerManager
 
             hackRFController.init();
 
-            HackRFTuner tuner = new HackRFTuner(hackRFController);
+            HackRFTuner tuner = new HackRFTuner(hackRFController, mUserPreferences);
 
             return new TunerInitStatus(tuner, "LOADED");
         }
@@ -392,7 +398,7 @@ public class TunerManager
 
                     controller.init();
 
-                    RTL2832Tuner rtlTuner = new RTL2832Tuner(tunerClass, controller);
+                    RTL2832Tuner rtlTuner = new RTL2832Tuner(tunerClass, controller, mUserPreferences);
 
                     return new TunerInitStatus(rtlTuner, "LOADED");
                 }
@@ -408,7 +414,7 @@ public class TunerManager
 
                     controller.init();
 
-                    RTL2832Tuner rtlTuner = new RTL2832Tuner(tunerClass, controller);
+                    RTL2832Tuner rtlTuner = new RTL2832Tuner(tunerClass, controller, mUserPreferences);
 
                     return new TunerInitStatus(rtlTuner, "LOADED");
                 }

@@ -157,7 +157,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
 
-        mSourceManager = new SourceManager(tunerModel, mSettingsManager);
+        mSourceManager = new SourceManager(tunerModel, mSettingsManager, mUserPreferences);
 
         mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, recorderManager,
             mSourceManager, aliasModel);
