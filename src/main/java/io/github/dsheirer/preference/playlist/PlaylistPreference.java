@@ -185,7 +185,7 @@ public class PlaylistPreference extends Preference
      */
     private Path getDefaultPlaylistPath()
     {
-        return mDirectoryPreference.getDefaultPlaylistFolder().resolve(FILE_PLAYLIST);
+        return mDirectoryPreference.getDefaultPlaylistDirectory().resolve(FILE_PLAYLIST);
     }
 
     /**

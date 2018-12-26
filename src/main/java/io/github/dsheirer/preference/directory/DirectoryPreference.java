@@ -42,11 +42,15 @@ public class DirectoryPreference extends Preference
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
     private static final String DIRECTORY_PLAYLIST = "playlist";
     private static final String DIRECTORY_RECORDING = "recordings";
+    private static final String DIRECTORY_EVENT_LOGS = "event_logs";
+
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT = "directory.application.root";
+    private static final String PREFERENCE_KEY_DIRECTORY_EVENT_LOGS = "directory.event.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_PLAYLIST = "directory.playlist";
     private static final String PREFERENCE_KEY_DIRECTORY_RECORDING = "directory.recording";
 
     private Path mDirectoryApplicationRoot;
+    private Path mDirectoryEventLogs;
     private Path mDirectoryPlaylist;
     private Path mDirectoryRecording;
 
@@ -72,7 +76,7 @@ public class DirectoryPreference extends Preference
     {
         if(mDirectoryApplicationRoot == null)
         {
-            mDirectoryApplicationRoot = getPath(PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT, getDefaultApplicationFolder());
+            mDirectoryApplicationRoot = getPath(PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT, getDefaultApplicationDirectory());
             createDirectory(mDirectoryApplicationRoot);
         }
 
@@ -89,13 +93,18 @@ public class DirectoryPreference extends Preference
 
         //Set the child paths to null so that they'll be recreated on next access.  If the user has explicitly set a
         //path override for any of these directories, then it will be retained.
-        nullifyChildDirectories();
+        nullifyApplicationChildDirectories();
 
         notifyPreferenceUpdated();
     }
 
-    private void nullifyChildDirectories()
+    /**
+     * Nullifies each of the application root child directories so that they can be re-created from application root
+     * or re-created from a persisted override path.
+     */
+    private void nullifyApplicationChildDirectories()
     {
+        mDirectoryEventLogs = null;
         mDirectoryPlaylist = null;
         mDirectoryRecording = null;
     }
@@ -110,8 +119,42 @@ public class DirectoryPreference extends Preference
 
         //Set the child paths to null so that they'll be recreated on next access.  If the user has explicitly set a
         //path override for any of these directories, then it will be retained.
-        nullifyChildDirectories();
+        nullifyApplicationChildDirectories();
 
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Path to the folder for storing event logs
+     */
+    public Path getDirectoryEventLogs()
+    {
+        if(mDirectoryEventLogs == null)
+        {
+            mDirectoryEventLogs = getPath(PREFERENCE_KEY_DIRECTORY_EVENT_LOGS, getDefaultEventLogsDirectory());
+            createDirectory(mDirectoryEventLogs);
+        }
+
+        return mDirectoryEventLogs;
+    }
+
+    /**
+     * Sets the path to the event logs folder
+     */
+    public void setDirectoryEventLogs(Path path)
+    {
+        mDirectoryEventLogs = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_EVENT_LOGS, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored playlist directory preference so that the default path can be used again
+     */
+    public void resetDirectoryEventLogs()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_EVENT_LOGS);
+        mDirectoryEventLogs = null;
         notifyPreferenceUpdated();
     }
 
@@ -122,7 +165,7 @@ public class DirectoryPreference extends Preference
     {
         if(mDirectoryPlaylist == null)
         {
-            mDirectoryPlaylist = getPath(PREFERENCE_KEY_DIRECTORY_PLAYLIST, getDefaultPlaylistFolder());
+            mDirectoryPlaylist = getPath(PREFERENCE_KEY_DIRECTORY_PLAYLIST, getDefaultPlaylistDirectory());
             createDirectory(mDirectoryPlaylist);
         }
 
@@ -156,7 +199,7 @@ public class DirectoryPreference extends Preference
     {
         if(mDirectoryRecording == null)
         {
-            mDirectoryRecording = getPath(PREFERENCE_KEY_DIRECTORY_RECORDING, getDefaultRecordingFolder());
+            mDirectoryRecording = getPath(PREFERENCE_KEY_DIRECTORY_RECORDING, getDefaultRecordingDirectory());
             createDirectory(mDirectoryRecording);
         }
 
@@ -184,25 +227,33 @@ public class DirectoryPreference extends Preference
     }
 
     /**
-     * Default application root path
+     * Default application root directory
      */
-    private Path getDefaultApplicationFolder()
+    private Path getDefaultApplicationDirectory()
     {
         return Paths.get(System.getProperty("user.home"), DIRECTORY_APPLICATION_ROOT);
     }
 
     /**
-     * Default playlist folder
+     * Default event logs directory
      */
-    public Path getDefaultPlaylistFolder()
+    public Path getDefaultEventLogsDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_EVENT_LOGS);
+    }
+
+    /**
+     * Default playlist directory
+     */
+    public Path getDefaultPlaylistDirectory()
     {
         return getDirectoryApplicationRoot().resolve(DIRECTORY_PLAYLIST);
     }
 
     /**
-     * Default playlist folder
+     * Default playlist directory
      */
-    public Path getDefaultRecordingFolder()
+    public Path getDefaultRecordingDirectory()
     {
         return getDirectoryApplicationRoot().resolve(DIRECTORY_RECORDING);
     }
