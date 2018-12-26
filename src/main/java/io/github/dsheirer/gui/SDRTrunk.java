@@ -19,12 +19,6 @@
  */
 package io.github.dsheirer.gui;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.filter.ThresholdFilter;
-import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioPacketManager;
@@ -42,6 +36,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -62,7 +57,6 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import net.miginfocom.swing.MigLayout;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,8 +89,6 @@ import java.util.List;
 public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
-    private static final String APPLICATION_LOG_FILENAME = "sdrtrunk_app.log";
-    private static final int APPLICATION_LOG_MAX_HISTORY = 10;
 
     private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
     private boolean mBroadcastStatusVisible;
@@ -115,13 +107,14 @@ public class SDRTrunk implements Listener<TunerEvent>
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
-    private RollingFileAppender mRollingFileAppender;
+    private ApplicationLog mApplicationLog;
 
     private String mTitle;
 
     public SDRTrunk()
     {
-        initLogging();
+        mApplicationLog = new ApplicationLog(mUserPreferences);
+        mApplicationLog.start();
 
         //Setup the application home directory
         Path home = getHomePath();
@@ -239,72 +232,6 @@ public class SDRTrunk implements Listener<TunerEvent>
         if(channels.size() > 0)
         {
             ChannelAutoStartFrame autoStartFrame = new ChannelAutoStartFrame(mChannelProcessingManager, channels);
-        }
-    }
-
-    private void initLogging()
-    {
-        if(mRollingFileAppender == null)
-        {
-            Path logfile = mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog().resolve(APPLICATION_LOG_FILENAME);
-            mLog.info("Application Log File: " + logfile.toString());
-
-            LoggerContext loggerContext = (LoggerContext)LoggerFactory.getILoggerFactory();
-
-            PatternLayoutEncoder encoder = new PatternLayoutEncoder();
-            encoder.setContext(loggerContext);
-            encoder.setPattern("%-25(%d{yyyyMMdd HHmmss.SSS} [%thread]) %-5level %logger{30} - %msg  %memory_usage%n");
-            encoder.start();
-
-            mRollingFileAppender = new RollingFileAppender();
-            mRollingFileAppender.setContext(loggerContext);
-            mRollingFileAppender.setAppend(true);
-            mRollingFileAppender.setName("FILE");
-            mRollingFileAppender.setEncoder(encoder);
-            mRollingFileAppender.setFile(logfile.toString());
-
-            ThresholdFilter thresholdFilter = new ThresholdFilter();
-            thresholdFilter.setLevel(Level.DEBUG.toString());
-            thresholdFilter.setContext(loggerContext);
-            thresholdFilter.setName("sdrtrunk threshold filter");
-            thresholdFilter.start();
-
-            mRollingFileAppender.addFilter(thresholdFilter);
-
-            String pattern = logfile.toString().replace(APPLICATION_LOG_FILENAME, "%d{yyyyMMdd}_" + APPLICATION_LOG_FILENAME);
-            TimeBasedRollingPolicy rollingPolicy = new TimeBasedRollingPolicy<>();
-            rollingPolicy.setContext(loggerContext);
-            rollingPolicy.setFileNamePattern(pattern);
-            rollingPolicy.setMaxHistory(APPLICATION_LOG_MAX_HISTORY);
-            rollingPolicy.setParent(mRollingFileAppender);
-            rollingPolicy.start();
-
-            mRollingFileAppender.setRollingPolicy(rollingPolicy);
-            mRollingFileAppender.start();
-
-            Logger logger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
-            ((ch.qos.logback.classic.Logger)logger).setLevel(Level.ALL);
-            ((ch.qos.logback.classic.Logger)logger).addAppender(mRollingFileAppender);
-
-//            StatusPrinter.print(loggerContext);
-
-            mLog.info("");
-            mLog.info("*******************************************************************");
-            mLog.info("**** sdrtrunk: a trunked radio and digital decoding application ***");
-            mLog.info("****  website: https://github.com/dsheirer/sdrtrunk             ***");
-            mLog.info("*******************************************************************");
-            mLog.info("Memory Logging Format: [Used/Allocated PercentUsed%]");
-            mLog.info("Host OS Name:          " + System.getProperty("os.name"));
-            mLog.info("Host OS Arch:          " + System.getProperty("os.arch"));
-            mLog.info("Host OS Version:       " + System.getProperty("os.version"));
-            mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
-            mLog.info("Host Max Java Memory:  " + FileUtils.byteCountToDisplaySize(Runtime.getRuntime().maxMemory()));
-            mLog.info("Storage Directories:");
-            mLog.info(" Application Root: " + mUserPreferences.getDirectoryPreference().getDirectoryApplicationRoot());
-            mLog.info(" Application Log:  " + mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog());
-            mLog.info(" Event Log:        " + mUserPreferences.getDirectoryPreference().getDirectoryEventLog());
-            mLog.info(" Playlist:         " + mUserPreferences.getDirectoryPreference().getDirectoryPlaylist());
-            mLog.info(" Recordings:       " + mUserPreferences.getDirectoryPreference().getDirectoryRecording());
         }
     }
 
@@ -509,12 +436,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("Releasing tuners ...");
         mSourceManager.shutdown();
         mLog.info("Shutdown complete.");
-
-        if(mRollingFileAppender != null)
-        {
-            mLog.info("Stopping application logging");
-            mRollingFileAppender.stop();
-        }
+        mApplicationLog.stop();
     }
 
     /**
