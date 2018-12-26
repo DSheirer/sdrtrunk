@@ -2144,9 +2144,12 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                         .identifiers(icRoaming)
                         .build());
                     break;
+                case MOTOROLA_OSP_OPCODE_7:
+                    mLog.info("MOTOROLA OPCODE 7: " + tsbk.getMessage().toHexString());
+                    break;
                 default:
-                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
-                        " OPCODE:" + tsbk.getOpcodeNumber());
+//                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
+//                        " OPCODE:" + tsbk.getOpcodeNumber());
                     break;
             }
         }

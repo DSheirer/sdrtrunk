@@ -30,6 +30,19 @@ import io.github.dsheirer.sample.Listener;
 
 /**
  * User Preferences.  A collection of preferences that can be accessed by preference type.
+ *
+ * Note: user preference updates are broadcast throughout the system using the Google Guava Event Bus.  Each component
+ * can register with the event bus and annotate a method to receive updates:
+ *
+ * To register a component to receive events, add this in the constructor:
+ * MyEventBus.getEventBus().register(this);
+ *
+ * To receive preference update notifications, annotate a method with @Subscribe and use a PreferenceType argument:
+ *
+ * @Subscribe
+ * public void preferenceUpdated(PreferenceType preferenceType)
+ * {
+ * }
  */
 public class UserPreferences implements Listener<PreferenceType>
 {

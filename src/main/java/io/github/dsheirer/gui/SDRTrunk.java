@@ -153,7 +153,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         EventLogManager eventLogManager = new EventLogManager();
 
-        RecorderManager recorderManager = new RecorderManager(aliasModel);
+        RecorderManager recorderManager = new RecorderManager(aliasModel, mUserPreferences);
 
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
 

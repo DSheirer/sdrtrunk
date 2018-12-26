@@ -73,6 +73,7 @@ public class DirectoryPreference extends Preference
         if(mDirectoryApplicationRoot == null)
         {
             mDirectoryApplicationRoot = getPath(PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT, getDefaultApplicationFolder());
+            createDirectory(mDirectoryApplicationRoot);
         }
 
         return mDirectoryApplicationRoot;
@@ -85,6 +86,32 @@ public class DirectoryPreference extends Preference
     {
         mDirectoryApplicationRoot = path;
         mPreferences.put(PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT, path.toString());
+
+        //Set the child paths to null so that they'll be recreated on next access.  If the user has explicitly set a
+        //path override for any of these directories, then it will be retained.
+        nullifyChildDirectories();
+
+        notifyPreferenceUpdated();
+    }
+
+    private void nullifyChildDirectories()
+    {
+        mDirectoryPlaylist = null;
+        mDirectoryRecording = null;
+    }
+
+    /**
+     * Removes a stored recording directory preference so that the default path can be used again
+     */
+    public void resetDirectoryApplicationRoot()
+    {
+        mDirectoryApplicationRoot = null;
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT);
+
+        //Set the child paths to null so that they'll be recreated on next access.  If the user has explicitly set a
+        //path override for any of these directories, then it will be retained.
+        nullifyChildDirectories();
+
         notifyPreferenceUpdated();
     }
 
@@ -96,6 +123,7 @@ public class DirectoryPreference extends Preference
         if(mDirectoryPlaylist == null)
         {
             mDirectoryPlaylist = getPath(PREFERENCE_KEY_DIRECTORY_PLAYLIST, getDefaultPlaylistFolder());
+            createDirectory(mDirectoryPlaylist);
         }
 
         return mDirectoryPlaylist;
@@ -112,6 +140,16 @@ public class DirectoryPreference extends Preference
     }
 
     /**
+     * Removes a stored playlist directory preference so that the default path can be used again
+     */
+    public void resetDirectoryPlaylist()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_PLAYLIST);
+        mDirectoryPlaylist = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
      * Path to the folder for storing recordings
      */
     public Path getDirectoryRecording()
@@ -119,6 +157,7 @@ public class DirectoryPreference extends Preference
         if(mDirectoryRecording == null)
         {
             mDirectoryRecording = getPath(PREFERENCE_KEY_DIRECTORY_RECORDING, getDefaultRecordingFolder());
+            createDirectory(mDirectoryRecording);
         }
 
         return mDirectoryRecording;
@@ -135,13 +174,21 @@ public class DirectoryPreference extends Preference
     }
 
     /**
+     * Removes a stored recording directory preference so that the default path can be used again
+     */
+    public void resetDirectoryRecording()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_RECORDING);
+        mDirectoryRecording = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
      * Default application root path
      */
     private Path getDefaultApplicationFolder()
     {
-        Path defaultApplicationPath = Paths.get(System.getProperty("user.home"), DIRECTORY_APPLICATION_ROOT);
-        createDirectory(defaultApplicationPath);
-        return defaultApplicationPath;
+        return Paths.get(System.getProperty("user.home"), DIRECTORY_APPLICATION_ROOT);
     }
 
     /**
@@ -149,9 +196,7 @@ public class DirectoryPreference extends Preference
      */
     public Path getDefaultPlaylistFolder()
     {
-        Path defaultPlaylistFolder = getDirectoryApplicationRoot().resolve(DIRECTORY_PLAYLIST);
-        createDirectory(defaultPlaylistFolder);
-        return defaultPlaylistFolder;
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_PLAYLIST);
     }
 
     /**
@@ -159,9 +204,7 @@ public class DirectoryPreference extends Preference
      */
     public Path getDefaultRecordingFolder()
     {
-        Path defaultRecordingFolder = getDirectoryApplicationRoot().resolve(DIRECTORY_RECORDING);
-        createDirectory(defaultRecordingFolder);
-        return defaultRecordingFolder;
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_RECORDING);
     }
 
     /**
@@ -196,7 +239,7 @@ public class DirectoryPreference extends Preference
      */
     private void createDirectory(Path directory)
     {
-        if(!Files.exists(directory) && Files.isDirectory(directory))
+        if(!Files.exists(directory))
         {
             try
             {

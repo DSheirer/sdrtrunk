@@ -20,8 +20,13 @@
 
 package io.github.dsheirer.gui.preference.directory;
 
+import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.scene.control.Button;
@@ -30,6 +35,12 @@ import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 
 /**
@@ -37,21 +48,29 @@ import javafx.scene.layout.Priority;
  */
 public class DirectoryPreferenceEditor extends HBox
 {
+    private final static Logger mLog = LoggerFactory.getLogger(DirectoryPreferenceEditor.class);
+
     private DirectoryPreference mDirectoryPreference;
     private GridPane mEditorPane;
     private Label mApplicationRootLabel;
-    private Button mApplicationRootButton;
+    private Button mChangeApplicationRootButton;
+    private Button mResetApplicationRootButton;
     private Label mApplicationRootPathLabel;
     private Label mPlaylistLabel;
-    private Button mPlaylistButton;
+    private Button mChangePlaylistButton;
+    private Button mResetPlaylistButton;
     private Label mPlaylistPathLabel;
     private Label mRecordingLabel;
-    private Button mRecordingButton;
+    private Button mChangeRecordingButton;
+    private Button mResetRecordingButton;
     private Label mRecordingPathLabel;
 
     public DirectoryPreferenceEditor(UserPreferences userPreferences)
     {
         mDirectoryPreference = userPreferences.getDirectoryPreference();
+
+        //Register to receive directory preference update notifications so we can update the path labels
+        MyEventBus.getEventBus().register(this);
 
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
@@ -63,7 +82,6 @@ public class DirectoryPreferenceEditor extends HBox
         {
             mEditorPane = new GridPane();
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
-//            GridPane.setHalignment(getChannelizerLabel(), HPos.LEFT);
 
             int row = 0;
 
@@ -75,7 +93,7 @@ public class DirectoryPreferenceEditor extends HBox
             GridPane.setMargin(directoryLabel, new Insets(0, 10, 0, 0));
             mEditorPane.add(directoryLabel, 1, row++);
 
-            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row++, 3, 1);
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row++, 4, 1);
 
             GridPane.setMargin(getApplicationRootLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getApplicationRootLabel(), 0, row);
@@ -83,8 +101,11 @@ public class DirectoryPreferenceEditor extends HBox
             GridPane.setMargin(getApplicationRootPathLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getApplicationRootPathLabel(), 1, row);
 
-            GridPane.setMargin(getApplicationRootButton(), new Insets(2, 0, 2, 0));
-            mEditorPane.add(getApplicationRootButton(), 2, row++);
+            GridPane.setMargin(getChangeApplicationRootButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeApplicationRootButton(), 2, row);
+
+            GridPane.setMargin(getResetApplicationRootButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetApplicationRootButton(), 3, row++);
 
             GridPane.setMargin(getPlaylistLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getPlaylistLabel(), 0, row);
@@ -92,8 +113,11 @@ public class DirectoryPreferenceEditor extends HBox
             GridPane.setMargin(getPlaylistPathLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getPlaylistPathLabel(), 1, row);
 
-            GridPane.setMargin(getPlaylistButton(), new Insets(2, 0, 2, 0));
-            mEditorPane.add(getPlaylistButton(), 2, row++);
+            GridPane.setMargin(getChangePlaylistButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangePlaylistButton(), 2, row);
+
+            GridPane.setMargin(getResetPlaylistButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetPlaylistButton(), 3, row++);
 
             GridPane.setMargin(getRecordingLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getRecordingLabel(), 0, row);
@@ -101,8 +125,11 @@ public class DirectoryPreferenceEditor extends HBox
             GridPane.setMargin(getRecordingPathLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getRecordingPathLabel(), 1, row);
 
-            GridPane.setMargin(getRecordingButton(), new Insets(2, 0, 2, 0));
-            mEditorPane.add(getRecordingButton(), 2, row++);
+            GridPane.setMargin(getChangeRecordingButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeRecordingButton(), 2, row);
+
+            GridPane.setMargin(getResetRecordingButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetRecordingButton(), 3, row++);
         }
 
         return mEditorPane;
@@ -118,15 +145,49 @@ public class DirectoryPreferenceEditor extends HBox
         return mApplicationRootLabel;
     }
 
-    private Button getApplicationRootButton()
+    private Button getChangeApplicationRootButton()
     {
-        if(mApplicationRootButton == null)
+        if(mChangeApplicationRootButton == null)
         {
-            mApplicationRootButton = new Button("Change...");
-            //TODO: add action
+            mChangeApplicationRootButton = new Button("Change...");
+            mChangeApplicationRootButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Application Root Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryApplicationRoot().toFile());
+                    Stage stage = (Stage)getChangeApplicationRootButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryApplicationRoot(selected.toPath());
+                    }
+                }
+            });
         }
 
-        return mApplicationRootButton;
+        return mChangeApplicationRootButton;
+    }
+
+    private Button getResetApplicationRootButton()
+    {
+        if(mResetApplicationRootButton == null)
+        {
+            mResetApplicationRootButton = new Button("Reset");
+            mResetApplicationRootButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryApplicationRoot();
+                }
+            });
+        }
+
+        return mResetApplicationRootButton;
     }
 
     private Label getApplicationRootPathLabel()
@@ -149,15 +210,49 @@ public class DirectoryPreferenceEditor extends HBox
         return mPlaylistLabel;
     }
 
-    private Button getPlaylistButton()
+    private Button getChangePlaylistButton()
     {
-        if(mPlaylistButton == null)
+        if(mChangePlaylistButton == null)
         {
-            mPlaylistButton = new Button("Change...");
-            //TODO: add action
+            mChangePlaylistButton = new Button("Change...");
+            mChangePlaylistButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Playlist Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryPlaylist().toFile());
+                    Stage stage = (Stage)getChangePlaylistButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryPlaylist(selected.toPath());
+                    }
+                }
+            });
         }
 
-        return mPlaylistButton;
+        return mChangePlaylistButton;
+    }
+
+    private Button getResetPlaylistButton()
+    {
+        if(mResetPlaylistButton == null)
+        {
+            mResetPlaylistButton = new Button("Reset");
+            mResetPlaylistButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryPlaylist();
+                }
+            });
+        }
+
+        return mResetPlaylistButton;
     }
 
     private Label getPlaylistPathLabel()
@@ -180,15 +275,49 @@ public class DirectoryPreferenceEditor extends HBox
         return mRecordingLabel;
     }
 
-    private Button getRecordingButton()
+    private Button getChangeRecordingButton()
     {
-        if(mRecordingButton == null)
+        if(mChangeRecordingButton == null)
         {
-            mRecordingButton = new Button("Change...");
-            //TODO: add action
+            mChangeRecordingButton = new Button("Change...");
+            mChangeRecordingButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Recording Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryRecording().toFile());
+                    Stage stage = (Stage)getChangeRecordingButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryRecording(selected.toPath());
+                    }
+                }
+            });
         }
 
-        return mRecordingButton;
+        return mChangeRecordingButton;
+    }
+
+    private Button getResetRecordingButton()
+    {
+        if(mResetRecordingButton == null)
+        {
+            mResetRecordingButton = new Button("Reset");
+            mResetRecordingButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryRecording();
+                }
+            });
+        }
+
+        return mResetRecordingButton;
     }
 
     private Label getRecordingPathLabel()
@@ -199,5 +328,16 @@ public class DirectoryPreferenceEditor extends HBox
         }
 
         return mRecordingPathLabel;
+    }
+
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType != null && preferenceType == PreferenceType.DIRECTORY)
+        {
+            getApplicationRootPathLabel().setText(mDirectoryPreference.getDirectoryApplicationRoot().toString());
+            getPlaylistPathLabel().setText(mDirectoryPreference.getDirectoryPlaylist().toString());
+            getRecordingPathLabel().setText(mDirectoryPreference.getDirectoryRecording().toString());
+        }
     }
 }
