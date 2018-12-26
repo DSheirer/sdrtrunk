@@ -40,16 +40,19 @@ public class DirectoryPreference extends Preference
     private Preferences mPreferences = Preferences.userNodeForPackage(DirectoryPreference.class);
 
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
+    private static final String DIRECTORY_APPLICATION_LOGS = "logs";
     private static final String DIRECTORY_PLAYLIST = "playlist";
     private static final String DIRECTORY_RECORDING = "recordings";
     private static final String DIRECTORY_EVENT_LOGS = "event_logs";
 
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT = "directory.application.root";
+    private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS = "directory.application.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_EVENT_LOGS = "directory.event.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_PLAYLIST = "directory.playlist";
     private static final String PREFERENCE_KEY_DIRECTORY_RECORDING = "directory.recording";
 
     private Path mDirectoryApplicationRoot;
+    private Path mDirectoryApplicationLogs;
     private Path mDirectoryEventLogs;
     private Path mDirectoryPlaylist;
     private Path mDirectoryRecording;
@@ -104,6 +107,7 @@ public class DirectoryPreference extends Preference
      */
     private void nullifyApplicationChildDirectories()
     {
+        mDirectoryApplicationLogs = null;
         mDirectoryEventLogs = null;
         mDirectoryPlaylist = null;
         mDirectoryRecording = null;
@@ -125,9 +129,43 @@ public class DirectoryPreference extends Preference
     }
 
     /**
+     * Path to the folder for storing application logs
+     */
+    public Path getDirectoryApplicationLog()
+    {
+        if(mDirectoryApplicationLogs == null)
+        {
+            mDirectoryApplicationLogs = getPath(PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS, getDefaultApplicationLogsDirectory());
+            createDirectory(mDirectoryApplicationLogs);
+        }
+
+        return mDirectoryApplicationLogs;
+    }
+
+    /**
+     * Sets the path to the application logs folder
+     */
+    public void setDirectoryApplicationLogs(Path path)
+    {
+        mDirectoryApplicationLogs = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored application logs directory preference so that the default path can be used again
+     */
+    public void resetDirectoryApplicationLogs()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS);
+        mDirectoryApplicationLogs = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
      * Path to the folder for storing event logs
      */
-    public Path getDirectoryEventLogs()
+    public Path getDirectoryEventLog()
     {
         if(mDirectoryEventLogs == null)
         {
@@ -232,6 +270,14 @@ public class DirectoryPreference extends Preference
     private Path getDefaultApplicationDirectory()
     {
         return Paths.get(System.getProperty("user.home"), DIRECTORY_APPLICATION_ROOT);
+    }
+
+    /**
+     * Default event logs directory
+     */
+    public Path getDefaultApplicationLogsDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_APPLICATION_LOGS);
     }
 
     /**

@@ -58,6 +58,11 @@ public class DirectoryPreferenceEditor extends HBox
     private Button mResetApplicationRootButton;
     private Label mApplicationRootPathLabel;
 
+    private Label mApplicationLogsLabel;
+    private Button mChangeApplicationLogsButton;
+    private Button mResetApplicationLogsButton;
+    private Label mApplicationLogsPathLabel;
+
     private Label mEventLogsLabel;
     private Button mChangeEventLogsButton;
     private Button mResetEventLogsButton;
@@ -115,6 +120,20 @@ public class DirectoryPreferenceEditor extends HBox
             GridPane.setMargin(getResetApplicationRootButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetApplicationRootButton(), 3, row++);
 
+
+            GridPane.setMargin(getApplicationLogsLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getApplicationLogsLabel(), 0, row);
+
+            GridPane.setMargin(getApplicationLogsPathLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getApplicationLogsPathLabel(), 1, row);
+
+            GridPane.setMargin(getChangeApplicationLogsButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeApplicationLogsButton(), 2, row);
+
+            GridPane.setMargin(getResetApplicationLogsButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetApplicationLogsButton(), 3, row++);
+
+
             GridPane.setMargin(getEventLogsLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getEventLogsLabel(), 0, row);
 
@@ -127,6 +146,7 @@ public class DirectoryPreferenceEditor extends HBox
             GridPane.setMargin(getResetEventLogsButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetEventLogsButton(), 3, row++);
 
+
             GridPane.setMargin(getPlaylistLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getPlaylistLabel(), 0, row);
 
@@ -138,6 +158,7 @@ public class DirectoryPreferenceEditor extends HBox
 
             GridPane.setMargin(getResetPlaylistButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetPlaylistButton(), 3, row++);
+
 
             GridPane.setMargin(getRecordingLabel(), new Insets(0, 10, 0, 0));
             mEditorPane.add(getRecordingLabel(), 0, row);
@@ -220,6 +241,71 @@ public class DirectoryPreferenceEditor extends HBox
         return mApplicationRootPathLabel;
     }
 
+    private Label getApplicationLogsLabel()
+    {
+        if(mApplicationLogsLabel == null)
+        {
+            mApplicationLogsLabel = new Label("Application Logs");
+        }
+
+        return mApplicationLogsLabel;
+    }
+
+    private Button getChangeApplicationLogsButton()
+    {
+        if(mChangeApplicationLogsButton == null)
+        {
+            mChangeApplicationLogsButton = new Button("Change...");
+            mChangeApplicationLogsButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Application Logs Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryApplicationLog().toFile());
+                    Stage stage = (Stage)getChangeApplicationLogsButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryApplicationLogs(selected.toPath());
+                    }
+                }
+            });
+        }
+
+        return mChangeApplicationLogsButton;
+    }
+
+    private Button getResetApplicationLogsButton()
+    {
+        if(mResetApplicationLogsButton == null)
+        {
+            mResetApplicationLogsButton = new Button("Reset");
+            mResetApplicationLogsButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryApplicationLogs();
+                }
+            });
+        }
+
+        return mResetApplicationLogsButton;
+    }
+
+    private Label getApplicationLogsPathLabel()
+    {
+        if(mApplicationLogsPathLabel == null)
+        {
+            mApplicationLogsPathLabel = new Label(mDirectoryPreference.getDirectoryApplicationLog().toString());
+        }
+
+        return mApplicationLogsPathLabel;
+    }
+
     private Label getEventLogsLabel()
     {
         if(mEventLogsLabel == null)
@@ -242,7 +328,7 @@ public class DirectoryPreferenceEditor extends HBox
                 {
                     DirectoryChooser directoryChooser = new DirectoryChooser();
                     directoryChooser.setTitle("Select Event Logs Folder");
-                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryEventLogs().toFile());
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryEventLog().toFile());
                     Stage stage = (Stage)getChangeEventLogsButton().getScene().getWindow();
                     File selected = directoryChooser.showDialog(stage);
 
@@ -279,7 +365,7 @@ public class DirectoryPreferenceEditor extends HBox
     {
         if(mEventLogsPathLabel == null)
         {
-            mEventLogsPathLabel = new Label(mDirectoryPreference.getDirectoryEventLogs().toString());
+            mEventLogsPathLabel = new Label(mDirectoryPreference.getDirectoryEventLog().toString());
         }
 
         return mEventLogsPathLabel;
@@ -421,7 +507,8 @@ public class DirectoryPreferenceEditor extends HBox
         if(preferenceType != null && preferenceType == PreferenceType.DIRECTORY)
         {
             getApplicationRootPathLabel().setText(mDirectoryPreference.getDirectoryApplicationRoot().toString());
-            getEventLogsPathLabel().setText(mDirectoryPreference.getDirectoryEventLogs().toString());
+            getApplicationLogsPathLabel().setText(mDirectoryPreference.getDirectoryApplicationLog().toString());
+            getEventLogsPathLabel().setText(mDirectoryPreference.getDirectoryEventLog().toString());
             getPlaylistPathLabel().setText(mDirectoryPreference.getDirectoryPlaylist().toString());
             getRecordingPathLabel().setText(mDirectoryPreference.getDirectoryRecording().toString());
         }

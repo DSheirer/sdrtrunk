@@ -88,7 +88,7 @@ public class EventLogManager
         sb.append(eventLogType.getFileSuffix());
         sb.append(".log");
 
-        Path eventLogDirectory = mUserPreferences.getDirectoryPreference().getDirectoryEventLogs();
+        Path eventLogDirectory = mUserPreferences.getDirectoryPreference().getDirectoryEventLog();
 
         switch(eventLogType)
         {
