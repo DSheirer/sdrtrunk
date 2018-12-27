@@ -1010,6 +1010,8 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
         else if(message instanceof PacketMessage)
         {
             PacketMessage packetMessage = (PacketMessage)message;
+            getIdentifierCollection().remove(IdentifierClass.USER);
+            getIdentifierCollection().update(packetMessage.getIdentifiers());
 
             IPacket packet = packetMessage.getPacket();
 
@@ -1025,22 +1027,11 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
 
                     IPacket udpPayload = udpPacket.getPayload();
 
-                    Identifier from = packetMessage.getHeader().isOutbound() ?
-                        ipv4.getHeader().getFromAddress() : packetMessage.getHeader().getLLID();
-                    Identifier to = packetMessage.getHeader().isOutbound() ?
-                        packetMessage.getHeader().getLLID() : ipv4.getHeader().getToAddress();
-
-                    getIdentifierCollection().update(from);
-                    getIdentifierCollection().update(to);
-
                     if(udpPayload instanceof ARSPacket)
                     {
                         ARSPacket arsPacket = (ARSPacket)udpPayload;
 
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                        ic.remove(IdentifierClass.USER);
-                        ic.update(from);
-                        ic.update(to);
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
                             .channel(getCurrentChannel())
@@ -1054,9 +1045,6 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                     else
                     {
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                        ic.remove(IdentifierClass.USER);
-                        ic.update(from);
-                        ic.update(to);
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
                             .channel(getCurrentChannel())

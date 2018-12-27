@@ -145,7 +145,6 @@ public class USBTransferProcessor implements TransferCallback
      */
     private void stop()
     {
-        mLog.debug("stop() was invoked");
         if(mRunning.compareAndSet(true, false))
         {
             mBufferDispatcherFuture.cancel(true);
