@@ -104,7 +104,7 @@ public class PreferencesEditor extends Application
     public void start(Stage stage) throws Exception
     {
         stage.setTitle("Preferences");
-        Scene scene = new Scene(getBorderPane(), 800, 500);
+        Scene scene = new Scene(getBorderPane(), 900, 500);
         stage.setScene(scene);
         stage.show();
     }

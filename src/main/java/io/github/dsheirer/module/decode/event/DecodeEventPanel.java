@@ -26,6 +26,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
@@ -202,7 +203,15 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                     sb.append(",");
                 }
 
-                sb.append(mUserPreferences.getTalkgroupFormatPreference().format(identifier));
+                if(identifier.getForm() == Form.TALKGROUP)
+                {
+                    sb.append(mUserPreferences.getTalkgroupFormatPreference().format(identifier));
+                }
+                else
+                {
+                    sb.append(identifier);
+                }
+
             }
 
             return sb.toString();

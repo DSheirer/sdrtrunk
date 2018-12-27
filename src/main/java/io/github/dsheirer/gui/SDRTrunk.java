@@ -164,7 +164,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSourceManager.getMixerManager());
 
-        mBroadcastModel = new BroadcastModel(aliasModel, mIconManager);
+        mBroadcastModel = new BroadcastModel(aliasModel, mIconManager, mUserPreferences);
 
         //Audio packets are routed through the audio packet manager for metadata enrichment and then
         //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
@@ -367,47 +367,20 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     Robot robot = new Robot();
 
-                    final BufferedImage image =
-                        robot.createScreenCapture(mMainGui.getBounds());
+                    final BufferedImage image = robot.createScreenCapture(mMainGui.getBounds());
 
-                    SystemProperties props = SystemProperties.getInstance();
+                    String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
 
-                    Path capturePath = props.getApplicationFolder("screen_captures");
+                    final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
-                    if(!Files.exists(capturePath))
-                    {
+                    EventQueue.invokeLater(() -> {
                         try
                         {
-                            Files.createDirectory(capturePath);
+                            ImageIO.write(image, "png", captureFile.toFile());
                         }
                         catch(IOException e)
                         {
-                            mLog.error("Couldn't create 'screen_captures' "
-                                + "subdirectory in the " +
-                                "SDRTrunk application directory", e);
-                        }
-                    }
-
-                    String filename = TimeStamp.getTimeStamp("_") +
-                        "_screen_capture.png";
-
-                    final Path captureFile = capturePath.resolve(filename);
-
-                    EventQueue.invokeLater(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                ImageIO.write(image, "png",
-                                    captureFile.toFile());
-                            }
-                            catch(IOException e)
-                            {
-                                mLog.error("Couldn't write screen capture to "
-                                    + "file [" + captureFile.toString() + "]", e);
-                            }
+                            mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
                         }
                     });
                 }

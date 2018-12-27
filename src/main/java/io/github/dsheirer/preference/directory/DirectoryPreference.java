@@ -40,22 +40,28 @@ public class DirectoryPreference extends Preference
     private Preferences mPreferences = Preferences.userNodeForPackage(DirectoryPreference.class);
 
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
-    private static final String DIRECTORY_APPLICATION_LOGS = "logs";
+    private static final String DIRECTORY_APPLICATION_LOG = "logs";
+    private static final String DIRECTORY_EVENT_LOG = "event_logs";
     private static final String DIRECTORY_PLAYLIST = "playlist";
     private static final String DIRECTORY_RECORDING = "recordings";
-    private static final String DIRECTORY_EVENT_LOGS = "event_logs";
+    private static final String DIRECTORY_SCREEN_CAPTURE = "screen_captures";
+    private static final String DIRECTORY_STREAMING = "streaming";
 
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT = "directory.application.root";
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS = "directory.application.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_EVENT_LOGS = "directory.event.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_PLAYLIST = "directory.playlist";
     private static final String PREFERENCE_KEY_DIRECTORY_RECORDING = "directory.recording";
+    private static final String PREFERENCE_KEY_DIRECTORY_SCREEN_CAPTURE = "directory.screen.capture";
+    private static final String PREFERENCE_KEY_DIRECTORY_STREAMING = "directory.streaming";
 
     private Path mDirectoryApplicationRoot;
     private Path mDirectoryApplicationLogs;
     private Path mDirectoryEventLogs;
     private Path mDirectoryPlaylist;
     private Path mDirectoryRecording;
+    private Path mDirectoryScreenCapture;
+    private Path mDirectoryStreaming;
 
     /**
      * Constructs this preference with an update listener
@@ -111,6 +117,8 @@ public class DirectoryPreference extends Preference
         mDirectoryEventLogs = null;
         mDirectoryPlaylist = null;
         mDirectoryRecording = null;
+        mDirectoryScreenCapture = null;
+        mDirectoryStreaming = null;
     }
 
     /**
@@ -265,6 +273,74 @@ public class DirectoryPreference extends Preference
     }
 
     /**
+     * Path to the folder for storing screen capture
+     */
+    public Path getDirectoryScreenCapture()
+    {
+        if(mDirectoryScreenCapture == null)
+        {
+            mDirectoryScreenCapture = getPath(PREFERENCE_KEY_DIRECTORY_SCREEN_CAPTURE, getDefaultScreenCaptureDirectory());
+            createDirectory(mDirectoryScreenCapture);
+        }
+
+        return mDirectoryScreenCapture;
+    }
+
+    /**
+     * Sets the path to the screen capture folder
+     */
+    public void setDirectoryScreenCapture(Path path)
+    {
+        mDirectoryScreenCapture = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_SCREEN_CAPTURE, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored screen capture directory preference so that the default path can be used again
+     */
+    public void resetDirectoryScreenCapture()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_SCREEN_CAPTURE);
+        mDirectoryScreenCapture = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Path to the folder for storing streaming temporary recordings
+     */
+    public Path getDirectoryStreaming()
+    {
+        if(mDirectoryStreaming == null)
+        {
+            mDirectoryStreaming = getPath(PREFERENCE_KEY_DIRECTORY_STREAMING, getDefaultStreamingDirectory());
+            createDirectory(mDirectoryStreaming);
+        }
+
+        return mDirectoryStreaming;
+    }
+
+    /**
+     * Sets the path to the streaming folder
+     */
+    public void setDirectoryStreaming(Path path)
+    {
+        mDirectoryStreaming = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_STREAMING, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored streaming directory preference so that the default path can be used again
+     */
+    public void resetDirectoryStreaming()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_STREAMING);
+        mDirectoryStreaming = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
      * Default application root directory
      */
     private Path getDefaultApplicationDirectory()
@@ -277,7 +353,7 @@ public class DirectoryPreference extends Preference
      */
     public Path getDefaultApplicationLogsDirectory()
     {
-        return getDirectoryApplicationRoot().resolve(DIRECTORY_APPLICATION_LOGS);
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_APPLICATION_LOG);
     }
 
     /**
@@ -285,7 +361,7 @@ public class DirectoryPreference extends Preference
      */
     public Path getDefaultEventLogsDirectory()
     {
-        return getDirectoryApplicationRoot().resolve(DIRECTORY_EVENT_LOGS);
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_EVENT_LOG);
     }
 
     /**
@@ -302,6 +378,22 @@ public class DirectoryPreference extends Preference
     public Path getDefaultRecordingDirectory()
     {
         return getDirectoryApplicationRoot().resolve(DIRECTORY_RECORDING);
+    }
+
+    /**
+     * Default screen capture directory
+     */
+    public Path getDefaultScreenCaptureDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_SCREEN_CAPTURE);
+    }
+
+    /**
+     * Default streaming directory
+     */
+    public Path getDefaultStreamingDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_STREAMING);
     }
 
     /**

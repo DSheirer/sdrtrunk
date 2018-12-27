@@ -1039,7 +1039,8 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
 
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                         ic.remove(IdentifierClass.USER);
-                        ic.update(message.getIdentifiers());
+                        ic.update(from);
+                        ic.update(to);
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
                             .channel(getCurrentChannel())
@@ -1054,7 +1055,8 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                     {
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                         ic.remove(IdentifierClass.USER);
-                        ic.update(message.getIdentifiers());
+                        ic.update(from);
+                        ic.update(to);
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
                             .channel(getCurrentChannel())
@@ -2382,8 +2384,8 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                     .build());
                 break;
             default:
-                mLog.debug("Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
-                    " OPCODE:" + lcw.getOpcodeNumber());
+//                mLog.debug("Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
+//                    " OPCODE:" + lcw.getOpcodeNumber());
                 break;
         }
     }

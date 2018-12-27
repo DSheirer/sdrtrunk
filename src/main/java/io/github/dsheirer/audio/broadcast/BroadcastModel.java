@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +15,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -79,17 +81,15 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(AliasModel aliasModel, IconManager iconManager)
+    public BroadcastModel(AliasModel aliasModel, IconManager iconManager, UserPreferences userPreferences)
     {
         mAliasModel = aliasModel;
         mIconManager = iconManager;
-        mStreamManager = new StreamManager(new CompletedRecordingListener(), BroadcastFormat.MP3,
-            SystemProperties.getInstance().getApplicationFolder(TEMPORARY_STREAM_DIRECTORY));
+        mStreamManager = new StreamManager(new CompletedRecordingListener(), BroadcastFormat.MP3, userPreferences);
         mStreamManager.start();
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
-        ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(),
-            15l, 15l, TimeUnit.SECONDS);
+        ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
 
         removeOrphanedTemporaryRecordings();
     }

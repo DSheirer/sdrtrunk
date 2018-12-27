@@ -181,7 +181,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             }
             catch(BitSetFullException bsfe)
             {
-                mLog.debug("Message full exception - unexpected");
+//                mLog.debug("Message full exception - unexpected");
 
                 //Reset so that we can start over again
                 reset(0);
@@ -280,9 +280,9 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                                     mTrailingDibitsToSuppress = 22;
                                     break;
                                 default:
-                                    mLog.debug("*** MORE THAN 5 PDU BLOCKS DETECTED [" +
-                                        mPDUSequence.getHeader().getBlocksToFollowCount() +
-                                        "] - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
+//                                    mLog.debug("*** MORE THAN 5 PDU BLOCKS DETECTED [" +
+//                                        mPDUSequence.getHeader().getBlocksToFollowCount() +
+//                                        "] - DETERMINE TRAILING NULL COUNT TO SUPPRESS AND UPDATE CODE");
                                     break;
                             }
 
@@ -298,7 +298,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
                     }
                     else
                     {
-                        mLog.error("Received PDU data block with out a preceeding data header");
+//                        mLog.error("Received PDU data block with out a preceeding data header");
                         reset(mDataUnitID.getMessageLength());
                     }
                     break;
@@ -489,39 +489,6 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
             }
         });
 
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_040600_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180922_042033_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045614_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits"); //Has Moto LC Opcode 01
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_045647_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050325_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050403_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_050721_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051057_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits"); //ARS PDUs and SNDCP PDUs
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_051808_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_EMERG_AND_PACKETS.bits"); //ARS and SNCDP PDUs
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20180923_052519_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091511_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181008_091650_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_101745_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_101850_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_101855_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_102145_9600BPS_CNYICC_Onondaga Simulcast_LCN 04.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_102451_9600BPS_CNYICC_Onondaga Simulcast_LCN 09_lots_of_PACKET_DATA.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_102456_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_102459_9600BPS_CNYICC_Onondaga Simulcast_LCN 11.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_102501_9600BPS_CNYICC_Onondaga Simulcast_LCN 12.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181021_103208_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_140834_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_140851_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_141547_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_141607_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_142300_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_142319_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143012_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143031_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143723_9600BPS_CNYICC_Onondaga Simulcast_LCN 06.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181028_143741_9600BPS_CNYICC_Onondaga Simulcast_LCN 07.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_100905_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_101622_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_102339_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_134948_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits");
 //        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144312_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits"); //Interesting UDP port 231 packets (oswego LCN 4)

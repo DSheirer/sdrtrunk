@@ -78,6 +78,16 @@ public class DirectoryPreferenceEditor extends HBox
     private Button mResetRecordingButton;
     private Label mRecordingPathLabel;
 
+    private Label mScreenCaptureLabel;
+    private Button mChangeScreenCaptureButton;
+    private Button mResetScreenCaptureButton;
+    private Label mScreenCapturePathLabel;
+
+    private Label mStreamingLabel;
+    private Button mChangeStreamingButton;
+    private Button mResetStreamingButton;
+    private Label mStreamingPathLabel;
+
     public DirectoryPreferenceEditor(UserPreferences userPreferences)
     {
         mDirectoryPreference = userPreferences.getDirectoryPreference();
@@ -171,6 +181,32 @@ public class DirectoryPreferenceEditor extends HBox
 
             GridPane.setMargin(getResetRecordingButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetRecordingButton(), 3, row++);
+
+
+            GridPane.setMargin(getScreenCaptureLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getScreenCaptureLabel(), 0, row);
+
+            GridPane.setMargin(getScreenCapturePathLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getScreenCapturePathLabel(), 1, row);
+
+            GridPane.setMargin(getChangeScreenCaptureButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeScreenCaptureButton(), 2, row);
+
+            GridPane.setMargin(getResetScreenCaptureButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetScreenCaptureButton(), 3, row++);
+
+
+            GridPane.setMargin(getStreamingLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getStreamingLabel(), 0, row);
+
+            GridPane.setMargin(getStreamingPathLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getStreamingPathLabel(), 1, row);
+
+            GridPane.setMargin(getChangeStreamingButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeStreamingButton(), 2, row);
+
+            GridPane.setMargin(getResetStreamingButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetStreamingButton(), 3, row++);
         }
 
         return mEditorPane;
@@ -501,6 +537,136 @@ public class DirectoryPreferenceEditor extends HBox
         return mRecordingPathLabel;
     }
 
+    private Label getScreenCaptureLabel()
+    {
+        if(mScreenCaptureLabel == null)
+        {
+            mScreenCaptureLabel = new Label("Screen Captures");
+        }
+
+        return mScreenCaptureLabel;
+    }
+
+    private Button getChangeScreenCaptureButton()
+    {
+        if(mChangeScreenCaptureButton == null)
+        {
+            mChangeScreenCaptureButton = new Button("Change...");
+            mChangeScreenCaptureButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Screen Capture Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryScreenCapture().toFile());
+                    Stage stage = (Stage)getChangeScreenCaptureButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryScreenCapture(selected.toPath());
+                    }
+                }
+            });
+        }
+
+        return mChangeScreenCaptureButton;
+    }
+
+    private Button getResetScreenCaptureButton()
+    {
+        if(mResetScreenCaptureButton == null)
+        {
+            mResetScreenCaptureButton = new Button("Reset");
+            mResetScreenCaptureButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryScreenCapture();
+                }
+            });
+        }
+
+        return mResetScreenCaptureButton;
+    }
+
+    private Label getScreenCapturePathLabel()
+    {
+        if(mScreenCapturePathLabel == null)
+        {
+            mScreenCapturePathLabel = new Label(mDirectoryPreference.getDirectoryScreenCapture().toString());
+        }
+
+        return mScreenCapturePathLabel;
+    }
+
+    private Label getStreamingLabel()
+    {
+        if(mStreamingLabel == null)
+        {
+            mStreamingLabel = new Label("Streaming");
+        }
+
+        return mStreamingLabel;
+    }
+
+    private Button getChangeStreamingButton()
+    {
+        if(mChangeStreamingButton == null)
+        {
+            mChangeStreamingButton = new Button("Change...");
+            mChangeStreamingButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Streaming Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryStreaming().toFile());
+                    Stage stage = (Stage)getChangeStreamingButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryStreaming(selected.toPath());
+                    }
+                }
+            });
+        }
+
+        return mChangeStreamingButton;
+    }
+
+    private Button getResetStreamingButton()
+    {
+        if(mResetStreamingButton == null)
+        {
+            mResetStreamingButton = new Button("Reset");
+            mResetStreamingButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryStreaming();
+                }
+            });
+        }
+
+        return mResetStreamingButton;
+    }
+
+    private Label getStreamingPathLabel()
+    {
+        if(mStreamingPathLabel == null)
+        {
+            mStreamingPathLabel = new Label(mDirectoryPreference.getDirectoryStreaming().toString());
+        }
+
+        return mStreamingPathLabel;
+    }
+
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
@@ -511,6 +677,8 @@ public class DirectoryPreferenceEditor extends HBox
             getEventLogsPathLabel().setText(mDirectoryPreference.getDirectoryEventLog().toString());
             getPlaylistPathLabel().setText(mDirectoryPreference.getDirectoryPlaylist().toString());
             getRecordingPathLabel().setText(mDirectoryPreference.getDirectoryRecording().toString());
+            getScreenCapturePathLabel().setText(mDirectoryPreference.getDirectoryScreenCapture().toString());
+            getStreamingPathLabel().setText(mDirectoryPreference.getDirectoryStreaming().toString());
         }
     }
 }
