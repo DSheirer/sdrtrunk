@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -52,6 +51,7 @@ public class PacketMessage extends P25Message
     private BinaryMessage mPacketMessage;
     private SNDCPPacketHeader mSNDCPPacketHeader;
     private IPacket mPacket;
+    private List<Identifier> mIdentifiers;
 
     public PacketMessage(PDUSequence PDUSequence, int nac, long timestamp)
     {
@@ -262,6 +262,19 @@ public class PacketMessage extends P25Message
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.EMPTY_LIST;
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getPDUSequence().getHeader().getLLID());
+
+            if(getPacket() instanceof IPV4Packet)
+            {
+                IPV4Packet ipv4 = (IPV4Packet)getPacket();
+                mIdentifiers.add(ipv4.getHeader().getFromAddress());
+                mIdentifiers.add(ipv4.getHeader().getToAddress());
+            }
+        }
+
+        return mIdentifiers;
     }
 }
