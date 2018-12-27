@@ -222,6 +222,26 @@ public class AliasList implements Listener<AliasEvent>
         {
             switch(id.getType())
             {
+                case TALKGROUP:
+                    Talkgroup talkgroup = (Talkgroup)id;
+
+                    TalkgroupAliasList talkgroupAliasList = mTalkgroupProtocolMap.get(talkgroup.getProtocol());
+
+                    if(talkgroupAliasList != null)
+                    {
+                        talkgroupAliasList.remove(talkgroup);
+                    }
+                    break;
+                case TALKGROUP_RANGE:
+                    TalkgroupRange talkgroupRange = (TalkgroupRange)id;
+
+                    TalkgroupAliasList talkgroupRangeAliasList = mTalkgroupProtocolMap.get(talkgroupRange.getProtocol());
+
+                    if(talkgroupRangeAliasList != null)
+                    {
+                        talkgroupRangeAliasList.remove(talkgroupRange);
+                    }
+                    break;
                 case ESN:
                     String esn = ((Esn) id).getEsn();
 
