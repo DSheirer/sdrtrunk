@@ -120,6 +120,16 @@ public class TalkgroupRange extends AliasID
         return false;
     }
 
+    /**
+     * Indicates if this talkgroup range contains/includes the talkgroup value
+     * @param talkgroupValue
+     * @return
+     */
+    public boolean contains(int talkgroupValue)
+    {
+        return getMinTalkgroup() <= talkgroupValue && talkgroupValue <= getMaxTalkgroup();
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public AliasIDType getType()
