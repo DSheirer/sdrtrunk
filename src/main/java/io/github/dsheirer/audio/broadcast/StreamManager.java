@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.AudioRecorder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
@@ -26,7 +28,6 @@ import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,7 +47,7 @@ public class StreamManager implements Listener<ReusableAudioPacket>
 
     private Listener<AudioRecording> mAudioRecordingListener;
     private BroadcastFormat mBroadcastFormat;
-    private Path mTempDirectory;
+    private UserPreferences mUserPreferences;
     private Map<Integer,AudioRecorder> mStreamRecorders = new HashMap<>();
     private Runnable mRecorderMonitor;
     private ScheduledFuture<?> mRecorderMonitorFuture;
@@ -61,15 +62,14 @@ public class StreamManager implements Listener<ReusableAudioPacket>
      * Completed streamable audio recordings are nominated to the output listener (for broadcast) upon completion
      *
      * @param listener to receive completed audio recordings
-     * @param tempDirectory where to store temporary audio recordings
+     * @param broadcastFormat for the stream
+     * @param userPreferences to obtain the temporary streaming recording directory
      */
-    public StreamManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, Path tempDirectory)
+    public StreamManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, UserPreferences userPreferences)
     {
-        assert (tempDirectory != null && Files.isDirectory(tempDirectory));
-
         mAudioRecordingListener = listener;
         mBroadcastFormat = broadcastFormat;
-        mTempDirectory = tempDirectory;
+        mUserPreferences = userPreferences;
     }
 
     /**
@@ -204,7 +204,7 @@ public class StreamManager implements Listener<ReusableAudioPacket>
         sb.append(TimeStamp.getLongTimeStamp("_"));
         sb.append(mBroadcastFormat.getFileExtension());
 
-        Path temporaryRecordingPath = mTempDirectory.resolve(sb.toString());
+        Path temporaryRecordingPath = mUserPreferences.getDirectoryPreference().getDirectoryStreaming().resolve(sb.toString());
 
         return temporaryRecordingPath;
     }

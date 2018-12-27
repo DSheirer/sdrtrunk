@@ -1,18 +1,22 @@
-/*******************************************************************************
- * sdr-trunk
+/*
+ * ******************************************************************************
+ * sdrtrunk
  * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.record;
 
 import io.github.dsheirer.alias.AliasList;
@@ -24,7 +28,7 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.string.StringIdentifier;
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.wave.AudioPacketWaveRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.record.wave.WaveMetadata;
@@ -60,6 +64,7 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     private List<ReusableAudioPacket> mAudioPackets = new ArrayList<>();
     private ScheduledFuture<?> mBufferProcessorFuture;
     private AliasModel mAliasModel;
+    private UserPreferences mUserPreferences;
     private int mUnknownAudioRecordingIndex = 1;
 
     private boolean mCanStartNewRecorders = true;
@@ -71,9 +76,10 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
      * indicating that the call is complete.  A separate recording monitor periodically checks for idled recorders to
      * be stopped for cases when the channel fails to send an end-call audio packet.
      */
-    public RecorderManager(AliasModel aliasModel)
+    public RecorderManager(AliasModel aliasModel, UserPreferences userPreferences)
     {
         mAliasModel = aliasModel;
+        mUserPreferences = userPreferences;
         mAudioPacketQueue.setOverflowListener(new IOverflowListener()
         {
             @Override
@@ -299,10 +305,13 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         return getRecordingBasePath().resolve(sbFinal.toString());
     }
 
-
+    /**
+     * Base path to recordings folder
+     * @return
+     */
     public Path getRecordingBasePath()
     {
-        return SystemProperties.getInstance().getApplicationFolder("recordings");
+        return mUserPreferences.getDirectoryPreference().getDirectoryRecording();
     }
 
     /**

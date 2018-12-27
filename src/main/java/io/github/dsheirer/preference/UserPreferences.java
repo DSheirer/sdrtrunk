@@ -21,19 +21,34 @@
 package io.github.dsheirer.preference;
 
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
-import io.github.dsheirer.preference.playlist.FilePreferences;
+import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.tuner.TunerPreference;
 import io.github.dsheirer.sample.Listener;
 
 /**
  * User Preferences.  A collection of preferences that can be accessed by preference type.
+ *
+ * Note: user preference updates are broadcast throughout the system using the Google Guava Event Bus.  Each component
+ * can register with the event bus and annotate a method to receive updates:
+ *
+ * To register a component to receive events, add this in the constructor:
+ * MyEventBus.getEventBus().register(this);
+ *
+ * To receive preference update notifications, annotate a method with @Subscribe and use a PreferenceType argument:
+ *
+ * @Subscribe
+ * public void preferenceUpdated(PreferenceType preferenceType)
+ * {
+ * }
  */
 public class UserPreferences implements Listener<PreferenceType>
 {
     private DecodeEventPreference mDecodeEventPreference;
-    private FilePreferences mFilePreferences;
+    private DirectoryPreference mDirectoryPreference;
+    private PlaylistPreference mPlaylistPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
 
@@ -54,11 +69,19 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Directory preferences
+     */
+    public DirectoryPreference getDirectoryPreference()
+    {
+        return mDirectoryPreference;
+    }
+
+    /**
      * Playlist preferences
      */
-    public FilePreferences getFilePreferences()
+    public PlaylistPreference getPlaylistPreference()
     {
-        return mFilePreferences;
+        return mPlaylistPreference;
     }
 
     /**
@@ -83,7 +106,8 @@ public class UserPreferences implements Listener<PreferenceType>
     private void loadPreferenceTypes()
     {
         mDecodeEventPreference = new DecodeEventPreference(this);
-        mFilePreferences = new FilePreferences(this::receive);
+        mDirectoryPreference = new DirectoryPreference(this::receive);
+        mPlaylistPreference = new PlaylistPreference(this, mDirectoryPreference);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this);
         mTunerPreference = new TunerPreference(this);
     }

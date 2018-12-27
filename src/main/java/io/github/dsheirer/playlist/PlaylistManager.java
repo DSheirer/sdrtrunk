@@ -33,7 +33,7 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapEvent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.playlist.FilePreferences;
+import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -186,7 +186,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
      */
     private void save()
     {
-        FilePreferences files = mUserPreferences.getFilePreferences();
+        PlaylistPreference files = mUserPreferences.getPlaylistPreference();
 
         PlaylistV2 playlist = new PlaylistV2();
 
@@ -239,7 +239,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
                 Files.delete(files.getPlaylistLock());
             }
 
-            mUserPreferences.getFilePreferences().setPlaylistLastAccessedPath(files.getPlaylist());
+            mUserPreferences.getPlaylistPreference().setPlaylistLastAccessedPath(files.getPlaylist());
         }
         catch(IOException ioe)
         {
@@ -256,7 +256,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
      */
     public PlaylistV2 load()
     {
-        FilePreferences files = mUserPreferences.getFilePreferences();
+        PlaylistPreference files = mUserPreferences.getPlaylistPreference();
 
         PlaylistV2 playlist = null;
 

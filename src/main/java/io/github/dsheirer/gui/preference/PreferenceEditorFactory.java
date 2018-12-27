@@ -20,6 +20,7 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.scene.Node;
@@ -33,10 +34,12 @@ public class PreferenceEditorFactory
     {
         switch(preferenceEditorType)
         {
-            case TALKGROUP_FORMAT:
-                return new TalkgroupFormatPreferenceEditor(userPreferences);
             case CHANNEL_EVENT:
                 return new DecodeEventViewPreferenceEditor(userPreferences);
+            case DIRECTORY:
+                return new DirectoryPreferenceEditor(userPreferences);
+            case TALKGROUP_FORMAT:
+                return new TalkgroupFormatPreferenceEditor(userPreferences);
             case TUNER:
                 return new TunerPreferenceEditor(userPreferences);
         }

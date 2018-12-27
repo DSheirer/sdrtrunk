@@ -22,7 +22,7 @@ package io.github.dsheirer.module.log;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
-import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.util.StringUtils;
 import org.slf4j.Logger;
@@ -36,12 +36,11 @@ public class EventLogManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(EventLogManager.class);
 
-    private Path mDirectory;
+    private UserPreferences mUserPreferences;
 
-    public EventLogManager()
+    public EventLogManager(UserPreferences userPreferences)
     {
-        mDirectory = SystemProperties.getInstance()
-            .getApplicationFolder("event_logs");
+        mUserPreferences = userPreferences;
     }
 
     public List<Module> getLoggers(Channel channel)
@@ -89,16 +88,18 @@ public class EventLogManager
         sb.append(eventLogType.getFileSuffix());
         sb.append(".log");
 
+        Path eventLogDirectory = mUserPreferences.getDirectoryPreference().getDirectoryEventLog();
+
         switch(eventLogType)
         {
             case CALL_EVENT:
-                return new DecodeEventLogger(mDirectory, sb.toString(), frequency);
+                return new DecodeEventLogger(eventLogDirectory, sb.toString(), frequency);
             case DECODED_MESSAGE:
-                return new MessageEventLogger(mDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
+                return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
             case TRAFFIC_CALL_EVENT:
-                return new DecodeEventLogger(mDirectory, sb.toString(), frequency);
+                return new DecodeEventLogger(eventLogDirectory, sb.toString(), frequency);
             case TRAFFIC_DECODED_MESSAGE:
-                return new MessageEventLogger(mDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
+                return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
             default:
                 return null;
         }

@@ -36,6 +36,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -56,7 +57,6 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import net.miginfocom.swing.MigLayout;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +89,7 @@ import java.util.List;
 public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
+
     private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
     private boolean mBroadcastStatusVisible;
 
@@ -106,21 +107,14 @@ public class SDRTrunk implements Listener<TunerEvent>
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
+    private ApplicationLog mApplicationLog;
 
     private String mTitle;
 
     public SDRTrunk()
     {
-        mLog.info("*******************************************************************");
-        mLog.info("**** sdrtrunk: a trunked radio and digital decoding application ***");
-        mLog.info("****  website: https://github.com/dsheirer/sdrtrunk             ***");
-        mLog.info("*******************************************************************");
-        mLog.info("Memory Logging Format: [Used/Allocated PercentUsed%]");
-        mLog.info("Host OS Name:          " + System.getProperty("os.name"));
-        mLog.info("Host OS Arch:          " + System.getProperty("os.arch"));
-        mLog.info("Host OS Version:       " + System.getProperty("os.version"));
-        mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
-        mLog.info("Host Max Java Memory:  " + FileUtils.byteCountToDisplaySize(Runtime.getRuntime().maxMemory()));
+        mApplicationLog = new ApplicationLog(mUserPreferences);
+        mApplicationLog.start();
 
         //Setup the application home directory
         Path home = getHomePath();
@@ -151,9 +145,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         ChannelMapModel channelMapModel = new ChannelMapModel();
 
-        EventLogManager eventLogManager = new EventLogManager();
+        EventLogManager eventLogManager = new EventLogManager(mUserPreferences);
 
-        RecorderManager recorderManager = new RecorderManager(aliasModel);
+        RecorderManager recorderManager = new RecorderManager(aliasModel, mUserPreferences);
 
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
 
@@ -170,7 +164,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSourceManager.getMixerManager());
 
-        mBroadcastModel = new BroadcastModel(aliasModel, mIconManager);
+        mBroadcastModel = new BroadcastModel(aliasModel, mIconManager, mUserPreferences);
 
         //Audio packets are routed through the audio packet manager for metadata enrichment and then
         //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
@@ -373,47 +367,20 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     Robot robot = new Robot();
 
-                    final BufferedImage image =
-                        robot.createScreenCapture(mMainGui.getBounds());
+                    final BufferedImage image = robot.createScreenCapture(mMainGui.getBounds());
 
-                    SystemProperties props = SystemProperties.getInstance();
+                    String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
 
-                    Path capturePath = props.getApplicationFolder("screen_captures");
+                    final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
-                    if(!Files.exists(capturePath))
-                    {
+                    EventQueue.invokeLater(() -> {
                         try
                         {
-                            Files.createDirectory(capturePath);
+                            ImageIO.write(image, "png", captureFile.toFile());
                         }
                         catch(IOException e)
                         {
-                            mLog.error("Couldn't create 'screen_captures' "
-                                + "subdirectory in the " +
-                                "SDRTrunk application directory", e);
-                        }
-                    }
-
-                    String filename = TimeStamp.getTimeStamp("_") +
-                        "_screen_capture.png";
-
-                    final Path captureFile = capturePath.resolve(filename);
-
-                    EventQueue.invokeLater(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            try
-                            {
-                                ImageIO.write(image, "png",
-                                    captureFile.toFile());
-                            }
-                            catch(IOException e)
-                            {
-                                mLog.error("Couldn't write screen capture to "
-                                    + "file [" + captureFile.toString() + "]", e);
-                            }
+                            mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
                         }
                     });
                 }
@@ -442,6 +409,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("Releasing tuners ...");
         mSourceManager.shutdown();
         mLog.info("Shutdown complete.");
+        mApplicationLog.stop();
     }
 
     /**

@@ -26,7 +26,7 @@ package io.github.dsheirer.preference;
 public enum PreferenceType
 {
     DECODE_EVENT,
-    FILES,
+    DIRECTORY,
     IDENTIFIER,
     TUNER;
 }
