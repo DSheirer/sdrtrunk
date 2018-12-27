@@ -28,10 +28,13 @@ import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
@@ -59,7 +62,7 @@ public class AliasList implements Listener<AliasEvent>
     private List<WildcardID> mSiteWildcards = new ArrayList<>();
     private boolean mHasAliasActions = false;
 
-    private Map<Protocol,Map<Integer,Alias>> mTalkgroupProtocolMap = new HashMap<>();
+    private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new HashMap<>();
 
     private String mName;
 
@@ -107,15 +110,28 @@ public class AliasList implements Listener<AliasEvent>
                     case TALKGROUP:
                         Talkgroup talkgroup = (Talkgroup)id;
 
-                        Map<Integer,Alias> protocolMap = mTalkgroupProtocolMap.get(talkgroup.getProtocol());
+                        TalkgroupAliasList talkgroupAliasList = mTalkgroupProtocolMap.get(talkgroup.getProtocol());
 
-                        if(protocolMap == null)
+                        if(talkgroupAliasList == null)
                         {
-                            protocolMap = new TreeMap<Integer,Alias>();
-                            mTalkgroupProtocolMap.put(talkgroup.getProtocol(), protocolMap);
+                            talkgroupAliasList = new TalkgroupAliasList();
+                            mTalkgroupProtocolMap.put(talkgroup.getProtocol(), talkgroupAliasList);
                         }
 
-                        protocolMap.put(talkgroup.getValue(), alias);
+                        talkgroupAliasList.add(talkgroup, alias);
+                        break;
+                    case TALKGROUP_RANGE:
+                        TalkgroupRange talkgroupRange = (TalkgroupRange)id;
+
+                        TalkgroupAliasList talkgroupRangeAliasList = mTalkgroupProtocolMap.get(talkgroupRange.getProtocol());
+
+                        if(talkgroupRangeAliasList == null)
+                        {
+                            talkgroupRangeAliasList = new TalkgroupAliasList();
+                            mTalkgroupProtocolMap.put(talkgroupRange.getProtocol(), talkgroupRangeAliasList);
+                        }
+
+                        talkgroupRangeAliasList.add(talkgroupRange, alias);
                         break;
                     case ESN:
                         String esn = ((Esn) id).getEsn();
@@ -153,6 +169,7 @@ public class AliasList implements Listener<AliasEvent>
                         break;
                     case BROADCAST_CHANNEL:
                     case NON_RECORDABLE:
+                    case RECORD:
                     case PRIORITY:
                         //We don't maintain lookups for these items
                         break;
@@ -397,17 +414,46 @@ public class AliasList implements Listener<AliasEvent>
      */
     public Alias getAlias(Identifier identifier)
     {
+//TODO: update this to List<Alias> return type so that we can return all of the aliases for a patch group
         if(identifier != null)
         {
             switch(identifier.getForm())
             {
                 case TALKGROUP:
                     TalkgroupIdentifier talkgroup = (TalkgroupIdentifier)identifier;
-                    Map<Integer,Alias> protocolMap = mTalkgroupProtocolMap.get(identifier.getProtocol());
 
-                    if(protocolMap != null)
+                    TalkgroupAliasList talkgroupAliasList = mTalkgroupProtocolMap.get(identifier.getProtocol());
+
+                    if(talkgroupAliasList != null)
                     {
-                        return protocolMap.get(talkgroup.getValue());
+                        return talkgroupAliasList.getAlias(talkgroup);
+                    }
+                    break;
+                case PATCH_GROUP:
+                    PatchGroupIdentifier patchGroupIdentifier = (PatchGroupIdentifier)identifier;
+                    PatchGroup patchGroup = patchGroupIdentifier.getValue();
+
+                    TalkgroupAliasList patchGroupAliasList = mTalkgroupProtocolMap.get(patchGroupIdentifier.getProtocol());
+
+                    if(patchGroupAliasList != null)
+                    {
+//TODO: make this a list of aliases that match the patch group - right now it just returns the first-matched
+                        Alias alias = patchGroupAliasList.getAlias(patchGroup.getPatchGroup());
+
+                        if(alias != null)
+                        {
+                            return alias;
+                        }
+
+                        for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
+                        {
+                            Alias patchedAlias = patchGroupAliasList.getAlias(patchedGroup);
+
+                            if(patchedAlias != null)
+                            {
+                                return patchedAlias;
+                            }
+                        }
                     }
                     break;
                 case ESN:
@@ -520,5 +566,58 @@ public class AliasList implements Listener<AliasEvent>
         }
 
         return channels;
+    }
+
+    /**
+     * Listing of talkgroups and ranges for a specific protocol
+     */
+    public class TalkgroupAliasList
+    {
+        private Map<Integer,Alias> mTalkgroupAliasMap = new TreeMap<>();
+        private Map<TalkgroupRange, Alias> mTalkgroupRangeMap = new HashMap<>();
+
+        public TalkgroupAliasList()
+        {
+        }
+
+        public Alias getAlias(TalkgroupIdentifier identifier)
+        {
+            int value = identifier.getValue();
+
+            if(mTalkgroupAliasMap.containsKey(value))
+            {
+                return mTalkgroupAliasMap.get(value);
+            }
+
+            for(TalkgroupRange talkgroupRange: mTalkgroupRangeMap.keySet())
+            {
+                if(talkgroupRange.contains(value))
+                {
+                    return mTalkgroupRangeMap.get(talkgroupRange);
+                }
+            }
+
+            return null;
+        }
+
+        public void add(Talkgroup talkgroup, Alias alias)
+        {
+            mTalkgroupAliasMap.put(talkgroup.getValue(), alias);
+        }
+
+        public void add(TalkgroupRange talkgroupRange, Alias alias)
+        {
+            mTalkgroupRangeMap.put(talkgroupRange, alias);
+        }
+
+        public void remove(Talkgroup talkgroup)
+        {
+            mTalkgroupAliasMap.remove(talkgroup.getValue());
+        }
+
+        public void remove(TalkgroupRange talkgroupRange)
+        {
+            mTalkgroupRangeMap.remove(talkgroupRange);
+        }
     }
 }
