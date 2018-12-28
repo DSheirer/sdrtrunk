@@ -31,8 +31,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class AliasEditor extends Editor<Alias> 
-			implements ActionListener, Listener<AliasEvent>
+public class AliasEditor extends Editor<Alias> implements ActionListener, Listener<AliasEvent>
 {
     private static final long serialVersionUID = 1L;
 

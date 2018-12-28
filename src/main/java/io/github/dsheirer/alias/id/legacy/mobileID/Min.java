@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package io.github.dsheirer.alias.id.mobileID;
+package io.github.dsheirer.alias.id.legacy.mobileID;
 
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
@@ -52,7 +52,7 @@ public class Min extends AliasID
 
     public String toString()
     {
-        return "MIN: " + (mMin != null ? mMin : "(empty)") + (isValid() ? "" : " **NOT VALID**");
+        return "MIN: " + (mMin != null ? mMin : "(empty)") + (isValid() ? "" : " **INVALID - USE TALKGROUP INSTEAD");
     }
 
     @Override

@@ -20,20 +20,18 @@
 
 package io.github.dsheirer.module.decode.ltrnet.identifier;
 
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Unique ID or radio ID for LTR-Net radios is a 16-bit logical network radio identifier value.
  */
-public class UniqueIdentifier extends IntegerIdentifier implements Comparable<UniqueIdentifier>
+public class LtrNetRadioIdentifier extends TalkgroupIdentifier implements Comparable<LtrNetRadioIdentifier>
 {
-    public UniqueIdentifier(int value, Role role)
+    public LtrNetRadioIdentifier(int value, Role role)
     {
-        super(value, IdentifierClass.USER, Form.UNIQUE_ID, role);
+        super(value, role, false);
     }
 
     @Override
@@ -45,21 +43,21 @@ public class UniqueIdentifier extends IntegerIdentifier implements Comparable<Un
     /**
      * Creates a unique identifier for the FROM radio role
      */
-    public static UniqueIdentifier createFrom(int value)
+    public static LtrNetRadioIdentifier createFrom(int value)
     {
-        return new UniqueIdentifier(value, Role.FROM);
+        return new LtrNetRadioIdentifier(value, Role.FROM);
     }
 
     /**
      * Creates a unique identifier for the TO radio role
      */
-    public static UniqueIdentifier createTo(int value)
+    public static LtrNetRadioIdentifier createTo(int value)
     {
-        return new UniqueIdentifier(value, Role.TO);
+        return new LtrNetRadioIdentifier(value, Role.TO);
     }
 
     @Override
-    public int compareTo(UniqueIdentifier o)
+    public int compareTo(LtrNetRadioIdentifier o)
     {
         return getValue().compareTo(o.getValue());
     }
