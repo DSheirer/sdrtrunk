@@ -1,13 +1,44 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
+
 package io.github.dsheirer.record.wave;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.configuration.ChannelNameConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
+import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.properties.SystemProperties;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -267,139 +298,90 @@ public class WaveMetadata
         }
     }
 
+    /**
+     * Creates a WAVE recording metadata chunk from the audio metadata argument
+     * @param audioMetadata to create the wave metadata from
+     * @return wave metadata instance
+     */
     public static WaveMetadata createFrom(IdentifierCollection identifierCollection, AliasList aliasList)
     {
+        WaveMetadata waveMetadata = new WaveMetadata();
 
-        return null;
-    }
+        waveMetadata.add(WaveMetadataType.SOFTWARE, SystemProperties.getInstance().getApplicationName());
+        waveMetadata.add(WaveMetadataType.DATE_CREATED, SDF.format(new Date(System.currentTimeMillis())));
 
-//    /**
-//     * Creates a WAVE recording metadata chunk from the audio metadata argument
-//     * @param audioMetadata to create the wave metadata from
-//     * @return wave metadata instance
-//     */
-//    public static WaveMetadata createFrom(Metadata audioMetadata)
-//    {
-//        WaveMetadata waveMetadata = new WaveMetadata();
-//
-//        waveMetadata.add(WaveMetadataType.SOFTWARE, SystemProperties.getInstance().getApplicationName());
-//        waveMetadata.add(WaveMetadataType.DATE_CREATED, SDF.format(new Date(audioMetadata.getTimestamp())));
-//        waveMetadata.add(WaveMetadataType.ARTIST_NAME, audioMetadata.getChannelConfigurationSystem());
-//        waveMetadata.add(WaveMetadataType.ALBUM_TITLE, audioMetadata.getChannelConfigurationSite());
-//        waveMetadata.add(WaveMetadataType.TRACK_TITLE, audioMetadata.getChannelConfigurationName());
-//        waveMetadata.add(WaveMetadataType.COMMENTS, audioMetadata.getPrimaryDecoderType().getDisplayString());
-//        waveMetadata.add(WaveMetadataType.CHANNEL_ID, audioMetadata.getChannelFrequencyLabel());
-//        waveMetadata.add(WaveMetadataType.CHANNEL_FREQUENCY, String.valueOf(audioMetadata.getChannelFrequency()));
-//
-//        AliasedIdentifier networkID1 = audioMetadata.getNetworkID1();
-//
-//        if(networkID1 != null)
-//        {
-//            waveMetadata.add(WaveMetadataType.NETWORK_ID_1, networkID1.getIdentifier());
-//        }
-//
-//        AliasedIdentifier networkID2 = audioMetadata.getNetworkID2();
-//
-//        if(networkID2 != null)
-//        {
-//            waveMetadata.add(WaveMetadataType.NETWORK_ID_2, networkID2.getIdentifier());
-//        }
-//
-//        AliasedIdentifier primaryFrom = audioMetadata.getPrimaryAddressFrom();
-//
-//        if(primaryFrom != null)
-//        {
-//            waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM, primaryFrom.getIdentifier());
-//
-//            Alias alias = primaryFrom.getAlias();
-//
-//            if(alias != null)
-//            {
+        Identifier system = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
+        if(system instanceof SystemConfigurationIdentifier)
+        {
+            waveMetadata.add(WaveMetadataType.ARTIST_NAME, ((SystemConfigurationIdentifier)system).getValue());
+        }
+
+        Identifier site = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SITE, Role.ANY);
+        if(site instanceof SiteConfigurationIdentifier)
+        {
+            waveMetadata.add(WaveMetadataType.ALBUM_TITLE, ((SiteConfigurationIdentifier)site).getValue());
+        }
+
+        Identifier channel = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
+        if(channel instanceof ChannelNameConfigurationIdentifier)
+        {
+            waveMetadata.add(WaveMetadataType.TRACK_TITLE, ((ChannelNameConfigurationIdentifier)channel).getValue());
+        }
+
+        Identifier decoder = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.DECODER_TYPE,
+                Role.ANY);
+        if(decoder instanceof DecoderTypeConfigurationIdentifier)
+        {
+            waveMetadata.add(WaveMetadataType.COMMENTS, ((DecoderTypeConfigurationIdentifier)decoder).getValue().getDisplayString());
+        }
+
+        Identifier channelName = identifierCollection.getIdentifier(IdentifierClass.DECODER, Form.CHANNEL_NAME,
+                Role.ANY);
+
+        if(channelName instanceof DecoderLogicalChannelNameIdentifier)
+        {
+            waveMetadata.add(WaveMetadataType.CHANNEL_ID, ((DecoderLogicalChannelNameIdentifier)channelName).getValue());
+        }
+
+        Identifier frequency = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION,
+                Form.CHANNEL_FREQUENCY, Role.ANY);
+
+        if(frequency instanceof FrequencyConfigurationIdentifier)
+        {
+            waveMetadata.add(WaveMetadataType.CHANNEL_FREQUENCY,
+                    String.valueOf(((FrequencyConfigurationIdentifier)frequency).getValue()));
+        }
+
+        for(Identifier identifier: identifierCollection.getIdentifiers(Form.TALKGROUP))
+        {
+            if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.FROM)
+            {
+                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM,
+                        String.valueOf(((TalkgroupIdentifier)identifier).getValue()));
 //                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, alias.getName());
 //                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, alias.getIconName());
-//            }
-//        }
-//
-//        AliasedIdentifier primaryTo = audioMetadata.getPrimaryAddressTo();
-//
-//        if(primaryTo != null)
-//        {
-//            waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO, primaryTo.getIdentifier());
-//
-//            Alias alias = primaryTo.getAlias();
-//
-//            if(alias != null)
-//            {
-//                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, alias.getName());
-//                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, alias.getIconName());
-//
-//                if(alias instanceof PatchGroupAlias)
-//                {
-//                    PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
-//
-//                    List<Alias> patchedAliases = patchGroupAlias.getPatchedAliases();
-//
-//                    if(patchedAliases.size() >= 1)
-//                    {
-//                        Alias patch = patchedAliases.get(0);
-//                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_PATCHED_1, patch.getName());
-//                    }
-//                    if(patchedAliases.size() >= 2)
-//                    {
-//                        Alias patch = patchedAliases.get(1);
-//                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_PATCHED_2, patch.getName());
-//                    }
-//                    if(patchedAliases.size() >= 3)
-//                    {
-//                        Alias patch = patchedAliases.get(2);
-//                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_PATCHED_3, patch.getName());
-//                    }
-//                    if(patchedAliases.size() >= 4)
-//                    {
-//                        Alias patch = patchedAliases.get(3);
-//                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_PATCHED_4, patch.getName());
-//                    }
-//                    if(patchedAliases.size() >= 5)
-//                    {
-//                        Alias patch = patchedAliases.get(4);
-//                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_PATCHED_5, patch.getName());
-//                    }
-//                }
-//            }
-//        }
-//
-//        AliasedIdentifier secondaryFrom = audioMetadata.getSecondaryAddressFrom();
-//
-//        if(secondaryFrom != null)
-//        {
-//            waveMetadata.add(WaveMetadataType.TALKGROUP_SECONDARY_FROM, secondaryFrom.getIdentifier());
-//
-//            Alias alias = secondaryFrom.getAlias();
-//
-//            if(alias != null)
-//            {
-//                waveMetadata.add(WaveMetadataType.TALKGROUP_SECONDARY_FROM_ALIAS, alias.getName());
-//                waveMetadata.add(WaveMetadataType.TALKGROUP_SECONDARY_FROM_ICON, alias.getIconName());
-//            }
-//        }
-//
-//        AliasedIdentifier secondaryTo = audioMetadata.getSecondaryAddressTo();
-//
-//        if(secondaryTo != null)
-//        {
-//            waveMetadata.add(WaveMetadataType.TALKGROUP_SECONDARY_TO, secondaryTo.getIdentifier());
-//
-//            Alias alias = secondaryTo.getAlias();
-//
-//            if(alias != null)
-//            {
-//                waveMetadata.add(WaveMetadataType.TALKGROUP_SECONDARY_TO_ALIAS, alias.getName());
-//                waveMetadata.add(WaveMetadataType.TALKGROUP_SECONDARY_TO_ICON, alias.getIconName());
-//            }
-//        }
-//
-//        return waveMetadata;
-//    }
+            }
+            else if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.TO)
+            {
+                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO,
+                        String.valueOf(((TalkgroupIdentifier)identifier).getValue()));
+//                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, alias.getName());
+//                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, alias.getIconName());
+            }
+            else if(identifier instanceof PatchGroupIdentifier)
+            {
+                PatchGroup patchGroup = ((PatchGroupIdentifier)identifier).getValue();
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("P:").append(patchGroup.getPatchGroup()).append(patchGroup.getPatchedGroupIdentifiers());
+                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO, sb.toString());
+//                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, alias.getName());
+//                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, alias.getIconName());
+            }
+        }
+
+        return waveMetadata;
+    }
 
     /**
      * Converts the integer length to an ID3 compatible length field where each byte only uses the 7 least significant
