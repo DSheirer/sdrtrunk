@@ -21,15 +21,12 @@ package io.github.dsheirer.alias;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
-import io.github.dsheirer.alias.id.WildcardID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
-import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
