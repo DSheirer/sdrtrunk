@@ -51,7 +51,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaylistManager.class);
 
-    public static final int PLAYLIST_CURRENT_VERSION = 2;
+    public static final int PLAYLIST_CURRENT_VERSION = 3;
 
     private AliasModel mAliasModel;
     private BroadcastModel mBroadcastModel;

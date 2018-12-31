@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package io.github.dsheirer.alias.id.uniqueID;
+package io.github.dsheirer.alias.id.legacy.uniqueID;
 
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;

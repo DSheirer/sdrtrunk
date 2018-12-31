@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package io.github.dsheirer.alias.id.uniqueID;
+package io.github.dsheirer.alias.id.legacy.uniqueID;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
@@ -48,7 +48,7 @@ public class UniqueID extends AliasID
 
     public String toString()
     {
-        return "UniqueID: " + mUid;
+        return "UniqueID: " + mUid + " **INVALID - USE TALKGROUP INSTEAD";
     }
 
     @Override

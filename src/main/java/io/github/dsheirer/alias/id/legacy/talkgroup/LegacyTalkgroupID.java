@@ -59,7 +59,7 @@ public class LegacyTalkgroupID extends AliasID
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Legacy Talkgroup:").append(mTalkgroup).append(" *Disabled - Please Convert");
+        sb.append("Legacy Talkgroup:").append(mTalkgroup).append(" *Disabled - Please use Talkgroup instead");
 
         return sb.toString();
     }

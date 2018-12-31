@@ -27,8 +27,9 @@ import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
-import io.github.dsheirer.alias.id.mobileID.Min;
+import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
+import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -77,10 +78,12 @@ public class PlaylistUpdater
         switch(playlist.getVersion())
         {
             case 1:
+            case 2:
                 mLog.info("Updating playlist from version [1] to version [" + PlaylistManager.PLAYLIST_CURRENT_VERSION + "]");
                 removeVersion1AudioRecordType(playlist);
                 removeVersion1BinaryMessageLogger(playlist);
                 removeVersion1NonRecordableAliasIdentifiers(playlist);
+                removeVersion1SiteIdentifiers(playlist);
                 updateVersion1Talkgroups(playlist);
                 updated = true;
                 break;
@@ -184,7 +187,34 @@ public class PlaylistUpdater
     }
 
     /**
-     * Converts legacy version 1talkgroups to the new talkgroup format.  Previously, each protocol had a talkgroup
+     * Removes site identifiers from all aliases.  These are no longer supported
+     */
+    private static void removeVersion1SiteIdentifiers(PlaylistV2 playlist)
+    {
+        int removed = 0;
+
+        for(Alias alias : playlist.getAliases())
+        {
+            Iterator<AliasID> it = alias.getId().iterator();
+
+            while(it.hasNext())
+            {
+                if(it.next().getType() == AliasIDType.SITE)
+                {
+                    it.remove();
+                    removed++;
+                }
+            }
+        }
+
+        if(removed > 0)
+        {
+            mLog.info("Removed [" + removed + "] site identifiers from aliases");
+        }
+    }
+
+    /**
+     * Converts legacy version 1 talkgroups to the new talkgroup format.  Previously, each protocol had a talkgroup
      * flavor and now there is a generic talkgroup identifier with a protocol specifier.
      *
      * @param playlist to update
@@ -425,6 +455,12 @@ public class PlaylistUpdater
                                 }
                             }
                         }
+                        break;
+                    case LTR_NET_UID:
+                        int uid = ((UniqueID)next).getUid();
+                        toAdd.add(new Talkgroup(Protocol.LTR_NET, uid));
+                        it.remove();
+                        updated++;
                         break;
                 }
             }
