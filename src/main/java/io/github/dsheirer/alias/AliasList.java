@@ -402,7 +402,7 @@ public class AliasList implements Listener<AliasEvent>
 
         while(it.hasNext())
         {
-            if(it.next().getKey().equals(alias))
+            if(it.next().getValue().equals(alias))
             {
                 it.remove();
             }
@@ -416,7 +416,7 @@ public class AliasList implements Listener<AliasEvent>
     public class TalkgroupAliasList
     {
         private Map<Integer,Alias> mTalkgroupAliasMap = new TreeMap<>();
-        private Map<TalkgroupRange, Alias> mTalkgroupRangeMap = new HashMap<>();
+        private Map<TalkgroupRange, Alias> mTalkgroupRangeAliasMap = new HashMap<>();
 
         public TalkgroupAliasList()
         {
@@ -431,11 +431,11 @@ public class AliasList implements Listener<AliasEvent>
                 return mTalkgroupAliasMap.get(value);
             }
 
-            for(TalkgroupRange talkgroupRange: mTalkgroupRangeMap.keySet())
+            for(TalkgroupRange talkgroupRange: mTalkgroupRangeAliasMap.keySet())
             {
                 if(talkgroupRange.contains(value))
                 {
-                    return mTalkgroupRangeMap.get(talkgroupRange);
+                    return mTalkgroupRangeAliasMap.get(talkgroupRange);
                 }
             }
 
@@ -449,7 +449,7 @@ public class AliasList implements Listener<AliasEvent>
 
         public void add(TalkgroupRange talkgroupRange, Alias alias)
         {
-            mTalkgroupRangeMap.put(talkgroupRange, alias);
+            mTalkgroupRangeAliasMap.put(talkgroupRange, alias);
         }
 
         public void remove(Talkgroup talkgroup)
@@ -459,7 +459,7 @@ public class AliasList implements Listener<AliasEvent>
 
         public void remove(TalkgroupRange talkgroupRange)
         {
-            mTalkgroupRangeMap.remove(talkgroupRange);
+            mTalkgroupRangeAliasMap.remove(talkgroupRange);
         }
 
         /**
@@ -468,7 +468,7 @@ public class AliasList implements Listener<AliasEvent>
         public void remove(Alias alias)
         {
             AliasList.remove(alias, mTalkgroupAliasMap);
-            AliasList.remove(alias, mTalkgroupRangeMap);
+            AliasList.remove(alias, mTalkgroupRangeAliasMap);
         }
     }
 }
