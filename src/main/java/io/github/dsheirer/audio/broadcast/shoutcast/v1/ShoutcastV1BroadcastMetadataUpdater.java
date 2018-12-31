@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
@@ -45,6 +47,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
@@ -200,15 +203,16 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
                 to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
             }
 
-            Alias toAlias = aliasList != null ? aliasList.getAlias(to) : null;
+            if(to != null)
+            {
+                sb.append("TO:").append(to);
 
-            if(toAlias != null)
-            {
-                sb.append("TO:").append(toAlias.getName());
-            }
-            else if(to != null)
-            {
-                sb.append("TO:").append(to.toString());
+                List<Alias> aliases = aliasList.getAliases(to);
+
+                if(!aliases.isEmpty())
+                {
+                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
+                }
             }
             else
             {
@@ -217,15 +221,16 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
 
             Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
 
-            Alias fromAlias = aliasList != null ? aliasList.getAlias(from) : null;
+            if(from != null)
+            {
+                sb.append(" FROM:").append(from);
 
-            if(fromAlias != null)
-            {
-                sb.append(" FROM:").append(fromAlias.getName());
-            }
-            else if(from != null)
-            {
-                sb.append(" FROM:").append(from.toString());
+                List<Alias> aliases = aliasList.getAliases(from);
+
+                if(!aliases.isEmpty())
+                {
+                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
+                }
             }
             else
             {

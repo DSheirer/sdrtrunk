@@ -39,6 +39,9 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Channel metadata containing details about the channel configuration, decoder state and current
  * set of decoded user identifiers (ie TO and FROM).
@@ -55,9 +58,9 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     private DecoderLogicalChannelNameIdentifier mDecoderLogicalChannelNameIdentifier;
     private DecoderTypeConfigurationIdentifier mDecoderTypeConfigurationIdentifier;
     private Identifier mFromIdentifier;
-    private Alias mFromIdentifierAlias;
+    private List<Alias> mFromIdentifierAliases;
     private Identifier mToIdentifier;
-    private Alias mToIdentifierAlias;
+    private List<Alias> mToIdentifierAliases;
 
     private IChannelMetadataUpdateListener mIChannelMetadataUpdateListener;
     private AliasModel mAliasModel;
@@ -181,9 +184,9 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     /**
      * Optional alias associated with the FROM identifier
      */
-    public Alias getFromIdentifierAlias()
+    public List<Alias> getFromIdentifierAliases()
     {
-        return mFromIdentifierAlias;
+        return mFromIdentifierAliases;
     }
 
     /**
@@ -202,9 +205,9 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     /**
      * Optional alias associated with the TO identifier
      */
-    public Alias getToIdentifierAlias()
+    public List<Alias> getToIdentifierAliases()
     {
-        return mToIdentifierAlias;
+        return mToIdentifierAliases;
     }
 
     /**
@@ -255,11 +258,11 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
                             {
                                 if(mToIdentifier != null)
                                 {
-                                    mToIdentifierAlias = mAliasList.getAlias(mToIdentifier);
+                                    mToIdentifierAliases = mAliasList.getAliases(mToIdentifier);
                                 }
                                 if(mFromIdentifier != null)
                                 {
-                                    mFromIdentifierAlias = mAliasList.getAlias(mFromIdentifier);
+                                    mFromIdentifierAliases = mAliasList.getAliases(mFromIdentifier);
                                 }
                             }
                         }
@@ -306,11 +309,11 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
 
                     if(mAliasList != null && mFromIdentifier != null)
                     {
-                        mFromIdentifierAlias = mAliasList.getAlias(mFromIdentifier);
+                        mFromIdentifierAliases = mAliasList.getAliases(mFromIdentifier);
                     }
                     else
                     {
-                        mFromIdentifierAlias = null;
+                        mFromIdentifierAliases = Collections.EMPTY_LIST;
                     }
 
                     broadcastUpdate(ChannelMetadataField.USER_FROM);
@@ -321,11 +324,11 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
 
                     if(mAliasList != null && mToIdentifier != null)
                     {
-                        mToIdentifierAlias = mAliasList.getAlias(mToIdentifier);
+                        mToIdentifierAliases = mAliasList.getAliases(mToIdentifier);
                     }
                     else
                     {
-                        mToIdentifierAlias = null;
+                        mToIdentifierAliases = Collections.EMPTY_LIST;
                     }
 
                     broadcastUpdate(ChannelMetadataField.USER_TO);

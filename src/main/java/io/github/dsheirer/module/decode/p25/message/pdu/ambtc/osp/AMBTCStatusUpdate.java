@@ -23,7 +23,8 @@ package io.github.dsheirer.module.decode.p25.message.pdu.ambtc.osp;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.identifier.status.APCO25Status;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UnitStatus;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UserStatus;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
@@ -137,7 +138,7 @@ public class AMBTCStatusUpdate extends AMBTCMessage
     {
         if(mUnitStatus == null && hasDataBlock(0))
         {
-            mUnitStatus = APCO25Status.createUnitStatus(getDataBlock(0).getMessage().getInt(BLOCK_0_UNIT_STATUS));
+            mUnitStatus = APCO25UnitStatus.create(getDataBlock(0).getMessage().getInt(BLOCK_0_UNIT_STATUS));
         }
 
         return mUnitStatus;
@@ -147,7 +148,7 @@ public class AMBTCStatusUpdate extends AMBTCMessage
     {
         if(mUserStatus == null && hasDataBlock(0))
         {
-            mUserStatus = APCO25Status.createUserStatus(getDataBlock(0).getMessage().getInt(BLOCK_0_USER_STATUS));
+            mUserStatus = APCO25UserStatus.create(getDataBlock(0).getMessage().getInt(BLOCK_0_USER_STATUS));
         }
 
         return mUserStatus;
