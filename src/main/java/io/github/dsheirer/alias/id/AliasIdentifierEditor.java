@@ -125,11 +125,7 @@ public class AliasIdentifierEditor extends Editor<Alias>
                 menu.add(new AddAliasIdentifierItem(AliasIDType.TALKGROUP));
                 menu.add(new AddAliasIdentifierItem(AliasIDType.TALKGROUP_RANGE));
                 menu.add(new AddAliasIdentifierItem(AliasIDType.ESN));
-                menu.add(new AddAliasIdentifierItem(AliasIDType.LOJACK));
-                menu.add(new AddAliasIdentifierItem(AliasIDType.LTR_NET_UID));
-                menu.add(new AddAliasIdentifierItem(AliasIDType.MDC1200));
-                menu.add(new AddAliasIdentifierItem(AliasIDType.MIN));
-                menu.add(new AddAliasIdentifierItem(AliasIDType.SITE));
+//                menu.add(new AddAliasIdentifierItem(AliasIDType.LOJACK));
                 menu.add(new AddAliasIdentifierItem(AliasIDType.STATUS));
 
                 menu.addSeparator();

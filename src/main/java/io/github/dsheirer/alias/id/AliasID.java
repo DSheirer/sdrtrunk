@@ -29,14 +29,14 @@ import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
-import io.github.dsheirer.alias.id.mobileID.Min;
+import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.siteID.SiteID;
+import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.alias.id.uniqueID.UniqueID;
+import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({

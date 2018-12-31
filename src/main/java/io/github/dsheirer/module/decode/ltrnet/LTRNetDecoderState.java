@@ -37,7 +37,7 @@ import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.ltrnet.channel.LtrNetChannel;
-import io.github.dsheirer.module.decode.ltrnet.identifier.UniqueIdentifier;
+import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetRadioIdentifier;
 import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
 import io.github.dsheirer.module.decode.ltrnet.message.isw.IswCallEnd;
 import io.github.dsheirer.module.decode.ltrnet.message.isw.IswCallStart;
@@ -82,7 +82,7 @@ public class LTRNetDecoderState extends DecoderState
     private SiteId mCurrentSite;
     private int mCurrentChannelNumber;
     private Set<LTRTalkgroup> mTalkgroups = new TreeSet<>();
-    private Set<UniqueIdentifier> mUniqueIdentifiers = new TreeSet<>();
+    private Set<LtrNetRadioIdentifier> mLtrNetRadioIdentifiers = new TreeSet<>();
     private Set<ESNIdentifier> mESNIdentifiers = new TreeSet<>();
     private DecodeEvent mCurrentCallEvent;
     private LTRTalkgroup mCurrentCallTalkgroup;
@@ -121,7 +121,7 @@ public class LTRNetDecoderState extends DecoderState
         mCurrentSite = null;
         mCurrentChannelNumber = 0;
         mTalkgroups.clear();
-        mUniqueIdentifiers.clear();
+        mLtrNetRadioIdentifiers.clear();
         mESNIdentifiers.clear();
         resetState();
     }
@@ -388,7 +388,7 @@ public class LTRNetDecoderState extends DecoderState
                     {
                         IswUniqueId iswUniqueId = (IswUniqueId)message;
                         getIdentifierCollection().update(iswUniqueId.getUniqueID());
-                        mUniqueIdentifiers.add(iswUniqueId.getUniqueID());
+                        mLtrNetRadioIdentifiers.add(iswUniqueId.getUniqueID());
                         updateCurrentCallIdentifiers();
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
@@ -462,7 +462,7 @@ public class LTRNetDecoderState extends DecoderState
                     if(message instanceof RegistrationAccept)
                     {
                         RegistrationAccept registrationAccept = (RegistrationAccept)message;
-                        mUniqueIdentifiers.add(registrationAccept.getUniqueID());
+                        mLtrNetRadioIdentifiers.add(registrationAccept.getUniqueID());
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                         ic.remove(IdentifierClass.USER);
                         ic.update(message.getIdentifiers());
@@ -580,18 +580,18 @@ public class LTRNetDecoderState extends DecoderState
 
         sb.append("\nActive Radio Unique IDs\n");
 
-        if(mUniqueIdentifiers.isEmpty())
+        if(mLtrNetRadioIdentifiers.isEmpty())
         {
             sb.append("  None\n");
         }
         else
         {
-            List<UniqueIdentifier> uniqueIdentifiers = new ArrayList<>(mUniqueIdentifiers);
-            Collections.sort(uniqueIdentifiers, Comparator.comparingInt(Identifier::getValue));
+            List<LtrNetRadioIdentifier> ltrNetRadioIdentifiers = new ArrayList<>(mLtrNetRadioIdentifiers);
+            Collections.sort(ltrNetRadioIdentifiers, Comparator.comparingInt(Identifier::getValue));
 
-            for(UniqueIdentifier uniqueIdentifier: uniqueIdentifiers)
+            for(LtrNetRadioIdentifier ltrNetRadioIdentifier : ltrNetRadioIdentifiers)
             {
-                sb.append("  ").append(uniqueIdentifier).append("\n");
+                sb.append("  ").append(ltrNetRadioIdentifier).append("\n");
             }
         }
 

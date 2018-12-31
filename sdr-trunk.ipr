@@ -383,15 +383,15 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.j2objc/j2objc-annotations/1.1/dcd31de68a90e41e336f6b7afce0d39285c433d7/j2objc-annotations-1.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.jidesoft:jide-oss:3.4.3">
+    <library name="Gradle: com.jidesoft:jide-oss:3.6.18">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.4.3/207ac43eebd7923f7791529d53ea8809719abae2/jide-oss-3.4.3.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.6.18/2a0b8ef9ed1f18607b70f1e627d862fb8e595373/jide-oss-3.6.18.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.4.3/3116cd87d8627faaf20398284df2f213134cda24/jide-oss-3.4.3-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.6.18/814e47763c22729f665a4232da421824831ea734/jide-oss-3.6.18-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.4.3/403b99170d6e679bcf9218b44fb986991da327a/jide-oss-3.4.3-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.6.18/b9cadcf869c0bdd032756228315252516856ad56/jide-oss-3.6.18-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: com.miglayout:miglayout-core:5.0">
@@ -476,15 +476,15 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.axis/axis/1.4/442ab1fe3e66b6d5c916ae3f203fbfa618515f1c/axis-1.4-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.apache.commons:commons-lang3:3.7">
+    <library name="Gradle: org.apache.commons:commons-lang3:3.8.1">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.7/557edd918fd41f9260963583ebf5a61a43a6b423/commons-lang3-3.7.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.8.1/6505a72a097d9270f7a9e7bf42c4238283247755/commons-lang3-3.8.1.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.7/8d6fb4d39bedef08da171550c73b5d84e8c1125/commons-lang3-3.7-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.8.1/e7e19f37a0e712862967e39558b888fb59ee5b6a/commons-lang3-3.8.1-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.7/e7e36219edde1c66c93495a75490d8f526c377cb/commons-lang3-3.7-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.8.1/e9748d7783594da3735ad9724390a10e7cebc01d/commons-lang3-3.8.1-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.apache.commons:commons-math3:3.5">
@@ -619,82 +619,75 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.slf4j/slf4j-api/1.7.25/962153db4a9ea71b79d047dfd1b2a0d80d8f4739/slf4j-api-1.7.25-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:darwin-x86-64:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/298ccebd5e648b2de2eb9246b0973ddda1c0ef3f/libusb4java-1.2.0.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/1fdaa8ec7cfad158be58fbc8e2867d05f2b5fe63/libusb4java-1.3.0-darwin-x86-64.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:linux-arm:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:linux-aarch64:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/aa5b1be4bdb52dc9c86c08f09d7aad0a43b425c7/libusb4java-1.2.0-linux-arm.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/bb5924dfb86c27ca5d91ccc975c11da2caa3c82d/libusb4java-1.3.0-linux-aarch64.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:linux-x86:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:linux-arm:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/dfd709cb29ecd4dfee551b3dea27f4acb3c13253/libusb4java-1.2.0-linux-x86.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/504de50cc979b1f19b76ba1154d298632ff1be4e/libusb4java-1.3.0-linux-arm.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:linux-x86_64:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:linux-x86-64:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/949ddf102f3311110643f4c6ca507b977cd675f5/libusb4java-1.2.0-linux-x86_64.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/9514c818fc97f831277873f082dcefd5394045e4/libusb4java-1.3.0-linux-x86-64.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:osx-x86:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:linux-x86:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/98179e848d2b83f9f909d80979230ed8397d3f5b/libusb4java-1.2.0-osx-x86.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/7abf7240bcd7c26cb1ea5265eec5e6d703b71b4e/libusb4java-1.3.0-linux-x86.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:osx-x86_64:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:win32-x86-64:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/ca639c580e2d635dd945fe44efce6854ce113274/libusb4java-1.2.0-osx-x86_64.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/8cd521a203404d65f4bc59c2a8a38eb4dcd302da/libusb4java-1.3.0-win32-x86-64.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:windows-x86:1.2.0">
+    <library name="Gradle: org.usb4java:libusb4java:win32-x86:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/ece89016955c79221555d5e452cf5aa7c5e2d209/libusb4java-1.2.0-windows-x86.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.3.0/9cb97c4b8317d8dae0401f80438fde5bfd910b2c/libusb4java-1.3.0-win32-x86.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
     </library>
-    <library name="Gradle: org.usb4java:libusb4java:windows-x86_64:1.2.0">
+    <library name="Gradle: org.usb4java:usb4java-javax:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/libusb4java/1.2.0/2cb4cc4df02e0b5fbf2867491c8eee2ee7f19f87/libusb4java-1.2.0-windows-x86_64.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="Gradle: org.usb4java:usb4java-javax:1.2.0">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java-javax/1.2.0/c862d0f32a08d50afb8fb7c83a30c1deb6e7a444/usb4java-javax-1.2.0.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java-javax/1.3.0/b68f4617513a61e889fbf81926daba9c9accc96d/usb4java-javax-1.3.0.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java-javax/1.2.0/eed54c5a29ecf1978ee1a06006d641656ba9451e/usb4java-javax-1.2.0-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java-javax/1.3.0/76268e0268e00cace559a5d3284b065d64044a76/usb4java-javax-1.3.0-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java-javax/1.2.0/5649a42176194350c3e8f1eae04fc6a3142dc1b6/usb4java-javax-1.2.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java-javax/1.3.0/684ff71e8ca72e5536116390909dd37fcb590690/usb4java-javax-1.3.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.usb4java:usb4java:1.2.0">
+    <library name="Gradle: org.usb4java:usb4java:1.3.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java/1.2.0/d83b8dd04afc03ee740ac61817fadb21affe9e9c/usb4java-1.2.0.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java/1.3.0/2d5487fdf303642d480b199a9da0c5a0d2bb0e82/usb4java-1.3.0.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java/1.2.0/58dd077c6eace3e49d9857720ce8526ca680bad2/usb4java-1.2.0-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java/1.3.0/e688082c68718dfbd6f566beb2eebf31cc225036/usb4java-1.3.0-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java/1.2.0/7f5450599d865fa88aa6e91d0fe92bc69c0993b6/usb4java-1.2.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.usb4java/usb4java/1.3.0/e6f73cf21dbbc0ecf85417f311e13d8eb278d14a/usb4java-1.3.0-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: pl.edu.icm:JLargeArrays:1.6">
