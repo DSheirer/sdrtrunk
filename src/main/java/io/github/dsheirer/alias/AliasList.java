@@ -21,20 +21,19 @@ package io.github.dsheirer.alias;
 
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
-import io.github.dsheirer.alias.id.WildcardID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
-import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.alias.id.uniqueID.UniqueID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.status.UnitStatusIdentifier;
+import io.github.dsheirer.identifier.status.UserStatusIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
@@ -44,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -51,19 +51,10 @@ import java.util.TreeMap;
 public class AliasList implements Listener<AliasEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
-    public static final String WILDCARD = "*";
-
-    private Map<String,Alias> mESN = new HashMap<>();
-    private Map<String,Alias> mSiteID = new HashMap<>();
-    private Map<Integer,Alias> mStatus = new HashMap<>();
-    private Map<Integer,Alias> mUniqueID = new HashMap<>();
-
-    private List<WildcardID> mESNWildcards = new ArrayList<>();
-    private List<WildcardID> mSiteWildcards = new ArrayList<>();
-    private boolean mHasAliasActions = false;
-
     private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new HashMap<>();
-
+    private Map<String,Alias> mESNMap = new HashMap<>();
+    private Map<Integer,Alias> mStatusMap = new HashMap<>();
+    private boolean mHasAliasActions = false;
     private String mName;
 
     /**
@@ -136,45 +127,13 @@ public class AliasList implements Listener<AliasEvent>
                     case ESN:
                         String esn = ((Esn) id).getEsn();
 
-                        if(esn != null)
+                        if(esn != null && !esn.isEmpty())
                         {
-                            if(esn.contains(WILDCARD))
-                            {
-                                mESNWildcards.add(new WildcardID(esn));
-                                Collections.sort(mESNWildcards);
-                            }
-
-                            mESN.put(esn, alias);
-                        }
-                        break;
-                    case LTR_NET_UID:
-                        mUniqueID.put(((UniqueID) id).getUid(), alias);
-                        break;
-                    case SITE:
-                        String siteID = ((SiteID) id).getSite();
-
-                        if(siteID != null)
-                        {
-                            if(siteID.contains(WILDCARD))
-                            {
-                                mSiteWildcards.add(new WildcardID(siteID));
-                                Collections.sort(mSiteWildcards);
-                            }
-
-                            mSiteID.put(siteID, alias);
+                            mESNMap.put(esn.toLowerCase(), alias);
                         }
                         break;
                     case STATUS:
-                        mStatus.put(((StatusID) id).getStatus(), alias);
-                        break;
-                    case BROADCAST_CHANNEL:
-                    case NON_RECORDABLE:
-                    case RECORD:
-                    case PRIORITY:
-                        //We don't maintain lookups for these items
-                        break;
-                    default:
-                        mLog.warn("Unrecognized Alias ID Type:" + id.getType().name() + " - can't ADD to lookup table");
+                        mStatusMap.put(((StatusID) id).getStatus(), alias);
                         break;
                 }
             }
@@ -190,155 +149,13 @@ public class AliasList implements Listener<AliasEvent>
      */
     public void removeAlias(Alias alias)
     {
-        if(alias != null)
+        for(TalkgroupAliasList talkgroupAliasList: mTalkgroupProtocolMap.values())
         {
-            for(AliasID aliasID : alias.getId())
-            {
-                removeAliasID(aliasID, alias);
-            }
-        }
-    }
-
-    private void removeWildcard(String value, List<WildcardID> wildcards)
-    {
-        if(value != null)
-        {
-            for(WildcardID wildcardID : wildcards)
-            {
-                if(wildcardID.value().equals(value))
-                {
-                    wildcards.remove(wildcardID);
-                }
-            }
-        }
-    }
-
-    /**
-     * Removes the alias and alias identifier from internal mappings.
-     */
-    private void removeAliasID(AliasID id, Alias alias)
-    {
-        if(id.isValid())
-        {
-            switch(id.getType())
-            {
-                case TALKGROUP:
-                    Talkgroup talkgroup = (Talkgroup)id;
-
-                    TalkgroupAliasList talkgroupAliasList = mTalkgroupProtocolMap.get(talkgroup.getProtocol());
-
-                    if(talkgroupAliasList != null)
-                    {
-                        talkgroupAliasList.remove(talkgroup);
-                    }
-                    break;
-                case TALKGROUP_RANGE:
-                    TalkgroupRange talkgroupRange = (TalkgroupRange)id;
-
-                    TalkgroupAliasList talkgroupRangeAliasList = mTalkgroupProtocolMap.get(talkgroupRange.getProtocol());
-
-                    if(talkgroupRangeAliasList != null)
-                    {
-                        talkgroupRangeAliasList.remove(talkgroupRange);
-                    }
-                    break;
-                case ESN:
-                    String esn = ((Esn) id).getEsn();
-
-                    if(esn != null)
-                    {
-                        if(esn.contains(WILDCARD))
-                        {
-                            removeWildcard(esn, mESNWildcards);
-                        }
-                    }
-
-                    mESN.remove(esn);
-                    break;
-                case LTR_NET_UID:
-                    mUniqueID.remove(((UniqueID) id).getUid());
-                    break;
-                case SITE:
-                    mSiteID.remove(((SiteID) id).getSite());
-                    break;
-                case STATUS:
-                    mStatus.remove(((StatusID) id).getStatus());
-                    break;
-                case NON_RECORDABLE:
-                case PRIORITY:
-                case BROADCAST_CHANNEL:
-                    //We don't maintain lookups for these items
-                    break;
-                default:
-                    mLog.warn("Unrecognized Alias ID Type:" + id.getType().name() + " - can't REMOVE from lookup table");
-                    break;
-            }
-        }
-    }
-
-    /**
-     * Returns the first matching regex wildcard from the list of wildcards that matches the
-     * identifier.
-     *
-     * @param id to match
-     * @param wildcards to match against
-     * @return matching wildcard ID or null
-     */
-    private String getWildcardMatch(String id, List<WildcardID> wildcards)
-    {
-        if(id != null)
-        {
-            for(WildcardID wildcard : wildcards)
-            {
-                if(wildcard.matches(id))
-                {
-                    return wildcard.value();
-                }
-            }
+            talkgroupAliasList.remove(alias);
         }
 
-        return null;
-    }
-
-    /**
-     * Lookup alias by site ID
-     */
-    public Alias getSiteID(String siteID)
-    {
-        Alias alias = null;
-
-        if(siteID != null)
-        {
-            alias = mSiteID.get(siteID);
-
-            if(alias == null)
-            {
-                String wildcard = getWildcardMatch(siteID, mSiteWildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mSiteID.get(wildcard);
-                }
-            }
-        }
-
-        return alias;
-    }
-
-    /**
-     * Lookup alias by status ID
-     */
-    public Alias getStatus(int status)
-    {
-        return mStatus.get(status);
-    }
-
-    /**
-     * Lookup alias by Unique ID (UID)
-     */
-    public Alias getUniqueID(int uniqueID)
-    {
-        return mUniqueID.get(uniqueID);
+        remove(alias, mStatusMap);
+        remove(alias, mESNMap);
     }
 
     /**
@@ -350,17 +167,7 @@ public class AliasList implements Listener<AliasEvent>
 
         if(esn != null)
         {
-            alias = mESN.get(esn);
-
-            if(alias == null)
-            {
-                String wildcard = getWildcardMatch(esn, mESNWildcards);
-
-                if(wildcard != null)
-                {
-                    alias = mESN.get(wildcard);
-                }
-            }
+            alias = mESNMap.get(esn);
         }
 
         return alias;
@@ -412,6 +219,7 @@ public class AliasList implements Listener<AliasEvent>
                 case CHANGE:
                     if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
                     {
+                        removeAlias(alias);
                         addAlias(alias);
                     }
                     break;
@@ -430,11 +238,10 @@ public class AliasList implements Listener<AliasEvent>
     /**
      * Returns an optional alias that is associated with the identifier
       * @param identifier to alias
-     * @return alias or null
+     * @return list of alias or empty list
      */
-    public Alias getAlias(Identifier identifier)
+    public List<Alias> getAliases(Identifier identifier)
     {
-//TODO: update this to List<Alias> return type so that we can return all of the aliases for a patch group
         if(identifier != null)
         {
             switch(identifier.getForm())
@@ -446,7 +253,14 @@ public class AliasList implements Listener<AliasEvent>
 
                     if(talkgroupAliasList != null)
                     {
-                        return talkgroupAliasList.getAlias(talkgroup);
+                        Alias alias = talkgroupAliasList.getAlias(talkgroup);
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
                     }
                     break;
                 case PATCH_GROUP:
@@ -457,12 +271,13 @@ public class AliasList implements Listener<AliasEvent>
 
                     if(patchGroupAliasList != null)
                     {
-//TODO: make this a list of aliases that match the patch group - right now it just returns the first-matched
+                        List<Alias> aliases = new ArrayList<>();
+
                         Alias alias = patchGroupAliasList.getAlias(patchGroup.getPatchGroup());
 
                         if(alias != null)
                         {
-                            return alias;
+                            aliases.add(alias);
                         }
 
                         for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
@@ -471,21 +286,60 @@ public class AliasList implements Listener<AliasEvent>
 
                             if(patchedAlias != null)
                             {
-                                return patchedAlias;
+                                aliases.add(patchedAlias);
                             }
                         }
+
+                        return aliases;
                     }
                     break;
                 case ESN:
                     if(identifier instanceof ESNIdentifier)
                     {
-                        return getESNAlias(((ESNIdentifier)identifier).getValue());
+                        Alias alias = getESNAlias(((ESNIdentifier)identifier).getValue());
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
+                    }
+                    break;
+                case UNIT_STATUS:
+                    if(identifier instanceof UnitStatusIdentifier)
+                    {
+                        int status = ((UnitStatusIdentifier)identifier).getValue();
+
+                        Alias alias = mStatusMap.get(status);
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
+                    }
+                    break;
+                case USER_STATUS:
+                    if(identifier instanceof UserStatusIdentifier)
+                    {
+                        int status = ((UserStatusIdentifier)identifier).getValue();
+
+                        Alias alias = mStatusMap.get(status);
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
                     }
                     break;
             }
         }
 
-        return null;
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -497,11 +351,14 @@ public class AliasList implements Listener<AliasEvent>
     {
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.isStreamable())
+            for(Alias alias: aliases)
             {
-                return true;
+                if(alias != null && alias.isStreamable())
+                {
+                    return true;
+                }
             }
         }
 
@@ -517,11 +374,14 @@ public class AliasList implements Listener<AliasEvent>
     {
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.isRecordable())
+            for(Alias alias: aliases)
             {
-                return true;
+                if(alias != null && alias.isRecordable())
+                {
+                    return true;
+                }
             }
         }
 
@@ -549,11 +409,14 @@ public class AliasList implements Listener<AliasEvent>
 
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.getPlaybackPriority() < priority)
+            for(Alias alias: aliases)
             {
-                priority = alias.getPlaybackPriority();
+                if(alias != null && alias.getPlaybackPriority() < priority)
+                {
+                    priority = alias.getPlaybackPriority();
+                }
             }
         }
 
@@ -571,15 +434,18 @@ public class AliasList implements Listener<AliasEvent>
 
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.isStreamable())
+            for(Alias alias: aliases)
             {
-                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+                if(alias != null && alias.isStreamable())
                 {
-                    if(!channels.contains(broadcastChannel))
+                    for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
                     {
-                        channels.add(broadcastChannel);
+                        if(!channels.contains(broadcastChannel))
+                        {
+                            channels.add(broadcastChannel);
+                        }
                     }
                 }
             }
@@ -589,12 +455,29 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
+     * Removes the alias (as a value) from the specified map
+     */
+    public static void remove(Alias alias, Map map)
+    {
+        Iterator<Map.Entry> it = map.entrySet().iterator();
+
+        while(it.hasNext())
+        {
+            if(it.next().getValue().equals(alias))
+            {
+                it.remove();
+            }
+        }
+    }
+
+
+    /**
      * Listing of talkgroups and ranges for a specific protocol
      */
     public class TalkgroupAliasList
     {
         private Map<Integer,Alias> mTalkgroupAliasMap = new TreeMap<>();
-        private Map<TalkgroupRange, Alias> mTalkgroupRangeMap = new HashMap<>();
+        private Map<TalkgroupRange, Alias> mTalkgroupRangeAliasMap = new HashMap<>();
 
         public TalkgroupAliasList()
         {
@@ -609,11 +492,11 @@ public class AliasList implements Listener<AliasEvent>
                 return mTalkgroupAliasMap.get(value);
             }
 
-            for(TalkgroupRange talkgroupRange: mTalkgroupRangeMap.keySet())
+            for(TalkgroupRange talkgroupRange: mTalkgroupRangeAliasMap.keySet())
             {
                 if(talkgroupRange.contains(value))
                 {
-                    return mTalkgroupRangeMap.get(talkgroupRange);
+                    return mTalkgroupRangeAliasMap.get(talkgroupRange);
                 }
             }
 
@@ -627,7 +510,7 @@ public class AliasList implements Listener<AliasEvent>
 
         public void add(TalkgroupRange talkgroupRange, Alias alias)
         {
-            mTalkgroupRangeMap.put(talkgroupRange, alias);
+            mTalkgroupRangeAliasMap.put(talkgroupRange, alias);
         }
 
         public void remove(Talkgroup talkgroup)
@@ -637,7 +520,16 @@ public class AliasList implements Listener<AliasEvent>
 
         public void remove(TalkgroupRange talkgroupRange)
         {
-            mTalkgroupRangeMap.remove(talkgroupRange);
+            mTalkgroupRangeAliasMap.remove(talkgroupRange);
+        }
+
+        /**
+         * Removes the alias from all internal maps
+         */
+        public void remove(Alias alias)
+        {
+            AliasList.remove(alias, mTalkgroupAliasMap);
+            AliasList.remove(alias, mTalkgroupRangeAliasMap);
         }
     }
 }

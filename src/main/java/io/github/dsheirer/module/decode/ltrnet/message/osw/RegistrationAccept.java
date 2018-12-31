@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.ltrnet.message.osw;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ltrnet.LtrNetMessageType;
-import io.github.dsheirer.module.decode.ltrnet.identifier.UniqueIdentifier;
+import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetRadioIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class RegistrationAccept extends LtrNetOswMessage
 {
-    private UniqueIdentifier mUniqueIdentifier;
+    private LtrNetRadioIdentifier mLtrNetRadioIdentifier;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -49,14 +49,14 @@ public class RegistrationAccept extends LtrNetOswMessage
         return LtrNetMessageType.OSW_REGISTRATION_ACCEPT;
     }
 
-    public UniqueIdentifier getUniqueID()
+    public LtrNetRadioIdentifier getUniqueID()
     {
-        if(mUniqueIdentifier == null)
+        if(mLtrNetRadioIdentifier == null)
         {
-            mUniqueIdentifier = UniqueIdentifier.createTo(getMessage().getInt(SIXTEEN_BITS));
+            mLtrNetRadioIdentifier = LtrNetRadioIdentifier.createTo(getMessage().getInt(SIXTEEN_BITS));
         }
 
-        return mUniqueIdentifier;
+        return mLtrNetRadioIdentifier;
     }
 
 

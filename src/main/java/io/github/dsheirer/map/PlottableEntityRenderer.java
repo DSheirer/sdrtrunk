@@ -32,6 +32,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.geom.Point2D;
+import java.util.Collections;
 import java.util.List;
 
 public class PlottableEntityRenderer
@@ -58,7 +59,10 @@ public class PlottableEntityRenderer
                 graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             }
 
-            Alias alias = getAlias(entity);
+            List<Alias> aliases = getAliases(entity);
+
+            Alias alias = aliases.isEmpty() ? null : aliases.get(0);
+
             /**
              * Use the entity's preferred color for lines and labels
              */
@@ -99,16 +103,16 @@ public class PlottableEntityRenderer
     /**
      * Optional alias that matches the identifier for the entity history
      */
-    private Alias getAlias(PlottableEntityHistory entityHistory)
+    private List<Alias> getAliases(PlottableEntityHistory entityHistory)
     {
         AliasList aliasList = mAliasModel.getAliasList(entityHistory.getIdentifierCollection());
 
         if(aliasList != null)
         {
-            return aliasList.getAlias(entityHistory.getIdentifier());
+            return aliasList.getAliases(entityHistory.getIdentifier());
         }
 
-        return null;
+        return Collections.EMPTY_LIST;
     }
 
     private ImageIcon getIcon(Alias alias)

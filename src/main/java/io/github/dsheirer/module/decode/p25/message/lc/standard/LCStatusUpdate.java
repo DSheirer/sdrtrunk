@@ -22,7 +22,8 @@ package io.github.dsheirer.module.decode.p25.message.lc.standard;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.status.APCO25Status;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UnitStatus;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UserStatus;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
@@ -73,7 +74,7 @@ public class LCStatusUpdate extends LinkControlWord
     {
         if(mUnitStatus == null)
         {
-            mUnitStatus = APCO25Status.createUnitStatus(getMessage().getInt(UNIT_STATUS));
+            mUnitStatus = APCO25UnitStatus.create(getMessage().getInt(UNIT_STATUS));
         }
 
         return mUnitStatus;
@@ -83,7 +84,7 @@ public class LCStatusUpdate extends LinkControlWord
     {
         if(mUserStatus == null)
         {
-            mUserStatus = APCO25Status.createUserStatus(getMessage().getInt(USER_STATUS));
+            mUserStatus = APCO25UserStatus.create(getMessage().getInt(USER_STATUS));
         }
 
         return mUserStatus;

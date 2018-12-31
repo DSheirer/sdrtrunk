@@ -18,7 +18,7 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.ltrnet.identifier;
+package io.github.dsheirer.identifier.status;
 
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -26,41 +26,19 @@ import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
-/**
- * Unique ID or radio ID for LTR-Net radios is a 16-bit logical network radio identifier value.
- */
-public class UniqueIdentifier extends IntegerIdentifier implements Comparable<UniqueIdentifier>
+public class UnitStatusIdentifier extends IntegerIdentifier
 {
-    public UniqueIdentifier(int value, Role role)
+    private Protocol mProtocol;
+
+    public UnitStatusIdentifier(int value, Role role, Protocol protocol)
     {
-        super(value, IdentifierClass.USER, Form.UNIQUE_ID, role);
+        super(value, IdentifierClass.USER, Form.UNIT_STATUS, role);
+        mProtocol = protocol;
     }
 
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.LTR_NET;
-    }
-
-    /**
-     * Creates a unique identifier for the FROM radio role
-     */
-    public static UniqueIdentifier createFrom(int value)
-    {
-        return new UniqueIdentifier(value, Role.FROM);
-    }
-
-    /**
-     * Creates a unique identifier for the TO radio role
-     */
-    public static UniqueIdentifier createTo(int value)
-    {
-        return new UniqueIdentifier(value, Role.TO);
-    }
-
-    @Override
-    public int compareTo(UniqueIdentifier o)
-    {
-        return getValue().compareTo(o.getValue());
+        return mProtocol;
     }
 }

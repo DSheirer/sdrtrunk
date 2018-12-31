@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.module.decode.event;
 
+import com.google.common.base.Joiner;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
@@ -260,18 +261,17 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
                         for(Identifier identifier: identifiers)
                         {
-                            Alias alias = aliasList.getAlias(identifier);
+                            List<Alias> aliases = aliasList.getAliases(identifier);
 
-                            if(alias != null)
+                            if(!aliases.isEmpty())
                             {
                                 if(sb.length() > 0)
                                 {
                                     sb.append(",");
                                 }
-                                sb.append(alias.getName());
-
-                                color = alias.getDisplayColor();
-                                icon = mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE);
+                                sb.append(Joiner.on(", ").skipNulls().join(aliases));
+                                color = aliases.get(0).getDisplayColor();
+                                icon = mIconManager.getIcon(aliases.get(0).getIconName(), IconManager.DEFAULT_ICON_SIZE);
                             }
                         }
 
