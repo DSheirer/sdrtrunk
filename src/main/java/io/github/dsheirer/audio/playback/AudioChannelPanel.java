@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.audio.playback;
 
+import com.google.common.base.Joiner;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
@@ -49,6 +50,7 @@ import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.util.Collections;
 import java.util.List;
 
 public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, SettingChangeListener
@@ -80,7 +82,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private JLabel mIconLabel = new JLabel(" ");
     private JLabel mIdentifierLabel = new JLabel("-----");
     private Identifier mIdentifier;
-    private Alias mAlias;
+    private List<Alias> mAliases = Collections.EMPTY_LIST;
 
     private boolean mConfigured = false;
     private AliasModel mAliasModel;
@@ -195,7 +197,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private void resetLabels()
     {
         mIdentifier = null;
-        mAlias = null;
+        mAliases = Collections.EMPTY_LIST;
         updateLabels();
         mConfigured = false;
     }
@@ -223,9 +225,26 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
      */
     private void updateLabels()
     {
-        String identifier = mAlias != null ? mAlias.getName() : mTalkgroupFormatPreference.format(mIdentifier);
-        final ImageIcon icon = mAlias != null ? mIconManager.getIcon(mAlias.getIconName(), 18) : null;
-        final String identifierText = (identifier != null ? truncate(identifier, 33) : "-----");
+        String identifier = null;
+        String iconName = null;
+
+        if(mAliases.size() == 1)
+        {
+            identifier = mAliases.get(0).getName();
+            iconName = mAliases.get(0).getIconName();
+        }
+        else if(mAliases.size() > 1)
+        {
+            identifier = Joiner.on(", ").skipNulls().join(mAliases);
+        }
+
+        if(identifier == null)
+        {
+            identifier = "-----";
+        }
+
+        final ImageIcon icon = iconName != null ? mIconManager.getIcon(iconName, 18) : null;
+        final String identifierText = truncate(identifier, 33);
 
         EventQueue.invokeLater(new Runnable()
         {
@@ -253,7 +272,12 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
                 List<Identifier> toIds = identifierCollection.getIdentifiers(IdentifierClass.USER, Role.TO);
                 mIdentifier = !toIds.isEmpty() ? toIds.get(0) : null;
                 AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
-                mAlias = (aliasList != null ? aliasList.getAlias(mIdentifier) : null);
+
+                if(aliasList != null)
+                {
+                    mAliases = aliasList.getAliases(mIdentifier);
+                }
+
                 updateLabels();
             }
         }

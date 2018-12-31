@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +15,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast.icecast;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
@@ -47,6 +49,7 @@ import java.net.InetSocketAddress;
 import java.net.URLEncoder;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
@@ -208,11 +211,11 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             {
                 sb.append("TO:").append(to);
 
-                Alias toAlias = aliasList != null ? aliasList.getAlias(to) : null;
+                List<Alias> aliases = aliasList.getAliases(to);
 
-                if(toAlias != null)
+                if(!aliases.isEmpty())
                 {
-                    sb.append(" ").append(toAlias.getName());
+                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
                 }
             }
             else
@@ -226,11 +229,11 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             {
                 sb.append(" FROM:").append(from);
 
-                Alias fromAlias = aliasList != null ? aliasList.getAlias(from) : null;
+                List<Alias> aliases = aliasList.getAliases(from);
 
-                if(fromAlias != null)
+                if(!aliases.isEmpty())
                 {
-                    sb.append(" ").append(fromAlias.getName());
+                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
                 }
             }
             else

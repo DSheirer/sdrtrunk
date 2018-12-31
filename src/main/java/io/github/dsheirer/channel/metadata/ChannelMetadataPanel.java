@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.channel.metadata;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
@@ -52,6 +53,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
@@ -225,14 +227,22 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         {
             JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-            if(value instanceof Alias)
+            if(value instanceof List<?>)
             {
-                Alias alias = (Alias)value;
+                List<Alias> aliases = (List<Alias>)value;
 
-                label.setText(alias.getName());
-                label.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
-                label.setForeground(alias.getDisplayColor());
-
+                if(!aliases.isEmpty())
+                {
+                    label.setText(Joiner.on(", ").skipNulls().join(aliases));
+                    label.setIcon(mIconManager.getIcon(aliases.get(0).getIconName(), IconManager.DEFAULT_ICON_SIZE));
+                    label.setForeground(aliases.get(0).getDisplayColor());
+                }
+                else
+                {
+                    label.setText(null);
+                    label.setIcon(null);
+                    label.setForeground(table.getForeground());
+                }
             }
             else
             {

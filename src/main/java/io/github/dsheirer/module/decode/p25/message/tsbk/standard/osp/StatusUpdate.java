@@ -22,7 +22,8 @@ package io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.status.APCO25Status;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UnitStatus;
+import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UserStatus;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.message.tsbk.OSPMessage;
@@ -72,7 +73,7 @@ public class StatusUpdate extends OSPMessage
     {
         if(mUnitStatus == null)
         {
-            mUnitStatus = APCO25Status.createUnitStatus(getMessage().getInt(UNIT_STATUS));
+            mUnitStatus = APCO25UnitStatus.create(getMessage().getInt(UNIT_STATUS));
         }
 
         return mUnitStatus;
@@ -82,7 +83,7 @@ public class StatusUpdate extends OSPMessage
     {
         if(mUserStatus == null)
         {
-            mUserStatus = APCO25Status.createUserStatus(getMessage().getInt(USER_STATUS));
+            mUserStatus = APCO25UserStatus.create(getMessage().getInt(USER_STATUS));
         }
 
         return mUserStatus;

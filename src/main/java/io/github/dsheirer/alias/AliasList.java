@@ -32,6 +32,8 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.status.UnitStatusIdentifier;
+import io.github.dsheirer.identifier.status.UserStatusIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
@@ -39,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -235,11 +238,10 @@ public class AliasList implements Listener<AliasEvent>
     /**
      * Returns an optional alias that is associated with the identifier
       * @param identifier to alias
-     * @return alias or null
+     * @return list of alias or empty list
      */
-    public Alias getAlias(Identifier identifier)
+    public List<Alias> getAliases(Identifier identifier)
     {
-//TODO: update this to List<Alias> return type so that we can return all of the aliases for a patch group
         if(identifier != null)
         {
             switch(identifier.getForm())
@@ -251,7 +253,14 @@ public class AliasList implements Listener<AliasEvent>
 
                     if(talkgroupAliasList != null)
                     {
-                        return talkgroupAliasList.getAlias(talkgroup);
+                        Alias alias = talkgroupAliasList.getAlias(talkgroup);
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
                     }
                     break;
                 case PATCH_GROUP:
@@ -262,12 +271,13 @@ public class AliasList implements Listener<AliasEvent>
 
                     if(patchGroupAliasList != null)
                     {
-//TODO: make this a list of aliases that match the patch group - right now it just returns the first-matched
+                        List<Alias> aliases = new ArrayList<>();
+
                         Alias alias = patchGroupAliasList.getAlias(patchGroup.getPatchGroup());
 
                         if(alias != null)
                         {
-                            return alias;
+                            aliases.add(alias);
                         }
 
                         for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
@@ -276,21 +286,60 @@ public class AliasList implements Listener<AliasEvent>
 
                             if(patchedAlias != null)
                             {
-                                return patchedAlias;
+                                aliases.add(patchedAlias);
                             }
                         }
+
+                        return aliases;
                     }
                     break;
                 case ESN:
                     if(identifier instanceof ESNIdentifier)
                     {
-                        return getESNAlias(((ESNIdentifier)identifier).getValue());
+                        Alias alias = getESNAlias(((ESNIdentifier)identifier).getValue());
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
+                    }
+                    break;
+                case UNIT_STATUS:
+                    if(identifier instanceof UnitStatusIdentifier)
+                    {
+                        int status = ((UnitStatusIdentifier)identifier).getValue();
+
+                        Alias alias = mStatusMap.get(status);
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
+                    }
+                    break;
+                case USER_STATUS:
+                    if(identifier instanceof UserStatusIdentifier)
+                    {
+                        int status = ((UserStatusIdentifier)identifier).getValue();
+
+                        Alias alias = mStatusMap.get(status);
+
+                        if(alias != null)
+                        {
+                            List<Alias> aliases = new ArrayList<>();
+                            aliases.add(alias);
+                            return aliases;
+                        }
                     }
                     break;
             }
         }
 
-        return null;
+        return Collections.EMPTY_LIST;
     }
 
     /**
@@ -302,11 +351,14 @@ public class AliasList implements Listener<AliasEvent>
     {
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.isStreamable())
+            for(Alias alias: aliases)
             {
-                return true;
+                if(alias != null && alias.isStreamable())
+                {
+                    return true;
+                }
             }
         }
 
@@ -322,11 +374,14 @@ public class AliasList implements Listener<AliasEvent>
     {
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.isRecordable())
+            for(Alias alias: aliases)
             {
-                return true;
+                if(alias != null && alias.isRecordable())
+                {
+                    return true;
+                }
             }
         }
 
@@ -354,11 +409,14 @@ public class AliasList implements Listener<AliasEvent>
 
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.getPlaybackPriority() < priority)
+            for(Alias alias: aliases)
             {
-                priority = alias.getPlaybackPriority();
+                if(alias != null && alias.getPlaybackPriority() < priority)
+                {
+                    priority = alias.getPlaybackPriority();
+                }
             }
         }
 
@@ -376,15 +434,18 @@ public class AliasList implements Listener<AliasEvent>
 
         for(Identifier identifier: identifierCollection.getIdentifiers())
         {
-            Alias alias = getAlias(identifier);
+            List<Alias> aliases = getAliases(identifier);
 
-            if(alias != null && alias.isStreamable())
+            for(Alias alias: aliases)
             {
-                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+                if(alias != null && alias.isStreamable())
                 {
-                    if(!channels.contains(broadcastChannel))
+                    for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
                     {
-                        channels.add(broadcastChannel);
+                        if(!channels.contains(broadcastChannel))
+                        {
+                            channels.add(broadcastChannel);
+                        }
                     }
                 }
             }

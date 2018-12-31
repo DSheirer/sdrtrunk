@@ -20,6 +20,7 @@
 
 package io.github.dsheirer.record.wave;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.identifier.Form;
@@ -363,22 +364,22 @@ public class WaveMetadata
                 waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM,
                         String.valueOf(((TalkgroupIdentifier)identifier).getValue()));
 
-                Alias alias = aliasList.getAlias(identifier);
+                List<Alias> aliases = aliasList.getAliases(identifier);
 
-                if(alias != null)
+                if(!aliases.isEmpty())
                 {
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, alias.getName());
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, alias.getIconName());
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, aliases.get(0).getIconName());
                 }
             }
             else if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.TO)
             {
-                Alias alias = aliasList.getAlias(identifier);
+                List<Alias> aliases = aliasList.getAliases(identifier);
 
-                if(alias != null)
+                if(!aliases.isEmpty())
                 {
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, alias.getName());
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, alias.getIconName());
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, aliases.get(0).getIconName());
                 }
             }
             else if(identifier instanceof PatchGroupIdentifier)
@@ -389,12 +390,12 @@ public class WaveMetadata
                 sb.append("P:").append(patchGroup.getPatchGroup()).append(patchGroup.getPatchedGroupIdentifiers());
                 waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO, sb.toString());
 
-                Alias alias = aliasList.getAlias(identifier);
+                List<Alias> aliases = aliasList.getAliases(identifier);
 
-                if(alias != null)
+                if(!aliases.isEmpty())
                 {
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, alias.getName());
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, alias.getIconName());
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, aliases.get(0).getIconName());
                 }
             }
         }
