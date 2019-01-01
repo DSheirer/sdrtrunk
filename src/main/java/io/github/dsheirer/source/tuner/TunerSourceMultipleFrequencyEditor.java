@@ -1,38 +1,36 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.gui.control.JFrequencyControl;
+import io.github.dsheirer.gui.control.MultipleFrequencyEditor;
 import io.github.dsheirer.gui.editor.Editor;
-import io.github.dsheirer.source.ISourceEventProcessor;
-import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.DefaultListModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.ListModel;
-import java.awt.Dimension;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -44,7 +42,7 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
     private static final long serialVersionUID = 1L;
     private static final String NO_PREFERRED_TUNER = "(none)";
     private static final String UNAVAILABLE_TUNER = " (unavailable)";
-    private JList<Long> mFrequencyList;
+    private MultipleFrequencyEditor mFrequencyEditor = new MultipleFrequencyEditor(1.0, 6000.0);
     private JComboBox<String> mTunerNameComboBox;
     private TunerModel mTunerModel;
     private List<String> mCurrentTunerNames;
@@ -59,15 +57,19 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
     {
         loadTunerNames();
 
-        setLayout(new MigLayout("insets 0 0 0 0", "[right][grow][right][left]", "[grow,fill]"));
+        setLayout(new MigLayout("insets 0 0 0 0",
+            "[grow,fill][][right][grow,fill,left]", "[][grow,fill]"));
 
-        add(new JLabel("Frequencies"));
-        DefaultListModel<Long> model = new DefaultListModel<>();
-        model.addElement(123000000l);
-        mFrequencyList = new JList<>(model);
-        mFrequencyList.setPreferredSize(new Dimension(30, 30));
-
-        add(mFrequencyList);
+        mFrequencyEditor.getFrequencyModel().addTableModelListener(new TableModelListener()
+        {
+            @Override
+            public void tableChanged(TableModelEvent e)
+            {
+                setModified(true);
+            }
+        });
+//        mFrequencyEditor.setSize(new Dimension(100, 30));
+        add(mFrequencyEditor, "span 2 2");
 
         mTunerNameComboBox = new JComboBox<>(mCurrentTunerNames.toArray(new String[mCurrentTunerNames.size()]));
         mTunerNameComboBox.addActionListener(new ActionListener()
@@ -127,7 +129,7 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
     {
         if(hasItem() && isModified())
         {
-            SourceConfigTuner config = new SourceConfigTuner();
+            SourceConfigTunerMultipleFrequency config = new SourceConfigTunerMultipleFrequency();
 
             String preferredTuner = (String)mTunerNameComboBox.getSelectedItem();
 
@@ -147,6 +149,8 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
                 }
             }
 
+            config.setFrequencies(mFrequencyEditor.getFrequencyModel().getFrequencies());
+
             getItem().setSourceConfiguration(config);
         }
 
@@ -165,14 +169,8 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
             if(config instanceof SourceConfigTunerMultipleFrequency)
             {
                 SourceConfigTunerMultipleFrequency tunerConfig = (SourceConfigTunerMultipleFrequency) config;
-                DefaultListModel<Long> model = (DefaultListModel<Long>)mFrequencyList.getModel();
-                model.clear();
-                for(Long frequency: tunerConfig.getFrequencies())
-                {
-                    model.addElement(frequency);
-                }
-
                 updateTunerNameCombo(tunerConfig.getPreferredTuner());
+                mFrequencyEditor.getFrequencyModel().setFrequencies(tunerConfig.getFrequencies());
                 setModified(false);
             }
         }

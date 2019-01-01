@@ -78,18 +78,35 @@ public class MultipleFrequencyEditor extends JPanel
      */
     public MultipleFrequencyEditor(double minimum, double maximum)
     {
-        setLayout(new MigLayout("", "[grow,fill][]", "[top,grow,fill][][][][]"));
+        setLayout(new MigLayout("insets 0 0 0 0", "[]1[grow,fill]1[]", "[]1[]1[top,grow,fill]"));
+
+        mMoveUpButton = new JButton();
+        mMoveUpButton.setIcon(FontIcon.of(FontAwesome.ARROW_UP, 10));
+        mMoveUpButton.setEnabled(false);
+        mMoveUpButton.addActionListener(e -> {
+            int selectedRow = mFrequencyTable.getSelectedRow();
+            int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
+            mFrequencyModel.moveUp(index);
+            mFrequencyTable.getSelectionModel().setLeadSelectionIndex(index - 1);
+
+            updateButtons();
+        });
+        add(mMoveUpButton);
 
         mFrequencyTable = new JTable(mFrequencyModel);
+        //testing ...
+        mFrequencyTable.setPreferredScrollableViewportSize(new Dimension(100, 65));
+        mFrequencyTable.setFillsViewportHeight(true);
+
         mFrequencyTable.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mFrequencyTable.getSelectionModel().addListSelectionListener(new SelectionListener());
         mFrequencyTable.setDefaultEditor(Long.class, new FrequencyEditor(minimum, maximum));
         mFrequencyTable.setDefaultRenderer(Long.class, new FrequencyRenderer());
         JScrollPane listScrollPane = new JScrollPane(mFrequencyTable);
-        add(listScrollPane, "span 1 5,wrap");
+        add(listScrollPane, "span 1 3");
 
         mAddButton = new JButton();
-        mAddButton.setIcon(FontIcon.of(FontAwesome.PLUS));
+        mAddButton.setIcon(FontIcon.of(FontAwesome.PLUS, 10));
         mAddButton.addActionListener(e -> {
             int selectedRow = mFrequencyTable.getSelectedRow();
             if(selectedRow >= 0)
@@ -115,8 +132,21 @@ public class MultipleFrequencyEditor extends JPanel
         });
         add(mAddButton, "wrap");
 
+        mMoveDownButton = new JButton();
+        mMoveDownButton.setIcon(FontIcon.of(FontAwesome.ARROW_DOWN, 10));
+        mMoveDownButton.setEnabled(false);
+        mMoveDownButton.addActionListener(e -> {
+            int selectedRow = mFrequencyTable.getSelectedRow();
+            int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
+            mFrequencyModel.moveDown(index);
+            mFrequencyTable.getSelectionModel().setLeadSelectionIndex(index + 1);
+
+            updateButtons();
+        });
+        add(mMoveDownButton);
+
         mRemoveButton = new JButton();
-        mRemoveButton.setIcon(FontIcon.of(FontAwesome.MINUS));
+        mRemoveButton.setIcon(FontIcon.of(FontAwesome.MINUS, 10));
         mRemoveButton.setEnabled(false);
         mRemoveButton.addActionListener(e -> {
             int selectedRow = mFrequencyTable.getSelectedRow();
@@ -131,33 +161,12 @@ public class MultipleFrequencyEditor extends JPanel
 
             updateButtons();
         });
-        add(mRemoveButton, "wrap");
+        add(mRemoveButton);
+    }
 
-        mMoveUpButton = new JButton();
-        mMoveUpButton.setIcon(FontIcon.of(FontAwesome.ARROW_UP));
-        mMoveUpButton.setEnabled(false);
-        mMoveUpButton.addActionListener(e -> {
-            int selectedRow = mFrequencyTable.getSelectedRow();
-            int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
-            mFrequencyModel.moveUp(index);
-            mFrequencyTable.getSelectionModel().setLeadSelectionIndex(index - 1);
-
-            updateButtons();
-        });
-        add(mMoveUpButton, "wrap");
-
-        mMoveDownButton = new JButton();
-        mMoveDownButton.setIcon(FontIcon.of(FontAwesome.ARROW_DOWN));
-        mMoveDownButton.setEnabled(false);
-        mMoveDownButton.addActionListener(e -> {
-            int selectedRow = mFrequencyTable.getSelectedRow();
-            int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
-            mFrequencyModel.moveDown(index);
-            mFrequencyTable.getSelectionModel().setLeadSelectionIndex(index + 1);
-
-            updateButtons();
-        });
-        add(mMoveDownButton);
+    public FrequencyModel getFrequencyModel()
+    {
+        return mFrequencyModel;
     }
 
     private void updateButtons()
