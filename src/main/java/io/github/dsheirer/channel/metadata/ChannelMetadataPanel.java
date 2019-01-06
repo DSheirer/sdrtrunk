@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
-import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
+import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
@@ -347,9 +347,9 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             Color background = table.getBackground();
             Color foreground = table.getForeground();
 
-            if(value instanceof DecoderStateIdentifier)
+            if(value instanceof ChannelStateIdentifier)
             {
-                State state = ((DecoderStateIdentifier)value).getValue();
+                State state = ((ChannelStateIdentifier)value).getValue();
                 label.setText(state.getDisplayValue());
 
                 if(mBackgroundColors.containsKey(state))

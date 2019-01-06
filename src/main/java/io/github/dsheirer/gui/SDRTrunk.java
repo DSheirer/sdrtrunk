@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -154,7 +154,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mSourceManager = new SourceManager(tunerModel, mSettingsManager, mUserPreferences);
 
         mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, recorderManager,
-            mSourceManager, aliasModel);
+            mSourceManager, aliasModel, mUserPreferences);
 
         mChannelModel.addListener(mChannelProcessingManager);
         mChannelProcessingManager.addChannelEventListener(mChannelModel);

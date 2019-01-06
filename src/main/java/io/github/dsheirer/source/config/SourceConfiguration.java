@@ -30,7 +30,7 @@ import io.github.dsheirer.source.SourceType;
     @JsonSubTypes.Type(value = SourceConfigNone.class, name = "sourceConfigNone"),
     @JsonSubTypes.Type(value = SourceConfigRecording.class, name = "sourceConfigRecording"),
     @JsonSubTypes.Type(value = SourceConfigTuner.class, name = "sourceConfigTuner"),
-})
+    @JsonSubTypes.Type(value = SourceConfigTunerMultipleFrequency.class, name = "sourceConfigTunerMultipleFrequency")})
 @JacksonXmlRootElement(localName = "source_configuration")
 public class SourceConfiguration extends Configuration
 {

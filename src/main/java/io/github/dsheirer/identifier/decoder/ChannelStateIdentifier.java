@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,19 +27,19 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.protocol.Protocol;
 
-public class DecoderStateIdentifier extends Identifier<State>
+public class ChannelStateIdentifier extends Identifier<State>
 {
-    public static final DecoderStateIdentifier ACTIVE = DecoderStateIdentifier.create(State.ACTIVE);
-    public static final DecoderStateIdentifier CALL = DecoderStateIdentifier.create(State.CALL);
-    public static final DecoderStateIdentifier CONTROL = DecoderStateIdentifier.create(State.CONTROL);
-    public static final DecoderStateIdentifier DATA = DecoderStateIdentifier.create(State.DATA);
-    public static final DecoderStateIdentifier ENCRYPTED = DecoderStateIdentifier.create(State.ENCRYPTED);
-    public static final DecoderStateIdentifier FADE = DecoderStateIdentifier.create(State.FADE);
-    public static final DecoderStateIdentifier IDLE = DecoderStateIdentifier.create(State.IDLE);
-    public static final DecoderStateIdentifier TEARDOWN = DecoderStateIdentifier.create(State.TEARDOWN);
-    public static final DecoderStateIdentifier RESET = DecoderStateIdentifier.create(State.RESET);
+    public static final ChannelStateIdentifier ACTIVE = ChannelStateIdentifier.create(State.ACTIVE);
+    public static final ChannelStateIdentifier CALL = ChannelStateIdentifier.create(State.CALL);
+    public static final ChannelStateIdentifier CONTROL = ChannelStateIdentifier.create(State.CONTROL);
+    public static final ChannelStateIdentifier DATA = ChannelStateIdentifier.create(State.DATA);
+    public static final ChannelStateIdentifier ENCRYPTED = ChannelStateIdentifier.create(State.ENCRYPTED);
+    public static final ChannelStateIdentifier FADE = ChannelStateIdentifier.create(State.FADE);
+    public static final ChannelStateIdentifier IDLE = ChannelStateIdentifier.create(State.IDLE);
+    public static final ChannelStateIdentifier TEARDOWN = ChannelStateIdentifier.create(State.TEARDOWN);
+    public static final ChannelStateIdentifier RESET = ChannelStateIdentifier.create(State.RESET);
 
-    public DecoderStateIdentifier(State value)
+    public ChannelStateIdentifier(State value)
     {
         super(value, IdentifierClass.DECODER, Form.STATE, Role.ANY);
     }
@@ -53,9 +53,9 @@ public class DecoderStateIdentifier extends Identifier<State>
     /**
      * Creates a decoder state identifier from the decoder state value
      */
-    public static DecoderStateIdentifier create(State state)
+    public static ChannelStateIdentifier create(State state)
     {
-        return new DecoderStateIdentifier(state);
+        return new ChannelStateIdentifier(state);
     }
 
     @Override

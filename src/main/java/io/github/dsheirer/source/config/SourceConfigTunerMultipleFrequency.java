@@ -25,36 +25,56 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 
-import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
-@JsonSubTypes.Type(value = SourceConfigTuner.class, name = "sourceConfigTuner")
-public class SourceConfigTuner extends SourceConfiguration
+/**
+ * Multiple frequency tuner source configuration is used for a system with a rolling/rotating control
+ * channel where the control channel rotates across a pre-defined set of channel frequencies.
+ */
+@JsonSubTypes.Type(value = SourceConfigTunerMultipleFrequency.class, name = "sourceConfigTunerMultipleFrequency")
+public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
 {
-    private static DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
-
-    private long mFrequency = 0;
+    private List<Long> mFrequencies = new ArrayList<>();
     private String mPreferredTuner;
 
-    public SourceConfigTuner()
+    public SourceConfigTunerMultipleFrequency()
     {
-        super(SourceType.TUNER);
+        super(SourceType.TUNER_MULTIPLE_FREQUENCIES);
     }
 
-    public SourceConfigTuner(TunerChannel tunerChannel)
+    /**
+     * List of frequencies for this configuration
+     */
+    @JacksonXmlProperty(isAttribute = false, localName = "frequency")
+    public List<Long> getFrequencies()
     {
-        this();
-        mFrequency = tunerChannel.getFrequency();
+        return mFrequencies;
     }
 
-    @JacksonXmlProperty(isAttribute = true, localName = "frequency")
-    public long getFrequency()
+    /**
+     * Sets the list of frequencies for this configuration
+     */
+    public void setFrequencies(List<Long> frequencies)
     {
-        return mFrequency;
+        mFrequencies = frequencies;
     }
 
-    public void setFrequency(long frequency)
+    /**
+     * Indicates if this configuration has more than one frequency specified
+     */
+    @JsonIgnore
+    public boolean hasMultipleFrequencies()
     {
-        mFrequency = frequency;
+        return mFrequencies.size() > 1;
+    }
+
+    /**
+     * Adds a frequency to the list
+     */
+    public void addFrequency(long frequency)
+    {
+        mFrequencies.add(frequency);
     }
 
     /**
@@ -89,12 +109,19 @@ public class SourceConfigTuner extends SourceConfiguration
     @Override
     public String getDescription()
     {
-        return FREQUENCY_FORMAT.format((double)mFrequency / 1000000.0d) + " MHz";
+        return "Frequencies [" + mFrequencies.size() + "]";
     }
 
     @JsonIgnore
-    public TunerChannel getTunerChannel(int bandwidth)
+    public TunerChannel getFirstTunerChannel(int bandwidth)
     {
-        return new TunerChannel(mFrequency, bandwidth);
+        if(getFrequencies().size() > 0)
+        {
+            return new TunerChannel(getFrequencies().get(0), bandwidth);
+        }
+        else
+        {
+            return new TunerChannel(0l, bandwidth);
+        }
     }
 }

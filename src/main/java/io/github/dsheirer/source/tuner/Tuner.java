@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.tuner.ChannelizerType;
+import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProcessor;

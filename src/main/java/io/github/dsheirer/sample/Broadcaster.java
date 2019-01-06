@@ -1,21 +1,26 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.sample;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,7 +30,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class Broadcaster<T> implements Listener<T>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(Broadcaster.class);
+    private boolean mDebug;
+
     protected List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
+
+    public Broadcaster()
+    {
+    }
+
+    /**
+     * Turns on/off debugging to troubleshoot and log which listeners are receiving an item.
+     */
+    public void setDebug(boolean debug)
+    {
+        mDebug = debug;
+    }
 
     /**
      * Implements the Listener<T> interface to receive an element and broadcast that element to all registered
@@ -116,9 +136,21 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        for(Listener<T> listener : mListeners)
+        if(mDebug)
         {
-            listener.receive(t);
+            for(Listener<T> listener : mListeners)
+            {
+                mLog.debug("Sending [" + t + "] to listener [" + listener.getClass() + "]");
+                listener.receive(t);
+                mLog.debug("Finished sending to listener [" + listener.getClass() + "]");
+            }
+        }
+        else
+        {
+            for(Listener<T> listener : mListeners)
+            {
+                listener.receive(t);
+            }
         }
     }
 }

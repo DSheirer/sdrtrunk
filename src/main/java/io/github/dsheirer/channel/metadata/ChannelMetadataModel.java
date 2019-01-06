@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
             switch(columnIndex)
             {
                 case COLUMN_DECODER_STATE:
-                    return channelMetadata.getDecoderStateIdentifier();
+                    return channelMetadata.getChannelStateIdentifier();
                 case COLUMN_DECODER_TYPE:
                     return channelMetadata.getDecoderTypeConfigurationIdentifier();
                 case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:

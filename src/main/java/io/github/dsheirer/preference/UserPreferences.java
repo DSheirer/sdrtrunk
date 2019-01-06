@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,8 @@ import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
-import io.github.dsheirer.preference.tuner.TunerPreference;
+import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
+import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -48,6 +49,7 @@ public class UserPreferences implements Listener<PreferenceType>
 {
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
+    private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
     private PlaylistPreference mPlaylistPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
@@ -74,6 +76,14 @@ public class UserPreferences implements Listener<PreferenceType>
     public DirectoryPreference getDirectoryPreference()
     {
         return mDirectoryPreference;
+    }
+
+    /**
+     * Multiple frequency channel source preferences
+     */
+    public ChannelMultiFrequencyPreference getChannelMultiFrequencyPreference()
+    {
+        return mChannelMultiFrequencyPreference;
     }
 
     /**
@@ -106,7 +116,8 @@ public class UserPreferences implements Listener<PreferenceType>
     private void loadPreferenceTypes()
     {
         mDecodeEventPreference = new DecodeEventPreference(this);
-        mDirectoryPreference = new DirectoryPreference(this::receive);
+        mDirectoryPreference = new DirectoryPreference(this);
+        mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this);
         mPlaylistPreference = new PlaylistPreference(this, mDirectoryPreference);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this);
         mTunerPreference = new TunerPreference(this);
