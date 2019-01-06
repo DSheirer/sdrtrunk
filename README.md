@@ -21,6 +21,8 @@ All release versions of sdrtrunk are available from the [releases](https://githu
 
 **(final)** These versions have been tested and are the current release version.
 
+**(alpha)** These versions are under development feature previews and likely to contain bugs and unexpected behavior.
+
 **(beta)** These versions are currently being tested for bugs and functionality.
 
 ## Run the application
