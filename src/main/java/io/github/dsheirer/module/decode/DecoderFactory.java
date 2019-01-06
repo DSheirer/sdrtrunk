@@ -190,7 +190,8 @@ public class DecoderFactory
                 Sync sync = mptConfig.getSync();
                 modules.add(new MPT1327Decoder(sync));
                 modules.add(new AudioModule());
-                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                SourceType sourceType = channel.getSourceConfiguration().getSourceType();
+                if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 }
@@ -206,6 +207,15 @@ public class DecoderFactory
                 else
                 {
                     modules.add(new MPT1327DecoderState(channelType, timeout));
+                }
+
+                //Add a channel rotation monitor when we have multiple control channel frequencies specified
+                if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
+                    ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+                {
+                    List<State> activeStates = new ArrayList<>();
+                    activeStates.add(State.CONTROL);
+                    modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
                 }
                 break;
             case PASSPORT:
