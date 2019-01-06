@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,11 +15,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.heartbeat;
+
+import io.github.dsheirer.sample.Listener;
 
 public interface IHeartbeatProvider
 {
-    public HeartbeatManager getHeartbeatManager();
+    /**
+     * Adds the listener to receive heartbeats
+     */
+    void addHeartbeatListener(Listener<Heartbeat> listener);
+
+    /**
+     * Removes the listener from receiving heartbeats
+     * @param listener
+     */
+    void removeHeartbeatListener(Listener<Heartbeat> listener);
 }

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,12 +22,16 @@ package io.github.dsheirer.source;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.mixer.MixerManager;
 import io.github.dsheirer.source.recording.RecordingSourceManager;
 import io.github.dsheirer.source.tuner.TunerManager;
 import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
+import io.github.dsheirer.source.tuner.channel.MultiFrequencyTunerChannelSource;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 
 public class SourceManager
 {
@@ -86,7 +90,29 @@ public class SourceManager
                 retVal = mMixerManager.getSource(config);
                 break;
             case TUNER:
-                retVal = mTunerModel.getSource((SourceConfigTuner) config, channelSpecification);
+                if(config instanceof SourceConfigTuner)
+                {
+                    SourceConfigTuner sourceConfigTuner = (SourceConfigTuner)config;
+                    TunerChannel tunerChannel = sourceConfigTuner.getTunerChannel(channelSpecification.getBandwidth());
+                    String preferredTuner = sourceConfigTuner.getPreferredTuner();
+                    retVal = mTunerModel.getSource(tunerChannel, channelSpecification, preferredTuner);
+                }
+                break;
+            case TUNER_MULTIPLE_FREQUENCIES:
+                if(config instanceof SourceConfigTunerMultipleFrequency)
+                {
+                    SourceConfigTunerMultipleFrequency sourceConfigTuner = (SourceConfigTunerMultipleFrequency)config;
+                    TunerChannel tunerChannel = sourceConfigTuner.getFirstTunerChannel(channelSpecification.getBandwidth());
+                    String preferredTuner = sourceConfigTuner.getPreferredTuner();
+
+                    Source source = mTunerModel.getSource(tunerChannel, channelSpecification, preferredTuner);
+
+                    if(source instanceof TunerChannelSource)
+                    {
+                        retVal = new MultiFrequencyTunerChannelSource(getTunerModel(), (TunerChannelSource)source,
+                            sourceConfigTuner.getFrequencies(), channelSpecification, sourceConfigTuner.getPreferredTuner());
+                    }
+                }
                 break;
             case RECORDING:
                 retVal = mRecordingSourceManager.getSource(config, channelSpecification);

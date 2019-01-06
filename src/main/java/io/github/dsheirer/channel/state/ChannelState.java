@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.alias.AliasModel;
@@ -37,7 +38,7 @@ import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdent
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
-import io.github.dsheirer.identifier.decoder.DecoderStateIdentifier;
+import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
@@ -49,11 +50,13 @@ import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
-import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class ChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider,
     IDecoderStateEventListener, IDecoderStateEventProvider, ISourceEventListener, ISourceEventProvider,
@@ -76,6 +79,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     private Channel mChannel;
     private SourceEventListener mInternalSourceEventListener;
     private ChannelMetadata mChannelMetadata;
+    private IdentifierUpdateNotificationProxy mIdentifierUpdateNotificationProxy = new IdentifierUpdateNotificationProxy();
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
@@ -108,6 +112,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     {
         mChannel = channel;
         mChannelMetadata = new ChannelMetadata(aliasModel);
+        mIdentifierCollection.setIdentifierUpdateListener(mIdentifierUpdateNotificationProxy);
         createConfigurationIdentifiers(channel);
     }
 
@@ -136,8 +141,17 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         }
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
-            TunerChannel tunerChannel = ((SourceConfigTuner)channel.getSourceConfiguration()).getTunerChannel();
-            mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(tunerChannel.getFrequency()));
+            long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+            mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(frequency));
+        }
+        else if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER_MULTIPLE_FREQUENCIES)
+        {
+            List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies();
+
+            if(frequencies.size() > 0)
+            {
+                mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(frequencies.get(0)));
+            }
         }
     }
 
@@ -164,13 +178,13 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     @Override
     public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
     {
-        mIdentifierCollection.setIdentifierUpdateListener(listener);
+        mIdentifierUpdateNotificationProxy.setListener(listener);
     }
 
     @Override
     public void removeIdentifierUpdateListener()
     {
-        mIdentifierCollection.removeIdentifierUpdateListener();
+        mIdentifierUpdateNotificationProxy.removeListener();
     }
 
     /**
@@ -189,7 +203,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     {
         mState = State.IDLE;
         broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
-        mIdentifierCollection.update(DecoderStateIdentifier.IDLE);
+        mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
         mSourceOverflow = false;
     }
 
@@ -358,7 +372,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
                     broadcast(SquelchState.SQUELCH);
                     updateFadeTimeout();
                     mState = state;
-                    mIdentifierCollection.update(DecoderStateIdentifier.ACTIVE);
+                    mIdentifierCollection.update(ChannelStateIdentifier.ACTIVE);
                     break;
                 case CONTROL:
                     //Don't allow traffic channels to be control channels, otherwise they can't transition to teardown
@@ -367,39 +381,41 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
                         broadcast(SquelchState.SQUELCH);
                         updateFadeTimeout();
                         mState = state;
-                        mIdentifierCollection.update(DecoderStateIdentifier.CONTROL);
+                        mIdentifierCollection.update(ChannelStateIdentifier.CONTROL);
                     }
                     break;
                 case DATA:
                     broadcast(SquelchState.SQUELCH);
                     updateFadeTimeout();
                     mState = state;
-                    mIdentifierCollection.update(DecoderStateIdentifier.DATA);
+                    mIdentifierCollection.update(ChannelStateIdentifier.DATA);
                     break;
                 case ENCRYPTED:
                     broadcast(SquelchState.SQUELCH);
                     updateFadeTimeout();
                     mState = state;
-                    mIdentifierCollection.update(DecoderStateIdentifier.ENCRYPTED);
+                    mIdentifierCollection.update(ChannelStateIdentifier.ENCRYPTED);
                     break;
                 case CALL:
                     broadcast(SquelchState.UNSQUELCH);
                     updateFadeTimeout();
                     mState = state;
-                    mIdentifierCollection.update(DecoderStateIdentifier.CALL);
+                    mIdentifierCollection.update(ChannelStateIdentifier.CALL);
                     break;
                 case FADE:
                     processFadeState();
+                    mIdentifierCollection.update(ChannelStateIdentifier.FADE);
                     break;
                 case IDLE:
                     processIdleState();
+                    mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
                     break;
                 case TEARDOWN:
                     processTeardownState();
                     break;
                 case RESET:
                     mState = State.IDLE;
-                    mIdentifierCollection.update(DecoderStateIdentifier.IDLE);
+                    mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
                     break;
                 default:
                     break;
@@ -447,7 +463,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     {
         updateResetTimeout();
         mState = State.FADE;
-        mIdentifierCollection.update(DecoderStateIdentifier.FADE);
+        mIdentifierCollection.update(ChannelStateIdentifier.FADE);
 
         broadcast(SquelchState.SQUELCH);
     }
@@ -462,7 +478,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         }
 
         mState = State.IDLE;
-        mIdentifierCollection.update(DecoderStateIdentifier.IDLE);
+        mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
     }
 
     private void processTeardownState()
@@ -470,7 +486,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         broadcast(SquelchState.SQUELCH);
 
         mState = State.TEARDOWN;
-        mIdentifierCollection.update(DecoderStateIdentifier.TEARDOWN);
+        mIdentifierCollection.update(ChannelStateIdentifier.TEARDOWN);
 
         if(mChannel.isTrafficChannel())
         {
@@ -591,6 +607,12 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
                     //Rebroadcast source frequency change events for the decoder(s) to process
                     long frequency = sourceEvent.getValue().longValue();
                     broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, getState(), frequency));
+
+                    //Create a new frequency configuration identifier so that downstream consumers receive the change
+                    //via channel metadata and audio packet updates - this is a silent add that is sent as a notification
+                    //to all identifier collections so that they don't rebroadcast the change and cause a feedback loop
+                    mIdentifierUpdateNotificationProxy.receive(new IdentifierUpdateNotification(
+                        FrequencyConfigurationIdentifier.create(frequency), IdentifierUpdateNotification.Operation.SILENT_ADD));
                     break;
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                     //Rebroadcast frequency error measurements to external listener if we're currently
@@ -705,6 +727,34 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
                     "] mFadeTimeout [" + mFadeTimeout +
                     "]", e);
             }
+        }
+    }
+
+    /**
+     * Proxy between the identifier collection and the external update notification listener.  This proxy enables
+     * access to internal components to broadcast silent identifier update notifications externally.
+     */
+    public class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
+    {
+        private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
+
+        @Override
+        public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+        {
+            if(mIdentifierUpdateNotificationListener != null)
+            {
+                mIdentifierUpdateNotificationListener.receive(identifierUpdateNotification);
+            }
+        }
+
+        public void setListener(Listener<IdentifierUpdateNotification> listener)
+        {
+            mIdentifierUpdateNotificationListener = listener;
+        }
+
+        public void removeListener()
+        {
+            mIdentifierUpdateNotificationListener = null;
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,9 @@ public enum PreferenceEditorType
 {
     CHANNEL_EVENT("Channel Events"),
     DIRECTORY("Directories"),
-    TALKGROUP_FORMAT("Talkgroups"),
-    TUNER("Tuners");
+    SOURCE_CHANNEL_MULTIPLE_FREQUENCY("Channel - Multiple Frequency"),
+    SOURCE_TUNER_CHANNELIZER("Tuner Channelizer"),
+    TALKGROUP_FORMAT("Talkgroups");
 
     private String mLabel;
 

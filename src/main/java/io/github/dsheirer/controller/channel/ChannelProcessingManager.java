@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.binary.BinaryRecorder;
@@ -76,6 +77,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private RecorderManager mRecorderManager;
     private SourceManager mSourceManager;
     private AliasModel mAliasModel;
+    private UserPreferences mUserPreferences;
 
     /**
      * Constructs the channel processing manager
@@ -85,15 +87,18 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * @param recorderManager for receiving audio packets produced by the channel
      * @param sourceManager for obtaining a tuner channel source for the channel
      * @param aliasModel for aliasing of identifiers produced by the channel
+     * @param userPreferences for user defined behavior and settings
      */
     public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    RecorderManager recorderManager, SourceManager sourceManager, AliasModel aliasModel)
+                                    RecorderManager recorderManager, SourceManager sourceManager,
+                                    AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
         mRecorderManager = recorderManager;
         mSourceManager = sourceManager;
         mAliasModel = aliasModel;
+        mUserPreferences = userPreferences;
         mChannelMetadataModel = new ChannelMetadataModel();
     }
 
@@ -262,7 +267,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.addFrequencyChangeListener(channel);
 
             /* Processing Modules */
-            List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel);
+            List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences);
             processingChain.addModules(modules);
 
             /* Setup message activity model with filtering */

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.preference.tuner;
+package io.github.dsheirer.preference.source;
 
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -456,7 +456,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
 
         if(module instanceof IHeartbeatProvider)
         {
-            ((IHeartbeatProvider)module).getHeartbeatManager().addHeartbeatListener(mHeartbeatBroadcaster);
+            ((IHeartbeatProvider)module).addHeartbeatListener(mHeartbeatBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -528,7 +528,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
 
         if(module instanceof IHeartbeatProvider)
         {
-            ((IHeartbeatProvider)module).getHeartbeatManager().removeHeartbeatListener(mHeartbeatBroadcaster);
+            ((IHeartbeatProvider)module).removeHeartbeatListener(mHeartbeatBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -571,7 +571,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
                 mSourceEventBroadcaster.broadcast(SourceEvent.sampleRateChange(mSource.getSampleRate(), "Processing Chain Startup"));
 
                 //Broadcast the source center frequency / sample rate so that each of the modules can self-configure
-                mSourceEventBroadcaster.broadcast(SourceEvent.frequencyChange(mSource.getFrequency(), "Processing Chain Startup"));
+                mSourceEventBroadcaster.broadcast(SourceEvent.frequencyChange(mSource, mSource.getFrequency(), "Processing Chain Startup"));
 
                 //Setup the channel state to monitor source overflow conditions
                 mSource.setOverflowListener(mChannelState);

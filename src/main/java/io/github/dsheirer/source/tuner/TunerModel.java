@@ -1,25 +1,28 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
@@ -335,62 +338,60 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
     }
 
     /**
-     * Iterates current tuners to get a tuner channel source for the frequency
-     * specified in the channel config's source config object.
+     * Iterates current tuners to get a tuner channel source for the specified frequency and bandwidth
      *
      * Returns null if no tuner can source the channel
      */
-    public Source getSource(SourceConfigTuner config, ChannelSpecification channelSpecification)
+    public Source getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification, String preferredTuner)
     {
-        TunerChannelSource retVal = null;
+        TunerChannelSource source = null;
 
-        TunerChannel tunerChannel = config.getTunerChannel();
-
-        tunerChannel.setBandwidth(channelSpecification.getBandwidth());
-
-        Iterator<Tuner> it = mTuners.iterator();
-
-        Tuner tuner;
-
-        if(config.hasPreferredTuner())
+        if(tunerChannel != null && channelSpecification != null)
         {
-            tuner = getTuner(config.getPreferredTuner());
+            Iterator<Tuner> it = mTuners.iterator();
 
-            if(tuner != null)
+            Tuner tuner;
+
+            if(preferredTuner != null)
             {
+                tuner = getTuner(preferredTuner);
+
+                if(tuner != null)
+                {
+                    try
+                    {
+                        source = tuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
+
+                        if(source != null)
+                        {
+                            return source;
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        //Fall through to logger below
+                    }
+                }
+
+                mLog.info("Unable to source channel [" + tunerChannel.getFrequency() + "] from preferred tuner [" +
+                    preferredTuner + "] - searching for another tuner");
+            }
+
+            while(it.hasNext() && source == null)
+            {
+                tuner = it.next();
+
                 try
                 {
-                    retVal = tuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
-
-                    if(retVal != null)
-                    {
-                        return retVal;
-                    }
+                    source = tuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
                 }
                 catch(Exception e)
                 {
-                    //Fall through to logger below
+                    mLog.error("Error obtaining channel from tuner [" + tuner.getName() + "]", e);
                 }
             }
-
-            mLog.info("Unable to source channel [" + config.getFrequency() + "] from preferred tuner [" +
-                config.getPreferredTuner() + "] - searching for another tuner");
         }
 
-        while(it.hasNext() && retVal == null)
-        {
-            tuner = it.next();
-
-            try
-            {
-                retVal = tuner.getChannelSourceManager().getSource(tunerChannel, channelSpecification);
-            }
-            catch(Exception e)
-            {
-                mLog.error("error obtaining channel from tuner [" + tuner.getName() + "]", e);
-            }
-        }
-
-        return retVal;
+        return source;
     }
 }

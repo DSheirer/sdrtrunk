@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AudioModule;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
+import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
@@ -87,7 +88,10 @@ import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
 import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
 import io.github.dsheirer.module.demodulate.am.AMDemodulatorModule;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceType;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.tuner.channel.ChannelRotationMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,9 +113,10 @@ public class DecoderFactory
      *
      * @return list of configured decoders
      */
-    public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel)
+    public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
+                                          UserPreferences userPreferences)
     {
-        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel);
+        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
@@ -119,7 +124,8 @@ public class DecoderFactory
     /**
      * Constructs a primary decoder as specified in the decode configuration
      */
-    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel)
+    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel,
+                                                 AliasModel aliasModel, UserPreferences userPreferences)
     {
         List<Module> modules = new ArrayList<Module>();
 
@@ -239,6 +245,15 @@ public class DecoderFactory
                 }
 
                 modules.add(new P25AudioModule());
+
+                //Add a channel rotation monitor when we have multiple control channel frequencies specified
+                if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
+                    ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+                {
+                    List<State> activeStates = new ArrayList<>();
+                    activeStates.add(State.CONTROL);
+                    modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+                }
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");

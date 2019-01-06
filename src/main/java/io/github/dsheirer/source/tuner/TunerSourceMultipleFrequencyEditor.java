@@ -42,7 +42,7 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
     private static final long serialVersionUID = 1L;
     private static final String NO_PREFERRED_TUNER = "(none)";
     private static final String UNAVAILABLE_TUNER = " (unavailable)";
-    private MultipleFrequencyEditor mFrequencyEditor = new MultipleFrequencyEditor(1.0, 6000.0);
+    private MultipleFrequencyEditor mFrequencyEditor = new MultipleFrequencyEditor(0.0, 6000.0);
     private JComboBox<String> mTunerNameComboBox;
     private TunerModel mTunerModel;
     private List<String> mCurrentTunerNames;
@@ -161,6 +161,8 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
     public void setItem(Channel item)
     {
         super.setItem(item);
+
+        mFrequencyEditor.getFrequencyModel().clear();
 
         if(hasItem())
         {

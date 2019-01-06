@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@
 package io.github.dsheirer.gui.preference.tuner;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.tuner.ChannelizerType;
-import io.github.dsheirer.preference.tuner.TunerPreference;
+import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.preference.source.TunerPreference;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;

@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.sample.Listener;
@@ -117,7 +118,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public void start()
     {
         //Broadcast current frequency and sample rate so consumer can configure correctly
-        broadcastConsumerSourceEvent(SourceEvent.frequencyChange(getFrequency()));
+        broadcastConsumerSourceEvent(SourceEvent.frequencyChange(this, getFrequency(), "Startup"));
         broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
         mScheduledIntervalProcessor.start();
     }
@@ -185,6 +186,10 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             //Request events from the consumer
             case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
                 setChannelFrequencyCorrection(sourceEvent.getValue().longValue());
+                break;
+            case NOTIFICATION_FREQUENCY_ROTATION_FAILURE:
+            case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
+                //Ignore
                 break;
             default:
                 mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent() + " from [" +

@@ -47,6 +47,7 @@ import javax.swing.text.NumberFormatter;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.text.DecimalFormat;
@@ -62,7 +63,7 @@ import java.util.List;
 public class MultipleFrequencyEditor extends JPanel
 {
     private final static Logger mLog = LoggerFactory.getLogger(MultipleFrequencyEditor.class);
-    private static final Long DEFAULT_FREQUENCY = 150000000l;
+    private static final Long DEFAULT_FREQUENCY = 0l;
     private DecimalFormat mDecimalFormat = new DecimalFormat("0.000000");
     private FrequencyModel mFrequencyModel = new FrequencyModel();
     private JTable mFrequencyTable;
@@ -88,6 +89,7 @@ public class MultipleFrequencyEditor extends JPanel
             int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
             mFrequencyModel.moveUp(index);
             mFrequencyTable.getSelectionModel().setLeadSelectionIndex(index - 1);
+            mFrequencyTable.scrollRectToVisible(new Rectangle(mFrequencyTable.getCellRect(selectedRow, 0, true)));
 
             updateButtons();
         });
@@ -114,7 +116,9 @@ public class MultipleFrequencyEditor extends JPanel
                 int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
                 int nextIndex = index + 1;
                 mFrequencyModel.add(DEFAULT_FREQUENCY, nextIndex);
+                mFrequencyTable.requestFocus();
                 mFrequencyTable.setRowSelectionInterval(nextIndex, nextIndex);
+                mFrequencyTable.scrollRectToVisible(new Rectangle(mFrequencyTable.getCellRect(nextIndex, 0, true)));
                 mFrequencyTable.editCellAt(nextIndex, 0);
             }
             else
@@ -140,6 +144,7 @@ public class MultipleFrequencyEditor extends JPanel
             int index = mFrequencyTable.convertRowIndexToModel(selectedRow);
             mFrequencyModel.moveDown(index);
             mFrequencyTable.getSelectionModel().setLeadSelectionIndex(index + 1);
+            mFrequencyTable.scrollRectToVisible(new Rectangle(mFrequencyTable.getCellRect(selectedRow, 0, true)));
 
             updateButtons();
         });
@@ -157,6 +162,7 @@ public class MultipleFrequencyEditor extends JPanel
             {
                 int reselectedRow = mFrequencyTable.convertRowIndexToView(selectedIndex);
                 mFrequencyTable.setRowSelectionInterval(reselectedRow, reselectedRow);
+                mFrequencyTable.scrollRectToVisible(new Rectangle(mFrequencyTable.getCellRect(reselectedRow, 0, true)));
             }
 
             updateButtons();
@@ -270,6 +276,15 @@ public class MultipleFrequencyEditor extends JPanel
         }
 
         /**
+         * Removes all frequencies from the model
+         */
+        public void clear()
+        {
+            mFrequencies.clear();
+            fireTableDataChanged();
+        }
+
+        /**
          * Moves the frequency up in the list
          */
         public void moveUp(int index)
@@ -306,7 +321,8 @@ public class MultipleFrequencyEditor extends JPanel
          */
         public void setFrequencies(List<Long> frequencies)
         {
-            mFrequencies = frequencies;
+            mFrequencies.clear();
+            mFrequencies.addAll(frequencies);
             fireTableDataChanged();
         }
 
@@ -315,7 +331,9 @@ public class MultipleFrequencyEditor extends JPanel
          */
         public List<Long> getFrequencies()
         {
-            return mFrequencies;
+            List<Long> frequencies = new ArrayList<>();
+            frequencies.addAll(mFrequencies);
+            return frequencies;
         }
     }
 

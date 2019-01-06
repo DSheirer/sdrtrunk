@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.source;
 
 import java.util.EnumSet;
@@ -31,6 +32,8 @@ public class SourceEvent
         NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED,
         NOTIFICATION_FREQUENCY_CHANGE,
         NOTIFICATION_FREQUENCY_CORRECTION_CHANGE,
+        NOTIFICATION_FREQUENCY_ROTATION_SUCCESS,
+        NOTIFICATION_FREQUENCY_ROTATION_FAILURE,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
@@ -38,6 +41,7 @@ public class SourceEvent
 
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
+        REQUEST_FREQUENCY_ROTATION,
         REQUEST_SOURCE_DISPOSE,
         REQUEST_START_SAMPLE_STREAM,
         REQUEST_STOP_SAMPLE_STREAM;
@@ -62,6 +66,14 @@ public class SourceEvent
         mSource = source;
         mValue = value;
         mEventDescription = eventDescription;
+    }
+
+    /**
+     * Private constructor.  Use the static constructor methods to create an event.
+     */
+    private SourceEvent(Event event)
+    {
+        this(event, null, null, null);
     }
 
     /**
@@ -175,9 +187,9 @@ public class SourceEvent
      *
      * @param frequency in hertz
      */
-    public static SourceEvent frequencyChange(long frequency)
+    public static SourceEvent frequencyChange(Source source, long frequency)
     {
-        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, frequency);
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, source, frequency);
     }
 
     /**
@@ -186,9 +198,9 @@ public class SourceEvent
      * @param frequency in hertz
      * @param eventDescription to add a tag to the event
      */
-    public static SourceEvent frequencyChange(long frequency, String eventDescription)
+    public static SourceEvent frequencyChange(Source source, long frequency, String eventDescription)
     {
-        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, frequency, eventDescription);
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, source, frequency, eventDescription);
     }
 
     /**
@@ -336,6 +348,33 @@ public class SourceEvent
     public static SourceEvent sourceDisposeRequest(Source source)
     {
         return new SourceEvent(Event.REQUEST_SOURCE_DISPOSE, source);
+    }
+
+    /**
+     * Creates a request to cycle to the next source frequency.  This is normally used for decoders to request the
+     * next frequency in a list when a multiple-frequency source configuration is defined.
+     */
+    public static SourceEvent frequencyRotationRequest()
+    {
+        return new SourceEvent(Event.REQUEST_FREQUENCY_ROTATION);
+    }
+
+    /**
+     * Creates a notification that the request to rotate the source frequency to the next frequency in the list
+     * was successful.
+     */
+    public static SourceEvent frequencyRotationSuccessNotification(Source source, long frequency)
+    {
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_ROTATION_SUCCESS, source, frequency);
+    }
+
+    /**
+     * Creates a notification that the request to rotate the source frequency to the next frequency in the list
+     * was unsuccessful.
+     */
+    public static SourceEvent frequencyRotationFailureNotification(Source source, long frequency)
+    {
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_ROTATION_FAILURE, source, frequency);
     }
 
     @Override

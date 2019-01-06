@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 package io.github.dsheirer.gui.preference;
 
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
+import io.github.dsheirer.gui.preference.tuner.ChannelMultipleFrequencyPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.scene.Node;
@@ -38,9 +39,11 @@ public class PreferenceEditorFactory
                 return new DecodeEventViewPreferenceEditor(userPreferences);
             case DIRECTORY:
                 return new DirectoryPreferenceEditor(userPreferences);
+            case SOURCE_CHANNEL_MULTIPLE_FREQUENCY:
+                return new ChannelMultipleFrequencyPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:
                 return new TalkgroupFormatPreferenceEditor(userPreferences);
-            case TUNER:
+            case SOURCE_TUNER_CHANNELIZER:
                 return new TunerPreferenceEditor(userPreferences);
         }
 
