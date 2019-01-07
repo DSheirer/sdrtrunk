@@ -21,8 +21,6 @@
 package io.github.dsheirer.gui.control;
 
 import net.miginfocom.swing.MigLayout;
-import org.kordamp.ikonli.fontawesome.FontAwesome;
-import org.kordamp.ikonli.swing.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,8 +79,8 @@ public class MultipleFrequencyEditor extends JPanel
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[]1[grow,fill]1[]", "[]1[]1[top,grow,fill]"));
 
-        mMoveUpButton = new JButton();
-        mMoveUpButton.setIcon(FontIcon.of(FontAwesome.ARROW_UP, 10));
+        mMoveUpButton = new JButton("^");
+//        mMoveUpButton.setIcon(FontIcon.of(FontAwesome.ARROW_UP, 10));
         mMoveUpButton.setEnabled(false);
         mMoveUpButton.addActionListener(e -> {
             int selectedRow = mFrequencyTable.getSelectedRow();
@@ -107,8 +105,8 @@ public class MultipleFrequencyEditor extends JPanel
         JScrollPane listScrollPane = new JScrollPane(mFrequencyTable);
         add(listScrollPane, "span 1 3");
 
-        mAddButton = new JButton();
-        mAddButton.setIcon(FontIcon.of(FontAwesome.PLUS, 10));
+        mAddButton = new JButton("+");
+//        mAddButton.setIcon(FontIcon.of(FontAwesome.PLUS, 10));
         mAddButton.addActionListener(e -> {
             int selectedRow = mFrequencyTable.getSelectedRow();
             if(selectedRow >= 0)
@@ -136,8 +134,8 @@ public class MultipleFrequencyEditor extends JPanel
         });
         add(mAddButton, "wrap");
 
-        mMoveDownButton = new JButton();
-        mMoveDownButton.setIcon(FontIcon.of(FontAwesome.ARROW_DOWN, 10));
+        mMoveDownButton = new JButton("v");
+//        mMoveDownButton.setIcon(FontIcon.of(FontAwesome.ARROW_DOWN, 10));
         mMoveDownButton.setEnabled(false);
         mMoveDownButton.addActionListener(e -> {
             int selectedRow = mFrequencyTable.getSelectedRow();
@@ -150,8 +148,8 @@ public class MultipleFrequencyEditor extends JPanel
         });
         add(mMoveDownButton);
 
-        mRemoveButton = new JButton();
-        mRemoveButton.setIcon(FontIcon.of(FontAwesome.MINUS, 10));
+        mRemoveButton = new JButton("-");
+//        mRemoveButton.setIcon(FontIcon.of(FontAwesome.MINUS, 10));
         mRemoveButton.setEnabled(false);
         mRemoveButton.addActionListener(e -> {
             int selectedRow = mFrequencyTable.getSelectedRow();
