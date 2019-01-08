@@ -60,7 +60,7 @@ Linux
 ```
 Windows
 ```
-gradle.bat clean buildSdr
+gradlew.bat clean buildSdr
 ```
 This would add gradle, download all project dependencies and build JAR
 
