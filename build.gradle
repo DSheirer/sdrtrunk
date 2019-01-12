@@ -74,10 +74,10 @@ dependencies {
     compile 'org.apache.axis:axis-jaxrpc:1.4'
     compile 'org.apache.axis:axis:1.4'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3'
-    compile 'org.kordamp.ikonli:ikonli-javafx:2.1.1'
-    compile 'org.kordamp.ikonli:ikonli-swing:2.1.1'
-    compile 'org.kordamp.ikonli:ikonli-fontawesome-pack:2.1.1'
-    compile 'com.google.guava:guava:27.0-jre'    
+    compile 'com.google.guava:guava:27.0-jre'
+    compile group: 'com.github.jiconfont', name: 'jiconfont-font_awesome', version: '4.7.0.1'
+    compile group: 'com.github.jiconfont', name: 'jiconfont-javafx', version: '1.0.0'
+    compile group: 'com.github.jiconfont', name: 'jiconfont-swing', version: '1.0.1'
 }
 
 task wrapper(type: Wrapper) {

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.gui.instrument;
 
 import io.github.dsheirer.gui.instrument.decoder.AbstractDecoderPane;
@@ -32,8 +36,9 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
-import org.kordamp.ikonli.fontawesome.FontAwesome;
-import org.kordamp.ikonli.javafx.FontIcon;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconFontFX;
+import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +69,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener
     public PlaybackController()
     {
         super(10);
+        IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
 
         getChildren().addAll(getControlsBox(), getFileLabel());
 
@@ -235,7 +241,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
         if(mRewindButton == null)
         {
             mRewindButton = new Button();
-            mRewindButton.setGraphic(new FontIcon(FontAwesome.FAST_BACKWARD));
+            IconNode iconNode = new IconNode(FontAwesome.FAST_BACKWARD);
+            iconNode.setIconSize(10);
+            mRewindButton.setGraphic(iconNode);
         }
 
         return mRewindButton;
@@ -248,7 +256,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
             mPlay1Button = new Button("1");
             mPlay1Button.setUserData(1);
             mPlay1Button.setOnAction(getPlaybackEventHandler());
-            mPlay1Button.setGraphic(new FontIcon(FontAwesome.PLAY));
+            IconNode iconNode = new IconNode(FontAwesome.PLAY);
+            iconNode.setIconSize(10);
+            mPlay1Button.setGraphic(iconNode);
         }
 
         return mPlay1Button;
@@ -261,7 +271,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
             mPlay10Button = new Button("10");
             mPlay10Button.setUserData(10);
             mPlay10Button.setOnAction(getPlaybackEventHandler());
-            mPlay10Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+            IconNode iconNode = new IconNode(FontAwesome.FAST_FORWARD);
+            iconNode.setIconSize(10);
+            mPlay10Button.setGraphic(iconNode);
         }
 
         return mPlay10Button;
@@ -274,7 +286,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
             mPlay30Button = new Button("30");
             mPlay30Button.setUserData(30);
             mPlay30Button.setOnAction(getPlaybackEventHandler());
-            mPlay30Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+            IconNode iconNode = new IconNode(FontAwesome.FAST_FORWARD);
+            iconNode.setIconSize(10);
+            mPlay30Button.setGraphic(iconNode);
         }
 
         return mPlay30Button;
@@ -287,7 +301,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
             mPlay100Button = new Button("100");
             mPlay100Button.setUserData(100);
             mPlay100Button.setOnAction(getPlaybackEventHandler());
-            mPlay100Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+            IconNode iconNode = new IconNode(FontAwesome.FAST_FORWARD);
+            iconNode.setIconSize(10);
+            mPlay100Button.setGraphic(iconNode);
         }
 
         return mPlay100Button;
@@ -300,7 +316,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
             mPlay1000Button = new Button("1000");
             mPlay1000Button.setUserData(1000);
             mPlay1000Button.setOnAction(getPlaybackEventHandler());
-            mPlay1000Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+            IconNode iconNode = new IconNode(FontAwesome.FAST_FORWARD);
+            iconNode.setIconSize(10);
+            mPlay1000Button.setGraphic(iconNode);
         }
 
         return mPlay1000Button;
@@ -313,7 +331,9 @@ public class PlaybackController extends HBox implements IFrameLocationListener
             mPlay2000Button = new Button("2000");
             mPlay2000Button.setUserData(2000);
             mPlay2000Button.setOnAction(getPlaybackEventHandler());
-            mPlay2000Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+            IconNode iconNode = new IconNode(FontAwesome.FAST_FORWARD);
+            iconNode.setIconSize(10);
+            mPlay2000Button.setGraphic(iconNode);
         }
 
         return mPlay2000Button;
