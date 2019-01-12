@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,6 +84,7 @@ import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacket
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.message.tdu.TDULinkControlMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
+import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.isp.CancelServiceRequest;
@@ -2134,9 +2135,22 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
                         .identifiers(icRoaming)
                         .build());
                     break;
-                case MOTOROLA_OSP_OPCODE_7:
-                    mLog.info("MOTOROLA OPCODE 7: " + tsbk.getMessage().toHexString());
-                    break;
+                case MOTOROLA_OSP_DENY_RESPONSE:
+                    if(tsbk instanceof MotorolaDenyResponse)
+                    {
+                        MotorolaDenyResponse dr = (MotorolaDenyResponse)tsbk;
+                        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        ic.remove(IdentifierClass.USER);
+                        ic.update(tsbk.getIdentifiers());
+
+                        broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
+                            .channel(getCurrentChannel())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
+                            .details("DENY: " + dr.getDeniedServiceType().getDescription() +
+                                " REASON: " + dr.getDenyReason() + " - INFO: " + dr.getAdditionalInfo())
+                            .identifiers(ic)
+                            .build());
+                    }
                 default:
 //                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
 //                        " OPCODE:" + tsbk.getOpcodeNumber());
