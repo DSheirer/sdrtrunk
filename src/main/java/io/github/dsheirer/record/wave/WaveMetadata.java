@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -316,86 +316,89 @@ public class WaveMetadata
         waveMetadata.add(WaveMetadataType.SOFTWARE, SystemProperties.getInstance().getApplicationName());
         waveMetadata.add(WaveMetadataType.DATE_CREATED, SDF.format(new Date(System.currentTimeMillis())));
 
-        Identifier system = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
-        if(system instanceof SystemConfigurationIdentifier)
+        if(identifierCollection != null)
         {
-            waveMetadata.add(WaveMetadataType.ARTIST_NAME, ((SystemConfigurationIdentifier)system).getValue());
-        }
+            Identifier system = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
+            if(system instanceof SystemConfigurationIdentifier)
+            {
+                waveMetadata.add(WaveMetadataType.ARTIST_NAME, ((SystemConfigurationIdentifier)system).getValue());
+            }
 
-        Identifier site = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SITE, Role.ANY);
-        if(site instanceof SiteConfigurationIdentifier)
-        {
-            waveMetadata.add(WaveMetadataType.ALBUM_TITLE, ((SiteConfigurationIdentifier)site).getValue());
-        }
+            Identifier site = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SITE, Role.ANY);
+            if(site instanceof SiteConfigurationIdentifier)
+            {
+                waveMetadata.add(WaveMetadataType.ALBUM_TITLE, ((SiteConfigurationIdentifier)site).getValue());
+            }
 
-        Identifier channel = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
-        if(channel instanceof ChannelNameConfigurationIdentifier)
-        {
-            waveMetadata.add(WaveMetadataType.TRACK_TITLE, ((ChannelNameConfigurationIdentifier)channel).getValue());
-        }
+            Identifier channel = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_NAME, Role.ANY);
+            if(channel instanceof ChannelNameConfigurationIdentifier)
+            {
+                waveMetadata.add(WaveMetadataType.TRACK_TITLE, ((ChannelNameConfigurationIdentifier)channel).getValue());
+            }
 
-        Identifier decoder = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.DECODER_TYPE,
+            Identifier decoder = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.DECODER_TYPE,
                 Role.ANY);
-        if(decoder instanceof DecoderTypeConfigurationIdentifier)
-        {
-            waveMetadata.add(WaveMetadataType.COMMENTS, ((DecoderTypeConfigurationIdentifier)decoder).getValue().getDisplayString());
-        }
+            if(decoder instanceof DecoderTypeConfigurationIdentifier)
+            {
+                waveMetadata.add(WaveMetadataType.COMMENTS, ((DecoderTypeConfigurationIdentifier)decoder).getValue().getDisplayString());
+            }
 
-        Identifier channelName = identifierCollection.getIdentifier(IdentifierClass.DECODER, Form.CHANNEL_NAME, Role.ANY);
+            Identifier channelName = identifierCollection.getIdentifier(IdentifierClass.DECODER, Form.CHANNEL_NAME, Role.ANY);
 
-        if(channelName instanceof DecoderLogicalChannelNameIdentifier)
-        {
-            waveMetadata.add(WaveMetadataType.CHANNEL_ID, ((DecoderLogicalChannelNameIdentifier)channelName).getValue());
-        }
+            if(channelName instanceof DecoderLogicalChannelNameIdentifier)
+            {
+                waveMetadata.add(WaveMetadataType.CHANNEL_ID, ((DecoderLogicalChannelNameIdentifier)channelName).getValue());
+            }
 
-        Identifier frequency = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION,
+            Identifier frequency = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION,
                 Form.CHANNEL_FREQUENCY, Role.ANY);
 
-        if(frequency instanceof FrequencyConfigurationIdentifier)
-        {
-            waveMetadata.add(WaveMetadataType.CHANNEL_FREQUENCY,
-                    String.valueOf(((FrequencyConfigurationIdentifier)frequency).getValue()));
-        }
-
-        for(Identifier identifier: identifierCollection.getIdentifiers(Form.TALKGROUP))
-        {
-            if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.FROM)
+            if(frequency instanceof FrequencyConfigurationIdentifier)
             {
-                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM,
+                waveMetadata.add(WaveMetadataType.CHANNEL_FREQUENCY,
+                    String.valueOf(((FrequencyConfigurationIdentifier)frequency).getValue()));
+            }
+
+            for(Identifier identifier: identifierCollection.getIdentifiers(Form.TALKGROUP))
+            {
+                if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.FROM)
+                {
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM,
                         String.valueOf(((TalkgroupIdentifier)identifier).getValue()));
 
-                List<Alias> aliases = aliasList.getAliases(identifier);
+                    List<Alias> aliases = aliasList.getAliases(identifier);
 
-                if(!aliases.isEmpty())
-                {
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, aliases.get(0).getIconName());
+                    if(!aliases.isEmpty())
+                    {
+                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
+                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_FROM_ICON, aliases.get(0).getIconName());
+                    }
                 }
-            }
-            else if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.TO)
-            {
-                List<Alias> aliases = aliasList.getAliases(identifier);
-
-                if(!aliases.isEmpty())
+                else if(identifier instanceof TalkgroupIdentifier && identifier.getRole() == Role.TO)
                 {
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, aliases.get(0).getIconName());
+                    List<Alias> aliases = aliasList.getAliases(identifier);
+
+                    if(!aliases.isEmpty())
+                    {
+                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
+                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, aliases.get(0).getIconName());
+                    }
                 }
-            }
-            else if(identifier instanceof PatchGroupIdentifier)
-            {
-                PatchGroup patchGroup = ((PatchGroupIdentifier)identifier).getValue();
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("P:").append(patchGroup.getPatchGroup()).append(patchGroup.getPatchedGroupIdentifiers());
-                waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO, sb.toString());
-
-                List<Alias> aliases = aliasList.getAliases(identifier);
-
-                if(!aliases.isEmpty())
+                else if(identifier instanceof PatchGroupIdentifier)
                 {
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
-                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, aliases.get(0).getIconName());
+                    PatchGroup patchGroup = ((PatchGroupIdentifier)identifier).getValue();
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("P:").append(patchGroup.getPatchGroup()).append(patchGroup.getPatchedGroupIdentifiers());
+                    waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO, sb.toString());
+
+                    List<Alias> aliases = aliasList.getAliases(identifier);
+
+                    if(!aliases.isEmpty())
+                    {
+                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ALIAS, Joiner.on(", ").skipNulls().join(aliases));
+                        waveMetadata.add(WaveMetadataType.TALKGROUP_PRIMARY_TO_ICON, aliases.get(0).getIconName());
+                    }
                 }
             }
         }
