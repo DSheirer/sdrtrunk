@@ -56,6 +56,8 @@ import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +133,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         //Log current properties setting
         SystemProperties.getInstance().logCurrentSettings();
+
+        //Register FontAwesome so we can use the fonts in Swing windows
+        IconFontSwing.register(FontAwesome.getIconFont());
 
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
