@@ -61,29 +61,41 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.assertj:assertj-core:3.8.0'
     compile fileTree(dir: 'imports', include: '*.jar')
-    compile 'org.apache.commons:commons-lang3:3.7'
-    compile 'org.apache.commons:commons-io:1.3.2'
-    compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'ch.qos.logback:logback-core:1.2.3'
     compile 'ch.qos.logback:logback-classic:1.2.3'
-    compile 'com.miglayout:miglayout-swing:5.0'
-    compile 'org.usb4java:usb4java-javax:1.3.0'
-    compile 'org.usb4java:usb4java:1.3.0'
-    compile 'org.usb4java:libusb4java:1.3.0'
-    compile 'javax.usb:usb-api:1.0.2'
-    compile 'com.github.wendykierp:JTransforms:3.1'
-    compile 'pl.edu.icm:JLargeArrays:1.6'
-    compile 'net.coderazzi:tablefilter-swing:5.3.1'
-    compile 'com.jidesoft:jide-oss:3.6.18'
-    compile 'org.apache.mina:mina-core:2.0.16'
-    compile 'org.apache.mina:mina-http:2.0.16'
-    compile 'org.apache.axis:axis-jaxrpc:1.4'
-    compile 'org.apache.axis:axis:1.4'
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3'
-    compile 'com.google.guava:guava:27.0.1-jre'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.8'
     compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
     compile 'com.github.jiconfont:jiconfont-swing:1.0.1'
+    compile 'com.github.wendykierp:JTransforms:3.1'
+    compile 'com.google.guava:guava:27.0.1-jre'
+    compile 'com.jidesoft:jide-oss:3.6.18'
+    compile 'com.miglayout:miglayout-swing:5.2'
+    compile 'javax.usb:usb-api:1.0.2'
+    compile 'net.coderazzi:tablefilter-swing:5.4.0'
+    compile 'org.apache.axis:axis:1.4'
+    compile 'org.apache.axis:axis-jaxrpc:1.4'
+    compile 'org.apache.commons:commons-lang3:3.8.1'
+    compile 'org.apache.commons:commons-io:1.3.2'
+    compile 'org.apache.mina:mina-core:2.0.19'
+    compile 'org.apache.mina:mina-http:2.0.19'
+    compile "org.openjfx:javafx-base:11:win"
+    compile "org.openjfx:javafx-base:11:linux"
+    compile "org.openjfx:javafx-base:11:mac"
+    compile "org.openjfx:javafx-controls:11:win"
+    compile "org.openjfx:javafx-controls:11:linux"
+    compile "org.openjfx:javafx-controls:11:mac"
+    compile "org.openjfx:javafx-graphics:11:win"
+    compile "org.openjfx:javafx-graphics:11:linux"
+    compile "org.openjfx:javafx-graphics:11:mac"
+    compile "org.openjfx:javafx-swing:11:win"
+    compile "org.openjfx:javafx-swing:11:linux"
+    compile "org.openjfx:javafx-swing:11:mac"
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'org.usb4java:libusb4java:1.3.0'
+    compile 'org.usb4java:usb4java:1.3.0'
+    compile 'org.usb4java:usb4java-javax:1.3.0'
+    compile 'pl.edu.icm:JLargeArrays:1.6'
 }
 
 task buildSdr(type: Jar) {

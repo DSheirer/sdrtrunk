@@ -451,7 +451,7 @@ public class MultipleFrequencyEditor extends JPanel
                 }
                 catch(Exception exc)
                 {
-                    return new Double(0);
+                    return 0.0d;
                 }
             }
         }
