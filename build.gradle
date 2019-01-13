@@ -27,8 +27,11 @@ buildscript {
     }
 }
 
-apply plugin: 'java'
-apply plugin: 'idea'
+plugins {
+    id 'java'
+    id 'idea'
+    id 'org.openjfx.javafxplugin' version '0.0.6'
+}
 
 repositories {
     jcenter()
@@ -36,7 +39,7 @@ repositories {
 }
 
 version = '0.4.0-alpha.6'
-sourceCompatibility = 1.8
+sourceCompatibility = '11'
 
 sourceSets {
     main.java.srcDirs 'src/main'
@@ -50,6 +53,10 @@ idea {
     }
 }
 
+javafx {
+    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
+}
+
 dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.assertj:assertj-core:3.8.0'
@@ -60,7 +67,6 @@ dependencies {
     compile 'ch.qos.logback:logback-core:1.2.3'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'com.miglayout:miglayout-swing:5.0'
-
     compile 'org.usb4java:usb4java-javax:1.3.0'
     compile 'org.usb4java:usb4java:1.3.0'
     compile 'org.usb4java:libusb4java:1.3.0'
@@ -74,10 +80,10 @@ dependencies {
     compile 'org.apache.axis:axis-jaxrpc:1.4'
     compile 'org.apache.axis:axis:1.4'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3'
-    compile 'com.google.guava:guava:27.0-jre'
-    compile group: 'com.github.jiconfont', name: 'jiconfont-font_awesome', version: '4.7.0.1'
-    compile group: 'com.github.jiconfont', name: 'jiconfont-javafx', version: '1.0.0'
-    compile group: 'com.github.jiconfont', name: 'jiconfont-swing', version: '1.0.1'
+    compile 'com.google.guava:guava:27.0.1-jre'
+    compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
+    compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
+    compile 'com.github.jiconfont:jiconfont-swing:1.0.1'
 }
 
 task buildSdr(type: Jar) {

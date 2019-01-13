@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,7 +91,7 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 
         mMinTalkgroupField = new JFormattedTextField();
         mMinTalkgroupField.setColumns(10);
-        mMinTalkgroupField.setValue(new Integer(0));
+        mMinTalkgroupField.setValue(0);
         mMinTalkgroupField.getDocument().addDocumentListener(this);
         mMinTalkgroupField.setToolTipText(HELP_TEXT);
         add(mMinTalkgroupField, "growx,push");
@@ -100,7 +100,7 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 
         mMaxTalkgroupField = new JFormattedTextField();
         mMaxTalkgroupField.setColumns(10);
-        mMaxTalkgroupField.setValue(new Integer(0));
+        mMaxTalkgroupField.setValue(0);
         mMaxTalkgroupField.getDocument().addDocumentListener(this);
         mMaxTalkgroupField.setToolTipText(HELP_TEXT);
         add(mMaxTalkgroupField, "growx,push");
@@ -140,8 +140,8 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
         if(talkgroupRange != null)
         {
             mComboProtocol.setSelectedItem(talkgroupRange.getProtocol());
-            mMinTalkgroupField.setValue(new Integer(talkgroupRange.getMinTalkgroup()));
-            mMaxTalkgroupField.setValue(new Integer(talkgroupRange.getMaxTalkgroup()));
+            mMinTalkgroupField.setValue(talkgroupRange.getMinTalkgroup());
+            mMaxTalkgroupField.setValue(talkgroupRange.getMaxTalkgroup());
         }
 
         setModified(false);

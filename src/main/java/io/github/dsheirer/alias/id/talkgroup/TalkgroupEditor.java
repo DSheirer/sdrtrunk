@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         mTalkgroupField = new JFormattedTextField();
         mTalkgroupField.setColumns(10);
-        mTalkgroupField.setValue(new Integer(0));
+        mTalkgroupField.setValue(0);
         mTalkgroupField.getDocument().addDocumentListener(this);
         mTalkgroupField.setToolTipText(HELP_TEXT);
         add(mTalkgroupField, "growx,push");
@@ -130,7 +130,7 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
         if(talkgroup != null)
         {
             mComboProtocol.setSelectedItem(talkgroup.getProtocol());
-            mTalkgroupField.setValue(new Integer(talkgroup.getValue()));
+            mTalkgroupField.setValue(talkgroup.getValue());
         }
 
         setModified(false);
