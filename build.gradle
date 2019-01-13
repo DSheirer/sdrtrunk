@@ -18,6 +18,9 @@
  * *****************************************************************************
  */
 
+import org.gradle.internal.os.OperatingSystem;
+
+
 buildscript {
     repositories {
         jcenter()
@@ -28,9 +31,11 @@ buildscript {
 }
 
 plugins {
+    id 'application'
     id 'java'
     id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.6'
+    id 'org.beryx.runtime' version '1.1.0'
 }
 
 repositories {
@@ -44,17 +49,6 @@ sourceCompatibility = '11'
 sourceSets {
     main.java.srcDirs 'src/main'
     test.java.srcDirs 'src/test'
-}
-
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
-    }
-}
-
-javafx {
-    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
 dependencies {
@@ -98,14 +92,33 @@ dependencies {
     compile 'pl.edu.icm:JLargeArrays:1.6'
 }
 
-task buildSdr(type: Jar) {
-    manifest {
-        attributes 'Implementation-Title': 'SdrTrunk project',
-                'Implementation-Version': version,
-                'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
-                'Class-Path': 'jmbe-0.3.2.jar jmbe-0.3.3.jar'
+application {
+    mainClassName = "io.github.dsheirer.gui.SDRTrunk"
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
     }
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
+}
+
+javafx {
+    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
+}
+
+runtime {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
+    imageZip = file("$buildDir/sdr-trunk-" + version + ".zip")
+
+    targetPlatform('linux-x64', '/media/denny/WD250GB/java/linux/jdk-11.0.1')
+    targetPlatform('osx-x64', '/media/denny/WD250GB/java/osx/jdk-11.0.1.jdk')
+    targetPlatform('windows-x64', '/media/denny/WD250GB/java/windows/jdk-11.0.1')
+}
+
+task detect {
+    doLast {
+        println(OperatingSystem.current().getName())
+    }
 }
