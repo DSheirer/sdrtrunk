@@ -17,10 +17,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-
-import org.gradle.internal.os.OperatingSystem;
-
-
 buildscript {
     repositories {
         jcenter()
@@ -35,7 +31,7 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.6'
-    id 'org.beryx.runtime' version '1.1.0'
+    id 'org.beryx.runtime' version '1.1.1'
 }
 
 repositories {
@@ -108,17 +104,10 @@ javafx {
 }
 
 runtime {
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
-    imageZip = file("$buildDir/sdr-trunk-" + version + ".zip")
-
     targetPlatform('linux-x64', '/media/denny/WD250GB/java/linux/jdk-11.0.1')
     targetPlatform('osx-x64', '/media/denny/WD250GB/java/osx/jdk-11.0.1.jdk')
     targetPlatform('windows-x64', '/media/denny/WD250GB/java/windows/jdk-11.0.1')
-}
-
-task detect {
-    doLast {
-        println(OperatingSystem.current().getName())
-    }
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
+    imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
