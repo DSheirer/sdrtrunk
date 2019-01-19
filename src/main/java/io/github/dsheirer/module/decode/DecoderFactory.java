@@ -254,7 +254,7 @@ public class DecoderFactory
                     modules.add(new P25DecoderState(channel));
                 }
 
-                modules.add(new P25AudioModule());
+                modules.add(new P25AudioModule(userPreferences));
 
                 //Add a channel rotation monitor when we have multiple control channel frequencies specified
                 if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
