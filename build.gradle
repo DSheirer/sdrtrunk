@@ -105,7 +105,7 @@ javafx {
 
 runtime {
     targetPlatform('linux-x64', '/media/denny/WD250GB/java/linux/jdk-11.0.1')
-    targetPlatform('osx-x64', '/media/denny/WD250GB/java/osx/jdk-11.0.1.jdk')
+    targetPlatform('osx-x64', '/media/denny/WD250GB/java/osx/jdk-11.0.1.jdk/Contents/Home')
     targetPlatform('windows-x64', '/media/denny/WD250GB/java/windows/jdk-11.0.1')
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']

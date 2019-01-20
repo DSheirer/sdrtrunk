@@ -222,6 +222,11 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
         {
             try
             {
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.info("Loading JMBE library from [" + path.toString() + "]");
+                }
+
                 URLClassLoader childClassLoader = new URLClassLoader(new URL[]{path.toUri().toURL()},
                     this.getClass().getClassLoader());
 
@@ -300,6 +305,10 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
                     mLibraryLoadStatusLogged = true;
                 }
             }
+        }
+        else
+        {
+            mLog.info("JMBE audio library path is NOT SET in your User Preferences.");
         }
 
         if(audioConverter != null)
