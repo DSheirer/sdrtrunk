@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,10 @@ import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.LtrNetTalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.MDC1200TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -135,10 +137,6 @@ public class TalkgroupFormatPreference extends Preference
                 return IntegerFormat.DECIMAL;
             case FLEETSYNC:
                 return IntegerFormat.FORMATTED;
-            case IPV4:
-                return IntegerFormat.DECIMAL;
-            case LOJACK:
-                return IntegerFormat.DECIMAL;
             case LTR:
                 return IntegerFormat.FORMATTED;
             case LTR_NET:
@@ -150,8 +148,6 @@ public class TalkgroupFormatPreference extends Preference
             case MPT1327:
                 return IntegerFormat.FORMATTED;
             case PASSPORT:
-                return IntegerFormat.DECIMAL;
-            case TAIT1200:
                 return IntegerFormat.DECIMAL;
             case UNKNOWN:
             default:
@@ -167,10 +163,6 @@ public class TalkgroupFormatPreference extends Preference
                 return true;
             case FLEETSYNC:
                 return true;
-            case IPV4:
-                return true;
-            case LOJACK:
-                return true;
             case LTR:
                 return true;
             case LTR_NET:
@@ -182,8 +174,6 @@ public class TalkgroupFormatPreference extends Preference
             case MPT1327:
                 return true;
             case PASSPORT:
-                return false;
-            case TAIT1200:
                 return false;
             case UNKNOWN:
             default:
@@ -304,12 +294,21 @@ public class TalkgroupFormatPreference extends Preference
             case FLEETSYNC:
                 return FleetsyncTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.FLEETSYNC),
                     isTalkgroupFixedWidth(Protocol.FLEETSYNC));
+            case LTR_STANDARD:
+                return LTRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_STANDARD),
+                    isTalkgroupFixedWidth(Protocol.LTR_STANDARD));
             case LTR_NET:
-                return LtrNetTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_NET),
+                return LTRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_NET),
                     isTalkgroupFixedWidth(Protocol.LTR_NET));
+            case MDC1200:
+                return MDC1200TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MDC1200),
+                    isTalkgroupFixedWidth(Protocol.MDC1200));
             case MPT1327:
                 return MPT1327TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MPT1327),
                     isTalkgroupFixedWidth(Protocol.MPT1327));
+            case PASSPORT:
+                return PassportTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
+                    isTalkgroupFixedWidth(Protocol.PASSPORT));
             default:
                 return talkgroupIdentifier.toString();
         }

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public class Talkgroup extends AliasID
 {
-    private Protocol mProtocol;
+    private Protocol mProtocol = Protocol.UNKNOWN;
     private int mValue;
 
     public Talkgroup()
@@ -69,14 +69,21 @@ public class Talkgroup extends AliasID
     @Override
     public boolean isValid()
     {
-        return mValue != 0;
+        if(mProtocol == null || mProtocol == Protocol.UNKNOWN)
+        {
+            return false;
+        }
+
+        TalkgroupFormat talkgroupFormat = TalkgroupFormat.get(mProtocol);
+        return talkgroupFormat.getMinimumValidValue() <= mValue && mValue <= talkgroupFormat.getMaximumValidValue();
     }
 
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Talkgroup:").append(mValue).append(" Protocol:").append((mProtocol != null ? mProtocol : "(unspecified)"));
+        sb.append("Talkgroup:").append(TalkgroupFormatter.format(mProtocol, mValue));
+        sb.append(" Protocol:").append((mProtocol));
 
         if(!isValid())
         {
