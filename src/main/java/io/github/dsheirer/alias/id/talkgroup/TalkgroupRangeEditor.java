@@ -44,6 +44,8 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TalkgroupRangeEditor.class);
     private static final long serialVersionUID = 1L;
+
+    private static final String VALID_CHARACTERS_FOR_ASTERISK_MASKS = "0123456789 ";
     private MaskFormatter mMaskFormatter = new MaskFormatter();
     private JComboBox<Protocol> mComboProtocol;
     private JFormattedTextField mMinTalkgroupField;
@@ -134,6 +136,11 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
             mMinTalkgroupField.setToolTipText(mask.getValidRangeHelpText());
             mMaxTalkgroupField.setToolTipText(mask.getValidRangeHelpText());
             mMaskFormatter.setMask(mask.getMask());
+            if(mask.getMask().contains("*"))
+            {
+                mMaskFormatter.setValidCharacters(VALID_CHARACTERS_FOR_ASTERISK_MASKS);
+            }
+
             mMinTalkgroupField.setValue(TalkgroupFormatter.format(protocol, currentMinValue));
             mMaxTalkgroupField.setValue(TalkgroupFormatter.format(protocol, currentMaxValue));
         }

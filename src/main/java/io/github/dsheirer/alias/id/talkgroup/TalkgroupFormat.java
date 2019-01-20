@@ -24,22 +24,27 @@ import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Talkgroup protocol identifier entry masks and min/max valid ranges and valid range descriptions
+ *
+ * Note: the getMask() value is intended for use with a MaskFormatter attached to a JFormattedTextField.  The
+ * protocol masks that have a dash (-) use the # (any digit) character and the protocol masks that do not have
+ * a formatting dash use an asterisk (*).  Within the editor(s) that use this enumeration, the editor must use
+ * a setValidCharacters() on the mask formatter whenever it detects the mask containing one or more asterisks.
  */
 public enum TalkgroupFormat
 {
-    APCO25("########", 1, 0xFFFFFF, "1 to 16,777,215",
+    APCO25("********", 1, 0xFFFFFF, "1 to 16,777,215",
         "<html>APCO25 valid range is 1 to 65,535(talkgroup)<br>or 1 to 16,777,215 (radio ID)"),
     FLEETSYNC("###-####", 1, 0x7FFFFF, "001-0001 to 127-8192",
         "<html>Fleetsync valid ranges are 1-127(prefix)<br>and 1-8192(ident) (ie. 001-0001 to 127-8192)"),
     LTR("##-###", 257, 5375, "01-001 to 20-255",
         "<html>LTR valid ranges are 1-20(repeater) and 1-255(talkgroup) (ie. 01-001 to 20-255)"),
-    MDC1200("#####", 1, 0xFFFF, "1 to 65,535",
+    MDC1200("*****", 1, 0xFFFF, "1 to 65,535",
         "MDC-1200 valid value range is 1-65,535"),
     MPT1327("###-####", 1, 0x7FFFFF, "000-0001 to 127-8192",
         "<html>MPT-1327 valid ranges are 0-127(prefix)<br>and 1-8192(ident) (ie. 000-0001 to 127-8192)"),
-    PASSPORT("#####", 1, 0xFFFF, "1 to 65,535",
+    PASSPORT("*****", 1, 0xFFFF, "1 to 65,535",
         "Passport valid value range is 1-65,535"),
-    UNKNOWN("########", 1, 0xFFFFFF, "1 to 16,777,215",
+    UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
         "Unknown protocol valid value range is 1-16,777,215");
 
     private String mMask;

@@ -47,8 +47,9 @@ import java.text.ParseException;
 public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
-
     private static final long serialVersionUID = 1L;
+
+    private static final String VALID_CHARACTERS_FOR_ASTERISK_MASKS = "0123456789 ";
     private MaskFormatter mMaskFormatter = new MaskFormatter();
     private JComboBox<Protocol> mComboProtocol;
     private JFormattedTextField mTalkgroupField;
@@ -124,13 +125,13 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         try
         {
-            mLog.debug("Setting value to null");
             mTalkgroupField.setValue(null);
-            mLog.debug("Setting tooltip");
             mTalkgroupField.setToolTipText(mask.getValidRangeHelpText());
-            mLog.debug("Setting mask");
             mMaskFormatter.setMask(mask.getMask());
-            mLog.debug("Setting value");
+            if(mask.getMask().contains("*"))
+            {
+                mMaskFormatter.setValidCharacters(VALID_CHARACTERS_FOR_ASTERISK_MASKS);
+            }
             mTalkgroupField.setValue(TalkgroupFormatter.format(protocol, currentValue));
         }
         catch(ParseException pe)
