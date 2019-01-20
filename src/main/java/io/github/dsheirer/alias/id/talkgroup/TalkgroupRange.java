@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public class TalkgroupRange extends AliasID
 {
-    private Protocol mProtocol;
+    private Protocol mProtocol = Protocol.UNKNOWN;
     private int mMinTalkgroup;
     private int mMaxTalkgroup;
 
@@ -88,15 +88,25 @@ public class TalkgroupRange extends AliasID
     @Override
     public boolean isValid()
     {
-        return mProtocol != null && mMinTalkgroup != 0 && mMaxTalkgroup != 0 && mMinTalkgroup <= mMaxTalkgroup;
+        if(mProtocol == null || mProtocol == Protocol.UNKNOWN)
+        {
+            return false;
+        }
+
+        TalkgroupFormat talkgroupFormat = TalkgroupFormat.get(mProtocol);
+        return talkgroupFormat.getMinimumValidValue() <= mMinTalkgroup &&
+               mMinTalkgroup <= talkgroupFormat.getMaximumValidValue() &&
+               talkgroupFormat.getMinimumValidValue() <= mMaxTalkgroup &&
+               mMaxTalkgroup <= talkgroupFormat.getMaximumValidValue();
     }
 
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Talkgroup Range:").append(mMinTalkgroup).append(" to ").append(mMaxTalkgroup)
-            .append(" Protocol:").append(mProtocol == null ? "unspecified" : mProtocol);
+        sb.append("Talkgroup Range:").append(TalkgroupFormatter.format(mProtocol, mMinTalkgroup));
+        sb.append(" to ").append(TalkgroupFormatter.format(mProtocol, mMaxTalkgroup));
+        sb.append(" Protocol:").append(mProtocol != null ? mProtocol : "unspecified");
 
         if(!isValid())
         {

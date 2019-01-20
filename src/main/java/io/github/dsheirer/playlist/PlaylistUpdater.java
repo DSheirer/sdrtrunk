@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,11 +25,11 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
+import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
-import io.github.dsheirer.alias.id.legacy.mobileID.Min;
-import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
+import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -308,8 +308,6 @@ public class PlaylistUpdater
                                         {
                                             int value = Integer.valueOf(m.group(3));
                                             value += (Integer.valueOf(m.group(2)) << 8);
-                                            value += (Integer.valueOf(m.group(1)) << 13);
-
                                             toAdd.add(new Talkgroup(Protocol.LTR, value));
                                             it.remove();
                                             updated++;

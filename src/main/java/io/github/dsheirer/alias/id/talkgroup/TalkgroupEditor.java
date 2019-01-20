@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,26 +29,30 @@ import org.slf4j.LoggerFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.text.MaskFormatter;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.ParseException;
 
 public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
 
     private static final long serialVersionUID = 1L;
-
-    private static final String HELP_TEXT =
-        "<html><h3>Talkgroup Identifier</h3></html>";
-
+    private MaskFormatter mMaskFormatter = new MaskFormatter();
     private JComboBox<Protocol> mComboProtocol;
     private JFormattedTextField mTalkgroupField;
+
 
     public TalkgroupEditor(AliasID aliasID)
     {
@@ -62,7 +66,7 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         add(new JLabel("Protocol:"));
 
-        mComboProtocol = new JComboBox<Protocol>();
+        mComboProtocol = new JComboBox<>();
 
         DefaultComboBoxModel<Protocol> model = new DefaultComboBoxModel<>();
 
@@ -77,10 +81,9 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                Protocol selected = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+                Protocol protocol = (Protocol)mComboProtocol.getSelectedItem();
+                updateEditor(protocol);
                 setModified(true);
-//                ValidatingEditor<Channel> editor = DecoderFactory.getEditor(selected, mChannelMapModel);
-//                setEditor(editor);
             }
         });
 
@@ -88,11 +91,8 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         add(new JLabel("Value:"));
 
-        mTalkgroupField = new JFormattedTextField();
-        mTalkgroupField.setColumns(10);
-        mTalkgroupField.setValue(new Integer(0));
+        mTalkgroupField = new JFormattedTextField(mMaskFormatter);
         mTalkgroupField.getDocument().addDocumentListener(this);
-        mTalkgroupField.setToolTipText(HELP_TEXT);
         add(mTalkgroupField, "growx,push");
 
         JLabel help = new JLabel("Help ...");
@@ -103,13 +103,50 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void mouseClicked(MouseEvent e)
             {
+                TalkgroupFormat talkgroupFormat = TalkgroupFormat.get(getCurrentProtocol());
                 JOptionPane.showMessageDialog(TalkgroupEditor.this,
-                    HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE);
+                    talkgroupFormat.getValidRangeHelpText(), "Help", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         add(help, "align left");
     }
 
+    private void updateEditor(Protocol protocol)
+    {
+        TalkgroupFormat mask = TalkgroupFormat.get(protocol);
+        int currentValue = 0;
+        Talkgroup talkgroup = getTalkgroup();
+
+        if(talkgroup != null)
+        {
+            currentValue = talkgroup.getValue();
+        }
+
+        try
+        {
+            mLog.debug("Setting value to null");
+            mTalkgroupField.setValue(null);
+            mLog.debug("Setting tooltip");
+            mTalkgroupField.setToolTipText(mask.getValidRangeHelpText());
+            mLog.debug("Setting mask");
+            mMaskFormatter.setMask(mask.getMask());
+            mLog.debug("Setting value");
+            mTalkgroupField.setValue(TalkgroupFormatter.format(protocol, currentValue));
+        }
+        catch(ParseException pe)
+        {
+            mLog.error("Error applying talkgroup editor mask to mask formatter [" + mask.getMask() + "]");
+        }
+    }
+
+    private Protocol getCurrentProtocol()
+    {
+        return mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+    }
+
+    /**
+     * Current talkgroup alias id
+     */
     public Talkgroup getTalkgroup()
     {
         if(getItem() instanceof Talkgroup)
@@ -129,8 +166,20 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         if(talkgroup != null)
         {
-            mComboProtocol.setSelectedItem(talkgroup.getProtocol());
-            mTalkgroupField.setValue(new Integer(talkgroup.getValue()));
+            Protocol currentProtocol = getCurrentProtocol();
+            if(currentProtocol == talkgroup.getProtocol())
+            {
+                updateEditor(talkgroup.getProtocol());
+            }
+            mComboProtocol.getModel().setSelectedItem(talkgroup.getProtocol());
+
+            String formatted = TalkgroupFormatter.format(talkgroup.getProtocol(), talkgroup.getValue());
+            mTalkgroupField.setValue(formatted);
+        }
+        else
+        {
+            mComboProtocol.getModel().setSelectedItem(Protocol.UNKNOWN);
+            mTalkgroupField.setValue(TalkgroupFormatter.format(getCurrentProtocol(), 0));
         }
 
         setModified(false);
@@ -145,20 +194,63 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
 
         if(talkgroup != null)
         {
-            Protocol selected = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
-            talkgroup.setProtocol(selected);
+            Protocol protocol = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+
+            int value = -1;
 
             try
             {
-                int value = ((Number)mTalkgroupField.getValue()).intValue();
+                value = TalkgroupFormatter.parse(protocol, mTalkgroupField.getText());
+            }
+            catch(ParseException pe)
+            {
+                //ignore ... value is still -1 and outside valid value range
+            }
+
+            TalkgroupFormat mask = TalkgroupFormat.get(protocol);
+
+            //Check for valid value within range ... notify user but allow value to persist
+            if(value < mask.getMinimumValidValue() || value > mask.getMaximumValidValue())
+            {
+                String message = "Invalid value [" + mTalkgroupField.getText() + "].  " + protocol.name() +
+                    " valid range is [" + mask.getValidRangeDescription() + "]";
+
+                JOptionPane.showMessageDialog(TalkgroupEditor.this, message, "Invalid Talkgroup Value",
+                    JOptionPane.ERROR_MESSAGE);
+            }
+            else
+            {
                 talkgroup.setValue(value);
             }
-            catch(Exception e)
-            {
-                mLog.error("Error parsing minimum talkgroup value from [" + mTalkgroupField.getValue() + "]");
-            }
+
+            talkgroup.setProtocol(protocol);
         }
 
         setModified(false);
+    }
+
+    public static void main(String[] args)
+    {
+        Talkgroup talkgroup = new Talkgroup();
+        talkgroup.setProtocol(Protocol.APCO25);
+        talkgroup.setValue(12345678 );
+
+        JFrame frame = new JFrame("Talkgroup Editor");
+        frame.setSize(new Dimension(500, 400));
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JPanel panel = new JPanel();
+        TalkgroupEditor talkgroupEditor = new TalkgroupEditor(null);
+        panel.add(talkgroupEditor);
+        frame.setContentPane(panel);
+
+        EventQueue.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                frame.setVisible(true);
+                talkgroupEditor.setItem(talkgroup);
+            }
+        });
     }
 }
