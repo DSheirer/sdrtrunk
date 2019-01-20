@@ -365,8 +365,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         mOverlayPanel.addMouseWheelListener(mouser);
 
         //Add the spectrum and channel panels to the layered panel
-        mLayeredPanel.add(mSpectrumPanel, new Integer(0), 0);
-        mLayeredPanel.add(mOverlayPanel, new Integer(1), 0);
+        mLayeredPanel.add(mSpectrumPanel, 0, 0);
+        mLayeredPanel.add(mOverlayPanel, 1, 0);
 
         //Create the waterfall
         mWaterfallPanel.addMouseListener(mouser);
@@ -878,13 +878,13 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             mWindowOffset = windowOffset;
 
             Hashtable<Integer,JComponent> labels = new Hashtable<>();
-            labels.put(new Integer(0), new JLabel("1x"));
-            labels.put(new Integer(1), new JLabel("2x"));
-            labels.put(new Integer(2), new JLabel("4x"));
-            labels.put(new Integer(3), new JLabel("8x"));
-            labels.put(new Integer(4), new JLabel("16x"));
-            labels.put(new Integer(5), new JLabel("32x"));
-            labels.put(new Integer(6), new JLabel("64x"));
+            labels.put(0, new JLabel("1x"));
+            labels.put(1, new JLabel("2x"));
+            labels.put(2, new JLabel("4x"));
+            labels.put(3, new JLabel("8x"));
+            labels.put(4, new JLabel("16x"));
+            labels.put(5, new JLabel("32x"));
+            labels.put(6, new JLabel("64x"));
 
             setLabelTable(labels);
 

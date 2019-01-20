@@ -29,15 +29,11 @@ import org.slf4j.LoggerFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
-import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.text.MaskFormatter;
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -228,30 +224,5 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
         }
 
         setModified(false);
-    }
-
-    public static void main(String[] args)
-    {
-        Talkgroup talkgroup = new Talkgroup();
-        talkgroup.setProtocol(Protocol.APCO25);
-        talkgroup.setValue(12345678 );
-
-        JFrame frame = new JFrame("Talkgroup Editor");
-        frame.setSize(new Dimension(500, 400));
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        JPanel panel = new JPanel();
-        TalkgroupEditor talkgroupEditor = new TalkgroupEditor(null);
-        panel.add(talkgroupEditor);
-        frame.setContentPane(panel);
-
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                frame.setVisible(true);
-                talkgroupEditor.setItem(talkgroup);
-            }
-        });
     }
 }

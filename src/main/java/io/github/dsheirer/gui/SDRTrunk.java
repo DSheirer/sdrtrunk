@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.gui;
 
+import com.jidesoft.plaf.LookAndFeelFactory;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioPacketManager;
@@ -71,6 +72,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
+import javax.swing.UIManager;
+import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.AWTException;
 import java.awt.Desktop;
 import java.awt.Dimension;
@@ -87,6 +90,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 public class SDRTrunk implements Listener<TunerEvent>
 {
@@ -117,6 +121,21 @@ public class SDRTrunk implements Listener<TunerEvent>
     {
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
+
+        String operatingSystem = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
+
+        if(operatingSystem.contains("mac") || operatingSystem.contains("nux"))
+        {
+            try
+            {
+                UIManager.setLookAndFeel(MetalLookAndFeel.class.getName());
+                LookAndFeelFactory.installJideExtension();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error trying to set Metal look and feel for OS [" + operatingSystem + "]");
+            }
+        }
 
         //Setup the application home directory
         Path home = getHomePath();

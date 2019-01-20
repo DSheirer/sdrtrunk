@@ -2,8 +2,8 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
-      <module name="sdr-trunk_main" target="1.8" />
-      <module name="sdr-trunk_test" target="1.8" />
+      <module name="sdr-trunk_main" target="11" />
+      <module name="sdr-trunk_test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>

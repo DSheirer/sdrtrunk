@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -307,12 +307,6 @@ public class MPT1327DecoderState extends DecoderState
         {
             broadcast(new ChangeChannelTimeoutEvent(this, mChannelType,
                 DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000));
-
-            if(mCurrentCallEvent != null)
-            {
-                mCurrentCallEvent.end();
-                mCurrentCallEvent = null;
-            }
         }
     }
 

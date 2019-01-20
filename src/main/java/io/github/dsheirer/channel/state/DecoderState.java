@@ -35,7 +35,6 @@ import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.ActivitySummaryProvider;
-import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.sample.Broadcaster;
@@ -64,7 +63,6 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     private ConfigurationIdentifierListener mConfigurationIdentifierListener = new ConfigurationIdentifierListener();
 
     private IChannelDescriptor mCurrentChannel;
-    protected CallEvent mCurrentCallEvent;
 
     public DecoderState()
     {
@@ -107,7 +105,7 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     }
 
     /**
-     * Provides subclass reference to the call event broadcaster
+     * Provides subclass reference to the decode event broadcaster
      */
     protected Broadcaster<IDecodeEvent> getDecodeEventBroadcaster()
     {
