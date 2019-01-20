@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,8 +71,14 @@ public class AudioMetadataProcessor
             if(aliasList != null)
             {
                 audioPacket.addBroadcastChannels(aliasList.getBroadcastChannels(audioPacket.getIdentifierCollection()));
-                audioPacket.setRecordable(aliasList.isRecordable(audioPacket.getIdentifierCollection()));
                 audioPacket.setMonitoringPriority(aliasList.getAudioPlaybackPriority(audioPacket.getIdentifierCollection()));
+
+                //If the audio packet is already marked recordable, leave it alone, otherwise attempt to determine
+                //if we should record the audio packet from the aliased identifiers
+                if(!audioPacket.isRecordable())
+                {
+                    audioPacket.setRecordable(aliasList.isRecordable(audioPacket.getIdentifierCollection()));
+                }
             }
         }
     }

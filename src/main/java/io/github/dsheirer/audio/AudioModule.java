@@ -1,18 +1,22 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio;
 
 import io.github.dsheirer.audio.squelch.SquelchState;
@@ -72,6 +76,7 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
     private RealFIRFilter2 mHighPassFilter = new RealFIRFilter2(sHighPassFilterCoefficients);
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private SquelchState mSquelchState = SquelchState.SQUELCH;
+    private boolean mRecordAudioOverride;
 
     /**
      * Creates an Audio Module.
@@ -85,6 +90,16 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
     {
         removeAudioPacketListener();
         mSquelchStateListener = null;
+    }
+
+    /**
+     * Sets all audio packets as recordable when the argument is true.  Otherwise, defers to the aliased identifiers
+     * from the identifier collection to determine whether to record the audio or not.
+     * @param recordAudio set to true to mark all audio as recordable.
+     */
+    public void setRecordAudio(boolean recordAudio)
+    {
+        mRecordAudioOverride = recordAudio;
     }
 
     @Override
@@ -109,6 +124,11 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
             endAudioPacket.resetAttributes();
             endAudioPacket.setAudioChannelId(getAudioChannelId());
             endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
+
+            if(mRecordAudioOverride)
+            {
+                endAudioPacket.setRecordable(true);
+            }
             endAudioPacket.incrementUserCount();
             getAudioPacketListener().receive(endAudioPacket);
         }
@@ -132,6 +152,10 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
             audioPacket.resetAttributes();
             audioPacket.setAudioChannelId(getAudioChannelId());
             audioPacket.loadAudioFrom(highPassFiltered);
+            if(mRecordAudioOverride)
+            {
+                audioPacket.setRecordable(true);
+            }
             audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
 
             getAudioPacketListener().receive(audioPacket);
