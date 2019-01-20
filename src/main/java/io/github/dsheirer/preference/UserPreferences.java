@@ -21,6 +21,7 @@
 package io.github.dsheirer.preference;
 
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
@@ -47,6 +48,7 @@ import io.github.dsheirer.sample.Listener;
  */
 public class UserPreferences implements Listener<PreferenceType>
 {
+    private JmbeLibraryPreference mJmbeLibraryPreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
@@ -68,6 +70,14 @@ public class UserPreferences implements Listener<PreferenceType>
     public DecodeEventPreference getDecodeEventPreference()
     {
         return mDecodeEventPreference;
+    }
+
+    /**
+     * Decoder preferences
+     */
+    public JmbeLibraryPreference getJmbeLibraryPreference()
+    {
+        return mJmbeLibraryPreference;
     }
 
     /**
@@ -115,12 +125,13 @@ public class UserPreferences implements Listener<PreferenceType>
      */
     private void loadPreferenceTypes()
     {
-        mDecodeEventPreference = new DecodeEventPreference(this);
-        mDirectoryPreference = new DirectoryPreference(this);
-        mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this);
-        mPlaylistPreference = new PlaylistPreference(this, mDirectoryPreference);
-        mTalkgroupFormatPreference = new TalkgroupFormatPreference(this);
-        mTunerPreference = new TunerPreference(this);
+        mDecodeEventPreference = new DecodeEventPreference(this::receive);
+        mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
+        mDirectoryPreference = new DirectoryPreference(this::receive);
+        mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
+        mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
+        mTalkgroupFormatPreference = new TalkgroupFormatPreference(this::receive);
+        mTunerPreference = new TunerPreference(this::receive);
     }
 
     /**

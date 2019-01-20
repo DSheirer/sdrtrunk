@@ -189,6 +189,11 @@ public class PreferencesEditor extends Application
         {
             TreeItem<String> treeRoot = new TreeItem<>("Root node");
 
+            TreeItem<String> decoderItem = new TreeItem<>("Decoder");
+            decoderItem.getChildren().add(new TreeItem(PreferenceEditorType.JMBE_LIBRARY));
+            treeRoot.getChildren().add(decoderItem);
+            decoderItem.setExpanded(true);
+
             TreeItem<String> displayItem = new TreeItem<>("Display");
             displayItem.getChildren().add(new TreeItem(PreferenceEditorType.CHANNEL_EVENT));
             displayItem.getChildren().add(new TreeItem(PreferenceEditorType.TALKGROUP_FORMAT));

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,21 +31,22 @@ import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.text.MaskFormatter;
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.ParseException;
 
 public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TalkgroupRangeEditor.class);
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT =
-        "<html><h3>Talkgroup Range Identifier</h3>Identifies a range of talkgroup values</html>";
-
+    private static final String VALID_CHARACTERS_FOR_ASTERISK_MASKS = "0123456789 ";
+    private MaskFormatter mMaskFormatter = new MaskFormatter();
     private JComboBox<Protocol> mComboProtocol;
     private JFormattedTextField mMinTalkgroupField;
     private JFormattedTextField mMaxTalkgroupField;
@@ -78,10 +79,9 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                Protocol selected = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+                Protocol protocol = (Protocol)mComboProtocol.getSelectedItem();
+                updateEditor(protocol);
                 setModified(true);
-//                ValidatingEditor<Channel> editor = DecoderFactory.getEditor(selected, mChannelMapModel);
-//                setEditor(editor);
             }
         });
 
@@ -89,20 +89,14 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 
         add(new JLabel("Min:"));
 
-        mMinTalkgroupField = new JFormattedTextField();
-        mMinTalkgroupField.setColumns(10);
-        mMinTalkgroupField.setValue(0);
+        mMinTalkgroupField = new JFormattedTextField(mMaskFormatter);
         mMinTalkgroupField.getDocument().addDocumentListener(this);
-        mMinTalkgroupField.setToolTipText(HELP_TEXT);
         add(mMinTalkgroupField, "growx,push");
 
         add(new JLabel("Max:"));
 
-        mMaxTalkgroupField = new JFormattedTextField();
-        mMaxTalkgroupField.setColumns(10);
-        mMaxTalkgroupField.setValue(0);
+        mMaxTalkgroupField = new JFormattedTextField(mMaskFormatter);
         mMaxTalkgroupField.getDocument().addDocumentListener(this);
-        mMaxTalkgroupField.setToolTipText(HELP_TEXT);
         add(mMaxTalkgroupField, "growx,push");
 
         JLabel help = new JLabel("Help ...");
@@ -113,12 +107,55 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
             @Override
             public void mouseClicked(MouseEvent e)
             {
+                TalkgroupFormat talkgroupFormat = TalkgroupFormat.get(getCurrentProtocol());
                 JOptionPane.showMessageDialog(TalkgroupRangeEditor.this,
-                    HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE);
+                    talkgroupFormat.getValidRangeHelpText(), "Help", JOptionPane.INFORMATION_MESSAGE);
             }
         });
         add(help, "align left");
     }
+
+    private void updateEditor(Protocol protocol)
+    {
+        TalkgroupFormat mask = TalkgroupFormat.get(protocol);
+        int currentMinValue = 0;
+        int currentMaxValue = 0;
+        TalkgroupRange talkgroupRange = getTalkgroupRange();
+
+        if(talkgroupRange != null)
+        {
+            currentMinValue = talkgroupRange.getMinTalkgroup();
+            currentMaxValue = talkgroupRange.getMaxTalkgroup();
+        }
+
+        try
+        {
+            mMinTalkgroupField.setValue(null);
+            mMaxTalkgroupField.setValue(null);
+
+            mMinTalkgroupField.setToolTipText(mask.getValidRangeHelpText());
+            mMaxTalkgroupField.setToolTipText(mask.getValidRangeHelpText());
+            mMaskFormatter.setMask(mask.getMask());
+            if(mask.getMask().contains("*"))
+            {
+                mMaskFormatter.setValidCharacters(VALID_CHARACTERS_FOR_ASTERISK_MASKS);
+            }
+
+            mMinTalkgroupField.setValue(TalkgroupFormatter.format(protocol, currentMinValue));
+            mMaxTalkgroupField.setValue(TalkgroupFormatter.format(protocol, currentMaxValue));
+        }
+        catch(ParseException pe)
+        {
+            mLog.error("Error applying talkgroup editor mask to mask formatter [" + mask.getMask() + "]");
+        }
+    }
+
+    private Protocol getCurrentProtocol()
+    {
+        return mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+    }
+
+
 
     public TalkgroupRange getTalkgroupRange()
     {
@@ -139,9 +176,17 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 
         if(talkgroupRange != null)
         {
-            mComboProtocol.setSelectedItem(talkgroupRange.getProtocol());
-            mMinTalkgroupField.setValue(talkgroupRange.getMinTalkgroup());
-            mMaxTalkgroupField.setValue(talkgroupRange.getMaxTalkgroup());
+            mComboProtocol.getModel().setSelectedItem(talkgroupRange.getProtocol());
+            String minFormatted = TalkgroupFormatter.format(talkgroupRange.getProtocol(), talkgroupRange.getMinTalkgroup());
+            mMinTalkgroupField.setValue(minFormatted);
+            String maxFormatted = TalkgroupFormatter.format(talkgroupRange.getProtocol(), talkgroupRange.getMaxTalkgroup());
+            mMaxTalkgroupField.setValue(maxFormatted);
+        }
+        else
+        {
+            mComboProtocol.getModel().setSelectedItem(Protocol.UNKNOWN);
+            mMinTalkgroupField.setValue(TalkgroupFormatter.format(getCurrentProtocol(), 0));
+            mMaxTalkgroupField.setValue(TalkgroupFormatter.format(getCurrentProtocol(), 0));
         }
 
         setModified(false);
@@ -156,28 +201,61 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 
         if(talkgroupRange != null)
         {
-            Protocol selected = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
-            talkgroupRange.setProtocol(selected);
+            Protocol protocol = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+            talkgroupRange.setProtocol(protocol);
+
+            int minValue = -1;
+            int maxValue = -1;
 
             try
             {
-                int minTalkgroup = ((Number)mMinTalkgroupField.getValue()).intValue();
-                talkgroupRange.setMinTalkgroup(minTalkgroup);
+                minValue = TalkgroupFormatter.parse(protocol, mMinTalkgroupField.getText());
             }
-            catch(Exception e)
+            catch(ParseException pe)
             {
-                mLog.error("Error parsing minimum talkgroup value from [" + mMinTalkgroupField.getText() + "]");
+                //ignore ... value is still -1 and outside valid value range
             }
 
             try
             {
-                int maxTalkgroup = ((Number)mMaxTalkgroupField.getValue()).intValue();
-                talkgroupRange.setMaxTalkgroup(maxTalkgroup);
+                maxValue = TalkgroupFormatter.parse(protocol, mMaxTalkgroupField.getText());
             }
-            catch(Exception e)
+            catch(ParseException pe)
             {
-                mLog.error("Error parsing maximum talkgroup value from [" + mMaxTalkgroupField.getText() + "]");
+                //ignore ... value is still -1 and outside valid value range
             }
+
+            TalkgroupFormat mask = TalkgroupFormat.get(protocol);
+
+            //Check for valid value within range ... notify user but allow value to persist
+            if(minValue < mask.getMinimumValidValue() || minValue > mask.getMaximumValidValue())
+            {
+                String message = "Invalid minimum value [" + mMinTalkgroupField.getText() + "].  " + protocol.name() +
+                    " valid range is [" + mask.getValidRangeDescription() + "]";
+
+                JOptionPane.showMessageDialog(TalkgroupRangeEditor.this, message,
+                    "Invalid Talkgroup Value", JOptionPane.ERROR_MESSAGE);
+            }
+            else
+            {
+                talkgroupRange.setMinTalkgroup(minValue);
+            }
+
+            //Check for valid value within range ... notify user but allow value to persist
+            if(maxValue < mask.getMinimumValidValue() || maxValue > mask.getMaximumValidValue())
+            {
+                String message = "Invalid maximum value [" + mMaxTalkgroupField.getText() + "].  " + protocol.name() +
+                    " valid range is [" + mask.getValidRangeDescription() + "]";
+
+                JOptionPane.showMessageDialog(TalkgroupRangeEditor.this, message,
+                    "Invalid Talkgroup Value", JOptionPane.ERROR_MESSAGE);
+            }
+            else
+            {
+                talkgroupRange.setMaxTalkgroup(maxValue);
+            }
+
+            talkgroupRange.setProtocol(protocol);
         }
 
         setModified(false);

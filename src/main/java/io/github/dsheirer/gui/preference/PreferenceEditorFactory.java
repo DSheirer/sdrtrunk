@@ -20,6 +20,7 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.ChannelMultipleFrequencyPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
@@ -37,6 +38,8 @@ public class PreferenceEditorFactory
         {
             case CHANNEL_EVENT:
                 return new DecodeEventViewPreferenceEditor(userPreferences);
+            case JMBE_LIBRARY:
+                return new JmbeLibraryPreferenceEditor(userPreferences);
             case DIRECTORY:
                 return new DirectoryPreferenceEditor(userPreferences);
             case SOURCE_CHANNEL_MULTIPLE_FREQUENCY:

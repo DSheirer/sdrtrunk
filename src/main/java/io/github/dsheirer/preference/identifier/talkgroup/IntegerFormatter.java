@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,8 @@ package io.github.dsheirer.preference.identifier.talkgroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+
 /**
  * Base formatter class for integer values
  */
@@ -43,5 +45,35 @@ public class IntegerFormatter
     public static String toDecimal(int value, int width)
     {
         return String.format("%0" + width + "d", value);
+    }
+
+    /**
+     * Formats the integer value for display as a string.
+     *
+     * Subclass implementations should override this method to return formatted values.
+     */
+    public String format(int value)
+    {
+        return String.valueOf(value);
+    }
+
+    /**
+     * Parses an integer value from the formatted string value
+     *
+     * Subclass implementations should override this method to provide custom parsing of formatted values
+     */
+    public int parse(String formattedValue) throws ParseException
+    {
+        try
+        {
+            return Integer.parseInt(formattedValue.trim());
+        }
+        catch(Exception e)
+        {
+            //exception re-thrown below
+        }
+
+        mLog.error("Throwing a parse exception for value [" + formattedValue + "]");
+        throw new ParseException("Error parsing integer value from [" + formattedValue + "]", 0);
     }
 }

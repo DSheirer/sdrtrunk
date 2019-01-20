@@ -1,18 +1,22 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.nbfm;
 
 import io.github.dsheirer.controller.channel.Channel;
@@ -23,6 +27,7 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import java.awt.event.ActionEvent;
@@ -33,6 +38,7 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
     private static final long serialVersionUID = 1L;
 
     private JComboBox<DecodeConfigNBFM.Bandwidth> mComboBandwidth;
+    private JCheckBox mCheckBoxRecordAudio;
 
     public NBFMDecoderEditor()
     {
@@ -41,7 +47,7 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 
     private void init()
     {
-        setLayout(new MigLayout("insets 0 0 0 0,wrap 2", "[right][grow,fill]", ""));
+        setLayout(new MigLayout("insets 0 0 0 0,wrap 3", "[][][]", ""));
 
         mComboBandwidth = new JComboBox<>();
         mComboBandwidth.setModel(new DefaultComboBoxModel<DecodeConfigNBFM.Bandwidth>(
@@ -58,6 +64,18 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 
         add(new JLabel("Bandwidth:"));
         add(mComboBandwidth);
+
+        mCheckBoxRecordAudio = new JCheckBox("Record Audio");
+        mCheckBoxRecordAudio.setEnabled(false);
+        mCheckBoxRecordAudio.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                setModified(true);
+            }
+        });
+        add(mCheckBoxRecordAudio);
     }
 
     @Override
@@ -73,6 +91,7 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
         {
             DecodeConfigNBFM nbfm = new DecodeConfigNBFM();
             nbfm.setBandwidth((DecodeConfigNBFM.Bandwidth)mComboBandwidth.getSelectedItem());
+            nbfm.setRecordAudio(mCheckBoxRecordAudio.isSelected());
             getItem().setDecodeConfiguration(nbfm);
         }
 
@@ -82,6 +101,7 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
     private void setControlsEnabled(boolean enabled)
     {
         mComboBandwidth.setEnabled(enabled);
+        mCheckBoxRecordAudio.setEnabled(enabled);
     }
 
     @Override
@@ -99,6 +119,7 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
             {
                 DecodeConfigNBFM nbfm = (DecodeConfigNBFM)config;
                 mComboBandwidth.setSelectedItem(nbfm.getBandwidth());
+                mCheckBoxRecordAudio.setSelected(nbfm.getRecordAudio());
                 setModified(false);
             }
             else

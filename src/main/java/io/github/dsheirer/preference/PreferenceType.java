@@ -26,6 +26,7 @@ package io.github.dsheirer.preference;
 public enum PreferenceType
 {
     DECODE_EVENT,
+    JMBE_LIBRARY,
     DIRECTORY,
     IDENTIFIER,
     MULTI_FREQUENCY,

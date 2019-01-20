@@ -26,6 +26,7 @@ package io.github.dsheirer.gui.preference;
 public enum PreferenceEditorType
 {
     CHANNEL_EVENT("Channel Events"),
+    JMBE_LIBRARY("JMBE Audio Library"),
     DIRECTORY("Directories"),
     SOURCE_CHANNEL_MULTIPLE_FREQUENCY("Channel - Multiple Frequency"),
     SOURCE_TUNER_CHANNELIZER("Tuner Channelizer"),

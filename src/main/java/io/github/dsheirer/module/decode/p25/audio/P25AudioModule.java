@@ -19,16 +19,20 @@
  */
 package io.github.dsheirer.module.decode.p25.audio;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioFormats;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDUMessage;
+import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
@@ -38,6 +42,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 
 public class P25AudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener
 {
@@ -54,9 +62,12 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private LDU1Message mCachedLDU1Message = null;
     private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("P25AudioModule");
+    private UserPreferences mUserPreferences;
 
-    public P25AudioModule()
+    public P25AudioModule(UserPreferences userPreferences)
     {
+        mUserPreferences = userPreferences;
+        MyEventBus.getEventBus().register(this);
         loadConverter();
     }
 
@@ -119,7 +130,7 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
             {
                 if(message instanceof LDUMessage)
                 {
-                    processAudio((LDUMessage) message);
+                    processAudio((LDUMessage)message);
                 }
             }
             else
@@ -127,18 +138,18 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
                 if(message instanceof HDUMessage)
                 {
                     mEncryptedCallStateEstablished = true;
-                    mEncryptedCall = ((HDUMessage) message).getHeaderData().isEncryptedAudio();
+                    mEncryptedCall = ((HDUMessage)message).getHeaderData().isEncryptedAudio();
                 }
                 else if(message instanceof LDU1Message)
                 {
                     //When we receive an LDU1 message without first receiving the HDU message, cache the LDU1 Message
                     //until we can determine the encrypted call state from the next LDU2 message
-                    mCachedLDU1Message = (LDU1Message) message;
+                    mCachedLDU1Message = (LDU1Message)message;
                 }
                 else if(message instanceof LDU2Message)
                 {
                     mEncryptedCallStateEstablished = true;
-                    LDU2Message ldu2 = (LDU2Message) message;
+                    LDU2Message ldu2 = (LDU2Message)message;
                     mEncryptedCall = ldu2.getEncryptionSyncParameters().isEncryptedAudio();
 
                     if(mCachedLDU1Message != null)
@@ -182,46 +193,54 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
     }
 
     /**
+     * Receives notifications that the JMBE library preference has been updated via the Guava event bus
+     *
+     * @param preferenceType that was updated
+     */
+    @Subscribe
+    public void preferenceUpdated(PreferenceType preferenceType)
+    {
+        if(preferenceType == PreferenceType.JMBE_LIBRARY)
+        {
+            mLibraryLoadStatusLogged = false;
+            loadConverter();
+        }
+    }
+
+    /**
      * Loads audio frame processing chain.  Constructs an imbe targetdataline
      * to receive the raw imbe frames.  Adds an IMBE to 8k PCM format conversion
      * stream wrapper.  Finally, adds an upsampling (8k to 48k) stream wrapper.
      */
     private void loadConverter()
     {
-        AudioConversionLibrary library = null;
+        AudioConverter audioConverter = null;
 
-        try
+        Path path = mUserPreferences.getJmbeLibraryPreference().getPathJmbeLibrary();
+
+        if(path != null)
         {
-            Class temp = Class.forName("jmbe.JMBEAudioLibrary");
-
             try
             {
-                library = (AudioConversionLibrary) temp.getDeclaredConstructor().newInstance();
-            }
-            catch(InvocationTargetException | NoSuchMethodException e)
-            {
-                mLog.error("Couldn't reflectively create instance of JMBE library");
-            }
+                URLClassLoader childClassLoader = new URLClassLoader(new URL[]{path.toUri().toURL()},
+                    this.getClass().getClassLoader());
 
-            if(library != null && ((library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 &&
-                    library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1))
-            {
-                mAudioConverter = library.getAudioConverter(IMBE_CODEC, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+                Class classToLoad = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
 
-                if(mAudioConverter != null)
+                Object instance = classToLoad.getDeclaredConstructor().newInstance();
+
+                if(instance instanceof AudioConversionLibrary)
                 {
-                    mCanConvertAudio = true;
+                    AudioConversionLibrary library = (AudioConversionLibrary)instance;
 
-                    if(!mLibraryLoadStatusLogged)
+                    if((library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 &&
+                        library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1)
                     {
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("JMBE audio conversion library [");
-                        sb.append(library.getVersion());
-                        sb.append("] successfully loaded - P25 audio will be available");
-
-                        mLog.info(sb.toString());
-
-                        mLibraryLoadStatusLogged = true;
+                        audioConverter = library.getAudioConverter(IMBE_CODEC, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+                    }
+                    else
+                    {
+                        mLog.warn("JMBE library version 0.3.3 or higher is required - found: " + library.getVersion());
                     }
                 }
                 else
@@ -233,33 +252,75 @@ public class P25AudioModule extends AbstractAudioModule implements Listener<IMes
                     }
                 }
             }
-            else
+            catch(NoSuchMethodException nsme)
             {
-                mLog.warn("JMBE library version 0.3.3 or higher is required - found: " + library.getVersion());
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library - no such method exception");
+                    mLibraryLoadStatusLogged = true;
+                }
+            }
+            catch(MalformedURLException mue)
+            {
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library from path [" + path + "]");
+                    mLibraryLoadStatusLogged = true;
+                }
+            }
+            catch(ClassNotFoundException e1)
+            {
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library - class not found");
+                    mLibraryLoadStatusLogged = true;
+                }
+            }
+            catch(InvocationTargetException ite)
+            {
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library - invocation target exception", ite);
+                    mLibraryLoadStatusLogged = true;
+                }
+            }
+            catch(InstantiationException e1)
+            {
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library - instantiation exception", e1);
+                    mLibraryLoadStatusLogged = true;
+                }
+            }
+            catch(IllegalAccessException e1)
+            {
+                if(!mLibraryLoadStatusLogged)
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library - security restrictions");
+                    mLibraryLoadStatusLogged = true;
+                }
             }
         }
-        catch(ClassNotFoundException e1)
+
+        if(audioConverter != null)
         {
+            mAudioConverter = audioConverter;
+            mCanConvertAudio = true;
+
             if(!mLibraryLoadStatusLogged)
             {
-                mLog.error("Couldn't find/load JMBE audio conversion library");
+                mLog.info("JMBE audio conversion library successfully loaded - P25 audio will be available");
                 mLibraryLoadStatusLogged = true;
             }
         }
-        catch(InstantiationException e1)
+        else
         {
+            mCanConvertAudio = false;
+            mAudioConverter = null;
+
             if(!mLibraryLoadStatusLogged)
             {
-                mLog.error("Couldn't instantiate JMBE audio conversion library class");
-                mLibraryLoadStatusLogged = true;
-            }
-        }
-        catch(IllegalAccessException e1)
-        {
-            if(!mLibraryLoadStatusLogged)
-            {
-                mLog.error("Couldn't load JMBE audio conversion library due to "
-                        + "security restrictions");
+                mLog.info("JMBE audio conversion library NOT FOUND");
                 mLibraryLoadStatusLogged = true;
             }
         }

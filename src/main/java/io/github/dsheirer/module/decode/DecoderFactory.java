@@ -150,7 +150,14 @@ public class DecoderFactory
             case AM:
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-                modules.add(new AudioModule());
+                AudioModule audioModuleAM = new AudioModule();
+
+                //Check if the user wants all audio recorded ..
+                if(((DecodeConfigAM)decodeConfig).getRecordAudio())
+                {
+                    audioModuleAM.setRecordAudio(true);
+                }
+                modules.add(audioModuleAM);
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -159,7 +166,14 @@ public class DecoderFactory
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                modules.add(new AudioModule());
+                AudioModule audioModuleFM = new AudioModule();
+
+                //Check if the user wants all audio recorded ..
+                if(((DecodeConfigNBFM)decodeConfig).getRecordAudio())
+                {
+                    audioModuleFM.setRecordAudio(true);
+                }
+                modules.add(audioModuleFM);
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -254,7 +268,7 @@ public class DecoderFactory
                     modules.add(new P25DecoderState(channel));
                 }
 
-                modules.add(new P25AudioModule());
+                modules.add(new P25AudioModule(userPreferences));
 
                 //Add a channel rotation monitor when we have multiple control channel frequencies specified
                 if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
