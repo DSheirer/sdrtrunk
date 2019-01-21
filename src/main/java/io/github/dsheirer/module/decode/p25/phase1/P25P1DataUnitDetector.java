@@ -23,8 +23,6 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.edac.BCH_63_16_11;
-import io.github.dsheirer.module.decode.p25.IDataUnitDetectListener;
-import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.sample.Listener;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -39,14 +37,14 @@ public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
     private P25P1SyncDetector mSyncDetector;
     private NIDDelayBuffer mDataUnitBuffer = new NIDDelayBuffer();
     private DibitDelayBuffer mSyncDelayBuffer = new DibitDelayBuffer(DATA_UNIT_DIBIT_LENGTH - SYNC_DIBIT_LENGTH);
-    private IDataUnitDetectListener mDataUnitDetectListener;
+    private IP25P1DataUnitDetectListener mDataUnitDetectListener;
     private boolean mInitialSyncTestProcessed = false;
     private int mDibitsProcessed = 0;
     private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
-    private DataUnitID mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
+    private P25P1DataUnitID mPreviousDataUnitId = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
     private int mNIDDetectionCount;
 
-    public P25P1DataUnitDetector(IDataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
+    public P25P1DataUnitDetector(IP25P1DataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
     {
         mDataUnitDetectListener = dataUnitDetectListener;
         mSyncDetector = new P25P1SyncDetector(this, phaseLockedLoop);
@@ -147,25 +145,25 @@ public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
                         (bitErrorCount + nidBitErrorCount), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), correctedNid);
                 }
             }
-            else if(mPreviousDataUnitId == DataUnitID.LOGICAL_LINK_DATA_UNIT_1)
+            else if(mPreviousDataUnitId == P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_1)
             {
                 //We have a good sync match, but the NID didn't pass error control and we're in the middle
                 //of voice call, so treat this message as voice message, but set the previous duid to
                 //terminator so we can end if there isn't a subsequent voice message
-                mDataUnitDetectListener.dataUnitDetected(DataUnitID.LOGICAL_LINK_DATA_UNIT_2, -1,
+                mDataUnitDetectListener.dataUnitDetected(P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_2, -1,
                     (bitErrorCount + 64), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), new int[63]);
 
-                mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
+                mPreviousDataUnitId = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
             }
-            else if(mPreviousDataUnitId == DataUnitID.LOGICAL_LINK_DATA_UNIT_2)
+            else if(mPreviousDataUnitId == P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_2)
             {
                 //We have a good sync match, but the NID didn't pass error control and we're in the middle
                 //of voice call, so treat this message as voice message, but set the previous duid to
                 //terminator so we can end if there isn't a subsequent voice message
-                mDataUnitDetectListener.dataUnitDetected(DataUnitID.LOGICAL_LINK_DATA_UNIT_1, -1,
+                mDataUnitDetectListener.dataUnitDetected(P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_1, -1,
                     (bitErrorCount + 64), (mDibitsProcessed - DATA_UNIT_DIBIT_LENGTH), new int[63]);
 
-                mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
+                mPreviousDataUnitId = P25P1DataUnitID.TERMINATOR_DATA_UNIT;
             }
         }
     }
@@ -175,7 +173,7 @@ public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
      * @param nid in reverse bit order
      * @return
      */
-    public DataUnitID getDataUnitID(int[] nid)
+    public P25P1DataUnitID getDataUnitID(int[] nid)
     {
         int duid = 0;
 
@@ -199,7 +197,7 @@ public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
             duid ^= 8;
         }
 
-        return DataUnitID.fromValue(duid);
+        return P25P1DataUnitID.fromValue(duid);
     }
 
     /**

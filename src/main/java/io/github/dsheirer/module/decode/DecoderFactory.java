@@ -71,14 +71,14 @@ import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
-import io.github.dsheirer.module.decode.p25.P25DecoderState;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
-import io.github.dsheirer.module.decode.p25.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
+import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderEditor;
@@ -261,11 +261,11 @@ public class DecoderFactory
                 {
                     P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
                     modules.add(trafficChannelManager);
-                    modules.add(new P25DecoderState(channel, trafficChannelManager));
+                    modules.add(new P25P1DecoderState(channel, trafficChannelManager));
                 }
                 else
                 {
-                    modules.add(new P25DecoderState(channel));
+                    modules.add(new P25P1DecoderState(channel));
                 }
 
                 modules.add(new P25AudioModule(userPreferences));

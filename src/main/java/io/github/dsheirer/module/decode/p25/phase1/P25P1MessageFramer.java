@@ -27,19 +27,16 @@ import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.IDataUnitDetectListener;
-import io.github.dsheirer.module.decode.p25.P25ChannelStatusProcessor;
-import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.module.decode.p25.message.P25MessageFactory;
-import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.UMBTCMessage;
-import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
-import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessageFactory;
-import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
-import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.UMBTCMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -54,17 +51,17 @@ import java.nio.file.Paths;
  * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
  * and issue phase corrections.
  */
-public class P25P1MessageFramer implements Listener<Dibit>, IDataUnitDetectListener
+public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetectListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P1MessageFramer.class);
 
     private P25P1DataUnitDetector mDataUnitDetector;
-    private P25ChannelStatusProcessor mChannelStatusProcessor = new P25ChannelStatusProcessor();
+    private P25P1ChannelStatusProcessor mChannelStatusProcessor = new P25P1ChannelStatusProcessor();
     private Listener<Message> mMessageListener;
 
     private boolean mAssemblingMessage = false;
     private CorrectedBinaryMessage mBinaryMessage;
-    private DataUnitID mDataUnitID;
+    private P25P1DataUnitID mDataUnitID;
     private PDUSequence mPDUSequence;
     private int[] mCorrectedNID;
     private int mNAC;
@@ -229,8 +226,8 @@ public class P25P1MessageFramer implements Listener<Dibit>, IDataUnitDetectListe
                            mPDUSequence.getHeader().getBlocksToFollowCount() > 0)
                         {
                             //Setup to catch the sequence of data blocks that follow the header
-                            mDataUnitID = DataUnitID.PACKET_DATA_UNIT;
-                            mBinaryMessage = new CorrectedBinaryMessage(DataUnitID.PACKET_DATA_UNIT.getMessageLength());
+                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT;
+                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT.getMessageLength());
                             mAssemblingMessage = true;
                         }
                         else
@@ -293,8 +290,8 @@ public class P25P1MessageFramer implements Listener<Dibit>, IDataUnitDetectListe
                         else
                         {
                             //Setup to catch the next data block
-                            mDataUnitID = DataUnitID.PACKET_DATA_UNIT;
-                            mBinaryMessage = new CorrectedBinaryMessage(DataUnitID.PACKET_DATA_UNIT.getMessageLength());
+                            mDataUnitID = P25P1DataUnitID.PACKET_DATA_UNIT;
+                            mBinaryMessage = new CorrectedBinaryMessage(P25P1DataUnitID.PACKET_DATA_UNIT.getMessageLength());
                             mAssemblingMessage = true;
                         }
                     }
@@ -321,13 +318,13 @@ public class P25P1MessageFramer implements Listener<Dibit>, IDataUnitDetectListe
                     {
                         updateBitsProcessed(mDataUnitID.getMessageLength());
                         mBinaryMessage = new CorrectedBinaryMessage(mDataUnitID.getMessageLength());
-                        if(mDataUnitID == DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
+                        if(mDataUnitID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
                         {
-                            mDataUnitID = DataUnitID.TRUNKING_SIGNALING_BLOCK_2;
+                            mDataUnitID = P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2;
                         }
-                        else if(mDataUnitID == DataUnitID.TRUNKING_SIGNALING_BLOCK_2)
+                        else if(mDataUnitID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2)
                         {
-                            mDataUnitID = DataUnitID.TRUNKING_SIGNALING_BLOCK_3;
+                            mDataUnitID = P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_3;
                         }
                     }
                     break;
@@ -378,7 +375,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IDataUnitDetectListe
     }
 
     @Override
-    public void dataUnitDetected(DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
+    public void dataUnitDetected(P25P1DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
     {
         if(discardedDibits > 0)
         {

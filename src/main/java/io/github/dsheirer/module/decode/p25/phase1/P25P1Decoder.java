@@ -23,7 +23,6 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.P25MessageProcessor;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
@@ -40,14 +39,14 @@ public abstract class P25P1Decoder extends Decoder implements ISourceEventListen
     private double mSampleRate;
     private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
     private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
-    private P25MessageProcessor mMessageProcessor;
+    private P25P1MessageProcessor mMessageProcessor;
     private Listener<SourceEvent> mSourceEventListener;
     private double mSymbolRate;
 
     public P25P1Decoder(double symbolRate)
     {
         mSymbolRate = symbolRate;
-        mMessageProcessor = new P25MessageProcessor();
+        mMessageProcessor = new P25P1MessageProcessor();
         mMessageProcessor.setMessageListener(getMessageListener());
         mDibitBroadcaster.addListener(mByteBufferAssembler);
     }
@@ -213,7 +212,7 @@ public abstract class P25P1Decoder extends Decoder implements ISourceEventListen
         return DecoderType.P25_PHASE1;
     }
 
-    protected P25MessageProcessor getMessageProcessor()
+    protected P25P1MessageProcessor getMessageProcessor()
     {
         return mMessageProcessor;
     }
