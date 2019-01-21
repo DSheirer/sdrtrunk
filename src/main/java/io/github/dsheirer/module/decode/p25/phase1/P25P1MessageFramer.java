@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.module.decode.p25;
+package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
@@ -27,6 +27,8 @@ import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.IDataUnitDetectListener;
+import io.github.dsheirer.module.decode.p25.P25ChannelStatusProcessor;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessageFactory;
@@ -52,11 +54,11 @@ import java.nio.file.Paths;
  * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
  * and issue phase corrections.
  */
-public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListener
+public class P25P1MessageFramer implements Listener<Dibit>, IDataUnitDetectListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25MessageFramer2.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25P1MessageFramer.class);
 
-    private P25DataUnitDetector mDataUnitDetector;
+    private P25P1DataUnitDetector mDataUnitDetector;
     private P25ChannelStatusProcessor mChannelStatusProcessor = new P25ChannelStatusProcessor();
     private Listener<Message> mMessageListener;
 
@@ -72,13 +74,13 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
     private long mCurrentTime = System.currentTimeMillis();
     private ISyncDetectListener mSyncDetectListener;
 
-    public P25MessageFramer2(IPhaseLockedLoop phaseLockedLoop, int bitRate)
+    public P25P1MessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
-        mDataUnitDetector = new P25DataUnitDetector(this, phaseLockedLoop);
+        mDataUnitDetector = new P25P1DataUnitDetector(this, phaseLockedLoop);
         mBitRate = bitRate;
     }
 
-    public P25MessageFramer2(int bitRate)
+    public P25P1MessageFramer(int bitRate)
     {
         this(null, bitRate);
     }
@@ -144,7 +146,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         mMessageListener = messageListener;
     }
 
-    public P25DataUnitDetector getDataUnitDetector()
+    public P25P1DataUnitDetector getDataUnitDetector()
     {
         return mDataUnitDetector;
     }
@@ -434,7 +436,7 @@ public class P25MessageFramer2 implements Listener<Dibit>, IDataUnitDetectListen
         boolean ippacketOnly = false;
         boolean patchOnly = false;
 
-        P25MessageFramer2 messageFramer = new P25MessageFramer2(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
+        P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
         messageFramer.setListener(new Listener<Message>()
         {
             @Override

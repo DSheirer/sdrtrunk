@@ -1,25 +1,28 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.p25.message.pdu;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
-import io.github.dsheirer.module.decode.p25.P25Interleave;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.AMBTCHeader;
 import io.github.dsheirer.module.decode.p25.message.pdu.ambtc.isp.AMBTCAuthenticationQuery;
@@ -64,6 +67,7 @@ import io.github.dsheirer.module.decode.p25.message.pdu.packet.sndcp.SNDCPPacket
 import io.github.dsheirer.module.decode.p25.message.pdu.response.ResponseMessage;
 import io.github.dsheirer.module.decode.p25.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.message.tsbk.Opcode;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import org.slf4j.Logger;
@@ -85,7 +89,7 @@ public class PDUMessageFactory
     {
         //Get deinterleaved header chunk
         BitSet interleaved = correctedBinaryMessage.get(PDU0_BEGIN, PDU0_END);
-        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
 
         //Decode 1/2 rate trellis encoded PDU header
         CorrectedBinaryMessage viterbiDecoded = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);
@@ -127,7 +131,7 @@ public class PDUMessageFactory
      */
     public static DataBlock createConfirmedDataBlock(CorrectedBinaryMessage interleaved)
     {
-        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
         return new ConfirmedDataBlock(deinterleaved);
     }
 
@@ -136,7 +140,7 @@ public class PDUMessageFactory
      */
     public static DataBlock createUnconfirmedDataBlock(CorrectedBinaryMessage interleaved)
     {
-        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, interleaved);
+        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, interleaved);
         return new UnconfirmedDataBlock(deinterleaved);
     }
 

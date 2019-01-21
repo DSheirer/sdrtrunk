@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,6 @@
 package io.github.dsheirer.module.decode.p25.network;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.module.decode.p25.P25Decoder;
 import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.message.lc.standard.LCAdjacentSiteStatusBroadcast;
@@ -42,6 +41,7 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.RFSSStatus
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.SNDCPDataChannelAnnouncementExplicit;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.SystemServiceBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,14 +89,14 @@ public class P25NetworkConfigurationMonitor
     private Map<Integer,LCAdjacentSiteStatusBroadcastExplicit> mLCNeighborSitesExplicit = new HashMap<>();
     private Map<Integer,AdjacentStatusBroadcast> mTSBKNeighborSites = new HashMap<>();
 
-    private P25Decoder.Modulation mModulation;
+    private P25P1Decoder.Modulation mModulation;
 
     /**
      * Constructs a network configuration monitor.
      *
      * @param modulation type used by the decoder
      */
-    public P25NetworkConfigurationMonitor(P25Decoder.Modulation modulation)
+    public P25NetworkConfigurationMonitor(P25P1Decoder.Modulation modulation)
     {
         mModulation = modulation;
     }

@@ -1,37 +1,42 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
-package io.github.dsheirer.module.decode.p25;
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
+package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.edac.BCH_63_16_11;
+import io.github.dsheirer.module.decode.p25.IDataUnitDetectListener;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.sample.Listener;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
+public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25DataUnitDetector.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25P1DataUnitDetector.class);
     private static final int DATA_UNIT_DIBIT_LENGTH = 57; //56 dibits plus 1 status symbol
     private static final int SYNC_DIBIT_LENGTH = 24;
     private static final int MAXIMUM_SYNC_MATCH_BIT_ERRORS = 9;
-    private P25SyncDetector mSyncDetector;
+    private P25P1SyncDetector mSyncDetector;
     private NIDDelayBuffer mDataUnitBuffer = new NIDDelayBuffer();
     private DibitDelayBuffer mSyncDelayBuffer = new DibitDelayBuffer(DATA_UNIT_DIBIT_LENGTH - SYNC_DIBIT_LENGTH);
     private IDataUnitDetectListener mDataUnitDetectListener;
@@ -41,10 +46,10 @@ public class P25DataUnitDetector implements Listener<Dibit>, ISyncDetectListener
     private DataUnitID mPreviousDataUnitId = DataUnitID.TERMINATOR_DATA_UNIT;
     private int mNIDDetectionCount;
 
-    public P25DataUnitDetector(IDataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
+    public P25P1DataUnitDetector(IDataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
     {
         mDataUnitDetectListener = dataUnitDetectListener;
-        mSyncDetector = new P25SyncDetector(this, phaseLockedLoop);
+        mSyncDetector = new P25P1SyncDetector(this, phaseLockedLoop);
     }
 
     /**

@@ -22,7 +22,6 @@ package io.github.dsheirer.module.decode.p25.message.tsbk;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
-import io.github.dsheirer.module.decode.p25.P25Interleave;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.isp.UnknownMotorolaISPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.ChannelCWID;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.osp.ChannelLoading;
@@ -109,6 +108,7 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnit
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnknownOSPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.unknown.isp.UnknownVendorISPMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.unknown.osp.UnknownVendorOSPMessage;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -124,7 +124,7 @@ public class TSBKMessageFactory
                                      CorrectedBinaryMessage correctedBinaryMessage, int nac, long timestamp)
     {
         //Get deinterleaved header chunk
-        CorrectedBinaryMessage deinterleaved = P25Interleave.deinterleaveChunk(P25Interleave.DATA_DEINTERLEAVE, correctedBinaryMessage);
+        CorrectedBinaryMessage deinterleaved = P25P1Interleave.deinterleaveChunk(P25P1Interleave.DATA_DEINTERLEAVE, correctedBinaryMessage);
 
         //Decode 1/2 rate trellis encoded PDU header
         CorrectedBinaryMessage message = VITERBI_HALF_RATE_DECODER.decode(deinterleaved);

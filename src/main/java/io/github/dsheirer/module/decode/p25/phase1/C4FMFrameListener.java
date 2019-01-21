@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,20 +18,18 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25;
+package io.github.dsheirer.module.decode.p25.phase1;
 
-import io.github.dsheirer.module.decode.p25.message.P25Message;
-import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.bits.BinaryMessage;
 
-/**
- * Decoded metadata for an APCO25 channel
- */
-public class P25Metadata implements Listener<P25Message>
+public interface C4FMFrameListener
 {
+	/**
+	 * Listener interface to receive the output of the C4FMMessageFramer.
+	 * 
+	 * @param buffer - framed message without the sync pattern
+	 * @param inverted - flag indicating if the message was received inverted
+	 */
+	public void receive( BinaryMessage buffer, boolean inverted );
 
-    @Override
-    public void receive(P25Message p25Message)
-    {
-
-    }
 }

@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.module.decode.p25;
+package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.editor.Editor;
@@ -44,18 +44,18 @@ import javax.swing.event.ChangeListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class P25DecoderEditor extends ValidatingEditor<Channel>
+public class P25P1DecoderEditor extends ValidatingEditor<Channel>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25DecoderEditor.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25P1DecoderEditor.class);
 
     private static final long serialVersionUID = 1L;
 
-    private JComboBox<P25DecoderLSM.Modulation> mComboModulation;
+    private JComboBox<P25P1DecoderLSM.Modulation> mComboModulation;
     private JCheckBox mIgnoreDataCalls;
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
 
-    public P25DecoderEditor()
+    public P25P1DecoderEditor()
     {
         init();
     }
@@ -64,9 +64,9 @@ public class P25DecoderEditor extends ValidatingEditor<Channel>
     {
         setLayout(new MigLayout("insets 0 0 0 0,wrap 3", "[right][grow,fill][]", ""));
 
-        mComboModulation = new JComboBox<P25DecoderLSM.Modulation>();
-        mComboModulation.setModel(new DefaultComboBoxModel<P25DecoderLSM.Modulation>(
-            P25DecoderLSM.Modulation.values()));
+        mComboModulation = new JComboBox<P25P1DecoderLSM.Modulation>();
+        mComboModulation.setModel(new DefaultComboBoxModel<P25P1DecoderLSM.Modulation>(
+            P25P1DecoderLSM.Modulation.values()));
         mComboModulation.setEnabled(false);
         mComboModulation.addActionListener(new ActionListener()
         {
@@ -122,7 +122,7 @@ public class P25DecoderEditor extends ValidatingEditor<Channel>
         {
             DecodeConfigP25Phase1 p25 = new DecodeConfigP25Phase1();
 
-            p25.setModulation((P25Decoder.Modulation)mComboModulation.getSelectedItem());
+            p25.setModulation((P25P1Decoder.Modulation)mComboModulation.getSelectedItem());
             p25.setIgnoreDataCalls(mIgnoreDataCalls.isSelected());
             p25.setTrafficChannelPoolSize(mTrafficChannelPoolSize.getValue());
 
@@ -206,7 +206,7 @@ public class P25DecoderEditor extends ValidatingEditor<Channel>
             }
             else
             {
-                mComboModulation.setSelectedItem(P25Decoder.Modulation.C4FM);
+                mComboModulation.setSelectedItem(P25P1Decoder.Modulation.C4FM);
                 mIgnoreDataCalls.setSelected(false);
                 mTrafficChannelPoolSize.setValue(DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_DEFAULT);
                 setModified(true);

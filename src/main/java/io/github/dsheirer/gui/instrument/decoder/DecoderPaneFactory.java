@@ -1,22 +1,26 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.gui.instrument.decoder;
 
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.P25Decoder;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 
 import java.util.EnumSet;
 
@@ -60,7 +64,7 @@ public class DecoderPaneFactory
     /**
      * Creates a decoder pane for the P25 decoder type
      */
-    public static AbstractDecoderPane getP25DecoderPane(P25Decoder.Modulation modulation)
+    public static AbstractDecoderPane getP25DecoderPane(P25P1Decoder.Modulation modulation)
     {
         switch(modulation)
         {

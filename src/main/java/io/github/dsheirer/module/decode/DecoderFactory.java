@@ -71,14 +71,14 @@ import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
-import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.P25DecoderC4FM;
-import io.github.dsheirer.module.decode.p25.P25DecoderEditor;
-import io.github.dsheirer.module.decode.p25.P25DecoderLSM;
 import io.github.dsheirer.module.decode.p25.P25DecoderState;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
 import io.github.dsheirer.module.decode.p25.message.filter.P25MessageFilterSet;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderEditor;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderEditor;
@@ -247,10 +247,10 @@ public class DecoderFactory
                 switch(p25Config.getModulation())
                 {
                     case C4FM:
-                        modules.add(new P25DecoderC4FM());
+                        modules.add(new P25P1DecoderC4FM());
                         break;
                     case CQPSK:
-                        modules.add(new P25DecoderLSM());
+                        modules.add(new P25P1DecoderLSM());
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
@@ -438,7 +438,7 @@ public class DecoderFactory
             case NBFM:
                 return new NBFMDecoderEditor();
             case P25_PHASE1:
-                return new P25DecoderEditor();
+                return new P25P1DecoderEditor();
             case PASSPORT:
                 return new PassportDecoderEditor();
             default:

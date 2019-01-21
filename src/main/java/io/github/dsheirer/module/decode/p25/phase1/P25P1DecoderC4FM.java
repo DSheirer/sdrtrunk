@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-package io.github.dsheirer.module.decode.p25;
+package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
@@ -37,16 +37,16 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-public class P25DecoderC4FM extends P25Decoder
+public class P25P1DecoderC4FM extends P25P1Decoder
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25DecoderC4FM.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25P1DecoderC4FM.class);
 
     protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected AdaptivePLLGainMonitor mPLLGainMonitor;
-    protected P25MessageFramer2 mMessageFramer;
+    protected P25P1MessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
@@ -55,7 +55,7 @@ public class P25DecoderC4FM extends P25Decoder
      * P25 Phase 1 - standard C4FM modulation decoder.  Uses Differential QPSK decoding with a Costas PLL and a
      * decision-directed phase and timing error detector.
      */
-    public P25DecoderC4FM()
+    public P25P1DecoderC4FM()
     {
         super(4800.0);
         setSampleRate(25000.0);
@@ -80,7 +80,7 @@ public class P25DecoderC4FM extends P25Decoder
 
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
-        mMessageFramer = new P25MessageFramer2(mCostasLoop, DecoderType.P25_PHASE1.getProtocol().getBitRate());
+        mMessageFramer = new P25P1MessageFramer(mCostasLoop, DecoderType.P25_PHASE1.getProtocol().getBitRate());
         mMessageFramer.setSyncDetectListener(mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);

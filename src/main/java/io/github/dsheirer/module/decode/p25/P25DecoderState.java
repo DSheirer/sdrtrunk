@@ -126,6 +126,8 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitRegist
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.network.P25NetworkConfigurationMonitor;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -141,7 +143,7 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
     private final static Logger mLog = LoggerFactory.getLogger(P25DecoderState.class);
 
     private ChannelType mChannelType;
-    private P25Decoder.Modulation mModulation;
+    private P25P1Decoder.Modulation mModulation;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private P25NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private P25TrafficChannelManager mTrafficChannelManager;
@@ -184,7 +186,7 @@ public class P25DecoderState extends DecoderState implements IChannelEventListen
     /**
      * Modulation type for the decoder
      */
-    public P25Decoder.Modulation getModulation()
+    public P25P1Decoder.Modulation getModulation()
     {
         return mModulation;
     }

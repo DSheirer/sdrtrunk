@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@ public enum DecoderType
     NBFM("NBFM", "NBFM", Protocol.UNKNOWN),
     PASSPORT("Passport", "Passport", Protocol.PASSPORT),
     P25_PHASE1("P25 Phase I", "P25-1", Protocol.APCO25),
+    P25_PHASE2("P25 Phase II", "P25-2", Protocol.APCO25),
 
     //Auxiliary Decoders
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),

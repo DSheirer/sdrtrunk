@@ -1,4 +1,24 @@
-package io.github.dsheirer.module.decode.p25;
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
@@ -10,10 +30,10 @@ import java.util.BitSet;
 /**
  * Utility class to process interleave of P25 Voice and Data messages.
  */
-public class P25Interleave
+public class P25P1Interleave
 {
     private final static Logger mLog =
-        LoggerFactory.getLogger(P25Interleave.class);
+        LoggerFactory.getLogger(P25P1Interleave.class);
 
     public static int[] DATA_INTERLEAVE = new int[]{0, 1, 2, 3, 52, 53, 54, 55, 100,
         101, 102, 103, 148, 149, 150, 151, 4, 5, 6, 7, 56, 57, 58, 59, 104, 105, 106, 107, 152, 153,
