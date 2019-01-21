@@ -111,3 +111,15 @@ runtime {
     modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
     imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
+
+task buildSdr(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'SdrTrunk project',
+                'Implementation-Version': version,
+                'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
+                'Class-Path': 'jmbe-0.3.2.jar jmbe-0.3.3.jar'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
