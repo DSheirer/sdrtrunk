@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -236,6 +236,11 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         else if(mAliases.size() > 1)
         {
             identifier = Joiner.on(", ").skipNulls().join(mAliases);
+        }
+
+        if(identifier == null && mIdentifier != null)
+        {
+            identifier = mTalkgroupFormatPreference.format(mIdentifier);
         }
 
         if(identifier == null)
