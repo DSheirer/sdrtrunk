@@ -28,6 +28,7 @@ public class DecoderPaneFactory
 {
     private static final EnumSet<DecoderType> SUPPORTED_DECODER_TYPES = EnumSet.of(
         DecoderType.P25_PHASE1,
+        DecoderType.P25_PHASE2,
         DecoderType.FLEETSYNC2,
         DecoderType.LJ_1200,
         DecoderType.LTR_NET,
@@ -55,7 +56,9 @@ public class DecoderPaneFactory
             case TAIT_1200:
                 return new Tait1200Pane();
             case P25_PHASE1:
-                throw new IllegalArgumentException("Use the getP25DecoderPane() method for P25 decoder type");
+                throw new IllegalArgumentException("Use the getP25P1DecoderPane() method for P25 decoder type");
+            case P25_PHASE2:
+                return new P25Phase2HDQPSKPane();
         }
 
         return getDefaultPane();
@@ -64,7 +67,7 @@ public class DecoderPaneFactory
     /**
      * Creates a decoder pane for the P25 decoder type
      */
-    public static AbstractDecoderPane getP25DecoderPane(P25P1Decoder.Modulation modulation)
+    public static AbstractDecoderPane getP25P1DecoderPane(P25P1Decoder.Modulation modulation)
     {
         switch(modulation)
         {

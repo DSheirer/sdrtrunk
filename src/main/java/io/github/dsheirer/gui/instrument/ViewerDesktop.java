@@ -51,7 +51,7 @@ public class ViewerDesktop extends BorderPane
 
     public void setP25Phase1Decoder(P25P1Decoder.Modulation modulation)
     {
-        setDecoderPane(DecoderPaneFactory.getP25DecoderPane(modulation));
+        setDecoderPane(DecoderPaneFactory.getP25P1DecoderPane(modulation));
     }
 
     private void setDecoderPane(AbstractDecoderPane decoderPane)
