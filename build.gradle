@@ -31,7 +31,7 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.6'
-    id 'org.beryx.runtime' version '1.1.1'
+    id 'org.beryx.runtime' version '1.1.2'
 }
 
 repositories {
