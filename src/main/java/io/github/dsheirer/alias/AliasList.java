@@ -505,11 +505,32 @@ public class AliasList implements Listener<AliasEvent>
 
         public void add(Talkgroup talkgroup, Alias alias)
         {
+            //Detect talkgroup collisions
+            if(mTalkgroupAliasMap.containsKey(talkgroup.getValue()))
+            {
+                Alias existing = mTalkgroupAliasMap.get(talkgroup.getValue());
+
+                mLog.warn("Alias [" + alias.getName() + "] talkgroup [" + talkgroup.getValue() +
+                    "] has the same talkgroup value as alias [" + existing.getName() +
+                    "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+            }
+
             mTalkgroupAliasMap.put(talkgroup.getValue(), alias);
         }
 
         public void add(TalkgroupRange talkgroupRange, Alias alias)
         {
+            //Log warning if the new talkgroup range overlaps with any existing ranges
+            for(Map.Entry<TalkgroupRange,Alias> entry: mTalkgroupRangeAliasMap.entrySet())
+            {
+                if(talkgroupRange.overlaps(entry.getKey()))
+                {
+                    mLog.warn("Alias [" + alias.getName() + "] with talkgroup range [" + talkgroupRange.toString() +
+                        "] overlaps with alias [" + entry.getValue().getName() +
+                        "] with talkgroup range [" + entry.getKey().toString() + "] for alias list [" + getName() + "]");
+                }
+            }
+
             mTalkgroupRangeAliasMap.put(talkgroupRange, alias);
         }
 
