@@ -38,6 +38,7 @@ public class MDC1200TalkgroupFormatter extends IntegerFormatter
             switch(format)
             {
                 case DECIMAL:
+                case FORMATTED:
                     return toDecimal(identifier.getValue(), DECIMAL_WIDTH);
                 case HEXADECIMAL:
                     return toHex(identifier.getValue(), HEXADECIMAL_WIDTH);
