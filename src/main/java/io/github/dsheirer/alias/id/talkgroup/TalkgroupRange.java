@@ -140,6 +140,21 @@ public class TalkgroupRange extends AliasID
         return getMinTalkgroup() <= talkgroupValue && talkgroupValue <= getMaxTalkgroup();
     }
 
+    /**
+     * Indicates if this talkgroup range overlaps the talkgroup range argument.
+     * @param talkgroupRange to check for overlap
+     * @return true if the ranges overlap
+     */
+    public boolean overlaps(TalkgroupRange talkgroupRange)
+    {
+        return contains(talkgroupRange.getMinTalkgroup()) ||
+               contains(talkgroupRange.getMaxTalkgroup()) ||
+               (getMinTalkgroup() < talkgroupRange.getMinTalkgroup() &&
+                   talkgroupRange.getMaxTalkgroup() < getMaxTalkgroup()) ||
+               (talkgroupRange.getMinTalkgroup() < getMinTalkgroup() &&
+                   getMaxTalkgroup() < talkgroupRange.getMaxTalkgroup());
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public AliasIDType getType()
