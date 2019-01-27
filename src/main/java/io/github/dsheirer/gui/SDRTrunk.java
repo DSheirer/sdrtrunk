@@ -78,6 +78,7 @@ import java.awt.AWTException;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Point;
 import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -97,8 +98,12 @@ public class SDRTrunk implements Listener<TunerEvent>
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
 
     private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
-    private boolean mBroadcastStatusVisible;
+    private static final String BASE_WINDOW_NAME = "sdrtrunk.main.window";
+    private static final String CONTROLLER_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".control.panel";
+    private static final String SPECTRAL_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".spectral.panel";
+    private static final String WINDOW_FRAME_IDENTIFIER = BASE_WINDOW_NAME + ".frame";
 
+    private boolean mBroadcastStatusVisible;
     private AudioPacketManager mAudioPacketManager;
     private IconManager mIconManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
@@ -271,14 +276,44 @@ public class SDRTrunk implements Listener<TunerEvent>
          */
         mTitle = SystemProperties.getInstance().getApplicationName();
         mMainGui.setTitle(mTitle);
-        mMainGui.setSize(new Dimension(1280, 800));
-        mMainGui.setLocationRelativeTo(null);
+
+        Point location = mUserPreferences.getSwingPreference().getLocation(WINDOW_FRAME_IDENTIFIER);
+        if(location != null)
+        {
+            mMainGui.setLocation(location);
+        }
+        else
+        {
+            mMainGui.setLocationRelativeTo(null);
+        }
         mMainGui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mMainGui.addWindowListener(new ShutdownMonitor());
 
-        //Set preferred sizes to influence the split
+        Dimension dimension = mUserPreferences.getSwingPreference().getDimension(WINDOW_FRAME_IDENTIFIER);
+
         mSpectralPanel.setPreferredSize(new Dimension(1280, 300));
         mControllerPanel.setPreferredSize(new Dimension(1280, 500));
+
+        if(dimension != null)
+        {
+            Dimension spectral = mUserPreferences.getSwingPreference().getDimension(SPECTRAL_PANEL_IDENTIFIER);
+            if(spectral != null)
+            {
+                mSpectralPanel.setSize(spectral);
+            }
+
+            Dimension controller = mUserPreferences.getSwingPreference().getDimension(CONTROLLER_PANEL_IDENTIFIER);
+            if(controller != null)
+            {
+                mControllerPanel.setSize(controller);
+            }
+
+            mMainGui.setSize(dimension);
+        }
+        else
+        {
+            mMainGui.setSize(new Dimension(1280, 800));
+        }
 
         mSplitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
         mSplitPane.setDividerSize(5);
@@ -424,6 +459,10 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void processShutdown()
     {
         mLog.info("Application shutdown started ...");
+        mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
+        mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
+        mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
+        mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
         mJavaFxWindowManager.shutdown();
         mLog.info("Stopping channels ...");
         mChannelProcessingManager.shutdown();
@@ -443,7 +482,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     {
         if(mBroadcastStatusPanel == null)
         {
-            mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel);
+            mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel, mUserPreferences,
+                "application.broadcast.status.panel");
             mBroadcastStatusPanel.setPreferredSize(new Dimension(880, 70));
             mBroadcastStatusPanel.getTable().setEnabled(false);
         }

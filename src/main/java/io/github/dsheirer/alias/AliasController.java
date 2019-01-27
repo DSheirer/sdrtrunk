@@ -24,6 +24,8 @@ import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import net.coderazzi.filters.gui.AutoChoices;
 import net.coderazzi.filters.gui.TableFilterHeader;
 import net.miginfocom.swing.MigLayout;
@@ -48,17 +50,18 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AliasController extends JPanel
-    implements ActionListener, ListSelectionListener
+public class AliasController extends JPanel implements ActionListener, ListSelectionListener
 {
     private static final long serialVersionUID = 1L;
 
+    private static final String TABLE_PREFERENCE_KEY = "alias.controller";
     private AliasModel mAliasModel;
     private JTable mAliasTable;
     private TableFilterHeader mTableFilterHeader;
     private AliasEditor mAliasEditor;
     private MultipleAliasEditor mMultipleAliasEditor;
     private JideSplitPane mSplitPane;
+    private UserPreferences mUserPreferences;
 
     private static final String NEW_ALIAS = "New";
     private static final String COPY_ALIAS = "Copy";
@@ -69,15 +72,16 @@ public class AliasController extends JPanel
     private JButton mDeleteButton = new JButton(DELETE_ALIAS);
 
     private IconCellRenderer mIconCellRenderer;
+    private JTableColumnWidthMonitor mColumnWidthMonitor;
 
-    public AliasController(AliasModel aliasModel, BroadcastModel broadcastModel, IconManager iconManager)
+    public AliasController(AliasModel aliasModel, BroadcastModel broadcastModel, IconManager iconManager,
+                           UserPreferences userPreferences)
     {
         mAliasModel = aliasModel;
-
         mAliasEditor = new AliasEditor(mAliasModel, broadcastModel, iconManager);
         mMultipleAliasEditor = new MultipleAliasEditor(mAliasModel, broadcastModel, iconManager);
-
         mIconCellRenderer = new IconCellRenderer(iconManager);
+        mUserPreferences = userPreferences;
 
         init();
 
@@ -86,9 +90,7 @@ public class AliasController extends JPanel
 
     private void init()
     {
-        setLayout(new MigLayout("insets 0 0 0 0",
-            "[grow,fill]",
-            "[grow,fill]"));
+        setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
 
         //System Configuration View and Editor
         mAliasTable = new JTable(mAliasModel);
@@ -96,11 +98,11 @@ public class AliasController extends JPanel
         mAliasTable.getSelectionModel().addListSelectionListener(this);
         mAliasTable.setAutoCreateRowSorter(true);
 
-        mAliasTable.getColumnModel().getColumn(AliasModel.COLUMN_COLOR)
-            .setCellRenderer(new ColorCellRenderer());
+        mAliasTable.getColumnModel().getColumn(AliasModel.COLUMN_COLOR).setCellRenderer(new ColorCellRenderer());
 
-        mAliasTable.getColumnModel().getColumn(AliasModel.COLUMN_ICON)
-            .setCellRenderer(mIconCellRenderer);
+        mAliasTable.getColumnModel().getColumn(AliasModel.COLUMN_ICON).setCellRenderer(mIconCellRenderer);
+
+        mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mAliasTable, TABLE_PREFERENCE_KEY);
 
         mTableFilterHeader = new TableFilterHeader(mAliasTable, AutoChoices.ENABLED);
         mTableFilterHeader.setFilterOnUpdates(true);
@@ -109,8 +111,8 @@ public class AliasController extends JPanel
 
         JPanel buttonsPanel = new JPanel();
 
-        buttonsPanel.setLayout(
-            new MigLayout("insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[]"));
+        buttonsPanel.setLayout(new MigLayout("insets 0 0 0 0",
+            "[grow,fill][grow,fill][grow,fill]", "[]"));
 
         mNewButton.addActionListener(this);
         mNewButton.setToolTipText("Adds a new alias");
@@ -128,8 +130,8 @@ public class AliasController extends JPanel
 
         JPanel listAndButtonsPanel = new JPanel();
 
-        listAndButtonsPanel.setLayout(
-            new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill][]"));
+        listAndButtonsPanel.setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]",
+            "[grow,fill][]"));
 
         listAndButtonsPanel.add(tableScroller, "wrap");
         listAndButtonsPanel.add(buttonsPanel);

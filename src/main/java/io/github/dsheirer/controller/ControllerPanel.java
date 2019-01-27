@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.controller;
 
 import com.jidesoft.swing.JideTabbedPane;
@@ -25,7 +26,7 @@ import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastPanel;
 import io.github.dsheirer.audio.playback.AudioPanel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
-import io.github.dsheirer.channel.metadata.ChannelMetadataViewer;
+import io.github.dsheirer.channel.metadata.NowPlayingPanel;
 import io.github.dsheirer.controller.channel.ChannelController;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
@@ -41,7 +42,6 @@ import io.github.dsheirer.source.tuner.TunerViewPanel;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
-import javax.swing.JTable;
 import java.awt.Color;
 import java.awt.Dimension;
 
@@ -53,27 +53,18 @@ public class ControllerPanel extends JPanel
     private AudioPanel mAudioPanel;
     private BroadcastPanel mBroadcastPanel;
     private ChannelController mChannelController;
-    private ChannelMetadataViewer mChannelMetadataViewer;
+    private NowPlayingPanel mNowPlayingPanel;
     private ChannelModel mChannelModel;
     private MapPanel mMapPanel;
     private TunerViewPanel mTunerManagerPanel;
     private BroadcastModel mBroadcastModel;
 
     private JideTabbedPane mTabbedPane;
-    protected JTable mChannelActivityTable = new JTable();
 
-    public ControllerPanel(AudioPlaybackManager audioPlaybackManager,
-                           AliasModel aliasModel,
-                           BroadcastModel broadcastModel,
-                           ChannelModel channelModel,
-                           ChannelMapModel channelMapModel,
-                           ChannelProcessingManager channelProcessingManager,
-                           IconManager iconManager,
-                           MapService mapService,
-                           SettingsManager settingsManager,
-                           SourceManager sourceManager,
-                           TunerModel tunerModel,
-                           UserPreferences userPreferences)
+    public ControllerPanel(AudioPlaybackManager audioPlaybackManager, AliasModel aliasModel, BroadcastModel broadcastModel,
+                           ChannelModel channelModel, ChannelMapModel channelMapModel, ChannelProcessingManager channelProcessingManager,
+                           IconManager iconManager, MapService mapService, SettingsManager settingsManager,
+                           SourceManager sourceManager, TunerModel tunerModel, UserPreferences userPreferences)
     {
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
@@ -81,19 +72,19 @@ public class ControllerPanel extends JPanel
         mAudioPanel = new AudioPanel(iconManager, userPreferences, settingsManager, sourceManager, audioPlaybackManager,
             aliasModel);
 
-        mChannelMetadataViewer = new ChannelMetadataViewer(channelModel, channelProcessingManager, iconManager,
+        mNowPlayingPanel = new NowPlayingPanel(channelModel, channelProcessingManager, iconManager,
             aliasModel, userPreferences);
 
         mMapPanel = new MapPanel(mapService, aliasModel, iconManager, settingsManager);
 
-        mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, iconManager);
+        mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, iconManager, userPreferences);
 
         mChannelController = new ChannelController(channelModel, channelProcessingManager, channelMapModel,
-            sourceManager, aliasModel);
+            sourceManager, aliasModel, userPreferences);
 
-        mAliasController = new AliasController(aliasModel, broadcastModel, iconManager);
+        mAliasController = new AliasController(aliasModel, broadcastModel, iconManager, userPreferences);
 
-        mTunerManagerPanel = new TunerViewPanel(tunerModel);
+        mTunerManagerPanel = new TunerViewPanel(tunerModel, userPreferences);
 
         init();
     }
@@ -108,7 +99,7 @@ public class ControllerPanel extends JPanel
         mTabbedPane = new JideTabbedPane();
         mTabbedPane.setFont(this.getFont());
         mTabbedPane.setForeground(Color.BLACK);
-        mTabbedPane.addTab("Now Playing", mChannelMetadataViewer);
+        mTabbedPane.addTab("Now Playing", mNowPlayingPanel);
         mTabbedPane.addTab("Aliases", mAliasController);
         mTabbedPane.addTab("Channels", mChannelController);
         mTabbedPane.addTab("Map", mMapPanel);

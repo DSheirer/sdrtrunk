@@ -1,23 +1,29 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 package io.github.dsheirer.controller.channel;
 
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.source.SourceManager;
 import net.coderazzi.filters.gui.AutoChoices;
 import net.coderazzi.filters.gui.TableFilterHeader;
@@ -43,11 +49,14 @@ public class ChannelController extends JPanel implements ActionListener, ListSel
 {
     private static final long serialVersionUID = 1L;
 
+    private static final String TABLE_PREFERENCE_KEY = "channel.controller";
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private JTable mChannelTable;
+    private JTableColumnWidthMonitor mColumnWidthMonitor;
     private TableFilterHeader mTableFilterHeader;
     private ChannelEditor mEditor;
+    private UserPreferences mUserPreferences;
 
     private static final String NEW_CHANNEL = "New";
     private static final String COPY_CHANNEL = "Copy";
@@ -57,17 +66,16 @@ public class ChannelController extends JPanel implements ActionListener, ListSel
     private JButton mCopyChannelButton = new JButton(COPY_CHANNEL);
     private JButton mDeleteChannelButton = new JButton(DELETE_CHANNEL);
 
-    public ChannelController(ChannelModel channelModel,
-                             ChannelProcessingManager channelProcessingManager,
-                             ChannelMapModel channelMapModel,
-                             SourceManager sourceManager,
-                             AliasModel aliasModel)
+    public ChannelController(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
+                             ChannelMapModel channelMapModel, SourceManager sourceManager, AliasModel aliasModel,
+                             UserPreferences userPreferences)
     {
         mChannelModel = channelModel;
         mChannelProcessingManager = channelProcessingManager;
         mEditor = new ChannelEditor(channelModel, channelProcessingManager, channelMapModel, sourceManager, aliasModel);
         mChannelModel.addListener(mEditor);
         mChannelProcessingManager.addChannelEventListener(mEditor);
+        mUserPreferences = userPreferences;
 
         init();
     }
@@ -82,6 +90,7 @@ public class ChannelController extends JPanel implements ActionListener, ListSel
         mChannelTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mChannelTable.getSelectionModel().addListSelectionListener(this);
         mChannelTable.setAutoCreateRowSorter(true);
+        mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mChannelTable, TABLE_PREFERENCE_KEY);
 
         mTableFilterHeader = new TableFilterHeader(mChannelTable, AutoChoices.ENABLED);
         mTableFilterHeader.setFilterOnUpdates(true);
