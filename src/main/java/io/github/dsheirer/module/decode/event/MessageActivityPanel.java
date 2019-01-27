@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,17 +15,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.module.decode.event;
 
 import com.jidesoft.swing.JideButton;
 import com.jidesoft.swing.JideSplitButton;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.filter.FilterEditorPanel;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -49,26 +51,24 @@ import java.awt.event.MouseListener;
 public class MessageActivityPanel extends JPanel implements Listener<ProcessingChain>
 {
     private static final long serialVersionUID = 1L;
-
     private final static Logger mLog = LoggerFactory.getLogger(MessageActivityPanel.class);
-
+    private static final String TABLE_PREFERENCE_KEY = "message.activity.panel";
     private static MessageActivityModel EMPTY_MODEL = new MessageActivityModel();
-
     private JTable mTable = new JTable(EMPTY_MODEL);
-
+    private JTableColumnWidthMonitor mTableColumnWidthMonitor;
+    private UserPreferences mUserPreferences;
     private MessageManagementPanel mManagementPanel = new MessageManagementPanel();
 
-    private ChannelProcessingManager mChannelProcessingManager;
-
-    public MessageActivityPanel(ChannelProcessingManager channelProcessingManager)
+    public MessageActivityPanel(UserPreferences userPreferences)
     {
-        mChannelProcessingManager = channelProcessingManager;
+        mUserPreferences = userPreferences;
 
         setLayout(new MigLayout("insets 0 0 0 0", "[][grow,fill]", "[]0[grow,fill]"));
 
         add(mManagementPanel, "span,growx");
 
         add(new JScrollPane(mTable), "span,grow");
+        mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
     }
 
     @Override
@@ -79,6 +79,8 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
             @Override
             public void run()
             {
+                //Remove the existing table column width monitor and replace after swapping the table model
+                mTableColumnWidthMonitor.dispose();
                 mTable.setModel(processingChain != null ? processingChain.getMessageActivityModel() : EMPTY_MODEL);
 
                 mTable.getColumnModel().getColumn(0).setPreferredWidth(18);
@@ -93,6 +95,7 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
                 {
                     mManagementPanel.disableButtons();
                 }
+                mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
             }
         });
     }

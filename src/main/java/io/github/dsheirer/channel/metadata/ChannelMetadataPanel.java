@@ -33,6 +33,7 @@ import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
@@ -58,6 +59,7 @@ import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
+    private static final String TABLE_PREFERENCE_KEY = "channel.metadata.panel";
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private IconManager mIconManager;
@@ -66,6 +68,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
     private Map<State,Color> mBackgroundColors = new HashMap<>();
     private Map<State,Color> mForegroundColors = new HashMap<>();
+    private JTableColumnWidthMonitor mTableColumnMonitor;
 
     /**
      * Table view for currently decoding channel metadata
@@ -107,6 +110,9 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             .setCellRenderer(new AliasCellRenderer());
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_CONFIGURATION_FREQUENCY)
             .setCellRenderer(new FrequencyCellRenderer());
+
+        //Add a table column width monitor to store/restore column widths
+        mTableColumnMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
 
         JScrollPane scrollPane = new JScrollPane(mTable, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);

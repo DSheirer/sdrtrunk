@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,10 +15,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JLabel;
@@ -32,12 +35,17 @@ import java.awt.Component;
 public class BroadcastStatusPanel extends JPanel
 {
     private JTable mTable;
+    private JTableColumnWidthMonitor mColumnWidthMonitor;
     private JScrollPane mScrollPane;
     private BroadcastModel mBroadcastModel;
+    private UserPreferences mUserPreferences;
+    private String mPreferenceKey;
 
-    public BroadcastStatusPanel(BroadcastModel broadcastModel)
+    public BroadcastStatusPanel(BroadcastModel broadcastModel, UserPreferences userPreferences, String preferenceKey)
     {
         mBroadcastModel = broadcastModel;
+        mUserPreferences = userPreferences;
+        mPreferenceKey = preferenceKey;
 
         init();
     }
@@ -57,6 +65,7 @@ public class BroadcastStatusPanel extends JPanel
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
 
         mTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCASTER_STATUS).setCellRenderer(new StatusCellRenderer());
+        mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, mPreferenceKey);
 
         mScrollPane = new JScrollPane(mTable);
 

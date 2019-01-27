@@ -1,24 +1,28 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * ******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * *****************************************************************************
+ */
 
 package io.github.dsheirer.source.tuner;
 
 import com.jidesoft.swing.JideSplitPane;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import net.miginfocom.swing.MigLayout;
@@ -49,17 +53,21 @@ public class TunerViewPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(TunerViewPanel.class);
+    private static final String TABLE_PREFERENCE_KEY = "tuner.view.panel";
 
     private TunerModel mTunerModel;
     private JTable mTunerTable;
+    private JTableColumnWidthMonitor mColumnWidthMonitor;
     private TableRowSorter<TunerModel> mRowSorter;
     private JideSplitPane mSplitPane;
     private TunerEditor mTunerEditor;
+    private UserPreferences mUserPreferences;
 
-    public TunerViewPanel(TunerModel tunerModel)
+    public TunerViewPanel(TunerModel tunerModel, UserPreferences userPreferences)
     {
         mTunerModel = tunerModel;
         mTunerEditor = new TunerEditor(mTunerModel.getTunerConfigurationModel());
+        mUserPreferences = userPreferences;
 
         init();
     }
@@ -149,6 +157,7 @@ public class TunerViewPanel extends JPanel
         TableCellRenderer renderer = new LinkCellRenderer();
         mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(renderer);
 
+        mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTunerTable, TABLE_PREFERENCE_KEY);
         JScrollPane listScroller = new JScrollPane(mTunerTable);
         listScroller.setPreferredSize(new Dimension(400, 20));
 
