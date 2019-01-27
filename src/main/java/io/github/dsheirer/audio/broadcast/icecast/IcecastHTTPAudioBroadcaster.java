@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
@@ -30,11 +31,9 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolDecoderException;
 import org.apache.mina.http.HttpClientCodec;
-import org.apache.mina.http.HttpException;
 import org.apache.mina.http.HttpRequestImpl;
 import org.apache.mina.http.api.DefaultHttpResponse;
 import org.apache.mina.http.api.HttpMethod;
-import org.apache.mina.http.api.HttpStatus;
 import org.apache.mina.http.api.HttpVersion;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
@@ -51,6 +50,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 {
     private static final Logger mLog = LoggerFactory.getLogger(IcecastHTTPAudioBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
+    private static final String HTTP_1_0_OK_HEX_DUMP = "48 54 54 50 2F 31 2E 30 20 32 30 30 20 4F 4B";
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
@@ -113,7 +113,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 mSocketConnector.setConnectTimeoutCheckInterval(10000);
 
 //                mSocketConnector.getFilterChain().addLast("logger",
-//                    new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+//                    new LoggingFilter(IcecastHTTPAudioBroadcaster.class));
 
                 mSocketConnector.getFilterChain().addLast("codec", new HttpClientCodec());
                 mSocketConnector.setHandler(new IcecastHTTPIOHandler());
@@ -266,13 +266,18 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             if(throwable instanceof ProtocolDecoderException)
             {
-                Throwable cause = ((ProtocolDecoderException) throwable).getCause();
+                Throwable cause = throwable.getCause();
 
-                if(cause instanceof HttpException &&
-                    ((HttpException) cause).getStatusCode() == HttpStatus.CLIENT_ERROR_LENGTH_REQUIRED.code())
+                /**
+                 * Warning: Hack.  Icecast 2.4.2+ doesn't like to send HTTP headers along with their HTTP/1.0 OK
+                 * message which causes Apache Mina to think that it hasn't received the full HTTP response.  So, we
+                 * intercept the out of bounds exception and then inspect the message hex dump to see if it's an
+                 * OK response and then play like everything is well and good.
+                 */
+                if(cause instanceof ArrayIndexOutOfBoundsException &&
+                    ((ProtocolDecoderException)throwable).getHexdump().startsWith(HTTP_1_0_OK_HEX_DUMP))
                 {
-                    //Ignore - Icecast 2.4 sometimes doesn't send any headers with their HTTP responses.  Mina expects a
-                    //content-length for HTTP responses.
+                    setBroadcastState(BroadcastState.CONNECTED);
                 }
                 else
                 {
