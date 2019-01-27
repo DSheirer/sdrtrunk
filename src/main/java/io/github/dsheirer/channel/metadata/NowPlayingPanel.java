@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.channel.metadata;
 
 import com.jidesoft.swing.JideSplitPane;
@@ -33,10 +34,9 @@ import net.miginfocom.swing.MigLayout;
 import javax.swing.JPanel;
 import java.awt.Color;
 
-public class ChannelMetadataViewer extends JPanel
+public class NowPlayingPanel extends JPanel
 {
     private ChannelMetadataPanel mChannelMetadataPanel;
-
     private ChannelDetailPanel mChannelDetailPanel;
     private DecodeEventPanel mDecodeEventPanel;
     private MessageActivityPanel mMessageActivityPanel;
@@ -45,12 +45,12 @@ public class ChannelMetadataViewer extends JPanel
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
      * messages, events, and spectral view.
      */
-    public ChannelMetadataViewer(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
-                                 IconManager iconManager, AliasModel aliasModel, UserPreferences userPreferences)
+    public NowPlayingPanel(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
+                           IconManager iconManager, AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
         mDecodeEventPanel = new DecodeEventPanel(iconManager, userPreferences, aliasModel);
-        mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
+        mMessageActivityPanel = new MessageActivityPanel(userPreferences);
         mChannelMetadataPanel = new ChannelMetadataPanel(channelModel, channelProcessingManager, iconManager, userPreferences);
 
         init();
@@ -64,7 +64,6 @@ public class ChannelMetadataViewer extends JPanel
         tabbedPane.addTab("Details", mChannelDetailPanel);
         tabbedPane.addTab("Events", mDecodeEventPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
-//        tabbedPane.addTab("Spectrum", mChannelSpectrumPanel);
         tabbedPane.setFont(this.getFont());
         tabbedPane.setForeground(Color.BLACK);
 

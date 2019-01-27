@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -55,10 +56,12 @@ import java.util.List;
 
 public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(DecodeEventPanel.class);
-
     private static final long serialVersionUID = 1L;
+    private final static Logger mLog = LoggerFactory.getLogger(DecodeEventPanel.class);
+    private static final String TABLE_PREFERENCE_KEY = "decode.event.panel";
+
     private JTable mTable;
+    private JTableColumnWidthMonitor mTableColumnWidthMonitor;
     private DecodeEventModel mEmptyDecodeEventModel;
     private JScrollPane mEmptyScroller;
     private IconManager mIconManager;
@@ -83,6 +86,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         mTable = new JTable(mEmptyDecodeEventModel);
         mTable.setAutoCreateRowSorter(true);
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
         updateCellRenderers();
 
         mEmptyScroller = new JScrollPane(mTable);
@@ -127,12 +131,17 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     public void receive(ProcessingChain processingChain)
     {
         EventQueue.invokeLater(() -> {
+
+            //Dispose the current column width monitor and recreate after we swap out the table model
+            mTableColumnWidthMonitor.dispose();
             mTable.setModel(processingChain != null ? processingChain.getDecodeEventModel() : mEmptyDecodeEventModel);
 
             if(processingChain != null)
             {
                 updateCellRenderers();
             }
+
+            mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
         });
     }
 
@@ -162,17 +171,6 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
             if(value instanceof IdentifierCollection)
             {
                 List<Identifier> identifiers = ((IdentifierCollection)value).getIdentifiers(mRole);
-
-//                if(identifiers.size() > 1)
-//                {
-//                    StringBuilder sb = new StringBuilder();
-//                    sb.append("Multiple Identifiers:\n");
-//                    for(Identifier identifier: identifiers)
-//                    {
-//                        sb.append("ID:").append(identifier.debug()).append("\n");
-//                    }
-//                    mLog.debug(sb.toString());
-//                }
                 label.setText(format(identifiers));
             }
             else
