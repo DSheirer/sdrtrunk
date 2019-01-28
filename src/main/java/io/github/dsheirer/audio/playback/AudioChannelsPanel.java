@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,8 @@ public class AudioChannelsPanel extends JPanel
     public AudioChannelsPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
                               IAudioController controller, AliasModel aliasModel)
     {
-        setLayout(new MigLayout("insets 0 0 0 0", "[][sg abc,grow,fill][][sg abc,grow,fill]", "[grow,fill]"));
+        setLayout(new MigLayout("insets 0 0 0 0",
+            "[][sizegroup abc,grow,fill][][sizegroup abc,grow,fill]", "[grow,fill]"));
 
         setBackground(Color.BLACK);
 

@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,7 +84,7 @@ public class IdentifierCollection
         return mUpdated;
     }
 
-    protected void setUpdated(boolean updated)
+    public void setUpdated(boolean updated)
     {
         mUpdated = updated;
     }
@@ -112,6 +112,14 @@ public class IdentifierCollection
     public List<Identifier> getIdentifiers()
     {
         return Collections.unmodifiableList(mIdentifiers);
+    }
+
+    /**
+     * Indicates if this collection has no identifiers
+     */
+    public boolean isEmpty()
+    {
+        return mIdentifiers.isEmpty();
     }
 
     /**

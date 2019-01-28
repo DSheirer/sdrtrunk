@@ -28,6 +28,7 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
@@ -203,6 +204,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     {
         mState = State.IDLE;
         broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
+        mIdentifierCollection.remove(IdentifierClass.USER);
         mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
         mSourceOverflow = false;
     }

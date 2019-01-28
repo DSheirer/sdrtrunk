@@ -22,6 +22,8 @@ package io.github.dsheirer.identifier;
 
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -32,6 +34,7 @@ import java.util.Iterator;
 public class MutableIdentifierCollection extends IdentifierCollection implements IdentifierUpdateProvider,
     Listener<IdentifierUpdateNotification>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(MutableIdentifierCollection.class);
     private Listener<IdentifierUpdateNotification> mListener;
 
     public MutableIdentifierCollection()
