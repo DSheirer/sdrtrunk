@@ -239,7 +239,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         }
         else
         {
-            mLog.warn("Multiple To Identifiers in Collection: " + Joiner.on(",").join(toIds));
             mIdentifier = toIds.get(0);
             AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
 
