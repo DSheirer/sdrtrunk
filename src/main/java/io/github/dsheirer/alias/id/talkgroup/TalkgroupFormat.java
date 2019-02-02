@@ -84,6 +84,14 @@ public enum TalkgroupFormat
     }
 
     /**
+     * Indicates if the value is valid for the protocol
+     */
+    public boolean isValid(int value)
+    {
+        return getMinimumValidValue() <= value && value <= getMaximumValidValue();
+    }
+
+    /**
      * Short description of the valid value range
      */
     public String getValidRangeDescription()
@@ -99,9 +107,14 @@ public enum TalkgroupFormat
         return mValidRangeHelpText;
     }
 
-    public static TalkgroupFormat get(Protocol prococol)
+    public static TalkgroupFormat get(Protocol protocol)
     {
-        switch(prococol)
+        if(protocol == null)
+        {
+            return UNKNOWN;
+        }
+
+        switch(protocol)
         {
             case APCO25:
                 return APCO25;

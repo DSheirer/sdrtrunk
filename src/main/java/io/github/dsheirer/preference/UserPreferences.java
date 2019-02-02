@@ -28,6 +28,7 @@ import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
+import io.github.dsheirer.preference.swing.SwingPreference;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -55,6 +56,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private PlaylistPreference mPlaylistPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
+    private SwingPreference mSwingPreference = new SwingPreference();
 
     /**
      * Constructs a new user preferences instance
@@ -118,6 +120,15 @@ public class UserPreferences implements Listener<PreferenceType>
     public TunerPreference getTunerPreference()
     {
         return mTunerPreference;
+    }
+
+
+    /**
+     * Swing window location/size user preferences
+     */
+    public SwingPreference getSwingPreference()
+    {
+        return mSwingPreference;
     }
 
     /**

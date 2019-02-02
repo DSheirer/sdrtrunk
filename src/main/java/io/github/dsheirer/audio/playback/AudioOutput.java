@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,11 @@ public abstract class AudioOutput implements Listener<ReusableAudioPacket>, Line
     private LinkedTransferQueue<ReusableAudioPacket> mBuffer = new LinkedTransferQueue<>();
     private int mBufferStartThreshold;
     private int mBufferStopThreshold;
+    private static IdentifierCollection EMPTY_IDENTIFIER_COLLECTION = new IdentifierCollection();
+    static
+    {
+        EMPTY_IDENTIFIER_COLLECTION.setUpdated(true);
+    }
 
     private Listener<IdentifierCollection> mIdentifierCollectionListener;
     private Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
@@ -380,12 +385,11 @@ public abstract class AudioOutput implements Listener<ReusableAudioPacket>, Line
          */
         private void checkStop()
         {
-            if(mCanProcessAudio &&
-                mOutput.isRunning() &&
-                mOutput.available() >= mBufferStopThreshold)
+            if(mCanProcessAudio && mOutput.isRunning() && mOutput.available() >= mBufferStopThreshold)
             {
                 mOutput.drain();
                 mOutput.stop();
+                broadcast(EMPTY_IDENTIFIER_COLLECTION);
             }
         }
     }

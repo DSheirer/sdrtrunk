@@ -1,6 +1,7 @@
-/*******************************************************************************
+/*
+ * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +15,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * *****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast;
 
 import com.jidesoft.swing.JideSplitPane;
@@ -23,6 +24,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.preference.UserPreferences;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +53,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     private BroadcastModel mBroadcastModel;
     private AliasModel mAliasModel;
     private IconManager mIconManager;
+    private UserPreferences mUserPreferences;
 
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private JideSplitPane mSplitPane;
@@ -60,12 +63,14 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     private JButton mCopyButton = new JButton(COPY_BROADCAST_CONFIGURATION);
     private JButton mDeleteButton = new JButton(DELETE_BROADCAST_CONFIGURATION);
 
-    public BroadcastPanel(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
+    public BroadcastPanel(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager,
+                          UserPreferences userPreferences)
     {
         mBroadcastModel = broadcastModel;
         mAliasModel = aliasModel;
         mIconManager = iconManager;
         mEditor = mEmptyEditor;
+        mUserPreferences = userPreferences;
 
         init();
     }
@@ -74,7 +79,8 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     {
         setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
 
-        mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel);
+        mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel, mUserPreferences,
+            "broadcast.panel.broadcast.status.panel");
 
         mBroadcastStatusPanel.getTable().setAutoCreateRowSorter(true);
         mBroadcastStatusPanel.getTable().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

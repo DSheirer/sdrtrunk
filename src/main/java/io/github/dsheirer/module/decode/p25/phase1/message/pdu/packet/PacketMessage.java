@@ -33,8 +33,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.DataBlock;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPPacketHeader;
 import io.github.dsheirer.module.decode.p25.reference.IPHeaderCompression;
 import io.github.dsheirer.module.decode.p25.reference.UDPHeaderCompression;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +42,7 @@ import java.util.List;
  */
 public class PacketMessage extends P25Message
 {
-    private final static Logger mLog = LoggerFactory.getLogger(PacketMessage.class);
+//    private final static Logger mLog = LoggerFactory.getLogger(PacketMessage.class);
 
     private PDUSequence mPDUSequence;
     private BinaryMessage mPayload;
@@ -88,7 +86,6 @@ public class PacketMessage extends P25Message
                 }
                 else
                 {
-                    mLog.debug("***************** 2 byte SNDCP header with no data blocks header: " + getPDUSequence().getHeader().getMessage().toHexString());
                     mSNDCPPacketHeader = new SNDCPPacketHeader(getHeader().isOutbound());
                 }
             }
@@ -162,7 +159,7 @@ public class PacketMessage extends P25Message
     {
         List<Integer> numbers = new ArrayList<>();
 
-        for(DataBlock dataBlock: getPDUSequence().getDataBlocks())
+        for(DataBlock dataBlock : getPDUSequence().getDataBlocks())
         {
             if(dataBlock instanceof ConfirmedDataBlock)
             {

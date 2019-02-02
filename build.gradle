@@ -17,21 +17,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * *****************************************************************************
  */
-buildscript {
-    repositories {
-        jcenter()
-        mavenCentral()
-    }
-    dependencies {
-    }
-}
-
 plugins {
     id 'application'
     id 'java'
     id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.6'
-    id 'org.beryx.runtime' version '1.1.1'
+    id 'org.beryx.runtime' version '1.1.5'
 }
 
 repositories {
@@ -39,7 +30,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.4.0-alpha.7'
+version = '0.4.0-alpha.9'
 sourceCompatibility = '11'
 
 sourceSets {
@@ -107,15 +98,6 @@ javafx {
     modules = ['javafx.controls', 'javafx.base', 'javafx.graphics', 'javafx.swing']
 }
 
-runtime {
-    targetPlatform('linux-x64', '/media/denny/WD250GB/java/linux/jdk-11.0.1')
-    targetPlatform('osx-x64', '/media/denny/WD250GB/java/osx/jdk-11.0.1.jdk/Contents/Home')
-    targetPlatform('windows-x64', '/media/denny/WD250GB/java/windows/jdk-11.0.1')
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
-    imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
-}
-
 task buildSdr(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'SdrTrunk project',
@@ -127,3 +109,77 @@ task buildSdr(type: Jar) {
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
+
+/**
+ * Java Development Kit (JDK) locations.  These paths must point to the 'bin' directory
+ * within a JDK for each of the specified architectures.  These JDKs are used by the 
+ * runtime and runtimeZip tasks to produce platform-specific builds
+ */
+def jdkLinux_aarch64 = '/media/denny/WD250GB/java/bellsoft/linux-aarch64/jdk-11.0.2'
+def jdkLinux_x64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-11.0.2'
+def jdkOsx_x64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-11.0.2.jdk'
+def jdkWindows_x64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-11.0.2'
+
+runtime {
+    targetPlatform('linux-aarch64', jdkLinux_aarch64)
+    targetPlatform('linux-x64', jdkLinux_x64)
+    targetPlatform('osx-x64', jdkOsx_x64)
+    targetPlatform('windows-x64', jdkWindows_x64)
+
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
+    imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
+}
+
+/**
+ * Check for existence of JDK folders for each supported platform before creating runtime images
+ */
+tasks.runtime.doFirst {
+    def linux_aarch64 = new File(jdkLinux_aarch64)
+
+    if(!linux_aarch64.exists())
+    {
+        println("Linux aarch64 JDK was not found at " + jdkLinux_aarch64)
+        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-aarch64 architecture.  " +
+                "Please update the build.gradle script to provide the correct path")
+    }
+
+    def linux_x64 = new File(jdkLinux_x64)
+
+    if(!linux_x64.exists())
+    {
+        println("Linux x64 JDK was not found at " + jdkLinux_x64)
+        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-x64 architecture.  " +
+                "Please update the build.gradle script to provide the correct path")
+    }
+
+    def osx_x64 = new File(jdkOsx_x64)
+
+    if(!osx_x64.exists())
+    {
+        println("OSX x64 JDK was not found at " + jdkOsx_x64);
+        throw new GradleException("Cannot find Java Development Kit (JDK) for osx-x64 architecture.  " +
+                "Please update the build.gradle script to provide the correct path")
+    }
+
+    def windows_x64 = new File(jdkWindows_x64)
+
+    if(!windows_x64.exists())
+    {
+        println("Windows x64 JDK was not found at " + jdkWindows_x64)
+        throw new GradleException("Cannot find Java Development Kit (JDK) for windows-x64 architecture.  " +
+                "Please update the build.gradle script to provide the correct path")
+    }
+}
+
+/**
+ * Since we have to list each of the platform-specific JavaFX libraries as dependencies, 
+ * remove them from each build image
+ */
+tasks.runtime.doLast {
+    delete(fileTree('build/image/sdr-trunk-linux-aarch64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-osx-x64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+}
+

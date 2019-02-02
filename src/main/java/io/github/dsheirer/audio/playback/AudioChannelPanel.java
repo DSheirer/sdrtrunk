@@ -83,8 +83,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private JLabel mIdentifierLabel = new JLabel("-----");
     private Identifier mIdentifier;
     private List<Alias> mAliases = Collections.EMPTY_LIST;
-
-    private boolean mConfigured = false;
     private AliasModel mAliasModel;
 
     public AudioChannelPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
@@ -191,31 +189,70 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     }
 
     /**
-     * Resets the from and to labels.  Note: this does not happen on the swing
-     * event thread.  Only invoke from the swing thread.
+     * Resets the from and to labels.
      */
     private void resetLabels()
     {
+        boolean updated = mIdentifier != null;
         mIdentifier = null;
         mAliases = Collections.EMPTY_LIST;
-        updateLabels();
-        mConfigured = false;
+
+        if(updated)
+        {
+            updateLabels();
+        }
     }
 
-    /**
-     * Truncates the string to the specified length using an ellipses at the end
-     * @param value to optionally truncate
-     * @param length of the final formatted string
-     * @return formatted string or null
-     */
-    private static String truncate(String value, int length)
+    private void updateIdentifiers(IdentifierCollection identifierCollection)
     {
-        if(value != null && value.length() > length)
+        if(identifierCollection == null || identifierCollection.isEmpty())
         {
-            return value.substring(0, length - 3) + "...";
+            resetLabels();
+            return;
         }
 
-        return value;
+        List<Identifier> toIds = identifierCollection.getIdentifiers(IdentifierClass.USER, Role.TO);
+
+        if(toIds.isEmpty())
+        {
+            resetLabels();
+            return;
+        }
+
+        boolean updated = false;
+
+        if(toIds.size() == 1)
+        {
+            Identifier currentIdentifier = mIdentifier;
+
+            if(currentIdentifier == null || currentIdentifier != toIds.get(0))
+            {
+                mIdentifier = toIds.get(0);
+                AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
+
+                if(aliasList != null)
+                {
+                    mAliases = aliasList.getAliases(mIdentifier);
+                }
+                updated = true;
+            }
+        }
+        else
+        {
+            mIdentifier = toIds.get(0);
+            AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
+
+            if(aliasList != null)
+            {
+                mAliases = aliasList.getAliases(mIdentifier);
+            }
+            updated = true;
+        }
+
+        if(updated)
+        {
+            updateLabels();
+        }
     }
 
     /**
@@ -249,7 +286,8 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         }
 
         final ImageIcon icon = iconName != null ? mIconManager.getIcon(iconName, 18) : null;
-        final String identifierText = truncate(identifier, 33);
+
+        final String identifierText = identifier;
 
         EventQueue.invokeLater(new Runnable()
         {
@@ -258,7 +296,6 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
             {
                 mIdentifierLabel.setText(identifierText);
                 mIconLabel.setIcon(icon);
-                mConfigured = true;
             }
         });
 
@@ -272,22 +309,9 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         @Override
         public void receive(final IdentifierCollection identifierCollection)
         {
-            if(identifierCollection != null && (identifierCollection.isUpdated() || !mConfigured))
-            {
-                List<Identifier> toIds = identifierCollection.getIdentifiers(IdentifierClass.USER, Role.TO);
-                mIdentifier = !toIds.isEmpty() ? toIds.get(0) : null;
-                AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
-
-                if(aliasList != null)
-                {
-                    mAliases = aliasList.getAliases(mIdentifier);
-                }
-
-                updateLabels();
-            }
+            updateIdentifiers(identifierCollection);
         }
     }
-
 
     @Override
     public void settingChanged(Setting setting)

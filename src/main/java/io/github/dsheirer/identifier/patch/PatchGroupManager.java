@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ package io.github.dsheirer.identifier.patch;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +31,14 @@ import java.util.Map;
 
 /**
  * Manager for (temporary) patch groups and related identifiers.
+ *
+ * Patch groups are primarily used on Motorola P25 systems.  This manager monitors patch group additions and deletions
+ * and maintains a map of the current patch groups.
+ *
+ * Traffic channel calls will sometimes reference a patch group by simply using the patch group identifier.  This
+ * manager will replace that reference with the full patch group so that the call event has the full patch group
+ * including all of the patched groups, which may not have been included in the patch group reference on the
+ * traffic channel.
  */
 public class PatchGroupManager
 {
@@ -127,7 +134,7 @@ public class PatchGroupManager
     }
 
     /**
-     * Checks the TALKGROUP or PATCH GROUP identifier and replaces the identifier with the current patch group
+     * Checks the PATCH GROUP identifier and replaces the identifier with the current patch group
      * if the identifier matches a currently managed patch group.
      *
      * @param identifier for a talkgroup or a patch group.
@@ -144,22 +151,6 @@ public class PatchGroupManager
         {
             switch(identifier.getForm())
             {
-                case TALKGROUP:
-                    if(identifier instanceof TalkgroupIdentifier)
-                    {
-                        TalkgroupIdentifier tgi = (TalkgroupIdentifier)identifier;
-
-                        if(tgi.isGroup())
-                        {
-                            int talkgroupId = ((TalkgroupIdentifier)identifier).getValue();
-
-                            if(mPatchGroupMap.containsKey(talkgroupId))
-                            {
-                                return mPatchGroupMap.get(talkgroupId);
-                            }
-                        }
-                    }
-                    break;
                 case PATCH_GROUP:
                     if(identifier instanceof PatchGroupIdentifier)
                     {

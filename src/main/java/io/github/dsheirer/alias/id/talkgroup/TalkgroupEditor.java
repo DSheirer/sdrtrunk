@@ -193,6 +193,11 @@ public class TalkgroupEditor extends DocumentListenerEditor<AliasID>
         {
             Protocol protocol = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
 
+            if(protocol == null)
+            {
+                protocol = Protocol.UNKNOWN;
+            }
+
             int value = -1;
 
             try
