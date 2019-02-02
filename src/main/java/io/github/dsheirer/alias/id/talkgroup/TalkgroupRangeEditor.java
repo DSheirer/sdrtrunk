@@ -174,6 +174,8 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
 
         TalkgroupRange talkgroupRange = getTalkgroupRange();
 
+        updateEditor(talkgroupRange.getProtocol());
+
         if(talkgroupRange != null)
         {
             mComboProtocol.getModel().setSelectedItem(talkgroupRange.getProtocol());
@@ -202,6 +204,12 @@ public class TalkgroupRangeEditor extends DocumentListenerEditor<AliasID>
         if(talkgroupRange != null)
         {
             Protocol protocol = mComboProtocol.getItemAt(mComboProtocol.getSelectedIndex());
+
+            if(protocol == null)
+            {
+                protocol = Protocol.UNKNOWN;
+            }
+
             talkgroupRange.setProtocol(protocol);
 
             int minValue = -1;
