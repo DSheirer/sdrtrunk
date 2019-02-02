@@ -127,19 +127,13 @@ runtime {
     imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
 
-tasks.getByName('runtime').doFirst {checkJdks}
-
-task checkJdks {
-    group = "Verification"
-    description = 'Verifies existence of platform-specific JDKs for runtime task'
-
+/**
+ * Check for existence of JDK folders for each supported platform before creating runtime images
+ */
+tasks.runtime.doFirst {
     def linux_aarch64 = new File(jdkLinux_aarch64)
 
-    if(linux_aarch64.exists())
-    {
-        println("Linux aarch64 JDK successfully found at " + jdkLinux_aarch64)
-    }
-    else
+    if(!linux_aarch64.exists())
     {
         println("Linux aarch64 JDK was not found at " + jdkLinux_aarch64)
         throw new GradleException("Cannot find Java Development Kit (JDK) for linux-aarch64 architecture.  " +
@@ -148,11 +142,7 @@ task checkJdks {
 
     def linux_x64 = new File(jdkLinux_x64)
 
-    if(linux_x64.exists())
-    {
-        println("Linux x64 JDK successfully found at " + jdkLinux_x64)
-    }
-    else
+    if(!linux_x64.exists())
     {
         println("Linux x64 JDK was not found at " + jdkLinux_x64)
         throw new GradleException("Cannot find Java Development Kit (JDK) for linux-x64 architecture.  " +
@@ -161,11 +151,7 @@ task checkJdks {
 
     def osx_x64 = new File(jdkOsx_x64)
 
-    if(osx_x64.exists())
-    {
-        println("OSX x64 JDK successfully found at " + jdkOsx_x64);
-    }
-    else
+    if(!osx_x64.exists())
     {
         println("OSX x64 JDK was not found at " + jdkOsx_x64);
         throw new GradleException("Cannot find Java Development Kit (JDK) for osx-x64 architecture.  " +
@@ -174,15 +160,22 @@ task checkJdks {
 
     def windows_x64 = new File(jdkWindows_x64)
 
-    if(windows_x64.exists())
-    {
-        println("Windows x64 JDK successfully found at " + jdkWindows_x64)
-    }
-    else
+    if(!windows_x64.exists())
     {
         println("Windows x64 JDK was not found at " + jdkWindows_x64)
         throw new GradleException("Cannot find Java Development Kit (JDK) for windows-x64 architecture.  " +
                 "Please update the build.gradle script to provide the correct path")
     }
+}
+
+/**
+ * Since we have to list each of the platform-specific JavaFX libraries as dependencies, 
+ * remove them from each build image
+ */
+tasks.runtime.doLast {
+    delete(fileTree('build/image/sdr-trunk-linux-aarch64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-osx-x64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
 }
 
