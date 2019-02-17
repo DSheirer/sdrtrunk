@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.gui;
 
@@ -395,9 +397,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new BroadcastStatusVisibleMenuItem(mControllerPanel));
         viewMenu.add(new JSeparator());
 
-        for(Tuner tuner: mSourceManager.getTunerModel().getTuners())
+        for(Tuner tuner : mSourceManager.getTunerModel().getTuners())
         {
-            viewMenu.add(new ShowTunerMenuItem(mSpectralPanel, tuner));
+            viewMenu.add(new ShowTunerMenuItem(mSourceManager.getTunerModel(), tuner));
         }
 
         viewMenu.add(new JSeparator());
@@ -406,7 +408,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new JSeparator());
         JMenuItem preferencesItem = new JMenuItem("Preferences");
         preferencesItem.addActionListener(e -> MyEventBus.getEventBus()
-                .post(new PreferenceEditorViewRequest(PreferenceEditorType.CHANNEL_EVENT)));
+            .post(new PreferenceEditorViewRequest(PreferenceEditorType.CHANNEL_EVENT)));
         viewMenu.add(preferencesItem);
 
         menuBar.add(viewMenu);
