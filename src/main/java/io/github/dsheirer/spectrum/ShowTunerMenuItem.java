@@ -1,22 +1,30 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.spectrum;
 
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.Tuner;
+import io.github.dsheirer.source.tuner.TunerEvent;
+import io.github.dsheirer.source.tuner.TunerModel;
 
 import javax.swing.JMenuItem;
 import java.awt.EventQueue;
@@ -25,13 +33,13 @@ import java.awt.event.ActionListener;
 
 public class ShowTunerMenuItem extends JMenuItem
 {
-    private SpectralDisplayPanel mSpectralDisplayPanel;
+    private TunerModel mTunerModel;
     private Tuner mTuner;
 
-    public ShowTunerMenuItem(SpectralDisplayPanel spectralDisplayPanel, Tuner tuner)
+    public ShowTunerMenuItem(TunerModel tunerModel, Tuner tuner)
     {
         super(tuner != null ? "Show: " + tuner.getName() : "(empty)");
-        mSpectralDisplayPanel = spectralDisplayPanel;
+        mTunerModel = tunerModel;
         mTuner = tuner;
 
         addActionListener(new ActionListener()
@@ -44,7 +52,7 @@ public class ShowTunerMenuItem extends JMenuItem
                     @Override
                     public void run()
                     {
-                        mSpectralDisplayPanel.showTuner(mTuner);
+                        mTunerModel.broadcast(new TunerEvent(mTuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
                         SystemProperties properties = SystemProperties.getInstance();
                         properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
                     }
