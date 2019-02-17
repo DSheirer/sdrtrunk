@@ -1,24 +1,26 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.audio.broadcast.broadcastify;
 
-import com.radioreference.api.soap2.UserFeedBroadcast;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastConfigurationEditor;
@@ -26,6 +28,8 @@ import io.github.dsheirer.audio.broadcast.BroadcastEvent;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.rrapi.type.UserFeedBroadcast;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -64,10 +68,13 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     private JCheckBox mEnabled;
     private JButton mSaveButton;
     private JButton mResetButton;
+    private UserPreferences mUserPreferences;
 
-    public BroadcastifyConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
+    public BroadcastifyConfigurationEditor(UserPreferences userPreferences, BroadcastModel broadcastModel,
+                                           AliasModel aliasModel, IconManager iconManager)
     {
         super(broadcastModel, aliasModel, iconManager);
+        mUserPreferences = userPreferences;
 
         init();
     }
@@ -91,7 +98,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                final UserFeedSelectionDialog dialog = new UserFeedSelectionDialog(BroadcastifyConfigurationEditor.this);
+                final UserFeedSelectionDialog dialog = new UserFeedSelectionDialog(mUserPreferences,BroadcastifyConfigurationEditor.this);
 
                 EventQueue.invokeLater(new Runnable()
                 {
@@ -391,7 +398,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     @Override
     public void receive(UserFeedBroadcast userFeedBroadcast)
     {
-        mName.setText(userFeedBroadcast.getDescr());
+        mName.setText(userFeedBroadcast.getDescription());
         mServer.setText(userFeedBroadcast.getHostname());
         mPort.setText(userFeedBroadcast.getPort());
         mMountPoint.setText(userFeedBroadcast.getMount());
