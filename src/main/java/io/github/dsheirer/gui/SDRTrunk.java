@@ -75,6 +75,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.AWTException;
 import java.awt.Desktop;
@@ -211,7 +213,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences);
+            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences, recorderManager);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager, tunerModel);
@@ -397,10 +399,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new BroadcastStatusVisibleMenuItem(mControllerPanel));
         viewMenu.add(new JSeparator());
 
-        for(Tuner tuner : mSourceManager.getTunerModel().getTuners())
-        {
-            viewMenu.add(new ShowTunerMenuItem(mSourceManager.getTunerModel(), tuner));
-        }
+//        for(Tuner tuner : mSourceManager.getTunerModel().getTuners())
+//        {
+//            viewMenu.add(new ShowTunerMenuItem(mSourceManager.getTunerModel(), tuner));
+//        }
+        viewMenu.add(new TunersMenu());
 
         viewMenu.add(new JSeparator());
         viewMenu.add(new ClearTunerMenuItem(mSpectralPanel));
@@ -629,6 +632,34 @@ public class SDRTrunk implements Listener<TunerEvent>
                 }
             });
         }
+    }
+
+    public class TunersMenu extends JMenu
+    {
+        public TunersMenu()
+        {
+            super("Tuners");
+
+            addMenuListener(new MenuListener()
+            {
+                @Override
+                public void menuSelected(MenuEvent e)
+                {
+                    removeAll();
+
+                    for(Tuner tuner : mSourceManager.getTunerModel().getTuners())
+                    {
+                        add(new ShowTunerMenuItem(mSourceManager.getTunerModel(), tuner));
+                    }
+                }
+
+                @Override
+                public void menuDeselected(MenuEvent e) { }
+                @Override
+                public void menuCanceled(MenuEvent e) { }
+            });
+        }
+
     }
 
     /**

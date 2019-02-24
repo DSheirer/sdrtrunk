@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.identifier.channel;
@@ -131,7 +133,7 @@ public class P25Channel implements IChannelDescriptor
             return mFrequencyBand.getTimeslotCount();
         }
 
-        return 0;
+        return 1;
     }
 
     @Override
@@ -146,25 +148,64 @@ public class P25Channel implements IChannelDescriptor
     }
 
     /**
+     * Timeslot for a TDMA channel
+     * @return timeslot or 0 if the channel is not a TDMA channel
+     */
+    public int getTimeslot()
+    {
+        if(isTDMAChannel())
+        {
+            return getDownlinkChannelNumber() % getTimeslotCount();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Logical channel number.  For Phase 1 channels this is the downlink channel number.  For Phase 2 channels, this
+     * is the channel number without the timeslot specifier.
+     */
+    public int getDownlinkLogicalChannelNumber()
+    {
+        return getDownlinkChannelNumber() / getTimeslotCount();
+    }
+
+    /**
+     * Logical channel number.  For Phase 1 channels this is the uplink channel number.  For Phase 2 channels, this
+     * is the channel number without the timeslot specifier.
+     */
+    public int getUplinkLogicalChannelNumber()
+    {
+        return getUplinkChannelNumber() / getTimeslotCount();
+    }
+
+    /**
      * Formatted channel number
      */
     public String toString()
     {
         if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
         {
-            return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber();
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber());
         }
         else if(hasUplinkChannel())
         {
-            return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/" +
-                getUplinkBandIdentifier() + "-" + getUplinkChannelNumber();
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/" +
+                getUplinkBandIdentifier() + "-" + (getUplinkLogicalChannelNumber());
         }
         else
         {
-            return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/-----";
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/-----";
         }
     }
 
+    /**
+     * Designates channel equality as having the same band identifier and channel number.
+     *
+     * Note: Phase 2 channels also specify timeslot for a channel, but timeslot is not considered for equality.
+     * @param o other object
+     * @return true if both instances are P25 channels in the same band and channel number
+     */
     @Override
     public boolean equals(Object o)
     {
@@ -172,18 +213,21 @@ public class P25Channel implements IChannelDescriptor
         {
             return true;
         }
-        if(o == null || getClass() != o.getClass())
+        if(o == null)
+        {
+            return false;
+        }
+        if(!(o instanceof P25Channel))
         {
             return false;
         }
         P25Channel that = (P25Channel)o;
-        return mBandIdentifier == that.mBandIdentifier &&
-            mChannelNumber == that.mChannelNumber;
+        return mBandIdentifier == that.mBandIdentifier && getDownlinkLogicalChannelNumber() == that.getDownlinkLogicalChannelNumber();
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(mBandIdentifier, mChannelNumber);
+        return Objects.hash(mBandIdentifier, getDownlinkLogicalChannelNumber());
     }
 }

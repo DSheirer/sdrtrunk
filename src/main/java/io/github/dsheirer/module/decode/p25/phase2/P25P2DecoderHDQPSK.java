@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
@@ -24,38 +26,52 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
-import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
+import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.dsp.psk.pll.PLLGain;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IdentifierUpdateListener;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.record.binary.BinaryRecorder;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * P25 Phase 2 HDQPSK 2-timeslot Decoder
  */
-public class P25P2DecoderHDQPSK extends P25P2Decoder
+public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderHDQPSK.class);
 
-    protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
+    protected static final float SYMBOL_TIMING_GAIN = 0.01f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
-    protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
+    protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected P25P2MessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
+    private DecodeConfigP25Phase2 mDecodeConfigP25Phase2;
 
-    public P25P2DecoderHDQPSK()
+    public P25P2DecoderHDQPSK(DecodeConfigP25Phase2 decodeConfigP25Phase2)
     {
         super(6000.0);
         setSampleRate(25000.0);
+        mDecodeConfigP25Phase2 = decodeConfigP25Phase2;
     }
 
     public void setSampleRate(double sampleRate)
@@ -63,11 +79,10 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         super.setSampleRate(sampleRate);
 
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
-
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
-
-        mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
+        mCostasLoop.setPLLGain(PLLGain.LEVEL_8);
+        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
+        mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
         if(mMessageFramer != null)
         {
@@ -125,12 +140,12 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         if(filter == null)
         {
             FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                .sampleRate((int)getSampleRate())
-                .passBandCutoff(5100)
+                .sampleRate(50000.0)
+                .passBandCutoff(6500)
                 .passBandAmplitude(1.0)
-                .passBandRipple(0.01)
+                .passBandRipple(0.005)
                 .stopBandAmplitude(0.0)
-                .stopBandStart(6500)
+                .stopBandStart(7200)
                 .stopBandRipple(0.01)
                 .build();
 
@@ -189,5 +204,74 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
     public void reset()
     {
         mCostasLoop.reset();
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+
+        //Refresh the scramble parameters each time we start in case they change
+        if(mDecodeConfigP25Phase2 != null && mDecodeConfigP25Phase2.getScrambleParameters() != null &&
+            !mDecodeConfigP25Phase2.isAutoDetectScrambleParameters())
+        {
+            mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        String path = "/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/";
+        String input = "CNYICC_Rome_CNYICC_154_250_baseband_20190322_180331_good.wav";
+        String output = "CNYICC_ROME_154_250_8";
+
+        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677); //CNYICC
+        DecodeConfigP25Phase2 decodeConfigP25Phase2 = new DecodeConfigP25Phase2();
+        decodeConfigP25Phase2.setScrambleParameters(scrambleParameters);
+
+        P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK(decodeConfigP25Phase2);
+        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25_PHASE2);
+        decoder.setBufferListener(recorder.getReusableByteBufferListener());
+        recorder.start();
+
+        File file = new File(path + input);
+
+        boolean running = true;
+
+        try(ComplexWaveSource source = new ComplexWaveSource(file))
+        {
+            decoder.setSampleRate(50000.0);
+            source.setListener(decoder);
+            source.start();
+
+            while(running)
+            {
+                source.next(200, true);
+            }
+        }
+        catch(IOException e)
+        {
+            mLog.error("Error", e);
+            running = false;
+        }
+
+        recorder.stop();
+    }
+
+    @Override
+    public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
+    {
+        return new Listener<IdentifierUpdateNotification>()
+        {
+            @Override
+            public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+            {
+                if(identifierUpdateNotification.getIdentifier().getForm() == Form.SCRAMBLE_PARAMETERS && mMessageFramer != null)
+                {
+                    ScrambleParameters scrambleParameters = (ScrambleParameters)identifierUpdateNotification.getIdentifier().getValue();
+                    mMessageFramer.setScrambleParameters(scrambleParameters);
+                }
+            }
+        };
     }
 }

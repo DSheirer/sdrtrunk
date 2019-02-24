@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -24,19 +26,18 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.audio.P25P1CallSequenceRecorder;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.UMBTCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -427,74 +428,38 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
-        boolean pduOnly = false;
-        boolean mbtcOnly = false;
-        boolean sndcpOnly = false;
-        boolean ippacketOnly = false;
-        boolean patchOnly = false;
+        P25P1DecoderLSM decoderLSM = new P25P1DecoderLSM();
+
+
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190719_073751_9600BPS_APCO25PHASE1_DFWAirport_Site_857_3875_baseband_20181213_223236.bits");
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/20190720_071117_9600BPS_APCO25PHASE1_P25P2_HCPM_Metrocrest_Dallas_857_7625_phase_2_not_motorola_baseband_20181213_224616_control_channel.bits");
 
         P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        messageFramer.setListener(new Listener<Message>()
+
+        try(BinaryReader reader = new BinaryReader(path, 200))
+        {
+            while(reader.hasNext())
+            {
+                messageFramer.receive(reader.next());
+            }
+        }
+        catch(Exception ioe)
+        {
+            ioe.printStackTrace();
+        }
+
+        P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
+        P25P1CallSequenceRecorder frameRecorder = new P25P1CallSequenceRecorder(new UserPreferences(), 154250000, "", "");
+        messageFramer.setListener(messageProcessor);
+        messageProcessor.setMessageListener(new Listener<IMessage>()
         {
             @Override
-            public void receive(Message message)
+            public void receive(IMessage message)
             {
-                if(mbtcOnly)
-                {
-                    if(message instanceof AMBTCMessage || message instanceof UMBTCMessage)
-                    {
-                        mLog.debug(message.toString());
-                    }
-                }
-                else if(pduOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains(" PDU  "))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(sndcpOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains("SNDCP"))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(ippacketOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains("IPPKT") || s.contains("SNDCP") || s.contains(" PDU  "))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(patchOnly)
-                {
-                    if(message instanceof PatchGroupVoiceChannelGrant || message instanceof PatchGroupVoiceChannelGrantUpdate)
-                    {
-                        mLog.debug(message.toString());
-                    }
-                }
-                else
-                {
-                    String a = message.toString();
-                    mLog.debug(a);
-                }
+                frameRecorder.receive(message);
+                mLog.debug(message.toString());
             }
         });
-
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_102339_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_134948_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144312_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits"); //Interesting UDP port 231 packets (oswego LCN 4)
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144429_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144437_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181202_064827_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
-
 
 
         try(BinaryReader reader = new BinaryReader(path, 200))
@@ -509,7 +474,6 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
             ioe.printStackTrace();
         }
 
-
-        mLog.debug("NIDS Detected: " + messageFramer.getDataUnitDetector().getNIDDetectionCount());
+        frameRecorder.stop();
     }
 }

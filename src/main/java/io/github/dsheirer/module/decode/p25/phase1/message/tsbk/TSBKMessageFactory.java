@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
@@ -25,8 +27,8 @@ import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.UnknownMotorolaISPMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelCWID;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelLoading;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupAdd;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupDelete;
@@ -94,6 +96,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SND
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SNDCPDataChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SNDCPDataPageRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SyncBroadcast;
@@ -251,6 +254,8 @@ public class TSBKMessageFactory
                 return new RFSSStatusBroadcast(dataUnitID, message, nac, timestamp);
             case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST:
                 return new SecondaryControlChannelBroadcast(dataUnitID, message, nac, timestamp);
+            case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+                return new SecondaryControlChannelBroadcastExplicit(dataUnitID, message, nac, timestamp);
             case OSP_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                 return new SNDCPDataChannelAnnouncementExplicit(dataUnitID, message, nac, timestamp);
             case OSP_SNDCP_DATA_CHANNEL_GRANT:
@@ -288,13 +293,13 @@ public class TSBKMessageFactory
                 return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
 
             case MOTOROLA_OSP_CONTROL_CHANNEL_ID:
-                return new ChannelCWID(dataUnitID, message, nac, timestamp);
+                return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
                 return new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_DENY_RESPONSE:
                 return new MotorolaDenyResponse(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
-                return new ChannelCWID(dataUnitID, message, nac, timestamp);
+                return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_PATCH_GROUP_ADD:
                 return new PatchGroupAdd(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_PATCH_GROUP_DELETE:

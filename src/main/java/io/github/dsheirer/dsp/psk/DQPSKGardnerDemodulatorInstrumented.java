@@ -1,23 +1,30 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 
 public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
@@ -27,6 +34,7 @@ public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
     private Listener<Complex> mComplexSymbolListener;
     private Listener<Double> mPLLErrorListener;
     private Listener<Double> mPLLFrequencyListener;
+    private Listener<ReusableComplexBuffer> mFilteredGainAppliedComplexBufferListener;
     private double mSampleRate;
 
     /**
@@ -43,6 +51,18 @@ public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
     {
         super(phaseLockedLoop, interpolatingSampleBuffer);
         mSampleRate = sampleRate;
+    }
+
+    @Override
+    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    {
+        if(mFilteredGainAppliedComplexBufferListener != null)
+        {
+            reusableComplexBuffer.incrementUserCount();
+            mFilteredGainAppliedComplexBufferListener.receive(reusableComplexBuffer);
+        }
+
+        super.receive(reusableComplexBuffer);
     }
 
     /**
@@ -123,5 +143,13 @@ public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
     public void setPLLFrequencyListener(Listener<Double> listener)
     {
         mPLLFrequencyListener = listener;
+    }
+
+    /**
+     * Registers the listener to receive complex sample buffers that have been filtered with automatic gain control applied
+     */
+    public void setFilteredGainAppliedComplexBufferListener(Listener<ReusableComplexBuffer> listener)
+    {
+        mFilteredGainAppliedComplexBufferListener = listener;
     }
 }

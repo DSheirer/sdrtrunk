@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode;
 
@@ -72,13 +74,18 @@ import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
-import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
+import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
+import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderEditor;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderEditor;
@@ -96,7 +103,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
 public class DecoderFactory
@@ -150,14 +156,15 @@ public class DecoderFactory
             case AM:
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-                AudioModule audioModuleAM = new AudioModule();
 
                 //Check if the user wants all audio recorded ..
                 if(((DecodeConfigAM)decodeConfig).getRecordAudio())
                 {
+                    AudioModule audioModuleAM = new AudioModule();
                     audioModuleAM.setRecordAudio(true);
+                    modules.add(audioModuleAM);
                 }
-                modules.add(audioModuleAM);
+
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -268,7 +275,7 @@ public class DecoderFactory
                     modules.add(new P25P1DecoderState(channel));
                 }
 
-                modules.add(new P25AudioModule(userPreferences));
+                modules.add(new P25P1AudioModule(userPreferences));
 
                 //Add a channel rotation monitor when we have multiple control channel frequencies specified
                 if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
@@ -278,6 +285,14 @@ public class DecoderFactory
                     activeStates.add(State.CONTROL);
                     modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
                 }
+                break;
+            case P25_PHASE2:
+                modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
+
+                modules.add(new P25P2DecoderState(channel, 0));
+                modules.add(new P25P2DecoderState(channel, 1));
+                modules.add(new P25P2AudioModule(userPreferences, 0));
+                modules.add(new P25P2AudioModule(userPreferences, 1));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
@@ -418,6 +433,8 @@ public class DecoderFactory
                 return new DecodeConfigPassport();
             case P25_PHASE1:
                 return new DecodeConfigP25Phase1();
+            case P25_PHASE2:
+                return new DecodeConfigP25Phase2();
             default:
                 throw new IllegalArgumentException("DecodeConfigFactory - unknown decoder type [" + decoder.toString() + "]");
         }
@@ -439,6 +456,8 @@ public class DecoderFactory
                 return new NBFMDecoderEditor();
             case P25_PHASE1:
                 return new P25P1DecoderEditor();
+            case P25_PHASE2:
+                return new P25P2DecoderEditor();
             case PASSPORT:
                 return new PassportDecoderEditor();
             default:
@@ -486,6 +505,15 @@ public class DecoderFactory
                     copyP25.setModulation(originalP25.getModulation());
                     copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
                     return copyP25;
+                case P25_PHASE2:
+                    DecodeConfigP25Phase2 originalP25P2 = (DecodeConfigP25Phase2)config;
+                    DecodeConfigP25Phase2 copyP25P2 = new DecodeConfigP25Phase2();
+
+                    if(originalP25P2.getScrambleParameters() != null)
+                    {
+                        copyP25P2.setScrambleParameters(originalP25P2.getScrambleParameters().copy());
+                    }
+                    return copyP25P2;
                 case PASSPORT:
                     return new DecodeConfigPassport();
                 default:
@@ -494,15 +522,5 @@ public class DecoderFactory
         }
 
         return null;
-    }
-
-    /**
-     * Decoder(s) that support bitstreams indicating that they produce ReusableByteBuffers of decoded bits.
-     *
-     * @return set of decoders that support bitstreams.
-     */
-    public static EnumSet<DecoderType> getBitstreamDecoders()
-    {
-        return EnumSet.of(DecoderType.P25_PHASE1, DecoderType.MPT1327);
     }
 }

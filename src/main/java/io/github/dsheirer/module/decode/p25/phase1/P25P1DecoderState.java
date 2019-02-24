@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -45,7 +47,6 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
-import io.github.dsheirer.module.decode.p25.network.P25NetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
@@ -145,7 +146,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private ChannelType mChannelType;
     private P25P1Decoder.Modulation mModulation;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
-    private P25NetworkConfigurationMonitor mNetworkConfigurationMonitor;
+    private P25P1NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private P25TrafficChannelManager mTrafficChannelManager;
     private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
@@ -159,7 +160,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         mChannelType = channel.getChannelType();
         mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
-        mNetworkConfigurationMonitor = new P25NetworkConfigurationMonitor(mModulation);
+        mNetworkConfigurationMonitor = new P25P1NetworkConfigurationMonitor(mModulation);
 
         if(trafficChannelManager != null)
         {
@@ -216,6 +217,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void reset()
     {
+        super.reset();
         resetState();
     }
 
@@ -504,6 +506,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
                 //Network configuration messages
                 case OSP_ADJACENT_STATUS_BROADCAST:
+                    mNetworkConfigurationMonitor.process(ambtc);
+                    break;
+                case OSP_NETWORK_STATUS_BROADCAST:
+                    mNetworkConfigurationMonitor.process(ambtc);
+                    break;
+                case OSP_RFSS_STATUS_BROADCAST:
                     mNetworkConfigurationMonitor.process(ambtc);
                     break;
 

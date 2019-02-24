@@ -1,25 +1,28 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.event;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.protocol.Protocol;
@@ -37,6 +40,7 @@ public class DecodeEvent implements IDecodeEvent
     private IChannelDescriptor mChannelDescriptor;
     private String mDetails;
     private Protocol mProtocol;
+    private Integer mTimeslot;
 
     public DecodeEvent(long start)
     {
@@ -188,6 +192,49 @@ public class DecodeEvent implements IDecodeEvent
     }
 
     /**
+     * Timeslot for this event
+     * @return timeslot or default value of 0
+     */
+    @Override
+    public Integer getTimeslot()
+    {
+        return mTimeslot;
+    }
+
+    /**
+     * Indicates if this event specifies a timeslot
+     */
+    public boolean hasTimeslot()
+    {
+        return mTimeslot != null;
+    }
+
+    /**
+     * Sets the timeslot for this event
+     * @param timeslot of the event
+     */
+    public void setTimeslot(Integer timeslot)
+    {
+        mTimeslot = timeslot;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(mProtocol);
+        sb.append(" DECODE EVENT: ").append(getEventDescription());
+        sb.append(" DETAILS:").append(getDetails());
+        if(mIdentifierCollection != null)
+        {
+            sb.append(" IDS:").append(Joiner.on(",").join(mIdentifierCollection.getIdentifiers()));
+        }
+        sb.append(" DURATION:").append(mDuration);
+        sb.append(" CHANNEL:").append(mChannelDescriptor);
+        return sb.toString();
+    }
+
+    /**
      * Builder pattern for constructing decode events.
      */
     public static class DecodeEventBuilder
@@ -199,6 +246,7 @@ public class DecodeEvent implements IDecodeEvent
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
         protected Protocol mProtocol = Protocol.UNKNOWN;
+        protected Integer mTimeslot;
 
         /**
          * Constructs a builder instance with the specified start time in milliseconds
@@ -279,6 +327,12 @@ public class DecodeEvent implements IDecodeEvent
             return this;
         }
 
+        public DecodeEventBuilder timeslot(Integer timeslot)
+        {
+            mTimeslot = timeslot;
+            return this;
+        }
+
         /**
          * Builds the decode event
          */
@@ -291,6 +345,7 @@ public class DecodeEvent implements IDecodeEvent
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
+            decodeEvent.setTimeslot(mTimeslot);
             return decodeEvent;
         }
     }

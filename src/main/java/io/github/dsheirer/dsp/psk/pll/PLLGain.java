@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.dsp.psk.pll;
 
 /**
@@ -22,11 +28,18 @@ public enum PLLGain
 {
     //NOTE: static gain level of 200 produced the best results for releases prior to 0.3.4b2
 
+    LEVEL_0(100.0, 0, 0),
     LEVEL_1(150.0, 0, 1),
     LEVEL_2(170.0, 2, 4),
     LEVEL_3(190.0, 5, 6),
     LEVEL_4(200.0, 7, 8),
-    LEVEL_5(200.0, 9, 10);
+    LEVEL_5(200.0, 9, 10),
+    LEVEL_6(250.0, 11, 12),
+    LEVEL_7(275.0, 12,13),
+    LEVEL_8(325.0, 14, 15),
+    LEVEL_9(350.0, 16,17),
+    LEVEL_10(375.0, 18, 19),
+    LEVEL_11(400.0, 19,20);
 
     private double mLoopBandwidth;
     private int mRangeStart;

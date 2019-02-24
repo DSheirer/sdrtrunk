@@ -1,61 +1,69 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
-import io.github.dsheirer.bits.BitSetFullException;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.audio.AudioPacketManager;
+import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
-import io.github.dsheirer.message.Message;
-import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.MessageInjectionModule;
+import io.github.dsheirer.module.Module;
+import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.UMBTCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
+import io.github.dsheirer.settings.SettingsManager;
+import io.github.dsheirer.source.SourceManager;
+import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
  * and issue phase corrections.
  */
-public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetectListener
+public class P25P2MessageFramer implements Listener<Dibit>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2MessageFramer.class);
 
-    private P25P2DataUnitDetector mDataUnitDetector;
-    private Listener<Message> mMessageListener;
-
+    private P25P2SuperFrameDetector mSuperFrameDetector;
     private boolean mAssemblingMessage = false;
     private CorrectedBinaryMessage mBinaryMessage;
-    private P25P2DataUnitID mDataUnitID;
+    private DataUnitID mDataUnitID;
     private PDUSequence mPDUSequence;
     private int[] mCorrectedNID;
     private int mNAC;
@@ -67,7 +75,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
 
     public P25P2MessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
-        mDataUnitDetector = new P25P2DataUnitDetector(this, phaseLockedLoop);
+        mSuperFrameDetector = new P25P2SuperFrameDetector(phaseLockedLoop);
         mBitRate = bitRate;
     }
 
@@ -77,11 +85,23 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
     }
 
     /**
+     * Sets or updates the scramble parameters for the current channel
+     * @param scrambleParameters
+     */
+    public void setScrambleParameters(ScrambleParameters scrambleParameters)
+    {
+        if(mSuperFrameDetector != null)
+        {
+            mSuperFrameDetector.setScrambleParameters(scrambleParameters);
+        }
+    }
+
+    /**
      * Sets the sample rate for the sync detector
      */
     public void setSampleRate(double sampleRate)
     {
-        mDataUnitDetector.setSampleRate(sampleRate);
+        mSuperFrameDetector.setSampleRate(sampleRate);
     }
 
     /**
@@ -132,14 +152,14 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
      *
      * @param messageListener to receive framed and decoded messages
      */
-    public void setListener(Listener<Message> messageListener)
+    public void setListener(Listener<IMessage> messageListener)
     {
-        mMessageListener = messageListener;
+        mSuperFrameDetector.setListener(messageListener);
     }
 
-    public P25P2DataUnitDetector getDataUnitDetector()
+    public P25P2SuperFrameDetector getSuperFrameDetector()
     {
-        return mDataUnitDetector;
+        return mSuperFrameDetector;
     }
 
     /**
@@ -150,78 +170,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
     @Override
     public void receive(Dibit dibit)
     {
-        if(mAssemblingMessage)
-        {
-            //Strip out the status symbol dibit after every 70 bits or 35 dibits
-            if(mStatusSymbolDibitCounter == 35)
-            {
-                if(mAssemblingMessage)
-                {
-                    //Send status dibit to channel status processor to identify ISP or OSP channel
-//                    mChannelStatusProcessor.receive(dibit);
-                }
-                mStatusSymbolDibitCounter = 0;
-
-                return;
-            }
-
-            mStatusSymbolDibitCounter++;
-
-            try
-            {
-                mBinaryMessage.add(dibit.getBit1());
-                mBinaryMessage.add(dibit.getBit2());
-            }
-            catch(BitSetFullException bsfe)
-            {
-//                mLog.debug("Message full exception - unexpected");
-
-                //Reset so that we can start over again
-                reset(0);
-            }
-
-            if(mBinaryMessage.isFull())
-            {
-                //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
-                if(mDataUnitID.hasTrailingStatusDibit())
-                {
-                    mTrailingDibitsToSuppress = 1;
-                }
-
-                dispatchMessage();
-            }
-        }
-        else
-        {
-            //Suppress any trailing nulls or status dibits that follow certain DUID sequences
-            if(mTrailingDibitsToSuppress > 0)
-            {
-                mTrailingDibitsToSuppress--;
-                updateBitsProcessed(2);
-                return;
-            }
-
-            mDataUnitDetector.receive(dibit);
-        }
-    }
-
-    private void dispatchMessage()
-    {
-        if(mMessageListener != null)
-        {
-            switch(mDataUnitID)
-            {
-                default:
-//                    P25Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
-//                    mMessageListener.receive(message);
-//                    reset(mDataUnitID.getMessageLength());
-                    break;
-            }
-        }
-        else
-        {
-            reset(0);
-        }
+        mSuperFrameDetector.receive(dibit);
     }
 
     private void reset(int bitsProcessed)
@@ -232,7 +181,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
         mAssemblingMessage = false;
         mDataUnitID = null;
         mNAC = 0;
-        mDataUnitDetector.reset();
+        mSuperFrameDetector.reset();
         mStatusSymbolDibitCounter = 0;
     }
 
@@ -243,7 +192,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
      */
     public void receive(ReusableByteBuffer buffer)
     {
-        //Updates current timestamp to the timestamp from the incoming buffer
+        //TODO: set timestamp in super frame detector
         setCurrentTime(buffer.getTimestamp());
 
         for(byte value : buffer.getBytes())
@@ -257,128 +206,63 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
         buffer.decrementUserCount();
     }
 
-    @Override
-    public void dataUnitDetected(P25P2DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
-    {
-        if(discardedDibits > 0)
-        {
-            dispatchSyncLoss(discardedDibits * 2);
-        }
-
-        if(dataUnitID.getMessageLength() < 0)
-        {
-            dispatchSyncLoss(112); //Sync (48) and Nid (64)
-            return;
-        }
-
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncDetected(bitErrors);
-        }
-
-        mDataUnitID = dataUnitID;
-        mNAC = nac;
-        mCorrectedNID = correctedNid;
-        mBinaryMessage = new CorrectedBinaryMessage(dataUnitID.getMessageLength());
-        mBinaryMessage.incrementCorrectedBitCount(bitErrors);
-
-        mAssemblingMessage = true;
-        mStatusSymbolDibitCounter = 21;
-    }
-
-    @Override
-    public void syncLost(int bitsProcessed)
-    {
-        dispatchSyncLoss(bitsProcessed);
-
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncLost();
-        }
-    }
-
-    private void dispatchSyncLoss(int bitsProcessed)
-    {
-        //Updates current timestamp according to the number of bits procesed
-        updateBitsProcessed(bitsProcessed);
-
-        if(bitsProcessed > 0 && mMessageListener != null)
-        {
-            mMessageListener.receive(new SyncLossMessage(getTimestamp(), bitsProcessed, Protocol.APCO25));
-        }
-    }
-
     public static void main(String[] args)
     {
-        boolean pduOnly = false;
-        boolean mbtcOnly = false;
-        boolean sndcpOnly = false;
-        boolean ippacketOnly = false;
-        boolean patchOnly = false;
+        UserPreferences userPreferences = new UserPreferences();
+        AliasModel aliasModel = new AliasModel();
+        SourceManager sourceManager = new SourceManager(null, new SettingsManager(new TunerConfigurationModel()), userPreferences);
+        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(sourceManager.getMixerManager());
+
+        //Audio packets are routed through the audio packet manager for metadata enrichment and then
+        //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
+        AudioPacketManager audioPacketManager = new AudioPacketManager(aliasModel);
+        audioPacketManager.addListener(audioPlaybackManager);
+        audioPacketManager.start();
+
+        Channel channel = new Channel();
+        DecodeConfigP25Phase2 decodeP2 = new DecodeConfigP25Phase2();
+//        decodeP2.setScrambleParameters(new ScrambleParameters(1, 972, 972));
+        decodeP2.setScrambleParameters(new ScrambleParameters(781824, 686, 677)); //CNYICC - Rome
+        channel.setDecodeConfiguration(decodeP2);
+        List<Module> modules = DecoderFactory.getModules(null, channel, aliasModel, userPreferences);
+        MessageInjectionModule messageInjectionModule = new MessageInjectionModule();
+        modules.add(messageInjectionModule);
+        ProcessingChain processingChain = new ProcessingChain(channel, aliasModel);
+        processingChain.addAudioPacketListener(audioPacketManager);
+        processingChain.addModules(modules);
+        processingChain.start();
 
         P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        messageFramer.setListener(new Listener<Message>()
+        messageFramer.setScrambleParameters(decodeP2.getScrambleParameters());
+        P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
+//        P25P2CallSequenceRecorder frameRecorder = new P25P2CallSequenceRecorder(new UserPreferences(), 154250000);
+        messageFramer.setListener(messageProcessor);
+        messageProcessor.setMessageListener(new Listener<IMessage>()
         {
             @Override
-            public void receive(Message message)
+            public void receive(IMessage message)
             {
-                if(mbtcOnly)
-                {
-                    if(message instanceof AMBTCMessage || message instanceof UMBTCMessage)
-                    {
-                        mLog.debug(message.toString());
-                    }
-                }
-                else if(pduOnly)
-                {
-                    String s = message.toString();
+//                if(message.getTimeslot() == 0)
+//                {
+                    mLog.debug(message.toString());
+//                }
 
-                    if(s.contains(" PDU  "))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(sndcpOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains("SNDCP"))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(ippacketOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains("IPPKT") || s.contains("SNDCP") || s.contains(" PDU  "))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(patchOnly)
-                {
-                    if(message instanceof PatchGroupVoiceChannelGrant || message instanceof PatchGroupVoiceChannelGrantUpdate)
-                    {
-                        mLog.debug(message.toString());
-                    }
-                }
-                else
-                {
-                    String a = message.toString();
-                    mLog.debug(a);
-                }
+                messageInjectionModule.receive(message);
+//                frameRecorder.receive(message);
             }
         });
 
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_102339_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_134948_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144312_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits"); //Interesting UDP port 231 packets (oswego LCN 4)
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144429_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144437_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181202_064827_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
 
 
+
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190321_192101_12000BPS_APCO25PHASE2_DFW_Irving_DFW_Phase_II_baseband_20181015_182924_good_phase_2.wav.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042605_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_1.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042806_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_3.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042830_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_4.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042853_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_5.bits");
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042917_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_6.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042938_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_7.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {
@@ -392,7 +276,6 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
             ioe.printStackTrace();
         }
 
-
-        mLog.debug("NIDS Detected: " + messageFramer.getDataUnitDetector().getNIDDetectionCount());
+//        frameRecorder.stop();
     }
 }

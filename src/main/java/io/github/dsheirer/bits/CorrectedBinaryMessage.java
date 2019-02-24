@@ -1,21 +1,24 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.bits;
 
 import java.util.BitSet;
@@ -48,6 +51,12 @@ public class CorrectedBinaryMessage extends BinaryMessage
         super(data);
     }
 
+    public CorrectedBinaryMessage(BinaryMessage message)
+    {
+        this(message.size());
+        this.xor(message);
+    }
+
     @Override
     public int getCorrectedBitCount()
     {
@@ -72,4 +81,16 @@ public class CorrectedBinaryMessage extends BinaryMessage
         mCorrectedBitCount += additionalCount;
     }
 
+    /**
+     * Returns a new binary message containing the bits from (inclusive) to end (exclusive).
+     *
+     * @param start bit
+     * @param end bit
+     * @return message
+     */
+    public CorrectedBinaryMessage getSubMessage(int start, int end)
+    {
+        BitSet subset = this.get(start, end);
+        return new CorrectedBinaryMessage(subset, end - start);
+    }
 }

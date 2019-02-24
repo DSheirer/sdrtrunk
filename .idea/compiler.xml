@@ -4,6 +4,8 @@
     <bytecodeTargetLevel>
       <module name="sdr-trunk_main" target="11" />
       <module name="sdr-trunk_test" target="11" />
+      <module name="sdrtrunk-sdr-trunk_main" target="11" />
+      <module name="sdrtrunk-sdr-trunk_test" target="11" />
     </bytecodeTargetLevel>
   </component>
 </project>
