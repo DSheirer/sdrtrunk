@@ -54,6 +54,7 @@ dependencies {
     compile 'com.google.guava:guava:27.0.1-jre'
     compile 'com.jidesoft:jide-oss:3.6.18'
     compile 'com.miglayout:miglayout-swing:5.2'
+    compile 'eu.hansolo:charts:1.0.5'
     compile 'io.github.dsheirer:radio-reference-api:15.0.1'
     compile 'javax.usb:usb-api:1.0.2'
     compile 'net.coderazzi:tablefilter-swing:5.4.0'

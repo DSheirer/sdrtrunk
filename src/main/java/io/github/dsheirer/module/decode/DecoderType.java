@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode;
 
@@ -36,8 +38,8 @@ public enum DecoderType
     MPT1327("MPT1327", "MPT1327", Protocol.MPT1327),
     NBFM("NBFM", "NBFM", Protocol.UNKNOWN),
     PASSPORT("Passport", "Passport", Protocol.PASSPORT),
-    P25_PHASE1("P25 Phase I", "P25-1", Protocol.APCO25),
-    P25_PHASE2("P25 Phase II", "P25-2", Protocol.APCO25),
+    P25_PHASE1("P25 Phase 1", "P25-1", Protocol.APCO25),
+    P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25),
 
     //Auxiliary Decoders
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),

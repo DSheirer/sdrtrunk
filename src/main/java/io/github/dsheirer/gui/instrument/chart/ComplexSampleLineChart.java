@@ -1,25 +1,31 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
-import io.github.dsheirer.dsp.gain.ComplexGain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
+import io.github.dsheirer.sample.complex.ComplexSampleListener;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
@@ -32,20 +38,19 @@ import javafx.scene.chart.XYChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ComplexSampleLineChart extends LineChart implements Listener<ReusableComplexBuffer>
+public class ComplexSampleLineChart extends LineChart implements Listener<ReusableComplexBuffer>, ComplexSampleListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSampleLineChart.class);
 
     private ComplexCircularBuffer mComplexCircularBuffer;
     private ComplexCircularBuffer mDemodulationCircularBuffer;
-    private ComplexGain mComplexGain = new ComplexGain(500.0f);
     private ObservableList<XYChart.Data<Integer,Float>> mISamples = FXCollections.observableArrayList();
     private ObservableList<XYChart.Data<Integer,Float>> mQSamples = FXCollections.observableArrayList();
     private IntegerProperty mLengthProperty = new SimpleIntegerProperty(40);
 
-    public ComplexSampleLineChart(int length, int samplesPerSymbol)
+    public ComplexSampleLineChart(String label, int length, int samplesPerSymbol)
     {
-        super(new NumberAxis("Differential-Demodulated Samples", 0, length, 10),
+        super(new NumberAxis(label, 0, length, 10),
             new NumberAxis("Value", -1.0, 1.0, 0.25));
 
         LineChart.Series<Integer,Float> iSampleSeries = new LineChart.Series<>("Inphase", mISamples);
@@ -96,22 +101,23 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Reusab
     {
         float[] samples = complexBuffer.getSamples();
 
-        Complex sample = new Complex(0,0);
-
         for(int x = 0; x < samples.length; x += 2)
         {
-            sample.setValues(samples[x], samples[x + 1]);
-//            mComplexGain.apply(sample);
-            sample.normalize();
-
-            Complex previous = mDemodulationCircularBuffer.get(sample.copy());
-            sample.multiply(previous.conjugate());
-            mComplexCircularBuffer.put(sample.copy());
+            receive(samples[x], samples[x + 1]);
         }
 
-        updateChart();
-
         complexBuffer.decrementUserCount();
+    }
+
+    @Override
+    public void receive(float i, float q)
+    {
+        Complex sample = new Complex(i,q);
+        sample.normalize();
+        Complex previous = mDemodulationCircularBuffer.get(sample.copy());
+        sample.multiply(previous.conjugate());
+        mComplexCircularBuffer.put(sample);
+        updateChart();
     }
 
     private void updateChart()
