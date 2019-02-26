@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
@@ -23,6 +25,7 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.edac.BCH_63_16_11;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.sample.Listener;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -41,7 +44,7 @@ public class P25P2DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
     private boolean mInitialSyncTestProcessed = false;
     private int mDibitsProcessed = 0;
     private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
-    private P25P2DataUnitID mPreviousDataUnitId = P25P2DataUnitID.UNKNOWN;
+    private DataUnitID mPreviousDataUnitId = DataUnitID.UNKNOWN;
     private int mNIDDetectionCount;
 
     public P25P2DataUnitDetector(IP25P2DataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
@@ -67,8 +70,9 @@ public class P25P2DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
     @Override
     public void syncDetected(int bitErrors)
     {
+        mLog.debug("Sync Detected - errors:" + bitErrors);
         mInitialSyncTestProcessed = true;
-        checkForNid(bitErrors, false);
+//        checkForNid(bitErrors, false);
     }
 
     @Override
@@ -173,7 +177,7 @@ public class P25P2DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
      * @param nid in reverse bit order
      * @return
      */
-    public P25P2DataUnitID getDataUnitID(int[] nid)
+    public DataUnitID getDataUnitID(int[] nid)
     {
         int duid = 0;
 
@@ -197,7 +201,7 @@ public class P25P2DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
             duid ^= 8;
         }
 
-        return P25P2DataUnitID.fromValue(duid);
+        return DataUnitID.fromValue(duid);
     }
 
     /**

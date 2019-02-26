@@ -21,7 +21,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
-import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulatorInstrumented;
+import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
 import io.github.dsheirer.sample.Listener;
@@ -48,9 +48,9 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
     /**
      * Demodulator
      */
-    public DQPSKDecisionDirectedDemodulatorInstrumented getDemodulator()
+    public DQPSKGardnerDemodulatorInstrumented getDemodulator()
     {
-        return (DQPSKDecisionDirectedDemodulatorInstrumented)mQPSKDemodulator;
+        return (DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator;
     }
 
     /**
@@ -88,7 +88,7 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
             new InterpolatingSampleBufferInstrumented(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
         mInterpolatingSampleBuffer = instrumentedBuffer;
 
-        DQPSKDecisionDirectedDemodulatorInstrumented instrumented = new DQPSKDecisionDirectedDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, getSampleRate());
+        DQPSKGardnerDemodulatorInstrumented instrumented = new DQPSKGardnerDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, getSampleRate());
         mQPSKDemodulator = instrumented;
 
         instrumented.setComplexSymbolListener(mComplexSymbolListener);
@@ -103,19 +103,19 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
     public void setComplexSymbolListener(Listener<Complex> listener)
     {
         mComplexSymbolListener = listener;
-        ((DQPSKDecisionDirectedDemodulatorInstrumented)mQPSKDemodulator).setComplexSymbolListener(listener);
+        getDemodulator().setComplexSymbolListener(listener);
     }
 
     public void setPLLPhaseErrorListener(Listener<Double> listener)
     {
         mPLLPhaseErrorListener = listener;
-        ((DQPSKDecisionDirectedDemodulatorInstrumented)mQPSKDemodulator).setPLLErrorListener(listener);
+        getDemodulator().setPLLErrorListener(listener);
     }
 
     public void setPLLFrequencyListener(Listener<Double> listener)
     {
         mPLLFrequencyListener = listener;
-        ((DQPSKDecisionDirectedDemodulatorInstrumented)mQPSKDemodulator).setPLLFrequencyListener(listener);
+        getDemodulator().setPLLFrequencyListener(listener);
     }
 
     public void setFilteredBufferListener(Listener<ReusableComplexBuffer> listener)
@@ -126,12 +126,12 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
     public void setSymbolDecisionDataListener(Listener<SymbolDecisionData> listener)
     {
         mSymbolDecisionDataListener = listener;
-        ((DQPSKDecisionDirectedDemodulatorInstrumented)mQPSKDemodulator).setSymbolDecisionDataListener(listener);
+        getDemodulator().setSymbolDecisionDataListener(listener);
     }
 
     public void setSamplesPerSymbolListener(Listener<Double> listener)
     {
         mSamplesPerSymbolListener = listener;
-        ((DQPSKDecisionDirectedDemodulatorInstrumented)mQPSKDemodulator).setSamplesPerSymbolListener(listener);
+        getDemodulator().setSamplesPerSymbolListener(listener);
     }
 }

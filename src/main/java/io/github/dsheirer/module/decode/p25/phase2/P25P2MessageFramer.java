@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
@@ -28,10 +30,7 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.UMBTCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -55,7 +54,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
 
     private boolean mAssemblingMessage = false;
     private CorrectedBinaryMessage mBinaryMessage;
-    private P25P2DataUnitID mDataUnitID;
+    private DataUnitID mDataUnitID;
     private PDUSequence mPDUSequence;
     private int[] mCorrectedNID;
     private int mNAC;
@@ -258,7 +257,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
     }
 
     @Override
-    public void dataUnitDetected(P25P2DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
+    public void dataUnitDetected(DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
     {
         if(discardedDibits > 0)
         {
@@ -310,75 +309,31 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
 
     public static void main(String[] args)
     {
-        boolean pduOnly = false;
-        boolean mbtcOnly = false;
-        boolean sndcpOnly = false;
-        boolean ippacketOnly = false;
-        boolean patchOnly = false;
-
         P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
+        messageFramer.setSyncDetectListener(new ISyncDetectListener()
+        {
+            @Override
+            public void syncDetected(int bitErrors)
+            {
+                mLog.debug("Sync Detected!");
+            }
+
+            @Override
+            public void syncLost()
+            {
+
+            }
+        });
         messageFramer.setListener(new Listener<Message>()
         {
             @Override
             public void receive(Message message)
             {
-                if(mbtcOnly)
-                {
-                    if(message instanceof AMBTCMessage || message instanceof UMBTCMessage)
-                    {
-                        mLog.debug(message.toString());
-                    }
-                }
-                else if(pduOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains(" PDU  "))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(sndcpOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains("SNDCP"))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(ippacketOnly)
-                {
-                    String s = message.toString();
-
-                    if(s.contains("IPPKT") || s.contains("SNDCP") || s.contains(" PDU  "))
-                    {
-                        mLog.debug(s);
-                    }
-                }
-                else if(patchOnly)
-                {
-                    if(message instanceof PatchGroupVoiceChannelGrant || message instanceof PatchGroupVoiceChannelGrantUpdate)
-                    {
-                        mLog.debug(message.toString());
-                    }
-                }
-                else
-                {
-                    String a = message.toString();
-                    mLog.debug(a);
-                }
+                mLog.debug(message.toString());
             }
         });
 
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181102_102339_9600BPS_CNYICC_Onondaga Simulcast_LCN 08.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_134948_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144312_9600BPS_CNYICC_Oswego Simulcast_LCN 04.bits"); //Interesting UDP port 231 packets (oswego LCN 4)
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144429_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
-//        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181103_144437_9600BPS_CNYICC_Onondaga Simulcast_LCN 10.bits");
-        Path path = Paths.get("/home/denny/SDRTrunk/recordings/20181202_064827_9600BPS_CNYICC_Onondaga Simulcast_LCN 15 Control.bits");
-
-
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))
         {
@@ -391,8 +346,5 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
         {
             ioe.printStackTrace();
         }
-
-
-        mLog.debug("NIDS Detected: " + messageFramer.getDataUnitDetector().getNIDDetectionCount());
     }
 }

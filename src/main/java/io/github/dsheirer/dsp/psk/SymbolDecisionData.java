@@ -40,7 +40,7 @@ public class SymbolDecisionData
     public SymbolDecisionData(float samplesPerSymbol)
     {
         mSamplesPerSymbol = samplesPerSymbol;
-        mBuffer = new ComplexCircularBuffer(2 * (int)samplesPerSymbol);
+        mBuffer = new ComplexCircularBuffer(8);
     }
 
     /**

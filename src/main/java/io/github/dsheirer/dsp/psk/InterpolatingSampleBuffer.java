@@ -35,9 +35,9 @@ public class InterpolatingSampleBuffer
     private Complex mCurrentSample = new Complex(0,0);
     private Complex mMiddleSample = new Complex(0,0);
 
-    private float[] mDelayLineInphase;
-    private float[] mDelayLineQuadrature;
-    private int mDelayLinePointer = 0;
+    protected float[] mDelayLineInphase;
+    protected float[] mDelayLineQuadrature;
+    protected int mDelayLinePointer = 0;
     private int mTwiceSamplesPerSymbol;
 
     private float mSamplingPoint;

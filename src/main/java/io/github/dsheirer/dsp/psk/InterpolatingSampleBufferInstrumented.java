@@ -31,11 +31,13 @@ public class InterpolatingSampleBufferInstrumented extends InterpolatingSampleBu
     private final static Logger mLog = LoggerFactory.getLogger(InterpolatingSampleBufferInstrumented.class);
     private SymbolDecisionData mSymbolDecisionData;
     private ComplexSampleListener mSampleListener;
+    private int mBufferLength;
 
     public InterpolatingSampleBufferInstrumented(float samplesPerSymbol, float symbolTimingGain)
     {
         super(samplesPerSymbol, symbolTimingGain);
-        mSymbolDecisionData = new SymbolDecisionData((int)samplesPerSymbol);
+        mBufferLength = (int)Math.ceil(samplesPerSymbol);
+        mSymbolDecisionData = new SymbolDecisionData(mBufferLength);
     }
 
     public void receive(Complex sample)
@@ -56,6 +58,11 @@ public class InterpolatingSampleBufferInstrumented extends InterpolatingSampleBu
      */
     public SymbolDecisionData getSymbolDecisionData()
     {
+        for(int x = mDelayLinePointer; x < mDelayLinePointer + mBufferLength; x++)
+        {
+            mSymbolDecisionData.receive(mDelayLineInphase[x], mDelayLineQuadrature[x]);
+        }
+
         mSymbolDecisionData.setSamplingPoint(getSamplingPoint());
         return mSymbolDecisionData;
     }

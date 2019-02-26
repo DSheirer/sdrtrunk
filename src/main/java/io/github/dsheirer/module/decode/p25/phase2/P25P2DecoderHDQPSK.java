@@ -26,16 +26,22 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
-import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
+import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.PLLGain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,7 +55,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
 //    protected static final float SYMBOL_TIMING_GAIN = 0.3f;
     protected static final float SYMBOL_TIMING_GAIN = 0.01f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
-    protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
+    protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected P25P2MessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
@@ -70,10 +76,10 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mCostasLoop.setPLLGain(PLLGain.LEVEL_11);
+        mCostasLoop.setPLLGain(PLLGain.LEVEL_8);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
 
-        mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
+        mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
         if(mMessageFramer != null)
         {
@@ -87,7 +93,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         mMessageFramer.setSampleRate(sampleRate);
 
         mQPSKDemodulator.setSymbolListener(getDibitBroadcaster());
-        getDibitBroadcaster().addListener(mMessageFramer);
+//        getDibitBroadcaster().addListener(mMessageFramer);
     }
 
     /**
@@ -131,10 +137,10 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         if(filter == null)
         {
             FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                .sampleRate((int)getSampleRate())
+                .sampleRate(50000.0)
                 .passBandCutoff(6500)
                 .passBandAmplitude(1.0)
-                .passBandRipple(0.01)
+                .passBandRipple(0.005)
                 .stopBandAmplitude(0.0)
                 .stopBandStart(7200)
                 .stopBandRipple(0.01)
@@ -195,5 +201,37 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
     public void reset()
     {
         mCostasLoop.reset();
+    }
+
+    public static void main(String[] args)
+    {
+        String path = "/media/denny/500G1EXT4/RadioRecordings/";
+        String name = "DFWAirport_Site_857_3875_baseband_20181213_223136_trimmed.wav";
+        String recording = "DFWAirport_Site_857_3875_baseband_20181213_223136";
+        P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK();
+        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), recording, Protocol.APCO25_PHASE2);
+        decoder.setBufferListener(recorder.getReusableByteBufferListener());
+        recorder.start();
+
+        File file = new File(path + name);
+
+
+        try(ComplexWaveSource source = new ComplexWaveSource(file))
+        {
+            decoder.setSampleRate(50000.0);
+            source.setListener(decoder);
+            source.start();
+
+            while(true)
+            {
+                source.next(200, true);
+            }
+        }
+        catch(IOException e)
+        {
+            mLog.error("Error", e);
+        }
+
+        recorder.stop();
     }
 }
