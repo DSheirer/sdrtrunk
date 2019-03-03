@@ -22,25 +22,31 @@
 
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
-public class Timeslot
+/**
+ * Base timeslot class.
+ */
+public abstract class Timeslot
 {
     public static final int[] DATA_UNIT_ID = {0,1,74,75,244,245,318,319};
     private CorrectedBinaryMessage mMessage;
     private DataUnitID mDataUnitID;
+    private boolean mValid;
 
-    public Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID)
+    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence)
+    {
+        this(message, dataUnitID);
+        getMessage().xor(scramblingSequence);
+    }
+
+
+    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID)
     {
         mMessage = message;
         mDataUnitID = dataUnitID;
-    }
-
-    public Timeslot(CorrectedBinaryMessage message)
-    {
-        mMessage = message;
-        mDataUnitID = getDuid(getMessage());
     }
 
     protected CorrectedBinaryMessage getMessage()
@@ -51,6 +57,22 @@ public class Timeslot
     public DataUnitID getDataUnitID()
     {
         return mDataUnitID;
+    }
+
+    /**
+     * Indicates if this timeslot is valid
+     */
+    public boolean isValid()
+    {
+        return mValid;
+    }
+
+    /**
+     * Sets the valid flag for this timeslot
+     */
+    public void setValid(boolean valid)
+    {
+        mValid = valid;
     }
 
     /**

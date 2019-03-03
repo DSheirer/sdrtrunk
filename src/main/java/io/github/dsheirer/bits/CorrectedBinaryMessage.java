@@ -51,6 +51,12 @@ public class CorrectedBinaryMessage extends BinaryMessage
         super(data);
     }
 
+    public CorrectedBinaryMessage(BinaryMessage message)
+    {
+        this(message.size());
+        this.xor(message);
+    }
+
     @Override
     public int getCorrectedBitCount()
     {

@@ -193,7 +193,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
                 if(message instanceof SuperFrameFragment)
                 {
-                    mLog.debug("\t\t" + ((SuperFrameFragment)message).getTimeslots());
+//                    mLog.debug("\t\t" + ((SuperFrameFragment)message).getChannel0Timeslots());
                 }
             }
         });

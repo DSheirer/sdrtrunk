@@ -26,11 +26,11 @@ package io.github.dsheirer.module.decode.p25.phase2.enumeration;
  */
 public enum ISCHSequence
 {
-    ISCH_1(0, "ISCH 1"),
-    ISCH_2(1, "ISCH 2"),
-    ISCH_3(2, "ISCH 3"),
-    RESERVED_4(3, "RESERVED_4"),
-    UNKNOWN(-1, "UNKNOWN");
+    ISCH_1(0, "FRAG1"),
+    ISCH_2(1, "FRAG2"),
+    ISCH_3(2, "FRAG3"),
+    RESERVED_4(3, "RSVD4"),
+    UNKNOWN(-1, "UNKNO");
 
     private int mValue;
     private String mLabel;
@@ -47,6 +47,14 @@ public enum ISCHSequence
     public int getValue()
     {
         return mValue;
+    }
+
+    /**
+     * Indicates if this sequence is a final fragment sequence
+     */
+    public boolean isFinalFragment()
+    {
+        return this == ISCH_3;
     }
 
     @Override

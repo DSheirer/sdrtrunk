@@ -22,16 +22,56 @@
 
 package io.github.dsheirer.module.decode.p25.phase2.message;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.SuperframeSequence;
+import org.apache.commons.math3.linear.MatrixUtils;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Inter-slot signalling channel informational (ISCH-I) parsing class
  */
 public class InterSlotSignallingChannel
 {
+    private final static Logger mLog = LoggerFactory.getLogger(InterSlotSignallingChannel.class);
+
+    private static Map<Long,BinaryMessage> sCodewordMap = new TreeMap<>();
+
+    static
+    {
+        double[][] matrix = {{1,0,0,0,1,0,0,0,0,0,0,1,0,1,1,0,1,1,0,0,1,1,1,0,0,0,1,1,0,1,1,0,1,1,0,1,0,1,1,1},
+            {0,0,1,0,0,0,0,0,0,0,0,1,1,1,0,1,1,1,1,1,1,1,0,1,0,1,0,0,1,1,1,1,0,1,1,0,0,1,0,0},
+            {0,0,0,1,0,0,0,0,0,0,0,0,1,1,1,1,0,1,0,0,1,0,1,1,0,0,0,1,0,1,1,1,0,1,0,1,1,0,0,0},
+            {0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,0,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,0},
+            {0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1},
+            {0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,1,1,0,1,1,0,0,1,1,0,1,1,0,1,1,1,0,0,1,0},
+            {0,0,0,0,0,0,0,0,1,0,0,1,1,1,0,1,1,0,1,0,0,0,1,1,1,0,1,0,0,0,0,1,0,1,1,1,0,0,0,1},
+            {0,0,0,0,0,0,0,0,0,1,0,1,1,0,0,0,1,1,0,0,1,0,1,1,1,0,1,0,1,0,1,0,0,1,0,0,1,1,1,0},
+            {0,0,0,0,0,0,0,0,0,0,1,1,0,1,0,0,0,0,1,1,1,1,0,1,1,0,0,0,0,1,0,1,1,0,0,1,0,1,1,1}};
+
+        RealMatrix generator = MatrixUtils.createRealMatrix(matrix);
+
+        //We only generate a lookup map for 7/10 least significant bits since MSB and reserved bits are not used
+        for(int x = 0; x < 128; x++)
+        {
+            RealMatrix word = toMatrix10(x);
+            RealMatrix codewordMatrix = word.multiply(generator);
+            long codeword = decodeMatrix(codewordMatrix);
+            codeword ^= 0x184229d461l;
+            BinaryMessage message = new BinaryMessage(9);
+            message.load(0, 9, x);
+
+            sCodewordMap.put(codeword, message);
+        }
+    }
+
     private static final int[] RESERVED = {0, 1};
     private static final int[] CHANNEL_NUMBER = {2, 3};
     private static final int[] ISCH_SEQUENCE = {4, 5};
@@ -39,45 +79,115 @@ public class InterSlotSignallingChannel
     private static final int[] SUPERFRAME_SEQUENCE = {7, 8};
 
     private CorrectedBinaryMessage mMessage;
+    private boolean mValid;
 
     /**
      * Constructs the ISCH-I parsing class
      *
      * @param message containing bits
+     * @param expectedChannelNumber for this ISCH, either channel 0 or channel 1 to assist with validating the message
      */
-    public InterSlotSignallingChannel(CorrectedBinaryMessage message)
+    public InterSlotSignallingChannel(BinaryMessage message, ChannelNumber expectedChannelNumber)
     {
-        mMessage = message;
+        decode(message);
+        mValid = (getMessage().getCorrectedBitCount() < 9) && (getChannelNumber() == expectedChannelNumber);
     }
 
     /**
-     * Channel number.
+     * Decodes the 40-bit message codeword into an error-corrected 9-bit message
+     * @param message containing 40 bit codeword
+     */
+    private void decode(BinaryMessage message)
+    {
+        long codeword = message.getLong(0, 39);
+
+        if(sCodewordMap.containsKey(codeword))
+        {
+            mMessage = new CorrectedBinaryMessage(sCodewordMap.get(codeword));
+        }
+        else
+        {
+            int smallestErrorCount = 16;
+            long closestCodeword = 0;
+
+            for(long validCodeword: sCodewordMap.keySet())
+            {
+                long mask = codeword & validCodeword;
+                int errorCount = Long.bitCount(mask);
+
+                if(errorCount < smallestErrorCount)
+                {
+                    smallestErrorCount = errorCount;
+                    closestCodeword = validCodeword;
+                }
+            }
+
+            if(closestCodeword != 0)
+            {
+                mMessage = new CorrectedBinaryMessage(sCodewordMap.get(closestCodeword));
+                mMessage.setCorrectedBitCount(smallestErrorCount);
+            }
+            else
+            {
+                //This shouldn't happen, but we'll set bit error count to 9 to indicate a bad decode
+                mMessage = new CorrectedBinaryMessage(9);
+                mMessage.setCorrectedBitCount(9);
+            }
+        }
+    }
+
+    /**
+     * Indicates if this message is valid
+     */
+    public boolean isValid()
+    {
+        return mValid;
+    }
+
+    /**
+     * Bit error count or the number of bits that were corrected while decoding the transmitted 40-bit codeword
+     */
+    public int getBitErrorCount()
+    {
+        return getMessage().getCorrectedBitCount();
+    }
+
+    /**
+     * Decoded and corrected 9-bit message
+     */
+    private CorrectedBinaryMessage getMessage()
+    {
+        return mMessage;
+    }
+
+    /**
+     * Channel number for this ISCH
      *
      * @return channel number 0 or 1
      */
     public ChannelNumber getChannelNumber()
     {
-        return ChannelNumber.fromValue(mMessage.getInt(CHANNEL_NUMBER));
+        return ChannelNumber.fromValue(getMessage().getInt(CHANNEL_NUMBER));
     }
 
     /**
-     * Indicates this ISCH sequence location within a superframe
+     * Indicates this ISCH sequence's location within a super-frame
      *
-     * @return location 1, 2, or 3
+     * @return location 1, 2, or 3(final)
      */
     public ISCHSequence getIschSequence()
     {
-        return ISCHSequence.fromValue(mMessage.getInt(ISCH_SEQUENCE));
+        return ISCHSequence.fromValue(getMessage().getInt(ISCH_SEQUENCE));
     }
 
     /**
      * Indicates if the next inbound SACCH timeslot is free for mobile access
      *
-     * @return true if the inbound SACCH is open/free
+     * @return true if the inbound SACCH is free
      */
     public boolean isInboundSacchFree()
     {
-        return mMessage.get(INBOUND_SACCH_FREE_INDICATOR);
+        return getMessage().get(INBOUND_SACCH_FREE_INDICATOR);
     }
 
     /**
@@ -87,7 +197,7 @@ public class InterSlotSignallingChannel
      */
     public SuperframeSequence getSuperframeSequence()
     {
-        return SuperframeSequence.fromValue(mMessage.getInt(SUPERFRAME_SEQUENCE));
+        return SuperframeSequence.fromValue(getMessage().getInt(SUPERFRAME_SEQUENCE));
     }
 
     /**
@@ -96,37 +206,62 @@ public class InterSlotSignallingChannel
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ISCHI");
 
-        ChannelNumber channelNumber = getChannelNumber();
-
-        if(channelNumber == ChannelNumber.VOICE_CHANNEL_0)
+        if(isValid())
         {
-            sb.append(" VCH0");
+            sb.append("ISCHI ").append(getChannelNumber());
+            sb.append(" ").append(getIschSequence());
+            sb.append(" ").append(getSuperframeSequence());
+            sb.append(isInboundSacchFree() ? " SACCH:FREE" : " SACCH:BUSY");
         }
-        else if(channelNumber == ChannelNumber.VOICE_CHANNEL_1)
+        else
         {
-            sb.append(" VCH1");
+            sb.append("ISCHI      **INVALID**        ");
         }
-
-        switch(getSuperframeSequence())
-        {
-            case SUPERFRAME_1:
-                sb.append(" SF1");
-                break;
-            case SUPERFRAME_2:
-                sb.append(" SF2");
-                break;
-            case SUPERFRAME_3:
-                sb.append(" SF3");
-                break;
-            case SUPERFRAME_4:
-                sb.append(" SF4");
-                break;
-        }
-
-        sb.append(isInboundSacchFree() ? " SACCH:FREE" : "SACCH:BUSY");
 
         return sb.toString();
+    }
+
+    /**
+     * Creates a 10-element matrix from the value.
+     * @param value in range 0 - 127
+     * @return matrix
+     */
+    private static RealMatrix toMatrix10(int value)
+    {
+        double[] values = new double[9];
+        for(int x = 0; x < 7; x++)
+        {
+            int mask = (int)Math.pow(2, x);
+            if((value & mask) == mask)
+            {
+                values[8 - x] = 1;
+            }
+        }
+
+        return MatrixUtils.createRowRealMatrix(values);
+    }
+
+    /**
+     * Decodes the matrix which is assumed to be a single row with 40 elements representing bits
+     * @param matrix to decode
+     * @return long value
+     */
+    private static long decodeMatrix(RealMatrix matrix)
+    {
+        long decoded = 0;
+        double[] values = matrix.getRow(0);
+
+        for(int x = 0; x < 40; x++)
+        {
+            int value = (int)values[39 - x];
+
+            if((value & 1) == 1)
+            {
+                decoded += (long)Math.pow(2, x);
+            }
+        }
+
+        return decoded;
     }
 }

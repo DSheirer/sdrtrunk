@@ -26,10 +26,10 @@ package io.github.dsheirer.module.decode.p25.phase2.enumeration;
  */
 public enum ChannelNumber
 {
-    VOICE_CHANNEL_0(0, "VCH0"),
-    VOICE_CHANNEL_1(1, "VCH1"),
-    RESERVED_2(2, "RESERVED_2"),
-    RESERVED_3(3, "RESERVED_3"),
+    CHANNEL_0(0, "CH0"),
+    CHANNEL_1(1, "CH1"),
+    RESERVED_2(2, "RSV"),
+    RESERVED_3(3, "RSV"),
     UNKNOWN(-1, "UNKNOWN");
 
     private int mValue;
@@ -63,9 +63,9 @@ public enum ChannelNumber
         switch(value)
         {
             case 0:
-                return VOICE_CHANNEL_0;
+                return CHANNEL_0;
             case 1:
-                return VOICE_CHANNEL_1;
+                return CHANNEL_1;
             case 2:
                 return RESERVED_2;
             case 3:

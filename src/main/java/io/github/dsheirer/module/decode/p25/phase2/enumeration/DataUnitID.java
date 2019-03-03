@@ -29,14 +29,14 @@ import java.util.EnumSet;
 public enum DataUnitID
 {
 
-    VOICE_4(0, 0x00,"VOICE 4V"),
-    SCRAMBLED_SACCH(3, 0x39, "SACCH SCRAMBLED"),
-    VOICE_2(6, 0x65, "VOICE 2V"),
-    SCRAMBLED_FACCH(9, 0x9A,  "FACCH SCRAMBLED"),
-    UNSCRAMBLED_SACCH(12, 0xC6,  "SACCH UNSCRAMBLED"),
-    UNSCRAMBLED_FACCH(15, 0xFF,  "FACCH UNSCRAMBLED"),
+    VOICE_4(0, 0x00,"VOICE-4V"),
+    SCRAMBLED_SACCH(3, 0x39, "SACCH-SC"),
+    VOICE_2(6, 0x65, "VOICE-2V"),
+    SCRAMBLED_FACCH(9, 0x9A,  "FACCH-SC"),
+    UNSCRAMBLED_SACCH(12, 0xC6,  "SACCH-UN"),
+    UNSCRAMBLED_FACCH(15, 0xFF,  "FACCH-UN"),
 
-    UNKNOWN(-1, 0x00, "UNKNOWN");
+    UNKNOWN(-1, 0x00, "UNKNOWN-");
 
     private int mValue;
     private int mValueWithParity;

@@ -26,11 +26,11 @@ package io.github.dsheirer.module.decode.p25.phase2.enumeration;
  */
 public enum SuperframeSequence
 {
-    SUPERFRAME_1(0, "SUPERFRAME 1"),
-    SUPERFRAME_2(1, "SUPERFRAME 2"),
-    SUPERFRAME_3(2, "SUPERFRAME 3"),
-    SUPERFRAME_4(3, "SUPERFRAME_4"),
-    UNKNOWN(-1, "UNKNOWN");
+    SUPERFRAME_1(0, "SF1"),
+    SUPERFRAME_2(1, "SF2"),
+    SUPERFRAME_3(2, "SF3"),
+    SUPERFRAME_4(3, "SF4"),
+    UNKNOWN(-1, "UNK");
 
     private int mValue;
     private String mLabel;
