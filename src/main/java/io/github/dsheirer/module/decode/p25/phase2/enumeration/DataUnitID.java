@@ -21,35 +21,31 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2.enumeration;
 
+import java.util.EnumSet;
+
 /**
  * P25 Phase 2 Data Unit ID (DUID) enumeration
  */
 public enum DataUnitID
 {
-    VOICE_4(0,"VOICE 4V"),
-    RESERVED_1(1, "RESERVED 1"),
-    RESERVED_2(2, "RESERVED_2"),
-    SCRAMBLED_SACCH(3, "SACCH SCRAMBLED"),
-    RESERVED_4(4, "RESERVED 4"),
-    RESERVED_5(5, "RESERVED_5"),
-    VOICE_2(6,"VOICE 2V"),
-    RESERVED_7(7, "RESERVED_7"),
-    RESERVED_8(8, "RESERVED 8"),
-    SCRAMBLED_FACCH(9, "FACCH SCRAMBLED"),
-    RESERVED_10(10, "RESERVED_10"),
-    RESERVED_11(11, "RESERVED 11"),
-    UNSCRAMBLED_SACCH(12, "SACCH UNSCRAMBLED"),
-    RESERVED_13(13, "RESERVED_13"),
-    RESERVED_14(14, "RESERVED 14"),
-    UNSCRAMBLED_FACCH(15, "FACCH UNSCRAMBLED"),
-    UNKNOWN(-1, "UNKNOWN");
+
+    VOICE_4(0, 0x00,"VOICE 4V"),
+    SCRAMBLED_SACCH(3, 0x39, "SACCH SCRAMBLED"),
+    VOICE_2(6, 0x65, "VOICE 2V"),
+    SCRAMBLED_FACCH(9, 0x9A,  "FACCH SCRAMBLED"),
+    UNSCRAMBLED_SACCH(12, 0xC6,  "SACCH UNSCRAMBLED"),
+    UNSCRAMBLED_FACCH(15, 0xFF,  "FACCH UNSCRAMBLED"),
+
+    UNKNOWN(-1, 0x00, "UNKNOWN");
 
     private int mValue;
+    private int mValueWithParity;
     private String mLabel;
 
-    DataUnitID(int value, String label)
+    DataUnitID(int value, int valueWithParity, String label)
     {
         mValue = value;
+        mValueWithParity = valueWithParity;
         mLabel = label;
     }
 
@@ -61,18 +57,31 @@ public enum DataUnitID
         return mValue;
     }
 
+    /**
+     * Data Unit ID value with parity bits
+     */
+    public int getValueWithParity()
+    {
+        return mValueWithParity;
+    }
+
     @Override
     public String toString()
     {
         return mLabel;
     }
 
+    public static EnumSet<DataUnitID> VALID_VALUES = EnumSet.range(VOICE_4, UNSCRAMBLED_FACCH);
+
     /**
-     * Lookup the Data Unit ID from an integer value
+     * Lookup the Data Unit ID from an encoded 8-bit integer value that contains the 4-bit duid value and an appended
+     * 4-bit parity value.
      */
-    public static DataUnitID fromValue(int value)
+    public static DataUnitID fromEncodedValue(int value)
     {
-        switch(value)
+        int masked = 0xF & (value >> 4);
+
+        switch(masked)
         {
             case 0:
                 return VOICE_4;
@@ -86,30 +95,23 @@ public enum DataUnitID
                 return UNSCRAMBLED_SACCH;
             case 15:
                 return UNSCRAMBLED_FACCH;
-
-            //Undefined values
-            case 1:
-                return RESERVED_1;
-            case 2:
-                return RESERVED_2;
-            case 4:
-                return RESERVED_4;
-            case 5:
-                return RESERVED_5;
-            case 7:
-                return RESERVED_7;
-            case 8:
-                return RESERVED_8;
-            case 10:
-                return RESERVED_10;
-            case 11:
-                return RESERVED_11;
-            case 13:
-                return RESERVED_13;
-            case 14:
-                return RESERVED_14;
-            default:
-                return UNKNOWN;
         }
+
+        DataUnitID closest = DataUnitID.UNKNOWN;
+        int errorCount = 4;
+
+        for(DataUnitID duid: VALID_VALUES)
+        {
+            int mask = value ^ duid.getValueWithParity();
+            int maskErrorCount = Integer.bitCount(mask);
+
+            if(maskErrorCount < errorCount)
+            {
+                errorCount = maskErrorCount;
+                closest = duid;
+            }
+        }
+
+        return closest;
     }
 }

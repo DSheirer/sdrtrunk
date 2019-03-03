@@ -28,7 +28,6 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.FrameSync;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.sample.Listener;
 
 public class P25P2SyncDetector implements Listener<Dibit>
@@ -57,7 +56,7 @@ public class P25P2SyncDetector implements Listener<Dibit>
         //TODO: update the sync lost parameter to 48 bits ....
 
         //TODO: only enable the phase inversion detectors when we're in a sync-lost state
-        mMatcher = new MultiSyncPatternMatcher(syncDetectListener, P25P1DataUnitID.LOGICAL_LINK_DATA_UNIT_1.getMessageLength(), 48);
+        mMatcher = new MultiSyncPatternMatcher(syncDetectListener, 1440, 40);
         mPrimarySyncDetector = new SoftSyncDetector(FrameSync.P25_PHASE2_NORMAL.getSync(), SYNC_MATCH_THRESHOLD, syncDetectListener);
         mMatcher.add(mPrimarySyncDetector);
 

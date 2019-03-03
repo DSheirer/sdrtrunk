@@ -21,17 +21,15 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
-import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
-import io.github.dsheirer.message.Message;
-import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -45,13 +43,11 @@ import java.nio.file.Paths;
  * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
  * and issue phase corrections.
  */
-public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetectListener
+public class P25P2MessageFramer implements Listener<Dibit>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2MessageFramer.class);
 
-    private P25P2DataUnitDetector mDataUnitDetector;
-    private Listener<Message> mMessageListener;
-
+    private P25P2SuperFrameDetector mSuperFrameDetector;
     private boolean mAssemblingMessage = false;
     private CorrectedBinaryMessage mBinaryMessage;
     private DataUnitID mDataUnitID;
@@ -66,7 +62,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
 
     public P25P2MessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
-        mDataUnitDetector = new P25P2DataUnitDetector(this, phaseLockedLoop);
+        mSuperFrameDetector = new P25P2SuperFrameDetector(phaseLockedLoop);
         mBitRate = bitRate;
     }
 
@@ -80,7 +76,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
      */
     public void setSampleRate(double sampleRate)
     {
-        mDataUnitDetector.setSampleRate(sampleRate);
+        mSuperFrameDetector.setSampleRate(sampleRate);
     }
 
     /**
@@ -131,14 +127,14 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
      *
      * @param messageListener to receive framed and decoded messages
      */
-    public void setListener(Listener<Message> messageListener)
+    public void setListener(Listener<IMessage> messageListener)
     {
-        mMessageListener = messageListener;
+        mSuperFrameDetector.setListener(messageListener);
     }
 
-    public P25P2DataUnitDetector getDataUnitDetector()
+    public P25P2SuperFrameDetector getSuperFrameDetector()
     {
-        return mDataUnitDetector;
+        return mSuperFrameDetector;
     }
 
     /**
@@ -149,78 +145,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
     @Override
     public void receive(Dibit dibit)
     {
-        if(mAssemblingMessage)
-        {
-            //Strip out the status symbol dibit after every 70 bits or 35 dibits
-            if(mStatusSymbolDibitCounter == 35)
-            {
-                if(mAssemblingMessage)
-                {
-                    //Send status dibit to channel status processor to identify ISP or OSP channel
-//                    mChannelStatusProcessor.receive(dibit);
-                }
-                mStatusSymbolDibitCounter = 0;
-
-                return;
-            }
-
-            mStatusSymbolDibitCounter++;
-
-            try
-            {
-                mBinaryMessage.add(dibit.getBit1());
-                mBinaryMessage.add(dibit.getBit2());
-            }
-            catch(BitSetFullException bsfe)
-            {
-//                mLog.debug("Message full exception - unexpected");
-
-                //Reset so that we can start over again
-                reset(0);
-            }
-
-            if(mBinaryMessage.isFull())
-            {
-                //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
-                if(mDataUnitID.hasTrailingStatusDibit())
-                {
-                    mTrailingDibitsToSuppress = 1;
-                }
-
-                dispatchMessage();
-            }
-        }
-        else
-        {
-            //Suppress any trailing nulls or status dibits that follow certain DUID sequences
-            if(mTrailingDibitsToSuppress > 0)
-            {
-                mTrailingDibitsToSuppress--;
-                updateBitsProcessed(2);
-                return;
-            }
-
-            mDataUnitDetector.receive(dibit);
-        }
-    }
-
-    private void dispatchMessage()
-    {
-        if(mMessageListener != null)
-        {
-            switch(mDataUnitID)
-            {
-                default:
-//                    P25Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
-//                    mMessageListener.receive(message);
-//                    reset(mDataUnitID.getMessageLength());
-                    break;
-            }
-        }
-        else
-        {
-            reset(0);
-        }
+        mSuperFrameDetector.receive(dibit);
     }
 
     private void reset(int bitsProcessed)
@@ -231,7 +156,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
         mAssemblingMessage = false;
         mDataUnitID = null;
         mNAC = 0;
-        mDataUnitDetector.reset();
+        mSuperFrameDetector.reset();
         mStatusSymbolDibitCounter = 0;
     }
 
@@ -242,7 +167,7 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
      */
     public void receive(ReusableByteBuffer buffer)
     {
-        //Updates current timestamp to the timestamp from the incoming buffer
+        //TODO: set timestamp in super frame detector
         setCurrentTime(buffer.getTimestamp());
 
         for(byte value : buffer.getBytes())
@@ -256,80 +181,20 @@ public class P25P2MessageFramer implements Listener<Dibit>, IP25P2DataUnitDetect
         buffer.decrementUserCount();
     }
 
-    @Override
-    public void dataUnitDetected(DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
-    {
-        if(discardedDibits > 0)
-        {
-            dispatchSyncLoss(discardedDibits * 2);
-        }
-
-        if(dataUnitID.getMessageLength() < 0)
-        {
-            dispatchSyncLoss(112); //Sync (48) and Nid (64)
-            return;
-        }
-
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncDetected(bitErrors);
-        }
-
-        mDataUnitID = dataUnitID;
-        mNAC = nac;
-        mCorrectedNID = correctedNid;
-        mBinaryMessage = new CorrectedBinaryMessage(dataUnitID.getMessageLength());
-        mBinaryMessage.incrementCorrectedBitCount(bitErrors);
-
-        mAssemblingMessage = true;
-        mStatusSymbolDibitCounter = 21;
-    }
-
-    @Override
-    public void syncLost(int bitsProcessed)
-    {
-        dispatchSyncLoss(bitsProcessed);
-
-        if(mSyncDetectListener != null)
-        {
-            mSyncDetectListener.syncLost();
-        }
-    }
-
-    private void dispatchSyncLoss(int bitsProcessed)
-    {
-        //Updates current timestamp according to the number of bits procesed
-        updateBitsProcessed(bitsProcessed);
-
-        if(bitsProcessed > 0 && mMessageListener != null)
-        {
-            mMessageListener.receive(new SyncLossMessage(getTimestamp(), bitsProcessed, Protocol.APCO25));
-        }
-    }
-
     public static void main(String[] args)
     {
         P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        messageFramer.setSyncDetectListener(new ISyncDetectListener()
+        messageFramer.setListener(new Listener<IMessage>()
         {
             @Override
-            public void syncDetected(int bitErrors)
-            {
-                mLog.debug("Sync Detected!");
-            }
-
-            @Override
-            public void syncLost()
-            {
-
-            }
-        });
-        messageFramer.setListener(new Listener<Message>()
-        {
-            @Override
-            public void receive(Message message)
+            public void receive(IMessage message)
             {
                 mLog.debug(message.toString());
+
+                if(message instanceof SuperFrameFragment)
+                {
+                    mLog.debug("\t\t" + ((SuperFrameFragment)message).getTimeslots());
+                }
             }
         });
 
