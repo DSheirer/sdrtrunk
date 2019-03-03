@@ -22,13 +22,18 @@
 
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
-public class ScrambledSacchTimeslot extends Timeslot
+import java.util.List;
+
+public abstract class AbstractVoiceTimeslot extends Timeslot
 {
-    public ScrambledSacchTimeslot(CorrectedBinaryMessage message)
+    protected AbstractVoiceTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence)
     {
-        super(message, DataUnitID.SCRAMBLED_SACCH);
+        super(message, dataUnitID, scramblingSequence);
     }
+
+    public abstract List<BinaryMessage> getVoiceFrames();
 }

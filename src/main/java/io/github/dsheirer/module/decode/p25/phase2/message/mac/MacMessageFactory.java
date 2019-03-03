@@ -20,15 +20,17 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase2.timeslot;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
-public class ScrambledFacchTimeslot extends Timeslot
+/**
+ * Message factory for creating Encoded MAC Information (EMI) message parser instances.
+ */
+public class MacMessageFactory
 {
-    public ScrambledFacchTimeslot(CorrectedBinaryMessage message)
+    public static MacMessage create(CorrectedBinaryMessage message)
     {
-        super(message, DataUnitID.SCRAMBLED_FACCH);
+        return new MacMessage(System.currentTimeMillis(), message);
     }
 }

@@ -20,15 +20,23 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase2.timeslot;
+package io.github.dsheirer.edac;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
-
-public class UnScrambledSacchTimeslot extends Timeslot
+public class ReedSolomon_63_35_29 extends BerlekempMassey_63
 {
-    public UnScrambledSacchTimeslot(CorrectedBinaryMessage message)
+    /**
+     * Reed-Solomon RS(63,35,29) decoder.  This can also be used for error detection and correction of the following
+     * RS codes:
+     *
+     * RS(46,26,21) - max 10 errors = P25P2 IEMI
+     * RS(45,26,20)  - max 9 errors = P25P2 SOEMI (FACCH)
+     * RS(52,30,23) - max 11 errors = P25P2 IOEMI (SACCH)
+     * RS(44,16,29) - max 14 errors = P25P2 ESS
+     *
+     * The maximum correctable errors is determined by (n-k)/2, or hamming distance divided by 2.
+     */
+    public ReedSolomon_63_35_29(int maximumCorrectableErrors)
     {
-        super(message, DataUnitID.UNSCRAMBLED_SACCH);
+        super(maximumCorrectableErrors);
     }
 }

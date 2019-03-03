@@ -28,6 +28,7 @@ import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.ScramblingSequence;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -48,15 +49,14 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     private static final int DIBIT_DELAY_BUFFER_INDEX_SYNC_1 = 360;
     private static final int DIBIT_DELAY_BUFFER_INDEX_SYNC_2 = 540;
     private static final int SYNCHRONIZED_SYNC_MATCH_THRESHOLD = 10;
-    private static final int UNSYNCHRONIZED_SYNC_MATCH_THRESHOLD = 4;
+    private static final int UN_SYNCHRONIZED_SYNC_MATCH_THRESHOLD = 4;
 
+    private ScramblingSequence mScramblingSequence = new ScramblingSequence();
     private Listener<IMessage> mMessageListener;
     private P25P2SyncDetector mSyncDetector;
     private DibitDelayBuffer mSyncDetectionDelayBuffer = new DibitDelayBuffer(160);
     private DibitDelayBuffer mFragmentBuffer = new DibitDelayBuffer(720);
     private int mDibitsProcessed = 0;
-    private int mPreviousDibitsProcessed = 0;
-    private long mCurrentTimestamp;
     private boolean mSynchronized = false;
 
     public P25P2SuperFrameDetector(IPhaseLockedLoop phaseLockedLoop)
@@ -146,7 +146,7 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         mDibitsProcessed = 0;
         CorrectedBinaryMessage message = mFragmentBuffer.getMessage(0, 720);
         message.setCorrectedBitCount(bitErrors);
-        SuperFrameFragment frameFragment = new SuperFrameFragment(message, getCurrentTimestamp());
+        SuperFrameFragment frameFragment = new SuperFrameFragment(message, getCurrentTimestamp(), mScramblingSequence);
         broadcast(frameFragment);
     }
 
@@ -205,7 +205,7 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
             Dibit[] sync1Dibits = mFragmentBuffer.getBuffer(DIBIT_DELAY_BUFFER_INDEX_SYNC_1, 20);
             int sync1BitErrorCount = P25P2SyncPattern.getBitErrorCount(sync1Dibits);
 
-            if(sync1BitErrorCount <= UNSYNCHRONIZED_SYNC_MATCH_THRESHOLD)
+            if(sync1BitErrorCount <= UN_SYNCHRONIZED_SYNC_MATCH_THRESHOLD)
             {
                 mSynchronized = true;
                 broadcastFragment(sync1BitErrorCount + syncDetectorBitErrorCount);

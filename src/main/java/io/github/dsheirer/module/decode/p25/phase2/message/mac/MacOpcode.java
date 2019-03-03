@@ -20,15 +20,30 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase2.timeslot;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
-import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
-
-public class UnScrambledFacchTimeslot extends Timeslot
+/**
+ * MAC opcode is used to convey the type of MAC PDU for a MAC message
+ */
+public enum MacOpcode
 {
-    public UnScrambledFacchTimeslot(CorrectedBinaryMessage message)
+    MAC_0_RESERVED,
+    MAC_1_PTT,
+    MAC_2_END_PTT,
+    MAC_3_IDLE,
+    MAC_4_ACTIVE,
+    MAC_5_RESERVED,
+    MAC_6_HANGTIME,
+    MAC_7_RESERVED,
+    MAC_UNKNOWN;
+
+    public static MacOpcode fromValue(int value)
     {
-        super(message, DataUnitID.UNSCRAMBLED_FACCH);
+        if(0 <= value && value <= 7)
+        {
+            return MacOpcode.values()[value];
+        }
+
+        return MAC_UNKNOWN;
     }
 }

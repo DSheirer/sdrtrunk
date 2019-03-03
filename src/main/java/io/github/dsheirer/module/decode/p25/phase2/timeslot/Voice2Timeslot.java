@@ -22,13 +22,69 @@
 
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
-public class Voice2Timeslot extends Timeslot
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Timeslot containing two voice frames and Encryption Sync Signalling (ESS-A) fragment.
+ */
+public class Voice2Timeslot extends AbstractVoiceTimeslot
 {
-    public Voice2Timeslot(CorrectedBinaryMessage message)
+    private static final int FRAME_LENGTH = 72;
+    private static final int FRAME_1_START = 42;
+    private static final int FRAME_2_START = 116;
+    private static final int ESS_A1_START = 188;
+    private static final int ESS_A1_LENGTH = 96;
+    private static final int ESS_A2_START = 286;
+    private static final int ESS_A2_LENGTH = 72;
+
+    private List<BinaryMessage> mVoiceFrames;
+    private BinaryMessage mEssA;
+
+    /**
+     * Constructs a 2-Voice timeslot
+     * @param message containing 320 scrambled bits for the timeslot
+     * @param scramblingSequence to de-scramble the message
+     */
+    public Voice2Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence)
     {
-        super(message, DataUnitID.VOICE_2);
+        super(message, DataUnitID.VOICE_2, scramblingSequence);
+    }
+
+    /**
+     * Voice frames contained in this timeslot
+     */
+    public List<BinaryMessage> getVoiceFrames()
+    {
+        if(mVoiceFrames == null)
+        {
+            mVoiceFrames = new ArrayList<>();
+            mVoiceFrames.add(getMessage().getSubMessage(FRAME_1_START, FRAME_1_START + FRAME_LENGTH));
+            mVoiceFrames.add(getMessage().getSubMessage(FRAME_2_START, FRAME_2_START + FRAME_LENGTH));
+            return mVoiceFrames;
+        }
+
+        return mVoiceFrames;
+    }
+
+    /**
+     * Encryption Synchronization Signaling (ESS-A) segment
+     */
+    public BinaryMessage getEssA()
+    {
+        if(mEssA == null)
+        {
+            BinaryMessage segment1 = getMessage().getSubMessage(ESS_A1_START, ESS_A1_START + ESS_A1_LENGTH);
+            BinaryMessage segment2 = getMessage().getSubMessage(ESS_A2_START, ESS_A2_START + ESS_A2_LENGTH);
+            mEssA = new BinaryMessage(ESS_A1_LENGTH + ESS_A2_LENGTH);
+            mEssA.load(0, segment1);
+            mEssA.load(ESS_A1_LENGTH, segment2);
+        }
+
+        return mEssA;
     }
 }

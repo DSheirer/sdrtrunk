@@ -26,19 +26,21 @@ package io.github.dsheirer.module.decode.p25.phase2.enumeration;
  */
 public enum ISCHSequence
 {
-    ISCH_1(0, "FRAG1"),
-    ISCH_2(1, "FRAG2"),
-    ISCH_3(2, "FRAG3"),
-    RESERVED_4(3, "RSVD4"),
-    UNKNOWN(-1, "UNKNO");
+    ISCH_1(0, "FRAG1", 0),
+    ISCH_2(1, "FRAG2", 4),
+    ISCH_3(2, "FRAG3", 8),
+    RESERVED_4(3, "RSVD4", 0),
+    UNKNOWN(-1, "UNKNO", 0);
 
     private int mValue;
     private String mLabel;
+    private int mTimeslotOffset;
 
-    ISCHSequence(int value, String label)
+    ISCHSequence(int value, String label, int timeslotOffset)
     {
         mValue = value;
         mLabel = label;
+        mTimeslotOffset = timeslotOffset;
     }
 
     /**
@@ -47,6 +49,15 @@ public enum ISCHSequence
     public int getValue()
     {
         return mValue;
+    }
+
+    /**
+     * Offset to apply to the each of the timeslots in a fragment.
+     * @return timeslot offset
+     */
+    public int getTimeslotOffset()
+    {
+        return mTimeslotOffset;
     }
 
     /**

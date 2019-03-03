@@ -25,39 +25,38 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 
 /**
- * Timeslot factory.  Constructs timeslot parsing implementations according to the timeslot's data unit ID
+ * Abstract class for FACCH and SACCH signaling bearer messages
  */
-public class TimeslotFactory
+public abstract class AbstractSignalingTimeslot extends Timeslot
 {
     /**
-     * Creates a timeslot parser instance
+     * Constructs a scrambled signaling timeslot
      *
-     * @param message containing 320-bit timeslot data
-     * @return timeslot parser
+     * @param message with scrambled timeslot data
+     * @param dataUnitID for the timeslot
+     * @param scramblingSequence to unscramble the message
      */
-    public static Timeslot getTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence)
+    protected AbstractSignalingTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence)
     {
-        DataUnitID dataUnitID = Timeslot.getDuid(message);
-
-        switch(dataUnitID)
-        {
-            case VOICE_4:
-                return new Voice4Timeslot(message, scramblingSequence);
-            case VOICE_2:
-                return new Voice2Timeslot(message, scramblingSequence);
-            case SCRAMBLED_FACCH:
-                return new FacchTimeslot(message, scramblingSequence);
-            case SCRAMBLED_SACCH:
-                return new SacchTimeslot(message, scramblingSequence);
-            case UNSCRAMBLED_FACCH:
-                return new FacchTimeslot(message);
-            case UNSCRAMBLED_SACCH:
-                return new SacchTimeslot(message);
-            case UNKNOWN:
-            default:
-                return new UnknownTimeslot(message);
-        }
+        super(message, dataUnitID, scramblingSequence);
     }
+
+    /**
+     * Constructs an un-scrambled signaling timeslot
+     *
+     * @param message that is un-scrambled
+     * @param dataUnitID for the timeslot
+     */
+    protected AbstractSignalingTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID)
+    {
+        super(message, dataUnitID);
+    }
+
+    /**
+     * Access Encoded MAC Information (EMI) message carried by the signalling timeslot
+     */
+    public abstract MacMessage getMacMessage();
 }

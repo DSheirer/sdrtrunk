@@ -42,6 +42,9 @@ public class LinearFeedbackShiftRegister
 
     private boolean mCurrentOutput;
     private long mRegisters;
+    private int mWacn;
+    private int mSystem;
+    private int mNac;
 
     /**
      * Constructs an APCO25 Phase II external LFSR generator equivalent to
@@ -53,6 +56,10 @@ public class LinearFeedbackShiftRegister
 
     public void updateSeed(int wacn, int system, int nac)
     {
+        mWacn = wacn;
+        mSystem = system;
+        mNac = nac;
+
         mRegisters = ((0xFFFFF & wacn) << 20) + ((system & 0xFFF) << 12) + (nac & 0xFFF);
 
         if(mRegisters == 0)
@@ -61,6 +68,18 @@ public class LinearFeedbackShiftRegister
         }
 
         mCurrentOutput = (mRegisters & TAP_43) == TAP_43;
+    }
+
+    /**
+     * Indicates if the shift register is currently configured for the argument values (and doesn't need updating).
+     * @param wacn value
+     * @param system value
+     * @param nac value
+     * @return true if the argument values match the current shift register configuration
+     */
+    public boolean isCurrent(int wacn, int system, int nac)
+    {
+        return mWacn == wacn && mSystem == system && mNac == nac;
     }
 
     /**

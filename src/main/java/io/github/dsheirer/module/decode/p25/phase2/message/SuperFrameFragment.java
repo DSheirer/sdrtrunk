@@ -22,11 +22,13 @@
 
 package io.github.dsheirer.module.decode.p25.phase2.message;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.ScramblingSequence;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.TimeslotFactory;
 import io.github.dsheirer.protocol.Protocol;
@@ -60,6 +62,7 @@ public class SuperFrameFragment implements IMessage
     private InterSlotSignallingChannel mChannel1Isch;
     private List<Timeslot> mChannel0Timeslots;
     private List<Timeslot> mChannel1Timeslots;
+    private ScramblingSequence mScramblingSequence;
 
     /**
      * Constructs a fragment from the message with the specified timestamp.
@@ -67,10 +70,11 @@ public class SuperFrameFragment implements IMessage
      * @param message containing 1440-bit super-frame fragment (ie 1/3 of a superframe)
      * @param timestamp of the final bit of this fragment
      */
-    public SuperFrameFragment(CorrectedBinaryMessage message, long timestamp)
+    public SuperFrameFragment(CorrectedBinaryMessage message, long timestamp, ScramblingSequence scramblingSequence)
     {
         mMessage = message;
         mTimestamp = timestamp;
+        mScramblingSequence = scramblingSequence;
     }
 
     /**
@@ -127,15 +131,15 @@ public class SuperFrameFragment implements IMessage
         if(mChannel0Timeslots == null)
         {
             mChannel0Timeslots = new ArrayList<>();
-            mChannel0Timeslots.add(getTimeslot(TIMESLOT_A_START, CHANNEL_B_ISCH_START));
+            mChannel0Timeslots.add(getTimeslot(TIMESLOT_A_START, CHANNEL_B_ISCH_START, 0));
 
             if(isFinalFragment())
             {
-                mChannel0Timeslots.add(getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END));
+                mChannel0Timeslots.add(getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END, 3));
             }
             else
             {
-                mChannel0Timeslots.add(getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START));
+                mChannel0Timeslots.add(getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START, 2));
             }
         }
 
@@ -150,15 +154,15 @@ public class SuperFrameFragment implements IMessage
         if(mChannel1Timeslots == null)
         {
             mChannel1Timeslots = new ArrayList<>();
-            mChannel1Timeslots.add(getTimeslot(TIMESLOT_B_START, CHANNEL_C_ISCH_START));
+            mChannel1Timeslots.add(getTimeslot(TIMESLOT_B_START, CHANNEL_C_ISCH_START, 1));
 
             if(isFinalFragment())
             {
-                mChannel1Timeslots.add(getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START));
+                mChannel1Timeslots.add(getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START, 2));
             }
             else
             {
-                mChannel1Timeslots.add(getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END));
+                mChannel1Timeslots.add(getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END, 3));
             }
         }
 
@@ -170,12 +174,35 @@ public class SuperFrameFragment implements IMessage
      *
      * @param start bit of the timeslot
      * @param end bit for the message (exclusive)
+     * @param index of the timeslot (0-11)
      * @return timeslot parser instance
      */
-    private Timeslot getTimeslot(int start, int end)
+    private Timeslot getTimeslot(int start, int end, int index)
     {
         CorrectedBinaryMessage message = getMessage().getSubMessage(start, end);
-        return TimeslotFactory.getTimeslot(message);
+        BinaryMessage timeslotSequence = mScramblingSequence.getTimeslotSequence(getTimeslotOffset() + index);
+        return TimeslotFactory.getTimeslot(message, timeslotSequence);
+    }
+
+    /**
+     * Indicates the timeslot (index) offset to apply to each of the timeslots in this fragment
+     */
+    private int getTimeslotOffset()
+    {
+        ISCHSequence sequence0 = getIschChannel0().getIschSequence();
+
+        if(getIschChannel0().isValid())
+        {
+            return sequence0.getTimeslotOffset();
+        }
+
+        ISCHSequence sequence1 = getIschChannel1().getIschSequence();
+        if(getIschChannel1().isValid())
+        {
+            return sequence1.getTimeslotOffset();
+        }
+
+        return 0;
     }
 
     /**
@@ -185,13 +212,14 @@ public class SuperFrameFragment implements IMessage
     private boolean isFinalFragment()
     {
         ISCHSequence sequence0 = getIschChannel0().getIschSequence();
-        ISCHSequence sequence1 = getIschChannel1().getIschSequence();
 
         if(getIschChannel0().isValid())
         {
             return sequence0.isFinalFragment();
         }
-        else if(getIschChannel1().isValid())
+
+        ISCHSequence sequence1 = getIschChannel1().getIschSequence();
+        if(getIschChannel1().isValid())
         {
             return sequence1.isFinalFragment();
         }

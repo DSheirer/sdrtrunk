@@ -26,10 +26,64 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
-public class Voice4Timeslot extends Timeslot
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Timeslot containing four voice frames and Encryption Sync Signalling (ESS-B) fragment.
+ */
+public class Voice4Timeslot extends AbstractVoiceTimeslot
 {
-    public Voice4Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingCode)
+    private static final int FRAME_LENGTH = 72;
+    private static final int FRAME_1_START = 42;
+    private static final int FRAME_2_START = 116;
+    private static final int FRAME_3_START = 212;
+    private static final int FRAME_4_START = 286;
+    private static final int ESS_B_START = 188;
+    private static final int ESS_B_LENGTH = 24;
+
+    private List<BinaryMessage> mVoiceFrames;
+    private BinaryMessage mEssB;
+
+    /**
+     * Constructs a 4-Voice timeslot
+     *
+     * @param message containing 320 scrambled bits for the timeslot
+     * @param scramblingSequence to descramble the message
+     */
+    public Voice4Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence)
     {
-        super(message, DataUnitID.VOICE_4);
+        super(message, DataUnitID.VOICE_4, scramblingSequence);
+    }
+
+    /**
+     * Voice frames contained in this timeslot
+     */
+    public List<BinaryMessage> getVoiceFrames()
+    {
+        if(mVoiceFrames == null)
+        {
+            mVoiceFrames = new ArrayList<>();
+            mVoiceFrames.add(getMessage().getSubMessage(FRAME_1_START, FRAME_1_START + FRAME_LENGTH));
+            mVoiceFrames.add(getMessage().getSubMessage(FRAME_2_START, FRAME_2_START + FRAME_LENGTH));
+            mVoiceFrames.add(getMessage().getSubMessage(FRAME_3_START, FRAME_3_START + FRAME_LENGTH));
+            mVoiceFrames.add(getMessage().getSubMessage(FRAME_4_START, FRAME_4_START + FRAME_LENGTH));
+            return mVoiceFrames;
+        }
+
+        return mVoiceFrames;
+    }
+
+    /**
+     * Encryption Synchronization Signaling (ESS-B) segment
+     */
+    public BinaryMessage getEssB()
+    {
+        if(mEssB == null)
+        {
+            mEssB = getMessage().getSubMessage(ESS_B_START, ESS_B_START + ESS_B_LENGTH);
+        }
+
+        return mEssB;
     }
 }
