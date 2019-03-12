@@ -29,7 +29,6 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -184,17 +183,14 @@ public class P25P2MessageFramer implements Listener<Dibit>
     public static void main(String[] args)
     {
         P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        messageFramer.setListener(new Listener<IMessage>()
+        P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
+        messageFramer.setListener(messageProcessor);
+        messageProcessor.setMessageListener(new Listener<IMessage>()
         {
             @Override
             public void receive(IMessage message)
             {
                 mLog.debug(message.toString());
-
-                if(message instanceof SuperFrameFragment)
-                {
-//                    mLog.debug("\t\t" + ((SuperFrameFragment)message).getChannel0Timeslots());
-                }
             }
         });
 

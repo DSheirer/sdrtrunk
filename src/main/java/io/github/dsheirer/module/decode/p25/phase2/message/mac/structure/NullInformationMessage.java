@@ -19,59 +19,42 @@
  *
  *
  */
-package io.github.dsheirer.module.decode.p25.phase2.enumeration;
+
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * Null (empty) information message
  */
-public enum ChannelNumber
+public class NullInformationMessage extends MacStructure
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
-
-    private int mValue;
-    private String mLabel;
-
-    ChannelNumber(int value, String label)
+    /**
+     * Constructs the message
+     *
+     * @param message containing the message bits
+     * @param timestamp of the final bit of the message
+     */
+    public NullInformationMessage(CorrectedBinaryMessage message, int offset)
     {
-        mValue = value;
-        mLabel = label;
+        super(message, offset);
     }
 
     /**
-     * Channel number value
+     * Textual representation of this message
      */
-    public int getValue()
-    {
-        return mValue;
-    }
-
-    @Override
     public String toString()
     {
-        return mLabel;
+        return getOpcode().toString();
     }
 
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
+    public List<Identifier> getIdentifiers()
     {
-        switch(value)
-        {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
-        }
+        return Collections.EMPTY_LIST;
     }
 }

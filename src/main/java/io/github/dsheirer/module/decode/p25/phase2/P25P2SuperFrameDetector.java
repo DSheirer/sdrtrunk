@@ -28,11 +28,18 @@ import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastAbbreviated;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.ScramblingSequence;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * APCO25 Phase 2 super-frame fragment detector uses a sync pattern detector and a circular
@@ -62,6 +69,9 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     public P25P2SuperFrameDetector(IPhaseLockedLoop phaseLockedLoop)
     {
         mSyncDetector = new P25P2SyncDetector(this, phaseLockedLoop);
+
+        mLog.debug("Remove this ...");
+        mScramblingSequence.update(1, 972, 972);
     }
 
     public void setListener(Listener<IMessage> listener)
@@ -147,7 +157,31 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         CorrectedBinaryMessage message = mFragmentBuffer.getMessage(0, 720);
         message.setCorrectedBitCount(bitErrors);
         SuperFrameFragment frameFragment = new SuperFrameFragment(message, getCurrentTimestamp(), mScramblingSequence);
+        updateScramblingCode(frameFragment);
         broadcast(frameFragment);
+    }
+
+    private void updateScramblingCode(SuperFrameFragment superFrameFragment)
+    {
+        for(Timeslot timeslot: superFrameFragment.getTimeslots())
+        {
+            if(timeslot instanceof AbstractSignalingTimeslot)
+            {
+                List<MacMessage> macMessages = ((AbstractSignalingTimeslot)timeslot).getMacMessages();
+
+                for(MacMessage macMessage: macMessages)
+                {
+                    MacOpcode macOpcode = macMessage.getMacStructure().getOpcode();
+
+                    if(macOpcode == MacOpcode.PHASE1_123_NETWORK_STATUS_BROADCAST_ABBREVIATED &&
+                        macMessage.getMacStructure() instanceof NetworkStatusBroadcastAbbreviated)
+                    {
+                        NetworkStatusBroadcastAbbreviated networkStatus = (NetworkStatusBroadcastAbbreviated)macMessage.getMacStructure();
+                        mScramblingSequence.update(networkStatus.getScrambleParameters());
+                    }
+                }
+            }
+        }
     }
 
     private void broadcastSyncLoss(int dibitsProcessed)

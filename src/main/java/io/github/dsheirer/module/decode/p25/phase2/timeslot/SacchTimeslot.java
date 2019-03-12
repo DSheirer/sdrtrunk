@@ -25,69 +25,73 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.ReedSolomon_63_35_29;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.UnknownMacMessage;
+
+import java.util.List;
 
 /**
  * Slow Associated Control CHannel (SACCH) timeslot carrying an I-OEMI message
  */
 public class SacchTimeslot extends AbstractSignalingTimeslot
 {
-    private static final int[] INFO_1 = {42, 43, 44, 45, 46, 47};
-    private static final int[] INFO_2 = {48, 49, 50, 51, 52, 53};
-    private static final int[] INFO_3 = {54, 55, 56, 57, 58, 59};
-    private static final int[] INFO_4 = {60, 61, 62, 63, 64, 65};
-    private static final int[] INFO_5 = {66, 67, 68, 69, 70, 71};
-    private static final int[] INFO_6 = {72, 73, 74, 75, 76, 77};
-    private static final int[] INFO_7 = {78, 79, 80, 81, 82, 83};
-    private static final int[] INFO_8 = {84, 85, 86, 87, 88, 89};
-    private static final int[] INFO_9 = {90, 91, 92, 93, 94, 95};
-    private static final int[] INFO_10 = {96, 97, 98, 99, 100, 101};
-    private static final int[] INFO_11 = {102, 103, 104, 105, 106, 107};
-    private static final int[] INFO_12 = {108, 109, 110, 111, 112, 113}; //Gap for duid 114-115
-    private static final int[] INFO_13 = {116, 117, 118, 119, 120, 121};
-    private static final int[] INFO_14 = {122, 123, 124, 125, 126, 127};
-    private static final int[] INFO_15 = {128, 129, 130, 131, 132, 133};
-    private static final int[] INFO_16 = {134, 135, 136, 137, 138, 139};
-    private static final int[] INFO_17 = {140, 141, 142, 143, 144, 145};
-    private static final int[] INFO_18 = {146, 147, 148, 149, 150, 151};
-    private static final int[] INFO_19 = {152, 153, 154, 155, 156, 157};
-    private static final int[] INFO_20 = {158, 159, 160, 161, 162, 163};
-    private static final int[] INFO_21 = {164, 165, 166, 167, 168, 169};
-    private static final int[] INFO_22 = {170, 171, 172, 173, 174, 175};
-    private static final int[] INFO_23 = {176, 177, 178, 179, 180, 181};
-    private static final int[] INFO_24 = {182, 183, 184, 185, 186, 187};
-    private static final int[] INFO_25 = {188, 189, 190, 191, 192, 193};
-    private static final int[] INFO_26 = {194, 195, 196, 197, 198, 199};
-    private static final int[] INFO_27 = {200, 201, 202, 203, 204, 205};
-    private static final int[] INFO_28 = {206, 207, 208, 209, 210, 211};
-    private static final int[] INFO_29 = {212, 213, 214, 215, 216, 217};
-    private static final int[] INFO_30 = {218, 219, 220, 221, 222, 223};
-    private static final int[] PARITY_1 = {224, 225, 226, 227, 228, 229};
-    private static final int[] PARITY_2 = {230, 231, 232, 233, 234, 235};
-    private static final int[] PARITY_3 = {236, 237, 238, 239, 240, 241};
-    private static final int[] PARITY_4 = {242, 243, 244, 245, 246, 247};
-    private static final int[] PARITY_5 = {248, 249, 250, 251, 252, 253};
-    private static final int[] PARITY_6 = {254, 255, 256, 257, 258, 259};
-    private static final int[] PARITY_7 = {260, 261, 262, 263, 264, 265};
-    private static final int[] PARITY_8 = {266, 267, 268, 269, 270, 271};
-    private static final int[] PARITY_9 = {272, 273, 274, 275, 276, 277};
-    private static final int[] PARITY_10 = {278, 279, 280, 281, 282, 283}; //Gap for duid 284-285
-    private static final int[] PARITY_11 = {286, 287, 288, 289, 290, 291};
-    private static final int[] PARITY_12 = {292, 293, 294, 295, 296, 297};
-    private static final int[] PARITY_13 = {298, 299, 300, 301, 302, 303};
-    private static final int[] PARITY_14 = {304, 305, 306, 307, 308, 309};
-    private static final int[] PARITY_15 = {310, 311, 312, 313, 314, 315};
-    private static final int[] PARITY_16 = {316, 317, 318, 319, 320, 321};
-    private static final int[] PARITY_17 = {322, 323, 324, 325, 326, 327};
-    private static final int[] PARITY_18 = {328, 329, 330, 331, 332, 333};
-    private static final int[] PARITY_19 = {334, 335, 336, 337, 338, 339};
-    private static final int[] PARITY_20 = {340, 341, 342, 343, 344, 345};
-    private static final int[] PARITY_21 = {346, 347, 348, 349, 350, 351};
-    private static final int[] PARITY_22 = {352, 353, 354, 355, 356, 357};
+    private static final int[] INFO_1 = {2, 3, 4, 5, 6, 7};
+    private static final int[] INFO_2 = {8, 9, 10, 11, 12, 13};
+    private static final int[] INFO_3 = {14, 15, 16, 17, 18, 19};
+    private static final int[] INFO_4 = {20, 21, 22, 23, 24, 25};
+    private static final int[] INFO_5 = {26, 27, 28, 29, 30, 31};
+    private static final int[] INFO_6 = {32, 33, 34, 35, 36, 37};
+    private static final int[] INFO_7 = {38, 39, 40, 41, 42, 43};
+    private static final int[] INFO_8 = {44, 45, 46, 47, 48, 49};
+    private static final int[] INFO_9 = {50, 51, 52, 53, 54, 55};
+    private static final int[] INFO_10 = {56, 57, 58, 59, 60, 61};
+    private static final int[] INFO_11 = {62, 63, 64, 65, 66, 67};
+    private static final int[] INFO_12 = {68, 69, 70, 71, 72, 73}; //Gap for duid 114-115
+    private static final int[] INFO_13 = {76, 77, 78, 79, 80, 81};
+    private static final int[] INFO_14 = {82, 83, 84, 85, 86, 87};
+    private static final int[] INFO_15 = {88, 89, 90, 91, 92, 93};
+    private static final int[] INFO_16 = {94, 95, 96, 97, 98, 99};
+    private static final int[] INFO_17 = {100, 101, 102, 103, 104, 105};
+    private static final int[] INFO_18 = {106, 107, 108, 109, 110, 111};
+    private static final int[] INFO_19 = {112, 113, 114, 115, 116, 117};
+    private static final int[] INFO_20 = {118, 119, 120, 121, 122, 123};
+    private static final int[] INFO_21 = {124, 125, 126, 127, 128, 129};
+    private static final int[] INFO_22 = {130, 131, 132, 133, 134, 135};
+    private static final int[] INFO_23 = {136, 137, 138, 139, 140, 141};
+    private static final int[] INFO_24 = {142, 143, 144, 145, 146, 147};
+    private static final int[] INFO_25 = {148, 149, 150, 151, 152, 153};
+    private static final int[] INFO_26 = {154, 155, 156, 157, 158, 159};
+    private static final int[] INFO_27 = {160, 161, 162, 163, 164, 165};
+    private static final int[] INFO_28 = {166, 167, 168, 169, 170, 171};
+    private static final int[] INFO_29 = {172, 173, 174, 175, 176, 177};
+    private static final int[] INFO_30 = {178, 179, 180, 181, 182, 183};
+    private static final int[] PARITY_1 = {184, 185, 186, 187, 188, 189};
+    private static final int[] PARITY_2 = {190, 191, 192, 193, 194, 195};
+    private static final int[] PARITY_3 = {196, 197, 198, 199, 200, 201};
+    private static final int[] PARITY_4 = {202, 203, 204, 205, 206, 207};
+    private static final int[] PARITY_5 = {208, 209, 210, 211, 212, 213};
+    private static final int[] PARITY_6 = {214, 215, 216, 217, 218, 219};
+    private static final int[] PARITY_7 = {220, 221, 222, 223, 224, 225};
+    private static final int[] PARITY_8 = {226, 227, 228, 229, 230, 231};
+    private static final int[] PARITY_9 = {232, 233, 234, 235, 236, 237};
+    private static final int[] PARITY_10 = {238, 239, 240, 241, 242, 243}; //Gap for duid 284-285
+    private static final int[] PARITY_11 = {246, 247, 248, 249, 250, 251};
+    private static final int[] PARITY_12 = {252, 253, 254, 255, 256, 257};
+    private static final int[] PARITY_13 = {258, 259, 260, 261, 262, 263};
+    private static final int[] PARITY_14 = {264, 265, 266, 267, 268, 269};
+    private static final int[] PARITY_15 = {270, 271, 272, 273, 274, 275};
+    private static final int[] PARITY_16 = {276, 277, 278, 279, 280, 281};
+    private static final int[] PARITY_17 = {282, 283, 284, 285, 286, 287};
+    private static final int[] PARITY_18 = {288, 289, 290, 291, 292, 293};
+    private static final int[] PARITY_19 = {294, 295, 296, 297, 298, 299};
+    private static final int[] PARITY_20 = {300, 301, 302, 303, 304, 305};
+    private static final int[] PARITY_21 = {306, 307, 308, 309, 310, 311};
+    private static final int[] PARITY_22 = {312, 313, 314, 315, 316, 317};
 
-    private MacMessage mMacMessage;
+    private List<MacMessage> mMacMessages;
 
     /**
      * Constructs a scrambled SACCH timeslot
@@ -95,9 +99,10 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
      * @param message containing 320 scrambled bits for the timeslot
      * @param scramblingSequence to descramble the message
      */
-    public SacchTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence)
+    public SacchTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence, ChannelNumber channelNumber,
+                         long timestamp)
     {
-        super(message, DataUnitID.SCRAMBLED_SACCH, scramblingSequence);
+        super(message, DataUnitID.SCRAMBLED_SACCH, scramblingSequence, channelNumber, timestamp);
     }
 
     /**
@@ -105,18 +110,39 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
      *
      * @param message containing 320 scrambled bits for the timeslot
      */
-    public SacchTimeslot(CorrectedBinaryMessage message)
+    public SacchTimeslot(CorrectedBinaryMessage message, ChannelNumber channelNumber, long timestamp)
     {
-        super(message, DataUnitID.UNSCRAMBLED_SACCH);
+        super(message, DataUnitID.UNSCRAMBLED_SACCH, channelNumber, timestamp);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getChannelNumber());
+
+        if(getDataUnitID() == DataUnitID.UNSCRAMBLED_SACCH)
+        {
+            sb.append(" SA-UN");
+            sb.append(" ").append(getMacMessages().toString());
+        }
+        else
+        {
+            sb.append(" SA-SC");
+            sb.append(" ").append(getMacMessages().toString());
+        }
+
+
+        return sb.toString();
     }
 
     /**
-     * Information Outbound Encoded MAC Information (I-OEMI) message carried by this timeslot
+     * Information Outbound Encoded MAC Information (I-OEMI) message(s) carried by this timeslot
      */
     @Override
-    public MacMessage getMacMessage()
+    public List<MacMessage> getMacMessages()
     {
-        if(mMacMessage == null)
+        if(mMacMessages == null)
         {
             int[] input = new int[63];
             int[] output = new int[63];
@@ -213,11 +239,14 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
                 pointer += 6;
             }
 
-            mMacMessage = MacMessageFactory.create(binaryMessage);
+            mMacMessages = MacMessageFactory.create(getChannelNumber(), getDataUnitID(), binaryMessage, getTimestamp());
 
             if(irrecoverableErrors)
             {
-                mMacMessage.setValid(false);
+                mMacMessages.clear();
+                MacMessage macMessage = new UnknownMacMessage(getChannelNumber(), getDataUnitID(), binaryMessage, getTimestamp());
+                macMessage.setValid(false);
+                mMacMessages.add(macMessage);
             }
             else
             {
@@ -233,6 +262,6 @@ public class SacchTimeslot extends AbstractSignalingTimeslot
 
         }
 
-        return mMacMessage;
+        return mMacMessages;
     }
 }

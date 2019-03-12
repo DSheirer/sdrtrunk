@@ -19,34 +19,29 @@
  *
  *
  */
+
 package io.github.dsheirer.module.decode.p25.phase2.enumeration;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * Indicates the offset from a current MAC message to the next start of a 4V voice frame sequence
  */
-public enum ChannelNumber
+public enum Voice4VOffset
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
+    SLOTS_1("NEXT NON-SACCH SLOT"),
+    SLOTS_2("2 NON-SACCH SLOTS"),
+    SLOTS_3("3 NON-SACCH SLOTS"),
+    SLOTS_4("4 NON-SACCH SLOTS"),
+    SLOTS_5("5 NON-SACCH SLOTS"),
+    RESERVED("RESERVED"),
+    INBOUND("INBOUND"),
+    NO_VOICE("NO VOICE FRAMING"),
+    UNKNOWN("UNKNOWN");
 
-    private int mValue;
     private String mLabel;
 
-    ChannelNumber(int value, String label)
+    Voice4VOffset(String label)
     {
-        mValue = value;
         mLabel = label;
-    }
-
-    /**
-     * Channel number value
-     */
-    public int getValue()
-    {
-        return mValue;
     }
 
     @Override
@@ -55,23 +50,13 @@ public enum ChannelNumber
         return mLabel;
     }
 
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
+    public static Voice4VOffset fromValue(int value)
     {
-        switch(value)
+        if(0 <= value && value <= 7)
         {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
+            return Voice4VOffset.values()[value];
         }
+
+        return UNKNOWN;
     }
 }

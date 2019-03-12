@@ -23,19 +23,27 @@
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.LinearFeedbackShiftRegister;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * APCO-25 Phase II scrambling sequence utility
+ * APCO-25 Phase II scrambling sequence utility that provides scrambling sequence snippets for each of the 12 timeslots
+ * in a 12-timeslot super frame.
  */
 public class ScramblingSequence
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ScramblingSequence.class);
+
     private LinearFeedbackShiftRegister mShiftRegister = new LinearFeedbackShiftRegister();
     private List<BinaryMessage> mScramblingSegments = new ArrayList<>();
 
+    /**
+     * Constructs an instance
+     */
     public ScramblingSequence()
     {
         for(int x = 0; x < 12; x++)
@@ -44,6 +52,18 @@ public class ScramblingSequence
         }
     }
 
+    /**
+     * Updates this scrambling sequence with the specified seed parameters
+     */
+    public void update(ScrambleParameters parameters)
+    {
+        update(parameters.getWACN(), parameters.getSystem(), parameters.getNAC());
+    }
+
+    /**
+     * Updates this scrambling sequence with the specified parameters from the Network Broadcast Status message and
+     * generates 12 x 320-bit scrambling sequences for each of the superframe's 12 timeslots.
+     */
     public void update(int wacn, int system, int nac)
     {
         if(!mShiftRegister.isCurrent(wacn, system, nac))
@@ -52,7 +72,9 @@ public class ScramblingSequence
 
             BinaryMessage scramblingSequence = mShiftRegister.generateScramblingSequence(wacn, system, nac);
 
-            for(int x = 40; x < 4320; x += 360)
+            //Note: the scrambling sequence starts at halfway through the first ISCH of the superframe, so we start
+            //chopping the LFSR sequence using 320 of each 360 bits starting at bit 20 of 40 of the first ISCH.
+            for(int x = 20; x < 4320; x += 360)
             {
                 mScramblingSegments.add(scramblingSequence.getSubMessage(x, x + 320));
             }

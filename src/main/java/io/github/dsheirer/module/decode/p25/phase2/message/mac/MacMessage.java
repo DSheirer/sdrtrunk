@@ -24,9 +24,11 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.Voice4VOffset;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,38 +36,70 @@ import java.util.List;
  */
 public class MacMessage extends P25P2Message
 {
-    private static int[] MAC_OPCODE = {0, 1, 2};
-    private static int[] OFFSET = {3, 4, 5};
+    private static int[] PDU_TYPE = {0, 1, 2};
+    private static int[] OFFSET_TO_NEXT_VOICE_4V_START = {3, 4, 5};
     private static int[] RESERVED = {6, 7};
 
+    private ChannelNumber mChannelNumber;
+    private DataUnitID mDataUnitID;
     private CorrectedBinaryMessage mMessage;
+    private MacStructure mMacStructure;
 
     /**
      * Constructs the message
      *
+     * @param message containing underlying transmitted bits
      * @param timestamp of the final bit of the message
+     * @param macStructure for the payload
      */
-    public MacMessage(long timestamp, CorrectedBinaryMessage message)
+    public MacMessage(ChannelNumber channelNumber, DataUnitID dataUnitID, CorrectedBinaryMessage message,
+                      long timestamp, MacStructure macStructure)
     {
         super(timestamp);
+        mChannelNumber = channelNumber;
+        mDataUnitID = dataUnitID;
         mMessage = message;
+        mMacStructure = macStructure;
     }
 
     /**
-     * Underlying binary message as transmitted and error-corrected
+     * Channel number or timeslot for this message
+     */
+    public ChannelNumber getChannelNumber()
+    {
+        return mChannelNumber;
+    }
+
+    /**
+     * Data Unit ID or timeslot type for this message
+     */
+    public DataUnitID getDataUnitID()
+    {
+        return mDataUnitID;
+    }
+
+    /**
+     * Underlying binary message as transmitted and error-correctede
      */
     protected CorrectedBinaryMessage getMessage()
     {
         return mMessage;
     }
 
+    /**
+     * MAC structure parser/payload for this message
+     */
+    public MacStructure getMacStructure()
+    {
+        return mMacStructure;
+    }
 
     /**
      * MAC opcode identifies the type of MAC PDU for this message
      */
-    public MacOpcode getOpcode()
+    public MacPduType getMacPduType()
     {
-        return fromMessage(getMessage());
+        return getMacPduTypeFromMessage(getMessage());
     }
 
     /**
@@ -73,21 +107,42 @@ public class MacMessage extends P25P2Message
      * @param message containing a mac opcode
      * @return opcode
      */
-    public static MacOpcode fromMessage(CorrectedBinaryMessage message)
+    public static MacPduType getMacPduTypeFromMessage(CorrectedBinaryMessage message)
     {
-        return MacOpcode.fromValue(message.getInt(MAC_OPCODE));
+        return MacPduType.fromValue(message.getInt(PDU_TYPE));
     }
 
-    @Override
-    public String toString()
+    /**
+     * Offset to the next Voice 4V start sequence
+     */
+    public Voice4VOffset getOffsetToNextVoice4VStart()
     {
-        return getMessage().toHexString() + (isValid() ? " VALID" : " INVALID") +
-            " ERROR COUNT:" + getMessage().getCorrectedBitCount();
+        return Voice4VOffset.fromValue(getMessage().getInt(OFFSET_TO_NEXT_VOICE_4V_START));
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.EMPTY_LIST;
+        return getMacStructure().getIdentifiers();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getChannelNumber());
+        sb.append(" ").append(getDataUnitID());
+
+        if(isValid())
+        {
+            sb.append(" ").append(getMacPduType().toString());
+            sb.append(" ").append(getMacStructure().toString());
+        }
+        else
+        {
+            sb.append(" INVALID/CRC ERROR");
+        }
+
+        return sb.toString();
     }
 }

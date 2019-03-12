@@ -24,6 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
 import java.util.ArrayList;
@@ -50,10 +51,13 @@ public class Voice4Timeslot extends AbstractVoiceTimeslot
      *
      * @param message containing 320 scrambled bits for the timeslot
      * @param scramblingSequence to descramble the message
+     * @param channelNumber of the timeslot
+     * @param timestamp of the last transmitted bit
      */
-    public Voice4Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence)
+    public Voice4Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence, ChannelNumber channelNumber,
+                          long timestamp)
     {
-        super(message, DataUnitID.VOICE_4, scramblingSequence);
+        super(message, DataUnitID.VOICE_4, scramblingSequence, channelNumber, timestamp);
     }
 
     /**

@@ -60,8 +60,10 @@ public class SuperFrameFragment implements IMessage
     private CorrectedBinaryMessage mMessage;
     private InterSlotSignallingChannel mChannel0Isch;
     private InterSlotSignallingChannel mChannel1Isch;
-    private List<Timeslot> mChannel0Timeslots;
-    private List<Timeslot> mChannel1Timeslots;
+    private Timeslot mTimeslotA;
+    private Timeslot mTimeslotB;
+    private Timeslot mTimeslotC;
+    private Timeslot mTimeslotD;
     private ScramblingSequence mScramblingSequence;
 
     /**
@@ -122,28 +124,98 @@ public class SuperFrameFragment implements IMessage
         return mChannel1Isch;
     }
 
+    /**
+     * Timeslot A
+     */
+    public Timeslot getTimeslotA()
+    {
+        if(mTimeslotA == null)
+        {
+            mTimeslotA = getTimeslot(TIMESLOT_A_START, CHANNEL_B_ISCH_START, 0, ChannelNumber.CHANNEL_0);
+        }
+
+        return mTimeslotA;
+    }
+
+    /**
+     * Timeslot B
+     */
+    public Timeslot getTimeslotB()
+    {
+        if(mTimeslotB == null)
+        {
+            mTimeslotB = getTimeslot(TIMESLOT_B_START, CHANNEL_C_ISCH_START, 1, ChannelNumber.CHANNEL_1);
+        }
+
+        return mTimeslotB;
+    }
+
+    /**
+     * Timeslot C
+     */
+    public Timeslot getTimeslotC()
+    {
+        if(mTimeslotC == null)
+        {
+            mTimeslotC = getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START, 2,
+                isFinalFragment() ? ChannelNumber.CHANNEL_1 : ChannelNumber.CHANNEL_0);
+        }
+
+        return mTimeslotC;
+    }
+
+    /**
+     * Timeslot D
+     */
+    public Timeslot getTimeslotD()
+    {
+        if(mTimeslotD == null)
+        {
+            mTimeslotD = getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END, 3,
+                isFinalFragment() ? ChannelNumber.CHANNEL_0 : ChannelNumber.CHANNEL_1);
+        }
+
+        return mTimeslotD;
+    }
+
+    public List<Timeslot> getTimeslots()
+    {
+        List<Timeslot> timeslots = new ArrayList<>();
+        timeslots.add(getTimeslotA());
+        timeslots.add(getTimeslotB());
+
+        if(isFinalFragment())
+        {
+            timeslots.add(getTimeslotD());
+            timeslots.add(getTimeslotC());
+        }
+        else
+        {
+            timeslots.add(getTimeslotC());
+            timeslots.add(getTimeslotD());
+        }
+
+        return timeslots;
+    }
 
     /**
      * Channel 0 timeslots
      */
     public List<Timeslot> getChannel0Timeslots()
     {
-        if(mChannel0Timeslots == null)
-        {
-            mChannel0Timeslots = new ArrayList<>();
-            mChannel0Timeslots.add(getTimeslot(TIMESLOT_A_START, CHANNEL_B_ISCH_START, 0));
+        List<Timeslot> timeslots = new ArrayList<>();
+        timeslots.add(getTimeslotA());
 
-            if(isFinalFragment())
-            {
-                mChannel0Timeslots.add(getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END, 3));
-            }
-            else
-            {
-                mChannel0Timeslots.add(getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START, 2));
-            }
+        if(isFinalFragment())
+        {
+            timeslots.add(getTimeslotD());
+        }
+        else
+        {
+            timeslots.add(getTimeslotC());
         }
 
-        return mChannel0Timeslots;
+        return timeslots;
     }
 
     /**
@@ -151,22 +223,20 @@ public class SuperFrameFragment implements IMessage
      */
     public List<Timeslot> getChannel1Timeslots()
     {
-        if(mChannel1Timeslots == null)
-        {
-            mChannel1Timeslots = new ArrayList<>();
-            mChannel1Timeslots.add(getTimeslot(TIMESLOT_B_START, CHANNEL_C_ISCH_START, 1));
+        List<Timeslot> timeslots = new ArrayList<>();
 
-            if(isFinalFragment())
-            {
-                mChannel1Timeslots.add(getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START, 2));
-            }
-            else
-            {
-                mChannel1Timeslots.add(getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END, 3));
-            }
+        timeslots.add(getTimeslotB());
+
+        if(isFinalFragment())
+        {
+            timeslots.add(getTimeslotC());
+        }
+        else
+        {
+            timeslots.add(getTimeslotD());
         }
 
-        return mChannel1Timeslots;
+        return timeslots;
     }
 
     /**
@@ -177,11 +247,11 @@ public class SuperFrameFragment implements IMessage
      * @param index of the timeslot (0-11)
      * @return timeslot parser instance
      */
-    private Timeslot getTimeslot(int start, int end, int index)
+    private Timeslot getTimeslot(int start, int end, int index, ChannelNumber channelNumber)
     {
         CorrectedBinaryMessage message = getMessage().getSubMessage(start, end);
         BinaryMessage timeslotSequence = mScramblingSequence.getTimeslotSequence(getTimeslotOffset() + index);
-        return TimeslotFactory.getTimeslot(message, timeslotSequence);
+        return TimeslotFactory.getTimeslot(message, timeslotSequence, channelNumber, getTimestamp());
     }
 
     /**

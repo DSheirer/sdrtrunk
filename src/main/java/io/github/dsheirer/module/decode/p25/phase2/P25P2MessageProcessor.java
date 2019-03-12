@@ -22,6 +22,11 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +47,32 @@ public class P25P2MessageProcessor implements Listener<IMessage>
     {
         if(mMessageListener != null)
         {
-            mMessageListener.receive(message);
+            if(message instanceof SuperFrameFragment)
+            {
+                SuperFrameFragment sff = (SuperFrameFragment)message;
+
+//                mLog.debug(sff.toString());
+                for(Timeslot timeslot: sff.getTimeslots())
+                {
+                    if(timeslot instanceof AbstractSignalingTimeslot)
+                    {
+                        AbstractSignalingTimeslot ast = (AbstractSignalingTimeslot)timeslot;
+
+                        for(MacMessage macMessage: ast.getMacMessages())
+                        {
+                            mMessageListener.receive(macMessage);
+                        }
+                    }
+                    else
+                    {
+                        mMessageListener.receive(timeslot);
+                    }
+                }
+            }
+            else if(message instanceof SyncLossMessage)
+            {
+                mMessageListener.receive(message);
+            }
         }
     }
 

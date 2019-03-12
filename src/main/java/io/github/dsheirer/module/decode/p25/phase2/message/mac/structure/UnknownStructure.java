@@ -20,34 +20,40 @@
  *
  */
 
-package io.github.dsheirer.identifier.encryption;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
-import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
-public class EncryptionKeyIdentifier extends Identifier<EncryptionKey>
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Unknown MAC Opcode Structure.
+ */
+public class UnknownStructure extends MacStructure
 {
-    public EncryptionKeyIdentifier(EncryptionKey value, IdentifierClass identifierClass, Form form, Role role)
+    /**
+     * Constructs the message
+     *
+     * @param message containing the message bits
+     * @param offset bit index to the start of this structure
+     */
+    public UnknownStructure(CorrectedBinaryMessage message, int offset)
     {
-        super(value, identifierClass, form, role);
+        super(message, offset);
     }
 
     @Override
-    public Protocol getProtocol()
+    public List<Identifier> getIdentifiers()
     {
-        return Protocol.APCO25;
+        return Collections.EMPTY_LIST;
     }
 
-    public boolean isEncrypted()
+    @Override
+    public String toString()
     {
-        return getValue() != null && getValue().isEncrypted();
-    }
-
-    public static EncryptionKeyIdentifier create(EncryptionKey encryptionKey)
-    {
-        return new EncryptionKeyIdentifier(encryptionKey, IdentifierClass.NETWORK, Form.ENCRYPTION_KEY, Role.ANY);
+        return getOpcode().toString();
     }
 }

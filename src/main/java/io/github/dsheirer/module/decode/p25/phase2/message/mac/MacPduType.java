@@ -19,34 +19,29 @@
  *
  *
  */
-package io.github.dsheirer.module.decode.p25.phase2.enumeration;
+
+package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * MAC opcode is used to convey the type of MAC PDU for a MAC message
  */
-public enum ChannelNumber
+public enum MacPduType
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
+    MAC_0_RESERVED("RESERVED-0"),
+    MAC_1_PTT("PUSH-TO-TALK"),
+    MAC_2_END_PTT("END PUSH-TO-TALK"),
+    MAC_3_IDLE("IDLE"),
+    MAC_4_ACTIVE("ACTIVE"),
+    MAC_5_RESERVED("RESERVED-5"),
+    MAC_6_HANGTIME("HANGTIME"),
+    MAC_7_RESERVED("RESERVED-7"),
+    MAC_UNKNOWN("UNKNOWN");
 
-    private int mValue;
     private String mLabel;
 
-    ChannelNumber(int value, String label)
+    MacPduType(String label)
     {
-        mValue = value;
         mLabel = label;
-    }
-
-    /**
-     * Channel number value
-     */
-    public int getValue()
-    {
-        return mValue;
     }
 
     @Override
@@ -55,23 +50,13 @@ public enum ChannelNumber
         return mLabel;
     }
 
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
+    public static MacPduType fromValue(int value)
     {
-        switch(value)
+        if(0 <= value && value <= 7)
         {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
+            return MacPduType.values()[value];
         }
+
+        return MAC_UNKNOWN;
     }
 }

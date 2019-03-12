@@ -20,18 +20,21 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase2;
+package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.BitSetFullException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * APCO-25 Phase II Linear Feedback Shift Register for generating the scrambling sequence for descrambling
  * a Phase II inbound or outbound channel.
- *
  */
 public class LinearFeedbackShiftRegister
 {
+    private final static Logger mLog = LoggerFactory.getLogger(LinearFeedbackShiftRegister.class);
+
     private static long MASK = 0xFFFFFFFFFFFl;
     private static long TAP_43 = (1l << 43);
     private static long TAP_33 = (1l << 33);
@@ -60,18 +63,21 @@ public class LinearFeedbackShiftRegister
         mSystem = system;
         mNac = nac;
 
-        mRegisters = ((0xFFFFF & wacn) << 20) + ((system & 0xFFF) << 12) + (nac & 0xFFF);
+        mRegisters = (0xFFFFF & wacn) << 24;
+        mRegisters += (0xFFF & system) << 12;
+        mRegisters += (0xFFF & nac);
 
         if(mRegisters == 0)
         {
             mRegisters = 0xFFFFFFFFFFFl;
         }
 
-        mCurrentOutput = (mRegisters & TAP_43) == TAP_43;
+        mCurrentOutput = getTap(TAP_43);
     }
 
     /**
      * Indicates if the shift register is currently configured for the argument values (and doesn't need updating).
+     *
      * @param wacn value
      * @param system value
      * @param nac value
@@ -116,27 +122,31 @@ public class LinearFeedbackShiftRegister
      */
     public boolean next()
     {
-        boolean feedback = mCurrentOutput;
-        feedback ^= (mRegisters & TAP_33) == TAP_33;
-        feedback ^= (mRegisters & TAP_19) == TAP_19;
-        feedback ^= (mRegisters & TAP_14) == TAP_14;
-        feedback ^= (mRegisters & TAP_8) == TAP_8;
-        feedback ^= (mRegisters & TAP_3) == TAP_3;
+        boolean retVal = getTap(TAP_43);
+
+        boolean feedback = retVal;
+
+        feedback ^= getTap(TAP_33);
+        feedback ^= getTap(TAP_19);
+        feedback ^= getTap(TAP_14);
+        feedback ^= getTap(TAP_8);
+        feedback ^= getTap(TAP_3);
         mRegisters <<= 1;
         mRegisters &= MASK;
 
         if(feedback)
         {
-            mRegisters |= 1;
+            mRegisters++;
         }
 
-        mCurrentOutput = (mRegisters & TAP_43) == TAP_43;
-
-        return mCurrentOutput;
+        return retVal;
     }
 
-    public static void main(String[] args)
+    /**
+     * Provides the boolean value of the specified tap position
+     */
+    private boolean getTap(long tap)
     {
-
+        return (mRegisters & tap) == tap;
     }
 }

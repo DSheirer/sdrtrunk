@@ -19,34 +19,36 @@
  *
  *
  */
+
 package io.github.dsheirer.module.decode.p25.phase2.enumeration;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * Indicates the RF level adjustment command to a mobile radio
  */
-public enum ChannelNumber
+public enum RFLevel
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
+    UNKNOWN("UNKNOWN"),
+    MINUS_15("-15 dBm"),
+    MINUS_12("-12 dBm"),
+    MINUS_9("-9 dBm"),
+    MINUS_6("-6 dBm"),
+    MINUS_3("-3 dBm"),
+    NONE("0 dBm"),
+    PLUS_3("+3 dBm"),
+    PLUS_6("+6 dBm"),
+    PLUS_9("+9 dBm"),
+    PLUS_12("+12 dBm"),
+    PLUS_15("+15 dBm"),
+    PLUS_18("+18 dBm"),
+    PLUS_21("+21 dBm"),
+    PLUS_24("+24 dBm"),
+    PLUS_27("+27 dBm");
 
-    private int mValue;
     private String mLabel;
 
-    ChannelNumber(int value, String label)
+    RFLevel(String label)
     {
-        mValue = value;
         mLabel = label;
-    }
-
-    /**
-     * Channel number value
-     */
-    public int getValue()
-    {
-        return mValue;
     }
 
     @Override
@@ -55,23 +57,13 @@ public enum ChannelNumber
         return mLabel;
     }
 
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
+    public static RFLevel fromValue(int value)
     {
-        switch(value)
+        if(0 <= value && value <= 15)
         {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
+            return RFLevel.values()[value];
         }
+
+        return UNKNOWN;
     }
 }

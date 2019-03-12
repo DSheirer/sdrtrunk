@@ -19,59 +19,52 @@
  *
  *
  */
+
 package io.github.dsheirer.module.decode.p25.phase2.enumeration;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * APCO25 Linear Feedback Shift Register (LFSR) seed parameters.
  */
-public enum ChannelNumber
+public class ScrambleParameters
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
+    private int mWacn;
+    private int mSystem;
+    private int mNac;
 
-    private int mValue;
-    private String mLabel;
-
-    ChannelNumber(int value, String label)
+    /**
+     * Constructs a parameters instance
+     */
+    public ScrambleParameters(int wacn, int system, int nac)
     {
-        mValue = value;
-        mLabel = label;
+        mWacn = wacn;
+        mSystem = system;
+        mNac = nac;
     }
 
     /**
-     * Channel number value
+     * WACN
+     * @return wacn
      */
-    public int getValue()
+    public int getWACN()
     {
-        return mValue;
-    }
-
-    @Override
-    public String toString()
-    {
-        return mLabel;
+        return mWacn;
     }
 
     /**
-     * Lookup the Channel Number from an integer value
+     * System
+     * @return system
      */
-    public static ChannelNumber fromValue(int value)
+    public int getSystem()
     {
-        switch(value)
-        {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
-        }
+        return mSystem;
+    }
+
+    /**
+     * NAC
+     * @return nac
+     */
+    public int getNAC()
+    {
+        return mNac;
     }
 }

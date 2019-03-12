@@ -24,6 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
 /**
@@ -37,27 +38,28 @@ public class TimeslotFactory
      * @param message containing 320-bit timeslot data
      * @return timeslot parser
      */
-    public static Timeslot getTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence)
+    public static Timeslot getTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence,
+                                       ChannelNumber channelNumber, long timestamp)
     {
         DataUnitID dataUnitID = Timeslot.getDuid(message);
 
         switch(dataUnitID)
         {
             case VOICE_4:
-                return new Voice4Timeslot(message, scramblingSequence);
+                return new Voice4Timeslot(message, scramblingSequence, channelNumber, timestamp);
             case VOICE_2:
-                return new Voice2Timeslot(message, scramblingSequence);
+                return new Voice2Timeslot(message, scramblingSequence, channelNumber, timestamp);
             case SCRAMBLED_FACCH:
-                return new FacchTimeslot(message, scramblingSequence);
+                return new FacchTimeslot(message, scramblingSequence, channelNumber, timestamp);
             case SCRAMBLED_SACCH:
-                return new SacchTimeslot(message, scramblingSequence);
+                return new SacchTimeslot(message, scramblingSequence, channelNumber, timestamp);
             case UNSCRAMBLED_FACCH:
-                return new FacchTimeslot(message);
+                return new FacchTimeslot(message, channelNumber, timestamp);
             case UNSCRAMBLED_SACCH:
-                return new SacchTimeslot(message);
+                return new SacchTimeslot(message, channelNumber, timestamp);
             case UNKNOWN:
             default:
-                return new UnknownTimeslot(message);
+                return new UnknownTimeslot(message, channelNumber, timestamp);
         }
     }
 }

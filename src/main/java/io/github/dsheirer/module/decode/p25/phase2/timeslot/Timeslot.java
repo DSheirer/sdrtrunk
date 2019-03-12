@@ -24,29 +24,43 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
+import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Base timeslot class.
  */
-public abstract class Timeslot
+public abstract class Timeslot implements IMessage
 {
     public static final int[] DATA_UNIT_ID = {0,1,74,75,244,245,318,319};
     private CorrectedBinaryMessage mMessage;
     private DataUnitID mDataUnitID;
+    private ChannelNumber mChannelNumber;
     private boolean mValid;
+    private long mTimestamp;
 
-    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence)
+    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence,
+                       ChannelNumber channelNumber,  long timestamp)
     {
-        this(message, dataUnitID);
+        this(message, dataUnitID, channelNumber, timestamp);
         getMessage().xor(scramblingSequence);
     }
 
 
-    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID)
+    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, ChannelNumber channelNumber, long timestamp)
     {
         mMessage = message;
         mDataUnitID = dataUnitID;
+        mChannelNumber = channelNumber;
+        mTimestamp = timestamp;
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.APCO25_PHASE2;
     }
 
     protected CorrectedBinaryMessage getMessage()
@@ -57,6 +71,24 @@ public abstract class Timeslot
     public DataUnitID getDataUnitID()
     {
         return mDataUnitID;
+    }
+
+    /**
+     * Channel number for this timeslot.
+     * @return channel number (either Channel 0 or Channel 1)
+     */
+    public ChannelNumber getChannelNumber()
+    {
+        return mChannelNumber;
+    }
+
+    /**
+     * Timestamp for the final transmitted bit of this message
+     * @return timestamp in milliseconds since epoch
+     */
+    public long getTimestamp()
+    {
+        return mTimestamp;
     }
 
     /**

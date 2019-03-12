@@ -19,34 +19,36 @@
  *
  *
  */
+
 package io.github.dsheirer.module.decode.p25.phase2.enumeration;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * Bit Error Rate (BER)
  */
-public enum ChannelNumber
+public enum BER
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
+    B0("0 - 0.08%"),
+    B1("0.08-0.12%"),
+    B2("0.12-0.18%"),
+    B3("0.18-0.27%"),
+    B4("0.27-0.39% "),
+    B5("0.39-0.57%"),
+    B6("0.57-0.84%"),
+    B7("0.84-1.25%"),
+    B8("1.25-1.35%"),
+    B9("1.35-2.7%"),
+    B10("2.7-3.9%"),
+    B11("3.9-5.7%"),
+    B12("5.7-8.4%"),
+    B13("8.4-12.5%"),
+    B14(">12.5%"),
+    UNUSED("UNUSED");
 
-    private int mValue;
     private String mLabel;
 
-    ChannelNumber(int value, String label)
+    BER(String label)
     {
-        mValue = value;
         mLabel = label;
-    }
-
-    /**
-     * Channel number value
-     */
-    public int getValue()
-    {
-        return mValue;
     }
 
     @Override
@@ -55,23 +57,13 @@ public enum ChannelNumber
         return mLabel;
     }
 
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
+    public static BER fromValue(int value)
     {
-        switch(value)
+        if(0 <= value && value <= 15)
         {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
+            return BER.values()[value];
         }
+
+        return UNUSED;
     }
 }
