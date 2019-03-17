@@ -20,84 +20,88 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Secondary control channel broadcast information.
+ * Secondary control channel broadcast - abbreviated format
  */
-public class LCSecondaryControlChannelBroadcast extends LinkControlWord implements IFrequencyBandReceiver
+public class SecondaryControlChannelBroadcastAbbreviated extends MacStructure implements IFrequencyBandReceiver
 {
-    private static final int[] RFSS = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] RFSS = {8,9,10,11,12,13,14,15};
     private static final int[] SITE = {16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] FREQUENCY_BAND_A = {24, 25, 26, 27};
     private static final int[] CHANNEL_NUMBER_A = {28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] SERVICE_CLASS_A = {40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] SYSTEM_SERVICE_CLASS_A = {40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] FREQUENCY_BAND_B = {48, 49, 50, 51};
     private static final int[] CHANNEL_NUMBER_B = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
-    private static final int[] SERVICE_CLASS_B = {64, 65, 66, 67, 68, 69, 70, 71};
+    private static final int[] SYSTEM_SERVICE_CLASS_B = {64, 65, 66, 67, 68, 69, 70, 71};
 
-    private List<Identifier> mIdentifiers;
-    private Identifier mRFSS;
+    private Identifier mRfss;
     private Identifier mSite;
     private IChannelDescriptor mChannelA;
     private IChannelDescriptor mChannelB;
     private SystemServiceClass mSystemServiceClassA;
     private SystemServiceClass mSystemServiceClassB;
+    private List<Identifier> mIdentifiers;
 
     /**
-     * Constructs a Link Control Word from the binary message sequence.
+     * Constructs the message
      *
-     * @param message
+     * @param message containing the message bits
+     * @param offset into the message for this structure
      */
-    public LCSecondaryControlChannelBroadcast(BinaryMessage message)
+    public SecondaryControlChannelBroadcastAbbreviated(CorrectedBinaryMessage message, int offset)
     {
-        super(message);
+        super(message, offset);
     }
 
+    /**
+     * Textual representation of this message
+     */
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getMessageStub());
-        sb.append(" SITE:" + getRFSS() + "-" + getSite());
-        sb.append(" CHAN A:" + getChannelA());
-        sb.append(" SERVICE CLASS:" + getSystemServiceClassA());
-
+        sb.append(getOpcode());
+        sb.append(" RFSS:").append(getRfss());
+        sb.append(" SITE:").append(getSite());
+        sb.append(" CHAN A:").append(getChannelA());
+        sb.append(" SERVICE OPTIONS:").append(getSystemServiceClassA());
         if(hasChannelB())
         {
-            sb.append(" CHAN B:" + getChannelB());
-            sb.append(" SERVICE CLASS:" + getSystemServiceClassB());
+            sb.append(" CHAN B:").append(getChannelB());
+            sb.append(" SERVICE OPTIONS:").append(getSystemServiceClassB());
         }
         return sb.toString();
     }
 
-    public Identifier getRFSS()
+    public Identifier getRfss()
     {
-        if(mRFSS == null)
+        if(mRfss == null)
         {
-            mRFSS = APCO25Rfss.create(getMessage().getInt(RFSS));
+            mRfss = APCO25Rfss.create(getMessage().getInt(RFSS, getOffset()));
         }
 
-        return mRFSS;
+        return mRfss;
     }
 
     public Identifier getSite()
     {
         if(mSite == null)
         {
-            mSite = APCO25Site.create(getMessage().getInt(SITE));
+            mSite = APCO25Site.create(getMessage().getInt(SITE, getOffset()));
         }
 
         return mSite;
@@ -107,63 +111,58 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     {
         if(mChannelA == null)
         {
-            mChannelA = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_A),
-                getMessage().getInt(CHANNEL_NUMBER_A));
+            mChannelA = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_A, getOffset()),
+                getMessage().getInt(CHANNEL_NUMBER_A, getOffset()));
         }
 
         return mChannelA;
-    }
-
-    private boolean hasChannelB()
-    {
-        return getMessage().getInt(CHANNEL_NUMBER_A) != getMessage().getInt(CHANNEL_NUMBER_B) &&
-            getMessage().getInt(SERVICE_CLASS_B) != 0;
-    }
-
-    public IChannelDescriptor getChannelB()
-    {
-        if(mChannelB == null)
-        {
-            mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_B),
-                getMessage().getInt(CHANNEL_NUMBER_B));
-        }
-
-        return mChannelB;
     }
 
     public SystemServiceClass getSystemServiceClassA()
     {
         if(mSystemServiceClassA == null)
         {
-            mSystemServiceClassA = new SystemServiceClass(getMessage().getInt(SERVICE_CLASS_A));
+            mSystemServiceClassA = new SystemServiceClass(getMessage().getInt(SYSTEM_SERVICE_CLASS_A, getOffset()));
         }
 
         return mSystemServiceClassA;
     }
 
+    private boolean hasChannelB()
+    {
+        return getMessage().getInt(CHANNEL_NUMBER_A, getOffset()) != getMessage().getInt(CHANNEL_NUMBER_B, getOffset()) &&
+            getMessage().getInt(SYSTEM_SERVICE_CLASS_B, getOffset()) != 0;
+    }
+
+    public IChannelDescriptor getChannelB()
+    {
+        if(hasChannelB() && mChannelB == null)
+        {
+            mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_B, getOffset()),
+                getMessage().getInt(CHANNEL_NUMBER_B, getOffset()));
+        }
+
+        return mChannelB;
+    }
 
     public SystemServiceClass getSystemServiceClassB()
     {
         if(mSystemServiceClassB == null)
         {
-            mSystemServiceClassB = new SystemServiceClass(getMessage().getInt(SERVICE_CLASS_B));
+            mSystemServiceClassB = new SystemServiceClass(getMessage().getInt(SYSTEM_SERVICE_CLASS_B, getOffset()));
         }
 
         return mSystemServiceClassB;
     }
 
-
-    /**
-     * List of identifiers contained in this message
-     */
     @Override
     public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getRFSS());
             mIdentifiers.add(getSite());
+            mIdentifiers.add(getRfss());
         }
 
         return mIdentifiers;
@@ -174,6 +173,7 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     {
         List<IChannelDescriptor> channels = new ArrayList<>();
         channels.add(getChannelA());
+
         if(hasChannelB())
         {
             channels.add(getChannelB());

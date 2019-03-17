@@ -656,6 +656,38 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Returns the long value represented by the bit array
+     *
+     * @param bits - an array of bit positions that will be treated as if they
+     * were contiguous bits, with index 0 being the MSB and index
+     * length - 1 being the LSB
+     * @param offset to apply to each of the bits indices
+     * @return - integer value of the bit array
+     */
+    public long getLong(int[] bits, int offset)
+    {
+        if(bits.length > 64)
+        {
+            throw new IllegalArgumentException("Overflow - must be 64 bits "
+                + "or less to fit into a primitive long value");
+        }
+
+        long value = 0;
+
+        for(int index : bits)
+        {
+            value = Long.rotateLeft(value, 1);
+
+            if(get(index + offset))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
      * Returns the bit values between start and end (inclusive) bit indices.  If the overall length of the bit sequence
      * is not a multiple of 8 bits, the value is zero padded with least significant bits to make it a multiple of 8.
      * @param start index

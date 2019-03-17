@@ -26,6 +26,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FullyQualifiedIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
@@ -36,17 +37,24 @@ import java.util.List;
 /**
  * Group voice channel user - abbreviated format
  */
-public class GroupVoiceChannelUserAbbreviated extends MacStructure
+public class GroupVoiceChannelUserExtended extends MacStructure
 {
     private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] GROUP_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
     private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
         49, 50, 51, 52, 53, 54, 55};
+    private static final int[] FULLY_QUALIFIED_SOURCE_WACN = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+        70, 71, 72, 73, 74, 75};
+    private static final int[] FULLY_QUALIFIED_SOURCE_SYSTEM = {76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87};
+    private static final int[] FULLY_QUALIFIED_SOURCE_ID = {88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101,
+        102, 103, 104, 105, 106, 107, 108, 109, 110, 111};
+
 
     private List<Identifier> mIdentifiers;
+    private VoiceServiceOptions mServiceOptions;
     private TalkgroupIdentifier mGroupAddress;
     private TalkgroupIdentifier mSourceAddress;
-    private VoiceServiceOptions mServiceOptions;
+    private APCO25FullyQualifiedIdentifier mSourceSuid;
 
     /**
      * Constructs the message
@@ -54,7 +62,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public GroupVoiceChannelUserAbbreviated(CorrectedBinaryMessage message, int offset)
+    public GroupVoiceChannelUserExtended(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -68,6 +76,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
         sb.append(getOpcode());
         sb.append(" TO:").append(getGroupAddress());
         sb.append(" FM:").append(getSourceAddress());
+        sb.append(" SUID:").append(getSourceSuid());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }
@@ -111,6 +120,20 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
         return mSourceAddress;
     }
 
+    public APCO25FullyQualifiedIdentifier getSourceSuid()
+    {
+        if(mSourceSuid == null)
+        {
+            int wacn = getMessage().getInt(FULLY_QUALIFIED_SOURCE_WACN, getOffset());
+            int system = getMessage().getInt(FULLY_QUALIFIED_SOURCE_SYSTEM, getOffset());
+            int id = getMessage().getInt(FULLY_QUALIFIED_SOURCE_ID, getOffset());
+
+            mSourceSuid = APCO25FullyQualifiedIdentifier.createFrom(wacn, system, id);
+        }
+
+        return mSourceSuid;
+    }
+
     @Override
     public List<Identifier> getIdentifiers()
     {
@@ -119,6 +142,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getGroupAddress());
             mIdentifiers.add(getSourceAddress());
+            mIdentifiers.add(getSourceSuid());
         }
 
         return mIdentifiers;

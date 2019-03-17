@@ -27,30 +27,32 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
+import io.github.dsheirer.module.decode.p25.reference.DataServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Group voice channel grant update
+ * SNDCP data channel grant
  */
-public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequencyBandReceiver
+public class SNDCPDataChannelGrant extends MacStructure implements IFrequencyBandReceiver
 {
-    private static final int[] FREQUENCY_BAND_A = {8, 9, 10, 11};
-    private static final int[] CHANNEL_NUMBER_A = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int[] GROUP_ADDRESS_A = {24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] FREQUENCY_BAND_B = {40, 41, 42, 43};
-    private static final int[] CHANNEL_NUMBER_B = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
-    private static final int[] GROUP_ADDRESS_B = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] TRANSMIT_FREQUENCY_BAND = {16, 17, 18, 19};
+    private static final int[] TRANSMIT_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int[] RECEIVE_FREQUENCY_BAND = {32, 33, 34, 35};
+    private static final int[] RECEIVE_CHANNEL_NUMBER = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] TARGET_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+        65, 66, 67, 68, 69, 70, 71};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mGroupAddressA;
-    private APCO25Channel mChannelA;
-    private TalkgroupIdentifier mGroupAddressB;
-    private APCO25Channel mChannelB;
+    private APCO25Channel mChannel;
+    private TalkgroupIdentifier mTargetAddress;
+    private DataServiceOptions mServiceOptions;
 
     /**
      * Constructs the message
@@ -58,7 +60,7 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public GroupVoiceChannelGrantUpdate(CorrectedBinaryMessage message, int offset)
+    public SNDCPDataChannelGrant(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -70,60 +72,52 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" GROUP A:").append(getGroupAddressA());
-        sb.append(" CHAN-A:").append(getChannelA());
-        sb.append(" GROUP B:").append(getGroupAddressB());
-        sb.append(" CHAN-B:").append(getChannelB());
+        sb.append(" TO:").append(getTargetAddress());
+        sb.append(" CHAN:").append(getChannel());
+        sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }
 
-    public APCO25Channel getChannelA()
-    {
-        if(mChannelA == null)
-        {
-            mChannelA = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_A, getOffset()),
-                getMessage().getInt(CHANNEL_NUMBER_A, getOffset()));
-        }
-
-        return mChannelA;
-    }
-
-    public APCO25Channel getChannelB()
-    {
-        if(mChannelB == null)
-        {
-            mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_B, getOffset()),
-                getMessage().getInt(CHANNEL_NUMBER_B, getOffset()));
-        }
-
-        return mChannelB;
-    }
-
-
     /**
-     * Talkgroup channel A
+     * Voice channel service options
      */
-    public TalkgroupIdentifier getGroupAddressA()
+    public DataServiceOptions getServiceOptions()
     {
-        if(mGroupAddressA == null)
+        if(mServiceOptions == null)
         {
-            mGroupAddressA = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_A, getOffset()));
+            mServiceOptions = new DataServiceOptions(getMessage().getInt(SERVICE_OPTIONS, getOffset()));
         }
 
-        return mGroupAddressA;
+        return mServiceOptions;
     }
 
     /**
-     * Talkgroup channel B
+     * Channel
      */
-    public TalkgroupIdentifier getGroupAddressB()
+    public APCO25Channel getChannel()
     {
-        if(mGroupAddressB == null)
+        if(mChannel == null)
         {
-            mGroupAddressB = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_B, getOffset()));
+            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(TRANSMIT_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(TRANSMIT_CHANNEL_NUMBER, getOffset()),
+                getMessage().getInt(RECEIVE_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(RECEIVE_CHANNEL_NUMBER, getOffset()));
         }
 
-        return mGroupAddressB;
+        return mChannel;
+    }
+
+    /**
+     * To Talkgroup
+     */
+    public TalkgroupIdentifier getTargetAddress()
+    {
+        if(mTargetAddress == null)
+        {
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+        }
+
+        return mTargetAddress;
     }
 
     @Override
@@ -132,10 +126,8 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getChannelA());
-            mIdentifiers.add(getChannelB());
-            mIdentifiers.add(getGroupAddressA());
-            mIdentifiers.add(getGroupAddressB());
+            mIdentifiers.add(getTargetAddress());
+            mIdentifiers.add(getChannel());
         }
 
         return mIdentifiers;
@@ -145,8 +137,7 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
     public List<IChannelDescriptor> getChannels()
     {
         List<IChannelDescriptor> channels = new ArrayList<>();
-        channels.add(getChannelA());
-        channels.add(getChannelB());
+        channels.add(getChannel());
         return channels;
     }
 }

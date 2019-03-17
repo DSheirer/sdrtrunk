@@ -31,6 +31,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastAbbreviated;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastExtended;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.ScramblingSequence;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
@@ -177,6 +178,12 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
                         macMessage.getMacStructure() instanceof NetworkStatusBroadcastAbbreviated)
                     {
                         NetworkStatusBroadcastAbbreviated networkStatus = (NetworkStatusBroadcastAbbreviated)macMessage.getMacStructure();
+                        mScramblingSequence.update(networkStatus.getScrambleParameters());
+                    }
+                    else if(macOpcode == MacOpcode.PHASE1_251_NETWORK_STATUS_BROADCAST_EXTENDED &&
+                        macMessage.getMacStructure() instanceof NetworkStatusBroadcastExtended)
+                    {
+                        NetworkStatusBroadcastExtended networkStatus = (NetworkStatusBroadcastExtended)macMessage.getMacStructure();
                         mScramblingSequence.update(networkStatus.getScrambleParameters());
                     }
                 }

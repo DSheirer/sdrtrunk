@@ -20,89 +20,80 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase1.message.lc.standard;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Secondary control channel broadcast information.
+ * Secondary control channel broadcast - explicit channel format
  */
-public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IFrequencyBandReceiver
+public class SecondaryControlChannelBroadcastExplicit extends MacStructure implements IFrequencyBandReceiver
 {
-    private static final int[] LRA = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] DOWNLINK_FREQUENCY_BAND = {16, 17, 18, 19};
-    private static final int[] DOWNLINK_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] RFSS = {32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] SITE = {40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] UPLINK_FREQUENCY_BAND = {48, 49, 50, 51};
-    private static final int[] UPLINK_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
-    private static final int[] SERVICE_CLASS = {64, 65, 66, 67, 68, 69, 70, 71};
+    private static final int[] RFSS = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] SITE = {16, 17, 18, 19, 20, 21, 22, 23};
+    private static final int[] TRANSMIT_FREQUENCY_BAND = {24, 25, 26, 27};
+    private static final int[] TRANSMIT_CHANNEL_NUMBER = {28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
+    private static final int[] RECEIVE_FREQUENCY_BAND = {40, 41, 42, 43};
+    private static final int[] RECEIVE_CHANNEL_NUMBER = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
+    private static final int[] SYSTEM_SERVICE_CLASS = {56, 57, 58, 59, 60, 61, 62, 63};
 
-    private List<Identifier> mIdentifiers;
-    private Identifier mLRA;
-    private Identifier mRFSS;
+    private Identifier mRfss;
     private Identifier mSite;
     private IChannelDescriptor mChannel;
     private SystemServiceClass mSystemServiceClass;
+    private List<Identifier> mIdentifiers;
 
     /**
-     * Constructs a Link Control Word from the binary message sequence.
+     * Constructs the message
      *
-     * @param message
+     * @param message containing the message bits
+     * @param offset into the message for this structure
      */
-    public LCRFSSStatusBroadcastExplicit(BinaryMessage message)
+    public SecondaryControlChannelBroadcastExplicit(CorrectedBinaryMessage message, int offset)
     {
-        super(message);
+        super(message, offset);
     }
 
+    /**
+     * Textual representation of this message
+     */
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLocationRegistrationArea());
-        sb.append(" SITE:" + getRfss() + "-" + getSite());
-        sb.append(" CHAN:" + getChannel());
-        sb.append(" SERVICE OPTIONS:" + getSystemServiceClass());
+        sb.append(getOpcode());
+        sb.append(" RFSS:").append(getRfss());
+        sb.append(" SITE:").append(getSite());
+        sb.append(" CHAN A:").append(getChannel());
+        sb.append(" SERVICE OPTIONS:").append(getSystemServiceClass());
         return sb.toString();
-    }
-
-    public Identifier getLocationRegistrationArea()
-    {
-        if(mLRA == null)
-        {
-            mLRA = APCO25Lra.create(getMessage().getInt(LRA));
-        }
-
-        return mLRA;
     }
 
     public Identifier getRfss()
     {
-        if(mRFSS == null)
+        if(mRfss == null)
         {
-            mRFSS = APCO25Rfss.create(getMessage().getInt(RFSS));
+            mRfss = APCO25Rfss.create(getMessage().getInt(RFSS, getOffset()));
         }
 
-        return mRFSS;
+        return mRfss;
     }
 
     public Identifier getSite()
     {
         if(mSite == null)
         {
-            mSite = APCO25Site.create(getMessage().getInt(SITE));
+            mSite = APCO25Site.create(getMessage().getInt(SITE, getOffset()));
         }
 
         return mSite;
@@ -112,9 +103,10 @@ public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IF
     {
         if(mChannel == null)
         {
-            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(DOWNLINK_FREQUENCY_BAND),
-                getMessage().getInt(DOWNLINK_CHANNEL_NUMBER), getMessage().getInt(UPLINK_FREQUENCY_BAND),
-                getMessage().getInt(UPLINK_CHANNEL_NUMBER));
+            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(TRANSMIT_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(TRANSMIT_CHANNEL_NUMBER, getOffset()),
+                getMessage().getInt(RECEIVE_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(RECEIVE_CHANNEL_NUMBER, getOffset()));
         }
 
         return mChannel;
@@ -124,24 +116,20 @@ public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IF
     {
         if(mSystemServiceClass == null)
         {
-            mSystemServiceClass = new SystemServiceClass(getMessage().getInt(SERVICE_CLASS));
+            mSystemServiceClass = new SystemServiceClass(getMessage().getInt(SYSTEM_SERVICE_CLASS, getOffset()));
         }
 
         return mSystemServiceClass;
     }
 
-    /**
-     * List of identifiers contained in this message
-     */
     @Override
     public List<Identifier> getIdentifiers()
     {
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getLocationRegistrationArea());
-            mIdentifiers.add(getRfss());
             mIdentifiers.add(getSite());
+            mIdentifiers.add(getRfss());
         }
 
         return mIdentifiers;

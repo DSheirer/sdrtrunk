@@ -19,39 +19,46 @@
  *
  *
  */
-package io.github.dsheirer.identifier;
+
+package io.github.dsheirer.identifier.talkgroup;
 
 /**
- * Identifier form.  Indicates the type of identifier.
+ * Fully qualified radio identifier
  */
-public enum Form
+public class FullyQualifiedIdentifier
 {
-    ALIAS_LIST,
-    CHANNEL,
-    CHANNEL_DESCRIPTOR,
-    CHANNEL_NAME,
-    CHANNEL_FREQUENCY,
-    DECODER_TYPE,
-    ENCRYPTION_KEY,
-    ESN,
-    FULLY_QUALIFIED_IDENTIFIER,
-    IPV4_ADDRESS,
-    LOCATION_REGISTRATION_AREA,
-    LOJACK,
-    NEIGHBOR_SITE,
-    NETWORK_ACCESS_CODE,
-    PATCH_GROUP,
-    RF_SUBSYSTEM,
-    SHORT_DATA_MESSAGE,
-    SITE,
-    STATE,
-    SYSTEM,
-    TALKGROUP,
-    TELEPHONE_NUMBER,
-    UNIT_IDENTIFIER,
-    UNIT_STATUS,
-    USER_STATUS,
-    UNIQUE_ID,
-    WACN,
-    ANY;
+    private int mWacn;
+    private int mSystem;
+    private int mId;
+
+    /**
+     * Constructs an instance
+     * @param wacn
+     * @param system
+     * @param id
+     */
+    public FullyQualifiedIdentifier(int wacn, int system, int id)
+    {
+        mWacn = wacn;
+        mSystem = system;
+        mId = id;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mWacn + "." + mSystem + "." + mId;
+    }
+
+    /**
+     * Creates an instance with the specified values
+     * @param wacn value
+     * @param system value
+     * @param id value
+     * @return instance
+     */
+    public static FullyQualifiedIdentifier create(int wacn, int system, int id)
+    {
+        return new FullyQualifiedIdentifier(wacn, system, id);
+    }
 }

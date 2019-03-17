@@ -20,7 +20,7 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
@@ -30,59 +30,80 @@ import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Adjacent status broadcast - neighbor sites
+ * Adjacent (neighbor site) status broadcast - abbreviated format
  */
-public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBandReceiver
+public class AdjacentStatusBroadcastExtended extends MacStructure implements IFrequencyBandReceiver
 {
-    private static final int[] LOCATION_REGISTRATION_AREA = {16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int CONVENTIONAL_CHANNEL_FLAG = 24;
-    private static final int SITE_FAILURE_FLAG = 25;
-    private static final int VALID_INFORMATION_FLAG = 26;
-    private static final int ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG = 27;
-    private static final int[] SYSTEM = {28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] RFSS = {40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] SITE = {48, 49, 50, 51, 52, 53, 54, 55};
-    private static final int[] FREQUENCY_BAND = {56, 57, 58, 59};
-    private static final int[] CHANNEL_NUMBER = {60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
-    private static final int[] SYSTEM_SERVICE_CLASS = {72, 73, 74, 75, 76, 77, 78, 79};
+    private static final int[] LRA = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int CONVENTIONAL_CHANNEL_FLAG = 16;
+    private static final int SITE_FAILURE_FLAG = 17;
+    private static final int VALID_INFORMATION_FLAG = 18;
+    private static final int ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG = 19;
+    private static final int[] SYSTEM_ID = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 
-    private Identifier mLocationRegistrationArea;
-    private Identifier mSystem;
-    private Identifier mSite;
-    private Identifier mRfss;
-    private IChannelDescriptor mChannel;
-    private SystemServiceClass mSystemServiceClass;
+    private static final int[] RFSS_ID = {32, 33, 34, 35, 36, 37, 38, 39};
+    private static final int[] SITE_ID = {40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] TRANSMIT_FREQUENCY_BAND = {48, 49, 50, 51};
+    private static final int[] TRANSMIT_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
+    private static final int[] RECEIVE_FREQUENCY_BAND = {64, 65, 66, 67};
+    private static final int[] RECEIVE_CHANNEL_NUMBER = {68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
+    private static final int[] SERVICE_CLASS = {80, 81, 82, 83, 84, 85, 86, 87};
+
     private List<Identifier> mIdentifiers;
+    private Identifier mLRA;
     private List<String> mSiteFlags;
+    private Identifier mSystem;
+    private Identifier mRFSS;
+    private Identifier mSite;
+    private APCO25Channel mChannel;
+    private SystemServiceClass mSystemServiceClass;
 
     /**
-     * Constructs a TSBK from the binary message sequence.
+     * Constructs the message
+     *
+     * @param message containing the message bits
+     * @param offset into the message for this structure
      */
-    public AdjacentStatusBroadcast(P25P1DataUnitID dataUnitId, CorrectedBinaryMessage message, int nac, long timestamp)
+    public AdjacentStatusBroadcastExtended(CorrectedBinaryMessage message, int offset)
     {
-        super(dataUnitId, message, nac, timestamp);
+        super(message, offset);
     }
 
+    /**
+     * Textual representation of this message
+     */
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLocationRegistrationArea());
+        sb.append(getOpcode());
         sb.append(" SYSTEM:").append(getSystem());
-        sb.append(" RFSS:").append(getRfss());
+        sb.append(" RFSS:").append(getRFSS());
         sb.append(" SITE:").append(getSite());
-        sb.append(" FLAGS ").append(getSiteFlags());
-        sb.append(" SERVICES ").append(getSystemServiceClass());
+        sb.append(" LRA:").append(getLRA());
+        sb.append(" CHANNEL:").append(getChannel());
+        sb.append(" FLAGS:").append(getSiteFlags());
+        sb.append(" SERVICES:").append(getSystemServiceClass().getServices());
         return sb.toString();
+    }
+
+    public Identifier getLRA()
+    {
+        if(mLRA == null)
+        {
+            mLRA = APCO25Lra.create(getMessage().getInt(LRA, getOffset()));
+        }
+
+        return mLRA;
     }
 
     public List<String> getSiteFlags()
@@ -120,7 +141,7 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
      */
     public boolean isConventionalChannel()
     {
-        return getMessage().get(CONVENTIONAL_CHANNEL_FLAG);
+        return getMessage().get(CONVENTIONAL_CHANNEL_FLAG + getOffset());
     }
 
     /**
@@ -128,7 +149,7 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
      */
     public boolean isFailedConditionSite()
     {
-        return getMessage().get(SITE_FAILURE_FLAG);
+        return getMessage().get(SITE_FAILURE_FLAG + getOffset());
     }
 
     /**
@@ -136,7 +157,7 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
      */
     public boolean isValidSiteInformation()
     {
-        return getMessage().get(VALID_INFORMATION_FLAG);
+        return getMessage().get(VALID_INFORMATION_FLAG + getOffset());
     }
 
     /**
@@ -144,54 +165,47 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
      */
     public boolean isActiveNetworkConnectionToRfssControllerSite()
     {
-        return getMessage().get(ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG);
+        return getMessage().get(ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG + getOffset());
     }
 
-    public Identifier getLocationRegistrationArea()
+    public Identifier getRFSS()
     {
-        if(mLocationRegistrationArea == null)
+        if(mRFSS == null)
         {
-            mLocationRegistrationArea = APCO25Lra.create(getMessage().getInt(LOCATION_REGISTRATION_AREA));
+            mRFSS = APCO25Rfss.create(getMessage().getInt(RFSS_ID, getOffset()));
         }
 
-        return mLocationRegistrationArea;
-    }
-
-    public Identifier getSystem()
-    {
-        if(mSystem == null)
-        {
-            mSystem = APCO25System.create(getMessage().getInt(SYSTEM));
-        }
-
-        return mSystem;
+        return mRFSS;
     }
 
     public Identifier getSite()
     {
         if(mSite == null)
         {
-            mSite = APCO25Site.create(getMessage().getInt(SITE));
+            mSite = APCO25Site.create(getMessage().getInt(SITE_ID, getOffset()));
         }
 
         return mSite;
     }
 
-    public Identifier getRfss()
+    public Identifier getSystem()
     {
-        if(mRfss == null)
+        if(mSystem == null)
         {
-            mRfss = APCO25Rfss.create(getMessage().getInt(RFSS));
+            mSystem = APCO25System.create(getMessage().getInt(SYSTEM_ID, getOffset()));
         }
 
-        return mRfss;
+        return mSystem;
     }
 
-    public IChannelDescriptor getChannel()
+    public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {
-            mChannel = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND), getMessage().getInt(CHANNEL_NUMBER));
+            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(TRANSMIT_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(TRANSMIT_CHANNEL_NUMBER, getOffset()),
+                getMessage().getInt(RECEIVE_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(RECEIVE_CHANNEL_NUMBER, getOffset()));
         }
 
         return mChannel;
@@ -201,7 +215,7 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
     {
         if(mSystemServiceClass == null)
         {
-            mSystemServiceClass = new SystemServiceClass(getMessage().getInt(SYSTEM_SERVICE_CLASS));
+            mSystemServiceClass = SystemServiceClass.create(getMessage().getInt(SERVICE_CLASS, getOffset()));
         }
 
         return mSystemServiceClass;
@@ -213,10 +227,11 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getLocationRegistrationArea());
+            mIdentifiers.add(getLRA());
             mIdentifiers.add(getSystem());
+            mIdentifiers.add(getRFSS());
             mIdentifiers.add(getSite());
-            mIdentifiers.add(getRfss());
+            mIdentifiers.add(getChannel());
         }
 
         return mIdentifiers;
@@ -225,8 +240,6 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
     @Override
     public List<IChannelDescriptor> getChannels()
     {
-        List<IChannelDescriptor> channels = new ArrayList<>();
-        channels.add(getChannel());
-        return channels;
+        return Collections.singletonList(getChannel());
     }
 }

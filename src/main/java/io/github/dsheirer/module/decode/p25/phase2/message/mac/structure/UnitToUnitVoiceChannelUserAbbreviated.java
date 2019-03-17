@@ -34,17 +34,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Group voice channel user - abbreviated format
+ * Unit-to-unit voice channel user - abbreviated format
  */
-public class GroupVoiceChannelUserAbbreviated extends MacStructure
+public class UnitToUnitVoiceChannelUserAbbreviated extends MacStructure
 {
     private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] GROUP_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-        49, 50, 51, 52, 53, 54, 55};
+    private static final int[] TARGET_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+        34, 35, 36, 37, 38, 39};
+    private static final int[] SOURCE_ADDRESS = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+        57, 58, 59, 60, 61, 62, 63};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mGroupAddress;
+    private TalkgroupIdentifier mTargetAddress;
     private TalkgroupIdentifier mSourceAddress;
     private VoiceServiceOptions mServiceOptions;
 
@@ -54,7 +55,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public GroupVoiceChannelUserAbbreviated(CorrectedBinaryMessage message, int offset)
+    public UnitToUnitVoiceChannelUserAbbreviated(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -66,7 +67,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getGroupAddress());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceAddress());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
@@ -88,14 +89,14 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getGroupAddress()
+    public TalkgroupIdentifier getTargetAddress()
     {
-        if(mGroupAddress == null)
+        if(mTargetAddress == null)
         {
-            mGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
-        return mGroupAddress;
+        return mTargetAddress;
     }
 
     /**
@@ -117,7 +118,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getGroupAddress());
+            mIdentifiers.add(getTargetAddress());
             mIdentifiers.add(getSourceAddress());
         }
 

@@ -23,10 +23,14 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
@@ -34,16 +38,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Group voice channel user - abbreviated format
+ * Group voice channel grant - extended format
  */
-public class GroupVoiceChannelUserAbbreviated extends MacStructure
+public class GroupVoiceChannelGrantExtended extends MacStructure implements IFrequencyBandReceiver
 {
     private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] GROUP_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-        49, 50, 51, 52, 53, 54, 55};
+    private static final int[] TRANSMIT_FREQUENCY_BAND = {16, 17, 18, 19};
+    private static final int[] TRANSMIT_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int[] RECEIVE_FREQUENCY_BAND = {32, 33, 34, 35};
+    private static final int[] RECEIVE_CHANNEL_NUMBER = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] GROUP_ADDRESS = {48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
+    private static final int[] SOURCE_ADDRESS = {64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81,
+        82, 83, 84, 85, 86, 87};
 
     private List<Identifier> mIdentifiers;
+    private APCO25Channel mChannel;
     private TalkgroupIdentifier mGroupAddress;
     private TalkgroupIdentifier mSourceAddress;
     private VoiceServiceOptions mServiceOptions;
@@ -54,7 +63,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public GroupVoiceChannelUserAbbreviated(CorrectedBinaryMessage message, int offset)
+    public GroupVoiceChannelGrantExtended(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -68,6 +77,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
         sb.append(getOpcode());
         sb.append(" TO:").append(getGroupAddress());
         sb.append(" FM:").append(getSourceAddress());
+        sb.append(" CHAN:").append(getChannel());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }
@@ -83,6 +93,22 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
         }
 
         return mServiceOptions;
+    }
+
+    /**
+     * Channel
+     */
+    public APCO25Channel getChannel()
+    {
+        if(mChannel == null)
+        {
+            mChannel = APCO25ExplicitChannel.create(getMessage().getInt(TRANSMIT_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(TRANSMIT_CHANNEL_NUMBER, getOffset()),
+                getMessage().getInt(RECEIVE_FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(RECEIVE_CHANNEL_NUMBER, getOffset()));
+        }
+
+        return mChannel;
     }
 
     /**
@@ -119,8 +145,17 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getGroupAddress());
             mIdentifiers.add(getSourceAddress());
+            mIdentifiers.add(getChannel());
         }
 
         return mIdentifiers;
+    }
+
+    @Override
+    public List<IChannelDescriptor> getChannels()
+    {
+        List<IChannelDescriptor> channels = new ArrayList<>();
+        channels.add(getChannel());
+        return channels;
     }
 }

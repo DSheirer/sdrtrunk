@@ -25,28 +25,27 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Group voice channel user - abbreviated format
+ * MAC release / call or talker preemption
  */
-public class GroupVoiceChannelUserAbbreviated extends MacStructure
+public class MacRelease extends MacStructure
 {
-    private static final int[] SERVICE_OPTIONS = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] GROUP_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-        49, 50, 51, 52, 53, 54, 55};
+    private static final int UNFORCED_FORCED_FLAG = 8;
+    private static final int CALL_AUDIO_FLAG = 9;
+    private static final int[] TARGET_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+        33, 34, 35, 36, 37, 38, 39};
+    private static final int[] COLOR_CODE = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mGroupAddress;
-    private TalkgroupIdentifier mSourceAddress;
-    private VoiceServiceOptions mServiceOptions;
+    private TalkgroupIdentifier mTargetAddress;
+    private Identifier mNac;
 
     /**
      * Constructs the message
@@ -54,7 +53,7 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public GroupVoiceChannelUserAbbreviated(CorrectedBinaryMessage message, int offset)
+    public MacRelease(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -66,49 +65,69 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getGroupAddress());
-        sb.append(" FM:").append(getSourceAddress());
-        sb.append(" ").append(getServiceOptions());
-        return sb.toString();
-    }
-
-    /**
-     * Voice channel service options
-     */
-    public VoiceServiceOptions getServiceOptions()
-    {
-        if(mServiceOptions == null)
+        sb.append(" TO:").append(getTargetAddress());
+        sb.append(" NAC:").append(getNac());
+        if(isForcedPreemption())
         {
-            mServiceOptions = new VoiceServiceOptions(getMessage().getInt(SERVICE_OPTIONS, getOffset()));
+            sb.append(" FORCED");
+        }
+        else
+        {
+            sb.append(" UNFORCED");
         }
 
-        return mServiceOptions;
+        if(isTalkerPreemption())
+        {
+            sb.append(" TALKER");
+        }
+        else
+        {
+            sb.append(" CALL");
+        }
+
+        sb.append(" PREEMPTION");
+
+        return sb.toString();
     }
 
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getGroupAddress()
+    public TalkgroupIdentifier getTargetAddress()
     {
-        if(mGroupAddress == null)
+        if(mTargetAddress == null)
         {
-            mGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
-        return mGroupAddress;
+        return mTargetAddress;
+    }
+
+    public Identifier getNac()
+    {
+        if(mNac == null)
+        {
+            mNac = APCO25Nac.create(getMessage().getInt(COLOR_CODE, getOffset()));
+        }
+
+        return mNac;
     }
 
     /**
-     * From Radio Unit
+     * Indicates if this is a forced (true) or unforced (false) preemption.
      */
-    public TalkgroupIdentifier getSourceAddress()
+    public boolean isForcedPreemption()
     {
-        if(mSourceAddress == null)
-        {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
-        }
+        return getMessage().get(UNFORCED_FORCED_FLAG + getOffset());
+    }
 
-        return mSourceAddress;
+    /**
+     * Indicates if the call is a talker preemption (true) or call preemption (false) where a talker preemption means
+     * the current talker is preempted, but the current talkgroup and call will continue.
+     */
+    public boolean isTalkerPreemption()
+    {
+        return getMessage().get(CALL_AUDIO_FLAG + getOffset());
     }
 
     @Override
@@ -117,8 +136,8 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getGroupAddress());
-            mIdentifiers.add(getSourceAddress());
+            mIdentifiers.add(getTargetAddress());
+            mIdentifiers.add(getNac());
         }
 
         return mIdentifiers;

@@ -20,14 +20,14 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
+package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,33 +35,38 @@ import java.util.List;
 /**
  * Radio unit monitor command
  */
-public class RadioUnitMonitorCommand extends OSPMessage
+public class RadioUnitMonitorCommand extends MacStructure
 {
-    private static final int[] RESERVED = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29};
-    private static final int[] TX_MULTIPLIER = {30, 31};
-    private static final int[] SOURCE_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
-        50, 51, 52, 53, 54, 55};
-    private static final int[] TARGET_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
-        74, 75, 76, 77, 78, 79};
+    private static final int[] TRANSMIT_MULTIPLIER = {14, 15};
+    private static final int[] SOURCE_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+        33, 34, 35, 36, 37, 38, 39};
+    private static final int[] TARGET_ADDRESS = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
+        57, 58, 59, 60, 61, 62, 63};
 
-    private Identifier mSourceAddress;
-    private Identifier mTargetAddress;
     private List<Identifier> mIdentifiers;
+    private TalkgroupIdentifier mSourceAddress;
+    private TalkgroupIdentifier mTargetAddress;
 
     /**
-     * Constructs a TSBK from the binary message sequence.
+     * Constructs the message
+     *
+     * @param message containing the message bits
+     * @param offset into the message for this structure
      */
-    public RadioUnitMonitorCommand(P25P1DataUnitID dataUnitId, CorrectedBinaryMessage message, int nac, long timestamp)
+    public RadioUnitMonitorCommand(CorrectedBinaryMessage message, int offset)
     {
-        super(dataUnitId, message, nac, timestamp);
+        super(message, offset);
     }
 
+    /**
+     * Textual representation of this message
+     */
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getMessageStub());
-        sb.append(" FM:").append(getSourceAddress());
+        sb.append(getOpcode());
         sb.append(" TO:").append(getTargetAddress());
+        sb.append(" FM:").append(getSourceAddress());
         sb.append(" TX MULTIPLIER:").append(getTxMultiplier());
         return sb.toString();
     }
@@ -72,24 +77,30 @@ public class RadioUnitMonitorCommand extends OSPMessage
      */
     public int getTxMultiplier()
     {
-        return getMessage().getInt(TX_MULTIPLIER);
+        return getMessage().getInt(TRANSMIT_MULTIPLIER, getOffset());
     }
 
-    public Identifier getTargetAddress()
+    /**
+     * To Talkgroup
+     */
+    public TalkgroupIdentifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS));
+            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;
     }
 
-    public Identifier getSourceAddress()
+    /**
+     * From Radio Unit
+     */
+    public TalkgroupIdentifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS));
+            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;

@@ -21,8 +21,11 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
+import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
@@ -31,15 +34,22 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
 public class P25P2MessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2MessageProcessor.class);
 
     private Listener<IMessage> mMessageListener;
 
+    //Map of up to 16 band identifiers per RFSS.  These identifier update messages are inserted into any message that
+    // conveys channel information so that the uplink/downlink frequencies can be calculated
+    private Map<Integer,IFrequencyBand> mFrequencyBandMap = new TreeMap<Integer,IFrequencyBand>();
+
     public P25P2MessageProcessor()
     {
-        //TODO: catch/retain the frequency band messages and insert into corresponding messages
     }
 
     @Override
@@ -60,6 +70,35 @@ public class P25P2MessageProcessor implements Listener<IMessage>
 
                         for(MacMessage macMessage: ast.getMacMessages())
                         {
+                            /* Insert frequency band identifier update messages into channel-type messages */
+                            if(macMessage instanceof IFrequencyBandReceiver)
+                            {
+                                IFrequencyBandReceiver receiver = (IFrequencyBandReceiver)macMessage;
+
+                                List<IChannelDescriptor> channels = receiver.getChannels();
+
+                                for(IChannelDescriptor channel : channels)
+                                {
+                                    int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
+
+                                    for(int id : frequencyBandIdentifiers)
+                                    {
+                                        if(mFrequencyBandMap.containsKey(id))
+                                        {
+                                            channel.setFrequencyBand(mFrequencyBandMap.get(id));
+                                        }
+                                    }
+                                }
+                            }
+
+                            /* Store band identifiers so that they can be injected into channel
+                             * type messages */
+                            if(macMessage instanceof IFrequencyBand)
+                            {
+                                IFrequencyBand bandIdentifier = (IFrequencyBand)macMessage;
+                                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
+                            }
+
                             mMessageListener.receive(macMessage);
                         }
                     }
