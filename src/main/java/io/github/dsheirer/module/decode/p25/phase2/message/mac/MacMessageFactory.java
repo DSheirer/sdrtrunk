@@ -181,7 +181,7 @@ public class MacMessageFactory
                     }
                     else if(secondOpcode != MacOpcode.TDMA_0_NULL_INFORMATION_MESSAGE)
                     {
-                        mLog.warn("Possible variable-length third opcode detected but not parsed: " + opcode);
+                        mLog.warn("Possible variable-length third opcode detected but not parsed: " + secondOpcode);
                     }
                 }
             }

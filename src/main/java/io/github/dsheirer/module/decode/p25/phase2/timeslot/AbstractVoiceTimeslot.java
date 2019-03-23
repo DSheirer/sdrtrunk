@@ -53,6 +53,11 @@ public abstract class AbstractVoiceTimeslot extends Timeslot
         StringBuilder sb = new StringBuilder();
         sb.append(getChannelNumber());
         sb.append(" ").append(getDataUnitID().toString());
+
+        for(int x = 0; x < getVoiceFrames().size(); x++)
+        {
+            sb.append(" ").append(x).append(":").append(getVoiceFrames().get(x).toHexString());
+        }
         return sb.toString();
 
     }

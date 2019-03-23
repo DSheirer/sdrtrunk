@@ -36,11 +36,11 @@ import java.util.List;
 public class Voice4Timeslot extends AbstractVoiceTimeslot
 {
     private static final int FRAME_LENGTH = 72;
-    private static final int FRAME_1_START = 42;
-    private static final int FRAME_2_START = 116;
-    private static final int FRAME_3_START = 212;
-    private static final int FRAME_4_START = 286;
-    private static final int ESS_B_START = 188;
+    private static final int FRAME_1_START = 2;
+    private static final int FRAME_2_START = 76;
+    private static final int FRAME_3_START = 172;
+    private static final int FRAME_4_START = 246;
+    private static final int ESS_B_START = 148;
     private static final int ESS_B_LENGTH = 24;
 
     private List<BinaryMessage> mVoiceFrames;

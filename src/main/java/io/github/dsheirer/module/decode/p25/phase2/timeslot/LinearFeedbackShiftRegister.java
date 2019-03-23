@@ -63,7 +63,10 @@ public class LinearFeedbackShiftRegister
         mSystem = system;
         mNac = nac;
 
-        mRegisters = (0xFFFFF & wacn) << 24;
+        int temp = 0xFFFFF & 1;
+        long tempShift = temp << 24;
+
+        mRegisters = (long)(0xFFFFF & wacn) << 24;
         mRegisters += (0xFFF & system) << 12;
         mRegisters += (0xFFF & nac);
 

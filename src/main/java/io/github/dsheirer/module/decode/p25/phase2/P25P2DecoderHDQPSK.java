@@ -205,16 +205,18 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
 
     public static void main(String[] args)
     {
-        String path = "/media/denny/500G1EXT4/RadioRecordings/";
-        String name = "DFWAirport_Site_857_3875_baseband_20181213_223136_trimmed.wav";
-        String recording = "DFWAirport_Site_857_3875_baseband_20181213_223136";
+        String path = "/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/";
+        String input = "CNYICC_Rome_CNYICC_154_250_baseband_20190322_180331_good.wav";
+        String output = "CNYICC_ROME_154_250_8";
+
         P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK();
-        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), recording, Protocol.APCO25_PHASE2);
+        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25_PHASE2);
         decoder.setBufferListener(recorder.getReusableByteBufferListener());
         recorder.start();
 
-        File file = new File(path + name);
+        File file = new File(path + input);
 
+        boolean running = true;
 
         try(ComplexWaveSource source = new ComplexWaveSource(file))
         {
@@ -222,7 +224,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
             source.setListener(decoder);
             source.start();
 
-            while(true)
+            while(running)
             {
                 source.next(200, true);
             }
@@ -230,6 +232,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         catch(IOException e)
         {
             mLog.error("Error", e);
+            running = false;
         }
 
         recorder.stop();
