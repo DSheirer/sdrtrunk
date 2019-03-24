@@ -27,8 +27,10 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.audio.P25P2CallSequenceRecorder;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -184,17 +186,21 @@ public class P25P2MessageFramer implements Listener<Dibit>
     {
         P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
         P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
+        P25P2CallSequenceRecorder frameRecorder = new P25P2CallSequenceRecorder(new UserPreferences(), 154250000);
         messageFramer.setListener(messageProcessor);
         messageProcessor.setMessageListener(new Listener<IMessage>()
         {
             @Override
             public void receive(IMessage message)
             {
+                frameRecorder.receive(message);
                 mLog.debug(message.toString());
             }
         });
 
-        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042605_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_1.bits");
+
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042605_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_1.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042806_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_3.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042830_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_4.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042853_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_5.bits");
@@ -213,5 +219,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
         {
             ioe.printStackTrace();
         }
+
+        frameRecorder.stop();
     }
 }

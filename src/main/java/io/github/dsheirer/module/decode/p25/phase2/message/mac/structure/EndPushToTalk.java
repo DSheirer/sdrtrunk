@@ -28,6 +28,7 @@ import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -58,6 +59,12 @@ public class EndPushToTalk extends MacStructure
     public EndPushToTalk(CorrectedBinaryMessage message)
     {
         super(message, 0);
+    }
+
+    @Override
+    public MacOpcode getOpcode()
+    {
+        return MacOpcode.PUSH_TO_TALK;
     }
 
     /**

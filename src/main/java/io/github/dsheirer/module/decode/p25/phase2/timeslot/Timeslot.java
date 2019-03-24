@@ -24,23 +24,28 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 
 /**
  * Base timeslot class.
  */
-public abstract class Timeslot implements IMessage
+public abstract class Timeslot extends P25P2Message
 {
     public static final int[] DATA_UNIT_ID = {0,1,74,75,244,245,318,319};
     private CorrectedBinaryMessage mMessage;
     private DataUnitID mDataUnitID;
     private ChannelNumber mChannelNumber;
-    private boolean mValid;
-    private long mTimestamp;
 
+    /**
+     * Constructs a scrambled timeslot instance and automatically descrambles the transmitted bits.
+     * @param message containing transmitted bits and bit error count
+     * @param dataUnitID that identifies this timeslot
+     * @param scramblingSequence to descramble this timeslot
+     * @param channelNumber or timeslot 0 or 1
+     * @param timestamp the message was received
+     */
     protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence,
                        ChannelNumber channelNumber,  long timestamp)
     {
@@ -48,19 +53,19 @@ public abstract class Timeslot implements IMessage
         getMessage().xor(scramblingSequence);
     }
 
-
+    /**
+     * Constructs an unscrambled timeslot instance.
+     * @param message containing transmitted bits and bit error count
+     * @param dataUnitID that identifies this timeslot
+     * @param channelNumber or timeslot 0 or 1
+     * @param timestamp the message was received
+     */
     protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, ChannelNumber channelNumber, long timestamp)
     {
+        super(timestamp);
         mMessage = message;
         mDataUnitID = dataUnitID;
         mChannelNumber = channelNumber;
-        mTimestamp = timestamp;
-    }
-
-    @Override
-    public Protocol getProtocol()
-    {
-        return Protocol.APCO25_PHASE2;
     }
 
     protected CorrectedBinaryMessage getMessage()
@@ -80,31 +85,6 @@ public abstract class Timeslot implements IMessage
     public ChannelNumber getChannelNumber()
     {
         return mChannelNumber;
-    }
-
-    /**
-     * Timestamp for the final transmitted bit of this message
-     * @return timestamp in milliseconds since epoch
-     */
-    public long getTimestamp()
-    {
-        return mTimestamp;
-    }
-
-    /**
-     * Indicates if this timeslot is valid
-     */
-    public boolean isValid()
-    {
-        return mValid;
-    }
-
-    /**
-     * Sets the valid flag for this timeslot
-     */
-    public void setValid(boolean valid)
-    {
-        mValid = valid;
     }
 
     /**

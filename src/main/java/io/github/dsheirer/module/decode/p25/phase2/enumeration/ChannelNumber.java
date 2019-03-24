@@ -22,7 +22,7 @@
 package io.github.dsheirer.module.decode.p25.phase2.enumeration;
 
 /**
- * P25 Phase 2 Channel Number enumeration
+ * P25 Phase 2 Timeslot (Channel Number) enumeration
  */
 public enum ChannelNumber
 {

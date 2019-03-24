@@ -26,9 +26,12 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.p25.audio.IEncryptionSyncParameters;
+import io.github.dsheirer.module.decode.p25.audio.Phase2EncryptionSyncParameters;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -64,6 +67,12 @@ public class PushToTalk extends MacStructure
         super(message, 0);
     }
 
+    @Override
+    public MacOpcode getOpcode()
+    {
+        return MacOpcode.PUSH_TO_TALK;
+    }
+
     /**
      * Textual representation of this message
      */
@@ -88,6 +97,14 @@ public class PushToTalk extends MacStructure
     public boolean isEncrypted()
     {
         return getEncryptionKey().getValue().isEncrypted();
+    }
+
+    /**
+     * Encryption sync parameters
+     */
+    public IEncryptionSyncParameters getEncryptionSyncParameters()
+    {
+        return new Phase2EncryptionSyncParameters(getEncryptionKey(), getMessageIndicator());
     }
 
     /**

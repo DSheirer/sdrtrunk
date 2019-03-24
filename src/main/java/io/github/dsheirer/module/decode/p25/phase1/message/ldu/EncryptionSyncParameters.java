@@ -25,6 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
+import io.github.dsheirer.module.decode.p25.audio.IEncryptionSyncParameters;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ import java.util.List;
 /**
  * Encryption Sync Parameters from Logical Link Data Unit 2 voice frame.
  */
-public class EncryptionSyncParameters
+public class EncryptionSyncParameters implements IEncryptionSyncParameters
 {
     private static final int[] MESSAGE_INDICATOR_1 = {0, 1, 2, 3, 4, 5, 6, 7};
     private static final int[] MESSAGE_INDICATOR_2 = {8, 9, 10, 11, 12, 13, 14, 15};
