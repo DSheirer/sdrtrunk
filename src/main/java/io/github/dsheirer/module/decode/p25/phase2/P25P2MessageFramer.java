@@ -199,13 +199,13 @@ public class P25P2MessageFramer implements Listener<Dibit>
         });
 
 
-        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042605_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_1.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042806_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_3.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042830_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_4.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042853_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_5.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042917_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_6.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042938_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_7.bits");
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042938_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_7.bits");
 
 
         try(BinaryReader reader = new BinaryReader(path, 200))

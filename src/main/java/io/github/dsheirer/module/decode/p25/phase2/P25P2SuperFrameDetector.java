@@ -72,8 +72,8 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         mSyncDetector = new P25P2SyncDetector(this, phaseLockedLoop);
 
         mLog.debug("Remove this ...");
-        mScramblingSequence.update(1, 972, 972); //DFW
-//        mScramblingSequence.update(781824, 686, 677); //CNYICC
+//        mScramblingSequence.update(1, 972, 972); //DFW
+        mScramblingSequence.update(781824, 686, 677); //CNYICC
     }
 
     public void setListener(Listener<IMessage> listener)

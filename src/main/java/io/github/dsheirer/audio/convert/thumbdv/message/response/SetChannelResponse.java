@@ -19,59 +19,39 @@
  *
  *
  */
-package io.github.dsheirer.module.decode.p25.phase2.enumeration;
+
+package io.github.dsheirer.audio.convert.thumbdv.message.response;
+
+import io.github.dsheirer.audio.convert.thumbdv.message.PacketField;
 
 /**
- * P25 Phase 2 Channel Number (Timeslot) enumeration
+ * Set Vocoder rate response
  */
-public enum ChannelNumber
+public class SetChannelResponse extends AmbeResponse
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
-
-    private int mValue;
-    private String mLabel;
-
-    ChannelNumber(int value, String label)
+    public SetChannelResponse(byte[] message)
     {
-        mValue = value;
-        mLabel = label;
+        super(message);
+    }
+
+    @Override
+    public PacketField getType()
+    {
+        return PacketField.PKT_CHANNEL_0;
     }
 
     /**
-     * Channel number value
+     * Success indicator
      */
-    public int getValue()
+    public boolean isSuccessful()
     {
-        return mValue;
+        byte[] payload = getPayload();
+        return payload != null && payload.length ==1 && payload[0] == 0;
     }
 
     @Override
     public String toString()
     {
-        return mLabel;
-    }
-
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
-    {
-        switch(value)
-        {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
-        }
+        return "SET CHANNEL 0 " + (isSuccessful() ? "SUCCESSFUL" : "**FAILED**");
     }
 }

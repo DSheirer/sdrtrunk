@@ -47,6 +47,7 @@ dependencies {
     compile 'ch.qos.logback:logback-core:1.2.3'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.8'
+    compile 'com.fazecast:jSerialComm:2.5.0'
     compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
     compile 'com.github.jiconfont:jiconfont-swing:1.0.1'

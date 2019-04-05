@@ -19,59 +19,32 @@
  *
  *
  */
-package io.github.dsheirer.module.decode.p25.phase2.enumeration;
+
+package io.github.dsheirer.audio.convert.thumbdv.message.response;
+
+import io.github.dsheirer.audio.convert.thumbdv.message.PacketField;
+
+import java.util.Arrays;
 
 /**
- * P25 Phase 2 Channel Number (Timeslot) enumeration
+ * Ready response
  */
-public enum ChannelNumber
+public class ReadyResponse extends AmbeResponse
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
-
-    private int mValue;
-    private String mLabel;
-
-    ChannelNumber(int value, String label)
+    public ReadyResponse(byte[] message)
     {
-        mValue = value;
-        mLabel = label;
+        super(message);
     }
 
-    /**
-     * Channel number value
-     */
-    public int getValue()
+    @Override
+    public PacketField getType()
     {
-        return mValue;
+        return PacketField.PKT_READY;
     }
 
     @Override
     public String toString()
     {
-        return mLabel;
-    }
-
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
-    {
-        switch(value)
-        {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
-        }
+        return "READY" + Arrays.toString(getMessage());
     }
 }
