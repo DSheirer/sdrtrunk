@@ -59,7 +59,7 @@ public class DecodeSpeechRequest extends AmbeRequest
     @Override
     public PacketField getType()
     {
-        return PacketField.PACKET_TYPE_ENCODED_SPEECH;
+        return PacketField.PACKET_TYPE_ENCODE_SPEECH;
     }
 
     private boolean hasVocoderRate()

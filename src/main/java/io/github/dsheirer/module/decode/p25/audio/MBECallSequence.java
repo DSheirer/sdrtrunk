@@ -57,6 +57,11 @@ public class MBECallSequence
         mProtocol = protocol;
     }
 
+    public MBECallSequence()
+    {
+        //no-arg constructor for faster jackson deserialization
+    }
+
     /**
      * Protocol/format for the voice frames
      */
@@ -65,6 +70,12 @@ public class MBECallSequence
     {
         return mProtocol;
     }
+
+    public void setProtocol(String protocol)
+    {
+        mProtocol = protocol;
+    }
+
 
     /**
      * Indicates if this sequences contains any audio frames
@@ -85,7 +96,7 @@ public class MBECallSequence
     }
 
     /**
-     * Sets the encrypted statsu of this call sequence
+     * Sets the encrypted status of this call sequence
      *
      * @param encrypted status
      */
@@ -153,6 +164,11 @@ public class MBECallSequence
         return mToIdentifier;
     }
 
+    public void setToIdentifier(String toIdentifier)
+    {
+        mToIdentifier = toIdentifier;
+    }
+
     /**
      * Call type
      *
@@ -183,6 +199,11 @@ public class MBECallSequence
     public List<VoiceFrame> getVoiceFrames()
     {
         return mVoiceFrames;
+    }
+
+    public void setVoiceFrames(List<VoiceFrame> voiceFrames)
+    {
+        mVoiceFrames = voiceFrames;
     }
 
     /**
@@ -230,102 +251,5 @@ public class MBECallSequence
     public void addEncryptedVoiceFrame(long timestamp, String frame, int algorithm, int keyid, String messageIndicator)
     {
         mVoiceFrames.add(new VoiceFrame(timestamp, frame, algorithm, keyid, messageIndicator));
-    }
-
-    /**
-     * Voice frame using hexadecimal representation of the transmitted voice and ecc bits
-     */
-    @JsonRootName(value = "frame")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonPropertyOrder({"encryption_algorithm", "encryption_key_id", "encryption_mi", "time", "hex"})
-    public class VoiceFrame
-    {
-        private long mTimestamp;
-        private String mFrame;
-        private Integer mAlgorithm;
-        private Integer mKeyId;
-        private String mMessageIndicator;
-
-        /**
-         * Constructs an unencrypted voice frame
-         *
-         * @param timestamp the frame was transmitted
-         * @param frame with voice and ecc bits
-         */
-        public VoiceFrame(long timestamp, String frame)
-        {
-            mTimestamp = timestamp;
-            mFrame = frame;
-        }
-
-        /**
-         * Constructs an encrypted voice frame
-         *
-         * @param timestamp the message was transmitted
-         * @param frame of hexadecimal values
-         * @param algorithm used to encrypt the voice frame
-         * @param keyid used to encrypt the voice frame
-         * @param messageIndicator for the key generator fill
-         */
-        public VoiceFrame(long timestamp, String frame, int algorithm, int keyid, String messageIndicator)
-        {
-            this(timestamp, frame);
-            mAlgorithm = algorithm;
-            mKeyId = keyid;
-            mMessageIndicator = messageIndicator;
-        }
-
-        /**
-         * Timestamp the frame was transmitted
-         *
-         * @return timestamp in milliseconds since epoch (1970)
-         */
-        @JsonProperty("time")
-        public long getTimestamp()
-        {
-            return mTimestamp;
-        }
-
-        /**
-         * Transmitted voice frame and ecc bits in hexadecimal
-         */
-        @JsonProperty("hex")
-        public String getFrame()
-        {
-            return mFrame;
-        }
-
-        /**
-         * Algorithm identifier numeric value
-         *
-         * @return algorithm id
-         */
-        @JsonProperty("encryption_algorithm")
-        public Integer getAlgorithm()
-        {
-            return mAlgorithm;
-        }
-
-        /**
-         * Key identifier
-         *
-         * @return key id
-         */
-        @JsonProperty("encryption_key_id")
-        public Integer getKeyId()
-        {
-            return mKeyId;
-        }
-
-        /**
-         * Key generator fill values
-         *
-         * @return message indicator
-         */
-        @JsonProperty("encryption_mi")
-        public String getMessageIndicator()
-        {
-            return mMessageIndicator;
-        }
     }
 }

@@ -39,7 +39,7 @@ public class EncodeSpeechResponse extends AmbeResponse
     @Override
     public PacketField getType()
     {
-        return PacketField.PACKET_TYPE_ENCODED_SPEECH;
+        return PacketField.PACKET_TYPE_ENCODE_SPEECH;
     }
 
 

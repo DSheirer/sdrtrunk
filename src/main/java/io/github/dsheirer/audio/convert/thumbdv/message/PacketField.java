@@ -69,8 +69,8 @@ public enum PacketField
 
     //Packet Types
     PACKET_TYPE_CONTROL((byte)0x00),
-    PACKET_TYPE_ENCODED_SPEECH((byte)0x01),
-    PACKET_TYPE_SPEECH((byte)0x02),
+    PACKET_TYPE_ENCODE_SPEECH((byte)0x01),
+    PACKET_TYPE_DECODE_SPEECH((byte)0x02),
 
     UNKNOWN((byte)0x00);
 

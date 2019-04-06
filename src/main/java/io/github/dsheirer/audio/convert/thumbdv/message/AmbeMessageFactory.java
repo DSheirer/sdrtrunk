@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.audio.convert.thumbdv.message;
 
+import io.github.dsheirer.audio.convert.thumbdv.message.response.DecodeSpeechResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.EncodeSpeechResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.GetConfigResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.InitializeCodecResponse;
@@ -85,7 +86,7 @@ public class AmbeMessageFactory
             }
             else if(data[INDEX_PACKET_TYPE] == SPEECH_PACKET)
             {
-
+                return new DecodeSpeechResponse(data);
             }
         }
 

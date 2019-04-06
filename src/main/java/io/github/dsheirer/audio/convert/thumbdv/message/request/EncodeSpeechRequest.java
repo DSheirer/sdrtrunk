@@ -62,7 +62,7 @@ public class EncodeSpeechRequest extends AmbeRequest
     @Override
     public PacketField getType()
     {
-        return PacketField.PACKET_TYPE_SPEECH;
+        return PacketField.PACKET_TYPE_DECODE_SPEECH;
     }
 
     @Override

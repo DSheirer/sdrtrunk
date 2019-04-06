@@ -23,6 +23,10 @@
 package io.github.dsheirer.module.decode.p25.audio;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.dsheirer.audio.convert.thumbdv.ThumbDv;
+import io.github.dsheirer.audio.convert.thumbdv.message.response.AmbeResponse;
+import io.github.dsheirer.record.wave.AudioPacketWaveRecorder;
+import io.github.dsheirer.record.wave.WaveMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Utility for converting MBE call sequences (*.mbe) to PCM wave audio format
@@ -38,16 +43,82 @@ public class MBECallSequenceConverter
 {
     private final static Logger mLog = LoggerFactory.getLogger(MBECallSequenceConverter.class);
 
-    public static Path convert(Path input, Path output) throws IOException
+    public static void convert(Path input, Path output) throws IOException
     {
         InputStream inputStream = Files.newInputStream(input);
         ObjectMapper mapper = new ObjectMapper();
         MBECallSequence sequence = mapper.readValue(inputStream, MBECallSequence.class);
-        return convert(sequence);
+        convert(sequence, output);
     }
 
-    public static Path convert(MBECallSequence callSequence)
+    public static void convert(MBECallSequence callSequence, Path outputPath)
     {
-        return null;
+        if(callSequence == null || callSequence.isEncrypted())
+        {
+            throw new IllegalArgumentException("Cannot decode null or encrypted call sequence");
+        }
+
+        if(callSequence != null && !callSequence.isEncrypted())
+        {
+            ThumbDv.AudioProtocol protocol = ThumbDv.AudioProtocol.P25_PHASE2;
+
+            AudioPacketWaveRecorder recorder = new AudioPacketWaveRecorder(outputPath);
+            recorder.start();
+
+            long delayMillis = 0;
+
+            try(ThumbDv thumbDv = new ThumbDv(protocol, recorder))
+            {
+                thumbDv.start();
+                for(VoiceFrame voiceFrame: callSequence.getVoiceFrames())
+                {
+                    mLog.debug("Frame [" + voiceFrame.getFrame() + "] + Hex [" + AmbeResponse.toHex(voiceFrame.getFrameBytes()));
+                    thumbDv.decode(voiceFrame.getFrameBytes());
+                    delayMillis += 30;
+                }
+
+                if(delayMillis > 0)
+                {
+                    delayMillis += 1000;
+                    try
+                    {
+                        Thread.sleep(delayMillis);
+                    }
+                    catch(InterruptedException ie)
+                    {
+
+                    }
+                }
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error", ioe);
+            }
+
+            recorder.stop(Paths.get(outputPath.toString().replace(".tmp", ".wav")), new WaveMetadata());
+        }
+    }
+
+    public static void main(String[] args)
+    {
+//        String mbe = "E:\\mbe_recordings\\20190331085324_154250000_1_TS0_65084_6570511.mbe";
+//        String mbe = "E:\\mbe_recordings\\20190331085324_154250000_2_TS1_65035.mbe";
+        String mbe = "E:\\mbe_recordings\\20190331085324_154250000_3_TS0_65084_6591007.mbe";
+
+        Path input = Paths.get(mbe);
+        Path output = Paths.get(mbe.replace(".mbe", ".tmp"));
+
+        mLog.info("Converting: " + mbe);
+
+        try
+        {
+            MBECallSequenceConverter.convert(input, output);
+        }
+        catch(IOException ioe)
+        {
+            mLog.error("Error", ioe);
+        }
+
+        mLog.info("Finished");
     }
 }

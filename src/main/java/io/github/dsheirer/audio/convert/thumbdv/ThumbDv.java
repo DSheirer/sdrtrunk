@@ -27,11 +27,14 @@ import io.github.dsheirer.audio.convert.thumbdv.message.AmbeMessage;
 import io.github.dsheirer.audio.convert.thumbdv.message.AmbeMessageFactory;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.AmbeRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.DecodeSpeechRequest;
-import io.github.dsheirer.audio.convert.thumbdv.message.request.EncodeSpeechRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.ResetRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.SetVocoderParametersRequest;
-import io.github.dsheirer.audio.convert.thumbdv.message.response.AmbeResponse;
-import io.github.dsheirer.gui.SDRTrunk;
+import io.github.dsheirer.audio.convert.thumbdv.message.response.DecodeSpeechResponse;
+import io.github.dsheirer.audio.convert.thumbdv.message.response.ReadyResponse;
+import io.github.dsheirer.audio.convert.thumbdv.message.response.SetVocoderParameterResponse;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -49,23 +53,56 @@ import java.util.concurrent.TimeUnit;
  *
  * Note: linux users must allow access to the serial port:
  *
- *  sudo usermod -a -G uucp username
- *  sudo usermod -a -G dialout username
- *  sudo usermod -a -G lock username
- *  sudo usermod -a -G tty username
+ * sudo usermod -a -G uucp username
+ * sudo usermod -a -G dialout username
+ * sudo usermod -a -G lock username
+ * sudo usermod -a -G tty username
  */
 public class ThumbDv implements AutoCloseable
 {
-    private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ThumbDv.class);
     private static final String PORT_DESCRIPTION = "USB-to-Serial Port (ftdi_sio)";
+    private static final String PORT_DESCRIPTION_FRAGMENT = "USB Serial Port";
     private static final int BAUD_RATE = 460800;
-    private static final byte PACKET_START = (byte)0x61;
+    private static final byte PACKET_START = (byte) 0x61;
+
+    public enum AudioProtocol
+    {
+        DMR,
+        DSTAR,
+        NXDN,
+        P25_PHASE2,
+    }
 
     private SerialPort mSerialPort;
     private ScheduledFuture mSerialPortReaderHandle;
+    private ScheduledFuture mAudioDecodeProcessorHandle;
+    private LinkedTransferQueue<DecodeSpeechRequest> mDecodeSpeechRequests = new LinkedTransferQueue<>();
+    private AudioProtocol mAudioProtocol;
+    private Listener<ReusableAudioPacket> mAudioPacketListener;
+    private ReusableAudioPacketQueue mReusableAudioPacketQueue = new ReusableAudioPacketQueue("ThumbDv");
+    private boolean mStarted;
 
-    public ThumbDv()
+    public ThumbDv(AudioProtocol audioProtocol, Listener<ReusableAudioPacket> listener)
     {
+        mAudioProtocol = audioProtocol;
+        mAudioPacketListener = listener;
+    }
+
+    /**
+     * Enqueues the audio code frame for decoding.  Decoded PCM speech packet will be sent to the registered
+     * audio packet listener.
+     *
+     * @param codecFrame
+     */
+    public void decode(byte[] codecFrame)
+    {
+        if(!mStarted || mSerialPort == null)
+        {
+            throw new IllegalStateException("Must invoke start() method and thumbdv serial device must be available");
+        }
+
+        mDecodeSpeechRequests.offer(new DecodeSpeechRequest(codecFrame));
     }
 
     public void close() throws IOException
@@ -84,33 +121,52 @@ public class ThumbDv implements AutoCloseable
 
     public void start() throws IOException
     {
-        SerialPort[] ports = SerialPort.getCommPorts();
-
-        for(SerialPort port: ports)
+        if(mSerialPort == null)
         {
-            if(port.getDescriptivePortName().contentEquals(PORT_DESCRIPTION))
+            SerialPort[] ports = SerialPort.getCommPorts();
+
+            for(SerialPort port : ports)
             {
-                mLog.debug("ThumbDv serial port found - initializing for event-based message processing");
-                mSerialPort = port;
-                mSerialPort.setBaudRate(BAUD_RATE);
-                mSerialPort.openPort(0, 1000, 1000);
-
-                if(!mSerialPort.isOpen())
+                mLog.debug("Serial Port Name:" + port.getDescriptivePortName());
+                if(port.getDescriptivePortName().contentEquals(PORT_DESCRIPTION) ||
+                        port.getDescriptivePortName().contains(PORT_DESCRIPTION_FRAGMENT))
                 {
-                    mLog.warn("Could not open serial port: " + mSerialPort.getSystemPortName());
-                    throw new IOException("Could not open serial port:" + mSerialPort.getSystemPortName());
+                    mSerialPort = port;
+                    mSerialPort.setBaudRate(BAUD_RATE);
+                    mSerialPort.openPort(0, 5000, 10000);
+
+                    if(mSerialPort.isOpen())
+                    {
+                        mLog.info("Resetting ThumbDv Device");
+                        send(new ResetRequest());
+
+                        mLog.info("Creating Serial Port Reader");
+                        final Runnable r = new SerialPortReader(mSerialPort.getInputStream());
+                        mLog.info("Starting Serial Port Reader");
+                        mSerialPortReaderHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(r, 0,
+                                5, TimeUnit.MILLISECONDS);
+
+                        mStarted = true;
+                        mLog.info("Startup complete - awaiting reset response");
+                    }
+                    else
+                    {
+                        mLog.warn("Could not open serial port: " + mSerialPort.getSystemPortName());
+                        throw new IOException("Could not open serial port:" + mSerialPort.getSystemPortName());
+                    }
+
+                    break;
                 }
-
-                Runnable r = new SerialPortReader(mSerialPort.getInputStream());
-                mSerialPortReaderHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(r, 100, 10, TimeUnit.MILLISECONDS);
-
-                logSerialPort();
-
-                return;
             }
         }
 
-        throw new IOException("ThumbDV serial port not found");
+        if(mSerialPort == null)
+        {
+            throw new IOException("ThumbDV serial port not found");
+        }
+
+
+        return;
     }
 
     public void send(byte[] message) throws IOException
@@ -134,6 +190,7 @@ public class ThumbDv implements AutoCloseable
 
     /**
      * Sends the AMBE request message
+     *
      * @param request message
      * @throws IOException if there is an error
      */
@@ -145,10 +202,67 @@ public class ThumbDv implements AutoCloseable
     private void receive(byte[] bytes)
     {
         AmbeMessage message = AmbeMessageFactory.getMessage(bytes);
-        mLog.debug("RECEIVED:" + message.toString());
+
+        if(message instanceof DecodeSpeechResponse && mAudioPacketListener != null)
+        {
+            float[] samples = ((DecodeSpeechResponse)message).getSamples();
+            ReusableAudioPacket audioPacket = mReusableAudioPacketQueue.getBuffer(samples.length);
+            audioPacket.loadAudioFrom(samples);
+            mAudioPacketListener.receive(audioPacket);
+        }
+        else if(message instanceof ReadyResponse && mAudioDecodeProcessorHandle == null)
+        {
+            if(mAudioDecodeProcessorHandle == null)
+            {
+                try
+                {
+                    switch(mAudioProtocol)
+                    {
+                        case DSTAR:
+                            send(new SetVocoderParametersRequest(0x0130, 0x0763, 0x4000, 0x0000, 0x0000, 0x0048));
+                            break;
+                        case DMR:
+                        case NXDN:
+                        case P25_PHASE2:
+                            send(new SetVocoderParametersRequest(0x0431, 0x0754, 0x2400, 0x0000, 0x0000, 0x6F48));
+                            break;
+                        default:
+                            throw new IllegalStateException("Unrecognized audio protocol:" + mAudioProtocol);
+                    }
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error setting audio protocol vocoder parameters");
+                }
+
+                mLog.info("ThumbDv Reset Complete");
+            }
+            else
+            {
+                mLog.info("ThumbDv Reset Detected");
+            }
+        }
+        else if(message instanceof SetVocoderParameterResponse)
+        {
+            if(((SetVocoderParameterResponse)message).isSuccessful())
+            {
+                mLog.info("Audio vocoder parameters configured for " + mAudioProtocol);
+                //Start the audio frame decode processor
+                mAudioDecodeProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioDecodeProcessor(), 0,
+                        10, TimeUnit.MILLISECONDS);
+            }
+        }
+        else if(message != null)
+        {
+            mLog.debug("RECEIVED:" + message.toString());
+        }
     }
 
-    private void logSerialPort()
+    /**
+     * Logs the current settings of the serial port.  Note: you must invoke start() before this method so that
+     * the serial port can be discovered and opened.
+     */
+    public void logSerialPort()
     {
         if(mSerialPort != null)
         {
@@ -164,6 +278,51 @@ public class ThumbDv implements AutoCloseable
 
             mLog.info(sb.toString());
         }
+        else
+        {
+            mLog.info("No serial port found");
+        }
+    }
+
+    /**
+     * Processes the audio frame decode queue
+     */
+    public class AudioDecodeProcessor implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                DecodeSpeechRequest request = mDecodeSpeechRequests.poll();
+
+                if(request != null)
+                {
+                    try
+                    {
+                        send(request);
+                    }
+                    catch(IOException ioe)
+                    {
+                        mLog.error("Error decoding audio frame", ioe);
+                    }
+
+//                    try
+//                    {
+//                        //Force a 20ms sleep after submitting an audio frame to avoid overflowing the thumbdv
+//                        Thread.sleep(20);
+//                    }
+//                    catch(InterruptedException ie)
+//                    {
+//                        //Do nothing
+//                    }
+                }
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error", t);
+            }
+        }
     }
 
     public class SerialPortReader implements Runnable
@@ -178,84 +337,91 @@ public class ThumbDv implements AutoCloseable
         @Override
         public void run()
         {
-            if(mInputStream != null)
+            try
             {
-                try
+                if(mInputStream != null)
                 {
-                    while(mInputStream.available() > 0)
+                    try
                     {
-                        byte[] buffer = new byte[400];
-
-                        int bytesRead = mInputStream.readNBytes(buffer, 0, 1);
-
-                        if(bytesRead == 1 && buffer[0] == PACKET_START)
+                        while(mInputStream.available() > 0)
                         {
-                            while(mInputStream.available() < 2)
+                            byte[] buffer = new byte[400];
+
+                            int bytesRead = mInputStream.readNBytes(buffer, 0, 1);
+
+                            if(bytesRead == 1 && buffer[0] == PACKET_START)
                             {
-                                try
+                                while(mInputStream.available() < 2)
                                 {
-                                    Thread.sleep(1);
-                                }
-                                catch(InterruptedException ie)
-                                {
-                                }
-                            }
-
-                            bytesRead = mInputStream.readNBytes(buffer, 1, 2);
-
-                            if(bytesRead == 2)
-                            {
-                                int length = (0xFF & buffer[1]) << 8;
-                                length += (0xFF & buffer[2]);
-
-                                if(0 < length && length < 400)
-                                {
-                                    length++; //Add a byte for the type byte
-
-                                    while(mInputStream.available() < length)
+                                    try
                                     {
-                                        try
-                                        {
-                                            Thread.sleep(1);
-                                        }
-                                        catch(InterruptedException ie)
-                                        {
-                                        }
+                                        Thread.sleep(1);
                                     }
-
-                                    bytesRead = mInputStream.readNBytes(buffer, 3, length);
-
-                                    if(bytesRead == length)
+                                    catch(InterruptedException ie)
                                     {
-                                        receive(Arrays.copyOf(buffer, length + 3));
+                                    }
+                                }
+
+                                bytesRead = mInputStream.readNBytes(buffer, 1, 2);
+
+                                if(bytesRead == 2)
+                                {
+                                    int length = (0xFF & buffer[1]) << 8;
+                                    length += (0xFF & buffer[2]);
+
+                                    if(0 < length && length < 400)
+                                    {
+                                        length++; //Add a byte for the type byte
+
+                                        while(mInputStream.available() < length)
+                                        {
+                                            try
+                                            {
+                                                Thread.sleep(1);
+                                            }
+                                            catch(InterruptedException ie)
+                                            {
+                                            }
+                                        }
+
+                                        bytesRead = mInputStream.readNBytes(buffer, 3, length);
+
+                                        if(bytesRead == length)
+                                        {
+                                            receive(Arrays.copyOf(buffer, length + 3));
+                                        }
+                                        else
+                                        {
+                                            mLog.debug("Expected [" + length + "] but received [" + bytesRead + "] bytes - " + Arrays.toString(buffer));
+                                        }
                                     }
                                     else
                                     {
-                                        mLog.debug("Expected [" + length + "] but received [" + bytesRead + "] bytes - " + Arrays.toString(buffer));
+                                        mLog.error("Received packet with unexpected length: " + length);
+                                        //Don't process the buffer ... let the reader read and inspect 1 byte at a time
+                                        //to regain sync on the packet start byte
                                     }
                                 }
                                 else
                                 {
-                                    mLog.error("Received packet with unexpected length: " + length);
-                                    //Don't process the buffer ... let the reader read and inspect 1 byte at a time
-                                    //to regain sync on the packet start byte
+                                    mLog.debug("Expected [2] but received [" + bytesRead + "] -- this shouldn't happen");
                                 }
                             }
                             else
                             {
-                                mLog.debug("Expected [2] but received [" + bytesRead + "] -- this shouldn't happen");
+                                mLog.debug("Unrecognized byte: " + Arrays.toString(buffer));
                             }
                         }
-                        else
-                        {
-                            mLog.debug("Unrecognized byte: " + Arrays.toString(buffer));
-                        }
+                    }
+                    catch(IOException ioe)
+                    {
+                        mLog.error("Error while reading ThumbDv serial port", ioe);
                     }
                 }
-                catch(IOException ioe)
-                {
-                    mLog.error("Error while reading ThumbDv serial port", ioe);
-                }
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error", t);
             }
         }
     }
@@ -264,131 +430,45 @@ public class ThumbDv implements AutoCloseable
     {
         mLog.debug("Starting");
 
-//        String[] frames = {"B9E881526173002A6B", "954BE6500310B00777", "F6948E13324A0F4AB7"};
-//        String[] frames = {"954BE6500310B00777", "A478E4520114C02767", "FDC5825757247CC3AF", "EEC4A07775103C87AB", "DDE7805756155CE7FB"};
-//        String[] frames = {"ACAA40200044408080"}; //silence frame
-
         String[] frames = {"0E46122323067C60F8", "0E469433C1067CF1BC", "0E46122B23067C60F8", "0E67162BE08874E2B4",
-            "0E46163BE1067CF1BC", "0E46122B23067C60F8", "0A06163BE00A5C303E", "0E46122B23067C60F8", "0E46163BE1847CE1FC",
-            "0E46122B23067C60F8"};
+                "0E46163BE1067CF1BC", "0E46122B23067C60F8", "0A06163BE00A5C303E", "0E46122B23067C60F8", "0E46163BE1847CE1FC",
+                "0E46122B23067C60F8"};
 
         List<byte[]> frameData = new ArrayList<>();
 
-        for(String frame: frames)
+        for(String frame : frames)
         {
             byte[] bytes = new byte[frame.length() / 2];
             for(int x = 0; x < frame.length(); x += 2)
             {
                 String hex = frame.substring(x, x + 2);
-                bytes[x / 2] = (byte)(0xFF & Integer.parseInt(hex, 16));
+                bytes[x / 2] = (byte) (0xFF & Integer.parseInt(hex, 16));
             }
 
             frameData.add(bytes);
         }
 
-        Runnable r = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                mLog.debug("Starting thumb dv thread(s)");
+        mLog.debug("Starting thumb dv thread(s)");
 
-                try(ThumbDv thumbDv = new ThumbDv())
-                {
-                    thumbDv.start();
-
-                    mLog.debug("Resetting ...");
-                    thumbDv.send(new ResetRequest());
-
-                    try
-                    {
-                        Thread.sleep(1000);
-                    }
-                    catch(InterruptedException ie)
-                    {
-
-                    }
-
-//                    thumbDv.send(new ProductIdRequest());
-//                    thumbDv.send(new VersionRequest());
-
-//                    SetVocoderParametersRequest r = new SetVocoderParametersRequest(0x0431, 0x0754, 0x2400, 0x0000, 0x0000, 0x6F48);  //DMR
-                    SetVocoderParametersRequest r = new SetVocoderParametersRequest(0x0130, 0x0763, 0x4000, 0x0000, 0x0000, 0x0048);  //DSTAR
-                    thumbDv.send(r);
-//                    thumbDv.send(new SetVocoderRequest(VocoderRate.RATE_33));
-//                    thumbDv.send(new SetVocoderRequest(VocoderRate.RATE_39));
-
-//                    thumbDv.send(new SetPacketModeRequest());
-//                    thumbDv.send(new GetConfigRequest());
-
-
-//                    thumbDv.send(new ResetRequest());
-//
-//                    try
-//                    {
-//                        Thread.sleep(5000);
-//                    }
-//                    catch(InterruptedException ie)
-//                    {
-//
-//                    }
-
-//                    thumbDv.send(new SetChannelFormatRequest());
-//                    thumbDv.send(new SetSpeechFormatRequest());
-//                    thumbDv.send(new InitializeCodecRequest(InitializeOption.ENCODER_AND_DECODER));
-
-                    try
-                    {
-                        Thread.sleep(2000);
-                    }
-                    catch(InterruptedException ie)
-                    {
-
-                    }
-
-                    for(int x = 0; x < 10; x++)
-                    {
-                        mLog.debug("Sending PCM Audio Frame");
-                        thumbDv.send(new EncodeSpeechRequest(new short[160]));
-
-                        try
-                        {
-                            Thread.sleep(40);
-                        }
-                        catch(InterruptedException ie)
-                        {
-
-                        }
-                    }
-
-                    for(byte[] frame: frameData)
-                    {
-//                        DecodeSpeechRequest request = new DecodeSpeechRequest(frame, VocoderRate.RATE_33);
-                        DecodeSpeechRequest request = new DecodeSpeechRequest(frame);
-                        mLog.debug("Sending Decode Request Message: " + Arrays.toString(request.getData()) + " " + AmbeResponse.toHex(request.getData()));
-                        thumbDv.send(request);
-                        try
-                        {
-                            Thread.sleep(40);
-                        }
-                        catch(InterruptedException ie)
-                        {
-
-                        }
-                    }
-
-
-                    while(true);
-                }
-                catch(IOException ioe)
-                {
-                    mLog.error("Error", ioe);
-                }
-            }
+        final Listener<ReusableAudioPacket> listener = reusableAudioPacket -> {
+            mLog.info("Got an audio packet!");
+            reusableAudioPacket.decrementUserCount();
         };
 
-        ThreadPool.SCHEDULED.schedule(r, 1, TimeUnit.SECONDS);
+        try(ThumbDv thumbDv = new ThumbDv(AudioProtocol.P25_PHASE2, listener))
+        {
+            thumbDv.start();
 
-        while(true);
+            for(byte[] frame : frameData)
+            {
+                thumbDv.decode(frame);
+            }
+
+            while(true);
+        }
+        catch(IOException ioe)
+        {
+            mLog.error("Error", ioe);
+        }
     }
 }

@@ -52,7 +52,7 @@ public abstract class AmbeRequest extends AmbeMessage
         data[1] = (byte)((length >> 8 & 0xFF));
         data[2] = (byte)(length & 0xFF);
 
-        if(type == PacketField.PACKET_TYPE_ENCODED_SPEECH || type == PacketField.PACKET_TYPE_SPEECH)
+        if(type == PacketField.PACKET_TYPE_ENCODE_SPEECH || type == PacketField.PACKET_TYPE_DECODE_SPEECH)
         {
             data[PACKET_TYPE_INDEX] = type.getCode();
         }
