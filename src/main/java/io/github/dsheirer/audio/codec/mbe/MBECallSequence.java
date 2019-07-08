@@ -20,7 +20,7 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.audio;
+package io.github.dsheirer.audio.codec.mbe;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import io.github.dsheirer.identifier.encryption.EncryptionKey;
+import io.github.dsheirer.module.decode.p25.audio.VoiceFrame;
 
 import java.util.ArrayList;
 import java.util.List;

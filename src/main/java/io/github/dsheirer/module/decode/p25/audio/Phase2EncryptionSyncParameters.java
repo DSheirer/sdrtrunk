@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.module.decode.p25.audio;
 
+import io.github.dsheirer.audio.codec.mbe.IEncryptionSyncParameters;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 
 public class Phase2EncryptionSyncParameters implements IEncryptionSyncParameters

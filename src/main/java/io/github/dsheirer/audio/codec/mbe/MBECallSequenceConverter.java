@@ -20,11 +20,12 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.audio;
+package io.github.dsheirer.audio.codec.mbe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.dsheirer.audio.convert.thumbdv.ThumbDv;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.AmbeResponse;
+import io.github.dsheirer.module.decode.p25.audio.VoiceFrame;
 import io.github.dsheirer.record.wave.AudioPacketWaveRecorder;
 import io.github.dsheirer.record.wave.WaveMetadata;
 import org.slf4j.Logger;
@@ -72,7 +73,7 @@ public class MBECallSequenceConverter
                 thumbDv.start();
                 for(VoiceFrame voiceFrame: callSequence.getVoiceFrames())
                 {
-                    mLog.debug("Frame [" + voiceFrame.getFrame() + "] + Hex [" + AmbeResponse.toHex(voiceFrame.getFrameBytes()));
+                    mLog.debug("Frame [" + voiceFrame.getFrame() + "] + Hex [" + AmbeResponse.toHex(voiceFrame.getFrameBytes()) + "]");
                     thumbDv.decode(voiceFrame.getFrameBytes());
                     delayMillis += 30;
                 }
@@ -101,24 +102,21 @@ public class MBECallSequenceConverter
 
     public static void main(String[] args)
     {
-//        String mbe = "E:\\mbe_recordings\\20190331085324_154250000_1_TS0_65084_6570511.mbe";
-//        String mbe = "E:\\mbe_recordings\\20190331085324_154250000_2_TS1_65035.mbe";
-        String mbe = "E:\\mbe_recordings\\20190331085324_154250000_3_TS0_65084_6591007.mbe";
-
-        Path input = Paths.get(mbe);
-        Path output = Paths.get(mbe.replace(".mbe", ".tmp"));
-
-        mLog.info("Converting: " + mbe);
-
-        try
-        {
-            MBECallSequenceConverter.convert(input, output);
-        }
-        catch(IOException ioe)
-        {
-            mLog.error("Error", ioe);
-        }
-
-        mLog.info("Finished");
+//        String mbe = "/home/denny/SDRTrunk/recordings/20190331085324_154250000_3_TS0_65084_6591007.mbe";
+//        String mbe = "/home/denny/SDRTrunk/recordings/20190331085324_154250000_2_TS1_65035.mbe";
+//
+//        Path input = Paths.get(mbe);
+//        Path output = Paths.get(mbe.replace(".mbe", ".tmp"));
+//
+//        mLog.info("Converting: " + mbe);
+//
+//        try
+//        {
+//            MBECallSequenceConverter.convert(input, output);
+//        }
+//        catch(IOException ioe)
+//        {
+//            mLog.error("Error", ioe);
+//        }
     }
 }

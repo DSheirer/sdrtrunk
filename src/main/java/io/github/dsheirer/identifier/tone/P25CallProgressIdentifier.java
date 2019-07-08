@@ -20,23 +20,27 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.audio;
+package io.github.dsheirer.identifier.tone;
 
-import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
+import io.github.dsheirer.protocol.Protocol;
 
-/**
- * P25 Encryption Parameters
- */
-public interface IEncryptionSyncParameters
+import java.util.List;
+
+public class P25CallProgressIdentifier extends CallProgressIdentifier
 {
-    /**
-     * Encryption key identifier
-     */
-    EncryptionKeyIdentifier getEncryptionKey();
+    public P25CallProgressIdentifier(List<String> values)
+    {
+        super(values);
+    }
 
-    /**
-     * Message Indicator
-     * @return key generator fill values
-     */
-    String getMessageIndicator();
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.APCO25;
+    }
+
+    public static P25CallProgressIdentifier create(List<String> values)
+    {
+        return new P25CallProgressIdentifier(values);
+    }
 }

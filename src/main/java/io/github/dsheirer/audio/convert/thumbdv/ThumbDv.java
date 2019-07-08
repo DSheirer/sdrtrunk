@@ -25,10 +25,13 @@ package io.github.dsheirer.audio.convert.thumbdv;
 import com.fazecast.jSerialComm.SerialPort;
 import io.github.dsheirer.audio.convert.thumbdv.message.AmbeMessage;
 import io.github.dsheirer.audio.convert.thumbdv.message.AmbeMessageFactory;
+import io.github.dsheirer.audio.convert.thumbdv.message.VocoderRate;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.AmbeRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.DecodeSpeechRequest;
+import io.github.dsheirer.audio.convert.thumbdv.message.request.EncodeSpeechRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.ResetRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.request.SetVocoderParametersRequest;
+import io.github.dsheirer.audio.convert.thumbdv.message.request.SetVocoderRequest;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.DecodeSpeechResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.ReadyResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.SetVocoderParameterResponse;
@@ -219,11 +222,13 @@ public class ThumbDv implements AutoCloseable
                     switch(mAudioProtocol)
                     {
                         case DSTAR:
+                            send(new SetVocoderRequest(VocoderRate.RATE_33));
                             send(new SetVocoderParametersRequest(0x0130, 0x0763, 0x4000, 0x0000, 0x0000, 0x0048));
                             break;
                         case DMR:
                         case NXDN:
                         case P25_PHASE2:
+                            send(new SetVocoderRequest(VocoderRate.RATE_33));
                             send(new SetVocoderParametersRequest(0x0431, 0x0754, 0x2400, 0x0000, 0x0000, 0x6F48));
                             break;
                         default:
@@ -430,6 +435,8 @@ public class ThumbDv implements AutoCloseable
     {
         mLog.debug("Starting");
 
+        String silence = "BEDDEA821EFD660C08";
+
         String[] frames = {"0E46122323067C60F8", "0E469433C1067CF1BC", "0E46122B23067C60F8", "0E67162BE08874E2B4",
                 "0E46163BE1067CF1BC", "0E46122B23067C60F8", "0A06163BE00A5C303E", "0E46122B23067C60F8", "0E46163BE1847CE1FC",
                 "0E46122B23067C60F8"};
@@ -459,16 +466,27 @@ public class ThumbDv implements AutoCloseable
         {
             thumbDv.start();
 
-            for(byte[] frame : frameData)
+            Thread.sleep(6000);
+
+            for(int x = 0; x < 20; x++)
             {
-                thumbDv.decode(frame);
+                thumbDv.send(new EncodeSpeechRequest(new short[160]));
+                Thread.sleep(20);
             }
+//            for(byte[] frame : frameData)
+//            {
+//                thumbDv.decode(frame);
+//            }
 
             while(true);
         }
         catch(IOException ioe)
         {
             mLog.error("Error", ioe);
+        }
+        catch(InterruptedException e)
+        {
+            e.printStackTrace();
         }
     }
 }

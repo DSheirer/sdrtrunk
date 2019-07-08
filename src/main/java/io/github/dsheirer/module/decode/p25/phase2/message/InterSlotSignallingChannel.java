@@ -24,7 +24,6 @@ package io.github.dsheirer.module.decode.p25.phase2.message;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.SuperframeSequence;
 import org.apache.commons.math3.linear.MatrixUtils;
@@ -85,12 +84,12 @@ public class InterSlotSignallingChannel
      * Constructs the ISCH-I parsing class
      *
      * @param message containing bits
-     * @param expectedChannelNumber for this ISCH, either channel 0 or channel 1 to assist with validating the message
+     * @param expectedTimeslot for this ISCH, either channel 0 or channel 1 to assist with validating the message
      */
-    public InterSlotSignallingChannel(BinaryMessage message, ChannelNumber expectedChannelNumber)
+    public InterSlotSignallingChannel(BinaryMessage message, int expectedTimeslot)
     {
         decode(message);
-        mValid = (getMessage().getCorrectedBitCount() < 9) && (getChannelNumber() == expectedChannelNumber);
+        mValid = (getMessage().getCorrectedBitCount() < 9) && (getTimeslot() == expectedTimeslot);
     }
 
     /**
@@ -161,13 +160,13 @@ public class InterSlotSignallingChannel
     }
 
     /**
-     * Channel number for this ISCH
+     * Timeslot for this ISCH
      *
-     * @return channel number 0 or 1
+     * @return timeslot 0 or 1
      */
-    public ChannelNumber getChannelNumber()
+    public int getTimeslot()
     {
-        return ChannelNumber.fromValue(getMessage().getInt(CHANNEL_NUMBER));
+        return getMessage().getInt(CHANNEL_NUMBER);
     }
 
     /**
@@ -209,7 +208,7 @@ public class InterSlotSignallingChannel
 
         if(isValid())
         {
-            sb.append("ISCHI ").append(getChannelNumber());
+            sb.append("ISCHI ").append(getTimeslot());
             sb.append(" ").append(getIschSequence());
             sb.append(" ").append(getSuperframeSequence());
             sb.append(isInboundSacchFree() ? " SACCH:FREE" : " SACCH:BUSY");

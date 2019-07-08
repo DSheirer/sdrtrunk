@@ -20,7 +20,7 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.audio;
+package io.github.dsheirer.audio.codec.mbe;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.dsheirer.message.IMessage;

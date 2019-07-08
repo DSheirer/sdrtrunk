@@ -24,7 +24,6 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
 import java.util.ArrayList;
@@ -50,13 +49,13 @@ public class Voice2Timeslot extends AbstractVoiceTimeslot
      * Constructs a 2-Voice timeslot
      * @param message containing 320 scrambled bits for the timeslot
      * @param scramblingSequence to de-scramble the message
-     * @param channelNumber for the timeslot
+     * @param timeslot for the message
      * @param timestamp of the last transmitted bit
      */
-    public Voice2Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence, ChannelNumber channelNumber,
+    public Voice2Timeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence, int timeslot,
                           long timestamp)
     {
-        super(message, DataUnitID.VOICE_2, scramblingSequence, channelNumber, timestamp);
+        super(message, DataUnitID.VOICE_2, scramblingSequence, timeslot, timestamp);
     }
 
     /**

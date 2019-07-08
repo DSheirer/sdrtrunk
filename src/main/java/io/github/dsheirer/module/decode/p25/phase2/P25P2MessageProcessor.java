@@ -26,10 +26,14 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
+import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
+import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequenceProcessor;
 import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractSignalingTimeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
+import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice2Timeslot;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +46,8 @@ public class P25P2MessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2MessageProcessor.class);
 
+    private EncryptionSynchronizationSequenceProcessor mESSProcessor0 = new EncryptionSynchronizationSequenceProcessor(0);
+    private EncryptionSynchronizationSequenceProcessor mESSProcessor1 = new EncryptionSynchronizationSequenceProcessor(1);
     private Listener<IMessage> mMessageListener;
 
     //Map of up to 16 band identifiers per RFSS.  These identifier update messages are inserted into any message that
@@ -61,7 +67,6 @@ public class P25P2MessageProcessor implements Listener<IMessage>
             {
                 SuperFrameFragment sff = (SuperFrameFragment)message;
 
-//                mLog.debug(sff.toString());
                 for(Timeslot timeslot: sff.getTimeslots())
                 {
                     if(timeslot instanceof AbstractSignalingTimeslot)
@@ -101,6 +106,44 @@ public class P25P2MessageProcessor implements Listener<IMessage>
 
                             mMessageListener.receive(macMessage);
                         }
+                    }
+                    else if(timeslot instanceof AbstractVoiceTimeslot)
+                    {
+                        if(timeslot.getTimeslot() == 0)
+                        {
+                            mESSProcessor0.process((AbstractVoiceTimeslot)timeslot);
+
+                            if(timeslot instanceof Voice2Timeslot)
+                            {
+                                EncryptionSynchronizationSequence ess = mESSProcessor0.getSequence();
+
+                                if(ess != null)
+                                {
+                                    mMessageListener.receive(ess);
+                                }
+
+                                mESSProcessor0.reset();
+                            }
+                        }
+                        else
+                        {
+                            mESSProcessor1.process((AbstractVoiceTimeslot)timeslot);
+
+                            if(timeslot instanceof Voice2Timeslot)
+                            {
+                                EncryptionSynchronizationSequence ess = mESSProcessor1.getSequence();
+
+                                if(ess != null)
+                                {
+                                    mMessageListener.receive(ess);
+                                }
+
+                                mESSProcessor1.reset();
+                            }
+                        }
+
+                        mMessageListener.receive(timeslot);
+
                     }
                     else
                     {

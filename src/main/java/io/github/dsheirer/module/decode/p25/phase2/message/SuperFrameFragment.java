@@ -26,7 +26,6 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.ScramblingSequence;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Timeslot;
@@ -87,6 +86,16 @@ public class SuperFrameFragment implements IMessage
         return mMessage;
     }
 
+
+    /**
+     * Unused.  Implements the parent class abstract method.
+     */
+    @Override
+    public int getTimeslot()
+    {
+        return 0;
+    }
+
     /**
      * Timestamp for the final bit of this fragment
      */
@@ -104,7 +113,7 @@ public class SuperFrameFragment implements IMessage
         if(mChannel0Isch == null)
         {
             mChannel0Isch = new InterSlotSignallingChannel(
-                getMessage().getSubMessage(CHANNEL_A_ISCH_START, TIMESLOT_A_START), ChannelNumber.CHANNEL_0);
+                getMessage().getSubMessage(CHANNEL_A_ISCH_START, TIMESLOT_A_START), 0);
         }
 
         return mChannel0Isch;
@@ -118,7 +127,7 @@ public class SuperFrameFragment implements IMessage
         if(mChannel1Isch == null)
         {
             mChannel1Isch = new InterSlotSignallingChannel(
-                getMessage().getSubMessage(CHANNEL_B_ISCH_START, TIMESLOT_B_START), ChannelNumber.CHANNEL_1);
+                getMessage().getSubMessage(CHANNEL_B_ISCH_START, TIMESLOT_B_START), 1);
         }
 
         return mChannel1Isch;
@@ -131,7 +140,7 @@ public class SuperFrameFragment implements IMessage
     {
         if(mTimeslotA == null)
         {
-            mTimeslotA = getTimeslot(TIMESLOT_A_START, CHANNEL_B_ISCH_START, 0, ChannelNumber.CHANNEL_0);
+            mTimeslotA = getTimeslot(TIMESLOT_A_START, CHANNEL_B_ISCH_START, 0, 0);
         }
 
         return mTimeslotA;
@@ -144,7 +153,7 @@ public class SuperFrameFragment implements IMessage
     {
         if(mTimeslotB == null)
         {
-            mTimeslotB = getTimeslot(TIMESLOT_B_START, CHANNEL_C_ISCH_START, 1, ChannelNumber.CHANNEL_1);
+            mTimeslotB = getTimeslot(TIMESLOT_B_START, CHANNEL_C_ISCH_START, 1, 1);
         }
 
         return mTimeslotB;
@@ -158,7 +167,7 @@ public class SuperFrameFragment implements IMessage
         if(mTimeslotC == null)
         {
             mTimeslotC = getTimeslot(TIMESLOT_C_START, CHANNEL_D_ISCH_START, 2,
-                isFinalFragment() ? ChannelNumber.CHANNEL_1 : ChannelNumber.CHANNEL_0);
+                isFinalFragment() ? 1 : 0);
         }
 
         return mTimeslotC;
@@ -172,7 +181,7 @@ public class SuperFrameFragment implements IMessage
         if(mTimeslotD == null)
         {
             mTimeslotD = getTimeslot(TIMESLOT_D_START, TIMESLOT_D_END, 3,
-                isFinalFragment() ? ChannelNumber.CHANNEL_0 : ChannelNumber.CHANNEL_1);
+                isFinalFragment() ? 0 : 1);
         }
 
         return mTimeslotD;
@@ -247,11 +256,11 @@ public class SuperFrameFragment implements IMessage
      * @param index of the timeslot (0-11)
      * @return timeslot parser instance
      */
-    private Timeslot getTimeslot(int start, int end, int index, ChannelNumber channelNumber)
+    private Timeslot getTimeslot(int start, int end, int index, int timeslot)
     {
         CorrectedBinaryMessage message = getMessage().getSubMessage(start, end);
         BinaryMessage timeslotSequence = mScramblingSequence.getTimeslotSequence(getTimeslotOffset() + index);
-        return TimeslotFactory.getTimeslot(message, timeslotSequence, channelNumber, getTimestamp());
+        return TimeslotFactory.getTimeslot(message, timeslotSequence, timeslot, getTimestamp());
     }
 
     /**

@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
@@ -335,7 +337,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
                 IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
                     IdentifierUpdateNotification.Operation.ADD);
-                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+//                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
             }
 
             IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
@@ -344,14 +346,14 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             {
                 IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
                     IdentifierUpdateNotification.Operation.ADD);
-                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+//                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
             }
         }
 
         processingChain.start();
         channel.setProcessing(true);
 
-        getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
+//        getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
 
         mProcessingChains.put(channel, processingChain);
 
@@ -372,7 +374,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             ProcessingChain processingChain = mProcessingChains.get(channel);
 
-            getChannelMetadataModel().remove(processingChain.getChannelState().getChannelMetadata());
+//            getChannelMetadataModel().remove(processingChain.getChannelState().getChannelMetadata());
 
             processingChain.stop();
 

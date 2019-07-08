@@ -23,7 +23,6 @@
 package io.github.dsheirer.module.decode.p25.phase2.message;
 
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
@@ -80,8 +79,8 @@ public abstract class P25P2Message implements IMessage
     }
 
     /**
-     * Channel number or timeslot
-     * @return timeslot 0 or 1
+     * Indicates the timeslot, 0 or 1, for this message
      */
-    public abstract ChannelNumber getChannelNumber();
+    @Override
+    public abstract int getTimeslot();
 }

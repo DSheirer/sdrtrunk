@@ -1,37 +1,36 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
-import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
-import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.ChannelNameConfigurationIdentifier;
@@ -40,56 +39,39 @@ import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentif
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
-import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
-import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
-import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
-import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import io.github.dsheirer.source.heartbeat.Heartbeat;
-import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
-public class ChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider,
-    IDecoderStateEventListener, IDecoderStateEventProvider, ISourceEventListener, ISourceEventProvider,
-    IHeartbeatListener, ISquelchStateProvider, IOverflowListener, IdentifierUpdateListener, IdentifierUpdateProvider
+public class SingleChannelState extends AbstractChannelState implements
+    IDecoderStateEventListener, ISourceEventListener,
+    IdentifierUpdateListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
+    private final static Logger mLog = LoggerFactory.getLogger(SingleChannelState.class);
 
     public static final long FADE_TIMEOUT_DELAY = 1200;
     public static final long RESET_TIMEOUT_DELAY = 2000;
 
-    private State mState = State.IDLE;
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
-    private Listener<ChannelEvent> mChannelEventListener;
-    private Listener<IDecodeEvent> mDecodeEventListener;
-    private Listener<DecoderStateEvent> mDecoderStateListener;
-    private Listener<SquelchState> mSquelchStateListener;
-    private Listener<SourceEvent> mExternalSourceEventListener;
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
-    private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
-    private Channel mChannel;
     private SourceEventListener mInternalSourceEventListener;
     private ChannelMetadata mChannelMetadata;
-    private IdentifierUpdateNotificationProxy mIdentifierUpdateNotificationProxy = new IdentifierUpdateNotificationProxy();
 
     private boolean mSquelchLocked = false;
-    private boolean mSelected = false;
-    private boolean mSourceOverflow = false;
 
     private long mStandardChannelFadeTimeout = FADE_TIMEOUT_DELAY;
     private long mTrafficChannelFadeTimeout = DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000;
-    private long mFadeTimeout;
-    private long mEndTimeout;
 
 
     /**
@@ -109,9 +91,9 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
      * signal to the user that the call is ended, while continuing to display the call details for the user
      * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
      */
-    public ChannelState(Channel channel, AliasModel aliasModel)
+    public SingleChannelState(Channel channel, AliasModel aliasModel)
     {
-        mChannel = channel;
+        super(channel);
         mChannelMetadata = new ChannelMetadata(aliasModel);
         mIdentifierCollection.setIdentifierUpdateListener(mIdentifierUpdateNotificationProxy);
         createConfigurationIdentifiers(channel);
@@ -176,24 +158,12 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         mIdentifierCollection.receive(notification);
     }
 
-    @Override
-    public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
-    {
-        mIdentifierUpdateNotificationProxy.setListener(listener);
-    }
-
-    @Override
-    public void removeIdentifierUpdateListener()
-    {
-        mIdentifierUpdateNotificationProxy.removeListener();
-    }
-
     /**
      * Channel metadata for this channel.
      */
-    public ChannelMetadata getChannelMetadata()
+    public Collection<ChannelMetadata> getChannelMetadata()
     {
-        return mChannelMetadata;
+        return Collections.singletonList(mChannelMetadata);
     }
 
     /**
@@ -206,7 +176,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
         mIdentifierCollection.remove(IdentifierClass.USER);
         mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
-        mSourceOverflow = false;
+        sourceOverflow(false);
     }
 
     @Override
@@ -265,16 +235,7 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         }
     }
 
-    public void setSelected(boolean selected)
-    {
-        mSelected = selected;
-    }
-
-    public boolean isSelected()
-    {
-        return mSelected;
-    }
-
+    @Override
     public State getState()
     {
         return mState;
@@ -331,24 +292,6 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         {
             mExternalSourceEventListener.receive(sourceEvent);
         }
-    }
-
-    /**
-     * Sets the squelch state listener
-     */
-    @Override
-    public void setSquelchStateListener(Listener<SquelchState> listener)
-    {
-        mSquelchStateListener = listener;
-    }
-
-    /**
-     * Removes the squelch state listener
-     */
-    @Override
-    public void removeSquelchStateListener()
-    {
-        mSquelchStateListener = null;
     }
 
     /**
@@ -426,42 +369,10 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
     }
 
     /**
-     * Receiver inner class that implements the IHeartbeatListener interface to receive heartbeat messages.
-     */
-    @Override
-    public Listener<Heartbeat> getHeartbeatListener()
-    {
-        return mHeartbeatReceiver;
-    }
-
-    /**
-     * This method is invoked if the source buffer provider goes into overflow state.  Since this is an external state,
-     * we use the mSourceOverflow variable to override the internal state reported to external listeners.
-     *
-     * @param overflow true to indicate an overflow state
-     */
-    @Override
-    public void sourceOverflow(boolean overflow)
-    {
-        mSourceOverflow = overflow;
-    }
-
-    /**
-     * Indicates if this channel's sample buffer is in overflow state, meaning that the inbound sample
-     * stream is not being processed fast enough and samples are being thrown away until the processing can
-     * catch up.
-     *
-     * @return true if the channel is in overflow state.
-     */
-    public boolean isOverflow()
-    {
-        return mSourceOverflow;
-    }
-
-    /**
      * Sets the state and processes related actions
      */
-    private void processFadeState()
+    @Override
+    protected void processFadeState()
     {
         updateResetTimeout();
         mState = State.FADE;
@@ -470,7 +381,8 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         broadcast(SquelchState.SQUELCH);
     }
 
-    private void processIdleState()
+    @Override
+    protected void processIdleState()
     {
         broadcast(SquelchState.SQUELCH);
 
@@ -483,7 +395,8 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         mIdentifierCollection.update(ChannelStateIdentifier.IDLE);
     }
 
-    private void processTeardownState()
+    @Override
+    protected void processTeardownState()
     {
         broadcast(SquelchState.SQUELCH);
 
@@ -518,30 +431,6 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         }
     }
 
-    @Override
-    public void setChannelEventListener(Listener<ChannelEvent> listener)
-    {
-        mChannelEventListener = listener;
-    }
-
-    @Override
-    public void removeChannelEventListener()
-    {
-        mChannelEventListener = null;
-    }
-
-    @Override
-    public void addDecodeEventListener(Listener<IDecodeEvent> listener)
-    {
-        mDecodeEventListener = listener;
-    }
-
-    @Override
-    public void removeDecodeEventListener(Listener<IDecodeEvent> listener)
-    {
-        mDecodeEventListener = null;
-    }
-
     /**
      * Broadcasts a channel state event to any registered listeners
      */
@@ -553,46 +442,10 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         }
     }
 
-    /**
-     * Adds a decoder state event listener
-     */
-    @Override
-    public void setDecoderStateListener(Listener<DecoderStateEvent> listener)
-    {
-        mDecoderStateListener = listener;
-    }
-
-    /**
-     * Removes the decoder state event listener
-     */
-    @Override
-    public void removeDecoderStateListener()
-    {
-        mDecoderStateListener = null;
-    }
-
     @Override
     public Listener<DecoderStateEvent> getDecoderStateListener()
     {
         return mDecoderStateEventReceiver;
-    }
-
-    /**
-     * Registers the listener to receive source events from the channel state
-     */
-    @Override
-    public void setSourceEventListener(Listener<SourceEvent> listener)
-    {
-        mExternalSourceEventListener = listener;
-    }
-
-    /**
-     * De-Registers a listener from receiving source events from the channel state
-     */
-    @Override
-    public void removeSourceEventListener()
-    {
-        mExternalSourceEventListener = null;
     }
 
     /**
@@ -687,76 +540,4 @@ public class ChannelState extends Module implements IChannelEventProvider, IDeco
         }
     }
 
-    /**
-     * Processes periodic heartbeats received from the processing chain to perform state monitoring and cleanup
-     * functions.
-     *
-     * Monitors decoder state events to automatically transition the channel state to IDLE (standard channel) or to
-     * TEARDOWN (traffic channel) when decoding stops or the monitored channel returns to a no signal state.
-     *
-     * Provides a FADE transition state to allow for momentary decoding dropouts and to allow the user access to call
-     * details for a fade period upon call end.
-     */
-    public class HeartbeatReceiver implements Listener<Heartbeat>
-    {
-        @Override
-        public void receive(Heartbeat heartbeat)
-        {
-            try
-            {
-                if(State.CALL_STATES.contains(mState) && mFadeTimeout <= System.currentTimeMillis())
-                {
-                    processFadeState();
-                }
-                else if(mState == State.FADE && mEndTimeout <= System.currentTimeMillis())
-                {
-                    if(mChannel.isTrafficChannel())
-                    {
-                        processTeardownState();
-                    }
-                    else
-                    {
-                        processIdleState();
-                    }
-                }
-            }
-            catch(Throwable e)
-            {
-                mLog.error("An error occurred while state monitor was running " +
-                    "- state [" + getState() +
-                    "] current [" + System.currentTimeMillis() +
-                    "] mResetTimeout [" + mEndTimeout +
-                    "] mFadeTimeout [" + mFadeTimeout +
-                    "]", e);
-            }
-        }
-    }
-
-    /**
-     * Proxy between the identifier collection and the external update notification listener.  This proxy enables
-     * access to internal components to broadcast silent identifier update notifications externally.
-     */
-    public class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
-    {
-        private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
-
-        @Override
-        public void receive(IdentifierUpdateNotification identifierUpdateNotification)
-        {
-            if(mIdentifierUpdateNotificationListener != null)
-            {
-                mIdentifierUpdateNotificationListener.receive(identifierUpdateNotification);
-            }
-        }
-
-        public void setListener(Listener<IdentifierUpdateNotification> listener)
-        {
-            mIdentifierUpdateNotificationListener = listener;
-        }
-
-        public void removeListener()
-        {
-            mIdentifierUpdateNotificationListener = null;
-        }
-    }
 }

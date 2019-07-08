@@ -24,7 +24,6 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
 import java.util.Collections;
@@ -32,9 +31,9 @@ import java.util.List;
 
 public class UnknownTimeslot extends Timeslot
 {
-    public UnknownTimeslot(CorrectedBinaryMessage message, ChannelNumber channelNumber,  long timestamp)
+    public UnknownTimeslot(CorrectedBinaryMessage message, int timeslot,  long timestamp)
     {
-        super(message, DataUnitID.VOICE_2, channelNumber, timestamp);
+        super(message, DataUnitID.VOICE_2, timeslot, timestamp);
     }
 
     @Override

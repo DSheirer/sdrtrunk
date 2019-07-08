@@ -23,9 +23,10 @@
 package io.github.dsheirer.module.decode.p25.audio;
 
 
+import io.github.dsheirer.audio.codec.mbe.MBECallSequence;
+import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
@@ -53,8 +54,8 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
 
     private static final String PROTOCOL = "APCO25-PHASE2";
 
-    private TimeslotCallSequenceProcessor mTimeslot0Processor = new TimeslotCallSequenceProcessor(ChannelNumber.CHANNEL_0);
-    private TimeslotCallSequenceProcessor mTimeslot1Processor = new TimeslotCallSequenceProcessor(ChannelNumber.CHANNEL_1);
+    private TimeslotCallSequenceProcessor mTimeslot0Processor = new TimeslotCallSequenceProcessor(0);
+    private TimeslotCallSequenceProcessor mTimeslot1Processor = new TimeslotCallSequenceProcessor(1);
 
     /**
      * Constructs a P25-Phase2 MBE call sequence recorder.
@@ -89,12 +90,12 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
 
             if(p25p2.isValid())
             {
-                switch(p25p2.getChannelNumber())
+                switch(p25p2.getTimeslot())
                 {
-                    case CHANNEL_0:
+                    case 0:
                         mTimeslot0Processor.process(p25p2);
                         break;
-                    case CHANNEL_1:
+                    case 1:
                         mTimeslot1Processor.process(p25p2);
                         break;
                 }
@@ -107,24 +108,24 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
      */
     class TimeslotCallSequenceProcessor
     {
-        private ChannelNumber mChannelNumber;
+        private int mTimeslot;
         private MBECallSequence mCallSequence;
 
         /**
          * Constructs a processor for the specified channel number / timeslot
-         * @param channelNumber
+         * @param timeslot
          */
-        public TimeslotCallSequenceProcessor(ChannelNumber channelNumber)
+        public TimeslotCallSequenceProcessor(int timeslot)
         {
-            mChannelNumber = channelNumber;
+            mTimeslot = timeslot;
         }
 
         /**
-         * Channel number (timeslot) for this processor
+         * Timeslot for this processor
          */
-        public ChannelNumber getChannelNumber()
+        public int getTimeslot()
         {
-            return mChannelNumber;
+            return mTimeslot;
         }
 
         /**
@@ -134,7 +135,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
         {
             if(mCallSequence != null)
             {
-                writeCallSequence(mCallSequence, getChannelNumber().toString());
+                writeCallSequence(mCallSequence, "TS" + getTimeslot());
                 mCallSequence = null;
             }
         }
@@ -252,7 +253,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                                 mCallSequence.setFromIdentifier(source);
                             }
                             mCallSequence.setToIdentifer(eptt.getGroupAddress().toString());
-                            writeCallSequence(mCallSequence, mChannelNumber.toString());
+                            writeCallSequence(mCallSequence, "TS" + getTimeslot());
                             mCallSequence = null;
                         }
                         else
@@ -348,7 +349,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
 
                 if(!isActive)
                 {
-                    writeCallSequence(mCallSequence, mChannelNumber.toString());
+                    writeCallSequence(mCallSequence, "TS" + getTimeslot());
                     mCallSequence = null;
                 }
             }

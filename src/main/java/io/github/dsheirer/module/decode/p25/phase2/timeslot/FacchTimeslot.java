@@ -25,7 +25,6 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.ReedSolomon_63_35_29;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
@@ -95,26 +94,25 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
      * @param message containing 320 scrambled bits for the timeslot
      * @param scramblingSequence to descramble the message
      */
-    public FacchTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence, ChannelNumber channelNumber,
-                         long timestamp)
+    public FacchTimeslot(CorrectedBinaryMessage message, BinaryMessage scramblingSequence, int timeslot, long timestamp)
     {
-        super(message, DataUnitID.SCRAMBLED_FACCH, scramblingSequence, channelNumber, timestamp);
+        super(message, DataUnitID.SCRAMBLED_FACCH, scramblingSequence, timeslot, timestamp);
     }
 
     /**
      * Constructs a un-scrambled FACCH timeslot
      * @param message containing 320 scrambled bits for the timeslot
      */
-    public FacchTimeslot(CorrectedBinaryMessage message, ChannelNumber channelNumber, long timestamp)
+    public FacchTimeslot(CorrectedBinaryMessage message, int timeslot, long timestamp)
     {
-        super(message, DataUnitID.UNSCRAMBLED_FACCH, channelNumber, timestamp);
+        super(message, DataUnitID.UNSCRAMBLED_FACCH, timeslot, timestamp);
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getChannelNumber());
+        sb.append("TS").append(getTimeslot());
 
         if(getDataUnitID() == DataUnitID.UNSCRAMBLED_FACCH)
         {
@@ -235,12 +233,12 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
                 pointer += 6;
             }
 
-            mMacMessages = MacMessageFactory.create(getChannelNumber(), getDataUnitID(), binaryMessage, getTimestamp());
+            mMacMessages = MacMessageFactory.create(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp());
 
             if(irrecoverableErrors)
             {
                 mMacMessages.clear();
-                MacMessage macMessage = new UnknownMacMessage(getChannelNumber(), getDataUnitID(), binaryMessage, getTimestamp());
+                MacMessage macMessage = new UnknownMacMessage(getTimeslot(), getDataUnitID(), binaryMessage, getTimestamp());
                 macMessage.setValid(false);
                 mMacMessages.add(macMessage);
             }
@@ -280,7 +278,7 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
         mLog.debug(" IN:" + raw);
         mLog.debug("OUT:" + m.toHexString());
 
-        FacchTimeslot facch = new FacchTimeslot(m, ChannelNumber.CHANNEL_0, System.currentTimeMillis());
+        FacchTimeslot facch = new FacchTimeslot(m, 0, System.currentTimeMillis());
 
         List<MacMessage> macs = facch.getMacMessages();
 

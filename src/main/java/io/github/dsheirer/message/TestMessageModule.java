@@ -19,59 +19,65 @@
  *
  *
  */
-package io.github.dsheirer.module.decode.p25.phase2.enumeration;
+
+package io.github.dsheirer.message;
+
+import io.github.dsheirer.module.Module;
+import io.github.dsheirer.sample.Listener;
 
 /**
- * P25 Phase 2 Channel Number (Timeslot) enumeration
+ * Testing module to use for injecting IMessages into a processing chain
  */
-public enum ChannelNumber
+public class TestMessageModule extends Module implements IMessageProvider
 {
-    CHANNEL_0(0, "TS0"),
-    CHANNEL_1(1, "TS1"),
-    RESERVED_2(2, "RSV"),
-    RESERVED_3(3, "RSV"),
-    UNKNOWN(-1, "UNKNOWN");
+    private Listener<IMessage> mMessageListener;
 
-    private int mValue;
-    private String mLabel;
-
-    ChannelNumber(int value, String label)
+    public TestMessageModule()
     {
-        mValue = value;
-        mLabel = label;
-    }
 
-    /**
-     * Channel number value
-     */
-    public int getValue()
-    {
-        return mValue;
     }
 
     @Override
-    public String toString()
+    public void reset()
     {
-        return mLabel;
+
     }
 
-    /**
-     * Lookup the Channel Number from an integer value
-     */
-    public static ChannelNumber fromValue(int value)
+    @Override
+    public void start()
     {
-        switch(value)
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void dispose()
+    {
+
+    }
+
+    public void receive(IMessage message)
+    {
+        if(mMessageListener != null)
         {
-            case 0:
-                return CHANNEL_0;
-            case 1:
-                return CHANNEL_1;
-            case 2:
-                return RESERVED_2;
-            case 3:
-                return RESERVED_3;
-            default:
-                return UNKNOWN;
+            mMessageListener.receive(message);
         }
+    }
+
+    @Override
+    public void setMessageListener(Listener<IMessage> listener)
+    {
+        mMessageListener = listener;
+    }
+
+    @Override
+    public void removeMessageListener()
+    {
+        mMessageListener = null;
     }
 }

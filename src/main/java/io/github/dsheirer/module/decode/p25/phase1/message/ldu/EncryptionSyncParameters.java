@@ -22,10 +22,10 @@
 
 package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 
+import io.github.dsheirer.audio.codec.mbe.IEncryptionSyncParameters;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
-import io.github.dsheirer.module.decode.p25.audio.IEncryptionSyncParameters;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 
 import java.util.ArrayList;

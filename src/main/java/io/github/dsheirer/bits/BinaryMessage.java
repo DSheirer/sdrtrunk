@@ -300,6 +300,18 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Overrides the parent method which returns a BitSet so that we can return a BinaryMessage
+     * @param from
+     * @param to
+     * @return
+     */
+    @Override
+    public BinaryMessage get(int from, int to)
+    {
+        return new BinaryMessage(super.get(from, to), (to - from));
+    }
+
+    /**
      * Returns this bitset as an array of integer ones and zeros
      */
     public int[] toIntegerArray()
@@ -569,6 +581,24 @@ public class BinaryMessage extends BitSet
         }
 
         return (byte)value;
+    }
+
+    /**
+     * Converts the message to a byte array.
+     *
+     * Note: BitSet.toByteArray() outputs the bytes in big-endian (inverted) order.  This method retains the correct
+     * endianness where bit 0 is the most significant bit of the first byte.
+     */
+    public byte[] getBytes()
+    {
+        byte[] bytes = new byte[(int)Math.ceil((double)size() / 8.0)];
+
+        for(int x = 0; x < bytes.length; x++)
+        {
+            bytes[x] = getByte(x * 8);
+        }
+
+        return bytes;
     }
 
     /**
@@ -943,6 +973,23 @@ public class BinaryMessage extends BitSet
         }
 
         return checksumIndexes;
+    }
+
+    /**
+     * Creates a binary message loaded with the byte array
+     * @param bytes to load
+     * @return loaded binary message
+     */
+    public static BinaryMessage from(byte[] bytes)
+    {
+        BinaryMessage message = new BinaryMessage(bytes.length * 8);
+
+        for(int x = 0; x < bytes.length; x++)
+        {
+            message.setByte(x * 8, bytes[x]);
+        }
+
+        return message;
     }
 
     /**

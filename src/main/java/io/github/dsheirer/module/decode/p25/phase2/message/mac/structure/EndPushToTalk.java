@@ -41,6 +41,7 @@ import java.util.List;
  */
 public class EndPushToTalk extends MacStructure
 {
+    private static final int SYSTEM_CONTROLLER = 16777215;
     private static int[] COLOR_CODE = {12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
     private static int[] SOURCE_ADDRESS = {104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118,
         119, 120, 121, 122, 123, 124, 125, 126, 127};
@@ -64,7 +65,7 @@ public class EndPushToTalk extends MacStructure
     @Override
     public MacOpcode getOpcode()
     {
-        return MacOpcode.PUSH_TO_TALK;
+        return MacOpcode.END_PUSH_TO_TALK;
     }
 
     /**

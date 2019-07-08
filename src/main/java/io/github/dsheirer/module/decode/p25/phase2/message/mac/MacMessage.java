@@ -24,7 +24,6 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.Voice4VOffset;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
@@ -40,7 +39,7 @@ public class MacMessage extends P25P2Message
     private static int[] OFFSET_TO_NEXT_VOICE_4V_START = {3, 4, 5};
     private static int[] RESERVED = {6, 7};
 
-    private ChannelNumber mChannelNumber;
+    private int mChannelNumber;
     private DataUnitID mDataUnitID;
     private CorrectedBinaryMessage mMessage;
     private MacStructure mMacStructure;
@@ -48,24 +47,25 @@ public class MacMessage extends P25P2Message
     /**
      * Constructs the message
      *
+     * @param timeslot for this message
      * @param message containing underlying transmitted bits
      * @param timestamp of the final bit of the message
      * @param macStructure for the payload
      */
-    public MacMessage(ChannelNumber channelNumber, DataUnitID dataUnitID, CorrectedBinaryMessage message,
+    public MacMessage(int timeslot, DataUnitID dataUnitID, CorrectedBinaryMessage message,
                       long timestamp, MacStructure macStructure)
     {
         super(timestamp);
-        mChannelNumber = channelNumber;
+        mChannelNumber = timeslot;
         mDataUnitID = dataUnitID;
         mMessage = message;
         mMacStructure = macStructure;
     }
 
     /**
-     * Channel number or timeslot for this message
+     * Timeslot / Channel number for this message
      */
-    public ChannelNumber getChannelNumber()
+    public int getTimeslot()
     {
         return mChannelNumber;
     }
@@ -130,7 +130,7 @@ public class MacMessage extends P25P2Message
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getChannelNumber());
+        sb.append("TS").append(getTimeslot());
         sb.append(" ").append(getDataUnitID());
 
         if(isValid())

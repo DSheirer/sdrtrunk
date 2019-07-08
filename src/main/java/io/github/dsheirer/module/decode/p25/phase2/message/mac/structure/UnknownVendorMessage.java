@@ -36,6 +36,7 @@ import java.util.List;
 public class UnknownVendorMessage extends MacStructure
 {
     private static final int[] VENDOR = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] LENGTH = {18, 19, 20, 21, 22, 23};
 
     /**
      * Constructs the message
@@ -53,12 +54,21 @@ public class UnknownVendorMessage extends MacStructure
         return Vendor.fromValue(getMessage().getInt(VENDOR, getOffset()));
     }
 
+    /**
+     * Length of the message
+     */
+    public int getLength()
+    {
+        return getMessage().getInt(LENGTH, getOffset());
+    }
+
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
         sb.append(" VENDOR:").append(getVendor());
+        sb.append(" LENGTH:").append(getLength());
         sb.append(" MSG:").append(getMessage().toHexString());
 
         return sb.toString();

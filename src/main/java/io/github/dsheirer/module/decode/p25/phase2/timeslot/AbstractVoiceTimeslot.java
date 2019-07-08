@@ -25,7 +25,6 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 
 import java.util.Collections;
@@ -34,9 +33,9 @@ import java.util.List;
 public abstract class AbstractVoiceTimeslot extends Timeslot
 {
     protected AbstractVoiceTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID,
-                                    BinaryMessage scramblingSequence, ChannelNumber channelNumber, long timestamp)
+                                    BinaryMessage scramblingSequence, int timeslot, long timestamp)
     {
-        super(message, dataUnitID, scramblingSequence, channelNumber, timestamp);
+        super(message, dataUnitID, scramblingSequence, timeslot, timestamp);
     }
 
     public abstract List<BinaryMessage> getVoiceFrames();
@@ -51,7 +50,7 @@ public abstract class AbstractVoiceTimeslot extends Timeslot
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getChannelNumber());
+        sb.append("TS").append(getTimeslot());
         sb.append(" ").append(getDataUnitID().toString());
 
         for(int x = 0; x < getVoiceFrames().size(); x++)

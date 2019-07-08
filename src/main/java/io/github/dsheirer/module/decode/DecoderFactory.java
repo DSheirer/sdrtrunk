@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode;
 
@@ -72,13 +74,16 @@ import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
-import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
+import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
+import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderEditor;
@@ -268,7 +273,7 @@ public class DecoderFactory
                     modules.add(new P25P1DecoderState(channel));
                 }
 
-                modules.add(new P25AudioModule(userPreferences));
+                modules.add(new P25P1AudioModule(userPreferences));
 
                 //Add a channel rotation monitor when we have multiple control channel frequencies specified
                 if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
@@ -278,6 +283,22 @@ public class DecoderFactory
                     activeStates.add(State.CONTROL);
                     modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
                 }
+                break;
+            case P25_PHASE2:
+                modules.add(new P25P2DecoderHDQPSK());
+
+                if(channelType == ChannelType.STANDARD)
+                {
+                    modules.add(new P25P2DecoderState(channel, 0));
+                    modules.add(new P25P2DecoderState(channel, 1));
+                }
+                else
+                {
+//                    modules.add(new P25P2DecoderState(channel, ));
+                }
+
+                modules.add(new P25P2AudioModule(userPreferences, 0));
+                modules.add(new P25P2AudioModule(userPreferences, 1));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");

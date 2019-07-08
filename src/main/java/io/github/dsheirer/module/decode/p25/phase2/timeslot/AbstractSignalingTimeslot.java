@@ -25,7 +25,6 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 
@@ -43,13 +42,13 @@ public abstract class AbstractSignalingTimeslot extends Timeslot
      * @param message with scrambled timeslot data
      * @param dataUnitID for the timeslot
      * @param scramblingSequence to unscramble the message
-     * @param channelNumber for the timeslot
+     * @param timeslot for the message
      * @param timestamp of the last transmitted bit
      */
     protected AbstractSignalingTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID,
-                                        BinaryMessage scramblingSequence, ChannelNumber channelNumber, long timestamp)
+                                        BinaryMessage scramblingSequence, int timeslot, long timestamp)
     {
-        super(message, dataUnitID, scramblingSequence, channelNumber, timestamp);
+        super(message, dataUnitID, scramblingSequence, timeslot, timestamp);
     }
 
     /**
@@ -57,11 +56,12 @@ public abstract class AbstractSignalingTimeslot extends Timeslot
      *
      * @param message that is un-scrambled
      * @param dataUnitID for the timeslot
+     * @param timeslot for the message
+     * @param timestamp of the message
      */
-    protected AbstractSignalingTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID,
-                                        ChannelNumber channelNumber, long timestamp)
+    protected AbstractSignalingTimeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, int timeslot, long timestamp)
     {
-        super(message, dataUnitID, channelNumber, timestamp);
+        super(message, dataUnitID, timeslot, timestamp);
     }
 
     @Override

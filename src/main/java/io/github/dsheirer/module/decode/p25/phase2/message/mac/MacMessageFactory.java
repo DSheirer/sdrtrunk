@@ -23,7 +23,6 @@
 package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.AcknowledgeResponse;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.AdjacentStatusBroadcastAbbreviated;
@@ -34,6 +33,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.DateAnd
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.DenyResponse;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.EndPushToTalk;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.ExtendedFunctionCommand;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.ExtendedFunctionCommandExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdate;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdateTDMA;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdateVUhf;
@@ -48,8 +48,11 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVo
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelGrantUpdateMultipleExplicit;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelUserExtended;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceServiceRequest;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.IndividualPagingMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MacRelease;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MessageUpdateAbbreviated;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.MessageUpdateExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NetworkStatusBroadcastExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.NullInformationMessage;
@@ -58,6 +61,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToT
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.QueuedResponse;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RadioUnitMonitorCommand;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RadioUnitMonitorCommandEnhanced;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RadioUnitMonitorCommandExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RfssStatusBroadcastAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RfssStatusBroadcastExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.SNDCPDataChannelAnnouncementExplicit;
@@ -67,6 +71,8 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.Seconda
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.StatusQueryAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.StatusQueryExtended;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.StatusUpdateAbbreviated;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.StatusUpdateExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.SystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.TelephoneInterconnectAnswerRequest;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.TelephoneInterconnectVoiceChannelUser;
@@ -96,7 +102,7 @@ public class MacMessageFactory
 
     private final static Logger mLog = LoggerFactory.getLogger(MacMessageFactory.class);
 
-    public static List<MacMessage> create(ChannelNumber channelNumber, DataUnitID dataUnitID,
+    public static List<MacMessage> create(int timeslot, DataUnitID dataUnitID,
                                           CorrectedBinaryMessage message, long timestamp)
     {
         List<MacMessage> messages = new ArrayList<>();
@@ -108,10 +114,10 @@ public class MacMessageFactory
             case MAC_0_RESERVED:
                 break;
             case MAC_1_PTT:
-                messages.add(new MacMessage(channelNumber, dataUnitID, message, timestamp, new PushToTalk(message)));
+                messages.add(new MacMessage(timeslot, dataUnitID, message, timestamp, new PushToTalk(message)));
                 break;
             case MAC_2_END_PTT:
-                messages.add(new MacMessage(channelNumber, dataUnitID, message, timestamp, new EndPushToTalk(message)));
+                messages.add(new MacMessage(timeslot, dataUnitID, message, timestamp, new EndPushToTalk(message)));
                 break;
             case MAC_3_IDLE:
             case MAC_4_ACTIVE:
@@ -121,7 +127,7 @@ public class MacMessageFactory
                 for(Integer index : indices)
                 {
                     MacStructure macStructure = createMacStructure(message, index);
-                    messages.add(new MacMessage(channelNumber, dataUnitID, message, timestamp, macStructure));
+                    messages.add(new MacMessage(timeslot, dataUnitID, message, timestamp, macStructure));
                 }
                 break;
             case MAC_5_RESERVED:
@@ -131,7 +137,7 @@ public class MacMessageFactory
             case MAC_UNKNOWN:
                 break;
             default:
-                messages.add(new UnknownMacMessage(channelNumber, dataUnitID, message, timestamp));
+                messages.add(new UnknownMacMessage(timeslot, dataUnitID, message, timestamp));
                 break;
         }
 
@@ -233,6 +239,8 @@ public class MacMessageFactory
                 return new MacRelease(message, offset);
             case PHASE1_64_GROUP_VOICE_CHANNEL_GRANT_ABBREVIATED:
                 return new GroupVoiceChannelGrantAbbreviated(message, offset);
+            case PHASE1_65_GROUP_VOICE_SERVICE_REQUEST:
+                return new GroupVoiceServiceRequest(message, offset);
             case PHASE1_66_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                 return new GroupVoiceChannelGrantUpdate(message, offset);
             case PHASE1_68_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_ABBREVIATED:
@@ -243,14 +251,20 @@ public class MacMessageFactory
                 return new UnitToUnitVoiceChannelGrantUpdateAbbreviated(message, offset);
             case PHASE1_74_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 return new TelephoneInterconnectAnswerRequest(message, offset);
+            case PHASE1_76_RADIO_UNIT_MONITOR_COMMAND_ABBREVIATED:
+                return new RadioUnitMonitorCommand(message, offset);
             case PHASE1_84_SNDCP_DATA_CHANNEL_GRANT:
                 return new SNDCPDataChannelGrant(message, offset);
             case PHASE1_85_SNDCP_DATA_PAGE_REQUEST:
                 return new SNDCPDataPageRequest(message, offset);
+            case PHASE1_88_STATUS_UPDATE_ABBREVIATED:
+                return new StatusUpdateAbbreviated(message, offset);
             case PHASE1_90_STATUS_QUERY_ABBREVIATED:
                 return new StatusQueryAbbreviated(message, offset);
-            case PHASE1_93_RADIO_UNIT_MONITOR_COMMAND:
-                return new RadioUnitMonitorCommand(message, offset);
+            case OBSOLETE_PHASE1_93_RADIO_UNIT_MONITOR_COMMAND:
+                return new UnknownStructure(message, offset); //Message is obsolete -- return unknown
+            case PHASE1_92_MESSAGE_UPDATE_ABBREVIATED:
+                return new MessageUpdateAbbreviated(message, offset);
             case PHASE1_94_RADIO_UNIT_MONITOR_COMMAND_ENHANCED:
                 return new RadioUnitMonitorCommandEnhanced(message, offset);
             case PHASE1_95_CALL_ALERT_ABBREVIATED:
@@ -259,7 +273,7 @@ public class MacMessageFactory
                 return new AcknowledgeResponse(message, offset);
             case PHASE1_97_QUEUED_RESPONSE:
                 return new QueuedResponse(message, offset);
-            case PHASE1_100_EXTENDED_FUNCTION_COMMAND:
+            case PHASE1_100_EXTENDED_FUNCTION_COMMAND_ABBREVIATED:
                 return new ExtendedFunctionCommand(message, offset);
             case PHASE1_103_DENY_RESPONSE:
                 return new DenyResponse(message, offset);
@@ -295,12 +309,20 @@ public class MacMessageFactory
                 return new UnitToUnitAnswerRequestExtended(message, offset);
             case PHASE1_198_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_EXTENDED:
                 return new UnitToUnitVoiceChannelGrantUpdateExtended(message, offset);
+            case PHASE1_204_RADIO_UNIT_MONITOR_COMMAND_EXTENDED:
+                return new RadioUnitMonitorCommandExtended(message, offset);
             case PHASE1_214_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                 return new SNDCPDataChannelAnnouncementExplicit(message, offset);
+            case PHASE1_216_STATUS_UPDATE_EXTENDED:
+                return new StatusUpdateExtended(message, offset);
             case PHASE1_218_STATUS_QUERY_EXTENDED:
                 return new StatusQueryExtended(message, offset);
+            case PHASE1_220_MESSAGE_UPDATE_EXTENDED:
+                return new MessageUpdateExtended(message, offset);
             case PHASE1_223_CALL_ALERT_EXTENDED:
                 return new CallAlertExtended(message, offset);
+            case PHASE1_228_EXTENDED_FUNCTION_COMMAND_EXTENDED:
+                return new ExtendedFunctionCommandExtended(message, offset);
             case PHASE1_233_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
                 return new SecondaryControlChannelBroadcastExplicit(message, offset);
             case PHASE1_234_GROUP_AFFILIATION_QUERY_EXTENDED:

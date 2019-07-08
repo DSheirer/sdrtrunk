@@ -37,11 +37,13 @@ import java.util.List;
  */
 public class RadioUnitMonitorCommand extends MacStructure
 {
-    private static final int[] TRANSMIT_MULTIPLIER = {14, 15};
-    private static final int[] SOURCE_ADDRESS = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-        33, 34, 35, 36, 37, 38, 39};
-    private static final int[] TARGET_ADDRESS = {40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
-        57, 58, 59, 60, 61, 62, 63};
+    private static final int[] TRANSMIT_TIME = {16, 17, 18, 19, 20, 21, 22, 23};
+    private static final int SILENT_MONITOR = 24; //??
+    private static final int[] TRANSMIT_MULTIPLIER = {30, 31};
+    private static final int[] TARGET_ADDRESS = {32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+        50, 51, 52, 53, 54, 55};
+    private static final int[] SOURCE_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
+        74, 75, 76, 77, 78, 79};
 
     private List<Identifier> mIdentifiers;
     private TalkgroupIdentifier mSourceAddress;
@@ -67,15 +69,36 @@ public class RadioUnitMonitorCommand extends MacStructure
         sb.append(getOpcode());
         sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceAddress());
-        sb.append(" TX MULTIPLIER:").append(getTxMultiplier());
+
+        if(isSilentMonitor())
+        {
+            sb.append(" SILENT MONITORING");
+        }
+        sb.append(" TIME:").append(getTransmitTime());
+        sb.append(" MULTIPLIER:").append(getTransmitMultiplier());
         return sb.toString();
     }
 
     /**
-     * Multiplier for a value stored in the radio that determines how long the target address radio will be
-     * keyed for monitoring.
+     * Indicates if the target radio should not indicate to the user that the radio is being monitored.
      */
-    public int getTxMultiplier()
+    public boolean isSilentMonitor()
+    {
+        return getMessage().get(SILENT_MONITOR + getOffset());
+    }
+
+    /**
+     * Transmit time.
+     */
+    public int getTransmitTime()
+    {
+        return getMessage().getInt(TRANSMIT_TIME, getOffset());
+    }
+
+    /**
+     * Multiplier for transmit time.
+     */
+    public int getTransmitMultiplier()
     {
         return getMessage().getInt(TRANSMIT_MULTIPLIER, getOffset());
     }

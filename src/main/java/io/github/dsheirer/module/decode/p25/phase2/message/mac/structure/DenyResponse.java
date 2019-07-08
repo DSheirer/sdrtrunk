@@ -27,7 +27,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.reference.QueuedResponseReason;
+import io.github.dsheirer.module.decode.p25.reference.DenyReason;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public class DenyResponse extends MacStructure
     private static final int[] TARGET_ADDRESS = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73,
         74, 75, 76, 77, 78, 79};
 
-    private QueuedResponseReason mQueuedResponseReason;
+    private DenyReason mDenyReason;
     private String mAdditionalInfo;
     private Identifier mTargetAddress;
     private List<Identifier> mIdentifiers;
@@ -69,8 +69,8 @@ public class DenyResponse extends MacStructure
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
         sb.append(" TO:").append(getTargetAddress());
-        sb.append(" SERVICE:").append(getQueuedResponseServiceType());
-        sb.append(" REASON:").append(getQueuedResponseReason());
+        sb.append(" SERVICE:").append(getDeniedServiceType());
+        sb.append(" REASON:").append(getDenyReason());
 
         if(hasAdditionalInformation())
         {
@@ -99,19 +99,19 @@ public class DenyResponse extends MacStructure
     /**
      * Opcode representing the service type that is being acknowledged by the radio unit.
      */
-    public MacOpcode getQueuedResponseServiceType()
+    public MacOpcode getDeniedServiceType()
     {
         return MacOpcode.fromValue(getMessage().getInt(SERVICE_TYPE, getOffset()));
     }
 
-    public QueuedResponseReason getQueuedResponseReason()
+    public DenyReason getDenyReason()
     {
-        if(mQueuedResponseReason == null)
+        if(mDenyReason == null)
         {
-            mQueuedResponseReason = QueuedResponseReason.fromCode(getMessage().getInt(REASON, getOffset()));
+            mDenyReason = DenyReason.fromCode(getMessage().getInt(REASON, getOffset()));
         }
 
-        return mQueuedResponseReason;
+        return mDenyReason;
     }
 
     public Identifier getTargetAddress()

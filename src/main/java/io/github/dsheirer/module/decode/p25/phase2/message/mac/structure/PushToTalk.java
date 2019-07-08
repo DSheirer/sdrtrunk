@@ -22,11 +22,11 @@
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
+import io.github.dsheirer.audio.codec.mbe.IEncryptionSyncParameters;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.audio.IEncryptionSyncParameters;
 import io.github.dsheirer.module.decode.p25.audio.Phase2EncryptionSyncParameters;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;

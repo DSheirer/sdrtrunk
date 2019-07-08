@@ -1,20 +1,24 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.filter.FilterSet;
@@ -31,12 +35,13 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
     private static final long serialVersionUID = 1L;
     private static final int TIME = 0;
     private static final int PROTOCOL = 1;
-    private static final int MESSAGE = 2;
+    private static final int TIMESLOT = 2;
+    private static final int MESSAGE = 3;
 
     protected int mMaxMessages = 500;
     protected LinkedList<MessageItem> mMessageItems = new LinkedList<>();
     protected int[] mColumnWidths = {20, 20, 500};
-    protected String[] mHeaders = new String[]{"Time", "Protocol", "Message"};
+    protected String[] mHeaders = new String[]{"Time", "Protocol", "Timeslot", "Message"};
 
     private SimpleDateFormat mSDFTime = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
 
@@ -168,6 +173,8 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
                     return messageItem.getTimestamp(mSDFTime);
                 case PROTOCOL:
                     return messageItem.getProtocol();
+                case TIMESLOT:
+                    return messageItem.getTimeslot();
                 case MESSAGE:
                     return messageItem.getText();
                 default:

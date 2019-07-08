@@ -24,7 +24,6 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnknownStructure;
 
@@ -43,17 +42,16 @@ public class UnknownMacMessage extends MacMessage
      * @param message containing the message bits
      * @param timestamp of the final bit of the message
      */
-    public UnknownMacMessage(ChannelNumber channelNumber, DataUnitID dataUnitID, CorrectedBinaryMessage message,
-                             long timestamp)
+    public UnknownMacMessage(int timeslot, DataUnitID dataUnitID, CorrectedBinaryMessage message, long timestamp)
     {
-        super(channelNumber, dataUnitID, message, timestamp, new UnknownStructure(message, 0));
+        super(timeslot, dataUnitID, message, timestamp, new UnknownStructure(message, 0));
     }
 
     @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getChannelNumber());
+        sb.append("TS").append(getTimeslot());
         sb.append(" ").append(getDataUnitID());
 
         if(isValid())

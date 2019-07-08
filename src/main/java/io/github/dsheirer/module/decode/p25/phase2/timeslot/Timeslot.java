@@ -24,7 +24,6 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ChannelNumber;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.P25P2Message;
 
@@ -36,20 +35,20 @@ public abstract class Timeslot extends P25P2Message
     public static final int[] DATA_UNIT_ID = {0,1,74,75,244,245,318,319};
     private CorrectedBinaryMessage mMessage;
     private DataUnitID mDataUnitID;
-    private ChannelNumber mChannelNumber;
+    private int mTimeslot;
 
     /**
      * Constructs a scrambled timeslot instance and automatically descrambles the transmitted bits.
      * @param message containing transmitted bits and bit error count
      * @param dataUnitID that identifies this timeslot
      * @param scramblingSequence to descramble this timeslot
-     * @param channelNumber or timeslot 0 or 1
+     * @param timeslot or timeslot 0 or 1
      * @param timestamp the message was received
      */
     protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, BinaryMessage scramblingSequence,
-                       ChannelNumber channelNumber,  long timestamp)
+                       int timeslot, long timestamp)
     {
-        this(message, dataUnitID, channelNumber, timestamp);
+        this(message, dataUnitID, timeslot, timestamp);
         getMessage().xor(scramblingSequence);
     }
 
@@ -57,15 +56,15 @@ public abstract class Timeslot extends P25P2Message
      * Constructs an unscrambled timeslot instance.
      * @param message containing transmitted bits and bit error count
      * @param dataUnitID that identifies this timeslot
-     * @param channelNumber or timeslot 0 or 1
+     * @param timeslot or timeslot 0 or 1
      * @param timestamp the message was received
      */
-    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, ChannelNumber channelNumber, long timestamp)
+    protected Timeslot(CorrectedBinaryMessage message, DataUnitID dataUnitID, int timeslot, long timestamp)
     {
         super(timestamp);
         mMessage = message;
         mDataUnitID = dataUnitID;
-        mChannelNumber = channelNumber;
+        mTimeslot = timeslot;
     }
 
     protected CorrectedBinaryMessage getMessage()
@@ -79,12 +78,12 @@ public abstract class Timeslot extends P25P2Message
     }
 
     /**
-     * Channel number for this timeslot.
+     * Timeslot
      * @return channel number (either Channel 0 or Channel 1)
      */
-    public ChannelNumber getChannelNumber()
+    public int getTimeslot()
     {
-        return mChannelNumber;
+        return mTimeslot;
     }
 
     /**

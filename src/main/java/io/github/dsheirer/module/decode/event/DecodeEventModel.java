@@ -1,20 +1,24 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.module.decode.event;
 
 import com.google.common.eventbus.Subscribe;
@@ -45,13 +49,14 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     public static final int COLUMN_TO_ALIAS = 6;
     public static final int COLUMN_CHANNEL = 7;
     public static final int COLUMN_FREQUENCY = 8;
-    public static final int COLUMN_DETAILS = 9;
+    public static final int COLUMN_TIMESLOT = 9;
+    public static final int COLUMN_DETAILS = 10;
 
     protected int mMaxMessages = 500;
 
     protected List<IDecodeEvent> mEvents = new ArrayList<>();
 
-    protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Details"};
+    protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Timeslot", "Details"};
 
     public DecodeEventModel()
     {
@@ -187,6 +192,8 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
                         return event.getChannelDescriptor();
                     case COLUMN_FREQUENCY:
                         return event.getChannelDescriptor();
+                    case COLUMN_TIMESLOT:
+                        return event.getTimeslot();
                     case COLUMN_DETAILS:
                         return event.getDetails();
                 }
@@ -215,6 +222,8 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
                 return IdentifierCollection.class;
             case COLUMN_CHANNEL:
                 return IChannelDescriptor.class;
+            case COLUMN_TIMESLOT:
+                return Integer.class;
         }
 
         return super.getColumnClass(columnIndex);
