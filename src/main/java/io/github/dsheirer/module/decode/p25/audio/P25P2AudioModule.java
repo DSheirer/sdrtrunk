@@ -24,6 +24,7 @@ package io.github.dsheirer.module.decode.p25.audio;
 
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
+import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -81,7 +82,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     }
 
     @Override
-    public Listener<SquelchState> getSquelchStateListener()
+    public Listener<SquelchStateEvent> getSquelchStateListener()
     {
         return null;
     }
@@ -295,7 +296,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
         if(mIdentifierUpdateNotificationListener != null)
         {
             mIdentifierUpdateNotificationListener.receive(new IdentifierUpdateNotification(identifier,
-                IdentifierUpdateNotification.Operation.ADD));
+                IdentifierUpdateNotification.Operation.ADD, getTimeslot()));
         }
     }
 
@@ -354,12 +355,12 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
      * flag is reset so that the encrypted audio state for the next call can be properly detected and we send an
      * END audio packet so that downstream processors like the audio recorder can properly close out a call sequence.
      */
-    public class SquelchStateListener implements Listener<SquelchState>
+    public class SquelchStateListener implements Listener<SquelchStateEvent>
     {
         @Override
-        public void receive(SquelchState state)
+        public void receive(SquelchStateEvent event)
         {
-            if(state == SquelchState.SQUELCH)
+            if(event.getTimeslot() == getTimeslot() && event.getSquelchState() == SquelchState.SQUELCH)
             {
                 if(hasAudioPacketListener())
                 {

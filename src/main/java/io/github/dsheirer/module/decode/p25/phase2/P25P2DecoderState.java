@@ -22,10 +22,10 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
-import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.channel.state.TimeslotDecoderState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
@@ -42,7 +42,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
-import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.network.P25NetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
@@ -89,43 +88,15 @@ import org.slf4j.LoggerFactory;
  * by monitoring the decoded message stream.
  *
  */
-public class P25P2DecoderState extends DecoderState implements IChannelEventListener
+public class P25P2DecoderState extends TimeslotDecoderState implements IChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderState.class);
 
     private ChannelType mChannelType;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private P25NetworkConfigurationMonitor mNetworkConfigurationMonitor;
-    private P25TrafficChannelManager mTrafficChannelManager;
     private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
-    private int mTimeslot;
-
-    /**
-     * Constructs an APCO-25 decoder state with an optional traffic channel manager.
-     * @param channel with configuration details
-     * @param trafficChannelManager for handling traffic channel grants.
-     */
-    public P25P2DecoderState(Channel channel, int timeslot, P25TrafficChannelManager trafficChannelManager)
-    {
-        mChannelType = channel.getChannelType();
-        mTimeslot = timeslot;
-
-
-        //        mNetworkConfigurationMonitor = new P25NetworkConfigurationMonitor(mModulation);
-//
-//        if(trafficChannelManager != null)
-//        {
-//            mTrafficChannelManager = trafficChannelManager;
-//            mChannelEventListener = trafficChannelManager.getChannelEventListener();
-//        }
-//        else
-//        {
-//            mChannelEventListener = channelEvent -> {
-//                //do nothing with channel events if we're not configured to process traffic channels
-//            };
-//        }
-    }
 
     /**
      * Constructs an APCO-25 decoder state for a traffic channel.
@@ -133,12 +104,8 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
      */
     public P25P2DecoderState(Channel channel, int timeslot)
     {
-        this(channel, timeslot, null);
-    }
-
-    public int getTimeslot()
-    {
-        return mTimeslot;
+        super(timeslot);
+        mChannelType = channel.getChannelType();
     }
 
     /**
@@ -174,14 +141,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
      */
     protected void resetState()
     {
+        mLog.debug("######################################## RESETTING P25P2 DECODER STATE ##############################");
         super.resetState();
 
-        if(mCurrentCallEvent != null)
-        {
-            mCurrentCallEvent.end(System.currentTimeMillis());
-            broadcast(mCurrentCallEvent);
-            mCurrentCallEvent = null;
-        }
+        closeCurrentCallEvent(System.currentTimeMillis(), true);
     }
 
     /**
@@ -200,12 +163,14 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
             {
                 if(isEncrypted())
                 {
-                    broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED, getTimeslot()));
                 }
                 else
                 {
-                    broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
                 }
+
+                updateCurrentCall(null, null, message.getTimestamp());
             }
             else if(message instanceof EncryptionSynchronizationSequence)
             {
@@ -214,33 +179,6 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
         }
     }
 
-//    private void processMacMessage(MacMessage macMessage)
-//    {
-//        MacStructure mac = macMessage.getMacStructure();
-//
-//        switch(macMessage.getMacPduType())
-//        {
-//            case MAC_1_PTT:
-//            case MAC_4_ACTIVE:
-//                broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
-//                processMacStructure(macMessage.getMacStructure(), macMessage.getTimestamp());
-//                break;
-//            case MAC_6_HANGTIME:
-//                broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE, getTimeslot()));
-//                processMacStructure(macMessage.getMacStructure(), macMessage.getTimestamp());
-//                break;
-//            case MAC_2_END_PTT:
-//                broadcast(new DecoderStateEvent(this, Event.DECODE, State.IDLE, getTimeslot()));
-//                processMacStructure(macMessage.getMacStructure(), macMessage.getTimestamp());
-//            case MAC_3_IDLE:
-//                broadcast(new DecoderStateEvent(this, Event.DECODE, State.IDLE, getTimeslot()));
-//                break;
-//            default:
-//                mLog.info("Unrecognized MAC PDU Type [" + macMessage.getMacPduType() + "]");
-//                break;
-//        }
-//    }
-//
     private void processMacMessage(MacMessage message)
     {
         MacStructure mac = message.getMacStructure();
@@ -258,12 +196,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
 
                 if(ptt.isEncrypted())
                 {
-                    broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
                     updateCurrentCall(DecodeEventType.CALL_ENCRYPTED, ptt.getEncryptionKey().toString(), message.getTimestamp());
                 }
                 else
                 {
-                    broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
                     updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
                 }
                 break;
@@ -278,12 +214,13 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
 
-                    closeCurrentCallEvent(message.getTimestamp());
-
+                    closeCurrentCallEvent(message.getTimestamp(), false);
                     getIdentifierCollection().remove(IdentifierClass.USER);
-
-                    broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE, getTimeslot()));
                 }
+                break;
+            case TDMA_0_NULL_INFORMATION_MESSAGE:
+                closeCurrentCallEvent(message.getTimestamp(), true);
+                continueState(State.ACTIVE);
                 break;
             case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
                 for(Identifier identifier : mac.getIdentifiers())
@@ -298,12 +235,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
 
                     if(gvcua.getServiceOptions().isEncrypted())
                     {
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
                         updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
                     }
                     else
                     {
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
                         updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
                     }
                 }
@@ -321,12 +256,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
 
                     if(gvcue.getServiceOptions().isEncrypted())
                     {
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
                         updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
                     }
                     else
                     {
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
                         updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
                     }
                 }
@@ -345,12 +278,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     if(uuvcua.getServiceOptions().isEncrypted())
                     {
                         updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
                     }
                     else
                     {
                         updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
                     }
                 }
                 break;
@@ -368,12 +299,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     if(uuvcue.getServiceOptions().isEncrypted())
                     {
                         updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
                     }
                     else
                     {
                         updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
                     }
                 }
                 break;
@@ -391,12 +320,10 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     if(tivcu.getServiceOptions().isEncrypted())
                     {
                         updateCurrentCall(DecodeEventType.CALL_INTERCONNECT_ENCRYPTED, null, message.getTimestamp());
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ENCRYPTED, getTimeslot()));
                     }
                     else
                     {
                         updateCurrentCall(DecodeEventType.CALL_INTERCONNECT, null, message.getTimestamp());
-                        broadcast(new DecoderStateEvent(this, Event.DECODE, State.CALL, getTimeslot()));
                     }
                 }
                 break;
@@ -412,6 +339,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
             case PHASE1_196_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_EXTENDED:
             case PHASE1_198_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_EXTENDED:
                 //Ignore - update on calls on this and other channels
+                continueState(State.ACTIVE);
                 break;
             case TDMA_17_INDIRECT_GROUP_PAGING:
                 MutableIdentifierCollection icGroupPaging = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -424,6 +352,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     .details("GROUP PAGE")
                     .identifiers(icGroupPaging)
                     .build());
+                continueState(State.ACTIVE);
                 break;
             case TDMA_18_INDIVIDUAL_PAGING_MESSAGE_WITH_PRIORITY:
                 if(mac instanceof IndividualPagingMessage)
@@ -442,6 +371,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icIndividualPaging)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case TDMA_48_POWER_CONTROL_SIGNAL_QUALITY:
                 if(mac instanceof PowerControlSignalQuality)
@@ -459,6 +389,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icPowerControl)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case TDMA_49_MAC_RELEASE:
                 if(mac instanceof MacRelease)
@@ -469,7 +400,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     icMacRelease.remove(IdentifierClass.USER);
                     icMacRelease.update(mac.getIdentifiers());
 
-                    closeCurrentCallEvent(message.getTimestamp());
+                    closeCurrentCallEvent(message.getTimestamp(), true);
 
                     broadcast(P25DecodeEvent.builder(message.getTimestamp())
                         .channel(getCurrentChannel())
@@ -495,6 +426,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icMacRelease)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_68_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_ABBREVIATED:
                 if(mac instanceof UnitToUnitVoiceChannelGrantAbbreviated)
@@ -511,6 +443,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icGrant)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_69_UNIT_TO_UNIT_ANSWER_REQUEST_ABBREVIATED:
                 if(mac instanceof UnitToUnitAnswerRequestAbbreviated)
@@ -527,6 +460,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icRequest)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_74_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 if(mac instanceof TelephoneInterconnectAnswerRequest)
@@ -543,6 +477,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icRequest)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_76_RADIO_UNIT_MONITOR_COMMAND_ABBREVIATED:
                 if(mac instanceof RadioUnitMonitorCommand)
@@ -560,6 +495,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icRequest)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_84_SNDCP_DATA_CHANNEL_GRANT:
                 if(mac instanceof SNDCPDataChannelGrant)
@@ -576,6 +512,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icGrant)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_85_SNDCP_DATA_PAGE_REQUEST:
                 if(mac instanceof SNDCPDataPageRequest)
@@ -592,6 +529,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icPage)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_88_STATUS_UPDATE_ABBREVIATED:
                 if(mac instanceof StatusUpdateAbbreviated)
@@ -608,6 +546,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icStatusUpdate)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_90_STATUS_QUERY_ABBREVIATED:
                 if(mac instanceof StatusQueryAbbreviated)
@@ -623,6 +562,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icStatusUpdate)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_92_MESSAGE_UPDATE_ABBREVIATED:
                 if(mac instanceof MessageUpdateAbbreviated)
@@ -639,6 +579,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icStatusUpdate)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_94_RADIO_UNIT_MONITOR_COMMAND_ENHANCED:
                 if(mac instanceof RadioUnitMonitorCommandEnhanced)
@@ -657,6 +598,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icRequest)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_95_CALL_ALERT_ABBREVIATED:
                 MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -668,6 +610,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     .eventDescription(DecodeEventType.CALL_ALERT.toString())
                     .identifiers(icCallAlert)
                     .build());
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_96_ACK_RESPONSE:
                 if(mac instanceof AcknowledgeResponse)
@@ -684,6 +627,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icAckResponse)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_97_QUEUED_RESPONSE:
                 if(mac instanceof QueuedResponse)
@@ -702,6 +646,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icQueuedResponse)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_100_EXTENDED_FUNCTION_COMMAND_ABBREVIATED:
                 if(mac instanceof ExtendedFunctionCommand)
@@ -719,6 +664,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icExtendedFunction)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_103_DENY_RESPONSE:
                 if(mac instanceof DenyResponse)
@@ -735,6 +681,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icDenyResponse)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_106_GROUP_AFFILIATION_QUERY_ABBREVIATED:
                 MutableIdentifierCollection icGroupAffiliationQuery = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -747,6 +694,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     .details("GROUP AFFILIATION")
                     .identifiers(icGroupAffiliationQuery)
                     .build());
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_109_UNIT_REGISTRATION_COMMAND_ABBREVIATED:
                 MutableIdentifierCollection icUnitRegisterCommand = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -759,6 +707,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     .details("UNIT REGISTRATION")
                     .identifiers(icUnitRegisterCommand)
                     .build());
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_197_UNIT_TO_UNIT_ANSWER_REQUEST_EXTENDED:
                 if(mac instanceof UnitToUnitAnswerRequestExtended)
@@ -777,6 +726,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icUnitAnswerRequestExtended)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_204_RADIO_UNIT_MONITOR_COMMAND_EXTENDED:
                 if(mac instanceof RadioUnitMonitorCommandExtended)
@@ -794,6 +744,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icRequest)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_216_STATUS_UPDATE_EXTENDED:
                 if(mac instanceof StatusUpdateExtended)
@@ -810,6 +761,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icStatusUpdate)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_218_STATUS_QUERY_EXTENDED:
                 MutableIdentifierCollection icStatusQueryExtended = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -822,6 +774,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                     .details("STATUS QUERY")
                     .identifiers(icStatusQueryExtended)
                     .build());
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_220_MESSAGE_UPDATE_EXTENDED:
                 if(mac instanceof MessageUpdateExtended)
@@ -838,6 +791,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icStatusUpdate)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_223_CALL_ALERT_EXTENDED:
                 if(mac instanceof CallAlertExtended)
@@ -852,6 +806,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icCallAlertExtended)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_228_EXTENDED_FUNCTION_COMMAND_EXTENDED:
                 if(mac instanceof ExtendedFunctionCommandExtended)
@@ -869,6 +824,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icExtendedFunction)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
             case PHASE1_234_GROUP_AFFILIATION_QUERY_EXTENDED:
                 if(mac instanceof GroupAffiliationQueryExtended)
@@ -885,6 +841,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
                         .identifiers(icGroupAffiliationQueryExtended)
                         .build());
                 }
+                continueState(State.ACTIVE);
                 break;
 
             case PHASE1_115_IDENTIFIER_UPDATE_TDMA:
@@ -908,8 +865,26 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
             case OBSOLETE_PHASE1_93_RADIO_UNIT_MONITOR_COMMAND:
             case UNKNOWN:
             default:
+                continueState(State.ACTIVE);
                 //ignore
                 break;
+        }
+    }
+
+    /**
+     * Broadcasts a state continuation.  If we're currently in a call, then we broadcast a call continuation, otherwise
+     * we broadcast a continuation of the specified state.
+     * @param state to continue
+     */
+    private void continueState(State state)
+    {
+        if(mCurrentCallEvent != null)
+        {
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
+        }
+        else
+        {
+            broadcast(new DecoderStateEvent(this, Event.DECODE, state, getTimeslot()));
         }
     }
 
@@ -927,29 +902,31 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
         {
             mCurrentCallEvent = P25DecodeEvent.builder(timestamp)
                 .channel(getCurrentChannel())
-                .eventDescription(type.toString())
+                .eventDescription(type != null ? type.toString() : DecodeEventType.CALL.toString())
                 .details(details)
                 .identifiers(getIdentifierCollection().copyOf())
                 .build();
 
             broadcast(mCurrentCallEvent);
-            broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+            broadcast(new DecoderStateEvent(this, Event.START, State.CALL, getTimeslot()));
+            mLog.debug("############ CREATED NEW CALL EVENT ####################### " + mCurrentCallEvent.toString());
         }
         else
         {
-            if(type == DecodeEventType.CALL_ENCRYPTED)
+            if(type != null)
             {
                 mCurrentCallEvent.setEventDescription(type.toString());
-
-                if(details != null)
-                {
-                    mCurrentCallEvent.setDetails(details);
-                }
             }
+
+            if(details != null)
+            {
+                mCurrentCallEvent.setDetails(details);
+            }
+
             mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
         }
     }
 
@@ -958,14 +935,28 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
      *
      * @param timestamp of the message that indicates the event has ended.
      */
-    private void closeCurrentCallEvent(long timestamp)
+    private void closeCurrentCallEvent(long timestamp, boolean resetIdentifiers)
     {
         if(mCurrentCallEvent != null)
         {
+            mLog.debug("####################### CLOSING CURRENT CALL ########################################");
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
 
+            broadcast(new DecoderStateEvent(this, Event.END, State.CALL, getTimeslot()));
+        }
+        else
+        {
+            continueState(State.ACTIVE);
+        }
+
+        if(resetIdentifiers)
+        {
+            getIdentifierCollection().remove(IdentifierClass.USER);
+        }
+        else
+        {
             //Only clear the from identifier at this point ... the channel may still be allocated to the TO talkgroup
             getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
         }
@@ -1016,7 +1007,7 @@ public class P25P2DecoderState extends DecoderState implements IChannelEventList
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannelType == ChannelType.TRAFFIC)
         {
-            broadcast(new ChangeChannelTimeoutEvent(this, ChannelType.TRAFFIC, 1000));
+            broadcast(new ChangeChannelTimeoutEvent(this, ChannelType.TRAFFIC, 1000, getTimeslot()));
         }
     }
 

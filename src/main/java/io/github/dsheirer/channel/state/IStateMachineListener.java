@@ -19,34 +19,15 @@
  *
  *
  */
-package io.github.dsheirer.module.decode.p25.phase1;
 
+package io.github.dsheirer.channel.state;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
-
-public class DecodeConfigP25Phase2 extends DecodeConfiguration
+public interface IStateMachineListener
 {
-    public DecodeConfigP25Phase2()
-    {
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
-    public DecoderType getDecoderType()
-    {
-        return DecoderType.P25_PHASE2;
-    }
-
     /**
-     * Source channel specification for this decoder
+     * Indicates that the state has changed for the specified timeslot
+     * @param state of the state machine currently
+     * @param timeslot that the state applies to
      */
-    @JsonIgnore
-    @Override
-    public ChannelSpecification getChannelSpecification()
-    {
-        return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0);
-    }
+    void stateChanged(State state, int timeslot);
 }

@@ -50,23 +50,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
-public class SingleChannelState extends AbstractChannelState implements IDecoderStateEventListener, ISourceEventListener,
+public class MultiChannelState extends AbstractChannelState implements IDecoderStateEventListener, ISourceEventListener,
     IdentifierUpdateListener, IStateMachineListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(SingleChannelState.class);
+    private final static Logger mLog = LoggerFactory.getLogger(MultiChannelState.class);
 
     public static final long FADE_TIMEOUT_DELAY = 1200;
     public static final long RESET_TIMEOUT_DELAY = 2000;
 
-    private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
     private SourceEventListener mInternalSourceEventListener;
-    private ChannelMetadata mChannelMetadata;
-    private StateMachine mStateMachine = new StateMachine(0);
-    private StateMonitoringSquelchController mSquelchController = new StateMonitoringSquelchController(0);
+    private Map<Integer,ChannelMetadata> mChannelMetadataMap = new TreeMap<>();
+    private Map<Integer,MutableIdentifierCollection> mIdentifierCollectionMap = new TreeMap<>();
+    private Map<Integer,StateMachine> mStateMachineMap = new TreeMap<>();
+    private Map<Integer,StateMonitoringSquelchController> mSquelchControllerMap = new TreeMap<>();
+    private int mTimeslotCount;
 
     /**
      * Channel state tracks the overall state of all processing modules and decoders configured for the channel and
@@ -85,26 +87,42 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
      * signal to the user that the call is ended, while continuing to display the call details for the user
      * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
      */
-    public SingleChannelState(Channel channel, AliasModel aliasModel)
+    public MultiChannelState(Channel channel, AliasModel aliasModel, int timeslots)
     {
         super(channel);
-        mChannelMetadata = new ChannelMetadata(aliasModel);
-        mIdentifierCollection.setIdentifierUpdateListener(mIdentifierUpdateNotificationProxy);
+
+        mTimeslotCount = timeslots;
+
+        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        {
+            mChannelMetadataMap.put(timeslot, new ChannelMetadata(aliasModel));
+            MutableIdentifierCollection mutableIdentifierCollection = new MutableIdentifierCollection(timeslot);
+            mIdentifierCollectionMap.put(timeslot, mutableIdentifierCollection);
+            mutableIdentifierCollection.setIdentifierUpdateListener(mIdentifierUpdateNotificationProxy);
+
+            StateMachine stateMachine = new StateMachine(timeslot);
+            mStateMachineMap.put(timeslot, stateMachine);
+            stateMachine.addListener(this);
+
+            StateMonitoringSquelchController squelchController = new StateMonitoringSquelchController(timeslot);
+            mSquelchControllerMap.put(timeslot, squelchController);
+            stateMachine.addListener(squelchController);
+
+            stateMachine.setChannelType(mChannel.getChannelType());
+            stateMachine.setIdentifierUpdateListener(mutableIdentifierCollection);
+            stateMachine.setEndTimeoutBuffer(RESET_TIMEOUT_DELAY);
+            if(channel.getChannelType() == ChannelType.STANDARD)
+            {
+                stateMachine.setFadeTimeoutBuffer(FADE_TIMEOUT_DELAY);
+            }
+            else
+            {
+                stateMachine.setFadeTimeoutBuffer(DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS * 1000);
+            }
+        }
+
         createConfigurationIdentifiers(channel);
 
-        mStateMachine.addListener(this);
-        mStateMachine.addListener(mSquelchController);
-        mStateMachine.setChannelType(mChannel.getChannelType());
-        mStateMachine.setIdentifierUpdateListener(mIdentifierCollection);
-        mStateMachine.setEndTimeoutBuffer(RESET_TIMEOUT_DELAY);
-        if(channel.getChannelType() == ChannelType.STANDARD)
-        {
-            mStateMachine.setFadeTimeoutBuffer(FADE_TIMEOUT_DELAY);
-        }
-        else
-        {
-            mStateMachine.setFadeTimeoutBuffer(DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS * 1000);
-        }
     }
 
     @Override
@@ -118,32 +136,44 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
             case TEARDOWN:
                 if(mChannel.isTrafficChannel())
                 {
-                    broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
+                    checkTeardown();
                 }
                 else
                 {
-                    mStateMachine.setState(State.RESET);
+                    mStateMachineMap.get(timeslot).setState(State.IDLE);
                 }
                 break;
+        }
+    }
+
+    /**
+     * Checks the state of each timeslot and issues a teardown request if all timeslots are inactive
+     */
+    private void checkTeardown()
+    {
+        boolean teardown = true;
+
+        for(StateMachine stateMachine: mStateMachineMap.values())
+        {
+            if(stateMachine.getState().isActiveState())
+            {
+                teardown = false;
+            }
+        }
+
+        if(teardown)
+        {
+            broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
         }
     }
 
     @Override
     protected void checkState()
     {
-        mStateMachine.checkState();
-    }
-
-    @Override
-    public void setSquelchStateListener(Listener<SquelchStateEvent> listener)
-    {
-        mSquelchController.setSquelchStateListener(listener);
-    }
-
-    @Override
-    public void removeSquelchStateListener()
-    {
-        mSquelchController.removeSquelchStateListener();
+        for(StateMachine stateMachine: mStateMachineMap.values())
+        {
+            stateMachine.checkState();
+        }
     }
 
     /**
@@ -151,36 +181,41 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
      */
     private void createConfigurationIdentifiers(Channel channel)
     {
-        mIdentifierCollection.update(DecoderTypeConfigurationIdentifier.create(channel.getDecodeConfiguration().getDecoderType()));
+        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        {
+            MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
 
-        if(channel.hasSystem())
-        {
-            mIdentifierCollection.update(SystemConfigurationIdentifier.create(channel.getSystem()));
-        }
-        if(channel.hasSite())
-        {
-            mIdentifierCollection.update(SiteConfigurationIdentifier.create(channel.getSite()));
-        }
-        if(channel.getName() != null && !channel.getName().isEmpty())
-        {
-            mIdentifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName()));
-        }
-        if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
-        {
-            mIdentifierCollection.update(AliasListConfigurationIdentifier.create(channel.getAliasListName()));
-        }
-        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-        {
-            long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-            mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(frequency));
-        }
-        else if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER_MULTIPLE_FREQUENCIES)
-        {
-            List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies();
+            identifierCollection.update(DecoderTypeConfigurationIdentifier.create(channel.getDecodeConfiguration().getDecoderType()));
 
-            if(frequencies.size() > 0)
+            if(channel.hasSystem())
             {
-                mIdentifierCollection.update(FrequencyConfigurationIdentifier.create(frequencies.get(0)));
+                identifierCollection.update(SystemConfigurationIdentifier.create(channel.getSystem()));
+            }
+            if(channel.hasSite())
+            {
+                identifierCollection.update(SiteConfigurationIdentifier.create(channel.getSite()));
+            }
+            if(channel.getName() != null && !channel.getName().isEmpty())
+            {
+                identifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName()));
+            }
+            if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
+            {
+                identifierCollection.update(AliasListConfigurationIdentifier.create(channel.getAliasListName()));
+            }
+            if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+            {
+                long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+                identifierCollection.update(FrequencyConfigurationIdentifier.create(frequency));
+            }
+            else if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER_MULTIPLE_FREQUENCIES)
+            {
+                List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies();
+
+                if(frequencies.size() > 0)
+                {
+                    identifierCollection.update(FrequencyConfigurationIdentifier.create(frequencies.get(0)));
+                }
             }
         }
     }
@@ -192,7 +227,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     @Override
     public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
     {
-        return mChannelMetadata;
+        return new IdentifierUpdateListenerProxy();
     }
 
     /**
@@ -203,7 +238,10 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     @Override
     public void updateChannelStateIdentifiers(IdentifierUpdateNotification notification)
     {
-        mIdentifierCollection.receive(notification);
+        for(MutableIdentifierCollection mutableIdentifierCollection: mIdentifierCollectionMap.values())
+        {
+            mutableIdentifierCollection.receive(notification);
+        }
     }
 
     /**
@@ -211,7 +249,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
      */
     public Collection<ChannelMetadata> getChannelMetadata()
     {
-        return Collections.singletonList(mChannelMetadata);
+        return mChannelMetadataMap.values();
     }
 
     /**
@@ -220,27 +258,38 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     @Override
     public void reset()
     {
-        mStateMachine.setState(State.RESET);
-        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
-        mIdentifierCollection.remove(IdentifierClass.USER);
+        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        {
+            mStateMachineMap.get(timeslot).setState(State.RESET);
+            broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE, timeslot));
+            MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
+            identifierCollection.remove(IdentifierClass.USER);
+        }
+
         sourceOverflow(false);
     }
 
     @Override
     public void start()
     {
-        mIdentifierCollection.broadcastIdentifiers();
-
-        if(mChannel.getChannelType() == ChannelType.TRAFFIC)
+        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
         {
-            mStateMachine.setState(State.CALL);
+            mIdentifierCollectionMap.get(timeslot).broadcastIdentifiers();
+
+            if(mChannel.getChannelType() == ChannelType.TRAFFIC)
+            {
+                mStateMachineMap.get(timeslot).setState(State.CALL);
+            }
         }
     }
 
     @Override
     public void stop()
     {
-        mSquelchController.setSquelchLock(false);
+        for(StateMonitoringSquelchController squelchController: mSquelchControllerMap.values())
+        {
+            squelchController.setSquelchLock(false);
+        }
     }
 
     public void dispose()
@@ -258,6 +307,25 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         }
 
         return mInternalSourceEventListener;
+    }
+
+
+    @Override
+    public void setSquelchStateListener(Listener<SquelchStateEvent> listener)
+    {
+        for(StateMonitoringSquelchController squelchController: mSquelchControllerMap.values())
+        {
+            squelchController.setSquelchStateListener(listener);
+        }
+    }
+
+    @Override
+    public void removeSquelchStateListener()
+    {
+        for(StateMonitoringSquelchController squelchController: mSquelchControllerMap.values())
+        {
+            squelchController.removeSquelchStateListener();
+        }
     }
 
     /**
@@ -323,7 +391,12 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 case NOTIFICATION_FREQUENCY_CHANGE:
                     //Rebroadcast source frequency change events for the decoder(s) to process
                     long frequency = sourceEvent.getValue().longValue();
-                    broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, mStateMachine.getState(), frequency));
+
+                    for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+                    {
+                        broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY,
+                            mStateMachineMap.get(timeslot).getState(), frequency));
+                    }
 
                     //Create a new frequency configuration identifier so that downstream consumers receive the change
                     //via channel metadata and audio packet updates - this is a silent add that is sent as a notification
@@ -334,10 +407,13 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                     //Rebroadcast frequency error measurements to external listener if we're currently
                     //in an active (ie sync locked) state.
-                    if(mStateMachine.getState().isActiveState())
+                    for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
                     {
-                        broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
-                            mChannel.getChannelType().name()));
+                        if(mStateMachineMap.get(timeslot).getState().isActiveState())
+                        {
+                            broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
+                                mChannel.getChannelType().name()));
+                        }
                     }
                     break;
             }
@@ -357,30 +433,30 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 switch(event.getEvent())
                 {
                     case ALWAYS_UNSQUELCH:
-                        mSquelchController.setSquelchLock(true);
+                        mSquelchControllerMap.get(event.getTimeslot()).setSquelchLock(true);
                         break;
                     case CHANGE_CALL_TIMEOUT:
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
-                            mStateMachine.setFadeTimeoutBuffer(timeout.getCallTimeout());
+                            mStateMachineMap.get(event.getTimeslot()).setFadeTimeoutBuffer(timeout.getCallTimeout());
                         }
                     case CONTINUATION:
                     case DECODE:
                     case START:
                         if(State.CALL_STATES.contains(event.getState()))
                         {
-                            mStateMachine.setState(event.getState());
+                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
                         }
                         break;
                     case END:
                         if(mChannel.isTrafficChannel())
                         {
-                            mStateMachine.setState(State.TEARDOWN);
+                            mStateMachineMap.get(event.getTimeslot()).setState(State.TEARDOWN);
                         }
                         else
                         {
-                            mStateMachine.setState(State.FADE);
+                            mStateMachineMap.get(event.getTimeslot()).setState(State.FADE);
                         }
                         break;
                     case RESET:
@@ -389,6 +465,18 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                     default:
                         break;
                 }
+            }
+        }
+    }
+
+    public class IdentifierUpdateListenerProxy implements Listener<IdentifierUpdateNotification>
+    {
+        @Override
+        public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+        {
+            for(MutableIdentifierCollection mutableIdentifierCollection: mIdentifierCollectionMap.values())
+            {
+                mutableIdentifierCollection.receive(identifierUpdateNotification);
             }
         }
     }

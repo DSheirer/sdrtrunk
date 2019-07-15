@@ -23,6 +23,7 @@ package io.github.dsheirer.module.decode.p25.audio;
 
 import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
+import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
@@ -48,7 +49,7 @@ public class P25P1AudioModule extends ImbeAudioModule
     }
 
     @Override
-    public Listener<SquelchState> getSquelchStateListener()
+    public Listener<SquelchStateEvent> getSquelchStateListener()
     {
         return mSquelchStateListener;
     }
@@ -161,12 +162,12 @@ public class P25P1AudioModule extends ImbeAudioModule
      * flag is reset so that the encrypted audio state for the next call can be properly detected and we send an
      * END audio packet so that downstream processors like the audio recorder can properly close out a call sequence.
      */
-    public class SquelchStateListener implements Listener<SquelchState>
+    public class SquelchStateListener implements Listener<SquelchStateEvent>
     {
         @Override
-        public void receive(SquelchState state)
+        public void receive(SquelchStateEvent event)
         {
-            if(state == SquelchState.SQUELCH)
+            if(event.getSquelchState() == SquelchState.SQUELCH)
             {
                 if(hasAudioPacketListener())
                 {

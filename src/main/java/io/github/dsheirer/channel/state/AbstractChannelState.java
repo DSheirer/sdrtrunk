@@ -23,7 +23,6 @@
 package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
-import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent;
@@ -44,20 +43,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
-public abstract class AbstractChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider, IDecoderStateEventProvider, ISourceEventProvider, IHeartbeatListener, ISquelchStateProvider, IdentifierUpdateProvider, IOverflowListener
+public abstract class AbstractChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider,
+    IDecoderStateEventProvider, ISourceEventProvider, IHeartbeatListener, ISquelchStateProvider,
+    IdentifierUpdateProvider, IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractChannelState.class);
 
-    protected State mState = State.IDLE;
     protected Listener<ChannelEvent> mChannelEventListener;
     protected Listener<IDecodeEvent> mDecodeEventListener;
     protected Listener<DecoderStateEvent> mDecoderStateListener;
-    protected Listener<SquelchState> mSquelchStateListener;
     protected Listener<SourceEvent> mExternalSourceEventListener;
     protected Channel mChannel;
     protected IdentifierUpdateNotificationProxy mIdentifierUpdateNotificationProxy = new IdentifierUpdateNotificationProxy();
-    protected long mFadeTimeout;
-    protected long mEndTimeout;
     protected boolean mSourceOverflow = false;
     private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
 
@@ -66,6 +63,12 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
         mChannel = channel;
     }
 
+    /**
+     * Invoked each time that a heartbeat is received so that sub-class implementations can check current timers and
+     * adjust channel state as necessary.  The heartbeat arrives on a periodic basis independent of any decoded
+     * messages so that channel state is not entirely dependent on a continuous decoded message stream.
+     */
+    protected abstract void checkState();
 
     public abstract Collection<ChannelMetadata> getChannelMetadata();
 
@@ -81,25 +84,7 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
         mIdentifierUpdateNotificationProxy.removeListener();
     }
 
-    public abstract State getState();
-
-    /**
-     * Sets the squelch state listener
-     */
-    @Override
-    public void setSquelchStateListener(Listener<SquelchState> listener)
-    {
-        mSquelchStateListener = listener;
-    }
-
-    /**
-     * Removes the squelch state listener
-     */
-    @Override
-    public void removeSquelchStateListener()
-    {
-        mSquelchStateListener = null;
-    }
+    public abstract void updateChannelStateIdentifiers(IdentifierUpdateNotification notification);
 
     /**
      * Receiver inner class that implements the IHeartbeatListener interface to receive heartbeat messages.
@@ -133,12 +118,6 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
     {
         return mSourceOverflow;
     }
-
-    protected abstract void processFadeState();
-
-    protected abstract void processIdleState();
-
-    protected abstract void processTeardownState();
 
     @Override
     public void setChannelEventListener(Listener<ChannelEvent> listener)
@@ -215,33 +194,7 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
         @Override
         public void receive(Heartbeat heartbeat)
         {
-            try
-            {
-                if(State.CALL_STATES.contains(mState) && mFadeTimeout <= System.currentTimeMillis())
-                {
-                    processFadeState();
-                }
-                else if(mState == State.FADE && mEndTimeout <= System.currentTimeMillis())
-                {
-                    if(mChannel.isTrafficChannel())
-                    {
-                        processTeardownState();
-                    }
-                    else
-                    {
-                        processIdleState();
-                    }
-                }
-            }
-            catch(Throwable e)
-            {
-                mLog.error("An error occurred while state monitor was running " +
-                    "- state [" + getState() +
-                    "] current [" + System.currentTimeMillis() +
-                    "] mResetTimeout [" + mEndTimeout +
-                    "] mFadeTimeout [" + mFadeTimeout +
-                    "]", e);
-            }
+            checkState();
         }
     }
 

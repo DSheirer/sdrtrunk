@@ -225,12 +225,13 @@ public class P25P2MessageFramer implements Listener<Dibit>
             @Override
             public void receive(IMessage message)
             {
-                testMessageModule.receive(message);
-//                frameRecorder.receive(message);
                 if(message.getTimeslot() == 0)
                 {
                     mLog.debug(message.toString());
                 }
+
+                testMessageModule.receive(message);
+//                frameRecorder.receive(message);
             }
         });
 

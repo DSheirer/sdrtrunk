@@ -23,6 +23,7 @@ package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
@@ -239,8 +240,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             channel.setProcessing(false);
 
-            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED,
-                TUNER_UNAVAILABLE_DESCRIPTION));
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
+                ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
 
             return;
         }
@@ -334,26 +335,29 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
             if(channelDescriptor != null)
             {
-                ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
-                IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
-                    IdentifierUpdateNotification.Operation.ADD);
-//                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                for(int timeslot = 0; timeslot < channelDescriptor.getTimeslotCount(); timeslot++)
+                {
+                    ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier, IdentifierUpdateNotification.Operation.ADD, timeslot);
+                    processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                }
             }
 
             IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
 
             for(Identifier userIdentifier : identifierCollection.getIdentifiers(IdentifierClass.USER))
             {
+                //Only broadcast an identifier update for the timeslot specified in the originating collection
                 IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
-                    IdentifierUpdateNotification.Operation.ADD);
-//                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                    IdentifierUpdateNotification.Operation.ADD, channelGrantEvent.getIdentifierCollection().getTimeslot());
+                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
             }
         }
 
         processingChain.start();
         channel.setProcessing(true);
 
-//        getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
+        getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
 
         mProcessingChains.put(channel, processingChain);
 
@@ -374,7 +378,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             ProcessingChain processingChain = mProcessingChains.get(channel);
 
-//            getChannelMetadataModel().remove(processingChain.getChannelState().getChannelMetadata());
+            for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
+            {
+                getChannelMetadataModel().remove(channelMetadata);
+            }
 
             processingChain.stop();
 

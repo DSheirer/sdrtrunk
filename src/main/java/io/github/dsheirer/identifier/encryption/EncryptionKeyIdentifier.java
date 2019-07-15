@@ -48,6 +48,6 @@ public class EncryptionKeyIdentifier extends Identifier<EncryptionKey>
 
     public static EncryptionKeyIdentifier create(EncryptionKey encryptionKey)
     {
-        return new EncryptionKeyIdentifier(encryptionKey, IdentifierClass.NETWORK, Form.ENCRYPTION_KEY, Role.ANY);
+        return new EncryptionKeyIdentifier(encryptionKey, IdentifierClass.USER, Form.ENCRYPTION_KEY, Role.ANY);
     }
 }

@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.identifier;
@@ -37,12 +39,25 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
     private final static Logger mLog = LoggerFactory.getLogger(MutableIdentifierCollection.class);
     private Listener<IdentifierUpdateNotification> mListener;
 
+    public MutableIdentifierCollection(int timeslot)
+    {
+        super(timeslot);
+    }
+
     public MutableIdentifierCollection()
     {
+        super(0);
     }
 
     public MutableIdentifierCollection(Collection<Identifier> identifiers)
     {
+        this(identifiers, 0);
+    }
+
+    public MutableIdentifierCollection(Collection<Identifier> identifiers, int timeslot)
+    {
+        super(timeslot);
+
         for(Identifier identifier: identifiers)
         {
             update(identifier);
@@ -86,7 +101,7 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
         setUpdated(true);
         if(mListener != null)
         {
-            mListener.receive(new IdentifierUpdateNotification(identifier, IdentifierUpdateNotification.Operation.ADD));
+            mListener.receive(new IdentifierUpdateNotification(identifier, IdentifierUpdateNotification.Operation.ADD, getTimeslot()));
         }
     }
 
@@ -99,7 +114,7 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
         if(mListener != null)
         {
             mListener.receive(new IdentifierUpdateNotification(identifier,
-                IdentifierUpdateNotification.Operation.REMOVE));
+                IdentifierUpdateNotification.Operation.REMOVE, getTimeslot()));
         }
     }
 
@@ -370,21 +385,25 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
     @Override
     public void receive(IdentifierUpdateNotification identifierUpdateNotification)
     {
-        if(identifierUpdateNotification.isAdd())
+        //Only process notifications that match this timeslot
+        if(identifierUpdateNotification.getTimeslot() == getTimeslot())
         {
-            update(identifierUpdateNotification.getIdentifier());
-        }
-        else if(identifierUpdateNotification.isRemove())
-        {
-            remove(identifierUpdateNotification.getIdentifier());
-        }
-        else if(identifierUpdateNotification.isSilentAdd())
-        {
-            silentUpdate(identifierUpdateNotification.getIdentifier());
-        }
-        else if(identifierUpdateNotification.isSilentRemove())
-        {
-            silentRemove(identifierUpdateNotification.getIdentifier());
+            if(identifierUpdateNotification.isAdd())
+            {
+                update(identifierUpdateNotification.getIdentifier());
+            }
+            else if(identifierUpdateNotification.isRemove())
+            {
+                remove(identifierUpdateNotification.getIdentifier());
+            }
+            else if(identifierUpdateNotification.isSilentAdd())
+            {
+                silentUpdate(identifierUpdateNotification.getIdentifier());
+            }
+            else if(identifierUpdateNotification.isSilentRemove())
+            {
+                silentRemove(identifierUpdateNotification.getIdentifier());
+            }
         }
     }
 
@@ -394,7 +413,7 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public IdentifierCollection copyOf()
     {
-        IdentifierCollection copy = new IdentifierCollection(getIdentifiers());
+        IdentifierCollection copy = new IdentifierCollection(getIdentifiers(), getTimeslot());
         copy.setUpdated(isUpdated());
         setUpdated(false);
         return copy;

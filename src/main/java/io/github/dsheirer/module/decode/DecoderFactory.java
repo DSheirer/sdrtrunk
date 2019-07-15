@@ -287,18 +287,11 @@ public class DecoderFactory
             case P25_PHASE2:
                 modules.add(new P25P2DecoderHDQPSK());
 
-                if(channelType == ChannelType.STANDARD)
-                {
-                    modules.add(new P25P2DecoderState(channel, 0));
-                    modules.add(new P25P2DecoderState(channel, 1));
-                }
-                else
-                {
-//                    modules.add(new P25P2DecoderState(channel, ));
-                }
+                modules.add(new P25P2DecoderState(channel, 0));
+//                modules.add(new P25P2DecoderState(channel, 1));
 
                 modules.add(new P25P2AudioModule(userPreferences, 0));
-                modules.add(new P25P2AudioModule(userPreferences, 1));
+//                modules.add(new P25P2AudioModule(userPreferences, 1));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
