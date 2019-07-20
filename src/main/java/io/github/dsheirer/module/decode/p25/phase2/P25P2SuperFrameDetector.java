@@ -27,6 +27,7 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.phase2.message.SuperFrameFragment;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
@@ -70,10 +71,15 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     public P25P2SuperFrameDetector(IPhaseLockedLoop phaseLockedLoop)
     {
         mSyncDetector = new P25P2SyncDetector(this, phaseLockedLoop);
+    }
 
-        mLog.debug("Remove this ...");
-//        mScramblingSequence.update(1, 972, 972); //DFW
-        mScramblingSequence.update(781824, 686, 677); //CNYICC
+    /**
+     * Sets or updates the scrambling sequence parameters.
+     * @param scramblingSequence containing updated parameters
+     */
+    public void setScrambleParameters(ScrambleParameters scramblingSequence)
+    {
+        mScramblingSequence.update(scramblingSequence);
     }
 
     public void setListener(Listener<IMessage> listener)

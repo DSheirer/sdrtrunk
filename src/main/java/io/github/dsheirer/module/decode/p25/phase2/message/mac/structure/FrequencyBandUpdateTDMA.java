@@ -109,7 +109,7 @@ public class FrequencyBandUpdateTDMA extends MacStructure implements IFrequencyB
     @Override
     public long getTransmitOffset()
     {
-        long offset = getMessage().getLong(TRANSMIT_OFFSET, getOffset()) * 250000l;
+        long offset = getMessage().getLong(TRANSMIT_OFFSET, getOffset()) * getChannelType().getBandwidth();
 
         if(!getMessage().get(TRANSMIT_OFFSET_SIGN + getOffset()))
         {
@@ -130,7 +130,7 @@ public class FrequencyBandUpdateTDMA extends MacStructure implements IFrequencyB
     @Override
     public long getDownlinkFrequency(int channelNumber)
     {
-        return getBaseFrequency() + (getChannelSpacing() * channelNumber);
+        return getBaseFrequency() + (getChannelSpacing() * (int)(Math.floor(channelNumber / getTimeslotCount())));
     }
 
     @Override

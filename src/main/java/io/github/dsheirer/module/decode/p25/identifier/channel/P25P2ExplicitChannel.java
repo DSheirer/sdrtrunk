@@ -20,59 +20,34 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.phase2.enumeration;
+package io.github.dsheirer.module.decode.p25.identifier.channel;
 
 /**
- * APCO25 Linear Feedback Shift Register (LFSR) seed parameters.
+ * Explicit P25 Phase 2 channel.
  */
-public class ScrambleParameters
+public class P25P2ExplicitChannel extends P25ExplicitChannel
 {
-    private int mWacn;
-    private int mSystem;
-    private int mNac;
-
     /**
-     * Constructs a parameters instance
+     * Constructs an instance
+     * @param downlinkBandIdentifier
+     * @param downlinkChannelNumber
+     * @param uplinkBandIdentifier
+     * @param uplinkChannelNumber
      */
-    public ScrambleParameters(int wacn, int system, int nac)
+    public P25P2ExplicitChannel(int downlinkBandIdentifier, int downlinkChannelNumber, int uplinkBandIdentifier, int uplinkChannelNumber)
     {
-        mWacn = wacn;
-        mSystem = system;
-        mNac = nac;
+        super(downlinkBandIdentifier, downlinkChannelNumber, uplinkBandIdentifier, uplinkChannelNumber);
     }
 
-    /**
-     * WACN
-     * @return wacn
-     */
-    public int getWACN()
+    @Override
+    public int getTimeslotCount()
     {
-        return mWacn;
+        return 2;
     }
 
-    /**
-     * System
-     * @return system
-     */
-    public int getSystem()
+    @Override
+    public boolean isTDMAChannel()
     {
-        return mSystem;
-    }
-
-    /**
-     * NAC
-     * @return nac
-     */
-    public int getNAC()
-    {
-        return mNac;
-    }
-
-    /**
-     * Creates a copy of this instance.
-     */
-    public ScrambleParameters copy()
-    {
-        return new ScrambleParameters(mWacn, mSystem, mNac);
+        return true;
     }
 }

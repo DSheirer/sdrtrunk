@@ -89,6 +89,11 @@ public class IdentifierCollection
         return mTimeslot;
     }
 
+    public void setTimeslot(int timeslot)
+    {
+        mTimeslot = timeslot;
+    }
+
     /**
      * Indicates if this identifier collection contains an updated list of identifiers.
      */

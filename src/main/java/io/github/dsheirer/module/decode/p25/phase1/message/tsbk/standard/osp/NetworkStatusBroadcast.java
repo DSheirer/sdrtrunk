@@ -32,6 +32,7 @@ import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
 
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ public class NetworkStatusBroadcast extends OSPMessage implements IFrequencyBand
     private SystemServiceClass mSystemServiceClass;
     private List<Identifier> mIdentifiers;
     private List<String> mSiteFlags;
+    private ScrambleParameters mScrambleParameters;
 
     /**
      * Constructs a TSBK from the binary message sequence.
@@ -74,6 +76,20 @@ public class NetworkStatusBroadcast extends OSPMessage implements IFrequencyBand
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" SERVICES:").append(getSystemServiceClass().getServices());
         return sb.toString();
+    }
+
+    /**
+     * P25 Phase II scramble (randomizer) parameters.
+     */
+    public ScrambleParameters getScrambleParameters()
+    {
+        if(mScrambleParameters == null)
+        {
+            mScrambleParameters = new ScrambleParameters((int)getWacn().getValue(), (int)getSystem().getValue(),
+                (int)getNAC().getValue());
+        }
+
+        return mScrambleParameters;
     }
 
     public Identifier getLocationRegistrationArea()

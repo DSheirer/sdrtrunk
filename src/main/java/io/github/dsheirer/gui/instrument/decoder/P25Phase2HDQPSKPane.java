@@ -29,6 +29,7 @@ import io.github.dsheirer.gui.instrument.chart.SampleXYChart;
 import io.github.dsheirer.gui.instrument.chart.SymbolChart;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSKInstrumented;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
@@ -56,7 +57,7 @@ public class P25Phase2HDQPSKPane extends ComplexDecoderPane
 
 
     private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
-    private P25P2DecoderHDQPSKInstrumented mDecoder = new P25P2DecoderHDQPSKInstrumented();
+    private P25P2DecoderHDQPSKInstrumented mDecoder = new P25P2DecoderHDQPSKInstrumented(new DecodeConfigP25Phase2());
 
     public P25Phase2HDQPSKPane()
     {

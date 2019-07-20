@@ -26,10 +26,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 public class DecodeConfigP25Phase2 extends DecodeConfiguration
 {
+    private ScrambleParameters mScrambleParameters;
+
     public DecodeConfigP25Phase2()
     {
     }
@@ -54,5 +57,19 @@ public class DecodeConfigP25Phase2 extends DecodeConfiguration
     public int getTimeslotCount()
     {
         return 2;
+    }
+
+    /**
+     * Optional scramble (ie randomizer) parameters to use for the channel.
+     */
+    @JsonIgnore
+    public ScrambleParameters getScrambleParameters()
+    {
+        return mScrambleParameters;
+    }
+
+    public void setScrambleParameters(ScrambleParameters scrambleParameters)
+    {
+        mScrambleParameters = scrambleParameters;
     }
 }

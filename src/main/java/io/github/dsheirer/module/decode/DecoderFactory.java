@@ -82,6 +82,7 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
@@ -285,13 +286,23 @@ public class DecoderFactory
                 }
                 break;
             case P25_PHASE2:
-                modules.add(new P25P2DecoderHDQPSK());
+                modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
 
-                modules.add(new P25P2DecoderState(channel, 0));
-//                modules.add(new P25P2DecoderState(channel, 1));
+                if(channelType == ChannelType.STANDARD)
+                {
+                    P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
+                    modules.add(trafficChannelManager);
+                    modules.add(new P25P2DecoderState(channel, 0, trafficChannelManager));
+                    modules.add(new P25P2DecoderState(channel, 1, trafficChannelManager));
+                }
+                else
+                {
+                    modules.add(new P25P2DecoderState(channel, 0));
+                    modules.add(new P25P2DecoderState(channel, 1));
+                }
 
                 modules.add(new P25P2AudioModule(userPreferences, 0));
-//                modules.add(new P25P2AudioModule(userPreferences, 1));
+                modules.add(new P25P2AudioModule(userPreferences, 1));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");

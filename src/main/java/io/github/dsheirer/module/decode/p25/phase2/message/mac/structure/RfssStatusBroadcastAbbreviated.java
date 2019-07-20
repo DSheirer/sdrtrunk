@@ -30,6 +30,7 @@ import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
@@ -133,8 +134,10 @@ public class RfssStatusBroadcastAbbreviated extends MacStructure implements IFre
     {
         if(mChannel == null)
         {
-            mChannel = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND, getOffset()),
+            //Note: we know that this is a Phase 2 channel, so use the Phase 2 channel variant
+            P25P2Channel channel = new P25P2Channel(getMessage().getInt(FREQUENCY_BAND, getOffset()),
                 getMessage().getInt(CHANNEL_NUMBER, getOffset()));
+            mChannel = new APCO25Channel(channel);
         }
 
         return mChannel;

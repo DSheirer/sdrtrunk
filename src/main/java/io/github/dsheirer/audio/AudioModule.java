@@ -172,7 +172,7 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
     }
 
     @Override
-    public Listener getReusableBufferListener()
+    public Listener<ReusableFloatBuffer> getReusableBufferListener()
     {
         //Redirect received reusable buffers to the receive(buffer) method
         return this;

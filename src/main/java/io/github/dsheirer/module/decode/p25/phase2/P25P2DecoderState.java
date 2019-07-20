@@ -42,6 +42,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
+import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.network.P25NetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
@@ -97,6 +98,18 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
     private P25NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
+    private P25TrafficChannelManager mTrafficChannelManager;
+
+    /**
+     * Constructs an APCO-25 decoder state for a traffic channel.
+     * @param channel with configuration details
+     */
+    public P25P2DecoderState(Channel channel, int timeslot, P25TrafficChannelManager trafficChannelManager)
+    {
+        super(timeslot);
+        mChannelType = channel.getChannelType();
+        mTrafficChannelManager = trafficChannelManager;
+    }
 
     /**
      * Constructs an APCO-25 decoder state for a traffic channel.

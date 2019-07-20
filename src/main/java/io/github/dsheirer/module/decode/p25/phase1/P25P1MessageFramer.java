@@ -428,8 +428,11 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
+        P25P1DecoderLSM decoderLSM = new P25P1DecoderLSM();
 
-        Path path = Paths.get("/media/denny/500G1EXT4/PBITRecordings/20180922_040600_9600BPS_CNYICC_Onondaga Simulcast_LCN 09.bits");
+
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190719_073751_9600BPS_APCO25PHASE1_DFWAirport_Site_857_3875_baseband_20181213_223236.bits");
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/20190720_071117_9600BPS_APCO25PHASE1_P25P2_HCPM_Metrocrest_Dallas_857_7625_phase_2_not_motorola_baseband_20181213_224616_control_channel.bits");
 
         P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
 

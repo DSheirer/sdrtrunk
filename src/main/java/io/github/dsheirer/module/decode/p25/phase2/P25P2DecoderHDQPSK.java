@@ -31,6 +31,7 @@ import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.PLLGain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
@@ -61,11 +62,13 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
+    private DecodeConfigP25Phase2 mDecodeConfigP25Phase2;
 
-    public P25P2DecoderHDQPSK()
+    public P25P2DecoderHDQPSK(DecodeConfigP25Phase2 decodeConfigP25Phase2)
     {
         super(6000.0);
         setSampleRate(25000.0);
+        mDecodeConfigP25Phase2 = decodeConfigP25Phase2;
     }
 
     public void setSampleRate(double sampleRate)
@@ -203,13 +206,29 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         mCostasLoop.reset();
     }
 
+    @Override
+    public void start()
+    {
+        super.start();
+
+        //Refresh the scramble parameters each time we start in case they change
+        if(mDecodeConfigP25Phase2 != null && mDecodeConfigP25Phase2.getScrambleParameters() != null)
+        {
+            mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
+        }
+    }
+
     public static void main(String[] args)
     {
         String path = "/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/";
         String input = "CNYICC_Rome_CNYICC_154_250_baseband_20190322_180331_good.wav";
         String output = "CNYICC_ROME_154_250_8";
 
-        P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK();
+        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677); //CNYICC
+        DecodeConfigP25Phase2 decodeConfigP25Phase2 = new DecodeConfigP25Phase2();
+        decodeConfigP25Phase2.setScrambleParameters(scrambleParameters);
+
+        P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK(decodeConfigP25Phase2);
         BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25_PHASE2);
         decoder.setBufferListener(recorder.getReusableByteBufferListener());
         recorder.start();

@@ -41,8 +41,9 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
      * Instrumented version of the P25 C4FM decoder that supports registering listeners to provide access to data as
      * it is being processed by the decoder.
      */
-    public P25P2DecoderHDQPSKInstrumented()
+    public P25P2DecoderHDQPSKInstrumented(DecodeConfigP25Phase2 decodeConfigP25Phase2)
     {
+        super((decodeConfigP25Phase2));
     }
 
     /**

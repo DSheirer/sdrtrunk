@@ -96,7 +96,7 @@ public class FrequencyBandUpdate extends MacStructure implements IFrequencyBand
     @Override
     public long getTransmitOffset()
     {
-        long offset = getMessage().getLong(TRANSMIT_OFFSET, getOffset()) * 250000l;
+        long offset = getMessage().getLong(TRANSMIT_OFFSET, getOffset()) * getChannelSpacing();
 
         if(!getMessage().get(TRANSMIT_OFFSET_SIGN + getOffset()))
         {
