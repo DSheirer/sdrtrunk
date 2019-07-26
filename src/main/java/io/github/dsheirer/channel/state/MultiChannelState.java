@@ -197,7 +197,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             }
             if(channel.getName() != null && !channel.getName().isEmpty())
             {
-                identifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName()));
+                identifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName() + " TS:" + timeslot));
             }
             if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
             {
