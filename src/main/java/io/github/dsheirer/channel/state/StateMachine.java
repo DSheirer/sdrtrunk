@@ -162,7 +162,6 @@ public class StateMachine
     }
 
     private void broadcast(ChannelStateIdentifier channelStateIdentifier)
-
     {
         if(mIdentifierUpdateListener != null)
         {

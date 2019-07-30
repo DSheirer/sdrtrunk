@@ -78,5 +78,10 @@ public interface IDecodeEvent
      * Timeslot for the event.
      * @return timeslot or default of 0
      */
-    int getTimeslot();
+    Integer getTimeslot();
+
+    /**
+     * Indicates if the event has a timeslot specified
+     */
+    boolean hasTimeslot();
 }

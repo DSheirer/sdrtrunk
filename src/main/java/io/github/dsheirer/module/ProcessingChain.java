@@ -24,6 +24,7 @@ package io.github.dsheirer.module;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.IAudioPacketListener;
 import io.github.dsheirer.audio.IAudioPacketProvider;
+import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
@@ -50,6 +51,7 @@ import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogger;
+import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -703,6 +705,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
         for(Module module : mModules)
         {
             if(module instanceof ComplexBufferWaveRecorder)
+            {
+                recordingModules.add(module);
+            }
+            else if(module instanceof MBECallSequenceRecorder)
+            {
+                recordingModules.add(module);
+            }
+            else if(module instanceof BinaryRecorder)
             {
                 recordingModules.add(module);
             }

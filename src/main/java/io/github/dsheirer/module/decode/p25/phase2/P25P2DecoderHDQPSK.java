@@ -212,7 +212,8 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         super.start();
 
         //Refresh the scramble parameters each time we start in case they change
-        if(mDecodeConfigP25Phase2 != null && mDecodeConfigP25Phase2.getScrambleParameters() != null)
+        if(mDecodeConfigP25Phase2 != null && mDecodeConfigP25Phase2.getScrambleParameters() != null &&
+            !mDecodeConfigP25Phase2.isAutoDetectScrambleParameters())
         {
             mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
         }

@@ -40,7 +40,7 @@ public class DecodeEvent implements IDecodeEvent
     private IChannelDescriptor mChannelDescriptor;
     private String mDetails;
     private Protocol mProtocol;
-    private int mTimeslot = 0;
+    private Integer mTimeslot;
 
     public DecodeEvent(long start)
     {
@@ -196,16 +196,24 @@ public class DecodeEvent implements IDecodeEvent
      * @return timeslot or default value of 0
      */
     @Override
-    public int getTimeslot()
+    public Integer getTimeslot()
     {
         return mTimeslot;
+    }
+
+    /**
+     * Indicates if this event specifies a timeslot
+     */
+    public boolean hasTimeslot()
+    {
+        return mTimeslot != null;
     }
 
     /**
      * Sets the timeslot for this event
      * @param timeslot of the event
      */
-    public void setTimeslot(int timeslot)
+    public void setTimeslot(Integer timeslot)
     {
         mTimeslot = timeslot;
     }
@@ -238,7 +246,7 @@ public class DecodeEvent implements IDecodeEvent
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
         protected Protocol mProtocol = Protocol.UNKNOWN;
-        protected int mTimeslot = 0;
+        protected Integer mTimeslot;
 
         /**
          * Constructs a builder instance with the specified start time in milliseconds
@@ -319,7 +327,7 @@ public class DecodeEvent implements IDecodeEvent
             return this;
         }
 
-        public DecodeEventBuilder timeslot(int timeslot)
+        public DecodeEventBuilder timeslot(Integer timeslot)
         {
             mTimeslot = timeslot;
             return this;

@@ -146,7 +146,7 @@ public class MBECallSequence
      *
      * @param to id
      */
-    public void setToIdentifer(String to)
+    public void setToIdentifier(String to)
     {
         if(to != null && !to.isEmpty() && !to.contentEquals("0"))
         {
@@ -163,11 +163,6 @@ public class MBECallSequence
     public String getToIdentifier()
     {
         return mToIdentifier;
-    }
-
-    public void setToIdentifier(String toIdentifier)
-    {
-        mToIdentifier = toIdentifier;
     }
 
     /**

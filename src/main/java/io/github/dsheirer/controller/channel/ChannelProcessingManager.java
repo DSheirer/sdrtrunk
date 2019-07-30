@@ -40,9 +40,8 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.record.RecorderFactory;
 import io.github.dsheirer.record.RecorderManager;
-import io.github.dsheirer.record.RecorderType;
-import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
@@ -288,43 +287,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.addModules(loggers);
         }
 
-        /* Setup recorders */
-        List<RecorderType> recorders = channel.getRecordConfiguration().getRecorders();
+        //Add recorders
+        processingChain.addModules(RecorderFactory.getRecorders(mRecorderManager, mUserPreferences, channel));
 
-        if(!recorders.isEmpty())
-        {
-            /* Add baseband recorder */
-            if((recorders.contains(RecorderType.BASEBAND) && channel.getChannelType() == Channel.ChannelType.STANDARD))
-            {
-                processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
-            }
-
-            /* Add traffic channel baseband recorder */
-            if(recorders.contains(RecorderType.TRAFFIC_BASEBAND) && channel.getChannelType() == Channel.ChannelType.TRAFFIC)
-            {
-                processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
-            }
-
-            /* Add decoded bit stream recorder if the decoder supports bitstream output */
-            if(DecoderFactory.getBitstreamDecoders().contains(channel.getDecodeConfiguration().getDecoderType()))
-            {
-                if((recorders.contains(RecorderType.DEMODULATED_BIT_STREAM) &&
-                    channel.getChannelType() == Channel.ChannelType.STANDARD))
-                {
-                    processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
-                }
-
-                /* Add traffic channel decoded bit stream recorder */
-                if(recorders.contains(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM) &&
-                    channel.getChannelType() == Channel.ChannelType.TRAFFIC)
-                {
-                    processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
-                }
-            }
-        }
-
+        //Set the samples source
         processingChain.setSource(source);
 
         //Inject the channel identifier for traffic channels and preload user identifiers

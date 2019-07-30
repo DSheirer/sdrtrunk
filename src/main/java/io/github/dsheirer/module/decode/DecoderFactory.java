@@ -83,6 +83,7 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
@@ -102,7 +103,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
 public class DecoderFactory
@@ -156,14 +156,15 @@ public class DecoderFactory
             case AM:
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-                AudioModule audioModuleAM = new AudioModule();
 
                 //Check if the user wants all audio recorded ..
                 if(((DecodeConfigAM)decodeConfig).getRecordAudio())
                 {
+                    AudioModule audioModuleAM = new AudioModule();
                     audioModuleAM.setRecordAudio(true);
+                    modules.add(audioModuleAM);
                 }
-                modules.add(audioModuleAM);
+
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -288,19 +289,8 @@ public class DecoderFactory
             case P25_PHASE2:
                 modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
 
-                if(channelType == ChannelType.STANDARD)
-                {
-                    P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
-                    modules.add(trafficChannelManager);
-                    modules.add(new P25P2DecoderState(channel, 0, trafficChannelManager));
-                    modules.add(new P25P2DecoderState(channel, 1, trafficChannelManager));
-                }
-                else
-                {
-                    modules.add(new P25P2DecoderState(channel, 0));
-                    modules.add(new P25P2DecoderState(channel, 1));
-                }
-
+                modules.add(new P25P2DecoderState(channel, 0));
+                modules.add(new P25P2DecoderState(channel, 1));
                 modules.add(new P25P2AudioModule(userPreferences, 0));
                 modules.add(new P25P2AudioModule(userPreferences, 1));
                 break;
@@ -443,6 +433,8 @@ public class DecoderFactory
                 return new DecodeConfigPassport();
             case P25_PHASE1:
                 return new DecodeConfigP25Phase1();
+            case P25_PHASE2:
+                return new DecodeConfigP25Phase2();
             default:
                 throw new IllegalArgumentException("DecodeConfigFactory - unknown decoder type [" + decoder.toString() + "]");
         }
@@ -464,6 +456,8 @@ public class DecoderFactory
                 return new NBFMDecoderEditor();
             case P25_PHASE1:
                 return new P25P1DecoderEditor();
+            case P25_PHASE2:
+                return new P25P2DecoderEditor();
             case PASSPORT:
                 return new PassportDecoderEditor();
             default:
@@ -511,6 +505,15 @@ public class DecoderFactory
                     copyP25.setModulation(originalP25.getModulation());
                     copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
                     return copyP25;
+                case P25_PHASE2:
+                    DecodeConfigP25Phase2 originalP25P2 = (DecodeConfigP25Phase2)config;
+                    DecodeConfigP25Phase2 copyP25P2 = new DecodeConfigP25Phase2();
+
+                    if(originalP25P2.getScrambleParameters() != null)
+                    {
+                        copyP25P2.setScrambleParameters(originalP25P2.getScrambleParameters().copy());
+                    }
+                    return copyP25P2;
                 case PASSPORT:
                     return new DecodeConfigPassport();
                 default:
@@ -519,15 +522,5 @@ public class DecoderFactory
         }
 
         return null;
-    }
-
-    /**
-     * Decoder(s) that support bitstreams indicating that they produce ReusableByteBuffers of decoded bits.
-     *
-     * @return set of decoders that support bitstreams.
-     */
-    public static EnumSet<DecoderType> getBitstreamDecoders()
-    {
-        return EnumSet.of(DecoderType.P25_PHASE1, DecoderType.MPT1327);
     }
 }

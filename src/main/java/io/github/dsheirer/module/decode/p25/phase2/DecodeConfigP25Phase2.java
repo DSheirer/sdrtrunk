@@ -32,6 +32,7 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 public class DecodeConfigP25Phase2 extends DecodeConfiguration
 {
     private ScrambleParameters mScrambleParameters;
+    private boolean mAutoDetectScrambleParameters;
 
     public DecodeConfigP25Phase2()
     {
@@ -62,7 +63,7 @@ public class DecodeConfigP25Phase2 extends DecodeConfiguration
     /**
      * Optional scramble (ie randomizer) parameters to use for the channel.
      */
-    @JsonIgnore
+    @JacksonXmlProperty(localName = "scramble_parameters")
     public ScrambleParameters getScrambleParameters()
     {
         return mScrambleParameters;
@@ -71,5 +72,16 @@ public class DecodeConfigP25Phase2 extends DecodeConfiguration
     public void setScrambleParameters(ScrambleParameters scrambleParameters)
     {
         mScrambleParameters = scrambleParameters;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "auto_detect_scramble_parameters")
+    public boolean isAutoDetectScrambleParameters()
+    {
+        return mAutoDetectScrambleParameters;
+    }
+
+    public void setAutoDetectScrambleParameters(boolean autoDetect)
+    {
+        mAutoDetectScrambleParameters = autoDetect;
     }
 }

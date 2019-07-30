@@ -26,6 +26,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.preference.PreferenceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,6 +168,8 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
             case COLUMN_USER_FROM_ALIAS:
             case COLUMN_USER_TO_ALIAS:
                 return Alias.class;
+            case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
+                return String.class;
             default:
                 return Identifier.class;
         }
@@ -186,7 +189,30 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                 case COLUMN_DECODER_TYPE:
                     return channelMetadata.getDecoderTypeConfigurationIdentifier();
                 case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
-                    return channelMetadata.getDecoderLogicalChannelNameIdentifier();
+                    DecoderLogicalChannelNameIdentifier id = channelMetadata.getDecoderLogicalChannelNameIdentifier();
+
+                    if(channelMetadata.hasTimeslot())
+                    {
+                        if(id == null)
+                        {
+                            return "TS:" + channelMetadata.getTimeslot();
+                        }
+                        else
+                        {
+                            return id.getValue() + " TS:" + channelMetadata.getTimeslot();
+                        }
+                    }
+                    else
+                    {
+                        if(id == null)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            return id.getValue();
+                        }
+                    }
                 case COLUMN_CONFIGURATION_FREQUENCY:
                     return channelMetadata.getFrequencyConfigurationIdentifier();
                 case COLUMN_CONFIGURATION_CHANNEL:

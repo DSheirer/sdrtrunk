@@ -30,22 +30,25 @@ public abstract class ImbeAudioModule extends JmbeAudioModule
 {
     private static final Logger mLog = LoggerFactory.getLogger(ImbeAudioModule.class);
     private static final String IMBE_CODEC = "IMBE";
-    private static boolean mLibraryStatusLogged = false;
+    private static boolean sLibraryStatusLogged = false;
 
     public ImbeAudioModule(UserPreferences userPreferences)
     {
         super(userPreferences);
 
-        if(getAudioCodec() != null)
+        if(!sLibraryStatusLogged)
         {
-            mLog.info("JMBE audio conversion library IMBE CODEC successfully loaded - P25-1 audio will be available");
-        }
-        else
-        {
-            mLog.warn("JMBE audio conversion library, IMBE CODEC not loaded - P25-1 audio will NOT be available");
-        }
+            if(getAudioCodec() != null)
+            {
+                mLog.info("JMBE audio conversion library IMBE CODEC successfully loaded - P25-1 audio will be available");
+            }
+            else
+            {
+                mLog.warn("JMBE audio conversion library, IMBE CODEC not loaded - P25-1 audio will NOT be available");
+            }
 
-        mLibraryStatusLogged = true;
+            sLibraryStatusLogged = true;
+        }
     }
 
     @Override

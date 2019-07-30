@@ -30,13 +30,13 @@ public abstract class AmbeAudioModule extends JmbeAudioModule
 {
     private static final Logger mLog = LoggerFactory.getLogger(AmbeAudioModule.class);
     private static final String AMBE_CODEC = "AMBE 3600 x 2450";
-    private static boolean mLibraryStatusLogged = false;
+    private static boolean sLibraryStatusLogged = false;
 
     public AmbeAudioModule(UserPreferences userPreferences)
     {
         super(userPreferences);
 
-        if(!mLibraryStatusLogged)
+        if(!sLibraryStatusLogged)
         {
             if(getAudioCodec() != null)
             {
@@ -47,7 +47,7 @@ public abstract class AmbeAudioModule extends JmbeAudioModule
                 mLog.warn("AMBE CODEC not loaded - P25-2/DMR/NXDN audio will NOT be available");
             }
 
-            mLibraryStatusLogged = true;
+            sLibraryStatusLogged = true;
         }
     }
 

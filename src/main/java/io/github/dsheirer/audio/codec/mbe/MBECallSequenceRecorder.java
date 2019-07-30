@@ -95,10 +95,7 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
      */
     protected void writeCallSequence(MBECallSequence sequence, String optionalChannelTag)
     {
-        mLog.debug("***************** Writing Call Sequence for " + (optionalChannelTag != null ? optionalChannelTag : "")
-            + " Call: " + mCallNumber + " **********************************");
-
-        if(sequence.hasAudio())
+        if(sequence != null && sequence.hasAudio())
         {
             StringBuilder sb = new StringBuilder();
             sb.append(TimestampFormat.TIMESTAMP_COMPACT.getFormatter().format(new Date(System.currentTimeMillis())));

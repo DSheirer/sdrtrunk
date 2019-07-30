@@ -28,16 +28,17 @@ import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupVoiceChannelUpdate;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola.LCMotorolaPatchGroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUpdateExplicit;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCGroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCTelephoneInterconnectVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.p25.phase1.message.ldu.EncryptionSyncParameters;
+import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
+import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.EndPushToTalk;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelUserAbbreviated;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupVoiceChannelUserExtended;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToTalk;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.TelephoneInterconnectVoiceChannelUser;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserAbbreviated;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
 import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,6 +128,15 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
             mCallSequence = new MBECallSequence(PROTOCOL);
         }
 
+        if(lduMessage instanceof LDU1Message)
+        {
+            process((LDU1Message)lduMessage);
+        }
+        else if(lduMessage instanceof LDU2Message)
+        {
+            process((LDU2Message)lduMessage);
+        }
+
         List<byte[]> voiceFrames = lduMessage.getIMBEFrames();
 
         long baseTimestamp = lduMessage.getTimestamp();
@@ -139,182 +149,67 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
             //Voice frames are 20 milliseconds each, so we increment the timestamp by 20 for each one
             baseTimestamp += 20;
         }
-    }
-
-    /**
-     * Processes a P25 message
-     */
-    private void process(MacMessage macMessage)
-    {
-        switch(macMessage.getMacPduType())
-        {
-            case MAC_1_PTT:
-            case MAC_4_ACTIVE:
-                process(macMessage.getMacStructure(), true);
-                break;
-            case MAC_2_END_PTT:
-            case MAC_6_HANGTIME:
-                process(macMessage.getMacStructure(), false);
-                break;
-            case MAC_3_IDLE:
-                flush();
-                break;
-        }
 
     }
 
-    /**
-     * Processes a mac structure message to obtain from/to identifiers and to optionally close the call sequence
-     * when the MAC pdu indicates that the call sequence is no longer active
-     *
-     * @param mac
-     * @param isActive
-     */
-    private void process(MacStructure mac, boolean isActive)
+    private void process(LDU1Message ldu1Message)
     {
-        if(mCallSequence == null && isActive)
+        LinkControlWord lcw = ldu1Message.getLinkControlWord();
+
+        if(lcw.isValid())
         {
-            mCallSequence = new MBECallSequence(PROTOCOL);
+            switch(lcw.getOpcode())
+            {
+                case GROUP_VOICE_CHANNEL_USER:
+                    LCGroupVoiceChannelUser gvcu = (LCGroupVoiceChannelUser)lcw;
+                    mCallSequence.setFromIdentifier(gvcu.getSourceAddress().toString());
+                    mCallSequence.setToIdentifier(gvcu.getGroupAddress().toString());
+                    mCallSequence.setCallType(CALL_TYPE_GROUP);
+                    break;
+                case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
+                    LCUnitToUnitVoiceChannelUser uuvcu = (LCUnitToUnitVoiceChannelUser)lcw;
+                    mCallSequence.setFromIdentifier(uuvcu.getSourceAddress().toString());
+                    mCallSequence.setToIdentifier(uuvcu.getTargetAddress().toString());
+                    mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
+                    break;
+                case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
+                    LCGroupVoiceChannelUpdateExplicit gvcue = (LCGroupVoiceChannelUpdateExplicit)lcw;
+                    mCallSequence.setToIdentifier(gvcue.getGroupAddress().toString());
+                    mCallSequence.setCallType(CALL_TYPE_GROUP);
+                    break;
+                case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
+                    LCTelephoneInterconnectVoiceChannelUser tivcu = (LCTelephoneInterconnectVoiceChannelUser)lcw;
+                    mCallSequence.setToIdentifier(tivcu.getAddress().toString());
+                    mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
+                    break;
+                case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER:
+                    LCMotorolaPatchGroupVoiceChannelUser mpgvcu = (LCMotorolaPatchGroupVoiceChannelUser)lcw;
+                    mCallSequence.setFromIdentifier(mpgvcu.getSourceAddress().toString());
+                    mCallSequence.setToIdentifier(mpgvcu.getGroupAddress().toString());
+                    mCallSequence.setCallType(CALL_TYPE_GROUP);
+                    break;
+                case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE:
+                    LCMotorolaPatchGroupVoiceChannelUpdate mpgvcup = (LCMotorolaPatchGroupVoiceChannelUpdate)lcw;
+                    mCallSequence.setToIdentifier(mpgvcup.getPatchGroup().toString());
+                    mCallSequence.setCallType(CALL_TYPE_GROUP);
+                    break;
+                case CALL_TERMINATION_OR_CANCELLATION:
+                case MOTOROLA_TALK_COMPLETE:
+                    writeCallSequence(mCallSequence);
+                    mCallSequence = null;
+                    break;
+            }
         }
+    }
 
-        if(mCallSequence != null)
+    private void process(LDU2Message ldu2Message)
+    {
+        EncryptionSyncParameters parameters = ldu2Message.getEncryptionSyncParameters();
+
+        if(parameters.isValid() && parameters.isEncryptedAudio())
         {
-            switch(mac.getOpcode())
-            {
-                case PUSH_TO_TALK:
-                    if(mac instanceof PushToTalk)
-                    {
-                        PushToTalk ptt = (PushToTalk)mac;
-
-                        if(mCallSequence == null)
-                        {
-                            mCallSequence = new MBECallSequence(PROTOCOL);
-                        }
-                        mCallSequence.setFromIdentifier(ptt.getSourceAddress().toString());
-                        mCallSequence.setToIdentifer(ptt.getGroupAddress().toString());
-
-                        if(ptt.isEncrypted())
-                        {
-                            mCallSequence.setEncrypted(true);
-                            mCallSequence.setEncryptionSyncParameters(ptt.getEncryptionSyncParameters());
-                        }
-                    }
-                    else
-                    {
-                        mLog.warn("Expected push-to-talk structure but found: " + mac.getClass());
-                    }
-                    break;
-                case END_PUSH_TO_TALK:
-                    if(mac instanceof EndPushToTalk)
-                    {
-                        EndPushToTalk eptt = (EndPushToTalk)mac;
-
-                        String source = eptt.getSourceAddress().toString();
-
-                        if(source != null && !source.contentEquals("16777215"))
-                        {
-                            mCallSequence.setFromIdentifier(source);
-                        }
-                        mCallSequence.setToIdentifer(eptt.getGroupAddress().toString());
-                        writeCallSequence(mCallSequence);
-                        mCallSequence = null;
-                    }
-                    else
-                    {
-                        mLog.warn("Expected End push-to-talk structure but found: " + mac.getClass());
-                    }
-                    break;
-                case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
-                    if(mac instanceof GroupVoiceChannelUserAbbreviated)
-                    {
-                        GroupVoiceChannelUserAbbreviated gvcua = (GroupVoiceChannelUserAbbreviated)mac;
-                        mCallSequence.setFromIdentifier(gvcua.getSourceAddress().toString());
-                        mCallSequence.setToIdentifer(gvcua.getGroupAddress().toString());
-                        mCallSequence.setCallType(CALL_TYPE_GROUP);
-                        if(gvcua.getServiceOptions().isEncrypted())
-                        {
-                            mCallSequence.setEncrypted(true);
-                        }
-                    }
-                    else
-                    {
-                        mLog.warn("Expected group voice channel user abbreviated but found: " + mac.getClass());
-                    }
-                    break;
-                case TDMA_2_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-                    if(mac instanceof UnitToUnitVoiceChannelUserAbbreviated)
-                    {
-                        UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
-                        mCallSequence.setFromIdentifier(uuvcua.getSourceAddress().toString());
-                        mCallSequence.setToIdentifer(uuvcua.getTargetAddress().toString());
-                        mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
-                        if(uuvcua.getServiceOptions().isEncrypted())
-                        {
-                            mCallSequence.setEncrypted(true);
-                        }
-                    }
-                    else
-                    {
-                        mLog.warn("Expected unit-2-unit voice channel user abbreviated but found: " + mac.getClass());
-                    }
-                    break;
-                case TDMA_3_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-                    if(mac instanceof TelephoneInterconnectVoiceChannelUser)
-                    {
-                        TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
-                        mCallSequence.setToIdentifer(tivcu.getToOrFromAddress().toString());
-                        mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
-                        if(tivcu.getServiceOptions().isEncrypted())
-                        {
-                            mCallSequence.setEncrypted(true);
-                        }
-                    }
-                    else
-                    {
-                        mLog.warn("Expected telephone interconnect voice channel user abbreviated but found: " + mac.getClass());
-                    }
-                    break;
-                case TDMA_33_GROUP_VOICE_CHANNEL_USER_EXTENDED:
-                    if(mac instanceof GroupVoiceChannelUserExtended)
-                    {
-                        GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
-                        mCallSequence.setFromIdentifier(gvcue.getSourceAddress().toString());
-                        mCallSequence.setToIdentifer(gvcue.getGroupAddress().toString());
-                        mCallSequence.setCallType(CALL_TYPE_GROUP);
-                        if(gvcue.getServiceOptions().isEncrypted())
-                        {
-                            mCallSequence.setEncrypted(true);
-                        }
-                    }
-                    else
-                    {
-                        mLog.warn("Expected group voice channel user extended but found: " + mac.getClass());
-                    }
-                    break;
-                case TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
-                    if(mac instanceof UnitToUnitVoiceChannelUserExtended)
-                    {
-                        UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
-                        mCallSequence.setFromIdentifier(uuvcue.getSourceAddress().toString());
-                        mCallSequence.setToIdentifer(uuvcue.getTargetAddress().toString());
-                        mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
-                        if(uuvcue.getServiceOptions().isEncrypted())
-                        {
-                            mCallSequence.setEncrypted(true);
-                        }
-                    }
-                    else
-                    {
-                        mLog.warn("Expected unit-2-unit voice channel user extended but found: " + mac.getClass());
-                    }
-                    break;
-            }
-
-            if(!isActive)
-            {
-                writeCallSequence(mCallSequence);
-                mCallSequence = null;
-            }
+            mCallSequence.setEncrypted(true);
+            mCallSequence.setEncryptionSyncParameters(parameters);
         }
     }
 }

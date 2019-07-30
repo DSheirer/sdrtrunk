@@ -80,7 +80,6 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
      */
     protected void broadcast(IDecodeEvent event)
     {
-        mLog.debug("***** Decode Event Broadcasted: " + event.toString());
         mDecodeEventBroadcaster.broadcast(event);
     }
 
@@ -117,8 +116,6 @@ public abstract class AbstractDecoderState extends Module implements ActivitySum
         {
             mDecoderStateListener.receive(event);
         }
-
-        mLog.debug("***** Decoder State Event: " + event.toString());
     }
 
     /**

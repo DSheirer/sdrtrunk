@@ -49,14 +49,13 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     public static final int COLUMN_TO_ALIAS = 6;
     public static final int COLUMN_CHANNEL = 7;
     public static final int COLUMN_FREQUENCY = 8;
-    public static final int COLUMN_TIMESLOT = 9;
-    public static final int COLUMN_DETAILS = 10;
+    public static final int COLUMN_DETAILS = 9;
 
     protected int mMaxMessages = 500;
 
     protected List<IDecodeEvent> mEvents = new ArrayList<>();
 
-    protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Timeslot", "Details"};
+    protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Details"};
 
     public DecodeEventModel()
     {
@@ -189,11 +188,32 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
                     case COLUMN_TO_ALIAS:
                         return event.getIdentifierCollection();
                     case COLUMN_CHANNEL:
-                        return event.getChannelDescriptor();
+                        IChannelDescriptor channelDescriptor = event.getChannelDescriptor();
+
+                        if(channelDescriptor != null)
+                        {
+                            if(event.hasTimeslot())
+                            {
+                                return channelDescriptor.toString() + " TS:" + event.getTimeslot();
+                            }
+                            else
+                            {
+                                return channelDescriptor.toString();
+                            }
+                        }
+                        else
+                        {
+                            if(event.hasTimeslot())
+                            {
+                                return "TS:" + event.getTimeslot();
+                            }
+                            else
+                            {
+                                return null;
+                            }
+                        }
                     case COLUMN_FREQUENCY:
                         return event.getChannelDescriptor();
-                    case COLUMN_TIMESLOT:
-                        return event.getTimeslot();
                     case COLUMN_DETAILS:
                         return event.getDetails();
                 }
@@ -221,9 +241,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
             case COLUMN_TO_ID:
                 return IdentifierCollection.class;
             case COLUMN_CHANNEL:
-                return IChannelDescriptor.class;
-            case COLUMN_TIMESLOT:
-                return Integer.class;
+                return String.class;
         }
 
         return super.getColumnClass(columnIndex);

@@ -113,8 +113,11 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     public P25TrafficChannelManager(Channel parentChannel)
     {
         mParentChannel = parentChannel;
-        DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration();
-        mIgnoreDataCalls = p25Config.getIgnoreDataCalls();
+
+        if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1)
+        {
+            mIgnoreDataCalls = ((DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration()).getIgnoreDataCalls();
+        }
     }
 
     /**

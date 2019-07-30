@@ -54,7 +54,6 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
     protected Listener<DecoderStateEvent> mDecoderStateListener;
     protected Listener<SourceEvent> mExternalSourceEventListener;
     protected Channel mChannel;
-    protected IdentifierUpdateNotificationProxy mIdentifierUpdateNotificationProxy = new IdentifierUpdateNotificationProxy();
     protected boolean mSourceOverflow = false;
     private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
 
@@ -71,18 +70,6 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
     protected abstract void checkState();
 
     public abstract Collection<ChannelMetadata> getChannelMetadata();
-
-    @Override
-    public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
-    {
-        mIdentifierUpdateNotificationProxy.setListener(listener);
-    }
-
-    @Override
-    public void removeIdentifierUpdateListener()
-    {
-        mIdentifierUpdateNotificationProxy.removeListener();
-    }
 
     public abstract void updateChannelStateIdentifiers(IdentifierUpdateNotification notification);
 
@@ -195,34 +182,6 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
         public void receive(Heartbeat heartbeat)
         {
             checkState();
-        }
-    }
-
-    /**
-     * Proxy between the identifier collection and the external update notification listener.  This proxy enables
-     * access to internal components to broadcast silent identifier update notifications externally.
-     */
-    public class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
-    {
-        private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
-
-        @Override
-        public void receive(IdentifierUpdateNotification identifierUpdateNotification)
-        {
-            if(mIdentifierUpdateNotificationListener != null)
-            {
-                mIdentifierUpdateNotificationListener.receive(identifierUpdateNotification);
-            }
-        }
-
-        public void setListener(Listener<IdentifierUpdateNotification> listener)
-        {
-            mIdentifierUpdateNotificationListener = listener;
-        }
-
-        public void removeListener()
-        {
-            mIdentifierUpdateNotificationListener = null;
         }
     }
 }

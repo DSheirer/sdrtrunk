@@ -228,7 +228,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                                 mCallSequence = new MBECallSequence(PROTOCOL);
                             }
                             mCallSequence.setFromIdentifier(ptt.getSourceAddress().toString());
-                            mCallSequence.setToIdentifer(ptt.getGroupAddress().toString());
+                            mCallSequence.setToIdentifier(ptt.getGroupAddress().toString());
 
                             if(ptt.isEncrypted())
                             {
@@ -252,7 +252,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                             {
                                 mCallSequence.setFromIdentifier(source);
                             }
-                            mCallSequence.setToIdentifer(eptt.getGroupAddress().toString());
+                            mCallSequence.setToIdentifier(eptt.getGroupAddress().toString());
                             writeCallSequence(mCallSequence, "TS" + getTimeslot());
                             mCallSequence = null;
                         }
@@ -266,7 +266,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                         {
                             GroupVoiceChannelUserAbbreviated gvcua = (GroupVoiceChannelUserAbbreviated)mac;
                             mCallSequence.setFromIdentifier(gvcua.getSourceAddress().toString());
-                            mCallSequence.setToIdentifer(gvcua.getGroupAddress().toString());
+                            mCallSequence.setToIdentifier(gvcua.getGroupAddress().toString());
                             mCallSequence.setCallType(CALL_TYPE_GROUP);
                             if(gvcua.getServiceOptions().isEncrypted())
                             {
@@ -283,7 +283,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                         {
                             UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
                             mCallSequence.setFromIdentifier(uuvcua.getSourceAddress().toString());
-                            mCallSequence.setToIdentifer(uuvcua.getTargetAddress().toString());
+                            mCallSequence.setToIdentifier(uuvcua.getTargetAddress().toString());
                             mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
                             if(uuvcua.getServiceOptions().isEncrypted())
                             {
@@ -299,7 +299,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                         if(mac instanceof TelephoneInterconnectVoiceChannelUser)
                         {
                             TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
-                            mCallSequence.setToIdentifer(tivcu.getToOrFromAddress().toString());
+                            mCallSequence.setToIdentifier(tivcu.getToOrFromAddress().toString());
                             mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
                             if(tivcu.getServiceOptions().isEncrypted())
                             {
@@ -316,7 +316,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                         {
                             GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
                             mCallSequence.setFromIdentifier(gvcue.getSourceAddress().toString());
-                            mCallSequence.setToIdentifer(gvcue.getGroupAddress().toString());
+                            mCallSequence.setToIdentifier(gvcue.getGroupAddress().toString());
                             mCallSequence.setCallType(CALL_TYPE_GROUP);
                             if(gvcue.getServiceOptions().isEncrypted())
                             {
@@ -333,7 +333,7 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                         {
                             UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
                             mCallSequence.setFromIdentifier(uuvcue.getSourceAddress().toString());
-                            mCallSequence.setToIdentifer(uuvcue.getTargetAddress().toString());
+                            mCallSequence.setToIdentifier(uuvcue.getTargetAddress().toString());
                             mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
                             if(uuvcue.getServiceOptions().isEncrypted())
                             {

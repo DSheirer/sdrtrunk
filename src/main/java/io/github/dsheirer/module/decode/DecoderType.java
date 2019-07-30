@@ -23,7 +23,6 @@ package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.protocol.Protocol;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 
 /**
@@ -59,33 +58,41 @@ public enum DecoderType
     }
 
     /**
-     * Primary decoders
+     * Primary decoders that operate on I/Q sample streams
      */
-    public static EnumSet<DecoderType> getPrimaryDecoders()
-    {
-        return EnumSet.of(DecoderType.AM,
-            DecoderType.LTR_NET,
-            DecoderType.LTR_STANDARD,
-            DecoderType.MPT1327,
-            DecoderType.NBFM,
-            DecoderType.P25_PHASE1,
-            DecoderType.PASSPORT);
-    }
+    public static EnumSet<DecoderType> PRIMARY_DECODERS =
+        EnumSet.of(DecoderType.AM,
+        DecoderType.LTR_NET,
+        DecoderType.LTR_STANDARD,
+        DecoderType.MPT1327,
+        DecoderType.NBFM,
+        DecoderType.P25_PHASE1,
+        DecoderType.P25_PHASE2,
+        DecoderType.PASSPORT);
 
     /**
-     * Available auxiliary decoders.
+     * Auxiliary decoders that operate on in-band signalling in the decoded audio channel
      */
-    public static ArrayList<DecoderType> getAuxDecoders()
-    {
-        ArrayList<DecoderType> decoders = new ArrayList<DecoderType>();
+    public static final EnumSet<DecoderType> AUX_DECODERS =
+        EnumSet.of(DecoderType.FLEETSYNC2,
+        DecoderType.LJ_1200,
+        DecoderType.MDC1200,
+        DecoderType.TAIT_1200);
 
-        decoders.add(DecoderType.FLEETSYNC2);
-        decoders.add(DecoderType.LJ_1200);
-        decoders.add(DecoderType.MDC1200);
-        decoders.add(DecoderType.TAIT_1200);
+    /**
+     * Decoders that produce a (recordable) bitstream
+     */
+    public static final EnumSet<DecoderType> BITSTREAM_DECODERS =
+        EnumSet.of(DecoderType.MPT1327,
+            DecoderType.P25_PHASE1,
+            DecoderType.P25_PHASE2);
 
-        return decoders;
-    }
+    /**
+     * Decoders that produce (recordable) MBE audio codec frames
+     */
+    public static final EnumSet<DecoderType> MBE_AUDIO_CODEC_DECODERS =
+        EnumSet.of(DecoderType.P25_PHASE1,
+            DecoderType.P25_PHASE2);
 
     public Protocol getProtocol()
     {
@@ -106,5 +113,21 @@ public enum DecoderType
     public String toString()
     {
         return mDisplayString;
+    }
+
+    /**
+     * Indicates if the decoder type produces a (recordable) bitstream
+     */
+    public boolean providesBitstream()
+    {
+        return BITSTREAM_DECODERS.contains(this);
+    }
+
+    /**
+     * Indicates if the decoder type produces (recordable) MBE audio codec frames
+     */
+    public boolean providesMBEAudioFrames()
+    {
+        return MBE_AUDIO_CODEC_DECODERS.contains(this);
     }
 }

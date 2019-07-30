@@ -62,6 +62,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     public static final long FADE_TIMEOUT_DELAY = 1200;
     public static final long RESET_TIMEOUT_DELAY = 2000;
 
+    private IdentifierUpdateNotificationProxy mIdentifierUpdateNotificationProxy = new IdentifierUpdateNotificationProxy();
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
     private SourceEventListener mInternalSourceEventListener;
     private Map<Integer,ChannelMetadata> mChannelMetadataMap = new TreeMap<>();
@@ -69,6 +70,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private Map<Integer,StateMachine> mStateMachineMap = new TreeMap<>();
     private Map<Integer,StateMonitoringSquelchController> mSquelchControllerMap = new TreeMap<>();
     private int mTimeslotCount;
+    private Listener<IdentifierUpdateNotification> mIdentifierUpdateListener = new IdentifierUpdateListenerProxy();
 
     /**
      * Channel state tracks the overall state of all processing modules and decoders configured for the channel and
@@ -95,9 +97,11 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
         for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
         {
-            mChannelMetadataMap.put(timeslot, new ChannelMetadata(aliasModel));
+            mChannelMetadataMap.put(timeslot, new ChannelMetadata(aliasModel, timeslot));
             MutableIdentifierCollection mutableIdentifierCollection = new MutableIdentifierCollection(timeslot);
             mIdentifierCollectionMap.put(timeslot, mutableIdentifierCollection);
+
+            //Set the proxy as a listener so that echo'd updates are broadcast externally
             mutableIdentifierCollection.setIdentifierUpdateListener(mIdentifierUpdateNotificationProxy);
 
             StateMachine stateMachine = new StateMachine(timeslot);
@@ -122,7 +126,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         }
 
         createConfigurationIdentifiers(channel);
-
     }
 
     @Override
@@ -197,7 +200,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             }
             if(channel.getName() != null && !channel.getName().isEmpty())
             {
-                identifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName() + " TS:" + timeslot));
+                identifierCollection.update(ChannelNameConfigurationIdentifier.create(channel.getName()));
             }
             if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
             {
@@ -227,7 +230,27 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
     {
-        return new IdentifierUpdateListenerProxy();
+        return mIdentifierUpdateListener;
+    }
+
+    /**
+     * Registers the external listener that will receive identifier update notifications produced by this channel state
+     * @param listener
+     */
+    @Override
+    public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
+    {
+        mIdentifierUpdateNotificationProxy.setListener(listener);
+    }
+
+    /**
+     * Unregisters the external listener from receiving identifier update notifications produced by this channel state
+     * @param listener
+     */
+    @Override
+    public void removeIdentifierUpdateListener()
+    {
+        mIdentifierUpdateNotificationProxy.setListener(null);
     }
 
     /**
@@ -238,6 +261,8 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void updateChannelStateIdentifiers(IdentifierUpdateNotification notification)
     {
+        //TODO: make this an ADD so that it gets rebroadcast
+
         for(MutableIdentifierCollection mutableIdentifierCollection: mIdentifierCollectionMap.values())
         {
             mutableIdentifierCollection.receive(notification);
@@ -469,15 +494,51 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         }
     }
 
+    /**
+     * Receives and passes identifier update notifications to the correct channel metadata collections
+     */
     public class IdentifierUpdateListenerProxy implements Listener<IdentifierUpdateNotification>
     {
         @Override
         public void receive(IdentifierUpdateNotification identifierUpdateNotification)
         {
-            for(MutableIdentifierCollection mutableIdentifierCollection: mIdentifierCollectionMap.values())
+            int timeslot = identifierUpdateNotification.getTimeslot();
+
+            ChannelMetadata channelMetadata = mChannelMetadataMap.get(timeslot);
+
+            if(channelMetadata != null)
             {
-                mutableIdentifierCollection.receive(identifierUpdateNotification);
+                channelMetadata.receive(identifierUpdateNotification);
             }
         }
     }
+
+    /**
+     * Proxy between the internal identifier collections and the external update notification listener.  This proxy
+     * enables access to internal components to broadcast silent identifier update notifications externally.
+     */
+    public class IdentifierUpdateNotificationProxy implements Listener<IdentifierUpdateNotification>
+    {
+        private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
+
+        @Override
+        public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+        {
+            if(mIdentifierUpdateNotificationListener != null)
+            {
+                mIdentifierUpdateNotificationListener.receive(identifierUpdateNotification);
+            }
+        }
+
+        public void setListener(Listener<IdentifierUpdateNotification> listener)
+        {
+            mIdentifierUpdateNotificationListener = listener;
+        }
+
+        public void removeListener()
+        {
+            mIdentifierUpdateNotificationListener = null;
+        }
+    }
+
 }
