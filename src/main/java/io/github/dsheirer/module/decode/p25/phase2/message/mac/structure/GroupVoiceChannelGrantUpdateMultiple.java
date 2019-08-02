@@ -27,6 +27,7 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
@@ -159,8 +160,8 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
     {
         if(mChannelA == null)
         {
-            mChannelA = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_A, getOffset()),
-                getMessage().getInt(CHANNEL_NUMBER_A, getOffset()));
+            mChannelA = new APCO25Channel(new P25P2Channel(getMessage().getInt(FREQUENCY_BAND_A, getOffset()),
+                getMessage().getInt(CHANNEL_NUMBER_A, getOffset())));
         }
 
         return mChannelA;
@@ -170,8 +171,8 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
     {
         if(mChannelB == null)
         {
-            mChannelB = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_B, getOffset()),
-                getMessage().getInt(CHANNEL_NUMBER_B, getOffset()));
+            mChannelB = new APCO25Channel(new P25P2Channel(getMessage().getInt(FREQUENCY_BAND_B, getOffset()),
+                getMessage().getInt(CHANNEL_NUMBER_B, getOffset())));
         }
 
         return mChannelB;
@@ -181,8 +182,8 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
     {
         if(mChannelC == null)
         {
-            mChannelC = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND_C, getOffset()),
-                getMessage().getInt(CHANNEL_NUMBER_C, getOffset()));
+            mChannelC = new APCO25Channel(new P25P2Channel(getMessage().getInt(FREQUENCY_BAND_C, getOffset()),
+                getMessage().getInt(CHANNEL_NUMBER_C, getOffset())));
         }
 
         return mChannelC;

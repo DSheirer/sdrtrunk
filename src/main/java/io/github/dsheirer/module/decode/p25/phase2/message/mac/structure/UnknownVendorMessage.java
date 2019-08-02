@@ -31,7 +31,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Unknown MAC Opcode Structure.
+ * Unknown Vendor Message
  */
 public class UnknownVendorMessage extends MacStructure
 {
@@ -42,11 +42,24 @@ public class UnknownVendorMessage extends MacStructure
      * Constructs the message
      *
      * @param message containing the message bits
-     * @param offset bit index to the start of this structure
+     * @param offset into the message for this structure
      */
     public UnknownVendorMessage(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
+    }
+
+    /**
+     * Textual representation of this message
+     */
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("MANUFACTURER MESSAGE VENDOR:").append(getVendor());
+        sb.append(" LENGTH:").append(getMessageLength());
+        sb.append(" MSG:").append(getMessage().getSubMessage(getOffset(), getMessage().size()).toHexString());
+
+        return sb.toString();
     }
 
     public Vendor getVendor()
@@ -55,28 +68,17 @@ public class UnknownVendorMessage extends MacStructure
     }
 
     /**
-     * Length of the message
+     * Length of this message
      */
-    public int getLength()
+    public int getMessageLength()
     {
         return getMessage().getInt(LENGTH, getOffset());
     }
 
-    @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append(getOpcode());
-        sb.append(" VENDOR:").append(getVendor());
-        sb.append(" LENGTH:").append(getLength());
-        sb.append(" MSG:").append(getMessage().toHexString());
-
-        return sb.toString();
-    }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
     }
 }

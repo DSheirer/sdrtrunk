@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.channel.state;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -79,6 +80,10 @@ public abstract class TimeslotDecoderState extends DecoderState
                     if(identifier instanceof ChannelDescriptorConfigurationIdentifier)
                     {
                         setCurrentChannel(((ChannelDescriptorConfigurationIdentifier)identifier).getValue());
+                    }
+                    else if(identifier instanceof IChannelDescriptor)
+                    {
+                        setCurrentChannel((IChannelDescriptor)identifier);
                     }
                 }
             }

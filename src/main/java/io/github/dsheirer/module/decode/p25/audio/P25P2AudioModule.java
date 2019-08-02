@@ -133,10 +133,6 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                     {
                         processAudio(abstractVoiceTimeslot.getVoiceFrames());
                     }
-                    else
-                    {
-                        mLog.debug("*****IGNORING ENCRYPTED AUDIO CALL *****");
-                    }
                 }
                 else
                 {

@@ -23,8 +23,6 @@
 package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -111,14 +109,16 @@ public abstract class DecoderState extends AbstractDecoderState
     protected void resetState()
     {
         mIdentifierCollection.remove(IdentifierClass.USER);
-        mCurrentChannel = null;
     }
 
     /**
      * Reset the decoder state to prepare for processing a different sample
      * source
      */
-    public abstract void reset();
+    public void reset()
+    {
+        setCurrentChannel(null);
+    }
 
     /**
      * Allow the decoder to perform any setup actions
@@ -161,28 +161,11 @@ public abstract class DecoderState extends AbstractDecoderState
         @Override
         public void receive(IdentifierUpdateNotification identifierUpdateNotification)
         {
-            if(identifierUpdateNotification.getIdentifier().getIdentifierClass() == IdentifierClass.CONFIGURATION &&
-                identifierUpdateNotification.getIdentifier().getForm() != Form.DECODER_TYPE &&
-                identifierUpdateNotification.getIdentifier().getForm() != Form.CHANNEL_DESCRIPTOR)
-            {
-                if(identifierUpdateNotification.isAdd())
-                {
-                    getIdentifierCollection().update(identifierUpdateNotification.getIdentifier());
-                }
-                else if(identifierUpdateNotification.isSilentAdd())
-                {
-                    getIdentifierCollection().silentUpdate(identifierUpdateNotification.getIdentifier());
-                }
-            }
+            getIdentifierCollection().receive(identifierUpdateNotification);
 
-            if(identifierUpdateNotification.getOperation() == IdentifierUpdateNotification.Operation.ADD)
+            if(identifierUpdateNotification.getIdentifier() instanceof ChannelDescriptorConfigurationIdentifier)
             {
-                Identifier identifier = identifierUpdateNotification.getIdentifier();
-
-                if(identifier instanceof ChannelDescriptorConfigurationIdentifier)
-                {
-                    mCurrentChannel = ((ChannelDescriptorConfigurationIdentifier)identifier).getValue();
-                }
+                setCurrentChannel(((ChannelDescriptorConfigurationIdentifier)identifierUpdateNotification.getIdentifier()).getValue());
             }
         }
     }

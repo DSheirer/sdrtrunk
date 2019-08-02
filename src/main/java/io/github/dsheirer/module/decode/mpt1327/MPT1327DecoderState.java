@@ -272,8 +272,8 @@ public class MPT1327DecoderState extends DecoderState
 
     public void reset()
     {
+        super.reset();
         mIdents.clear();
-
         resetState();
     }
 

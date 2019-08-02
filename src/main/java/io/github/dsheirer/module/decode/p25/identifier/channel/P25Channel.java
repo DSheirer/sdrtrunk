@@ -133,7 +133,7 @@ public class P25Channel implements IChannelDescriptor
             return mFrequencyBand.getTimeslotCount();
         }
 
-        return 0;
+        return 1;
     }
 
     @Override
@@ -166,41 +166,18 @@ public class P25Channel implements IChannelDescriptor
      */
     public String toString()
     {
-        if(isTDMAChannel())
+        if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
         {
-            if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
-            {
-                return getDownlinkBandIdentifier() + "-" + (int)Math.floor(getDownlinkChannelNumber() / getTimeslotCount()) +
-                    ":TS" + (getDownlinkChannelNumber() % getTimeslotCount() + " " + getDownlinkFrequency());
-            }
-            else if(hasUplinkChannel())
-            {
-                return getDownlinkBandIdentifier() + "-" + (int)Math.floor(getDownlinkChannelNumber() / getTimeslotCount()) +
-                    ":TS" + (getDownlinkChannelNumber() % getTimeslotCount()) + "/" +
-                    getUplinkBandIdentifier() + "-" + (int)Math.floor(getUplinkChannelNumber() / getTimeslotCount()) + ":TS" +
-                    (getUplinkChannelNumber() % getTimeslotCount());
-            }
-            else
-            {
-                return getDownlinkBandIdentifier() + "-" + (int)Math.floor(getDownlinkChannelNumber() / getTimeslotCount()) + ":TS" +
-                    (getDownlinkChannelNumber() % getTimeslotCount()) + "/-----";
-            }
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkChannelNumber() / getTimeslotCount());
+        }
+        else if(hasUplinkChannel())
+        {
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkChannelNumber() / getTimeslotCount()) + "/" +
+                getUplinkBandIdentifier() + "-" + (getUplinkChannelNumber() / getTimeslotCount());
         }
         else
         {
-            if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
-            {
-                return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber();
-            }
-            else if(hasUplinkChannel())
-            {
-                return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/" +
-                    getUplinkBandIdentifier() + "-" + getUplinkChannelNumber();
-            }
-            else
-            {
-                return getDownlinkBandIdentifier() + "-" + getDownlinkChannelNumber() + "/-----";
-            }
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkChannelNumber() / getTimeslotCount()) + "/-----";
         }
     }
 

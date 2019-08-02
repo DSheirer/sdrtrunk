@@ -87,10 +87,29 @@ public abstract class MacStructure
     }
 
     /**
+     * Numeric value of the opcode
+     * @param message containing a mac opcode message
+     * @param offset into the message to the start of the mac sequence
+     * @return integer value
+     */
+    public static int getOpcodeNumber(CorrectedBinaryMessage message, int offset)
+    {
+        return message.getInt(OPCODE, offset);
+    }
+
+    /**
      * Opcode for this message
      */
     public MacOpcode getOpcode()
     {
         return getOpcode(getMessage(), getOffset());
+    }
+
+    /**
+     * Opcode numeric value for this structure
+     */
+    public int getOpcodeNumber()
+    {
+        return getOpcodeNumber(getMessage(), getOffset());
     }
 }

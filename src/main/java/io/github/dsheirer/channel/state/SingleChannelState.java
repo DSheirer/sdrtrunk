@@ -38,6 +38,7 @@ import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdent
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.sample.Listener;
@@ -121,6 +122,10 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     @Override
     public void stateChanged(State state, int timeslot)
     {
+        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
+        mIdentifierCollection.update(stateIdentifier);
+        mChannelMetadata.receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
+
         switch(state)
         {
             case IDLE:
@@ -227,6 +232,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     public void updateChannelStateIdentifiers(IdentifierUpdateNotification notification)
     {
         mIdentifierCollection.receive(notification);
+        mChannelMetadata.receive(notification);
     }
 
     /**

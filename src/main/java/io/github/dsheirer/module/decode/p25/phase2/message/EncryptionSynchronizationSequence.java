@@ -64,14 +64,14 @@ public class EncryptionSynchronizationSequence extends P25P2Message implements I
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ESS ").append(getEncryptionKey().toString());
+        sb.append("TS").append(mTimeslot);
+        sb.append(" ESS ").append(getEncryptionKey().toString());
 
         if(isEncrypted())
         {
             sb.append(" MI:").append(getMessageIndicator());
         }
 
-        sb.append(" TIMESLOT:").append(mTimeslot);
         return sb.toString();
     }
 

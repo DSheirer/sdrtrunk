@@ -31,7 +31,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
-import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
@@ -303,8 +303,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             {
                 for(int timeslot = 0; timeslot < channelDescriptor.getTimeslotCount(); timeslot++)
                 {
-                    ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
-                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier, IdentifierUpdateNotification.Operation.ADD, timeslot);
+                    DecoderLogicalChannelNameIdentifier identifier =
+                        DecoderLogicalChannelNameIdentifier.create(channelDescriptor.toString(), channelDescriptor.getProtocol());
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
+                        IdentifierUpdateNotification.Operation.ADD, timeslot);
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
                 }
             }

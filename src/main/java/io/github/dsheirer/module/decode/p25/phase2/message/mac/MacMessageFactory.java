@@ -159,7 +159,9 @@ public class MacMessageFactory
 
         MacOpcode opcode = MacStructure.getOpcode(message, DEFAULT_MAC_STRUCTURE_INDEX);
 
-        if(opcode.getLength() > 0 && opcode != MacOpcode.TDMA_0_NULL_INFORMATION_MESSAGE)
+        int opcodeLength = opcode.getLength();
+
+        if(opcodeLength > 0 && opcode != MacOpcode.TDMA_0_NULL_INFORMATION_MESSAGE)
         {
             int secondStructureIndex = DEFAULT_MAC_STRUCTURE_INDEX + (opcode.getLength() * 8);
 
@@ -185,16 +187,8 @@ public class MacMessageFactory
                             }
                         }
                     }
-                    else if(secondOpcode != MacOpcode.TDMA_0_NULL_INFORMATION_MESSAGE)
-                    {
-                        mLog.warn("Possible variable-length third opcode detected but not parsed: " + secondOpcode);
-                    }
                 }
             }
-        }
-        else if(opcode != MacOpcode.TDMA_0_NULL_INFORMATION_MESSAGE)
-        {
-            mLog.warn("Possible variable-length second opcode detected but not parsed: " + opcode);
         }
 
         return indices;
@@ -231,7 +225,7 @@ public class MacMessageFactory
                 return new GroupVoiceChannelUserExtended(message, offset);
             case TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                 return new UnitToUnitVoiceChannelUserExtended(message, offset);
-            case TDMA_37_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+            case TDMA_37_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE_EXPLICIT:
                 return new GroupVoiceChannelGrantUpdateMultipleExplicit(message, offset);
             case TDMA_48_POWER_CONTROL_SIGNAL_QUALITY:
                 return new PowerControlSignalQuality(message, offset);

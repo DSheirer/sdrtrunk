@@ -30,7 +30,7 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.TestMessageModule;
+import io.github.dsheirer.message.MessageInjectionModule;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
@@ -220,10 +220,12 @@ public class P25P2MessageFramer implements Listener<Dibit>
         audioPacketManager.start();
 
         Channel channel = new Channel();
-        channel.setDecodeConfiguration(new DecodeConfigP25Phase2());
+        DecodeConfigP25Phase2 decodeP2 = new DecodeConfigP25Phase2();
+        decodeP2.setScrambleParameters(new ScrambleParameters(1, 972, 972));
+        channel.setDecodeConfiguration(decodeP2);
         List<Module> modules = DecoderFactory.getModules(null, channel, aliasModel, userPreferences);
-        TestMessageModule testMessageModule = new TestMessageModule();
-        modules.add(testMessageModule);
+        MessageInjectionModule messageInjectionModule = new MessageInjectionModule();
+        modules.add(messageInjectionModule);
         ProcessingChain processingChain = new ProcessingChain(channel, aliasModel);
         processingChain.addAudioPacketListener(audioPacketManager);
         processingChain.addModules(modules);
@@ -243,7 +245,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
                     mLog.debug(message.toString());
 //                }
 
-                testMessageModule.receive(message);
+                messageInjectionModule.receive(message);
 //                frameRecorder.receive(message);
             }
         });

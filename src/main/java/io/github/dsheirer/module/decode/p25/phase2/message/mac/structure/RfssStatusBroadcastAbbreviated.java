@@ -30,7 +30,7 @@ import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
-import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
@@ -130,12 +130,14 @@ public class RfssStatusBroadcastAbbreviated extends MacStructure implements IFre
         return mSystem;
     }
 
+    /**
+     * Control channel.  This will be a phase 1 control channel even though it's being broadcast on a Phase 2 channel.
+     */
     public APCO25Channel getChannel()
     {
         if(mChannel == null)
         {
-            //Note: we know that this is a Phase 2 channel, so use the Phase 2 channel variant
-            P25P2Channel channel = new P25P2Channel(getMessage().getInt(FREQUENCY_BAND, getOffset()),
+            P25Channel channel = new P25Channel(getMessage().getInt(FREQUENCY_BAND, getOffset()),
                 getMessage().getInt(CHANNEL_NUMBER, getOffset()));
             mChannel = new APCO25Channel(channel);
         }

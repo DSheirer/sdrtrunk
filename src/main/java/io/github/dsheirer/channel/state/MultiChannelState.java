@@ -38,6 +38,7 @@ import io.github.dsheirer.identifier.configuration.DecoderTypeConfigurationIdent
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.sample.Listener;
@@ -131,6 +132,10 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void stateChanged(State state, int timeslot)
     {
+        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
+        mIdentifierCollectionMap.get(timeslot).update(stateIdentifier);
+        mChannelMetadataMap.get(timeslot).receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
+
         switch(state)
         {
             case IDLE:
@@ -261,11 +266,29 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void updateChannelStateIdentifiers(IdentifierUpdateNotification notification)
     {
-        //TODO: make this an ADD so that it gets rebroadcast
+        mLog.debug("Updateing: " + notification.getIdentifier());
+        //Explicitly add or remove the identifier from the local identifier collection to allow it to be rebroadcast
+        //to external listeners, which includes this state's channel metadata
+        MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(notification.getTimeslot());
 
-        for(MutableIdentifierCollection mutableIdentifierCollection: mIdentifierCollectionMap.values())
+        if(identifierCollection != null)
         {
-            mutableIdentifierCollection.receive(notification);
+            if(notification.isAdd())
+            {
+                identifierCollection.update(notification.getIdentifier());
+            }
+            else if(notification.isSilentAdd())
+            {
+                identifierCollection.silentUpdate(notification.getIdentifier());
+            }
+            else if(notification.isRemove())
+            {
+                identifierCollection.remove(notification.getIdentifier());
+            }
+            else if(notification.isSilentRemove())
+            {
+                identifierCollection.silentRemove(notification.getIdentifier());
+            }
         }
     }
 

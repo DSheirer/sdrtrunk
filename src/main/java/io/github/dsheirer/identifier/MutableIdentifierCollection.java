@@ -380,6 +380,9 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      * Implements the listener interface to receive notifications of identifier updates.  This allows an
      * identifier collection to maintain a synchronized state with a remote identifier collection.
      *
+     * Note: this method performs a silent add/update/remove on on the local collection and does not rebroadcast
+     * the update to a registered listener in order to prevent infinite loop updates.
+     *
      * @param identifierUpdateNotification to add or remove an identifier
      */
     @Override
@@ -388,19 +391,11 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
         //Only process notifications that match this timeslot
         if(identifierUpdateNotification.getTimeslot() == getTimeslot())
         {
-            if(identifierUpdateNotification.isAdd())
-            {
-                update(identifierUpdateNotification.getIdentifier());
-            }
-            else if(identifierUpdateNotification.isRemove())
-            {
-                remove(identifierUpdateNotification.getIdentifier());
-            }
-            else if(identifierUpdateNotification.isSilentAdd())
+            if(identifierUpdateNotification.isAdd() || identifierUpdateNotification.isSilentAdd())
             {
                 silentUpdate(identifierUpdateNotification.getIdentifier());
             }
-            else if(identifierUpdateNotification.isSilentRemove())
+            else if(identifierUpdateNotification.isRemove() || identifierUpdateNotification.isSilentRemove())
             {
                 silentRemove(identifierUpdateNotification.getIdentifier());
             }

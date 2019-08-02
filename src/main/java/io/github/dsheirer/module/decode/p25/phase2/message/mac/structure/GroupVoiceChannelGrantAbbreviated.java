@@ -27,6 +27,7 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
@@ -99,8 +100,8 @@ public class GroupVoiceChannelGrantAbbreviated extends MacStructure implements I
     {
         if(mChannel == null)
         {
-            mChannel = APCO25Channel.create(getMessage().getInt(FREQUENCY_BAND, getOffset()),
-                getMessage().getInt(CHANNEL_NUMBER, getOffset()));
+            mChannel = new APCO25Channel(new P25P2Channel(getMessage().getInt(FREQUENCY_BAND, getOffset()),
+                getMessage().getInt(CHANNEL_NUMBER, getOffset())));
         }
 
         return mChannel;
