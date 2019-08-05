@@ -211,7 +211,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences);
+            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences, recorderManager);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager, tunerModel);
