@@ -221,7 +221,8 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
         Channel channel = new Channel();
         DecodeConfigP25Phase2 decodeP2 = new DecodeConfigP25Phase2();
-        decodeP2.setScrambleParameters(new ScrambleParameters(1, 972, 972));
+//        decodeP2.setScrambleParameters(new ScrambleParameters(1, 972, 972));
+        decodeP2.setScrambleParameters(new ScrambleParameters(781824, 686, 677)); //CNYICC - Rome
         channel.setDecodeConfiguration(decodeP2);
         List<Module> modules = DecoderFactory.getModules(null, channel, aliasModel, userPreferences);
         MessageInjectionModule messageInjectionModule = new MessageInjectionModule();
@@ -232,6 +233,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
         processingChain.start();
 
         P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
+        messageFramer.setScrambleParameters(decodeP2.getScrambleParameters());
         P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
 //        P25P2CallSequenceRecorder frameRecorder = new P25P2CallSequenceRecorder(new UserPreferences(), 154250000);
         messageFramer.setListener(messageProcessor);
@@ -253,13 +255,13 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
 
 
-        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190321_192101_12000BPS_APCO25PHASE2_DFW_Irving_DFW_Phase_II_baseband_20181015_182924_good_phase_2.wav.bits");
+//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190321_192101_12000BPS_APCO25PHASE2_DFW_Irving_DFW_Phase_II_baseband_20181015_182924_good_phase_2.wav.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042605_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_1.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042806_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_3.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042830_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_4.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042853_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_5.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042917_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_6.bits");
+        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042917_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_6.bits");
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042938_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_7.bits");
 
         try(BinaryReader reader = new BinaryReader(path, 200))

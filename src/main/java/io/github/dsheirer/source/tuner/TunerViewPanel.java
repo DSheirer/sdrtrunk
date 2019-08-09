@@ -28,10 +28,12 @@ import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
+import io.github.dsheirer.source.tuner.recording.RecordingTuner;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -47,6 +49,8 @@ import javax.swing.table.TableRowSorter;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -161,15 +165,36 @@ public class TunerViewPanel extends JPanel
         mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(renderer);
 
         mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTunerTable, TABLE_PREFERENCE_KEY);
-        JScrollPane listScroller = new JScrollPane(mTunerTable);
-        listScroller.setPreferredSize(new Dimension(400, 20));
+        JScrollPane tunerTableScroller = new JScrollPane(mTunerTable);
+        tunerTableScroller.setPreferredSize(new Dimension(400, 20));
+
+        JPanel tunerTablePanel = new JPanel();
+        tunerTablePanel.setLayout(new MigLayout("insets 0 0 0 0", "[fill,grow][]", "[fill,grow][]"));
+        tunerTablePanel.add(tunerTableScroller, "span");
+
+        tunerTablePanel.add(new JLabel("")); //Empty spacer
+        JButton addRecordingTunerButton = new JButton("Add Recording Tuner");
+        addRecordingTunerButton.setEnabled(mTunerModel.canAddRecordingTuner());
+        addRecordingTunerButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                RecordingTuner recordingTuner = new RecordingTuner(mUserPreferences);
+                mTunerModel.addTuner(recordingTuner);
+                addRecordingTunerButton.setEnabled(mTunerModel.canAddRecordingTuner());
+            }
+        });
+        tunerTablePanel.add(addRecordingTunerButton);
+
+        tunerTablePanel.add(addRecordingTunerButton);
 
         JScrollPane editorScroller = new JScrollPane(mTunerEditor);
         editorScroller.setPreferredSize(new Dimension(400, 80));
 
         mSplitPane = new JideSplitPane();
         mSplitPane.setOrientation(JideSplitPane.VERTICAL_SPLIT);
-        mSplitPane.add(listScroller);
+        mSplitPane.add(tunerTablePanel);
         mSplitPane.add(editorScroller);
 
         add(mSplitPane);

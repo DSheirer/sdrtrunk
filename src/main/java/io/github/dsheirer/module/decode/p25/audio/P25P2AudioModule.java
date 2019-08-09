@@ -71,9 +71,9 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
     public P25P2AudioModule(UserPreferences userPreferences, int timeslot)
     {
-        //TODO: how do we get the identifier updates attached to the correct timeslot??
         super(userPreferences);
         mTimeslot = timeslot;
+        getIdentifierCollection().setTimeslot(timeslot);
     }
 
     private int getTimeslot()
@@ -180,6 +180,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 byte[] voiceFrameBytes = voiceFrame.getBytes();
 
                 IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
+                processMetadata(audioWithMetadata);
 
                 ReusableAudioPacket audioPacket = getAudioPacketQueue().getBuffer(audioWithMetadata.getAudio().length);
                 audioPacket.resetAttributes();
@@ -187,8 +188,6 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
                 audioPacket.loadAudioFrom(audioWithMetadata.getAudio());
                 getAudioPacketListener().receive(audioPacket);
-
-                processMetadata(audioWithMetadata);
             }
         }
     }
