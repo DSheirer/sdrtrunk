@@ -99,7 +99,8 @@ public class TunerEditor extends Editor<Tuner>
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
 
         JPanel listPanel = new JPanel();
-        listPanel.setLayout(new MigLayout("fill,wrap 3", "[grow,fill][][right]", "[][][][grow,fill][]"));
+        listPanel.setLayout(new MigLayout("fill,wrap 3", "[grow,fill][grow,fill][grow,fill]", "[][][][grow," +
+                "fill][]"));
 
         listPanel.add(mSelectedTunerType, "span");
 

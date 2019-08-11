@@ -22,9 +22,15 @@
 package io.github.dsheirer.source.tuner.recording;
 
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
+import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.PassThroughSourceManager;
+import io.github.dsheirer.source.tuner.manager.PolyphaseChannelSourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +45,30 @@ public class RecordingTuner extends Tuner
 
     public RecordingTuner(UserPreferences userPreferences)
     {
-        super("Recording Tuner", new RecordingTunerController(), userPreferences);
+        super("Recording Tuner", new RecordingTunerController());
+
+        ChannelSourceManager channelSourceManager = null;
+
+        if(getTunerController().getCurrentSampleRate() < 100000.0d)
+        {
+            setChannelSourceManager(new PassThroughSourceManager(getTunerController()));
+        }
+        else
+        {
+            ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
+            if(channelizerType == ChannelizerType.POLYPHASE)
+            {
+                setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController()));
+            }
+            else if(channelizerType == ChannelizerType.HETERODYNE)
+            {
+                setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+            }
+            else
+            {
+                throw new IllegalArgumentException("Unrecognized channelizer type: " + channelizerType);
+            }
+        }
     }
 
     /**
@@ -72,5 +101,23 @@ public class RecordingTuner extends Tuner
     public double getSampleSize()
     {
         return 16.0;
+    }
+
+    @Override
+    public void process(SourceEvent event)
+    {
+        super.process(event);
+
+        if(event.getEvent() == SourceEvent.Event.NOTIFICATION_RECORDING_FILE_LOADED)
+        {
+            if(getTunerController().getCurrentSampleRate() > 50000.0)
+            {
+                setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+            }
+            else
+            {
+                setChannelSourceManager(new PassThroughSourceManager(getTunerController()));
+            }
+        }
     }
 }

@@ -36,7 +36,9 @@ import io.github.dsheirer.source.tuner.fcd.proplusV2.FCD2TunerEditor;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTuner;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerEditor;
+import io.github.dsheirer.source.tuner.recording.RecordingTuner;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
+import io.github.dsheirer.source.tuner.recording.RecordingTunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.rtl.RTL2832Tuner;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerEditor;
@@ -93,6 +95,8 @@ public class TunerConfigurationFactory
                 return new HackRFTunerEditor(model, (HackRFTuner)tuner);
             case RAFAELMICRO_R820T:
                 return new R820TTunerEditor(model, (RTL2832Tuner)tuner);
+            case RECORDING:
+                return new RecordingTunerConfigurationEditor(model, (RecordingTuner)tuner);
             case UNKNOWN:
             default:
                 throw new IllegalArgumentException("Unrecognized Tuner: " + tuner.getName());

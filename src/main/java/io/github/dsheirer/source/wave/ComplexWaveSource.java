@@ -117,21 +117,26 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     @Override
     public void start()
     {
-        try
+        if(mInputStream == null)
         {
-            open();
-
-            if(mAutoReplay)
+            try
             {
-                long intervalMilliseconds = 50; //20 intervals per second
-                double framesPerInterval = getSampleRate() / 20.0d;
-                mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(framesPerInterval),
-                    0, intervalMilliseconds, TimeUnit.MILLISECONDS);
+                open();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error", e);
             }
         }
-        catch(IOException | UnsupportedAudioFileException e)
+
+        if(mAutoReplay)
         {
-            mLog.error("Error starting complex wave source", e);
+            long intervalMilliseconds = 50; //20 intervals per second
+            double framesPerInterval = getSampleRate() / 20.0d;
+            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(framesPerInterval),
+                    0, intervalMilliseconds, TimeUnit.MILLISECONDS);
+
+
         }
     }
 
@@ -208,27 +213,22 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         if(mInputStream == null)
         {
             mInputStream = AudioSystem.getAudioInputStream(mFile);
+
+            AudioFormat format = mInputStream.getFormat();
+
+            mBytesPerFrame = format.getFrameSize();
+
+            if(format.getChannels() != 2 || format.getSampleSizeInBits() != 16)
+            {
+                throw new IOException("Unsupported Wave Format - EXPECTED: 2 " +
+                        "channels 16-bit samples FOUND: " +
+                        mInputStream.getFormat().getChannels() + " channels " +
+                        mInputStream.getFormat().getSampleSizeInBits() + "-bit samples");
+            }
+
+            /* Broadcast that we're at frame location 0 */
+            broadcast(0);
         }
-        else
-        {
-            throw new IOException("Can't open wave source - is already opened");
-        }
-
-
-        AudioFormat format = mInputStream.getFormat();
-
-        mBytesPerFrame = format.getFrameSize();
-
-        if(format.getChannels() != 2 || format.getSampleSizeInBits() != 16)
-        {
-            throw new IOException("Unsupported Wave Format - EXPECTED: 2 " +
-                "channels 16-bit samples FOUND: " +
-                mInputStream.getFormat().getChannels() + " channels " +
-                mInputStream.getFormat().getSampleSizeInBits() + "-bit samples");
-        }
-
-        /* Broadcast that we're at frame location 0 */
-        broadcast(0);
     }
 
     /**
@@ -376,7 +376,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
             }
             catch(IOException ioe)
             {
-                mLog.debug("IO Exception - expected end of file - resetting [" + ioe.getLocalizedMessage() + "]");
+                mLog.debug("End of Recording - looping [" + ioe.getLocalizedMessage() + "]");
                 reset();
             }
         }

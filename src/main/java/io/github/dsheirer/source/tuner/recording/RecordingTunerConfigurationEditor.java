@@ -21,7 +21,7 @@
  */
 package io.github.dsheirer.source.tuner.recording;
 
-import io.github.dsheirer.gui.control.JFrequencyControl;
+import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEvent;
@@ -30,9 +30,11 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
+import javax.swing.filechooser.FileFilter;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -46,8 +48,7 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
     private final static Logger mLog = LoggerFactory.getLogger(RecordingTunerConfigurationEditor.class);
 
     private JTextField mConfigurationName;
-    private JFrequencyControl mFrequencyControl;
-    private JFileChooser mRecordingChooserButton;
+    private JButton mRecordingChooserButton;
     private JLabel mRecordingPath;
     private boolean mLoading;
 
@@ -102,29 +103,41 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
         });
 
         add(new JLabel("Name:"));
-        add(mConfigurationName, "span 2");
+        add(mConfigurationName, "span, wrap");
 
-        mFrequencyControl = new JFrequencyControl();
-        mFrequencyControl.setEnabled(false);
-        //TODO: add a change listener
-
-        mRecordingChooserButton = new JFileChooser("Recording");
+        mRecordingChooserButton = new JButton("Recording");
         mRecordingChooserButton.setEnabled(false);
         mRecordingChooserButton.addActionListener(new ActionListener()
         {
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                int returnVal = mRecordingChooserButton.showOpenDialog(RecordingTunerConfigurationEditor.this);
+                final JFileChooser chooser = new JFileChooser();
+                chooser.setFileFilter(new FileFilter()
+                {
+                    @Override
+                    public boolean accept(File f)
+                    {
+                        return f.isDirectory() || f.getName().matches(".*.wav");
+                    }
+
+                    @Override
+                    public String getDescription()
+                    {
+                        return "Baseband Recordings (*.wav)";
+                    }
+                });
+                int returnVal = chooser.showOpenDialog(RecordingTunerConfigurationEditor.this);
 
                 if (returnVal == JFileChooser.APPROVE_OPTION)
                 {
-                    File file = mRecordingChooserButton.getSelectedFile();
-                    //TODO: implement change listener and set label
-                }
-                else
-                {
+                    File file = chooser.getSelectedFile();
 
+                    if(file != null)
+                    {
+                        mRecordingPath.setText(file.getAbsolutePath());
+                        save();
+                    }
                 }
             }
         });
@@ -165,7 +178,6 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
             setControlsEnabled(tunerConfiguration.isAssigned());
             mConfigurationName.setText(config.getName());
             mRecordingPath.setText(config.getPath());
-            mFrequencyControl.setFrequency(config.getFrequency(), false);
         }
         else
         {
@@ -185,13 +197,22 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
             RecordingTunerConfiguration config = getConfiguration();
 
             config.setName(mConfigurationName.getText());
-            config.setFrequency(mFrequencyControl.getFrequency());
 
             String path = mRecordingPath.getText();
 
             if(path != null && !path.isEmpty())
             {
                 config.setPath(path);
+
+                mLog.debug("Saving and setting controller with path: " + path);
+                try
+                {
+                    mController.apply(config);
+                }
+                catch(SourceException se)
+                {
+                    mLog.error("Error while applying recording tuner configuration", se);
+                }
             }
 
             getTunerConfigurationModel().broadcast(

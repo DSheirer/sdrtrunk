@@ -36,6 +36,7 @@ public class SourceEvent
         NOTIFICATION_FREQUENCY_ROTATION_FAILURE,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED,
+        NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_STOP_SAMPLE_STREAM,
 
@@ -274,6 +275,14 @@ public class SourceEvent
     public static SourceEvent channelSampleRateChange(double sampleRate)
     {
         return new SourceEvent(Event.NOTIFICATION_CHANNEL_SAMPLE_RATE_CHANGE, sampleRate);
+    }
+
+    /**
+     * Notification that a baseband recording file has been loaded
+     */
+    public static SourceEvent recordingFileLoaded()
+    {
+        return new SourceEvent(Event.NOTIFICATION_RECORDING_FILE_LOADED);
     }
 
     /**

@@ -30,7 +30,6 @@
   <component name="DependencyValidationManager">
     <option name="SKIP_IMPORT_STATEMENTS" value="false" />
   </component>
-  <component name="Encoding" addBOMForNewFiles="with NO BOM" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
@@ -208,7 +207,7 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/sdr-trunk.iml" filepath="$PROJECT_DIR$/sdr-trunk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/sdr-trunk.iml" filepath="$PROJECT_DIR$/sdr-trunk.iml" group="sdr-trunk" />
       <module fileurl="file://$PROJECT_DIR$/sdr-trunk_main.iml" filepath="$PROJECT_DIR$/sdr-trunk_main.iml" group="sdr-trunk" />
       <module fileurl="file://$PROJECT_DIR$/sdr-trunk_test.iml" filepath="$PROJECT_DIR$/sdr-trunk_test.iml" group="sdr-trunk" />
     </modules>

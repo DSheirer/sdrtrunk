@@ -143,8 +143,8 @@ public class StateMachine
                     broadcast(ChannelStateIdentifier.TEARDOWN);
                     break;
                 case RESET:
-                    mState = State.IDLE;
-                    broadcast(ChannelStateIdentifier.IDLE);
+                    mState = State.RESET;
+                    broadcast(ChannelStateIdentifier.RESET);
                     break;
                 default:
                     break;

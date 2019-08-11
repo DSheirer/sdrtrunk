@@ -141,6 +141,10 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             case IDLE:
                 broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
                 break;
+            case RESET:
+                reset(timeslot);
+                mStateMachineMap.get(timeslot).setState(State.IDLE);
+                break;
             case TEARDOWN:
                 if(mChannel.isTrafficChannel())
                 {
@@ -148,7 +152,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                 }
                 else
                 {
-                    mStateMachineMap.get(timeslot).setState(State.IDLE);
+                    mStateMachineMap.get(timeslot).setState(State.RESET);
                 }
                 break;
         }
@@ -250,7 +254,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
     /**
      * Unregisters the external listener from receiving identifier update notifications produced by this channel state
-     * @param listener
      */
     @Override
     public void removeIdentifierUpdateListener()
@@ -306,15 +309,21 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void reset()
     {
+        mLog.debug("Resetting ...");
         for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
         {
-            mStateMachineMap.get(timeslot).setState(State.RESET);
-            broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE, timeslot));
-            MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
-            identifierCollection.remove(IdentifierClass.USER);
+            reset(timeslot);
         }
 
         sourceOverflow(false);
+    }
+
+    private void reset(int timeslot)
+    {
+        mStateMachineMap.get(timeslot).setState(State.RESET);
+        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE, timeslot));
+        MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
+        identifierCollection.remove(IdentifierClass.USER);
     }
 
     @Override
