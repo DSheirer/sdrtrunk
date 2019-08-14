@@ -131,6 +131,10 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
             case IDLE:
                 broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
                 break;
+            case RESET:
+                reset();
+                mStateMachine.setState(State.IDLE);
+                break;
             case TEARDOWN:
                 if(mChannel.isTrafficChannel())
                 {
