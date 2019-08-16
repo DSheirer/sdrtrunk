@@ -100,4 +100,10 @@ public class ScrambleParameters
     {
         return new ScrambleParameters(mWacn, mSystem, mNac);
     }
+
+    @Override
+    public String toString()
+    {
+        return "SCRAMBLE PARAMETERS WACN:" + mWacn + " SYSTEM:" + mSystem + " NAC:" + mNac;
+    }
 }

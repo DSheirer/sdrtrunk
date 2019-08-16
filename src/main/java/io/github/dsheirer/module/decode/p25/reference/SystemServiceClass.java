@@ -30,7 +30,7 @@ public class SystemServiceClass
 
     private static final int COMPOSITE_CONTROL_CHANNEL = 0x01;
     private static final int NO_SERVICE_REQUESTS = 0x02;
-    private static final int BACKUP_CONTROL_CHANNEL = 0x02;
+    private static final int BACKUP_CONTROL_CHANNEL = 0x04;
     private static final int DATA_SERVICE = 0x10;
     private static final int VOICE_SERVICE = 0x20;
     private static final int REGISTRATION_SERVICE = 0x40;

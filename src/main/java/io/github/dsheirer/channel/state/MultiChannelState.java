@@ -269,7 +269,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void updateChannelStateIdentifiers(IdentifierUpdateNotification notification)
     {
-        mLog.debug("Updateing: " + notification.getIdentifier());
         //Explicitly add or remove the identifier from the local identifier collection to allow it to be rebroadcast
         //to external listeners, which includes this state's channel metadata
         MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(notification.getTimeslot());
@@ -309,7 +308,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void reset()
     {
-        mLog.debug("Resetting ...");
         for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
         {
             reset(timeslot);

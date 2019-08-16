@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.network;
@@ -35,6 +37,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSeconda
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSystemServiceBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.AdjacentStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
@@ -64,6 +67,7 @@ public class P25NetworkConfigurationMonitor
     private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<>();
 
     //Network Status Messages
+    private AMBTCNetworkStatusBroadcast mAMBTCNetworkStatusBroadcast;
     private NetworkStatusBroadcast mTSBKNetworkStatusBroadcast;
     private LCNetworkStatusBroadcast mLCNetworkStatusBroadcast;
     private LCNetworkStatusBroadcastExplicit mLCNetworkStatusBroadcastExplicit;
@@ -176,6 +180,12 @@ public class P25NetworkConfigurationMonitor
                     mAMBTCNeighborSites.put((int)aasb.getSite().getValue(), aasb);
                 }
                 break;
+            case OSP_NETWORK_STATUS_BROADCAST:
+                if(ambtc instanceof AMBTCNetworkStatusBroadcast)
+                {
+                    mAMBTCNetworkStatusBroadcast = (AMBTCNetworkStatusBroadcast)ambtc;
+                }
+                break;
 //TODO: process the rest of the messages here
         }
     }
@@ -286,6 +296,12 @@ public class P25NetworkConfigurationMonitor
             sb.append(" WACN:").append(mTSBKNetworkStatusBroadcast.getWacn());
             sb.append(" SYSTEM:").append(mTSBKNetworkStatusBroadcast.getSystem());
             sb.append(" LRA:").append(mTSBKNetworkStatusBroadcast.getLocationRegistrationArea());
+        }
+        else if(mAMBTCNetworkStatusBroadcast != null)
+        {
+            sb.append("  NAC:").append(mAMBTCNetworkStatusBroadcast.getNAC());
+            sb.append(" WACN:").append(mAMBTCNetworkStatusBroadcast.getWacn());
+            sb.append(" SYSTEM:").append(mAMBTCNetworkStatusBroadcast.getSystem());
         }
         else if(mLCNetworkStatusBroadcast != null)
         {

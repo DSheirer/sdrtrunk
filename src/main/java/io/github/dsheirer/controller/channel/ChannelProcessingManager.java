@@ -27,6 +27,7 @@ import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -299,6 +300,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             ChannelGrantEvent channelGrantEvent = (ChannelGrantEvent)event;
             IChannelDescriptor channelDescriptor = channelGrantEvent.getChannelDescriptor();
 
+            IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
+
             if(channelDescriptor != null)
             {
                 for(int timeslot = 0; timeslot < channelDescriptor.getTimeslotCount(); timeslot++)
@@ -308,10 +311,17 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
                         IdentifierUpdateNotification.Operation.ADD, timeslot);
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+
+                    //Inject scramble parameters
+                    for(Identifier scrambleParameters: identifierCollection.getIdentifiers(Form.SCRAMBLE_PARAMETERS))
+                    {
+                        //Broadcast scramble parameters to both timeslots
+                        IdentifierUpdateNotification scrambleNotification = new IdentifierUpdateNotification(scrambleParameters,
+                            IdentifierUpdateNotification.Operation.ADD, timeslot);
+                        processingChain.getChannelState().updateChannelStateIdentifiers(scrambleNotification);
+                    }
                 }
             }
-
-            IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
 
             for(Identifier userIdentifier : identifierCollection.getIdentifiers(IdentifierClass.USER))
             {
@@ -320,6 +330,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     IdentifierUpdateNotification.Operation.ADD, channelGrantEvent.getIdentifierCollection().getTimeslot());
                 processingChain.getChannelState().updateChannelStateIdentifiers(notification);
             }
+
         }
 
         processingChain.start();

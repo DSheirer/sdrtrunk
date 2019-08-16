@@ -30,7 +30,9 @@ import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.module.Module;
@@ -42,6 +44,7 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
@@ -370,7 +373,27 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         //This will only happen on the first call
         createPhase2TrafficChannels();
 
+        if(mPhase2ScrambleParameters != null && identifierCollection instanceof MutableIdentifierCollection)
+        {
+            ((MutableIdentifierCollection)identifierCollection).silentUpdate(ScrambleParameterIdentifier.create(mPhase2ScrambleParameters));
+        }
+        else
+        {
+            mLog.debug("Scramble Parameters Null:" + (mPhase2ScrambleParameters == null) + " Class:" + identifierCollection.getClass());
+        }
+
         P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
+
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("Phase 2 Channel Grant - ").append(apco25Channel).append(" TS:").append(apco25Channel.getTimeslot()).append("\n");
+//        sb.append("Svc Options:" ).append(serviceOptions).append("\n");
+//        sb.append("Opcode:").append(opcode).append("\n");
+//        sb.append("Identifier collection:").append("\n");
+//        for(Identifier identifier: identifierCollection.getIdentifiers())
+//        {
+//            sb.append("\t").append(identifier).append("\n");
+//        }
+//        mLog.debug(sb.toString());
 
         identifierCollection.setTimeslot(apco25Channel.getTimeslot());
 
@@ -678,9 +701,16 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 @Override
                 public void receive(IMessage message)
                 {
-                    if(message.isValid() && message instanceof NetworkStatusBroadcast)
+                    if(mPhase2ScrambleParameters == null && message.isValid())
                     {
-                        mPhase2ScrambleParameters = ((NetworkStatusBroadcast)message).getScrambleParameters();
+                        if(message instanceof NetworkStatusBroadcast)
+                        {
+                            mPhase2ScrambleParameters = ((NetworkStatusBroadcast)message).getScrambleParameters();
+                        }
+                        else if(message instanceof AMBTCNetworkStatusBroadcast)
+                        {
+                            mPhase2ScrambleParameters = ((AMBTCNetworkStatusBroadcast)message).getScrambleParameters();
+                        }
                     }
                 }
             };

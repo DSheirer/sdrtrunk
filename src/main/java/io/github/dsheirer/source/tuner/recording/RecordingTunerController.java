@@ -68,6 +68,11 @@ public class RecordingTunerController extends TunerController
             mComplexWaveSource = null;
         }
 
+        if(recordingPath == null)
+        {
+            return;
+        }
+
         mComplexWaveSource = new ComplexWaveSource(new File(recordingPath), true);
         mComplexWaveSource.setListener(new Listener<ReusableComplexBuffer>()
         {
@@ -99,7 +104,7 @@ public class RecordingTunerController extends TunerController
         }
         catch(SourceException e)
         {
-            throw new IOException("Can't set frequency or sample rate");
+            throw new IOException("Can't set frequency or sample rate", e);
         }
     }
 

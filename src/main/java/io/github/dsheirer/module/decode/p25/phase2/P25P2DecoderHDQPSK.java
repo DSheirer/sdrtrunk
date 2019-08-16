@@ -30,10 +30,14 @@ import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.PLLGain;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IdentifierUpdateListener;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryRecorder;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
@@ -49,11 +53,10 @@ import java.util.Map;
 /**
  * P25 Phase 2 HDQPSK 2-timeslot Decoder
  */
-public class P25P2DecoderHDQPSK extends P25P2Decoder
+public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderHDQPSK.class);
 
-//    protected static final float SYMBOL_TIMING_GAIN = 0.3f;
     protected static final float SYMBOL_TIMING_GAIN = 0.01f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
@@ -75,13 +78,10 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
     {
         super.setSampleRate(sampleRate);
 
-        mLog.debug("Setting sample rate to [" + sampleRate + "] and samples per symbol [" + getSamplesPerSymbol() + "]");
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
-
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLGain(PLLGain.LEVEL_8);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
-
         mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
         if(mMessageFramer != null)
@@ -256,5 +256,22 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder
         }
 
         recorder.stop();
+    }
+
+    @Override
+    public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
+    {
+        return new Listener<IdentifierUpdateNotification>()
+        {
+            @Override
+            public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+            {
+                if(identifierUpdateNotification.getIdentifier().getForm() == Form.SCRAMBLE_PARAMETERS && mMessageFramer != null)
+                {
+                    ScrambleParameters scrambleParameters = (ScrambleParameters)identifierUpdateNotification.getIdentifier().getValue();
+                    mMessageFramer.setScrambleParameters(scrambleParameters);
+                }
+            }
+        };
     }
 }
