@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * Identifier update (frequency band) - VHF/UHF bands
  */
-public class FrequencyBandUpdateVUhf extends MacStructure implements IFrequencyBand
+public class FrequencyBandUpdateVUHF extends MacStructure implements IFrequencyBand
 {
     private static final int[] FREQUENCY_BAND_IDENTIFIER = {8, 9, 10, 11};
     private static final int[] BANDWIDTH = {12, 13, 14, 15, 16, 17, 18, 19, 20};
@@ -49,7 +49,7 @@ public class FrequencyBandUpdateVUhf extends MacStructure implements IFrequencyB
      * @param message containing the message bits
      * @param offset into the message for this structure
      */
-    public FrequencyBandUpdateVUhf(CorrectedBinaryMessage message, int offset)
+    public FrequencyBandUpdateVUHF(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }

@@ -74,8 +74,8 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateListener = new IdentifierUpdateListenerProxy();
 
     /**
-     * Channel state tracks the overall state of all processing modules and decoders configured for the channel and
-     * provides squelch control and decoder state reset events.
+     * Multi-Channel state tracks the overall state of all processing modules and decoders configured for the channel
+     * and provides squelch control and decoder state reset events.
      *
      * Uses a state enumeration that defines allowable channel state transitions in order to track a call or data decode
      * event from start to finish.  Uses a timer to monitor for inactivity and to provide a FADE period that indicates

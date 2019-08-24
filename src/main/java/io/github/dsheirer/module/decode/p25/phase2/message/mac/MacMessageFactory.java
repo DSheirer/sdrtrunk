@@ -36,7 +36,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.Extende
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.ExtendedFunctionCommandExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdate;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdateTDMA;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdateVUhf;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.FrequencyBandUpdateVUHF;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupAffiliationQueryAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupAffiliationQueryExtended;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.GroupPagingMessage;
@@ -278,12 +278,12 @@ public class MacMessageFactory
             case PHASE1_115_IDENTIFIER_UPDATE_TDMA:
                 return new FrequencyBandUpdateTDMA(message, offset);
             case PHASE1_116_IDENTIFIER_UPDATE_V_UHF:
-                return new FrequencyBandUpdateVUhf(message, offset);
+                return new FrequencyBandUpdateVUHF(message, offset);
             case PHASE1_117_TIME_AND_DATE_ANNOUNCEMENT:
                 return new DateAndTimeAnnouncement(message, offset);
             case PHASE1_120_SYSTEM_SERVICE_BROADCAST:
                 return new SystemServiceBroadcast(message, offset);
-            case PHASE1_121_SECONDARY_CONTROL_CHANNEL_BROADCAST:
+            case PHASE1_121_SECONDARY_CONTROL_CHANNEL_BROADCAST_ABBREVIATED:
                 return new SecondaryControlChannelBroadcastAbbreviated(message, offset);
             case PHASE1_122_RFSS_STATUS_BROADCAST_ABBREVIATED:
                 return new RfssStatusBroadcastAbbreviated(message, offset);

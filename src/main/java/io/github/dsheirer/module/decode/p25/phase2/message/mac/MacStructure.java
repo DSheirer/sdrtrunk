@@ -47,7 +47,6 @@ public abstract class MacStructure
     {
         mMessage = message;
         mOffset = offset;
-
     }
 
     /**

@@ -96,6 +96,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SND
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SNDCPDataChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SNDCPDataPageRequest;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusQuery;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.StatusUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SyncBroadcast;
@@ -253,6 +254,8 @@ public class TSBKMessageFactory
                 return new RFSSStatusBroadcast(dataUnitID, message, nac, timestamp);
             case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST:
                 return new SecondaryControlChannelBroadcast(dataUnitID, message, nac, timestamp);
+            case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+                return new SecondaryControlChannelBroadcastExplicit(dataUnitID, message, nac, timestamp);
             case OSP_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                 return new SNDCPDataChannelAnnouncementExplicit(dataUnitID, message, nac, timestamp);
             case OSP_SNDCP_DATA_CHANNEL_GRANT:

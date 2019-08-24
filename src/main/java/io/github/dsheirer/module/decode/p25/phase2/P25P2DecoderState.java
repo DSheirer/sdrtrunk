@@ -44,7 +44,6 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
-import io.github.dsheirer.module.decode.p25.network.P25NetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacPduType;
@@ -103,7 +102,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
 
     private ChannelType mChannelType;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
-    private P25NetworkConfigurationMonitor mNetworkConfigurationMonitor;
+    private P25P2NetworkConfigurationMonitor mNetworkConfigurationMonitor = new P25P2NetworkConfigurationMonitor();
     private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
 
@@ -200,6 +199,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
 
     private void processMacMessage(MacMessage message)
     {
+        mNetworkConfigurationMonitor.processMacMessage(message);
+
         MacStructure mac = message.getMacStructure();
 
         switch((mac.getOpcode()))
@@ -1043,7 +1044,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
             case PHASE1_116_IDENTIFIER_UPDATE_V_UHF:
             case PHASE1_117_TIME_AND_DATE_ANNOUNCEMENT:
             case PHASE1_120_SYSTEM_SERVICE_BROADCAST:
-            case PHASE1_121_SECONDARY_CONTROL_CHANNEL_BROADCAST:
+            case PHASE1_121_SECONDARY_CONTROL_CHANNEL_BROADCAST_ABBREVIATED:
             case PHASE1_122_RFSS_STATUS_BROADCAST_ABBREVIATED:
             case PHASE1_123_NETWORK_STATUS_BROADCAST_ABBREVIATED:
             case PHASE1_124_ADJACENT_STATUS_BROADCAST_ABBREVIATED:
@@ -1200,9 +1201,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
     @Override
     public String getActivitySummary()
     {
-        return new String("Not yet implemented");
-
-//        return mNetworkConfigurationMonitor.getActivitySummary();
+        return mNetworkConfigurationMonitor.getActivitySummary();
     }
 
     @Override
@@ -1212,7 +1211,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
         {
             case RESET:
                 resetState();
-//                mNetworkConfigurationMonitor.reset();
+                mNetworkConfigurationMonitor.reset();
                 break;
             default:
                 break;

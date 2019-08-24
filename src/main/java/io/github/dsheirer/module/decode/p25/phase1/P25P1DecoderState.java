@@ -47,7 +47,6 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
-import io.github.dsheirer.module.decode.p25.network.P25NetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
@@ -147,7 +146,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private ChannelType mChannelType;
     private P25P1Decoder.Modulation mModulation;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
-    private P25NetworkConfigurationMonitor mNetworkConfigurationMonitor;
+    private P25P1NetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private P25TrafficChannelManager mTrafficChannelManager;
     private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
@@ -161,7 +160,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         mChannelType = channel.getChannelType();
         mModulation = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getModulation();
-        mNetworkConfigurationMonitor = new P25NetworkConfigurationMonitor(mModulation);
+        mNetworkConfigurationMonitor = new P25P1NetworkConfigurationMonitor(mModulation);
 
         if(trafficChannelManager != null)
         {

@@ -20,10 +20,9 @@
  *
  */
 
-package io.github.dsheirer.module.decode.p25.network;
+package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCAdjacentSiteStatusBroadcast;
@@ -44,6 +43,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Net
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.RFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SNDCPDataChannelAnnouncementExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SystemServiceBroadcast;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,11 +58,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
- * Tracks the network configuration details of a P25 network from the broadcast messages
+ * Tracks the network configuration details of a P25 Phase 1 network from the broadcast messages
  */
-public class P25NetworkConfigurationMonitor
+public class P25P1NetworkConfigurationMonitor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25NetworkConfigurationMonitor.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25P1NetworkConfigurationMonitor.class);
 
     private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<>();
 
@@ -100,7 +100,7 @@ public class P25NetworkConfigurationMonitor
      *
      * @param modulation type used by the decoder
      */
-    public P25NetworkConfigurationMonitor(P25P1Decoder.Modulation modulation)
+    public P25P1NetworkConfigurationMonitor(P25P1Decoder.Modulation modulation)
     {
         mModulation = modulation;
     }
@@ -148,6 +148,14 @@ public class P25NetworkConfigurationMonitor
                     {
                         mSecondaryControlChannels.put(secondaryControlChannel.toString(), secondaryControlChannel);
                     }
+                }
+                break;
+            case OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+                if(tsbk instanceof SecondaryControlChannelBroadcastExplicit)
+                {
+                    SecondaryControlChannelBroadcastExplicit sccbe = (SecondaryControlChannelBroadcastExplicit)tsbk;
+                    IChannelDescriptor channel = sccbe.getChannel();
+                    mSecondaryControlChannels.put(channel.toString(), channel);
                 }
                 break;
             case OSP_ADJACENT_STATUS_BROADCAST:
@@ -280,14 +288,29 @@ public class P25NetworkConfigurationMonitor
 
     public void reset()
     {
-
+        mFrequencyBandMap.clear();
+        mAMBTCNetworkStatusBroadcast = null;
+        mTSBKNetworkStatusBroadcast = null;
+        mLCNetworkStatusBroadcast = null;
+        mLCNetworkStatusBroadcastExplicit = null;
+        mTSBKRFSSStatusBroadcast = null;
+        mLCRFSSStatusBroadcast = null;
+        mLCRFSSStatusBroadcastExplicit = null;
+        mSecondaryControlChannels.clear();
+        mSNDCPDataChannel = null;
+        mTSBKSystemServiceBroadcast = null;
+        mLCSystemServiceBroadcast = null;
+        mAMBTCNeighborSites = new HashMap<>();
+        mLCNeighborSites.clear();
+        mLCNeighborSitesExplicit.clear();
+        mTSBKNeighborSites.clear();
     }
 
     public String getActivitySummary()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Activity Summary - Decoder:P25 ").append(mModulation.getLabel());
+        sb.append("Activity Summary - Decoder:P25 Phase 1 ").append(mModulation.getLabel());
 
         sb.append("\n\nNetwork\n");
         if(mTSBKNetworkStatusBroadcast != null)
