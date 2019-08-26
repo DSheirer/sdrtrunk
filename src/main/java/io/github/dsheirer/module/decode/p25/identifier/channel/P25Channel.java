@@ -162,25 +162,50 @@ public class P25Channel implements IChannelDescriptor
     }
 
     /**
+     * Logical channel number.  For Phase 1 channels this is the downlink channel number.  For Phase 2 channels, this
+     * is the channel number without the timeslot specifier.
+     */
+    public int getDownlinkLogicalChannelNumber()
+    {
+        return getDownlinkChannelNumber() / getTimeslotCount();
+    }
+
+    /**
+     * Logical channel number.  For Phase 1 channels this is the uplink channel number.  For Phase 2 channels, this
+     * is the channel number without the timeslot specifier.
+     */
+    public int getUplinkLogicalChannelNumber()
+    {
+        return getUplinkChannelNumber() / getTimeslotCount();
+    }
+
+    /**
      * Formatted channel number
      */
     public String toString()
     {
         if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
         {
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkChannelNumber() / getTimeslotCount());
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber());
         }
         else if(hasUplinkChannel())
         {
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkChannelNumber() / getTimeslotCount()) + "/" +
-                getUplinkBandIdentifier() + "-" + (getUplinkChannelNumber() / getTimeslotCount());
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/" +
+                getUplinkBandIdentifier() + "-" + (getUplinkLogicalChannelNumber());
         }
         else
         {
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkChannelNumber() / getTimeslotCount()) + "/-----";
+            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/-----";
         }
     }
 
+    /**
+     * Designates channel equality as having the same band identifier and channel number.
+     *
+     * Note: Phase 2 channels also specify timeslot for a channel, but timeslot is not considered for equality.
+     * @param o other object
+     * @return true if both instances are P25 channels in the same band and channel number
+     */
     @Override
     public boolean equals(Object o)
     {
@@ -188,18 +213,21 @@ public class P25Channel implements IChannelDescriptor
         {
             return true;
         }
-        if(o == null || getClass() != o.getClass())
+        if(o == null)
+        {
+            return false;
+        }
+        if(!(o instanceof P25Channel))
         {
             return false;
         }
         P25Channel that = (P25Channel)o;
-        return mBandIdentifier == that.mBandIdentifier &&
-            mChannelNumber == that.mChannelNumber;
+        return mBandIdentifier == that.mBandIdentifier && getDownlinkLogicalChannelNumber() == that.getDownlinkLogicalChannelNumber();
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(mBandIdentifier, mChannelNumber);
+        return Objects.hash(mBandIdentifier, getDownlinkLogicalChannelNumber());
     }
 }

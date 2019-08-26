@@ -384,17 +384,6 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
         P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
 
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("Phase 2 Channel Grant - ").append(apco25Channel).append(" TS:").append(apco25Channel.getTimeslot()).append("\n");
-//        sb.append("Svc Options:" ).append(serviceOptions).append("\n");
-//        sb.append("Opcode:").append(opcode).append("\n");
-//        sb.append("Identifier collection:").append("\n");
-//        for(Identifier identifier: identifierCollection.getIdentifiers())
-//        {
-//            sb.append("\t").append(identifier).append("\n");
-//        }
-//        mLog.debug(sb.toString());
-
         identifierCollection.setTimeslot(apco25Channel.getTimeslot());
 
         if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
@@ -602,11 +591,6 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
      */
     private boolean isSameCall(IdentifierCollection collection1, IdentifierCollection collection2)
     {
-        if(collection1.getTimeslot() != collection2.getTimeslot())
-        {
-            return false;
-        }
-
         Identifier toIdentifier1 = getIdentifier(collection1, Role.TO);
         Identifier toIdentifier2 = getIdentifier(collection2, Role.TO);
         return Objects.equals(toIdentifier1, toIdentifier2);

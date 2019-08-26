@@ -53,6 +53,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCIn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCMessageUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCProtectionParameterBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRoamingAddressResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRoamingAddressUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCStatusQuery;
@@ -255,6 +256,8 @@ public class PDUMessageFactory
                 return new AMBTCNetworkStatusBroadcast(pduSequence, nac, timestamp);
             case OSP_PROTECTION_PARAMETER_BROADCAST:
                 return new AMBTCProtectionParameterBroadcast(pduSequence, nac, timestamp);
+            case OSP_RFSS_STATUS_BROADCAST:
+                return new AMBTCRFSSStatusBroadcast(pduSequence, nac, timestamp);
             case OSP_ROAMING_ADDRESS_UPDATE:
                 return new AMBTCRoamingAddressUpdate(pduSequence, nac, timestamp);
             case OSP_ROAMING_ADDRESS_COMMAND:

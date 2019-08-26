@@ -333,7 +333,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
             if(mChannel.getChannelType() == ChannelType.TRAFFIC)
             {
-                mStateMachineMap.get(timeslot).setState(State.CALL);
+                mStateMachineMap.get(timeslot).setState(State.ACTIVE);
             }
         }
     }
@@ -451,13 +451,15 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                     {
                         broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY,
                             mStateMachineMap.get(timeslot).getState(), frequency));
+
+                        //Create a new frequency configuration identifier so that downstream consumers receive the change
+                        //via channel metadata and audio packet updates - this is a silent add that is sent as a notification
+                        //to all identifier collections so that they don't rebroadcast the change and cause a feedback loop
+
+                        mIdentifierUpdateNotificationProxy.receive(new IdentifierUpdateNotification(
+                            FrequencyConfigurationIdentifier.create(frequency), IdentifierUpdateNotification.Operation.SILENT_ADD, timeslot));
                     }
 
-                    //Create a new frequency configuration identifier so that downstream consumers receive the change
-                    //via channel metadata and audio packet updates - this is a silent add that is sent as a notification
-                    //to all identifier collections so that they don't rebroadcast the change and cause a feedback loop
-                    mIdentifierUpdateNotificationProxy.receive(new IdentifierUpdateNotification(
-                        FrequencyConfigurationIdentifier.create(frequency), IdentifierUpdateNotification.Operation.SILENT_ADD, 0));
                     break;
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                     //Rebroadcast frequency error measurements to external listener if we're currently

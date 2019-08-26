@@ -1161,7 +1161,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
 
-            broadcast(new DecoderStateEvent(this, Event.END, State.CALL, getTimeslot()));
+            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
         }
         else
         {

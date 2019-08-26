@@ -42,10 +42,13 @@ public class RecordingTuner extends Tuner
     private final static Logger mLog = LoggerFactory.getLogger(RecordingTuner.class);
     private static int mInstanceCounter = 1;
     private final int mInstanceID = mInstanceCounter++;
+    private UserPreferences mUserPreferences;
 
     public RecordingTuner(UserPreferences userPreferences)
     {
         super("Recording Tuner", new RecordingTunerController());
+
+        mUserPreferences = userPreferences;
 
         ChannelSourceManager channelSourceManager = null;
 
@@ -56,6 +59,9 @@ public class RecordingTuner extends Tuner
         else
         {
             ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
+
+            mLog.debug("Using Channelizer Type: " + channelizerType);
+
             if(channelizerType == ChannelizerType.POLYPHASE)
             {
                 setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController()));
@@ -110,13 +116,28 @@ public class RecordingTuner extends Tuner
 
         if(event.getEvent() == SourceEvent.Event.NOTIFICATION_RECORDING_FILE_LOADED)
         {
-            if(getTunerController().getCurrentSampleRate() > 50000.0)
+            if(getTunerController().getCurrentSampleRate() < 100000.0d)
             {
-                setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+                setChannelSourceManager(new PassThroughSourceManager(getTunerController()));
             }
             else
             {
-                setChannelSourceManager(new PassThroughSourceManager(getTunerController()));
+                ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+
+                mLog.debug("Using Channelizer Type: " + channelizerType);
+
+                if(channelizerType == ChannelizerType.POLYPHASE)
+                {
+                    setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController()));
+                }
+                else if(channelizerType == ChannelizerType.HETERODYNE)
+                {
+                    setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+                }
+                else
+                {
+                    throw new IllegalArgumentException("Unrecognized channelizer type: " + channelizerType);
+                }
             }
         }
     }

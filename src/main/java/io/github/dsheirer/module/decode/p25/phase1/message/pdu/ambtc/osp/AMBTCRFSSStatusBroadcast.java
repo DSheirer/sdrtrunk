@@ -24,48 +24,47 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Lra;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Rfss;
+import io.github.dsheirer.module.decode.p25.identifier.APCO25Site;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
-import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.block.UnconfirmedDataBlock;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
-import io.github.dsheirer.module.decode.p25.reference.SystemServiceClass;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Network Status Broadcast
+ * RFSS Status Broadcast
  *
  * TODO: this parser class is incomplete at the moment ...
  */
-public class AMBTCNetworkStatusBroadcast extends AMBTCMessage implements IFrequencyBandReceiver
+public class AMBTCRFSSStatusBroadcast extends AMBTCMessage implements IFrequencyBandReceiver
 {
 
-    //    private static final int[] HEADER_LRA = {24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int[] HEADER_LRA = {24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int HEADER_ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG = 35;
     private static final int[] HEADER_SYSTEM = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
-    //    private static final int[] HEADER_RFSS = {64, 65, 66, 67, 68, 69, 70, 71};
-    //    private static final int[] HEADER_SITE = {72, 73, 74, 75, 76, 77, 78, 79};
-    private static final int[] BLOCK_0_WACN = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-    private static final int[] BLOCK_0_DOWNLINK_FREQUENCY_BAND = {24, 25, 26, 27};
-    private static final int[] BLOCK_0_DOWNLINK_CHANNEL_NUMBER = {28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
-    private static final int[] BLOCK_0_UPLINK_FREQUENCY_BAND = {40, 41, 42, 43};
-    private static final int[] BLOCK_0_UPLINK_CHANNEL_NUMBER = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
-    private static final int[] BLOCK_0_SYSTEM_SERVICE_CLASS = {56, 57, 58, 59, 60, 61, 62, 63};
+    private static final int[] BLOCK_0_RFSS = {0, 1, 2, 3, 4, 5, 6, 7};
+    private static final int[] BLOCK_0_SITE = {8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] BLOCK_0_DOWNLINK_FREQUENCY_BAND = {16, 17, 18, 19};
+    private static final int[] BLOCK_0_DOWNLINK_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int[] BLOCK_0_UPLINK_FREQUENCY_BAND = {32, 33, 34, 35};
+    private static final int[] BLOCK_0_UPLINK_CHANNEL_NUMBER = {36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
 
-    private ScrambleParameters mScrambleParameters;
-    private Identifier mWacn;
+    private Identifier mLra;
     private Identifier mSystem;
+    private Identifier mRfss;
+    private Identifier mSite;
     private IChannelDescriptor mChannel;
     private List<Identifier> mIdentifiers;
     private List<IChannelDescriptor> mChannels;
-    private SystemServiceClass mSystemServiceClass;
 
-    public AMBTCNetworkStatusBroadcast(PDUSequence PDUSequence, int nac, long timestamp)
+    public AMBTCRFSSStatusBroadcast(PDUSequence PDUSequence, int nac, long timestamp)
     {
         super(PDUSequence, nac, timestamp);
 
@@ -76,42 +75,26 @@ public class AMBTCNetworkStatusBroadcast extends AMBTCMessage implements IFreque
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" WACN:").append(getWacn());
         sb.append(" SYSTEM:").append(getSystem());
+        sb.append(" SITE:").append(getSite());
+        if(isActiveNetworkConnectionToRfssControllerSite())
+        {
+            sb.append(" ACTIVE NETWORK CONNECTION");
+        }
+        sb.append(" RFSS:").append(getRFSS());
+        sb.append(" LRA:").append(getLRA());
         sb.append(" CHAN:").append(getChannel());
-        sb.append(" SERVICES:").append(getSystemServiceClass());
         return sb.toString();
     }
 
-    public SystemServiceClass getSystemServiceClass()
+    public Identifier getLRA()
     {
-        if(mSystemServiceClass == null && hasDataBlock(0))
+        if(mLra == null)
         {
-            if(hasDataBlock(0))
-            {
-                mSystemServiceClass = new SystemServiceClass(getDataBlock(0).getMessage().getInt(BLOCK_0_SYSTEM_SERVICE_CLASS));
-            }
-            else
-            {
-                mSystemServiceClass = new SystemServiceClass(0);
-            }
+            mLra = APCO25Lra.create(getHeader().getMessage().getInt(HEADER_LRA));
         }
 
-        return mSystemServiceClass;
-    }
-
-    public ScrambleParameters getScrambleParameters()
-    {
-        if(mScrambleParameters == null)
-        {
-            int wacn = (int)getWacn().getValue();
-            int system = (int)getSystem().getValue();
-            int nac = (int)getNAC().getValue();
-
-            mScrambleParameters = new ScrambleParameters(wacn, system, nac);
-        }
-
-        return mScrambleParameters;
+        return mLra;
     }
 
     public Identifier getSystem()
@@ -124,21 +107,32 @@ public class AMBTCNetworkStatusBroadcast extends AMBTCMessage implements IFreque
         return mSystem;
     }
 
-    public Identifier getWacn()
+    public Identifier getRFSS()
     {
-        if(mWacn == null && hasDataBlock(0))
+        if(mRfss == null && hasDataBlock(0))
         {
-            mWacn = APCO25Wacn.create(getDataBlock(0).getMessage().getInt(BLOCK_0_WACN));
+            mRfss = APCO25Rfss.create(getDataBlock(0).getMessage().getInt(BLOCK_0_RFSS));
         }
 
-        return mWacn;
+        return mRfss;
     }
 
-    public boolean isExtendedChannel()
+    /**
+     * Indicates if the site has an active network connection to the RFSS controller
+     */
+    public boolean isActiveNetworkConnectionToRfssControllerSite()
     {
-        return hasDataBlock(0) &&
-            (getDataBlock(0).getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER) !=
-                getDataBlock(0).getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
+        return getHeader().getMessage().get(HEADER_ACTIVE_NETWORK_CONNECTION_TO_RFSS_CONTROLLER_FLAG);
+    }
+
+    public Identifier getSite()
+    {
+        if(mSite == null && hasDataBlock(0))
+        {
+            mSite = APCO25Site.create(getDataBlock(0).getMessage().getInt(BLOCK_0_SITE));
+        }
+
+        return mSite;
     }
 
     /**
@@ -152,18 +146,10 @@ public class AMBTCNetworkStatusBroadcast extends AMBTCMessage implements IFreque
             {
                 UnconfirmedDataBlock block = getDataBlock(0);
 
-                if(isExtendedChannel())
-                {
-                    mChannel = APCO25ExplicitChannel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
-                        block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER),
-                        block.getMessage().getInt(BLOCK_0_UPLINK_FREQUENCY_BAND),
-                        block.getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
-                }
-                else
-                {
-                    mChannel = APCO25Channel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
-                        block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER));
-                }
+                mChannel = APCO25ExplicitChannel.create(block.getMessage().getInt(BLOCK_0_DOWNLINK_FREQUENCY_BAND),
+                    block.getMessage().getInt(BLOCK_0_DOWNLINK_CHANNEL_NUMBER),
+                    block.getMessage().getInt(BLOCK_0_UPLINK_FREQUENCY_BAND),
+                    block.getMessage().getInt(BLOCK_0_UPLINK_CHANNEL_NUMBER));
             }
             else
             {
@@ -180,13 +166,21 @@ public class AMBTCNetworkStatusBroadcast extends AMBTCMessage implements IFreque
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            if(getWacn() != null)
+            if(getLRA() != null)
             {
-                mIdentifiers.add(getWacn());
+                mIdentifiers.add(getLRA());
             }
             if(getSystem() != null)
             {
                 mIdentifiers.add(getSystem());
+            }
+            if(getRFSS() != null)
+            {
+                mIdentifiers.add(getRFSS());
+            }
+            if(getSite() != null)
+            {
+                mIdentifiers.add(getSite());
             }
         }
 

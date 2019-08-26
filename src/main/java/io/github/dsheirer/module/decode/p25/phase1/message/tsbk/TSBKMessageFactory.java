@@ -28,7 +28,7 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.UnknownMotorolaISPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelLoading;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationIdGrant;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupAdd;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupDelete;
@@ -293,13 +293,13 @@ public class TSBKMessageFactory
                 return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
 
             case MOTOROLA_OSP_CONTROL_CHANNEL_ID:
-                return new MotorolaBaseStationIdGrant(dataUnitID, message, nac, timestamp);
+                return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
                 return new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_DENY_RESPONSE:
                 return new MotorolaDenyResponse(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
-                return new MotorolaBaseStationIdGrant(dataUnitID, message, nac, timestamp);
+                return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_PATCH_GROUP_ADD:
                 return new PatchGroupAdd(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_PATCH_GROUP_DELETE:

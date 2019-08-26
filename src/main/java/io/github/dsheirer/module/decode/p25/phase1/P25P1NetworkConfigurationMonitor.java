@@ -37,6 +37,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.LCSystemS
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.AdjacentStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.NetworkStatusBroadcast;
@@ -74,6 +75,7 @@ public class P25P1NetworkConfigurationMonitor
 
     //Current Site Status Messagese
     private RFSSStatusBroadcast mTSBKRFSSStatusBroadcast;
+    private AMBTCRFSSStatusBroadcast mAMBTCRFSSStatusBroadcast;
     private LCRFSSStatusBroadcast mLCRFSSStatusBroadcast;
     private LCRFSSStatusBroadcastExplicit mLCRFSSStatusBroadcastExplicit;
 
@@ -192,6 +194,12 @@ public class P25P1NetworkConfigurationMonitor
                 if(ambtc instanceof AMBTCNetworkStatusBroadcast)
                 {
                     mAMBTCNetworkStatusBroadcast = (AMBTCNetworkStatusBroadcast)ambtc;
+                }
+                break;
+            case OSP_RFSS_STATUS_BROADCAST:
+                if(ambtc instanceof AMBTCRFSSStatusBroadcast)
+                {
+                    mAMBTCRFSSStatusBroadcast = (AMBTCRFSSStatusBroadcast)ambtc;
                 }
                 break;
 //TODO: process the rest of the messages here
@@ -372,6 +380,18 @@ public class P25P1NetworkConfigurationMonitor
             sb.append("  PRI CONTROL CHANNEL:").append(mLCRFSSStatusBroadcastExplicit.getChannel());
             sb.append(" DOWNLINK:").append(mLCRFSSStatusBroadcastExplicit.getChannel().getDownlinkFrequency());
             sb.append(" UPLINK:").append(mLCRFSSStatusBroadcastExplicit.getChannel().getUplinkFrequency()).append("\n");
+        }
+        else if(mAMBTCRFSSStatusBroadcast != null)
+        {
+            sb.append("  SYSTEM:").append(mAMBTCRFSSStatusBroadcast.getSystem());
+            sb.append(" SITE:").append(mAMBTCRFSSStatusBroadcast.getSite());
+            sb.append(" RF SUBSYSTEM:").append(mAMBTCRFSSStatusBroadcast.getRFSS());
+            sb.append(" LOCATION REGISTRATION AREA:").append(mAMBTCRFSSStatusBroadcast.getLRA());
+            sb.append("  STATUS:").append(mAMBTCRFSSStatusBroadcast.isActiveNetworkConnectionToRfssControllerSite() ?
+                "ACTIVE RFSS NETWORK CONNECTION\n" : "\n");
+            sb.append("  PRI CONTROL CHANNEL:").append(mAMBTCRFSSStatusBroadcast.getChannel());
+            sb.append(" DOWNLINK:").append(mAMBTCRFSSStatusBroadcast.getChannel().getDownlinkFrequency());
+            sb.append(" UPLINK:").append(mAMBTCRFSSStatusBroadcast.getChannel().getUplinkFrequency()).append("\n");
         }
         else
         {

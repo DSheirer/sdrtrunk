@@ -511,6 +511,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 case OSP_NETWORK_STATUS_BROADCAST:
                     mNetworkConfigurationMonitor.process(ambtc);
                     break;
+                case OSP_RFSS_STATUS_BROADCAST:
+                    mNetworkConfigurationMonitor.process(ambtc);
+                    break;
+
                 //Channel grants
                 case OSP_GROUP_DATA_CHANNEL_GRANT:
                     if(ambtc instanceof AMBTCGroupDataChannelGrant)

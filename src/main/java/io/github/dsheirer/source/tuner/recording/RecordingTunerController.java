@@ -50,8 +50,7 @@ public class RecordingTunerController extends TunerController
       */
     public RecordingTunerController()
     {
-        super(1000000l, 3000000000l,
-                DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
+        super(1000000l, 3000000000l, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
     }
 
     /**
@@ -94,7 +93,15 @@ public class RecordingTunerController extends TunerController
             mLog.error("Unsupported audio format", e);
         }
 
+
         mCenterFrequency = centerFrequency;
+
+        mLog.debug("Set recording center frequency to: " + mCenterFrequency);
+
+        if(mCenterFrequency == 0)
+        {
+            mCenterFrequency = 100000000;
+        }
 
         try
         {
@@ -175,6 +182,19 @@ public class RecordingTunerController extends TunerController
         }
     }
 
+    @Override
+    public void setFrequency(long frequency) throws SourceException
+    {
+//        if(hasBufferListeners())
+//        {
+            mLog.debug("Set frequency [" + frequency + "] request ignored");
+//        }
+//        else
+//        {
+//            super.setFrequency(frequency);
+//        }
+    }
+
     /**
      * Current center frequency for this tuner
      * @throws SourceException
@@ -193,7 +213,8 @@ public class RecordingTunerController extends TunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        mLog.debug("Request to set frequency [" + frequency + "] ignored");
+        mLog.debug("Set frequency [" + frequency + "] request ignored");
+//        mCenterFrequency = frequency;
     }
 
     /**

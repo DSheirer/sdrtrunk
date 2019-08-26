@@ -266,7 +266,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
 
         if(mChannel.getChannelType() == ChannelType.TRAFFIC)
         {
-            mStateMachine.setState(State.CALL);
+            mStateMachine.setState(State.ACTIVE);
         }
     }
 

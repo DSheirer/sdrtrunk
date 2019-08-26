@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class MotorolaBaseStationIdGrant extends OSPMessage implements IFrequencyBandReceiver
+public class MotorolaBaseStationId extends OSPMessage implements IFrequencyBandReceiver
 {
     public static final int[] CHARACTER_1 = {16, 17, 18, 19, 20, 21};
     public static final int[] CHARACTER_2 = {22, 23, 24, 25, 26, 27};
@@ -49,7 +49,7 @@ public class MotorolaBaseStationIdGrant extends OSPMessage implements IFrequency
     private String mCWID;
     private IChannelDescriptor mChannel;
 
-    public MotorolaBaseStationIdGrant(P25P1DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timestamp)
+    public MotorolaBaseStationId(P25P1DataUnitID dataUnitID, CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(dataUnitID, message, nac, timestamp);
     }
