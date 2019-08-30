@@ -50,6 +50,8 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
     protected static final String CALL_TYPE_TELEPHONE_INTERCONNECT = "TELEPHONE INTERCONNECT";
     protected UserPreferences mUserPreferences;
     protected long mChannelFrequency;
+    protected String mSystem;
+    protected String mSite;
     private int mCallNumber = 1;
 
     /**
@@ -57,10 +59,12 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
      * @param userPreferences to obtain recording directory
      * @param channelFrequency for the channel to record
      */
-    public MBECallSequenceRecorder(UserPreferences userPreferences, long channelFrequency)
+    public MBECallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
     {
         mUserPreferences = userPreferences;
         mChannelFrequency = channelFrequency;
+        mSystem = system;
+        mSite = site;
     }
 
     @Override
@@ -97,6 +101,9 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
     {
         if(sequence != null && sequence.hasAudio())
         {
+            sequence.setSystem(mSystem);
+            sequence.setSite(mSite);
+
             StringBuilder sb = new StringBuilder();
             sb.append(TimestampFormat.TIMESTAMP_COMPACT.getFormatter().format(new Date(System.currentTimeMillis())));
             sb.append("_").append(mChannelFrequency);

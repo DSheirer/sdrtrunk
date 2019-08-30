@@ -94,10 +94,12 @@ public class RecorderFactory
                         switch(channel.getDecodeConfiguration().getDecoderType())
                         {
                             case P25_PHASE1:
-                                recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency));
+                                recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency,
+                                    channel.getSystem(), channel.getSite()));
                                 break;
                             case P25_PHASE2:
-                                recorderModules.add(new P25P2CallSequenceRecorder(userPreferences, frequency));
+                                recorderModules.add(new P25P2CallSequenceRecorder(userPreferences, frequency,
+                                    channel.getSystem(), channel.getSite()));
                                 break;
                         }
                     }
@@ -119,10 +121,12 @@ public class RecorderFactory
                         switch(channel.getDecodeConfiguration().getDecoderType())
                         {
                             case P25_PHASE1:
-                                recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency));
+                                recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency,
+                                    channel.getSystem(), channel.getSite()));
                                 break;
                             case P25_PHASE2:
-                                recorderModules.add(new P25P2CallSequenceRecorder(userPreferences, frequency));
+                                recorderModules.add(new P25P2CallSequenceRecorder(userPreferences, frequency,
+                                    channel.getSystem(), channel.getSite()));
                                 break;
                         }
                     }

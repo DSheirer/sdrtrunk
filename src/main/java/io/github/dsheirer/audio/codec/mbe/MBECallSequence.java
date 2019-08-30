@@ -46,6 +46,8 @@ public class MBECallSequence
     private String mFromIdentifier;
     private String mToIdentifier;
     private String mCallType;
+    private String mSystem;
+    private String mSite;
     private boolean mEncrypted;
     private List<VoiceFrame> mVoiceFrames = new ArrayList<>();
     private IEncryptionSyncParameters mTemporaryEncryptionSyncParameters;
@@ -184,6 +186,44 @@ public class MBECallSequence
     public String getCallType()
     {
         return mCallType;
+    }
+
+    /**
+     * System name defined by the user
+     * @return
+     */
+    @JsonProperty("system")
+    public String getSystem()
+    {
+        return mSystem;
+    }
+
+    /**
+     * Sets the system name
+     * @param system
+     */
+    public void setSystem(String system)
+    {
+        mSystem = system;
+    }
+
+    /**
+     * Site name defined by the user
+     * @return
+     */
+    @JsonProperty("site")
+    public String getSite()
+    {
+        return mSite;
+    }
+
+    /**
+     * Sets the site name
+     * @param site
+     */
+    public void setSite(String site)
+    {
+        mSite = site;
     }
 
     /**

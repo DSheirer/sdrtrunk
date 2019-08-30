@@ -449,7 +449,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         }
 
         P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
-        P25P1CallSequenceRecorder frameRecorder = new P25P1CallSequenceRecorder(new UserPreferences(), 154250000);
+        P25P1CallSequenceRecorder frameRecorder = new P25P1CallSequenceRecorder(new UserPreferences(), 154250000, "", "");
         messageFramer.setListener(messageProcessor);
         messageProcessor.setMessageListener(new Listener<IMessage>()
         {

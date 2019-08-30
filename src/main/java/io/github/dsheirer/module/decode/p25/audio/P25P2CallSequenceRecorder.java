@@ -63,9 +63,9 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
      * @param userPreferences to obtain the recording directory
      * @param channelFrequency for the channel to record
      */
-    public P25P2CallSequenceRecorder(UserPreferences userPreferences, long channelFrequency)
+    public P25P2CallSequenceRecorder(UserPreferences userPreferences, long channelFrequency, String system, String site)
     {
-        super(userPreferences, channelFrequency);
+        super(userPreferences, channelFrequency, system, site);
     }
 
     /**
