@@ -121,11 +121,11 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
 
             if(sequence.getToIdentifier() != null)
             {
-                sb.append("_").append(sequence.getToIdentifier());
+                sb.append("_").append(sequence.getToIdentifier().replace(":", ""));
             }
             if(sequence.getFromIdentifier() != null)
             {
-                sb.append("_").append(sequence.getFromIdentifier());
+                sb.append("_").append(sequence.getFromIdentifier().replace(":", ""));
             }
 
             if(sequence.isEncrypted())

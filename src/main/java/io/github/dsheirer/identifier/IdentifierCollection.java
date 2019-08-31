@@ -42,7 +42,7 @@ public class IdentifierCollection
     protected List<Identifier> mIdentifiers = new ArrayList<>();
     protected AliasListConfigurationIdentifier mAliasListConfigurationIdentifier;
     private boolean mUpdated = false;
-    private int mTimeslot;
+    private int mTimeslot = 0;
 
     /**
      * Constructs an empty identifier collection for the specified timeslot

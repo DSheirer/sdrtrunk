@@ -325,10 +325,20 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
             for(Identifier userIdentifier : identifierCollection.getIdentifiers(IdentifierClass.USER))
             {
-                //Only broadcast an identifier update for the timeslot specified in the originating collection
-                IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
-                    IdentifierUpdateNotification.Operation.ADD, channelGrantEvent.getIdentifierCollection().getTimeslot());
-                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                if(channelDescriptor.getTimeslotCount() > 1)
+                {
+                    //Only broadcast an identifier update for the timeslot specified in the originating collection
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
+                        IdentifierUpdateNotification.Operation.ADD, channelGrantEvent.getIdentifierCollection().getTimeslot());
+                    processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                }
+                else
+                {
+                    //Only broadcast an identifier update for the timeslot specified in the originating collection
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
+                        IdentifierUpdateNotification.Operation.ADD, 0);
+                    processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                }
             }
 
         }
