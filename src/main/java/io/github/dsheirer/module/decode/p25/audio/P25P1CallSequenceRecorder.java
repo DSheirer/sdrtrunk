@@ -39,6 +39,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.EncryptionSyncPar
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,6 +119,15 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
         {
             process((LDUMessage)message);
         }
+        else if(message instanceof TDULinkControlMessage)
+        {
+            process((TDULinkControlMessage)message);
+        }
+    }
+
+    private void process(TDULinkControlMessage tdulc)
+    {
+        process(tdulc.getLinkControlWord());
     }
 
     /**
@@ -154,10 +164,8 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
 
     }
 
-    private void process(LDU1Message ldu1Message)
+    private void process(LinkControlWord lcw)
     {
-        LinkControlWord lcw = ldu1Message.getLinkControlWord();
-
         if(lcw.isValid())
         {
             switch(lcw.getOpcode())
@@ -202,6 +210,11 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
                     break;
             }
         }
+    }
+
+    private void process(LDU1Message ldu1Message)
+    {
+        process(ldu1Message.getLinkControlWord());
     }
 
     private void process(LDU2Message ldu2Message)
