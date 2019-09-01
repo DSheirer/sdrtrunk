@@ -166,7 +166,7 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
 
     private void process(LinkControlWord lcw)
     {
-        if(lcw.isValid())
+        if(lcw.isValid() && mCallSequence != null)
         {
             switch(lcw.getOpcode())
             {
