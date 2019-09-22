@@ -23,14 +23,17 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.audio.P25P1CallSequenceRecorder;
+import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
@@ -312,8 +315,18 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
                     if(tsbkMessage.isLastBlock())
                     {
+                        switch(mDataUnitID)
+                        {
+                            case TRUNKING_SIGNALING_BLOCK_1:
+                                mTrailingDibitsToSuppress = 22;
+                                break;
+                            case TRUNKING_SIGNALING_BLOCK_2:
+                            case TRUNKING_SIGNALING_BLOCK_3:
+                                mTrailingDibitsToSuppress = 1;
+                                break;
+                        }
+
                         reset(mDataUnitID.getMessageLength());
-                        mTrailingDibitsToSuppress = 1;
                     }
                     else
                     {
@@ -428,11 +441,16 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
+        ApplicationLog applicationLog = new ApplicationLog(new UserPreferences());
+        applicationLog.start();
+
         P25P1DecoderLSM decoderLSM = new P25P1DecoderLSM();
 
-
 //        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190719_073751_9600BPS_APCO25PHASE1_DFWAirport_Site_857_3875_baseband_20181213_223236.bits");
-        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/20190720_071117_9600BPS_APCO25PHASE1_P25P2_HCPM_Metrocrest_Dallas_857_7625_phase_2_not_motorola_baseband_20181213_224616_control_channel.bits");
+//        Path path = Paths.get("C:\\Users\\Denny\\Downloads\\temp\\Harris\\20190906_091503_9600BPS_APCO25PHASE1_HillsCo_PlantCity_Hills_Co_P25_Phase_II.bits");
+        Path path = Paths.get("C:\\Users\\Denny\\Downloads\\temp\\Harris\\20190906_093654_9600BPS_APCO25PHASE1_HillsCo_PlantCity_Hills_Co_P25_Phase_II.bits");
+
+
 
         P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
 
@@ -449,14 +467,28 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         }
 
         P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
-        P25P1CallSequenceRecorder frameRecorder = new P25P1CallSequenceRecorder(new UserPreferences(), 154250000, "", "");
+//        P25P1CallSequenceRecorder frameRecorder = new P25P1CallSequenceRecorder(new UserPreferences(), 154250000, "", "");
+        Channel parent = new Channel();
+        parent.setDecodeConfiguration(new DecodeConfigP25Phase1());
+        P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(parent);
+        P25P1DecoderState decoderState = new P25P1DecoderState(parent, trafficChannelManager);
+        decoderState.addDecodeEventListener(new Listener<IDecodeEvent>()
+        {
+            @Override
+            public void receive(IDecodeEvent iDecodeEvent)
+            {
+                mLog.info("DECODE EVENT: " + iDecodeEvent.getEventDescription());
+            }
+        });
         messageFramer.setListener(messageProcessor);
         messageProcessor.setMessageListener(new Listener<IMessage>()
         {
             @Override
             public void receive(IMessage message)
             {
-                frameRecorder.receive(message);
+                trafficChannelManager.getMessageListener().receive(message);
+                decoderState.receive(message);
+//                frameRecorder.receive(message);
                 mLog.debug(message.toString());
             }
         });
@@ -474,6 +506,8 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
             ioe.printStackTrace();
         }
 
-        frameRecorder.stop();
+//        frameRecorder.stop();
+
+        applicationLog.stop();
     }
 }
