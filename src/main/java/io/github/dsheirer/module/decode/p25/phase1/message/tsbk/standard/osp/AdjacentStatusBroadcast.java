@@ -76,10 +76,10 @@ public class AdjacentStatusBroadcast extends OSPMessage implements IFrequencyBan
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" RFSS:").append(getRfss());
         sb.append(" SITE:").append(getSite());
+        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" FLAGS ").append(getSiteFlags());
         sb.append(" SERVICES ").append(getSystemServiceClass());
         return sb.toString();

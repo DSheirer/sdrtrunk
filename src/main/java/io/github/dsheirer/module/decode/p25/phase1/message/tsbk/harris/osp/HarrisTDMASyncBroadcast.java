@@ -25,17 +25,17 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Unknown Harris Opcode 48 message.
+ * Harris TDMA Sync Broadcast message.
  *
  * Note: Standard Opcode 48 is a TDMA Sync message, so this likely has something
  * to do with TDMA Phase II
  */
-public class HarrisOpcode48Message extends OSPMessage
+public class HarrisTDMASyncBroadcast extends OSPMessage
 {
     /**
      * Constructs a TSBK from the binary message sequence.
      */
-    public HarrisOpcode48Message(P25P1DataUnitID dataUnitId, CorrectedBinaryMessage message, int nac, long timestamp)
+    public HarrisTDMASyncBroadcast(P25P1DataUnitID dataUnitId, CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(dataUnitId, message, nac, timestamp);
     }
@@ -44,9 +44,10 @@ public class HarrisOpcode48Message extends OSPMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" HARRIS TDMA OPCODE 48");
+        sb.append(" HARRIS TDMA SYNC BROADCAST");
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
+
     }
 
     @Override

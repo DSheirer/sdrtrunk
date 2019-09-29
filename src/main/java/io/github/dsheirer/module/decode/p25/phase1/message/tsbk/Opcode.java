@@ -180,7 +180,7 @@ public enum Opcode
     HARRIS_ISP_UNKNOWN(-1, "HARRIS ISP UNKNOWN OPCODE", "HARRIS ISP UNKNOWN OPCODE"),
 
     //Vendor: harris, Outbound Service Packet (OSP)
-    HARRIS_OSP_OPCODE_48(48, "HARRIS TDMA 48  ", "HARRIS TDMA OPCODE 48"),
+    HARRIS_OSP_TDMA_SYNC(48, "HARRIS TDMA SYNC", "HARRIS TDMA SYNC BROADCAST"),
     HARRIS_OSP_UNKNOWN(-1, "HARRIS OSP UNKNOWN OPCODE", "HARRIS OSP UNKNOWN OPCODE"),
 
     //Vendor: unknown, Inbound Service Packet (ISP)
@@ -291,7 +291,7 @@ public enum Opcode
                     switch(value)
                     {
                         case 48:
-                            return HARRIS_OSP_OPCODE_48;
+                            return HARRIS_OSP_TDMA_SYNC;
                         default:
                             return HARRIS_OSP_UNKNOWN;
                     }
