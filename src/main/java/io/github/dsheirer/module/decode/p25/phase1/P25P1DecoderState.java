@@ -47,6 +47,7 @@ import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
@@ -87,6 +88,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDC
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPPacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
@@ -130,6 +132,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Uni
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
+import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -286,6 +289,25 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 case UNKNOWN:
                     break;
             }
+        }
+    }
+
+    /**
+     * Commands the traffic channel manager to process a traffic channel grant and allocate a decoder
+     * to process the traffic channel.
+     * @param apco25Channel to allocate
+     * @param serviceOptions for the channel
+     * @param identifierCollection identifying the users of the channel
+     * @param opcode that identifies the type of channel grant
+     * @param timestamp when the channel grant occurred.
+     */
+    private void processChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
+                                     IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
+    {
+        if(mTrafficChannelManager != null && apco25Channel.getValue().getFrequencyBand() != null)
+        {
+            mTrafficChannelManager.processChannelGrant(apco25Channel, serviceOptions, identifierCollection, opcode,
+                    timestamp);
         }
     }
 
@@ -521,16 +543,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     {
                         AMBTCGroupDataChannelGrant gdcg = (AMBTCGroupDataChannelGrant)ambtc;
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                            identifierCollection.remove(IdentifierClass.USER);
-                            identifierCollection.update(gdcg.getIdentifiers());
-
-                            mTrafficChannelManager.processChannelGrant(gdcg.getChannel(), gdcg.getDataServiceOptions(),
+                        MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifierCollection.remove(IdentifierClass.USER);
+                        identifierCollection.update(gdcg.getIdentifiers());
+                        processChannelGrant(gdcg.getChannel(), gdcg.getDataServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_GROUP_VOICE_CHANNEL_GRANT:
@@ -542,12 +560,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifierCollection.remove(IdentifierClass.USER);
                         identifierCollection.update(gvcg.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
+                        processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_INDIVIDUAL_DATA_CHANNEL_GRANT:
@@ -559,12 +574,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifierCollection.remove(IdentifierClass.USER);
                         identifierCollection.update(idcg.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(idcg.getChannel(), idcg.getDataServiceOptions(),
+                        processChannelGrant(idcg.getChannel(), idcg.getDataServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
@@ -572,16 +584,13 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     {
                         AMBTCTelephoneInterconnectChannelGrant ticg = (AMBTCTelephoneInterconnectChannelGrant)ambtc;
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                            identifierCollection.remove(IdentifierClass.USER);
-                            identifierCollection.update(ticg.getIdentifiers());
+                        MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifierCollection.remove(IdentifierClass.USER);
+                        identifierCollection.update(ticg.getIdentifiers());
 
-                            mTrafficChannelManager.processChannelGrant(ticg.getChannel(), ticg.getVoiceServiceOptions(),
+                        processChannelGrant(ticg.getChannel(), ticg.getVoiceServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
@@ -589,16 +598,13 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     {
                         AMBTCTelephoneInterconnectChannelGrantUpdate ticgu = (AMBTCTelephoneInterconnectChannelGrantUpdate)ambtc;
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                            identifierCollection.remove(IdentifierClass.USER);
-                            identifierCollection.update(ticgu.getIdentifiers());
+                        MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifierCollection.remove(IdentifierClass.USER);
+                        identifierCollection.update(ticgu.getIdentifiers());
 
-                            mTrafficChannelManager.processChannelGrant(ticgu.getChannel(), ticgu.getVoiceServiceOptions(),
+                        processChannelGrant(ticgu.getChannel(), ticgu.getVoiceServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
@@ -606,16 +612,13 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     {
                         AMBTCUnitToUnitVoiceServiceChannelGrant uuvscg = (AMBTCUnitToUnitVoiceServiceChannelGrant)ambtc;
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                            identifierCollection.remove(IdentifierClass.USER);
-                            identifierCollection.update(uuvscg.getIdentifiers());
+                        MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifierCollection.remove(IdentifierClass.USER);
+                        identifierCollection.update(uuvscg.getIdentifiers());
 
-                            mTrafficChannelManager.processChannelGrant(uuvscg.getChannel(), uuvscg.getVoiceServiceOptions(),
+                        processChannelGrant(uuvscg.getChannel(), uuvscg.getVoiceServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
@@ -623,16 +626,13 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     {
                         AMBTCUnitToUnitVoiceServiceChannelGrantUpdate uuvscgu = (AMBTCUnitToUnitVoiceServiceChannelGrantUpdate)ambtc;
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                            identifierCollection.remove(IdentifierClass.USER);
-                            identifierCollection.update(uuvscgu.getIdentifiers());
+                        MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                        identifierCollection.remove(IdentifierClass.USER);
+                        identifierCollection.update(uuvscgu.getIdentifiers());
 
-                            mTrafficChannelManager.processChannelGrant(uuvscgu.getChannel(), uuvscgu.getVoiceServiceOptions(),
+                        processChannelGrant(uuvscgu.getChannel(), uuvscgu.getVoiceServiceOptions(),
                                 identifierCollection, ambtc.getHeader().getOpcode(),
                                 ambtc.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
@@ -1181,11 +1181,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             identifiers.update(mPatchGroupManager.update(identifier));
                         }
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(gdcg.getChannel(), gdcg.getDataServiceOptions(),
+                        processChannelGrant(gdcg.getChannel(), gdcg.getDataServiceOptions(),
                                 identifiers, tsbk.getOpcode(), gdcg.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_GROUP_VOICE_CHANNEL_GRANT:
@@ -1201,11 +1198,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             identifiers.update(mPatchGroupManager.update(identifier));
                         }
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
+                        processChannelGrant(gvcg.getChannel(), gvcg.getVoiceServiceOptions(),
                                 identifiers, tsbk.getOpcode(), gvcg.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
@@ -1218,11 +1212,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiersA.remove(IdentifierClass.USER);
                         identifiersA.update(mPatchGroupManager.update(gvcgu.getGroupAddressA()));
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(gvcgu.getChannelA(), null, identifiersA,
+                        processChannelGrant(gvcgu.getChannelA(), null, identifiersA,
                                 tsbk.getOpcode(), gvcgu.getTimestamp());
-                        }
 
                         if(gvcgu.hasGroupB())
                         {
@@ -1231,11 +1222,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             identifiersB.remove(IdentifierClass.USER);
                             identifiersB.update(mPatchGroupManager.update(gvcgu.getGroupAddressB()));
 
-                            if(mTrafficChannelManager != null)
-                            {
-                                mTrafficChannelManager.processChannelGrant(gvcgu.getChannelB(), null, identifiersB,
+                            processChannelGrant(gvcgu.getChannelB(), null, identifiersB,
                                     tsbk.getOpcode(), gvcgu.getTimestamp());
-                            }
                         }
                     }
                     break;
@@ -1249,11 +1237,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiers.remove(IdentifierClass.USER);
                         identifiers.update(mPatchGroupManager.update(gvcgue.getGroupAddress()));
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(gvcgue.getChannel(), gvcgue.getVoiceServiceOptions(),
+                        processChannelGrant(gvcgue.getChannel(), gvcgue.getVoiceServiceOptions(),
                                 identifiers, tsbk.getOpcode(), gvcgue.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
@@ -1266,11 +1251,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiers.remove(IdentifierClass.USER);
                         identifiers.update(uuvcg.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(uuvcg.getChannel(), null, identifiers,
+                        processChannelGrant(uuvcg.getChannel(), null, identifiers,
                                 tsbk.getOpcode(), uuvcg.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
@@ -1283,11 +1265,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiers.remove(IdentifierClass.USER);
                         identifiers.update(uuvcgu.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(uuvcgu.getChannel(), null, identifiers,
+                        processChannelGrant(uuvcgu.getChannel(), null, identifiers,
                                 tsbk.getOpcode(), uuvcgu.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
@@ -1300,11 +1279,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiers.remove(IdentifierClass.USER);
                         identifiers.update(tivcg.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(tivcg.getChannel(), tivcg.getVoiceServiceOptions(),
+                        processChannelGrant(tivcg.getChannel(), tivcg.getVoiceServiceOptions(),
                                 identifiers, tsbk.getOpcode(), tivcg.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
@@ -1317,11 +1293,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiers.remove(IdentifierClass.USER);
                         identifiers.update(tivcgu.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(tivcgu.getChannel(), tivcgu.getVoiceServiceOptions(),
+                        processChannelGrant(tivcgu.getChannel(), tivcgu.getVoiceServiceOptions(),
                                 identifiers, tsbk.getOpcode(), tivcgu.getTimestamp());
-                        }
                     }
                     break;
                 case OSP_SNDCP_DATA_CHANNEL_GRANT:
@@ -1334,11 +1307,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiers.remove(IdentifierClass.USER);
                         identifiers.update(dcg.getIdentifiers());
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(dcg.getChannel(), dcg.getServiceOptions(),
+                        processChannelGrant(dcg.getChannel(), dcg.getServiceOptions(),
                                 identifiers, tsbk.getOpcode(), dcg.getTimestamp());
-                        }
                     }
                     break;
                 case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT:
@@ -1354,11 +1324,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             identifiers.update(mPatchGroupManager.update(identifier));
                         }
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(pgvcg.getChannel(), pgvcg.getVoiceServiceOptions(),
+                        processChannelGrant(pgvcg.getChannel(), pgvcg.getVoiceServiceOptions(),
                                 identifiers, tsbk.getOpcode(), pgvcg.getTimestamp());
-                        }
                     }
                     break;
                 case MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE:
@@ -1371,11 +1338,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         identifiersPG1.remove(IdentifierClass.USER);
                         identifiersPG1.update(mPatchGroupManager.update(pgvcgu.getPatchGroup1()));
 
-                        if(mTrafficChannelManager != null)
-                        {
-                            mTrafficChannelManager.processChannelGrant(pgvcgu.getChannel1(), null, identifiersPG1,
+                        processChannelGrant(pgvcgu.getChannel1(), null, identifiersPG1,
                                 tsbk.getOpcode(), pgvcgu.getTimestamp());
-                        }
 
                         if(pgvcgu.hasPatchGroup2())
                         {
@@ -1384,11 +1348,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             identifiersPG2.remove(IdentifierClass.USER);
                             identifiersPG2.update(mPatchGroupManager.update(pgvcgu.getPatchGroup2()));
 
-                            if(mTrafficChannelManager != null)
-                            {
-                                mTrafficChannelManager.processChannelGrant(pgvcgu.getChannel2(), null,
+                            processChannelGrant(pgvcgu.getChannel2(), null,
                                     identifiersPG2, tsbk.getOpcode(), pgvcgu.getTimestamp());
-                            }
                         }
                     }
                     break;

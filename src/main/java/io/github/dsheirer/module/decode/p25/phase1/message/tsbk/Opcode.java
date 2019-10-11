@@ -176,6 +176,13 @@ public enum Opcode
     MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN(14, "CCH PLND SHUTDWN", "CONTROL CHANNEL PLANNED SHUTDOWN"),
     MOTOROLA_OSP_UNKNOWN(-1, "MOTOROLA OSP UNKNOWN OPCODE", "MOTOROLA OSP UNKNOWN OPCODE"),
 
+    //Vendor: motorola, Inbound Service Packet (ISP)
+    HARRIS_ISP_UNKNOWN(-1, "HARRIS ISP UNKNOWN OPCODE", "HARRIS ISP UNKNOWN OPCODE"),
+
+    //Vendor: harris, Outbound Service Packet (OSP)
+    HARRIS_OSP_TDMA_SYNC(48, "HARRIS TDMA SYNC", "HARRIS TDMA SYNC BROADCAST"),
+    HARRIS_OSP_UNKNOWN(-1, "HARRIS OSP UNKNOWN OPCODE", "HARRIS OSP UNKNOWN OPCODE"),
+
     //Vendor: unknown, Inbound Service Packet (ISP)
     UNKNOWN_VENDOR_ISP(-1, "UNKNOWN VENDOR/OPCODE ISP", "UNKNOWN VENDOR ISP OPCODE"),
 
@@ -273,6 +280,21 @@ public enum Opcode
                     }
 
                     return ISP_UNKNOWN;
+                }
+            case HARRIS:
+                if(direction == Direction.INBOUND)
+                {
+                    return HARRIS_ISP_UNKNOWN;
+                }
+                else
+                {
+                    switch(value)
+                    {
+                        case 48:
+                            return HARRIS_OSP_TDMA_SYNC;
+                        default:
+                            return HARRIS_OSP_UNKNOWN;
+                    }
                 }
             case MOTOROLA:
                 if(direction == Direction.INBOUND)

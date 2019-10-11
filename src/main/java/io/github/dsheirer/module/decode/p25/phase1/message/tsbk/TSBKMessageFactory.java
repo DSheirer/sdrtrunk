@@ -26,6 +26,9 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.trellis.ViterbiDecoder_1_2_P25;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Interleave;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.isp.UnknownHarrisISPMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.HarrisTDMASyncBroadcast;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.harris.osp.UnknownHarrisOSPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.UnknownMotorolaISPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelLoading;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
@@ -289,9 +292,15 @@ public class TSBKMessageFactory
             case OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                 return new UnitToUnitVoiceChannelGrantUpdate(dataUnitID, message, nac, timestamp);
 
+            case HARRIS_ISP_UNKNOWN:
+                return new UnknownHarrisISPMessage(dataUnitID, message, nac, timestamp);
+            case HARRIS_OSP_TDMA_SYNC:
+                return new HarrisTDMASyncBroadcast(dataUnitID, message, nac, timestamp);
+            case HARRIS_OSP_UNKNOWN:
+                return new UnknownHarrisOSPMessage(dataUnitID, message, nac, timestamp);
+
             case MOTOROLA_ISP_UNKNOWN:
                 return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
-
             case MOTOROLA_OSP_CONTROL_CHANNEL_ID:
                 return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
