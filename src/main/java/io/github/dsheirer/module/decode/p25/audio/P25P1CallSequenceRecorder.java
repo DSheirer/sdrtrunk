@@ -40,6 +40,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,16 +114,19 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
     /**
      * Processes any P25 Phase 1 message
      */
-    public void process(P25Message message)
-    {
-        if(message instanceof LDUMessage)
-        {
-            process((LDUMessage)message);
+    public void process(P25Message message) {
+        if (message instanceof LDUMessage) {
+            process((LDUMessage) message);
+        } else if (message instanceof TDULinkControlMessage) {
+            process((TDULinkControlMessage) message);
+        } else if (message instanceof TDUMessage) {
+            process((TDUMessage) message);
         }
-        else if(message instanceof TDULinkControlMessage)
-        {
-            process((TDULinkControlMessage)message);
-        }
+    }
+
+    private void process(TDUMessage message) {
+        writeCallSequence(mCallSequence);
+        mCallSequence = null;
     }
 
     private void process(TDULinkControlMessage tdulc)

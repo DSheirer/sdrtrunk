@@ -109,6 +109,12 @@ task buildSdr(type: Jar) {
     with jar
 }
 
+task runSdr(type: JavaExec) {
+    classpath sourceSets.main.runtimeClasspath
+    main = "io.github.dsheirer.gui.SDRTrunk"
+    // args "arg1", "arg2"
+}
+
 /**
  * Java Development Kit (JDK) locations.  These paths must point to the 'bin' directory
  * within a JDK for each of the specified architectures.  These JDKs are used by the 
