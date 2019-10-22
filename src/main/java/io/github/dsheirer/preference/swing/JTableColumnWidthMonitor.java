@@ -87,13 +87,15 @@ public class JTableColumnWidthMonitor
 
         for(int x = 0; x < model.getColumnCount(); x++)
         {
-            int width = mUserPreferences.getSwingPreference().getInt(getColumnKey(x), Integer.MAX_VALUE);
+            int width = mUserPreferences.getSwingPreference().getInt(getColumnKey(model.getColumn(x).getModelIndex()), Integer.MAX_VALUE);
 
             if(width != Integer.MAX_VALUE)
             {
                 model.getColumn(x).setPreferredWidth(width);
             }
         }
+
+        restoreColumnPositions();
     }
 
     /**
@@ -102,19 +104,55 @@ public class JTableColumnWidthMonitor
     private void storeColumnWidths()
     {
         TableColumnModel model = mTable.getColumnModel();
-
         for(int x = 0; x < model.getColumnCount(); x++)
         {
-            mUserPreferences.getSwingPreference().setInt(getColumnKey(x), model.getColumn(x).getWidth());
+            mUserPreferences.getSwingPreference().setInt(getColumnKey(model.getColumn(x).getModelIndex()), model.getColumn(x).getWidth());
         }
     }
 
     /**
-     * Constructs a preference key for the column number
+     * Stores the current column widths to the user preferences
+     */
+    private void storeColumnPositions()
+    {
+        TableColumnModel model = mTable.getColumnModel();
+        for(int x = 0; x < model.getColumnCount(); x++)
+        {
+            mUserPreferences.getSwingPreference().setInt(getColumnKeyPosition(model.getColumn(x).getModelIndex()), x);
+            // overwrite the widths too since the position has changed
+            mUserPreferences.getSwingPreference().setInt(getColumnKey(model.getColumn(x).getModelIndex()), model.getColumn(x).getWidth());
+        }
+    }
+    /**
+     * Sets the preferred column widths on the table from persisted settings
+     */
+    private void restoreColumnPositions()
+    {
+        TableColumnModel model = mTable.getColumnModel();
+        for(int x = 0; x < model.getColumnCount(); x++)
+        {
+            int position = mUserPreferences.getSwingPreference().getInt(getColumnKeyPosition(model.getColumn(x).getModelIndex()), Integer.MAX_VALUE);
+            if(position != Integer.MAX_VALUE)
+            {
+                mTable.moveColumn(x,position);
+            }
+        }
+    }
+
+    /**
+     * Constructs a preference key for the column number (width)
      */
     private String getColumnKey(int column)
     {
         return mKey + ".column." + column;
+    }
+
+    /**
+     * Constructs a preference key for the column number (position)
+     */
+    private String getColumnKeyPosition(int column)
+    {
+        return mKey + ".columnposition." + column;
     }
 
     /**
@@ -136,7 +174,12 @@ public class JTableColumnWidthMonitor
         @Override
         public void columnRemoved(TableColumnModelEvent e){}
         @Override
-        public void columnMoved(TableColumnModelEvent e){}
+        public void columnMoved(TableColumnModelEvent e){
+            if(mSaveInProgress.compareAndSet(false, true))
+            {
+                ThreadPool.SCHEDULED.schedule(new ColumnWidthMoveTask(), 2, TimeUnit.SECONDS);
+            }
+        }
         @Override
         public void columnSelectionChanged(ListSelectionEvent e){}
     }
@@ -148,6 +191,16 @@ public class JTableColumnWidthMonitor
         public void run()
         {
             storeColumnWidths();
+            mSaveInProgress.set(false);
+        }
+    }
+
+    public class ColumnWidthMoveTask implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            storeColumnPositions();
             mSaveInProgress.set(false);
         }
     }

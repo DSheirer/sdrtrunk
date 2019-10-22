@@ -718,8 +718,8 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             {
                 boolean isPhase1 = channel.getDecodeConfiguration().getDecoderType() == DecoderType.P25_PHASE1;
 
-                if((isPhase1 && mManagedPhase1TrafficChannels.contains(channel)) ||
-                   (!isPhase1 && mManagedPhase2TrafficChannels.contains(channel)))
+                if((isPhase1 && mManagedPhase1TrafficChannels != null && mManagedPhase1TrafficChannels.contains(channel)) ||
+                   (!isPhase1 && mManagedPhase2TrafficChannels != null && mManagedPhase2TrafficChannels.contains(channel)))
                 {
                     switch(channelEvent.getEvent())
                     {
