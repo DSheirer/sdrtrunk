@@ -53,6 +53,7 @@ public class AudioPlaybackManager implements Listener<ReusableAudioPacket>, IAud
 
     public static final String AUDIO_CHANNELS_PROPERTY = "audio.manager.channels";
     public static final String AUDIO_MIXER_PROPERTY = "audio.manager.mixer";
+    ;
 
     public static final AudioEvent CONFIGURATION_CHANGE_STARTED =
         new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null);
@@ -73,6 +74,7 @@ public class AudioPlaybackManager implements Listener<ReusableAudioPacket>, IAud
     private ScheduledFuture<?> mProcessingTask;
     private MixerManager mMixerManager;
     private MixerChannelConfiguration mMixerChannelConfiguration;
+
 
 
     /**
@@ -101,6 +103,8 @@ public class AudioPlaybackManager implements Listener<ReusableAudioPacket>, IAud
         String mixer = properties.get(AUDIO_MIXER_PROPERTY, defaultMixer.getMixerInfo().getName());
 
         String channels = properties.get(AUDIO_CHANNELS_PROPERTY, MixerChannel.MONO.name());
+
+        // mIsMuted = properties.get(AUDIO_MUTED_PROPERTY, false);
 
         MixerChannelConfiguration[] mixerConfigurations = mMixerManager.getOutputMixers();
 

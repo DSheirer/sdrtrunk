@@ -99,6 +99,7 @@ public abstract class AudioOutput implements Listener<ReusableAudioPacket>, Line
         mMixer = mixer;
         mMixerChannel = mixerChannel;
 
+
         try
         {
             mOutput = (SourceDataLine) mMixer.getLine(lineInfo);

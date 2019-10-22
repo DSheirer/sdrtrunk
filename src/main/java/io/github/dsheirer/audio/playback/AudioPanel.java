@@ -25,6 +25,7 @@ import io.github.dsheirer.audio.AudioException;
 import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
@@ -52,6 +53,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
+import static io.github.dsheirer.audio.playback.AudioChannelPanel.PROPERTY_MUTED;
+
 public class AudioPanel extends JPanel implements Listener<AudioEvent>
 {
     private static final long serialVersionUID = 1L;
@@ -60,6 +63,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
     private static ImageIcon MUTED_ICON = IconManager.getScaledIcon("images/audio_muted.png", 20);
     private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon("images/audio_unmuted.png", 20);
+
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
@@ -70,6 +74,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
     private JButton mMuteButton;
     private AudioChannelsPanel mAudioChannelsPanel;
+    private boolean mMuted;
 
     public AudioPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
                       SourceManager sourceManager, IAudioController controller, AliasModel aliasModel)
@@ -90,6 +95,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[]0[grow,fill]", "[fill]0[]"));
         setBackground(Color.BLACK);
+        mMuted = SystemProperties.getInstance().get(PROPERTY_MUTED,false);
 
         mMuteButton = new MuteButton();
         mMuteButton.setBackground(getBackground());
@@ -390,11 +396,10 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
     {
         private static final long serialVersionUID = 1L;
 
-        private boolean mMuted = false;
-
         public MuteButton()
         {
-            setIcon(UNMUTED_ICON);
+
+            setIcon((mMuted ? MUTED_ICON : UNMUTED_ICON));
             setBorderPainted(false);
             getAccessibleContext().setAccessibleName("Mute");
 
@@ -417,6 +422,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                         {
                             setIcon(mMuted ? MUTED_ICON : UNMUTED_ICON);
                             getAccessibleContext().setAccessibleName(mMuted ? "Unmute" : "Mute");
+                            SystemProperties.getInstance().set(PROPERTY_MUTED, mMuted);
                         }
                     });
                 }
