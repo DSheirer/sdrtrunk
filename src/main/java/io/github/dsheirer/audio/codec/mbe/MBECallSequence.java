@@ -38,7 +38,7 @@ import java.util.List;
  * radio identifiers.
  */
 @JsonRootName("mbe_call")
-@JsonPropertyOrder({"protocol", "call_type", "from", "to", "encrypted", "frames"})
+@JsonPropertyOrder({"protocol", "call_type", "from", "to","encrypted", "frames"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MBECallSequence
 {
@@ -48,6 +48,7 @@ public class MBECallSequence
     private String mCallType;
     private String mSystem;
     private String mSite;
+    private String mToIdentifierPatch;
     private boolean mEncrypted;
     private List<VoiceFrame> mVoiceFrames = new ArrayList<>();
     private IEncryptionSyncParameters mTemporaryEncryptionSyncParameters;
@@ -165,6 +166,29 @@ public class MBECallSequence
     public String getToIdentifier()
     {
         return mToIdentifier;
+    }
+    /**
+     * Sets the to radio identifier
+     *
+     * @param to id
+     */
+    public void setToIdentifierPatch(String to)
+    {
+        if(to != null && !to.isEmpty() && !to.contentEquals("0"))
+        {
+            mToIdentifierPatch = to;
+        }
+    }
+
+    /**
+     * Radio identifier that received the call
+     *
+     * @return to id
+     */
+    // @JsonProperty("patchgroup")
+    public String getToIdentifierPatch()
+    {
+        return mToIdentifierPatch;
     }
 
     /**

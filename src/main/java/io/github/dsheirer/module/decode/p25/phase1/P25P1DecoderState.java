@@ -137,6 +137,8 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 /**
  * Decoder state for an APCO25 channel.  Maintains the call/data/idle state of the channel and produces events by
  * monitoring the decoded message stream.
@@ -825,6 +827,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 updateCurrentCall(headerData.isEncryptedAudio() ? DecodeEventType.CALL_ENCRYPTED :
                     DecodeEventType.CALL, null, message.getTimestamp());
 
+
+
                 return;
             }
         }
@@ -878,6 +882,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         closeCurrentCallEvent(message.getTimestamp());
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
 
+
         if(message instanceof TDULinkControlMessage)
         {
             LinkControlWord lcw = ((TDULinkControlMessage)message).getLinkControlWord();
@@ -887,6 +892,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 processLinkControl(lcw, message.getTimestamp());
             }
         }
+
+
     }
 
     /**
@@ -900,6 +907,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         if(mCurrentCallEvent == null)
         {
+            String pointlessString = mPatchGroupManager.toString();
+
             mCurrentCallEvent = P25DecodeEvent.builder(timestamp)
                 .channel(getCurrentChannel())
                 .eventDescription(type.toString())
@@ -912,6 +921,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         }
         else
         {
+            String pointlessString = mPatchGroupManager.toString();
+
             if(type == DecodeEventType.CALL_ENCRYPTED)
             {
                 mCurrentCallEvent.setEventDescription(type.toString());
@@ -947,6 +958,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processTDU(P25Message message)
     {
+        // mPatchGroupManager.
         closeCurrentCallEvent(message.getTimestamp());
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
     }
@@ -2123,8 +2135,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             .build());
                     }
                 default:
-//                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
-//                        " OPCODE:" + tsbk.getOpcodeNumber());
+                   // mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
+                     //   " OPCODE:" + tsbk.getOpcodeNumber());
                     break;
             }
         }
@@ -2206,12 +2218,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             //Patch Group management
             case MOTOROLA_PATCH_GROUP_ADD:
+                mLog.debug("MOTOROLA_PATCH_GROUP_ADD ");
                 mPatchGroupManager.addPatchGroups(lcw.getIdentifiers());
                 break;
             case MOTOROLA_PATCH_GROUP_DELETE:
                 mPatchGroupManager.removePatchGroups(lcw.getIdentifiers());
                 break;
             case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE:
+                mLog.debug("MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE ");
                 mPatchGroupManager.addPatchGroups(lcw.getIdentifiers());
                 break;
 

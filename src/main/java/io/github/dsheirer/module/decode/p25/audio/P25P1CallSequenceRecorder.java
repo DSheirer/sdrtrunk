@@ -23,9 +23,14 @@
 package io.github.dsheirer.module.decode.p25.audio;
 
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequence;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.patch.PatchGroup;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
@@ -41,10 +46,13 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -94,8 +102,11 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
             if(p25.isValid())
             {
                 process(p25);
+            } else {
+                mLog.debug("p25 message is not valid");
             }
         }
+
     }
 
 
@@ -118,6 +129,7 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
         if (message instanceof LDUMessage) {
             process((LDUMessage) message);
         } else if (message instanceof TDULinkControlMessage) {
+
             process((TDULinkControlMessage) message);
         } else if (message instanceof TDUMessage) {
             process((TDUMessage) message);
@@ -196,15 +208,21 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
                     mCallSequence.setToIdentifier(tivcu.getAddress().toString());
                     mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
                     break;
+                case MOTOROLA_PATCH_GROUP_ADD:
+                    mCallSequence.setToIdentifier(getPatchedTalkgroups(lcw));
+                    mLog.debug("MOTOROLA_PATCH_GROUP_ADD ");
+                    break;
                 case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER:
                     LCMotorolaPatchGroupVoiceChannelUser mpgvcu = (LCMotorolaPatchGroupVoiceChannelUser)lcw;
                     mCallSequence.setFromIdentifier(mpgvcu.getSourceAddress().toString());
-                    mCallSequence.setToIdentifier(mpgvcu.getGroupAddress().toString());
+                    mCallSequence.setToIdentifierPatch(mpgvcu.getGroupAddress().toString());
+                    mCallSequence.setToIdentifier(getPatchedTalkgroups(lcw));
                     mCallSequence.setCallType(CALL_TYPE_GROUP);
                     break;
                 case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE:
                     LCMotorolaPatchGroupVoiceChannelUpdate mpgvcup = (LCMotorolaPatchGroupVoiceChannelUpdate)lcw;
-                    mCallSequence.setToIdentifier(mpgvcup.getPatchGroup().toString());
+                    mCallSequence.setToIdentifierPatch(mpgvcup.getPatchGroup().toString());
+                    mCallSequence.setToIdentifier(getPatchedTalkgroups(lcw));
                     mCallSequence.setCallType(CALL_TYPE_GROUP);
                     break;
                 case CALL_TERMINATION_OR_CANCELLATION:
@@ -212,9 +230,41 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
                     writeCallSequence(mCallSequence);
                     mCallSequence = null;
                     break;
+                default:
+                    // mLog.debug("Unrecognized lcw Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
+                       //     " OPCODE:" + lcw.getOpcodeNumber());
             }
         }
     }
+
+
+    private String getPatchedTalkgroups(LinkControlWord lcw) {
+
+        List<Identifier> list = lcw.getIdentifiers();
+        if (list.size() > 2) {
+            mLog.debug("list size has more than 2 identifiers, this is goooooood:" + list.size());
+        } else {
+             // mLog.debug("Normal list size detected:" + list.size());
+        }
+
+        return "";
+    /*
+        StringBuilder sb = new StringBuilder();
+        int counter = 0;
+        for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
+        {
+            // sb.append(APCO25TalkgroupFormatter.format(patchedGroup, format, fixedWidth));
+            sb.append(patchedGroup.getValue());
+            if(counter++ < patchGroup.getPatchedGroupIdentifiers().size() - 1)
+            {
+                sb.append(",");
+            }
+        }
+        return sb.toString();
+        */
+
+    }
+
 
     private void process(LDU1Message ldu1Message)
     {

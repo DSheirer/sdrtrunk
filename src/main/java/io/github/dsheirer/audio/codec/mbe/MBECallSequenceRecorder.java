@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.audio.codec.mbe;
 
+import com.ctc.wstx.sw.EncodingXmlWriter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
@@ -148,6 +149,8 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
             catch(IOException ioe)
             {
                 mLog.error("Couldn't write MBE call sequence to path [" + filePath.toString() + "]", ioe);
+            } catch (Exception ex) {
+                mLog.error("Couldn't write MBE call sequence to path [" + filePath.toString() + "]", ex);
             }
         }
     }
