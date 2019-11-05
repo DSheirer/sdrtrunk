@@ -32,6 +32,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSourceManager.class);
     private PolyphaseChannelManager mPolyphaseChannelManager;
     private TunerController mTunerController;
+    private String mTunerId;
 
     /**
      * PolyphaseChannelSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
@@ -40,14 +41,16 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      *
      * @param tunerController with a center tuned frequency that will be managed by this instance
      */
-    public PolyphaseChannelSourceManager(TunerController tunerController)
+    public PolyphaseChannelSourceManager(TunerController tunerController, String tunerId)
     {
+        mTunerId = tunerId;
         mTunerController = tunerController;
 
         mPolyphaseChannelManager = new PolyphaseChannelManager(tunerController);
         //Register to receive channel count change notifications for rebroadcasting
         mPolyphaseChannelManager.addSourceEventListener(this::process);
         mTunerController.addListener(mPolyphaseChannelManager);
+
     }
 
     /**
@@ -417,7 +420,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
                     }
 
                     //If we're successful to here, allocate the channel
-                    return mPolyphaseChannelManager.getChannel(tunerChannel, channelSpecification);
+                    return mPolyphaseChannelManager.getChannel(tunerChannel, channelSpecification, mTunerId);
                 }
                 catch(SourceException se)
                 {

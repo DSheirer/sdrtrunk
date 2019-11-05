@@ -38,7 +38,7 @@ import java.util.List;
  * radio identifiers.
  */
 @JsonRootName("mbe_call")
-@JsonPropertyOrder({"protocol", "call_type", "from", "to","encrypted", "frames"})
+@JsonPropertyOrder({"protocol", "call_type", "from", "to","encrypted", "call_type","system","site","tuner_id","frames"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MBECallSequence
 {
@@ -52,6 +52,7 @@ public class MBECallSequence
     private boolean mEncrypted;
     private List<VoiceFrame> mVoiceFrames = new ArrayList<>();
     private IEncryptionSyncParameters mTemporaryEncryptionSyncParameters;
+    private String mTunerId = "";
 
     /**
      * Constructs a call sequence
@@ -248,6 +249,25 @@ public class MBECallSequence
     public void setSite(String site)
     {
         mSite = site;
+    }
+
+    /**
+     * Site name defined by the tuner
+     * @return
+     */
+    @JsonProperty("tuner_id")
+    public String getTuner()
+    {
+        return mTunerId;
+    }
+
+    /**
+     * Sets the tuner name
+     * @param tunerId
+     */
+    public void setTuner(String tunerId)
+    {
+        mTunerId = tunerId;
     }
 
     /**

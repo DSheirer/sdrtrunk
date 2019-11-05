@@ -54,6 +54,7 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
     protected String mSystem;
     protected String mSite;
     private int mCallNumber = 1;
+    protected String mTunerId = "";
 
     /**
      * Constructs an instance
@@ -78,10 +79,16 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
     {
     }
 
+    public void flush() {
+        mCallNumber = 1;
+    }
+
     @Override
     public void dispose()
     {
+        mLog.debug("I'm getting disposed");
     }
+
 
     /**
      * Writes an MBE call sequence recording to the recording directory

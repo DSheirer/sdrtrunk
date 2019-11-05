@@ -44,6 +44,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
     private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
+    private String mTunerID;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -64,6 +65,14 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         return mTunerChannel.getFrequency();
     }
+
+    public void setTunerId(String tunerID) {
+        mTunerID = tunerID;
+    }
+    public String getTunerId() {
+        return mTunerID;
+    }
+
 
     /**
      * Sets the center frequency for the sample streaming being sent from the producer.
@@ -122,6 +131,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(this, getFrequency(), "Startup"));
         broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
+        broadcastConsumerSourceEvent(SourceEvent.createTunerId(this, mTunerID));
         mScheduledIntervalProcessor.start();
     }
 

@@ -130,8 +130,8 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
                 }
                 break;
             default:
-                mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent().name() + " from [" +
-                    sourceEvent.getSource().getClass() + "]" );
+                // mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent().name() + " from [" +
+                  //   sourceEvent.getSource().getClass() + "]" );
         }
     }
 

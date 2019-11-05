@@ -311,7 +311,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                     TSBKMessage tsbkMessage = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
                         mDataUnitID, mBinaryMessage, mNAC, getTimestamp());
 
-                    mMessageListener.receive(tsbkMessage);
+                     mMessageListener.receive(tsbkMessage);
 
                     if(tsbkMessage.isLastBlock())
                     {

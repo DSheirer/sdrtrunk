@@ -264,6 +264,7 @@ public class DecoderFactory
                             p25Config.getModulation() + "]");
                 }
 
+
                 if(channelType == ChannelType.STANDARD)
                 {
                     P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);

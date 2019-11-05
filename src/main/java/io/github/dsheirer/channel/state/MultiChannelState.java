@@ -129,17 +129,39 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         createConfigurationIdentifiers(channel);
     }
 
+    private boolean idleStateThreadCreated = false;
+    private Thread handleIdleRestartThread;
+    private void handleIdleState(State channelState) throws InterruptedException {
+        if (channelState == State.IDLE && !idleStateThreadCreated) {
+            handleIdleRestartThread = new Thread(new MultiChannelState.StateIdleRestartThread());
+            handleIdleRestartThread.start();
+            idleStateThreadCreated = true;
+        } else if (channelState != State.IDLE && idleStateThreadCreated){
+            idleStateThreadCreated = false;
+            if (handleIdleRestartThread != null) {
+                handleIdleRestartThread.interrupt();
+                handleIdleRestartThread.join();
+                handleIdleRestartThread = null;
+            }
+        }
+    }
+
     @Override
     public void stateChanged(State state, int timeslot)
     {
         ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
         mIdentifierCollectionMap.get(timeslot).update(stateIdentifier);
         mChannelMetadataMap.get(timeslot).receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
+        try {
+            handleIdleState(state);
+        } catch (InterruptedException ex) {
 
+        }
         switch(state)
         {
             case IDLE:
                 broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
+
                 break;
             case RESET:
                 reset(timeslot);
@@ -570,6 +592,22 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         public void removeListener()
         {
             mIdentifierUpdateNotificationListener = null;
+        }
+    }
+
+    public class StateIdleRestartThread implements Runnable {
+        public void run(){
+            boolean cancelRestart = false;
+            try {
+                Thread.sleep(60000);
+            } catch (InterruptedException ex) {
+                cancelRestart = true;
+            }
+
+            if (!cancelRestart) {
+                mLog.debug("Restart channel now");
+                Channel m = mChannel;
+            }
         }
     }
 

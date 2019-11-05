@@ -57,6 +57,7 @@ public class P25P1ChannelStatusProcessor implements Listener<Dibit>
     private void update()
     {
         //This doesn't appear to be reliable and sometimes it fails on Harris systems.
+        /*
         if(mRepeaterCount > mSubscriberCount)
         {
             mDirection = Direction.OUTBOUND;
@@ -77,6 +78,7 @@ public class P25P1ChannelStatusProcessor implements Listener<Dibit>
                 mRepeaterCount = 0;
             }
         }
+         */
     }
 
     public Direction getDirection()

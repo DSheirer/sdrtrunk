@@ -71,7 +71,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private Color mLabelColor;
     private Color mMutedColor;
     private Color mValueColor;
-    private boolean mMuted;
+    private boolean mMuted = false;
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
@@ -144,7 +144,9 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         mMutedLabel.setFont(mFont);
         mMutedLabel.setForeground(mMutedColor);
         mMutedLabel.setVisible(mMuted);
-        mAudioOutput.setMuted(mMuted);
+        if(mAudioOutput != null) {
+            mAudioOutput.setMuted(mMuted);
+        }
         add(mMutedLabel);
 
         mChannelName = new JLabel(mAudioOutput != null ? mAudioOutput.getChannelName() : " ");

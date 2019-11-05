@@ -49,6 +49,9 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,13 +62,14 @@ import java.util.List;
  * P25 Phase 1 IMBE Frame recorder generates P25 call sequence recordings containing JSON representations of audio
  * frames, optional encryption and call identifiers.
  */
-public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
+public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implements ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P1CallSequenceRecorder.class);
 
     private static final String PROTOCOL = "APCO25-PHASE1";
 
     private MBECallSequence mCallSequence;
+
 
     /**
      * Constructs a P25-Phase2 MBE call sequence recorder.
@@ -117,6 +121,9 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
     {
         if(mCallSequence != null)
         {
+            if (mTunerId != "") {
+                mCallSequence.setTuner(mTunerId);
+            }
             writeCallSequence(mCallSequence);
             mCallSequence = null;
         }
@@ -215,24 +222,28 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
                 case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER:
                     LCMotorolaPatchGroupVoiceChannelUser mpgvcu = (LCMotorolaPatchGroupVoiceChannelUser)lcw;
                     mCallSequence.setFromIdentifier(mpgvcu.getSourceAddress().toString());
-                    mCallSequence.setToIdentifierPatch(mpgvcu.getGroupAddress().toString());
-                    mCallSequence.setToIdentifier(getPatchedTalkgroups(lcw));
+                    // mCallSequence.setToIdentifierPatch(mpgvcu.getGroupAddress().toString());
+                    mCallSequence.setToIdentifier(mpgvcu.getGroupAddress().toString());
                     mCallSequence.setCallType(CALL_TYPE_GROUP);
                     break;
                 case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE:
                     LCMotorolaPatchGroupVoiceChannelUpdate mpgvcup = (LCMotorolaPatchGroupVoiceChannelUpdate)lcw;
-                    mCallSequence.setToIdentifierPatch(mpgvcup.getPatchGroup().toString());
-                    mCallSequence.setToIdentifier(getPatchedTalkgroups(lcw));
+                    // mCallSequence.setToIdentifierPatch(mpgvcup.getPatchGroup().toString());
+                    mCallSequence.setToIdentifier(mpgvcup.getPatchGroup().toString());
                     mCallSequence.setCallType(CALL_TYPE_GROUP);
                     break;
                 case CALL_TERMINATION_OR_CANCELLATION:
                 case MOTOROLA_TALK_COMPLETE:
+                    mLog.debug("MOTOROLA TALK COMPETE");
+                    if (mTunerId != "") {
+                        mCallSequence.setTuner(mTunerId);
+                    }
                     writeCallSequence(mCallSequence);
                     mCallSequence = null;
                     break;
                 default:
-                    // mLog.debug("Unrecognized lcw Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
-                       //     " OPCODE:" + lcw.getOpcodeNumber());
+                    //mLog.debug("Unrecognized lcw Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
+                    //        " OPCODE:" + lcw.getOpcodeNumber());
             }
         }
     }
@@ -280,5 +291,21 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder
             mCallSequence.setEncrypted(true);
             mCallSequence.setEncryptionSyncParameters(parameters);
         }
+    }
+
+
+    @Override
+    public Listener<SourceEvent> getSourceEventListener() {
+
+        return new Listener<SourceEvent>()
+        {
+            @Override
+            public void receive(SourceEvent sourceEvent)
+            {
+                if (sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_TUNER_ID) {
+                    mTunerId = sourceEvent.getEventDescription();
+                }
+            }
+        };
     }
 }

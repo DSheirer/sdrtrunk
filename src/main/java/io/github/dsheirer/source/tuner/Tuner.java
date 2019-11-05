@@ -44,7 +44,7 @@ public abstract class Tuner implements ISourceEventProcessor
     private ChannelSourceManager mChannelSourceManager;
     private TunerController mTunerController;
     private TunerFrequencyErrorMonitor mTunerFrequencyErrorMonitor;
-    private String mName;
+    protected String mName;
 
     public Tuner(String name, TunerController tunerController)
     {
@@ -70,11 +70,11 @@ public abstract class Tuner implements ISourceEventProcessor
         ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
         if(channelizerType == ChannelizerType.POLYPHASE)
         {
-            setChannelSourceManager(new PolyphaseChannelSourceManager(mTunerController));
+            setChannelSourceManager(new PolyphaseChannelSourceManager(mTunerController, name));
         }
         else if(channelizerType == ChannelizerType.HETERODYNE)
         {
-            setChannelSourceManager(new HeterodyneChannelSourceManager(mTunerController));
+            setChannelSourceManager(new HeterodyneChannelSourceManager(mTunerController, name));
         }
         else
         {

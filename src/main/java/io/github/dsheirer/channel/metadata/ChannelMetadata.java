@@ -25,6 +25,7 @@ package io.github.dsheirer.channel.metadata;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -38,6 +39,7 @@ import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.channel.state.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +75,10 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
     {
         mAliasModel = aliasModel;
         mTimeslot = timeslot;
+    }
+
+    public void dispose() {
+        mLog.debug("shutting down bitch");
     }
 
     public ChannelMetadata(AliasModel aliasModel)

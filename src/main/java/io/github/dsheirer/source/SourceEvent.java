@@ -39,6 +39,7 @@ public class SourceEvent
         NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_STOP_SAMPLE_STREAM,
+        NOTIFICATION_TUNER_ID,
 
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
@@ -106,6 +107,8 @@ public class SourceEvent
         this(event, source, value, null);
     }
 
+
+
     /**
      * Event description.
      */
@@ -151,6 +154,7 @@ public class SourceEvent
         return mSource;
     }
 
+
     /**
      * Sets the source associated with this event
      */
@@ -165,6 +169,10 @@ public class SourceEvent
     public boolean hasSource()
     {
         return mSource != null;
+    }
+
+    public String getEventDescription() {
+        return (mEventDescription == null ? "" : mEventDescription);
     }
 
     /**
@@ -384,6 +392,10 @@ public class SourceEvent
     public static SourceEvent frequencyRotationFailureNotification(Source source, long frequency)
     {
         return new SourceEvent(Event.NOTIFICATION_FREQUENCY_ROTATION_FAILURE, source, frequency);
+    }
+
+    public static SourceEvent createTunerId(Source source, String tunerID) {
+        return new SourceEvent(Event.NOTIFICATION_TUNER_ID, source, 0, tunerID);
     }
 
     @Override

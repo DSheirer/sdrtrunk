@@ -64,11 +64,11 @@ public class RecordingTuner extends Tuner
 
             if(channelizerType == ChannelizerType.POLYPHASE)
             {
-                setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController()));
+                setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController(),mName));
             }
             else if(channelizerType == ChannelizerType.HETERODYNE)
             {
-                setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+                setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController(),mName));
             }
             else
             {
@@ -128,11 +128,11 @@ public class RecordingTuner extends Tuner
 
                 if(channelizerType == ChannelizerType.POLYPHASE)
                 {
-                    setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController()));
+                    setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController(),mName));
                 }
                 else if(channelizerType == ChannelizerType.HETERODYNE)
                 {
-                    setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController()));
+                    setChannelSourceManager(new HeterodyneChannelSourceManager(getTunerController(),mName));
                 }
                 else
                 {
