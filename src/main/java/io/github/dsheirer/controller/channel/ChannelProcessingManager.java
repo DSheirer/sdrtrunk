@@ -1,34 +1,38 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
-import io.github.dsheirer.identifier.configuration.ChannelDescriptorConfigurationIdentifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
@@ -37,9 +41,8 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.record.RecorderFactory;
 import io.github.dsheirer.record.RecorderManager;
-import io.github.dsheirer.record.RecorderType;
-import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
@@ -237,8 +240,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             channel.setProcessing(false);
 
-            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED,
-                TUNER_UNAVAILABLE_DESCRIPTION));
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
+                ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
 
             return;
         }
@@ -285,43 +288,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.addModules(loggers);
         }
 
-        /* Setup recorders */
-        List<RecorderType> recorders = channel.getRecordConfiguration().getRecorders();
+        //Add recorders
+        processingChain.addModules(RecorderFactory.getRecorders(mRecorderManager, mUserPreferences, channel));
 
-        if(!recorders.isEmpty())
-        {
-            /* Add baseband recorder */
-            if((recorders.contains(RecorderType.BASEBAND) && channel.getChannelType() == Channel.ChannelType.STANDARD))
-            {
-                processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
-            }
-
-            /* Add traffic channel baseband recorder */
-            if(recorders.contains(RecorderType.TRAFFIC_BASEBAND) && channel.getChannelType() == Channel.ChannelType.TRAFFIC)
-            {
-                processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
-            }
-
-            /* Add decoded bit stream recorder if the decoder supports bitstream output */
-            if(DecoderFactory.getBitstreamDecoders().contains(channel.getDecodeConfiguration().getDecoderType()))
-            {
-                if((recorders.contains(RecorderType.DEMODULATED_BIT_STREAM) &&
-                    channel.getChannelType() == Channel.ChannelType.STANDARD))
-                {
-                    processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
-                }
-
-                /* Add traffic channel decoded bit stream recorder */
-                if(recorders.contains(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM) &&
-                    channel.getChannelType() == Channel.ChannelType.TRAFFIC)
-                {
-                    processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
-                        channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
-                }
-            }
-        }
-
+        //Set the samples source
         processingChain.setSource(source);
 
         //Inject the channel identifier for traffic channels and preload user identifiers
@@ -330,22 +300,47 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             ChannelGrantEvent channelGrantEvent = (ChannelGrantEvent)event;
             IChannelDescriptor channelDescriptor = channelGrantEvent.getChannelDescriptor();
 
+            IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
+
             if(channelDescriptor != null)
             {
-                ChannelDescriptorConfigurationIdentifier identifier = new ChannelDescriptorConfigurationIdentifier(channelDescriptor);
-                IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
-                    IdentifierUpdateNotification.Operation.ADD);
-                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
-            }
+                for(int timeslot = 0; timeslot < channelDescriptor.getTimeslotCount(); timeslot++)
+                {
+                    DecoderLogicalChannelNameIdentifier identifier =
+                        DecoderLogicalChannelNameIdentifier.create(channelDescriptor.toString(), channelDescriptor.getProtocol());
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
+                        IdentifierUpdateNotification.Operation.ADD, timeslot);
+                    processingChain.getChannelState().updateChannelStateIdentifiers(notification);
 
-            IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
+                    //Inject scramble parameters
+                    for(Identifier scrambleParameters: identifierCollection.getIdentifiers(Form.SCRAMBLE_PARAMETERS))
+                    {
+                        //Broadcast scramble parameters to both timeslots
+                        IdentifierUpdateNotification scrambleNotification = new IdentifierUpdateNotification(scrambleParameters,
+                            IdentifierUpdateNotification.Operation.ADD, timeslot);
+                        processingChain.getChannelState().updateChannelStateIdentifiers(scrambleNotification);
+                    }
+                }
+            }
 
             for(Identifier userIdentifier : identifierCollection.getIdentifiers(IdentifierClass.USER))
             {
-                IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
-                    IdentifierUpdateNotification.Operation.ADD);
-                processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                if(channelDescriptor.getTimeslotCount() > 1)
+                {
+                    //Only broadcast an identifier update for the timeslot specified in the originating collection
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
+                        IdentifierUpdateNotification.Operation.ADD, channelGrantEvent.getIdentifierCollection().getTimeslot());
+                    processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                }
+                else
+                {
+                    //Only broadcast an identifier update for the timeslot specified in the originating collection
+                    IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
+                        IdentifierUpdateNotification.Operation.ADD, 0);
+                    processingChain.getChannelState().updateChannelStateIdentifiers(notification);
+                }
             }
+
         }
 
         processingChain.start();
@@ -372,7 +367,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             ProcessingChain processingChain = mProcessingChains.get(channel);
 
-            getChannelMetadataModel().remove(processingChain.getChannelState().getChannelMetadata());
+            for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
+            {
+                getChannelMetadataModel().remove(channelMetadata);
+            }
 
             processingChain.stop();
 

@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.mpt1327;
 
@@ -1075,105 +1077,65 @@ public class MPT1327Message extends Message
             case HEAD_PLUS1:
                 if(format == SDMFormat.MPT1327)
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                        B2_SDM_STF0_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF0_START, B2_SDM_STF0_END));
                 }
                 else
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                        B2_SDM_STF1_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF1_START, B2_SDM_STF1_END));
                 }
                 break;
             case HEAD_PLUS2:
                 if(format == SDMFormat.MPT1327)
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                        B2_SDM_STF0_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF0_START, B2_SDM_STF0_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B3_SDM_START,
-                        B3_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B3_SDM_START, B3_SDM_END));
                 }
                 else
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                        B2_SDM_STF1_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF1_START, B2_SDM_STF1_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B3_SDM_START,
-                        B3_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B3_SDM_START, B3_SDM_END));
                 }
                 break;
             case HEAD_PLUS3:
                 if(format == SDMFormat.MPT1327)
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                        B2_SDM_STF0_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF0_START, B2_SDM_STF0_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B3_SDM_START,
-                        B3_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B3_SDM_START, B3_SDM_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B4_SDM_STF0_START,
-                        B4_SDM_STF0_END,
-                        12));
+                    sb.append(mMessage.getHex(B4_SDM_STF0_START, B4_SDM_STF0_END));
                 }
                 else
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                        B2_SDM_STF1_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF1_START, B2_SDM_STF1_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B3_SDM_START,
-                        B3_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B3_SDM_START, B3_SDM_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B4_SDM_STF1_START,
-                        B4_SDM_STF1_END,
-                        12));
+                    sb.append(mMessage.getHex(B4_SDM_STF1_START, B4_SDM_STF1_END));
                 }
                 break;
             case HEAD_PLUS4:
                 if(format == SDMFormat.MPT1327)
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF0_START,
-                        B2_SDM_STF0_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF0_START, B2_SDM_STF0_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B3_SDM_START,
-                        B3_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B3_SDM_START, B3_SDM_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B4_SDM_STF0_START,
-                        B4_SDM_STF0_END,
-                        12));
+                    sb.append(mMessage.getHex(B4_SDM_STF0_START, B4_SDM_STF0_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B5_SDM_START,
-                        B5_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B5_SDM_START, B5_SDM_END));
                 }
                 else
                 {
-                    sb.append(mMessage.getHex(B2_SDM_STF1_START,
-                        B2_SDM_STF1_END,
-                        12));
+                    sb.append(mMessage.getHex(B2_SDM_STF1_START, B2_SDM_STF1_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B3_SDM_START,
-                        B3_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B3_SDM_START, B3_SDM_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B4_SDM_STF1_START,
-                        B4_SDM_STF1_END,
-                        12));
+                    sb.append(mMessage.getHex(B4_SDM_STF1_START, B4_SDM_STF1_END));
                     sb.append(" ");
-                    sb.append(mMessage.getHex(B5_SDM_START,
-                        B5_SDM_END,
-                        12));
+                    sb.append(mMessage.getHex(B5_SDM_START, B5_SDM_END));
                 }
                 break;
             default:

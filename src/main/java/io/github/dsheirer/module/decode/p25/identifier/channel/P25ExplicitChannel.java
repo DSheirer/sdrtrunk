@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * Copyright (C) 2014-2019 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 
 package io.github.dsheirer.module.decode.p25.identifier.channel;
 
-import io.github.dsheirer.module.decode.p25.message.IFrequencyBand;
+import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 
 public class P25ExplicitChannel extends P25Channel implements Comparable<P25Channel>
 {
