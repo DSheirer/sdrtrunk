@@ -166,7 +166,7 @@ public enum Vendor
 	V161( "VENDORA1", "V_A1", 161),
 	V162( "VENDORA2", "V_A2", 162),
 	V163( "VENDORA3", "V_A3", 163),
-	MACOM( "M/A-COM ", "M/A-COM", 164),
+	HARRIS( "HARRIS", "HARRIS", 164),
 	V165( "VENDORA5", "V_A5", 165),
 	V166( "VENDORA6", "V_A6", 166),
 	V167( "VENDORA7", "V_A7", 167),

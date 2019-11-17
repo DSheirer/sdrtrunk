@@ -72,10 +72,10 @@ public class RFSSStatusBroadcast extends OSPMessage implements IFrequencyBandRec
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" RFSS:").append(getRfss());
         sb.append(" SITE:").append(getSite());
+        sb.append(" LRA:").append(getLocationRegistrationArea());
         if(isActiveNetworkConnectionToRfssControllerSite())
         {
             sb.append(" ACTIVE NETWORK CONNECTION");

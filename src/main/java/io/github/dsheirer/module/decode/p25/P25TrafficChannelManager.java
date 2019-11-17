@@ -498,7 +498,6 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         broadcast(channelGrantEvent);
     }
 
-
     /**
      * Creates a call event type description for the specified opcode and service options
      */

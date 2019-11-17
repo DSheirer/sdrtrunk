@@ -71,9 +71,9 @@ public class NetworkStatusBroadcast extends OSPMessage implements IFrequencyBand
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" WACN:").append(getWacn());
         sb.append(" SYSTEM:").append(getSystem());
+        sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" SERVICES:").append(getSystemServiceClass().getServices());
         return sb.toString();
     }
