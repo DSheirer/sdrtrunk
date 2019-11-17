@@ -1,4 +1,26 @@
 /*
+ *
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
+ *
+ *
+ */
+
+/*
  * MapViewer.java
  *
  * Created on March 14, 2006, 2:14 PM
@@ -9,6 +31,8 @@
 
 package org.jdesktop.swingx;
 
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.Tile;
 import org.jdesktop.swingx.mapviewer.TileFactory;
@@ -20,7 +44,6 @@ import org.jdesktop.swingx.painter.Painter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -35,7 +58,6 @@ import java.awt.image.BufferedImage;
 import java.beans.DesignMode;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.net.URL;
 import java.util.Set;
 
 /**
@@ -125,18 +147,13 @@ public class JXMapViewer extends JPanel implements DesignMode
 		// make a dummy loading image
 		try
 		{
-			URL imageURL = JXMapViewer.class.getResource("/images/loading.png");
-
-			if(imageURL != null)
-			{
-				ImageIcon imageIcon = new ImageIcon( imageURL );
-				this.setLoadingImage( imageIcon.getImage() );
-			}
+			Image loading = IconFontSwing.buildImage(FontAwesome.LINK, 16);
+			this.setLoadingImage(loading);
 		}
 		catch (Throwable ex)
 		{
 			
-			mLog.error( "JXMapViewer could not load 'loading.png'" );
+			mLog.error( "JXMapViewer could not load default 'loading.png'" );
 			
 			BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2 = img.createGraphics();
