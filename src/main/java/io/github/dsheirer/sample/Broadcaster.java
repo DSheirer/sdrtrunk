@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.sample;
 
+import io.github.dsheirer.controller.channel.ChannelEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +137,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        if(mDebug)
+        if(mDebug || t.getClass() == ChannelEvent.class)
         {
             for(Listener<T> listener : mListeners)
             {

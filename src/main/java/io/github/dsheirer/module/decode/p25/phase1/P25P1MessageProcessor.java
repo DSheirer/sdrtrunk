@@ -24,6 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase1;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.sample.Listener;
@@ -58,6 +59,10 @@ public class P25P1MessageProcessor implements Listener<Message>
          * up-link and down-link frequencies for any numeric channel references
          * contained within the message.
          */
+        if (message.getClass() != SyncLossMessage.class) {
+           // mLog.debug("interesting");
+        }
+
         if(message.isValid())
         {
             /* Insert frequency band identifier update messages into channel-type messages */

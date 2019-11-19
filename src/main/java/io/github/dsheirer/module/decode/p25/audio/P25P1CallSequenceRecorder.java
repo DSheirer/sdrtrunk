@@ -136,9 +136,9 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implement
         if (message instanceof LDUMessage) {
             process((LDUMessage) message);
         } else if (message instanceof TDULinkControlMessage) {
-
             process((TDULinkControlMessage) message);
         } else if (message instanceof TDUMessage) {
+            mLog.debug("Process TDUMessage");
             process((TDUMessage) message);
         }
     }

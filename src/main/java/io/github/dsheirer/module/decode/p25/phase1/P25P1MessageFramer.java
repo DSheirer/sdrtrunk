@@ -38,6 +38,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.preference.UserPreferences;
@@ -199,6 +200,8 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                 }
 
                 dispatchMessage();
+            } else if (mDataUnitID == P25P1DataUnitID.HEADER_DATA_UNIT ){
+                // mLog.debug("mBinaryMessage is not full and it is a TDU");
             }
         }
         else
