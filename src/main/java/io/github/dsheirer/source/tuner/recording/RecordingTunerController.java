@@ -185,14 +185,14 @@ public class RecordingTunerController extends TunerController
     @Override
     public void setFrequency(long frequency) throws SourceException
     {
-//        if(hasBufferListeners())
-//        {
+        if(hasBufferListeners())
+        {
             mLog.debug("Set frequency [" + frequency + "] request ignored");
-//        }
-//        else
-//        {
-//            super.setFrequency(frequency);
-//        }
+        }
+        else
+        {
+            super.setFrequency(frequency);
+        }
     }
 
     /**
@@ -213,8 +213,7 @@ public class RecordingTunerController extends TunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        mLog.debug("Set frequency [" + frequency + "] request ignored");
-//        mCenterFrequency = frequency;
+        mCenterFrequency = frequency;
     }
 
     /**
