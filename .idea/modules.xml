@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sdr-trunk.iml" filepath="$PROJECT_DIR$/.idea/modules/sdr-trunk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/davidbelle.sdr-trunk.iml" filepath="$PROJECT_DIR$/.idea/modules/davidbelle.sdr-trunk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sdr-trunk.iml" filepath="$PROJECT_DIR$/.idea/modules/sdr-trunk.iml" group="sdr-trunk" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sdr-trunk.main.iml" filepath="$PROJECT_DIR$/.idea/modules/sdr-trunk.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/sdr-trunk.test.iml" filepath="$PROJECT_DIR$/.idea/modules/sdr-trunk.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/sdr-trunk_main.iml" filepath="$PROJECT_DIR$/.idea/modules/sdr-trunk_main.iml" group="sdr-trunk" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/sdr-trunk_test.iml" filepath="$PROJECT_DIR$/.idea/modules/sdr-trunk_test.iml" group="sdr-trunk" />
     </modules>

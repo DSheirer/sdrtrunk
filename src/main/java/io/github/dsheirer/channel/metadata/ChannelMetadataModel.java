@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.channel.metadata;
 
@@ -24,6 +26,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.preference.PreferenceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -77,7 +81,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     }
 
 
-    public void add(ChannelMetadata channelMetadata, Channel channel)
+    public void add(Collection<ChannelMetadata> channelMetadatas, Channel channel)
     {
         //Execute on the swing thread to avoid threading issues
         EventQueue.invokeLater(new Runnable()
@@ -85,11 +89,14 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
             @Override
             public void run()
             {
-                mChannelMetadata.add(channelMetadata);
-                mMetadataChannelMap.put(channelMetadata, channel);
-                int index = mChannelMetadata.indexOf(channelMetadata);
-                fireTableRowsInserted(index, index);
-                channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
+                for(ChannelMetadata channelMetadata: channelMetadatas)
+                {
+                    mChannelMetadata.add(channelMetadata);
+                    mMetadataChannelMap.put(channelMetadata, channel);
+                    int index = mChannelMetadata.indexOf(channelMetadata);
+                    fireTableRowsInserted(index, index);
+                    channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
+                }
             }
         });
     }
@@ -161,6 +168,8 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
             case COLUMN_USER_FROM_ALIAS:
             case COLUMN_USER_TO_ALIAS:
                 return Alias.class;
+            case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
+                return String.class;
             default:
                 return Identifier.class;
         }
@@ -180,7 +189,30 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                 case COLUMN_DECODER_TYPE:
                     return channelMetadata.getDecoderTypeConfigurationIdentifier();
                 case COLUMN_DECODER_LOGICAL_CHANNEL_NAME:
-                    return channelMetadata.getDecoderLogicalChannelNameIdentifier();
+                    DecoderLogicalChannelNameIdentifier id = channelMetadata.getDecoderLogicalChannelNameIdentifier();
+
+                    if(channelMetadata.hasTimeslot())
+                    {
+                        if(id == null)
+                        {
+                            return "TS:" + channelMetadata.getTimeslot();
+                        }
+                        else
+                        {
+                            return id.getValue() + " TS:" + channelMetadata.getTimeslot();
+                        }
+                    }
+                    else
+                    {
+                        if(id == null)
+                        {
+                            return null;
+                        }
+                        else
+                        {
+                            return id.getValue();
+                        }
+                    }
                 case COLUMN_CONFIGURATION_FREQUENCY:
                     return channelMetadata.getFrequencyConfigurationIdentifier();
                 case COLUMN_CONFIGURATION_CHANNEL:

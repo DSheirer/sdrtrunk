@@ -47,6 +47,7 @@ dependencies {
     compile 'ch.qos.logback:logback-core:1.2.3'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.8'
+    compile 'com.fazecast:jSerialComm:2.5.0'
     compile 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     compile 'com.github.jiconfont:jiconfont-javafx:1.0.0'
     compile 'com.github.jiconfont:jiconfont-swing:1.0.1'
@@ -54,6 +55,7 @@ dependencies {
     compile 'com.google.guava:guava:27.0.1-jre'
     compile 'com.jidesoft:jide-oss:3.6.18'
     compile 'com.miglayout:miglayout-swing:5.2'
+    compile 'eu.hansolo:charts:1.0.5'
     compile 'io.github.dsheirer:radio-reference-api:15.0.1'
     compile 'javax.usb:usb-api:1.0.2'
     compile 'net.coderazzi:tablefilter-swing:5.4.0'
@@ -100,11 +102,17 @@ task buildSdr(type: Jar) {
         attributes 'Implementation-Title': 'SdrTrunk project',
                 'Implementation-Version': version,
                 'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
-                'Class-Path': 'jmbe-0.3.2.jar jmbe-0.3.3.jar'
+                'Class-Path': 'jmbe-1.0.0.jar'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
+}
+
+task runSdr(type: JavaExec) {
+    classpath sourceSets.main.runtimeClasspath
+    main = "io.github.dsheirer.gui.SDRTrunk"
+    // args "arg1", "arg2"
 }
 
 /**

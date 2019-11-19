@@ -47,9 +47,11 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     private TunerController mTunerController;
     private ChannelSourceEventProcessor mChannelSourceEventProcessor = new ChannelSourceEventProcessor();
     private ReusableComplexDelayBuffer mSampleDelayBuffer;
+    private String mTunerId;
 
-    public HeterodyneChannelSourceManager(TunerController tunerController)
+    public HeterodyneChannelSourceManager(TunerController tunerController, String tunerId)
     {
+        mTunerId = tunerId;
         mTunerController = tunerController;
         mTunerController.addListener(this);
     }
@@ -91,6 +93,8 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 mTunerController.setLocked(true);
 
                 broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
+
+                tunerChannelSource.setTunerId(mTunerId);
 
                 return tunerChannelSource;
             }

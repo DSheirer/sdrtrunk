@@ -60,7 +60,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Note: add this channel manager as a source event listener to the complex buffer provider to ensure this manager
  * adapts to changes in source frequency and sample rate.
  */
-public class PolyphaseChannelManager implements ISourceEventProcessor
+public class   PolyphaseChannelManager implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final double MINIMUM_CHANNEL_BANDWIDTH = 25000.0;
@@ -77,6 +77,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private BufferSourceEventMonitor mBufferSourceEventMonitor = new BufferSourceEventMonitor();
     private ContinuousBufferProcessor<ReusableComplexBuffer> mBufferProcessor;
     private Map<Integer,float[]> mOutputProcessorFilters = new HashMap<>();
+
 
     /**
      * Creates a polyphase channel manager instance.
@@ -142,7 +143,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * @param tunerChannel specifying center frequency and bandwidth.
      * @return source or null.
      */
-    public TunerChannelSource getChannel(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
+    public TunerChannelSource getChannel(TunerChannel tunerChannel, ChannelSpecification channelSpecification,  String tunerId)
     {
         PolyphaseChannelSource channelSource = null;
 
@@ -175,6 +176,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 mChannelCalculator.getCenterFrequency() + "] and sample rate [" +
                 (mChannelCalculator.getChannelCount() * mChannelCalculator.getChannelBandwidth()) + "]");
         }
+
+        channelSource.setTunerId(tunerId);
 
         return channelSource;
     }

@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 
 package io.github.dsheirer.source.tuner;
 
@@ -20,6 +26,7 @@ import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.gui.control.JFrequencyControl;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
+import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationFactory;
@@ -34,6 +41,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JToggleButton;
 import javax.swing.RowFilter;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ListSelectionEvent;
@@ -53,6 +61,7 @@ public class TunerEditor extends Editor<Tuner>
     private JTable mTunerConfigurationTable;
     private TableRowSorter<TunerConfigurationModel> mRowSorter;
     private JFrequencyControl mFrequencyControl = new JFrequencyControl();
+    private JToggleButton mRecordButton;
     private JLabel mSelectedTunerType = new JLabel("No Tuner Selected");
     private JButton mNewConfigurationButton = new JButton("New");
     private JButton mDeleteConfigurationButton = new JButton("Delete");
@@ -60,10 +69,12 @@ public class TunerEditor extends Editor<Tuner>
     private JScrollPane mEditorScroller;
     private Editor<TunerConfiguration> mEditor = new EmptyEditor<>("a tuner");
     private JideSplitPane mEditorSplitPane = new JideSplitPane();
+    private RecorderManager mRecorderManager;
 
-    public TunerEditor(TunerConfigurationModel tunerConfigurationModel)
+    public TunerEditor(TunerConfigurationModel tunerConfigurationModel, RecorderManager recorderManager)
     {
         mTunerConfigurationModel = tunerConfigurationModel;
+        mRecorderManager = recorderManager;
         init();
     }
 
@@ -88,12 +99,38 @@ public class TunerEditor extends Editor<Tuner>
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
 
         JPanel listPanel = new JPanel();
-        listPanel.setLayout(new MigLayout("fill,wrap 3", "[grow,fill]", "[][][][grow,fill][]"));
+        listPanel.setLayout(new MigLayout("fill,wrap 3", "[grow,fill][grow,fill][grow,fill]", "[][][][grow," +
+                "fill][]"));
 
         listPanel.add(mSelectedTunerType, "span");
 
         mFrequencyControl.setEnabled(false);
-        listPanel.add(mFrequencyControl, "span");
+        listPanel.add(mFrequencyControl, "span 2");
+
+        mRecordButton = new JToggleButton("Record");
+        mRecordButton.setEnabled(false);
+        mRecordButton.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                if(mRecordButton.isSelected())
+                {
+                    if(hasItem())
+                    {
+                         getItem().getTunerController().startRecorder(mRecorderManager);
+                    }
+                }
+                else
+                {
+                    if(hasItem())
+                    {
+                        getItem().getTunerController().stopRecorder();
+                    }
+                }
+            }
+        });
+        listPanel.add(mRecordButton, "wrap");
 
         mRowSorter = new TableRowSorter<>(mTunerConfigurationModel);
         mTunerConfigurationTable = new JTable(mTunerConfigurationModel);
@@ -274,6 +311,9 @@ public class TunerEditor extends Editor<Tuner>
 
             //Set the displayed frequency without adjusting the tuner's frequency
             mFrequencyControl.setFrequency(tuner.getTunerController().getFrequency(), false);
+
+            mRecordButton.setEnabled(true);
+            mRecordButton.setSelected(getItem().getTunerController().isRecording());
         }
         else
         {
@@ -283,6 +323,8 @@ public class TunerEditor extends Editor<Tuner>
             mNewConfigurationButton.setEnabled(false);
             mRowSorter.setRowFilter(null);
             mEditor = new EmptyEditor<TunerConfiguration>();
+            mRecordButton.setEnabled(false);
+            mRecordButton.setSelected(false);
         }
 
         //Swap out the editor

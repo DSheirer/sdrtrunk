@@ -1,35 +1,40 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.IAudioPacketListener;
 import io.github.dsheirer.audio.IAudioPacketProvider;
+import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
-import io.github.dsheirer.audio.squelch.SquelchState;
-import io.github.dsheirer.channel.state.ChannelState;
+import io.github.dsheirer.audio.squelch.SquelchStateEvent;
+import io.github.dsheirer.channel.state.AbstractChannelState;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventListener;
 import io.github.dsheirer.channel.state.IDecoderStateEventProvider;
+import io.github.dsheirer.channel.state.MultiChannelState;
+import io.github.dsheirer.channel.state.SingleChannelState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
@@ -46,6 +51,7 @@ import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogger;
+import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -108,14 +114,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private Broadcaster<IMessage> mMessageBroadcaster = new Broadcaster<>();
-    private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
+    private Broadcaster<SquelchStateEvent> mSquelchStateEventBroadcaster = new Broadcaster<>();
 
     private AtomicBoolean mRunning = new AtomicBoolean();
 
     protected Source mSource;
     private List<Module> mModules = new ArrayList<>();
     private DecodeEventModel mDecodeEventModel;
-    private ChannelState mChannelState;
+    private AbstractChannelState mChannelState;
     private MessageActivityModel mMessageActivityModel;
 
     /**
@@ -125,11 +131,23 @@ public class ProcessingChain implements Listener<ChannelEvent>
      */
     public ProcessingChain(Channel channel, AliasModel aliasModel)
     {
-        mChannelState = new ChannelState(channel, aliasModel);
-        addModule(mChannelState);
+        if(channel.getDecodeConfiguration().getTimeslotCount() == 1)
+        {
+            mChannelState = new SingleChannelState(channel, aliasModel);
+        }
+        else
+        {
+            mChannelState = new MultiChannelState(channel, aliasModel, channel.getDecodeConfiguration().getTimeslotCount());
+        }
 
+        addModule(mChannelState);
         mDecodeEventModel = new DecodeEventModel();
         addDecodeEventListener(mDecodeEventModel);
+    }
+
+    public AbstractChannelState getChannelState()
+    {
+        return mChannelState;
     }
 
     public DecodeEventModel getDecodeEventModel()
@@ -137,15 +155,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
         return mDecodeEventModel;
     }
 
-    public ChannelState getChannelState()
-    {
-        return mChannelState;
-    }
-
     public MessageActivityModel getMessageActivityModel()
     {
         return mMessageActivityModel;
     }
+
+
+    //TODO: should we introduce the concept of getTimeslot() to messages and events and then use that to vector the
+    //TODO: inbound stream to the appropriate message and event models?
 
     public void setMessageActivityModel(MessageActivityModel model)
     {
@@ -171,7 +188,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
         mBasebandComplexBufferBroadcaster.dispose();
         mDemodulatedBitstreamBufferBroadcaster.dispose();
         mMessageBroadcaster.dispose();
-        mSquelchStateBroadcaster.dispose();
+        mSquelchStateEventBroadcaster.dispose();
     }
 
     /**
@@ -352,7 +369,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
 
         if(module instanceof ISquelchStateListener)
         {
-            mSquelchStateBroadcaster.addListener(((ISquelchStateListener)module).getSquelchStateListener());
+            mSquelchStateEventBroadcaster.addListener(((ISquelchStateListener)module).getSquelchStateListener());
         }
     }
 
@@ -419,7 +436,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
 
         if(module instanceof ISquelchStateListener)
         {
-            mSquelchStateBroadcaster.removeListener(((ISquelchStateListener)module).getSquelchStateListener());
+            mSquelchStateEventBroadcaster.removeListener(((ISquelchStateListener)module).getSquelchStateListener());
         }
     }
 
@@ -486,7 +503,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
 
         if(module instanceof ISquelchStateProvider)
         {
-            ((ISquelchStateProvider)module).setSquelchStateListener(mSquelchStateBroadcaster);
+            ((ISquelchStateProvider)module).setSquelchStateListener(mSquelchStateEventBroadcaster);
         }
     }
 
@@ -691,6 +708,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
             {
                 recordingModules.add(module);
             }
+            else if(module instanceof MBECallSequenceRecorder)
+            {
+                recordingModules.add(module);
+            }
+            else if(module instanceof BinaryRecorder)
+            {
+                recordingModules.add(module);
+            }
         }
 
         for(Module recordingModule : recordingModules)
@@ -806,14 +831,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
     /**
      * Adds the listener to receive call events from all modules.
      */
-    public void addSquelchStateListener(Listener<SquelchState> listener)
+    public void addSquelchStateListener(Listener<SquelchStateEvent> listener)
     {
-        mSquelchStateBroadcaster.addListener(listener);
+        mSquelchStateEventBroadcaster.addListener(listener);
     }
 
-    public void removeSquelchStateListener(Listener<SquelchState> listener)
+    public void removeSquelchStateListener(Listener<SquelchStateEvent> listener)
     {
-        mSquelchStateBroadcaster.removeListener(listener);
+        mSquelchStateEventBroadcaster.removeListener(listener);
     }
 
     /**

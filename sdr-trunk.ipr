@@ -11,9 +11,9 @@
       <entry name="!?*.java" />
       <entry name="!?*.groovy" />
     </wildcardResourcePatterns>
-    <bytecodeTargetLevel target="1.8">
-      <module name="sdr-trunk_main" target="1.8" />
-      <module name="sdr-trunk_test" target="1.8" />
+    <bytecodeTargetLevel target="11">
+      <module name="sdr-trunk_main" target="11" />
+      <module name="sdr-trunk_test" target="11" />
     </bytecodeTargetLevel>
   </component>
   <component name="CopyrightManager" default="sdrtrunk">
@@ -36,6 +36,7 @@
         <option name="distributionType" value="WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleHome" value="$USER_HOME$/gradle/gradle-2.12" />
+        <option name="gradleJvm" value="11" />
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
@@ -206,12 +207,12 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/sdr-trunk.iml" filepath="$PROJECT_DIR$/sdr-trunk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/sdr-trunk.iml" filepath="$PROJECT_DIR$/sdr-trunk.iml" group="sdr-trunk" />
       <module fileurl="file://$PROJECT_DIR$/sdr-trunk_main.iml" filepath="$PROJECT_DIR$/sdr-trunk_main.iml" group="sdr-trunk" />
       <module fileurl="file://$PROJECT_DIR$/sdr-trunk_test.iml" filepath="$PROJECT_DIR$/sdr-trunk_test.iml" group="sdr-trunk" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" project-jdk-name="1.8" project-jdk-type="JavaSDK">
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_11" project-jdk-name="11" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
   <component name="SvnBranchConfigurationManager">
@@ -255,48 +256,48 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-annotations/2.9.0/a0ad4e203304ccab7e01266fa814115850edb8a9/jackson-annotations-2.9.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.fasterxml.jackson.core:jackson-core:2.9.3">
+    <library name="Gradle: com.fasterxml.jackson.core:jackson-core:2.9.8">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.3/ea9b6fc7bc3ccba9777b0827091f9aa1f8580371/jackson-core-2.9.3.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.8/f5a654e4675769c716e5b387830d19b501ca191/jackson-core-2.9.8.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.3/a1c84964d4a1ef15eeb91d0c2b62460e7d7c4829/jackson-core-2.9.3-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.8/acc65b3b6e07784dc1760fa4e460238eb2a9073a/jackson-core-2.9.8-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.3/99006a307afedb30000fc93b462e98f0d822fa11/jackson-core-2.9.3-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-core/2.9.8/ecaea301e166a0b48f11615864246de739b6619b/jackson-core-2.9.8-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.fasterxml.jackson.core:jackson-databind:2.9.3">
+    <library name="Gradle: com.fasterxml.jackson.core:jackson-databind:2.9.8">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.3/193b96ef555b2f2573b576887ba9a93e4bf48e8c/jackson-databind-2.9.3.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.8/11283f21cc480aa86c4df7a0a3243ec508372ed2/jackson-databind-2.9.8.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.3/486b5cb643a0c98342b6f533d9fc5aa75ab736df/jackson-databind-2.9.3-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.8/a1dea243882227fc27c350a5b25ca76ef4ecb7d7/jackson-databind-2.9.8-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.3/eab1ff15884e40c0adafe219a98c46513eb1d0e6/jackson-databind-2.9.3-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.core/jackson-databind/2.9.8/f66792d499a6fea6c7a743558f940e0ebf775ce3/jackson-databind-2.9.8-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3">
+    <library name="Gradle: com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.8">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.9.3/c7d7d9f5316e0098e4d652f2d013aa9f9d69e3b1/jackson-dataformat-xml-2.9.3.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.9.8/6a068ddeeafe736da35fba3a7f64462081b562c9/jackson-dataformat-xml-2.9.8.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.9.3/9f09f5e7b1ff00b02953b0dc64e6edcc03d8dbc2/jackson-dataformat-xml-2.9.3-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.9.8/ba3a439d041b333550de55e34c370d9221011911/jackson-dataformat-xml-2.9.8-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.9.3/585e357aeb2ce0428740e88efd1443889e5834f4/jackson-dataformat-xml-2.9.3-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.dataformat/jackson-dataformat-xml/2.9.8/2d48d64536472ff6138cab6ba731b29247fdb0fb/jackson-dataformat-xml-2.9.8-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.9.3">
+    <library name="Gradle: com.fasterxml.jackson.module:jackson-module-jaxb-annotations:2.9.8">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.9.3/ffe9afb0a9ee84fc79a9fd451b00643da1fa2466/jackson-module-jaxb-annotations-2.9.3.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.9.8/da08815ba1c7f7b435e7df02b7bf98327bad2fd4/jackson-module-jaxb-annotations-2.9.8.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.9.3/21ec5b47ad8833bbe1ce1f99192bcb6a4d0d3846/jackson-module-jaxb-annotations-2.9.3-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.9.8/575e1a2a77b830cd3c369931b71b653114314a43/jackson-module-jaxb-annotations-2.9.8-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.9.3/660f2e6f5bc3dcd507e21ec656218d92095e4e01/jackson-module-jaxb-annotations-2.9.3-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.jackson.module/jackson-module-jaxb-annotations/2.9.8/b68061d95e61cc7c4a574f449cd9db7bad66d75b/jackson-module-jaxb-annotations-2.9.8-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: com.fasterxml.woodstox:woodstox-core:5.0.3">
@@ -308,6 +309,61 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fasterxml.woodstox/woodstox-core/5.0.3/f38482e8b060d9e5354c10103f4c4db53c58db7d/woodstox-core-5.0.3-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: com.fazecast:jSerialComm:2.5.0">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fazecast/jSerialComm/2.5.0/df146deefea578aa38de43a0658f06ac297acb6f/jSerialComm-2.5.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fazecast/jSerialComm/2.5.0/1aa3e4d710396f7bc56661b23a6d125bf5d3749/jSerialComm-2.5.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fazecast/jSerialComm/2.5.0/b9e6222384a17cb10474b7f25768edf4b742ec16/jSerialComm-2.5.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: com.github.jiconfont:jiconfont-font_awesome:4.7.0.1">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-font_awesome/4.7.0.1/121d019023f631af04a1357e637dd05a2cc91f7b/jiconfont-font_awesome-4.7.0.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-font_awesome/4.7.0.1/278c25d163a2e2eec5b2e93669b73936365cea69/jiconfont-font_awesome-4.7.0.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-font_awesome/4.7.0.1/8c79f5ccd872310c6dfd4f89f7fe3f748fba94a4/jiconfont-font_awesome-4.7.0.1-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: com.github.jiconfont:jiconfont-javafx:1.0.0">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-javafx/1.0.0/233530f110ab0c3ff845aa52799c43645a11f1c8/jiconfont-javafx-1.0.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-javafx/1.0.0/8cf9282bff0c0cf56cab9ba18f74943019f9a979/jiconfont-javafx-1.0.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-javafx/1.0.0/687e090ac5e1b4d20a242995a80631043d4ee78d/jiconfont-javafx-1.0.0-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: com.github.jiconfont:jiconfont-swing:1.0.1">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-swing/1.0.1/14621054d72340b4a664cce4710ba974a3882a19/jiconfont-swing-1.0.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-swing/1.0.1/55df548424fa5159247b05f02eb712719ce75d5/jiconfont-swing-1.0.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-swing/1.0.1/cae76b75041118062159ffa0a7e2109cc7f88fad/jiconfont-swing-1.0.1-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: com.github.jiconfont:jiconfont:1.0.0">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont/1.0.0/e17d93321975b6735ebc283f6832fa0350614d3a/jiconfont-1.0.0.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont/1.0.0/8dc32616a97fe4b54380821a6aab9d8930262262/jiconfont-1.0.0-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont/1.0.0/e79316fba9458423ce944fba6da101262549464/jiconfont-1.0.0-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: com.github.wendykierp:JTransforms:3.1">
@@ -343,26 +399,26 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.errorprone/error_prone_annotations/2.2.0/a8cd7823aa1dcd2fd6677c0c5988fdde9d1fb0a3/error_prone_annotations-2.2.0-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.google.guava:failureaccess:1.0">
+    <library name="Gradle: com.google.guava:failureaccess:1.0.1">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0/50bacb0bdbbeeda25142aff57e2214c402e1193c/failureaccess-1.0.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.1/1dcf1de382a0bf95a3d8b0849546c88bac1292c9/failureaccess-1.0.1.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0/d4f5c095ed310f738d56b26bad666f342c1fd73d/failureaccess-1.0-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.1/a9aadb2d577ff54ba3115ee7357cbe65bd2a470f/failureaccess-1.0.1-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0/1e90402881010c96ea5e4b7e6f56acb283e78db3/failureaccess-1.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/failureaccess/1.0.1/1d064e61aad6c51cc77f9b59dc2cccc78e792f5a/failureaccess-1.0.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.google.guava:guava:27.0-jre">
+    <library name="Gradle: com.google.guava:guava:27.0.1-jre">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/27.0-jre/c6ad87d2575af8ac8ec38e28e75aefa882cc3a1f/guava-27.0-jre.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/27.0.1-jre/bd41a290787b5301e63929676d792c507bbc00ae/guava-27.0.1-jre.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/27.0-jre/607bfb3210bdc9c60315b033710e35428bc400bb/guava-27.0-jre-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/27.0.1-jre/7515204e130bb73fea9f6df11e58559e6be2dcf0/guava-27.0.1-jre-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/27.0-jre/d6484e2ee11ad928ccf61cf3e4ce9cedc2eead7e/guava-27.0-jre-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/27.0.1-jre/cb5c1119df8d41a428013289b193eba3ccaf5f60/guava-27.0.1-jre-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava">
@@ -394,26 +450,26 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.jidesoft/jide-oss/3.6.18/b9cadcf869c0bdd032756228315252516856ad56/jide-oss-3.6.18-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.miglayout:miglayout-core:5.0">
+    <library name="Gradle: com.miglayout:miglayout-core:5.2">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-core/5.0/956daa1576bccb24e727ab75540b078171c7c432/miglayout-core-5.0.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-core/5.2/c1234205bde8fa72a420ecc5f63b9f269edccbfb/miglayout-core-5.2.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-core/5.0/c346dd69f6de7ae6ab2e93d42fa5def41c99aa1c/miglayout-core-5.0-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-core/5.2/43595a2a4d2da858dfe1163f0d0ce769b7fbb11/miglayout-core-5.2-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-core/5.0/c457b92ed51255fdb5dfab4e89c7aec06674cd7c/miglayout-core-5.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-core/5.2/4b3f0bfa2312173be31f87caa3cc58b617eea1df/miglayout-core-5.2-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: com.miglayout:miglayout-swing:5.0">
+    <library name="Gradle: com.miglayout:miglayout-swing:5.2">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-swing/5.0/7b4c4d92002459e68e8f115b9ae8a774b2660490/miglayout-swing-5.0.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-swing/5.2/53e2fc5586a120797e3af0ff4cf9adb3b403ab14/miglayout-swing-5.2.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-swing/5.0/7f87b7818189138a1e9691b861d06f20f121820d/miglayout-swing-5.0-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-swing/5.2/9ca06755a629747815fa91b3cd480bfb40fbb0e1/miglayout-swing-5.2-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-swing/5.0/d3e06bcc8aabd8cdd1f40989e12ced6413fae68c/miglayout-swing-5.0-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.miglayout/miglayout-swing/5.2/df798d1660b3106a0304efa9e04dfd1a1a2e6025/miglayout-swing-5.2-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: commons-io:commons-io:1.3.2">
@@ -425,6 +481,28 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/commons-io/commons-io/1.3.2/b41a5f39fa90007a6c247175933555ba5f166d70/commons-io-1.3.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: eu.hansolo:charts:1.0.5">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/eu.hansolo/charts/1.0.5/2bb9d233ac3e5f678920ff04effd57c0ba21d860/charts-1.0.5.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/eu.hansolo/charts/1.0.5/d65ed2f94c0d5579cf87eea01c5d14fa8196d235/charts-1.0.5-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/eu.hansolo/charts/1.0.5/aa26011a2c525ddf86cb92ed23558b18c0174fa4/charts-1.0.5-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: io.github.dsheirer:radio-reference-api:15.0.1">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.0.1/8af16506c26025517f0bc971ba35485e96130c9a/radio-reference-api-15.0.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.0.1/219528429b3ed73f285a8c2c4ded40d8eae61fc0/radio-reference-api-15.0.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.0.1/b699a9821030b54fbb7f472f97fcc634afb114fb/radio-reference-api-15.0.1-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: javax.usb:usb-api:1.0.2">
@@ -449,31 +527,15 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/junit/junit/4.12/a6c32b40bf3d76eca54e3c601e5d1470c86fcdfa/junit-4.12-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: net.coderazzi:tablefilter-swing:5.3.1">
+    <library name="Gradle: net.coderazzi:tablefilter-swing:5.4.0">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.coderazzi/tablefilter-swing/5.3.1/998bed231fba3ca6ab2f182aa576e5cb1df3339c/tablefilter-swing-5.3.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.coderazzi/tablefilter-swing/5.4.0/ba7415b409712bf1988b2f03eda7730deba26c10/tablefilter-swing-5.4.0.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.coderazzi/tablefilter-swing/5.3.1/90c361ce16cd898f1629906fa1df6d74a678704c/tablefilter-swing-5.3.1-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.coderazzi/tablefilter-swing/5.4.0/3bc5c263fc43180f4137a41bd0848851830761ff/tablefilter-swing-5.4.0-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.coderazzi/tablefilter-swing/5.3.1/9e46adc554cfdf19029afa46ee81044ea5602b44/tablefilter-swing-5.3.1-sources.jar!/" />
-      </SOURCES>
-    </library>
-    <library name="Gradle: org.apache.axis:axis-jaxrpc:1.4">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.axis/axis-jaxrpc/1.4/b393f1f0c0d95b68c86d0b1ab2e687bb71f3c075/axis-jaxrpc-1.4.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="Gradle: org.apache.axis:axis:1.4">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.axis/axis/1.4/94a9ce681a42d0352b3ad22659f67835e560d107/axis-1.4.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.axis/axis/1.4/442ab1fe3e66b6d5c916ae3f203fbfa618515f1c/axis-1.4-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/net.coderazzi/tablefilter-swing/5.4.0/298121afccdf36281e234aaf478f97ddbe8aecf3/tablefilter-swing-5.4.0-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.apache.commons:commons-lang3:3.8.1">
@@ -498,26 +560,26 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.5/1d3f412d28c8bff0e8f048240b08bcd21cfa432e/commons-math3-3.5-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.apache.mina:mina-core:2.0.16">
+    <library name="Gradle: org.apache.mina:mina-core:2.0.19">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-core/2.0.16/f720f17643eaa7b0fec07c1d7f6272972c02bba4/mina-core-2.0.16.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-core/2.0.19/b6ba5d8c6d1dd38a1151c590018e4e5edd6c4cfa/mina-core-2.0.19.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-core/2.0.16/9b8b385cba38847719659ce6fde466828c4ab623/mina-core-2.0.16-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-core/2.0.19/b50fe4a0802588c70fa9f23ae6dcefe54a688bca/mina-core-2.0.19-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-core/2.0.16/660fb813ca1c8d8a936f894324091400a5ac128a/mina-core-2.0.16-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-core/2.0.19/a070a03134f7c4f5c9ad79b094423d48f3e9551b/mina-core-2.0.19-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.apache.mina:mina-http:2.0.16">
+    <library name="Gradle: org.apache.mina:mina-http:2.0.19">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-http/2.0.16/b2081b5255a3998a044c34b12797b915e1640122/mina-http-2.0.16.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-http/2.0.19/b42328dbaeed685376821fe704f70ad36f4de24/mina-http-2.0.19.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-http/2.0.16/38119b808477795cc161a2aaf3e5bb16920a9aae/mina-http-2.0.16-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-http/2.0.19/3d6ce6d25fc14d858486f50a96213872ca7ae467/mina-http-2.0.19-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-http/2.0.16/fadd15439d830c99ccd6e020a2e125f0a4224059/mina-http-2.0.16-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.mina/mina-http/2.0.19/ce16dff76ec41be9f9c21df8bb8c271a3bb709cb/mina-http-2.0.19-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.assertj:assertj-core:3.8.0">
@@ -575,37 +637,158 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/1dc37250fbc78e23a65a67fbbaf71d2e9cbc3c0b/hamcrest-core-1.3-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.kordamp.ikonli:ikonli-core:2.1.1">
+    <library name="Gradle: org.openjfx:javafx-base:11.0.2">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-core/2.1.1/99b0142ea24785d14d51e329dd8050a9a55b8904/ikonli-core-2.1.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/7fb2e4a8528ec9e434a9ac9ee98b39af79e6dcb8/javafx-base-11.0.2.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-core/2.1.1/2931b2864da41ce42f1a5973b4239d25e02d0f37/ikonli-core-2.1.1-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/f0dfede8adbd1b28d1b5084bd2812ace69ebe673/javafx-base-11.0.2-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-core/2.1.1/ce342290407ae3c6ce7b1249978c9ddf45b92974/ikonli-core-2.1.1-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/c082cdf645f9833408dcd960bf68344c9384f569/javafx-base-11.0.2-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.kordamp.ikonli:ikonli-fontawesome-pack:2.1.1">
+    <library name="Gradle: org.openjfx:javafx-base:linux:11.0.2">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-fontawesome-pack/2.1.1/5c48f3fbb11a21b6fe460650569085aa0b7e4ae1/ikonli-fontawesome-pack-2.1.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/8db178adb1085d455e5ef643a48c34959c8771c1/javafx-base-11.0.2-linux.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-fontawesome-pack/2.1.1/e8c0c8694953bdbcca312b8cc0e6dbc5c2e7ec8b/ikonli-fontawesome-pack-2.1.1-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/f0dfede8adbd1b28d1b5084bd2812ace69ebe673/javafx-base-11.0.2-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-fontawesome-pack/2.1.1/19de8abf192dcc83c0d0b7b507fa1fc72ce6bbb2/ikonli-fontawesome-pack-2.1.1-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/c082cdf645f9833408dcd960bf68344c9384f569/javafx-base-11.0.2-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.kordamp.ikonli:ikonli-javafx:2.1.1">
+    <library name="Gradle: org.openjfx:javafx-base:mac:11.0.2">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-javafx/2.1.1/bf3e8f21146016f3fcee9ab48ab2228b7db4bc49/ikonli-javafx-2.1.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/b774922e5da6a56afee221d1a288d179a1342aa9/javafx-base-11.0.2-mac.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-javafx/2.1.1/7c45822547d7a8a53d80ebb8e4a5602db10f9e45/ikonli-javafx-2.1.1-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/f0dfede8adbd1b28d1b5084bd2812ace69ebe673/javafx-base-11.0.2-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.kordamp.ikonli/ikonli-javafx/2.1.1/a9c7c4aaad34e274df03701b84e064d9169ddd1d/ikonli-javafx-2.1.1-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/c082cdf645f9833408dcd960bf68344c9384f569/javafx-base-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-base:win:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/1852e57b8cf9a9b6488c33605bccd5d06ff210e1/javafx-base-11.0.2-win.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/f0dfede8adbd1b28d1b5084bd2812ace69ebe673/javafx-base-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/c082cdf645f9833408dcd960bf68344c9384f569/javafx-base-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-controls:linux:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/5f6929050a744aab39ebfc1e8e5dd03bcd2ad47b/javafx-controls-11.0.2-linux.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/baa088249ee757119688e78d9c3a256928189902/javafx-controls-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/1535a8b57f01a712405a739a0d69e09ab99dbb6b/javafx-controls-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-controls:mac:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/996371d2868035845572cdb19179dca2bfd1139f/javafx-controls-11.0.2-mac.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/baa088249ee757119688e78d9c3a256928189902/javafx-controls-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/1535a8b57f01a712405a739a0d69e09ab99dbb6b/javafx-controls-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-controls:win:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/6c763707769c18adce406904c771c2ad1fcc370b/javafx-controls-11.0.2-win.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/baa088249ee757119688e78d9c3a256928189902/javafx-controls-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/1535a8b57f01a712405a739a0d69e09ab99dbb6b/javafx-controls-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-graphics:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/e522eb4ea422eceeee207b1c266ba3db19b2343a/javafx-graphics-11.0.2.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/b7ae1857e54ed7d8ca0e30e01d12fae2b75ba400/javafx-graphics-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/15eadef01f327a851a6d3af0ac89d56292076b13/javafx-graphics-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-graphics:linux:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/ef4c34f0ca77cd99100b76c2ccf1dce383572bb1/javafx-graphics-11.0.2-linux.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/b7ae1857e54ed7d8ca0e30e01d12fae2b75ba400/javafx-graphics-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/15eadef01f327a851a6d3af0ac89d56292076b13/javafx-graphics-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-graphics:mac:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/c1d99ae5bc48e7173f4514a941d27d8f8c972c71/javafx-graphics-11.0.2-mac.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/b7ae1857e54ed7d8ca0e30e01d12fae2b75ba400/javafx-graphics-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/15eadef01f327a851a6d3af0ac89d56292076b13/javafx-graphics-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-graphics:win:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/20459ea2cf714942bcbeb78a7f70ba3531dc1a44/javafx-graphics-11.0.2-win.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/b7ae1857e54ed7d8ca0e30e01d12fae2b75ba400/javafx-graphics-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/15eadef01f327a851a6d3af0ac89d56292076b13/javafx-graphics-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-swing:linux:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/cb57db3e5bd1e2b62b17c8a504858bfc26fa54b1/javafx-swing-11.0.2-linux.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/336999871b9a7e88179a76e2251c73f47e3d5cb6/javafx-swing-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/bcc8c0a402ff01a89a50888c9dc26824a9f3f2cc/javafx-swing-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-swing:mac:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/47efd914c1ebdeda8789a779c8341266340c743/javafx-swing-11.0.2-mac.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/336999871b9a7e88179a76e2251c73f47e3d5cb6/javafx-swing-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/bcc8c0a402ff01a89a50888c9dc26824a9f3f2cc/javafx-swing-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-swing:win:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/9b5728e61148142fae8c47f6295c84d7a8d6c89/javafx-swing-11.0.2-win.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/336999871b9a7e88179a76e2251c73f47e3d5cb6/javafx-swing-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/bcc8c0a402ff01a89a50888c9dc26824a9f3f2cc/javafx-swing-11.0.2-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.slf4j:slf4j-api:1.7.25">

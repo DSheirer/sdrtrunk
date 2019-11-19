@@ -63,6 +63,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     public static final String PROPERTY_COLOR_LABEL = PROPERTY_PREFIX + "label";
     public static final String PROPERTY_COLOR_MUTED = PROPERTY_PREFIX + "muted";
     public static final String PROPERTY_COLOR_VALUE = PROPERTY_PREFIX + "value";
+    public static final String PROPERTY_MUTED = "audio.manager.muted";
 
     private Font mFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
 
@@ -70,6 +71,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private Color mLabelColor;
     private Color mMutedColor;
     private Color mValueColor;
+    private boolean mMuted = false;
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
@@ -106,6 +108,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
         mLabelColor = SystemProperties.getInstance().get(PROPERTY_COLOR_LABEL, Color.LIGHT_GRAY);
         mMutedColor = SystemProperties.getInstance().get(PROPERTY_COLOR_MUTED, Color.RED);
         mValueColor = SystemProperties.getInstance().get(PROPERTY_COLOR_VALUE, Color.GREEN);
+        mMuted = SystemProperties.getInstance().get(PROPERTY_MUTED,false);
 
         init();
     }
@@ -140,7 +143,10 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
 
         mMutedLabel.setFont(mFont);
         mMutedLabel.setForeground(mMutedColor);
-        mMutedLabel.setVisible(false);
+        mMutedLabel.setVisible(mMuted);
+        if(mAudioOutput != null) {
+            mAudioOutput.setMuted(mMuted);
+        }
         add(mMutedLabel);
 
         mChannelName = new JLabel(mAudioOutput != null ? mAudioOutput.getChannelName() : " ");

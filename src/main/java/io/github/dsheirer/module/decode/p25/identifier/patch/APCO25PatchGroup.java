@@ -28,9 +28,11 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public class APCO25PatchGroup extends PatchGroupIdentifier
 {
+    private PatchGroup mPatchGroup;
     public APCO25PatchGroup(PatchGroup value)
     {
         super(value);
+        mPatchGroup = value;
     }
 
     @Override

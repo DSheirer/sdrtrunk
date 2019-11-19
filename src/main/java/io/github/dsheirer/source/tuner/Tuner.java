@@ -44,41 +44,54 @@ public abstract class Tuner implements ISourceEventProcessor
     private ChannelSourceManager mChannelSourceManager;
     private TunerController mTunerController;
     private TunerFrequencyErrorMonitor mTunerFrequencyErrorMonitor;
-    private String mName;
+    protected String mName;
 
-    /**
-     * Abstract tuner class.
-     * @param name of the tuner
-     * @param tunerController for the tuner
-     */
-    public Tuner(String name, TunerController tunerController, UserPreferences userPreferences)
+    public Tuner(String name, TunerController tunerController)
     {
         mName = name;
         mTunerController = tunerController;
         //Register to receive frequency and sample rate change notifications
         mTunerController.addListener(this::process);
 
-        ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
+        mTunerFrequencyErrorMonitor = new TunerFrequencyErrorMonitor(this);
+        mTunerFrequencyErrorMonitor.start();
+    }
 
+    /**
+     * Abstract tuner class.
+     * @param name of the tuner
+     * @param tunerController for the tuner
+     * @param userPreferences to discover preferred channelizer type
+     */
+    public Tuner(String name, TunerController tunerController, UserPreferences userPreferences)
+    {
+        this(name, tunerController);
+
+        ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
         if(channelizerType == ChannelizerType.POLYPHASE)
         {
-            mChannelSourceManager = new PolyphaseChannelSourceManager(mTunerController);
+            setChannelSourceManager(new PolyphaseChannelSourceManager(mTunerController, name));
         }
         else if(channelizerType == ChannelizerType.HETERODYNE)
         {
-            mChannelSourceManager = new HeterodyneChannelSourceManager(mTunerController);
+            setChannelSourceManager(new HeterodyneChannelSourceManager(mTunerController, name));
         }
         else
         {
             throw new IllegalArgumentException("Unrecognized channelizer type: " + channelizerType);
         }
+    }
 
+    /**
+     * Sets the channel source manager
+     * @param manager to use
+     */
+    protected void setChannelSourceManager(ChannelSourceManager manager)
+    {
+        mChannelSourceManager = manager;
 
         //Register to receive channel count change notifications
         mChannelSourceManager.addSourceEventListener(this::process);
-
-        mTunerFrequencyErrorMonitor = new TunerFrequencyErrorMonitor(this);
-        mTunerFrequencyErrorMonitor.start();
     }
 
     @Override
@@ -104,6 +117,9 @@ public abstract class Tuner implements ISourceEventProcessor
                 break;
             case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
                 mTunerFrequencyErrorMonitor.receive(event);
+                break;
+            case NOTIFICATION_RECORDING_FILE_LOADED:
+                //ignore
                 break;
             default:
                 mLog.debug("Unrecognized Source Event: " + event.toString());

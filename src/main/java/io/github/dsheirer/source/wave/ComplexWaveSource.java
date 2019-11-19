@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.source.wave;
 
 import io.github.dsheirer.sample.ConversionUtils;
@@ -23,6 +29,7 @@ import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +40,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 public class ComplexWaveSource extends ComplexSource implements IControllableFileSource, AutoCloseable
 {
@@ -46,10 +55,28 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     private AudioInputStream mInputStream;
     private File mFile;
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexWaveSource");
+    private boolean mAutoReplay;
+    private ScheduledFuture<?> mReplayController;
+
+    /**
+     * Constructs an instance with optional auto-replay at near real time.
+     * @param file containing complex I/Q sample data
+     * @param autoReplay to enable continuous looping, real-time playback of sample data
+     */
+    public ComplexWaveSource(File file, boolean autoReplay) throws IOException
+    {
+        if(file == null || !file.exists() || !supports(file))
+        {
+            throw new IOException("Empty or Unsupported file format");
+        }
+
+        mFile = file;
+        mAutoReplay = autoReplay;
+    }
 
     public ComplexWaveSource(File file) throws IOException
     {
-        mFile = file;
+        this(file, false);
     }
 
     @Override
@@ -75,19 +102,41 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     public void reset()
     {
         stop();
+        mFrameCounter = 0;
         start();
+    }
+
+    /**
+     * Number of samples per buffer
+     */
+    public int getBufferSampleCount()
+    {
+        return (int)(getSampleRate() / 20.0d);
     }
 
     @Override
     public void start()
     {
-        try
+        if(mInputStream == null)
         {
-            open();
+            try
+            {
+                open();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error", e);
+            }
         }
-        catch(IOException | UnsupportedAudioFileException e)
+
+        if(mAutoReplay)
         {
-            mLog.error("Error starting complex wave source");
+            long intervalMilliseconds = 50; //20 intervals per second
+            double framesPerInterval = getSampleRate() / 20.0d;
+            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(framesPerInterval),
+                    0, intervalMilliseconds, TimeUnit.MILLISECONDS);
+
+
         }
     }
 
@@ -96,6 +145,11 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     {
         try
         {
+            if(mReplayController != null)
+            {
+                mReplayController.cancel(true);
+            }
+
             close();
         }
         catch(IOException e)
@@ -159,27 +213,22 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         if(mInputStream == null)
         {
             mInputStream = AudioSystem.getAudioInputStream(mFile);
+
+            AudioFormat format = mInputStream.getFormat();
+
+            mBytesPerFrame = format.getFrameSize();
+
+            if(format.getChannels() != 2 || format.getSampleSizeInBits() != 16)
+            {
+                throw new IOException("Unsupported Wave Format - EXPECTED: 2 " +
+                        "channels 16-bit samples FOUND: " +
+                        mInputStream.getFormat().getChannels() + " channels " +
+                        mInputStream.getFormat().getSampleSizeInBits() + "-bit samples");
+            }
+
+            /* Broadcast that we're at frame location 0 */
+            broadcast(0);
         }
-        else
-        {
-            throw new IOException("Can't open wave source - is already opened");
-        }
-
-
-        AudioFormat format = mInputStream.getFormat();
-
-        mBytesPerFrame = format.getFrameSize();
-
-        if(format.getChannels() != 2 || format.getSampleSizeInBits() != 16)
-        {
-            throw new IOException("Unsupported Wave Format - EXPECTED: 2 " +
-                "channels 16-bit samples FOUND: " +
-                mInputStream.getFormat().getChannels() + " channels " +
-                mInputStream.getFormat().getSampleSizeInBits() + "-bit samples");
-        }
-
-        /* Broadcast that we're at frame location 0 */
-        broadcast(0);
     }
 
     /**
@@ -192,7 +241,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     /**
-     * Reads the number of frames and optionally sends the buffer to the listener
+     * Reads the number of frames and optionally sends the buffer(s) to the listener
      */
     public void next(int frames, boolean broadcast) throws IOException
     {
@@ -301,5 +350,35 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         }
 
         return false;
+    }
+
+    public class ReplayController implements Runnable
+    {
+        private double mFramesPerInterval;
+        private int mFramesRead;
+        private int mIntervals;
+
+        public ReplayController(double framesPerInterval)
+        {
+            mFramesPerInterval = framesPerInterval;
+        }
+
+        @Override
+        public void run()
+        {
+            mIntervals++;
+            int framesToRead = (int)Math.floor((mIntervals * mFramesPerInterval) - mFramesRead);
+
+            try
+            {
+                next(framesToRead, true);
+                mFramesRead += framesToRead;
+            }
+            catch(IOException ioe)
+            {
+                mLog.debug("End of Recording - looping [" + ioe.getLocalizedMessage() + "]");
+                reset();
+            }
+        }
     }
 }

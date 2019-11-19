@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.source.tuner.channel;
 
@@ -42,6 +44,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
     private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
+    private String mTunerID;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -62,6 +65,14 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         return mTunerChannel.getFrequency();
     }
+
+    public void setTunerId(String tunerID) {
+        mTunerID = tunerID;
+    }
+    public String getTunerId() {
+        return mTunerID;
+    }
+
 
     /**
      * Sets the center frequency for the sample streaming being sent from the producer.
@@ -120,6 +131,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(this, getFrequency(), "Startup"));
         broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
+        broadcastConsumerSourceEvent(SourceEvent.createTunerId(this, mTunerID));
         mScheduledIntervalProcessor.start();
     }
 
@@ -289,49 +301,56 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         @Override
         public void run()
         {
-            if(!mStopped)
+            try
             {
-                try
+                if(!mStopped)
                 {
-                    getHeartbeatManager().broadcast();
+                    try
+                    {
+                        getHeartbeatManager().broadcast();
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error while sending heartbeat", t);
+                    }
                 }
-                catch(Throwable t)
+
+                if(!mStopped)
                 {
-                    mLog.error("Error while sending heartbeat", t);
+                    try
+                    {
+                        processSamples();
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error while processing samples", t);
+                    }
+                }
+
+                if(mStopped)
+                {
+                    if(mScheduledFuture != null)
+                    {
+                        //Set may-interrupt to false so that we can complete this iteration
+                        mScheduledFuture.cancel(false);
+                    }
+
+                    mScheduledFuture = null;
+
+                    try
+                    {
+                        getHeartbeatManager().broadcast();
+                        performDisposal();
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error during final shutdown processing of samples", t);
+                    }
                 }
             }
-
-            if(!mStopped)
+            catch(Throwable t)
             {
-                try
-                {
-                    processSamples();
-                }
-                catch(Throwable t)
-                {
-                    mLog.error("Error while processing samples", t);
-                }
-            }
-
-            if(mStopped)
-            {
-                if(mScheduledFuture != null)
-                {
-                    //Set may-interrupt to false so that we can complete this iteration
-                    mScheduledFuture.cancel(false);
-                }
-
-                mScheduledFuture = null;
-
-                try
-                {
-                    getHeartbeatManager().broadcast();
-                    performDisposal();
-                }
-                catch(Throwable t)
-                {
-                    mLog.error("Error during final shutdown processing of samples", t);
-                }
+                mLog.error("Error during heartbeat processing", t);
             }
         }
     }

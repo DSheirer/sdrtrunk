@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.gui.instrument.decoder;
 
 import io.github.dsheirer.gui.instrument.chart.ComplexSampleLineChart;
@@ -23,7 +29,7 @@ import io.github.dsheirer.gui.instrument.chart.SamplesPerSymbolChart;
 import io.github.dsheirer.gui.instrument.chart.SymbolChart;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.P25DecoderLSMInstrumented;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSMInstrumented;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import javafx.scene.layout.HBox;
@@ -44,7 +50,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     private DoubleLineChart mPLLFrequencyLineChart;
     private SamplesPerSymbolChart mSamplesPerSymbolLineChart;
     private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
-    private P25DecoderLSMInstrumented mDecoder = new P25DecoderLSMInstrumented();
+    private P25P1DecoderLSMInstrumented mDecoder = new P25P1DecoderLSMInstrumented();
 
     public P25Phase1LSMPane()
     {
@@ -91,7 +97,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
         getSamplesPerSymbolLineChart().setSamplesPerSymbol(samplesPerSymbol);
     }
 
-    private P25DecoderLSMInstrumented getDecoder()
+    private P25P1DecoderLSMInstrumented getDecoder()
     {
         return mDecoder;
     }
@@ -148,7 +154,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     {
         if(mDifferentialDemodulatedSamplesChartBox == null)
         {
-            mDifferentialDemodulatedSamplesChartBox = new ComplexSampleLineChart(100, 10);
+            mDifferentialDemodulatedSamplesChartBox = new ComplexSampleLineChart("Raw Samples", 100, 10);
         }
 
         return mDifferentialDemodulatedSamplesChartBox;

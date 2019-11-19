@@ -82,6 +82,9 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
             sb.append("[");
 
             int counter = 0;
+            if (patchGroup.getPatchedGroupIdentifiers().size() > 1) {
+                String hello = "found more than one talkgroup in this patch group, try and decipher which one to send";
+            }
             for(TalkgroupIdentifier patchedGroup: patchGroup.getPatchedGroupIdentifiers())
             {
                 sb.append(format(patchedGroup, format, fixedWidth));

@@ -1,20 +1,24 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+/*
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.bits;
 
 import io.github.dsheirer.edac.CRC;
@@ -285,17 +289,26 @@ public class BinaryMessage extends BitSet
 
     public String toHexString()
     {
-        int pointer = 0;
-
         StringBuilder sb = new StringBuilder();
 
-        while(pointer < size())
+        for(int x = 0; x < size(); x += 4)
         {
-            sb.append(getHex(pointer, pointer + 3, 1));
-            pointer += 4;
+            sb.append(getNibbleAsHex(x));
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Overrides the parent method which returns a BitSet so that we can return a BinaryMessage
+     * @param from
+     * @param to
+     * @return
+     */
+    @Override
+    public BinaryMessage get(int from, int to)
+    {
+        return new BinaryMessage(super.get(from, to), (to - from));
     }
 
     /**
@@ -545,28 +558,73 @@ public class BinaryMessage extends BitSet
     }
 
     /**
-     * Returns the byte value contained between index and index + 7 bit positions
+     * Returns the byte value contained between index and index + 7 bit positions.  If the length of this message is
+     * shorter than index + 7, then the least significant bits are set to zero in the returned value.
      *
-     * @param index specifying the start of the byte value
+     * @param startIndex specifying the start of the byte value
      * @return byte value contained at index <> index + 7 bit positions
      */
-    public byte getByte(int index)
+    public byte getByte(int startIndex)
     {
-        Validate.isTrue((index + 7) <= size());
-
         int value = 0;
 
         for(int x = 0; x < 8; x++)
         {
-            value = value << 1;
+            value <<= 1;
 
-            if(get(index + x))
+            int index = startIndex + x;
+
+            if(index <= size() && get(index))
             {
                 value++;
             }
         }
 
         return (byte)value;
+    }
+
+    /**
+     * Converts the message to a byte array.
+     *
+     * Note: BitSet.toByteArray() outputs the bytes in big-endian (inverted) order.  This method retains the correct
+     * endianness where bit 0 is the most significant bit of the first byte.
+     */
+    public byte[] getBytes()
+    {
+        byte[] bytes = new byte[(int)Math.ceil((double)size() / 8.0)];
+
+        for(int x = 0; x < bytes.length; x++)
+        {
+            bytes[x] = getByte(x * 8);
+        }
+
+        return bytes;
+    }
+
+    /**
+     * Returns the 4-bit nibble value contained between index and index + 3 bit positions.  If the length of this
+     * message is shorter than index + 3, then the least significant bits are set to zero in the returned value.
+     *
+     * @param startIndex specifying the start of the byte value
+     * @return nibble value contained at index <> index + 3 bit positions
+     */
+    public int getNibble(int startIndex)
+    {
+        int value = 0;
+
+        for(int x = 0; x < 4; x++)
+        {
+            value <<= 1;
+
+            int index = startIndex + x;
+
+            if(index <= size() && get(index))
+            {
+                value++;
+            }
+        }
+
+        return value;
     }
 
     /**
@@ -627,6 +685,69 @@ public class BinaryMessage extends BitSet
         return value;
     }
 
+    /**
+     * Returns the long value represented by the bit array
+     *
+     * @param bits - an array of bit positions that will be treated as if they
+     * were contiguous bits, with index 0 being the MSB and index
+     * length - 1 being the LSB
+     * @param offset to apply to each of the bits indices
+     * @return - integer value of the bit array
+     */
+    public long getLong(int[] bits, int offset)
+    {
+        if(bits.length > 64)
+        {
+            throw new IllegalArgumentException("Overflow - must be 64 bits "
+                + "or less to fit into a primitive long value");
+        }
+
+        long value = 0;
+
+        for(int index : bits)
+        {
+            value = Long.rotateLeft(value, 1);
+
+            if(get(index + offset))
+            {
+                value++;
+            }
+        }
+
+        return value;
+    }
+
+    /**
+     * Returns the bit values between start and end (inclusive) bit indices.  If the overall length of the bit sequence
+     * is not a multiple of 8 bits, the value is zero padded with least significant bits to make it a multiple of 8.
+     * @param start index
+     * @param end index
+     * @return hexadecimal representation of the bit sequence
+     */
+    public String getHex(int start, int end)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        for(int x = start; x <= end; x += 4)
+        {
+            sb.append(getNibbleAsHex(x));
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * Format the byte value that starts at the specified index as hexadecimal.  If the length of the message is less
+     * than the start index plus 7 bits, then the value represents those bits as high-order bits with zero padding in
+     * the least significant bits to make up the 8 bit value.
+     * @param startIndex of the byte.
+     * @return hexadecimal representation of the byte value
+     */
+    public String getNibbleAsHex(int startIndex)
+    {
+        int value = getNibble(startIndex);
+        return Integer.toHexString(value).toUpperCase();
+    }
 
     /**
      * Converts up to 63 bits from the bit array into an integer and then
@@ -655,29 +776,6 @@ public class BinaryMessage extends BitSet
         {
             throw new IllegalArgumentException("BitSetBuffer.getHex() "
                 + "maximum array length is 63 bits");
-        }
-    }
-
-    public String getHex(int msb, int lsb, int digitDisplayCount)
-    {
-        int length = lsb - msb;
-
-        if(length <= 32)
-        {
-            int value = getInt(msb, lsb);
-
-            return String.format("%0" + digitDisplayCount + "X", value);
-        }
-        else if(length <= 64)
-        {
-            long value = getLong(msb, lsb);
-
-            return String.format("%0" + digitDisplayCount + "X", value);
-        }
-        else
-        {
-            throw new IllegalArgumentException("BitSetBuffer.getHex() "
-                + "maximum array length is 64 bits");
         }
     }
 
@@ -878,6 +976,23 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Creates a binary message loaded with the byte array
+     * @param bytes to load
+     * @return loaded binary message
+     */
+    public static BinaryMessage from(byte[] bytes)
+    {
+        BinaryMessage message = new BinaryMessage(bytes.length * 8);
+
+        for(int x = 0; x < bytes.length; x++)
+        {
+            message.setByte(x * 8, bytes[x]);
+        }
+
+        return message;
+    }
+
+    /**
      * Creates a bitsetbuffer loaded from a string of zeros and ones
      *
      * @param message - string containing only zeros and ones
@@ -997,5 +1112,21 @@ public class BinaryMessage extends BitSet
         mask.load(offset, width, value);
 
         this.xor(mask);
+    }
+
+    public static void main(String[] args)
+    {
+        BinaryMessage message = new BinaryMessage(10);
+        message.set(1);
+        message.set(4);
+        message.set(5);
+        message.set(8);
+        message.set(9);
+
+        System.out.println("Hex: " + message.toHexString() + " Size:" + message.size());
+        for(int x = 0; x < 10; x++)
+        {
+            System.out.println(x + ": " + message.getHex(x, x + 10));
+        }
     }
 }

@@ -1,20 +1,24 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+/*
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.module.decode.mpt1327;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,7 +32,7 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration
     private String mChannelMapName;
     private Sync mSync = Sync.NORMAL;
 
-    private int mCallTimeout = DEFAULT_CALL_TIMEOUT_SECONDS;
+    private int mCallTimeout = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
 
     public DecodeConfigMPT1327()
@@ -82,7 +86,7 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration
         }
         else
         {
-            mCallTimeout = DEFAULT_CALL_TIMEOUT_SECONDS;
+            mCallTimeout = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
         }
     }
 
