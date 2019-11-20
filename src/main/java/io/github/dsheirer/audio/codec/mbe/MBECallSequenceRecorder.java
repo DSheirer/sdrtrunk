@@ -83,12 +83,11 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
         mCallNumber = 1;
     }
 
+
     @Override
     public void dispose()
     {
-        mLog.debug("I'm getting disposed");
     }
-
 
     /**
      * Writes an MBE call sequence recording to the recording directory

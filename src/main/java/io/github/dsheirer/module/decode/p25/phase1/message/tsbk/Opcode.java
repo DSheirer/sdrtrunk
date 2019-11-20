@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
@@ -197,6 +199,8 @@ public enum Opcode
         OSP_PROTECTION_PARAMETER_UPDATE);
     public static final EnumSet<Opcode> STANDARD_INBOUND_OPCODES = EnumSet.range(ISP_GROUP_VOICE_SERVICE_REQUEST,
         ISP_RESERVED_3F);
+    public static final EnumSet<Opcode> DATA_CHANNEL_GRANT_OPCODES = EnumSet.of(OSP_SNDCP_DATA_CHANNEL_GRANT,
+        OSP_INDIVIDUAL_DATA_CHANNEL_GRANT, OSP_GROUP_DATA_CHANNEL_GRANT);
 
     Opcode(int code, String label, String description)
     {
@@ -227,6 +231,14 @@ public enum Opcode
     public int getCode()
     {
         return mCode;
+    }
+
+    /**
+     * Indicates if this opcode is an SNDCP data channel grant opcode
+     */
+    public boolean isDataChannelGrant()
+    {
+        return DATA_CHANNEL_GRANT_OPCODES.contains(this);
     }
 
     @Override

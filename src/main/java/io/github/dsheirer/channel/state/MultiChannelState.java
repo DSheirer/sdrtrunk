@@ -161,7 +161,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         {
             case IDLE:
                 broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
-
                 break;
             case RESET:
                 reset(timeslot);

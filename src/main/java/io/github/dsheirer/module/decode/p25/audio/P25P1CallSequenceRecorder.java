@@ -54,7 +54,6 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,7 +68,6 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implement
     private static final String PROTOCOL = "APCO25-PHASE1";
 
     private MBECallSequence mCallSequence;
-
 
     /**
      * Constructs a P25-Phase2 MBE call sequence recorder.
@@ -106,11 +104,8 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implement
             if(p25.isValid())
             {
                 process(p25);
-            } else {
-                mLog.debug("p25 message is not valid");
             }
         }
-
     }
 
 
@@ -132,20 +127,20 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implement
     /**
      * Processes any P25 Phase 1 message
      */
-    public void process(P25Message message) {
-        if (message instanceof LDUMessage) {
-            process((LDUMessage) message);
-        } else if (message instanceof TDULinkControlMessage) {
-            process((TDULinkControlMessage) message);
-        } else if (message instanceof TDUMessage) {
-            mLog.debug("Process TDUMessage");
-            process((TDUMessage) message);
+    public void process(P25Message message)
+    {
+        if(message instanceof LDUMessage)
+        {
+            process((LDUMessage)message);
         }
-    }
-
-    private void process(TDUMessage message) {
-        writeCallSequence(mCallSequence);
-        mCallSequence = null;
+        else if(message instanceof TDULinkControlMessage)
+        {
+            process((TDULinkControlMessage)message);
+        }
+        else if(message instanceof TDUMessage)
+        {
+            flush();
+        }
     }
 
     private void process(TDULinkControlMessage tdulc)

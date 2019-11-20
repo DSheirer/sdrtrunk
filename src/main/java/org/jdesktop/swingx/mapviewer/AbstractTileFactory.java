@@ -1,20 +1,24 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+/*
+ *
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
+ *
+ *
+ */
 package org.jdesktop.swingx.mapviewer;
 
 import org.jdesktop.swingx.mapviewer.util.GeoUtil;
@@ -22,7 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLException;
+import javax.swing.SwingUtilities;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,6 +38,7 @@ import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -346,7 +353,6 @@ public abstract class AbstractTileFactory extends TileFactory
 					}
 					if (img == null)
 					{
-						System.out.println("error loading: " + uri);
 						trys--;
 					}
 					else
@@ -368,17 +374,26 @@ public abstract class AbstractTileFactory extends TileFactory
 				{
 					cache.needMoreMemory();
 				}
+				catch(SSLException ssle)
+				{
+					if(ssle.getMessage() != null && ssle.getMessage().startsWith("No PSK available"))
+					{
+						//JDK 11 bug: https://bugs.openjdk.java.net/browse/JDK-8213202
+					}
+					else
+					{
+						mLog.error("SSL Exception: " + ssle.getMessage());
+					}
+				}
 				catch (Throwable e)
 				{
 					if (trys == 0)
 					{
-						mLog.error("Failed to load a tile at url: " + 
-					tile.getURL() + ", stopping", e );
+						mLog.error("Failed to load a tile at url: " + tile.getURL() + ", stopping", e );
 					}
 					else
 					{
-						mLog.error("Failed to load a tile at url: " + 
-					tile.getURL() + ", retrying", e );
+						mLog.error("Failed to load a tile at url: " + tile.getURL() + ", retrying", e );
 						trys--;
 					}
 				}
@@ -388,17 +403,71 @@ public abstract class AbstractTileFactory extends TileFactory
 
 		private byte[] cacheInputStream(URL url) throws IOException
 		{
-			InputStream ins = url.openStream();
+			//Ugly hack.  We only use OSM tiles, so detect it here and comply with SOM Terms of Service (ie user agent)
+			if(url.toString().startsWith("https://tile.openstreetmap.org"))
+			{
+				HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
+				conn.addRequestProperty("User-Agent", "sdrtrunk");
+				InputStream is = conn.getInputStream();
+				ByteArrayOutputStream bout = new ByteArrayOutputStream();
+
+				byte[] buf = new byte[256];
+				while (true)
+				{
+					int n = is.read(buf);
+					if (n == -1)
+						break;
+					bout.write(buf, 0, n);
+				}
+				return bout.toByteArray();
+			}
+			else
+			{
+				InputStream ins = url.openStream();
+				ByteArrayOutputStream bout = new ByteArrayOutputStream();
+				byte[] buf = new byte[256];
+				while (true)
+				{
+					int n = ins.read(buf);
+					if (n == -1)
+						break;
+					bout.write(buf, 0, n);
+				}
+				return bout.toByteArray();
+			}
+		}
+	}
+
+	public static void main(String[] args)
+	{
+		String a = "https://tile.openstreetmap.org/12/1178/1504.png";
+//		String a = "https://tile.openstreetmap.org/11/589/751.png";
+
+		try
+		{
+			URL url = new URL(a);
+
+			System.out.println("Fetching URL: " + url.getClass() + " " + url.toString());
+
+			HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
+			conn.addRequestProperty("User-Agent", "sdrtrunk");
+			InputStream is = conn.getInputStream();
 			ByteArrayOutputStream bout = new ByteArrayOutputStream();
+
 			byte[] buf = new byte[256];
 			while (true)
 			{
-				int n = ins.read(buf);
+				int n = is.read(buf);
 				if (n == -1)
 					break;
 				bout.write(buf, 0, n);
 			}
-			return bout.toByteArray();
+
+			System.out.println("Bytes:" + Arrays.toString(bout.toByteArray()));
+		}
+		catch(IOException ioe)
+		{
+			ioe.printStackTrace();
 		}
 	}
 }

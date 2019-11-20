@@ -77,10 +77,6 @@ public class ChannelMetadata implements Listener<IdentifierUpdateNotification>, 
         mTimeslot = timeslot;
     }
 
-    public void dispose() {
-        mLog.debug("shutting down bitch");
-    }
-
     public ChannelMetadata(AliasModel aliasModel)
     {
         this(aliasModel, null);

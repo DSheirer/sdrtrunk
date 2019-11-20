@@ -30,8 +30,6 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,12 +43,8 @@ public class RecorderFactory
      * @param channel
      * @return
      */
-
-    private final static Logger mLog = LoggerFactory.getLogger(RecorderFactory.class);
-
     public static List<Module> getRecorders(RecorderManager recorderManager, UserPreferences userPreferences, Channel channel)
     {
-        mLog.debug("getRecorders channel " + channel.getSite() + " " + channel.getSystem());
         List<Module> recorderModules = new ArrayList<>();
 
         for(RecorderType recorderType: channel.getRecordConfiguration().getRecorders())

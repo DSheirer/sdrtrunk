@@ -43,6 +43,10 @@ import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
+import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
@@ -121,6 +125,8 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         {
             mIgnoreDataCalls = ((DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration()).getIgnoreDataCalls();
         }
+        createPhase1TrafficChannels();
+        createPhase2TrafficChannels();
     }
 
     /**
@@ -228,7 +234,16 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         {
             if(apco25Channel.getTimeslotCount() == 2)
             {
-                processPhase2ChannelGrant(apco25Channel, serviceOptions, identifierCollection, opcode, timestamp);
+                //Data channels may be granted as a phase 2 channel grant but are still phase 1 channels
+                if(opcode.isDataChannelGrant())
+                {
+                    APCO25Channel phase1Channel = convertPhase2ToPhase1(apco25Channel);
+                    processPhase1ChannelGrant(phase1Channel, serviceOptions, identifierCollection, opcode, timestamp);
+                }
+                else
+                {
+                    processPhase2ChannelGrant(apco25Channel, serviceOptions, identifierCollection, opcode, timestamp);
+                }
             }
             else
             {
@@ -254,8 +269,6 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     private void processPhase1ChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
                                     IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
     {
-        //This will only happen on the first call
-        createPhase1TrafficChannels();
 
         P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
 
@@ -288,8 +301,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
             //Even though we have an event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
-            if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel) &&
-                !(mIgnoreDataCalls && opcode == Opcode.OSP_SNDCP_DATA_CHANNEL_GRANT))
+            if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel) && !(mIgnoreDataCalls && opcode.isDataChannelGrant()))
             {
                 Channel trafficChannel = mAvailablePhase1TrafficChannelQueue.poll();
 
@@ -310,7 +322,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             return;
         }
 
-        if(mIgnoreDataCalls && opcode == Opcode.OSP_SNDCP_DATA_CHANNEL_GRANT)
+        if(mIgnoreDataCalls && opcode.isDataChannelGrant())
         {
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                 .channel(apco25Channel)
@@ -370,16 +382,9 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     private void processPhase2ChannelGrant(APCO25Channel apco25Channel, ServiceOptions serviceOptions,
                                            IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
     {
-        //This will only happen on the first call
-        createPhase2TrafficChannels();
-
         if(mPhase2ScrambleParameters != null && identifierCollection instanceof MutableIdentifierCollection)
         {
             ((MutableIdentifierCollection)identifierCollection).silentUpdate(ScrambleParameterIdentifier.create(mPhase2ScrambleParameters));
-        }
-        else
-        {
-            mLog.debug("Scramble Parameters Null:" + (mPhase2ScrambleParameters == null) + " Class:" + identifierCollection.getClass());
         }
 
         P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
@@ -416,9 +421,9 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             //Even though we have an event, the initial channel grant may have been rejected.  Check to see if there
             //is a traffic channel allocated.  If not, allocate one and update the event description.
             if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel) &&
-                !(mIgnoreDataCalls && opcode == Opcode.OSP_SNDCP_DATA_CHANNEL_GRANT))
+                !(mIgnoreDataCalls && opcode.isDataChannelGrant()))
             {
-                Channel trafficChannel = mAvailablePhase1TrafficChannelQueue.poll();
+                Channel trafficChannel = mAvailablePhase2TrafficChannelQueue.poll();
 
                 if(trafficChannel != null)
                 {
@@ -445,7 +450,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             return;
         }
 
-        if(mIgnoreDataCalls && opcode == Opcode.OSP_SNDCP_DATA_CHANNEL_GRANT)
+        if(mIgnoreDataCalls && opcode.isDataChannelGrant())
         {
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                 .channel(apco25Channel)
@@ -621,10 +626,6 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         {
             broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
         }
-
-        mAvailablePhase1TrafficChannelQueue.clear();
-
-//        mTrafficChannelsInUse.clear();
     }
 
     /**
@@ -703,6 +704,31 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         return mMessageListener;
     }
 
+   /**
+     * Converts a phase 2 channel to a phase 1 channel
+     * @param channel to convert
+     * @return channel converted to phase 1 or the original channel if no conversion is necessary
+     */
+    private static APCO25Channel convertPhase2ToPhase1(APCO25Channel channel)
+    {
+        P25Channel toConvert = channel.getValue();
+
+        if(toConvert instanceof P25P2ExplicitChannel)
+        {
+            P25P2ExplicitChannel phase2 = (P25P2ExplicitChannel)toConvert;
+            return APCO25ExplicitChannel.create(phase2.getDownlinkBandIdentifier(),
+                    phase2.getDownlinkChannelNumber(), phase2.getUplinkBandIdentifier(),
+                    phase2.getUplinkChannelNumber());
+        }
+        else if(toConvert instanceof P25P2Channel)
+        {
+            P25P2Channel phase2 = (P25P2Channel)toConvert;
+            return APCO25Channel.create(phase2.getDownlinkBandIdentifier(), phase2.getDownlinkChannelNumber());
+        }
+
+        return channel;
+    }
+
     /**
      * Monitors channel teardown events to detect when traffic channel processing has ended.  Reclaims the
      * channel instance for reuse by future traffic channel grants.
@@ -718,8 +744,8 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             {
                 boolean isPhase1 = channel.getDecodeConfiguration().getDecoderType() == DecoderType.P25_PHASE1;
 
-                if((isPhase1 && mManagedPhase1TrafficChannels != null && mManagedPhase1TrafficChannels.contains(channel)) ||
-                   (!isPhase1 && mManagedPhase2TrafficChannels != null && mManagedPhase2TrafficChannels.contains(channel)))
+                if((isPhase1 && mManagedPhase1TrafficChannels.contains(channel)) ||
+                   (!isPhase1 && mManagedPhase2TrafficChannels.contains(channel)))
                 {
                     switch(channelEvent.getEvent())
                     {
