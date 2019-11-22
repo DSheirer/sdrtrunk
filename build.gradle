@@ -97,16 +97,18 @@ javafx {
     modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
-task buildSdr(type: Jar) {
+jar {
     manifest {
-        attributes 'Implementation-Title': 'SdrTrunk project',
-                'Implementation-Version': version,
-                'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
-                'Class-Path': 'jmbe-1.0.0.jar'
+        attributes (
+            'Implementation-Title'  : 'sdrtrunk project',
+            'Implementation-Version' : archiveVersion,
+            'Class-Path'            : 'jmbe-1.0.0.jar',
+            'Created-By'            : "Gradle ${gradle.gradleVersion}",
+            'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+            'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
+            'Build-OS'              : "${System.properties['os.name']} (${System.properties['os.arch']} ${System.properties['os.version']}"
+        )
     }
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
 }
 
 /**
