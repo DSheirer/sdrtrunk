@@ -24,6 +24,14 @@ package io.github.dsheirer.channel.state;
 
 public class DecoderStateEvent
 {
+    private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_0 =
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 0);
+    private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_1 =
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 1);
+    private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_0 =
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 0);
+    private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_1 =
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 1);
     private Object mSource;
     private Event mEvent;
     private State mState;
@@ -52,6 +60,68 @@ public class DecoderStateEvent
     public DecoderStateEvent(Object source, Event event, State state, long frequency)
     {
         this(source, event, state, 0, frequency);
+    }
+
+    /**
+     * Creates a channel state active event for the specified timeslot
+     * @param timeslot that the state applies to
+     * @return new event
+     */
+    public static DecoderStateEvent activeState(int timeslot)
+    {
+        if(timeslot == 0)
+        {
+            return ACTIVE_STATE_TIMESLOT_0;
+        }
+        else if(timeslot == 1)
+        {
+            return ACTIVE_STATE_TIMESLOT_1;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Only timeslots 0 and 1 are currently supported");
+        }
+    }
+
+    /**
+     * Creates a channel state active event for the specified timeslot.
+     * @param state currently
+     * @return new event
+     */
+    public static DecoderStateEvent activeState()
+    {
+        return activeState(0);
+    }
+
+    /**
+     * Creates a channel state inactive event for the specified timeslot
+     * @param timeslot that the state applies to
+     * @return new event
+     */
+    public static DecoderStateEvent inactiveState(int timeslot)
+    {
+        if(timeslot == 0)
+        {
+            return INACTIVE_STATE_TIMESLOT_0;
+        }
+        else if(timeslot == 1)
+        {
+            return INACTIVE_STATE_TIMESLOT_1;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Only timeslots 0 and 1 are currently supported");
+        }
+    }
+
+    /**
+     * Creates a channel state active event for the specified timeslot.
+     * @param state currently
+     * @return new event
+     */
+    public static DecoderStateEvent inactiveState()
+    {
+        return inactiveState(0);
     }
 
     public String toString()
@@ -99,6 +169,8 @@ public class DecoderStateEvent
         CONTINUATION,
         DECODE,
         END,
+        NOTIFICATION_CHANNEL_ACTIVE_STATE,
+        NOTIFICATION_CHANNEL_INACTIVE_STATE,
         RESET,
         SOURCE_FREQUENCY,
         START;
