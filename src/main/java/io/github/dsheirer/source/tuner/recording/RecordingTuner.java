@@ -60,8 +60,6 @@ public class RecordingTuner extends Tuner
         {
             ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
 
-            mLog.debug("Using Channelizer Type: " + channelizerType);
-
             if(channelizerType == ChannelizerType.POLYPHASE)
             {
                 setChannelSourceManager(new PolyphaseChannelSourceManager(getTunerController()));
