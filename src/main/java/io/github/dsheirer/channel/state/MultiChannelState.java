@@ -132,6 +132,16 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void stateChanged(State state, int timeslot)
     {
+        //Broadcast current channel state so that channel rotation monitor can track
+        if(state.isActiveState())
+        {
+            broadcast(DecoderStateEvent.activeState(timeslot));
+        }
+        else
+        {
+            broadcast(DecoderStateEvent.inactiveState(timeslot));
+        }
+
         ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
         mIdentifierCollectionMap.get(timeslot).update(stateIdentifier);
         mChannelMetadataMap.get(timeslot).receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));

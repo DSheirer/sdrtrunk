@@ -1,32 +1,32 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.source.tuner.channel;
 
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.channel.state.DecoderStateEvent;
+import io.github.dsheirer.channel.state.IDecoderStateEventListener;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierUpdateListener;
-import io.github.dsheirer.identifier.IdentifierUpdateNotification;
-import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
@@ -43,10 +43,11 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Monitors channel state to detect when a channel is not in an identified active state and issues a request to rotate
- * the next channel frequency in the list.
+ * the next channel frequency in the list.  This class depends on the ChannelState to provide a continuous
+ * stream of channel active/inactive messaging in the form of DecoderStateEvents.
  */
-public class ChannelRotationMonitor extends Module implements ISourceEventProvider, IdentifierUpdateListener,
-    Listener<IdentifierUpdateNotification>
+public class ChannelRotationMonitor extends Module implements ISourceEventProvider, IDecoderStateEventListener,
+        Listener<DecoderStateEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelRotationMonitor.class);
 
@@ -93,33 +94,27 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     }
 
     @Override
-    public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
+    public Listener<DecoderStateEvent> getDecoderStateListener()
     {
         return this;
     }
 
-    /**
-     * Primary method for receiving channel state identifier notifications, enabling this module to track the
-     * current channel state being provided by the Channel State module.
-     */
     @Override
-    public void receive(IdentifierUpdateNotification identifierUpdateNotification)
+    public void receive(DecoderStateEvent decoderStateEvent)
     {
-        Identifier identifier = identifierUpdateNotification.getIdentifier();
-
-        if(identifier instanceof ChannelStateIdentifier)
+        if(decoderStateEvent.getEvent() == DecoderStateEvent.Event.NOTIFICATION_CHANNEL_ACTIVE_STATE)
         {
-            State currentState = ((ChannelStateIdentifier)identifier).getValue();
-
-            if(mActiveStates.contains(currentState))
+            mActive = true;
+        }
+        else if(decoderStateEvent.getEvent() == DecoderStateEvent.Event.NOTIFICATION_CHANNEL_INACTIVE_STATE)
+        {
+            if(mActive)
             {
-                mActive = true;
-            }
-            else if(mActive)
-            {
-                mActive = false;
+                //If we're toggling from active to inactive, update the timestamp,
                 mInactiveTimestamp = System.currentTimeMillis();
             }
+
+            mActive = false;
         }
     }
 
