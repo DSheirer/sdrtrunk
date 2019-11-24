@@ -141,6 +141,16 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     @Override
     public void stateChanged(State state, int timeslot)
     {
+        //Broadcast current channel state so that channel rotation monitor can track
+        if(state.isActiveState())
+        {
+            broadcast(DecoderStateEvent.activeState(timeslot));
+        }
+        else
+        {
+            broadcast(DecoderStateEvent.inactiveState(timeslot));
+        }
+
         ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
         mIdentifierCollection.update(stateIdentifier);
         mChannelMetadata.receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));

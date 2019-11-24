@@ -24,7 +24,7 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.6'
-    id 'org.beryx.runtime' version '1.1.5'
+    id 'org.beryx.runtime' version '1.8.0'
 }
 
 repositories {
@@ -97,16 +97,18 @@ javafx {
     modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
-task buildSdr(type: Jar) {
+jar {
     manifest {
-        attributes 'Implementation-Title': 'SdrTrunk project',
-                'Implementation-Version': version,
-                'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
-                'Class-Path': 'jmbe-1.0.0.jar'
+        attributes (
+            'Implementation-Title'  : 'sdrtrunk project',
+            'Implementation-Version' : archiveVersion,
+            'Class-Path'            : 'jmbe-1.0.0.jar',
+            'Created-By'            : "Gradle ${gradle.gradleVersion}",
+            'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+            'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
+            'Build-OS'              : "${System.properties['os.name']} (${System.properties['os.arch']} ${System.properties['os.version']}"
+        )
     }
-    baseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
-    with jar
 }
 
 task runSdr(type: JavaExec) {
@@ -120,17 +122,21 @@ task runSdr(type: JavaExec) {
  * within a JDK for each of the specified architectures.  These JDKs are used by the 
  * runtime and runtimeZip tasks to produce platform-specific builds
  */
-def jdkLinux_x64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-11.0.2'
-def jdkOsx_x64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-11.0.2.jdk'
-def jdkWindows_x64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-11.0.2'
+def jdkLinux_x64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-13.0.1'
+def jdkLinux_x86 = '/media/denny/WD250GB/java/bellsoft/linux-x86/jdk-13.0.1'
+def jdkOsx_x64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-13.0.1.jdk'
+def jdkWindows_x64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-13.0.1'
+def jdkWindows_x86 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-13.0.1'
 //def jdkLinux_aarch64 = '/media/denny/WD250GB/java/bellsoft/linux-aarch64/jdk-11.0.2'
 //def jdkLinux_arm32 = '/media/denny/WD250GB/java/bellsoft/linux-arm32/jdk-11.0.2'
 //def jfxLinux_arm32 = '/media/denny/WD250GB/java/bellsoft/linux-arm32/armv6hf-sdk/lib'
 
 runtime {
     targetPlatform('linux-x64', jdkLinux_x64)
+    targetPlatform('linux-x86', jdkLinux_x86)
     targetPlatform('osx-x64', jdkOsx_x64)
     targetPlatform('windows-x64', jdkWindows_x64)
+    targetPlatform('windows-x86', jdkWindows_x86)
 //    targetPlatform('linux-aarch64', jdkLinux_aarch64)
 //    targetPlatform('linux-arm32', jdkLinux_arm32)
 
@@ -152,6 +158,15 @@ tasks.runtime.doFirst {
                 "Please update the build.gradle script to provide the correct path")
     }
 
+    def linux_x86 = new File(jdkLinux_x86)
+
+    if(!linux_x86.exists())
+    {
+        println("Linux x86 JDK was not found at " + jdkLinux_x86)
+        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-x86 32-bit architecture.  " +
+                "Please update the build.gradle script to provide the correct path")
+    }
+
     def osx_x64 = new File(jdkOsx_x64)
 
     if(!osx_x64.exists())
@@ -166,6 +181,15 @@ tasks.runtime.doFirst {
     if(!windows_x64.exists())
     {
         println("Windows x64 JDK was not found at " + jdkWindows_x64)
+        throw new GradleException("Cannot find Java Development Kit (JDK) for windows-x64 architecture.  " +
+                "Please update the build.gradle script to provide the correct path")
+    }
+
+    def windows_x86 = new File(jdkWindows_x86)
+
+    if(!windows_x86.exists())
+    {
+        println("Windows x86 32-bit JDK was not found at " + jdkWindows_x86)
         throw new GradleException("Cannot find Java Development Kit (JDK) for windows-x64 architecture.  " +
                 "Please update the build.gradle script to provide the correct path")
     }
@@ -195,8 +219,10 @@ tasks.runtime.doFirst {
  */
 tasks.runtime.doLast {
     delete(fileTree('build/image/sdr-trunk-linux-x64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x86/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-osx-x64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
 
 //    delete(fileTree('build/image/sdr-trunk-linux-aarch64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
 //    delete(fileTree('build/image/sdr-trunk-linux-arm32/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })

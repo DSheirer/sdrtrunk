@@ -28,7 +28,7 @@ import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
-import io.github.dsheirer.source.tuner.recording.RecordingTuner;
+import io.github.dsheirer.source.tuner.recording.AddRecordingTunerDialog;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +49,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -180,9 +181,17 @@ public class TunerViewPanel extends JPanel
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                RecordingTuner recordingTuner = new RecordingTuner(mUserPreferences);
-                mTunerModel.addTuner(recordingTuner);
-                addRecordingTunerButton.setEnabled(mTunerModel.canAddRecordingTuner());
+                AddRecordingTunerDialog dialog = new AddRecordingTunerDialog(mUserPreferences, mTunerModel);
+                dialog.setLocationRelativeTo(TunerViewPanel.this);
+
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        dialog.setVisible(true);
+                    }
+                });
             }
         });
         tunerTablePanel.add(addRecordingTunerButton);

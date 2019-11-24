@@ -2,7 +2,7 @@
 A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
 
 * [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/GettingStarted_V0.3.0)
-* [User's Manual Version 0.3.0](https://github.com/DSheirer/sdrtrunk/wiki/UserManual_V0.3.0)
+* [User's Manual Version 0.3.0 and 0.4.0](https://github.com/DSheirer/sdrtrunk/wiki/UserManual_V0.3.0)
 * [Download](https://github.com/DSheirer/sdrtrunk/releases)
 * [Support](https://groups.google.com/forum/#!forum/sdrtrunk)
 
@@ -13,68 +13,48 @@ A cross-platform java application for decoding, monitoring, recording and stream
 
 If you simply want to download and run the program, please follow these instructions.
 
-## Install Java 8 (or newer)
-
-## Download the latest sdrtrunk release
+## Download the latest sdrtrunk release for your operating system
  
 All release versions of sdrtrunk are available from the [releases](https://github.com/DSheirer/sdrtrunk/releases) tab.
 
-**(final)** These versions have been tested and are the current release version.
+* **(alpha)** These versions are under development feature previews and likely to contain bugs and unexpected behavior.
+* **(beta)** These versions are currently being tested for bugs and functionality prior to final release.
+* **(final)** These versions have been tested and are the current release version.
 
-**(alpha)** These versions are under development feature previews and likely to contain bugs and unexpected behavior.
+## Unzip the release
 
-**(beta)** These versions are currently being tested for bugs and functionality.
+Use 7-zip or any zip utility to unzip the release file
 
-## Run the application
+## Start the application
 
-Either double-click on the downloaded file (if supported on your operating system) or open a terminal/command window
-and change to the directory where you downloaded the release file and type:
-
-```
-java -jar downloaded-jar-filename 
-```
-
-Note: replace _downloaded-jar-filename_ with the actual name of the sdrtrunk release version that you downloaded 
+Once unzipped, open a command prompt to where you unzipped the release.  Change to the **/bin** directory and use the launch script to start the application:
+* **Windows** sdr-trunk.bat
+* **Linux/OSX** ./sdr-trunk
 
 ## Optional - P25 Audio
-If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) wiki page contains instructions
-for downloading the JMBE audio library source code and compiling the JMBE library.  Copy the resulting JMBE audio library 
-jar file to the same folder containing the sdrtrunk application to use the library with sdrtrunk.
+If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) wiki page contains instructions for downloading the JMBE audio library source code and compiling the JMBE library.  Once you have compiled the library, launch the sdrtrunk application.  From the menu bar, choose **View >> Preferences**.  In the **JMBE Audio Codec** section, update the path to where your compiled JMBE library is located.  Any channels that are started after you set the path will be able to produce P25 audio.
 
 # Developer Instructions:
 
 If you're interested in modifying and/or compiling the source code, please follow these instructions to use gradle to compile the code. 
 
 ## Build the project
-sdrtrunk uses gradle as the build system. You can build it with locally installed gradle or if you do not have/want 
-to install gradle you can use preconfigured linux/windows wrapper.
+sdrtrunk uses the gradle build system. This requires OpenJDK 11 or higher installed on your local compuber.  Use the gradle wrapper to build the source code:
 
-### Build with locally installed gradle 4.3.1
+### Linux
 ```
-gradle clean buildSdr
+./gradlew clean build
 ```
-### Build with preconfigured wrapper for linux/windows
-Linux
+### Windows
 ```
-./gradlew clean buildSdr
+gradlew.bat clean build
 ```
-Windows
-```
-gradlew.bat clean buildSdr
-```
-This would add gradle, download all project dependencies and build JAR
+
+The **/build/distributions** folder will contain the zip file of the compiled program.  Unzip it and launch the program from the scripts in the **/bin** directory.
 
 ## Development
 All dependencies/versions are controlled from build.gradle.
 To change the new release version tag of artifact - change property:
 ```
-version = '0.3.2'
-```
-
-## Run SDRTrunk
-SDRTrunk is packed into single uber-jar file. There is need to have folders with dependencies and
-adding them with classpath. Just run with java.
-### Use Java8
-```
-java -jar build/libs/sdr-trunk-all-0.3.2.jar 
+version = '0.4.0'
 ```

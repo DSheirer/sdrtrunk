@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
 import javax.swing.SwingUtilities;
 import java.awt.image.BufferedImage;
@@ -38,6 +39,9 @@ import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -54,8 +58,8 @@ import java.util.concurrent.ThreadFactory;
  */
 public abstract class AbstractTileFactory extends TileFactory
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AbstractTileFactory.class );
+	private final static Logger mLog = LoggerFactory.getLogger( AbstractTileFactory.class );
+	private boolean mSSLSuitesLogged = false;
 
 	/**
 	 * Creates a new instance of DefaultTileFactory using the spcified TileFactoryInfo
@@ -382,7 +386,7 @@ public abstract class AbstractTileFactory extends TileFactory
 					}
 					else
 					{
-						mLog.error("SSL Exception: " + ssle.getMessage());
+						mLog.error("SSL Exception");
 					}
 				}
 				catch (Throwable e)
@@ -408,6 +412,23 @@ public abstract class AbstractTileFactory extends TileFactory
 			{
 				HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
 				conn.addRequestProperty("User-Agent", "sdrtrunk");
+
+				try
+				{
+					//Java 13 uses TLSv1.3 by default and fails to connect to tile server, so force TLS 1.2
+					SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+					sslContext.init(null, null, new SecureRandom());
+					conn.setSSLSocketFactory(sslContext.getSocketFactory());
+				}
+				catch(KeyManagementException kme)
+				{
+					mLog.error("Error initializing SSL context");
+				}
+				catch(NoSuchAlgorithmException nsae)
+				{
+					mLog.error("Unable to use TLSv1.2 for openstreetmap tiles");
+				}
+
 				InputStream is = conn.getInputStream();
 				ByteArrayOutputStream bout = new ByteArrayOutputStream();
 
@@ -419,6 +440,9 @@ public abstract class AbstractTileFactory extends TileFactory
 						break;
 					bout.write(buf, 0, n);
 				}
+
+				conn.disconnect();
+
 				return bout.toByteArray();
 			}
 			else
