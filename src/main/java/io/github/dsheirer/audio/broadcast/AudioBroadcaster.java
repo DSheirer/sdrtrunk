@@ -25,6 +25,8 @@ import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +53,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     private ISilenceGenerator mSilenceGenerator;
 
     private Listener<BroadcastEvent> mBroadcastEventListener;
-    private BroadcastState mBroadcastState = BroadcastState.READY;
+    private ObjectProperty<BroadcastState> mBroadcastState = new SimpleObjectProperty<>(BroadcastState.READY);
 
     private int mStreamedAudioCount = 0;
     private int mAgedOffAudioCount = 0;
@@ -87,6 +89,18 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
         mDelay = mBroadcastConfiguration.getDelay();
         mMaximumRecordingAge = mBroadcastConfiguration.getMaximumRecordingAge();
         mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
+    }
+
+    /**
+     * Observable broadcast state property
+     */
+    public ObjectProperty<BroadcastState> broadcastStateProperty()
+    {
+        return mBroadcastState;
+    }
+
+    public void dispose()
+    {
     }
 
     /**
@@ -250,18 +264,18 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
      */
     protected void setBroadcastState(BroadcastState state)
     {
-        if(mBroadcastState != state)
+        if(mBroadcastState.get() != state)
         {
             if(state == BroadcastState.CONNECTED || state == BroadcastState.DISCONNECTED)
             {
                 mLog.info("[" + getStreamName() + "] status: " + state);
             }
 
-            mBroadcastState = state;
+            mBroadcastState.setValue(state);
 
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));
 
-            if(mBroadcastState.isErrorState())
+            if(mBroadcastState.get().isErrorState())
             {
                 stop();
             }
@@ -290,7 +304,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
      */
     public BroadcastState getBroadcastState()
     {
-        return mBroadcastState;
+        return mBroadcastState.get();
     }
 
     /**

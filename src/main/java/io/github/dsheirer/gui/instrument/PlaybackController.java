@@ -39,7 +39,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.javafx.IconFontFX;
 import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +70,6 @@ public class PlaybackController extends HBox implements IFrameLocationListener
     public PlaybackController()
     {
         super(10);
-        IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
 
         getChildren().addAll(getControlsBox(), getFileLabel());
 

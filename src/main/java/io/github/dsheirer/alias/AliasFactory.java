@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -182,12 +182,12 @@ public class AliasFactory
     public static Alias copyOf(Alias original)
     {
         Alias copy = new Alias(original.getName());
-        copy.setList(original.getList());
+        copy.setAliasListName(original.getAliasListName());
         copy.setGroup(original.getGroup());
         copy.setColor(original.getColor());
         copy.setIconName(original.getIconName());
 
-        for(AliasID id : original.getId())
+        for(AliasID id : original.getAliasIdentifiers())
         {
             AliasID copyID = copyOf(id);
 
@@ -197,7 +197,7 @@ public class AliasFactory
             }
         }
 
-        for(AliasAction action : original.getAction())
+        for(AliasAction action : original.getAliasActions())
         {
             AliasAction copyAction = copyOf(action);
 

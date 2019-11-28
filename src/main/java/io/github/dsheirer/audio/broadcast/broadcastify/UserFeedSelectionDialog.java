@@ -128,7 +128,7 @@ public class UserFeedSelectionDialog extends JDialog implements DocumentListener
 
                     if(choice == JOptionPane.YES_OPTION)
                     {
-                        mUserPreferences.getRadioReferencePreference().removeStoreCredentials();
+                        mUserPreferences.getRadioReferencePreference().removeStoredCredentials();
                     }
                 }
             }
@@ -143,7 +143,7 @@ public class UserFeedSelectionDialog extends JDialog implements DocumentListener
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                mUserPreferences.getRadioReferencePreference().removeStoreCredentials();
+                mUserPreferences.getRadioReferencePreference().removeStoredCredentials();
             }
         });
         panel.add(mClearStoredCredentialsButton, "wrap");

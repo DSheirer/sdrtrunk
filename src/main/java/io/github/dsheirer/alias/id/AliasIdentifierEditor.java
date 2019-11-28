@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -217,7 +217,7 @@ public class AliasIdentifierEditor extends Editor<Alias>
     {
         super.setItem(alias);
 
-        if(alias == null || alias.getId().isEmpty())
+        if(alias == null || alias.getAliasIdentifiers().isEmpty())
         {
             mAliasIDList.setModel(EMPTY_MODEL);
         }
@@ -225,7 +225,7 @@ public class AliasIdentifierEditor extends Editor<Alias>
         {
             DefaultListModel<AliasID> model = new DefaultListModel<AliasID>();
 
-            List<AliasID> ids = alias.getId();
+            List<AliasID> ids = alias.getAliasIdentifiers();
 
             Collections.sort(ids, new Comparator<AliasID>()
             {

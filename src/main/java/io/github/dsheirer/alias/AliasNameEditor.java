@@ -1,21 +1,24 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.alias;
 
 import io.github.dsheirer.gui.editor.Editor;
@@ -25,12 +28,20 @@ import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.icon.IconTableModel;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JColorChooser;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
@@ -247,9 +258,9 @@ public class AliasNameEditor extends Editor<Alias>
                 ;
             }
 
-            mListCombo.setSelectedItem(alias.getList());
+            mListCombo.setSelectedItem(alias.getAliasListName());
 
-            List<String> groupNames = mAliasModel.getGroupNames(alias.getList());
+            List<String> groupNames = mAliasModel.getGroupNames(alias.getAliasListName());
 
             if(groupNames.isEmpty())
             {
@@ -307,7 +318,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             if(mListCombo.getSelectedItem() != null)
             {
-                alias.setList((String) mListCombo.getSelectedItem());
+                alias.setAliasListName((String) mListCombo.getSelectedItem());
             }
 
             if(mGroupCombo.getSelectedItem() != null)
