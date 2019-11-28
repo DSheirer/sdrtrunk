@@ -1,35 +1,39 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Channel Model
@@ -51,12 +55,51 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
         "Source", "Decoder", "Auto-Start"};
     private static final String VALUE_YES = "Yes";
 
-    private List<Channel> mChannels = new CopyOnWriteArrayList<>();
-    private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
+    private ObservableList<Channel> mChannels = FXCollections.observableArrayList(Channel.extractor());
+    private ObservableList<Channel> mTrafficChannels = FXCollections.observableArrayList(Channel.extractor());
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
     public ChannelModel()
     {
+        ChannelListChangeListener changeListener = new ChannelListChangeListener();
+        mChannels.addListener(changeListener);
+        mTrafficChannels.addListener(changeListener);
+    }
+
+    /**
+     * Observable list of channel configurations managed by this model
+     */
+    public ObservableList<Channel> channelList()
+    {
+        return mChannels;
+    }
+
+    /**
+     * Observable list of traffic channel configurations managed by this model
+     */
+    public ObservableList<Channel> trafficChannelList()
+    {
+        return mTrafficChannels;
+    }
+
+    /**
+     * Removes all channels and traffic channels and fires remove event for each.
+     */
+    public void clear()
+    {
+        List<Channel> trafficChannels = new ArrayList<>(mTrafficChannels);
+
+        for(Channel trafficChannel: trafficChannels)
+        {
+            removeChannel(trafficChannel);
+        }
+
+        List<Channel> channels = new ArrayList<>(mChannels);
+
+        for(Channel channel: channels)
+        {
+            removeChannel(channel);
+        }
     }
 
     /**
@@ -80,7 +123,7 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
     /**
      * Returns a list of unique system values from across the channel set
      */
-    public List<String> getSystems()
+    public List<String> getSystemNames()
     {
         List<String> systems = new ArrayList<>();
 
@@ -199,8 +242,6 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
                 break;
         }
 
-        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
-
         return index;
     }
 
@@ -229,8 +270,6 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
                 default:
                     break;
             }
-
-            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
         }
     }
 
@@ -403,8 +442,82 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
         throw new IllegalArgumentException("Not yet implemented");
     }
 
-    public void createChannel(DecoderType decoderType, long frequency)
+    /**
+     * List of site names from all channels in the model
+     */
+    public List<String> getSiteNames()
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        List<String> sites = new ArrayList<>();
+
+        for(Channel channel: mChannels)
+        {
+            String site = channel.getSite();
+
+            if(site != null && !site.isEmpty() && !sites.contains(site))
+            {
+                sites.add(site);
+            }
+        }
+
+        return sites;
+    }
+
+    /**
+     * List of alias list names from all channels in the model
+     */
+    public List<String> getAliasListNames()
+    {
+        List<String> aliasLists = new ArrayList<>();
+
+        for(Channel channel: mChannels)
+        {
+            String aliasList = channel.getAliasListName();
+
+            if(aliasList != null && !aliasList.isEmpty() && !aliasLists.contains(aliasList))
+            {
+                aliasLists.add(aliasList);
+            }
+        }
+
+        return aliasLists;
+    }
+
+    /**
+     * Observable list change listener for both channels and traffic channels lists
+     */
+    public class ChannelListChangeListener implements ListChangeListener<Channel>
+    {
+        @Override
+        public void onChanged(Change<? extends Channel> change)
+        {
+            while(change.next())
+            {
+                if(change.wasAdded())
+                {
+                    for(Channel channel: change.getAddedSubList())
+                    {
+                        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
+                    }
+                }
+                else if(change.wasRemoved())
+                {
+                    for(Channel channel: change.getRemoved())
+                    {
+                        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
+                    }
+                }
+                else if(change.wasUpdated())
+                {
+                    for(Channel channel: change.getList())
+                    {
+                        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_CONFIGURATION_CHANGE));
+                    }
+                }
+                else if (change.wasPermutated())
+                {
+                    System.out.println("Channel Model - Permutation change detected !!!!!");
+                }
+            }
+        }
     }
 }

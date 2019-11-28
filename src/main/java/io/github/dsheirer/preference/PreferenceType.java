@@ -29,6 +29,7 @@ public enum PreferenceType
     IDENTIFIER,
     JMBE_LIBRARY,
     MULTI_FREQUENCY,
+    PLAYLIST,
     PLAYBACK,
     RADIO_REFERENCE,
     RECORD,

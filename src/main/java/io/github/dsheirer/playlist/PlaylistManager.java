@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -32,11 +32,14 @@ import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapEvent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.service.radioreference.RadioReference;
+import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +48,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -59,8 +64,12 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
+    private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
+    private ChannelProcessingManager mChannelProcessingManager;
+    private RadioReference mRadioReference;
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
+    private ScheduledFuture<?> mPlaylistSaveFuture;
     private boolean mPlaylistLoading = false;
 
     /**
@@ -73,13 +82,17 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * @param channelModel
      */
     public PlaylistManager(AliasModel aliasModel, BroadcastModel broadcastModel, ChannelModel channelModel,
-                           ChannelMapModel channelMapModel, UserPreferences userPreferences)
+                           ChannelMapModel channelMapModel, TunerModel tunerModel, UserPreferences userPreferences,
+                           ChannelProcessingManager channelProcessingManager)
     {
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
+        mTunerModel = tunerModel;
         mUserPreferences = userPreferences;
+        mChannelProcessingManager = channelProcessingManager;
+        mRadioReference = new RadioReference(mUserPreferences);
 
         //Register for alias, channel and channel map events so that we can
         //save the playlist when there are any changes
@@ -132,6 +145,54 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Channel model managed by this playlist manager
+     */
+    public ChannelModel getChannelModel()
+    {
+        return mChannelModel;
+    }
+
+    /**
+     * Alias model managed by this playlist manager
+     */
+    public AliasModel getAliasModel()
+    {
+        return mAliasModel;
+    }
+
+    /**
+     * Radio Reference service interface
+     */
+    public RadioReference getRadioReference()
+    {
+        return mRadioReference;
+    }
+
+    /**
+     * Audio Broadcast (streaming) Model
+     */
+    public BroadcastModel getBroadcastModel()
+    {
+        return mBroadcastModel;
+    }
+
+    /**
+     * Channel Map model managed by this playlist manager
+     */
+    public ChannelMapModel getChannelMapModel()
+    {
+        return mChannelMapModel;
+    }
+
+    /**
+     * Tuner model for this playlist manager
+     */
+    public TunerModel getTunerModel()
+    {
+        return mTunerModel;
+    }
+
+    /**
      * Loads playlist from the current playlist file, or the default playlist file,
      * as specified in the current SDRTRunk system settings
      */
@@ -142,16 +203,143 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Closes the current playlist, saving if necessary, clears the models and sets the current playlist to use
+     * the specified playlist path.
+     * @param path to use for the playlist.
+     */
+    public void setPlaylist(Path path) throws IOException
+    {
+        if(path == null)
+        {
+            throw new IllegalArgumentException("Specified playlist path does not exist");
+        }
+
+        //Complete any pending playlist save
+        saveNow();
+
+        mUserPreferences.getPlaylistPreference().setPlaylist(path);
+
+        if(!Files.exists(path))
+        {
+            createEmptyPlaylist(path);
+        }
+
+        init();
+    }
+
+    /**
+     * Checks the path argument to determine if it is a valid V2 playlist file by loading and deserializer the file.
+     * @param path to check
+     * @return true if the path is a valid playist.
+     */
+    public static boolean isPlaylist(Path path)
+    {
+        if(path == null || !Files.exists(path))
+        {
+            return false;
+        }
+
+        JacksonXmlModule xmlModule = new JacksonXmlModule();
+        xmlModule.setDefaultUseWrapper(false);
+        ObjectMapper objectMapper = new XmlMapper(xmlModule);
+
+        try(InputStream in = Files.newInputStream(path))
+        {
+            PlaylistV2 playlist = objectMapper.readValue(in, PlaylistV2.class);
+
+            //If jackson can successfully deserialize the file, then it's a good V2 playlist
+            return true;
+        }
+        catch(IOException ioe)
+        {
+            mLog.error("IO error while reading playlist file", ioe);
+        }
+
+        return false;
+    }
+
+    /**
+     * Creates an empty serialized playlist
+     * @param path for storing the playlist
+     * @throws IOException if there is an error writing to disk
+     */
+    public void createEmptyPlaylist(Path path) throws IOException
+    {
+        PlaylistV2 playlist = new PlaylistV2();
+
+        try(OutputStream out = Files.newOutputStream(path))
+        {
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            objectMapper.writeValue(out, playlist);
+            out.flush();
+        }
+        catch(IOException ioe)
+        {
+            throw ioe;
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error while creating empty playlist [" + path.toString() + "]", e);
+        }
+    }
+
+    private void clearModels()
+    {
+        mPlaylistLoading = true;
+
+        //Shutdown any running channels
+        mChannelProcessingManager.shutdown();
+
+        mChannelModel.clear();
+        mChannelMapModel.clear();
+        mBroadcastModel.clear();
+        mAliasModel.clear();
+
+        mPlaylistLoading = false;
+    }
+
+    private void saveNow()
+    {
+        //Complete any pending playlist save
+        if(mPlaylistSaveFuture != null)
+        {
+            try
+            {
+                mPlaylistSaveFuture.cancel(true);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error trying to cancel pending playlist save");
+            }
+
+            mPlaylistSaveFuture = null;
+        }
+
+        if(mPlaylistSavePending.getAndSet(false))
+        {
+            save();
+        }
+    }
+
+    /**
      * Transfers data from persisted playlist into system models
      */
     private void transferPlaylistToModels(PlaylistV2 playlist)
     {
         if(playlist != null)
         {
+            clearModels();
+
             mPlaylistLoading = true;
 
             mAliasModel.addAliases(playlist.getAliases());
+
+
             mBroadcastModel.addBroadcastConfigurations(playlist.getBroadcastConfigurations());
+
             mChannelMapModel.addChannelMaps(playlist.getChannelMaps());
 
             //Channel model has to be loaded last since it will auto-start channels that are enabled
@@ -160,7 +348,6 @@ public class PlaylistManager implements Listener<ChannelEvent>
             mPlaylistLoading = false;
         }
     }
-
 
     /**
      * Channel event listener method.  Monitors channel events for events that indicate that the playlist has changed
@@ -188,7 +375,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
      */
     private void save()
     {
-        PlaylistPreference files = mUserPreferences.getPlaylistPreference();
+        PlaylistPreference playlistPreference = mUserPreferences.getPlaylistPreference();
 
         PlaylistV2 playlist = new PlaylistV2();
 
@@ -199,34 +386,35 @@ public class PlaylistManager implements Listener<ChannelEvent>
         playlist.setVersion(PLAYLIST_CURRENT_VERSION);
 
         //Create a backup copy of the current playlist
-        if(Files.exists(files.getPlaylist()))
+        if(Files.exists(playlistPreference.getPlaylist()))
         {
             try
             {
-                Files.copy(files.getPlaylist(), files.getPlaylistBackup(), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(playlistPreference.getPlaylist(), playlistPreference.getPlaylistBackup(),
+                    StandardCopyOption.REPLACE_EXISTING);
             }
             catch(Exception e)
             {
                 mLog.error("Error creating backup copy of current playlist prior to saving updates [" +
-                    files.getPlaylist().toString() + "]", e);
+                    playlistPreference.getPlaylist().toString() + "]", e);
             }
         }
 
         //Create a temporary lock file to signify that we're in the process of updating the playlist
-        if(!Files.exists(files.getPlaylistLock()))
+        if(!Files.exists(playlistPreference.getPlaylistLock()))
         {
             try
             {
-                Files.createFile(files.getPlaylistLock());
+                Files.createFile(playlistPreference.getPlaylistLock());
             }
             catch(IOException e)
             {
                 mLog.error("Error creating temporary lock file prior to saving playlist [" +
-                    files.getPlaylistLock().toString() + "]", e);
+                    playlistPreference.getPlaylistLock().toString() + "]", e);
             }
         }
 
-        try(OutputStream out = Files.newOutputStream(files.getPlaylist()))
+        try(OutputStream out = Files.newOutputStream(playlistPreference.getPlaylist()))
         {
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
@@ -236,20 +424,18 @@ public class PlaylistManager implements Listener<ChannelEvent>
             out.flush();
 
             //Remove the playlist lock file to indicate that we successfully saved the file
-            if(Files.exists(files.getPlaylistLock()))
+            if(Files.exists(playlistPreference.getPlaylistLock()))
             {
-                Files.delete(files.getPlaylistLock());
+                Files.delete(playlistPreference.getPlaylistLock());
             }
-
-            mUserPreferences.getPlaylistPreference().setPlaylistLastAccessedPath(files.getPlaylist());
         }
         catch(IOException ioe)
         {
-            mLog.error("IO error while writing the playlist to a file [" + files.getPlaylist().toString() + "]", ioe);
+            mLog.error("IO error while writing the playlist to a file [" + playlistPreference.getPlaylist().toString() + "]", ioe);
         }
         catch(Exception e)
         {
-            mLog.error("Error while saving playlist [" + files.getPlaylist().toString() + "]", e);
+            mLog.error("Error while saving playlist [" + playlistPreference.getPlaylist().toString() + "]", e);
         }
     }
 
@@ -290,7 +476,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
         if(Files.exists(files.getPlaylist()))
         {
-            mLog.info("Loading playlist file [" + files.getPlaylist().toString() + "]");
+            mLog.info("Loading playlist [" + files.getPlaylist().toString() + "]");
 
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
@@ -312,7 +498,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         }
         else if(Files.exists(files.getLegacyPlaylist()))
         {
-            mLog.info("Loading legacy playlist file [" + files.getLegacyPlaylist().toString() + "]");
+            mLog.info("Loading legacy playlist [" + files.getLegacyPlaylist().toString() + "]");
 
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
@@ -358,7 +544,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         {
             if(mPlaylistSavePending.compareAndSet(false, true))
             {
-                ThreadPool.SCHEDULED.schedule(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
+                mPlaylistSaveFuture = ThreadPool.SCHEDULED.schedule(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
             }
         }
     }
@@ -373,6 +559,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         {
             save();
 
+            mPlaylistSaveFuture = null;
             mPlaylistSavePending.set(false);
         }
     }

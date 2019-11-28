@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ public class AliasList implements Listener<AliasEvent>
     {
         if(alias != null)
         {
-            for(AliasID aliasID : alias.getId())
+            for(AliasID aliasID : alias.getAliasIdentifiers())
             {
                 addAliasID(aliasID, alias);
             }
@@ -247,20 +247,20 @@ public class AliasList implements Listener<AliasEvent>
             switch(event.getEvent())
             {
                 case ADD:
-                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
+                    if(alias.getAliasListName() != null && getName().equalsIgnoreCase(alias.getAliasListName()))
                     {
                         addAlias(alias);
                     }
                     break;
                 case CHANGE:
-                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
+                    if(alias.getAliasListName() != null && getName().equalsIgnoreCase(alias.getAliasListName()))
                     {
                         removeAlias(alias);
                         addAlias(alias);
                     }
                     break;
                 case DELETE:
-                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
+                    if(alias.getAliasListName() != null && getName().equalsIgnoreCase(alias.getAliasListName()))
                     {
                         removeAlias(alias);
                     }

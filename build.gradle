@@ -124,7 +124,7 @@ jar {
 }
 
 /**
- * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the 'bin' 
+ * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the 'bin'
  * directory within a JDK for each of the specified architectures.  These JDKs are used by the runtime and runtimeZip
  * tasks to produce platform-specific builds.  If none of these paths exists, then an image will be created for the
  * host OS using the installed JDK.
