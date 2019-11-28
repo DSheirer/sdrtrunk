@@ -1,21 +1,24 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.audio.broadcast;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -26,6 +29,17 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
+import javafx.beans.Observable;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.util.Callback;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -39,18 +53,32 @@ import java.net.SocketAddress;
 @JacksonXmlRootElement(localName = "stream")
 public abstract class BroadcastConfiguration
 {
+    // Static unique channel identifier tracking
+    private static int UNIQUE_ID = 0;
+
     private BroadcastFormat mBroadcastFormat = BroadcastFormat.MP3;
-    private String mName;
-    private String mHost;
-    private int mPort;
-    private String mPassword;
-    private long mDelay;
-    private long mMaximumRecordingAge = 10 * 60 * 1000; //10 minutes default
-    private boolean mEnabled = true;
+    private StringProperty mName = new SimpleStringProperty();
+    private StringProperty mHost = new SimpleStringProperty();
+    private IntegerProperty mPort = new SimpleIntegerProperty(80);
+    private StringProperty mPassword = new SimpleStringProperty();
+    private LongProperty mDelay = new SimpleLongProperty();
+    private LongProperty mMaximumRecordingAge = new SimpleLongProperty(10 * 60 * 1000); //10 minutes default
+    private BooleanProperty mEnabled = new SimpleBooleanProperty(false);
+    private BooleanProperty mValid;
+    private int mId = ++UNIQUE_ID;
 
     public BroadcastConfiguration()
     {
-        //No-arg constructor required for JAXB
+    }
+
+    /**
+     * Unique identifier for this configuration.
+     * Note: unique ids are generated at runtime and have no persistent context across sessions.
+     */
+    @JsonIgnore
+    public int getId()
+    {
+        return mId;
     }
 
     /**
@@ -64,6 +92,76 @@ public abstract class BroadcastConfiguration
     public BroadcastConfiguration(BroadcastFormat format)
     {
         mBroadcastFormat = format;
+    }
+
+    /**
+     * Stream name
+     */
+    public StringProperty nameProperty()
+    {
+        return mName;
+    }
+
+    /**
+     * Server host name
+     */
+    public StringProperty hostProperty()
+    {
+        return mHost;
+    }
+
+    /**
+     * Feed port
+     */
+    public IntegerProperty portProperty()
+    {
+        return mPort;
+    }
+
+    /**
+     * Feed password
+     */
+    public StringProperty passwordProperty()
+    {
+        return mPassword;
+    }
+
+    /**
+     * Delay introduced for each recording before streaming
+     */
+    public LongProperty delayProperty()
+    {
+        return mDelay;
+    }
+
+    /**
+     * Maximum allowable age of a recording to stream.  Recordings that exceed this threshold will be aged off.
+     */
+    public LongProperty maximumRecordingAgeProperty()
+    {
+        return mMaximumRecordingAge;
+    }
+
+    /**
+     * Stream enabled property
+     */
+    public BooleanProperty enabledProperty()
+    {
+        return mEnabled;
+    }
+
+    /**
+     * Configuration valid property
+     */
+    public BooleanProperty validProperty()
+    {
+        if(mValid == null)
+        {
+            mValid = new SimpleBooleanProperty();
+            mValid.bind(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)));
+        }
+
+        return mValid;
     }
 
     /**
@@ -83,7 +181,7 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "name")
     public String getName()
     {
-        return mName;
+        return mName.get();
     }
 
     /**
@@ -93,7 +191,7 @@ public abstract class BroadcastConfiguration
      */
     public void setName(String name)
     {
-        mName = name;
+        mName.set(name);
     }
 
     /**
@@ -110,7 +208,7 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "host")
     public String getHost()
     {
-        return mHost;
+        return mHost.get();
     }
 
     /**
@@ -120,7 +218,7 @@ public abstract class BroadcastConfiguration
      */
     public void setHost(String host)
     {
-        mHost = host;
+        mHost.set(host);
     }
 
     /**
@@ -137,7 +235,7 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "port")
     public int getPort()
     {
-        return mPort;
+        return mPort.get();
     }
 
     /**
@@ -147,7 +245,7 @@ public abstract class BroadcastConfiguration
      */
     public void setPort(int port)
     {
-        mPort = port;
+        mPort.set(port);
     }
 
     /**
@@ -155,7 +253,7 @@ public abstract class BroadcastConfiguration
      */
     public boolean hasPort()
     {
-        return mPort > 0;
+        return mPort.get() > 0;
     }
 
     @JsonIgnore
@@ -170,7 +268,7 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "password")
     public String getPassword()
     {
-        return mPassword;
+        return mPassword.get();
     }
 
     /**
@@ -180,7 +278,7 @@ public abstract class BroadcastConfiguration
      */
     public void setPassword(String password)
     {
-        mPassword = password;
+        mPassword.set(password);
     }
 
     /**
@@ -211,7 +309,7 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "delay")
     public long getDelay()
     {
-        return mDelay;
+        return mDelay.get();
     }
 
     /**
@@ -220,7 +318,7 @@ public abstract class BroadcastConfiguration
      */
     public void setDelay(long delay)
     {
-        mDelay = delay;
+        mDelay.set(delay);
     }
 
     /**
@@ -231,7 +329,7 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "maximum_recording_age")
     public long getMaximumRecordingAge()
     {
-        return mMaximumRecordingAge;
+        return mMaximumRecordingAge.get();
     }
 
     /**
@@ -241,7 +339,7 @@ public abstract class BroadcastConfiguration
      */
     public void setMaximumRecordingAge(long age)
     {
-        mMaximumRecordingAge = age;
+        mMaximumRecordingAge.set(age);
     }
 
     /**
@@ -250,12 +348,12 @@ public abstract class BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "enabled")
     public boolean isEnabled()
     {
-        return mEnabled;
+        return mEnabled.get();
     }
 
     public void setEnabled(boolean enabled)
     {
-        mEnabled = enabled;
+        mEnabled.set(enabled);
     }
 
     @Override
@@ -302,6 +400,15 @@ public abstract class BroadcastConfiguration
     @JsonIgnore
     public boolean isValid()
     {
-        return mHost != null && mPort > 0;
+        return validProperty().get();
+    }
+
+    /**
+     * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
+     */
+    public static Callback<BroadcastConfiguration, Observable[]> extractor()
+    {
+        return (BroadcastConfiguration b) -> new Observable[] {b.nameProperty(), b.hostProperty(), b.portProperty(),
+                b.passwordProperty(), b.maximumRecordingAgeProperty(), b.delayProperty(), b.enabledProperty()};
     }
 }

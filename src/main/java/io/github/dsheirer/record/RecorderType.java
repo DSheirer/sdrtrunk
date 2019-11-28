@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ import java.util.EnumSet;
 public enum RecorderType
 {
     /**
-     * Audio - 8kHz PCM -- **DO NOT USE - DEPRECATED - AUDIO RECORDING IS NOT MANAGED BY ALIASES
+     * Audio - 8kHz PCM -- **DO NOT USE - DEPRECATED - AUDIO RECORDING IS NOW MANAGED BY ALIASES AND/OR DECODE CONFIG
+     * for AM/NBFM
      */
 	AUDIO( "Audio (.wav)"),
 

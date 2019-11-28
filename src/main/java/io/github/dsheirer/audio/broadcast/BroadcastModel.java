@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,11 +73,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     public static final String[] COLUMN_NAMES = new String[]
         {"Streaming", "Name", "Status", "Queued", "Streamed", "Aged Off"};
 
-    private List<BroadcastConfiguration> mBroadcastConfigurations = new CopyOnWriteArrayList<>();
+    private ObservableList<ConfiguredBroadcast> mConfiguredBroadcasts =
+                FXCollections.observableArrayList(ConfiguredBroadcast.extractor());
+    private ObservableList<BroadcastConfiguration> mBroadcastConfigurations =
+                FXCollections.observableArrayList(BroadcastConfiguration.extractor());
     private List<AudioRecording> mRecordingQueue = new CopyOnWriteArrayList<>();
-
-    private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
-    private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
+    private Map<Integer,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
     private IconManager mIconManager;
     private StreamManager mStreamManager;
     private AliasModel mAliasModel;
@@ -94,6 +98,31 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
 
         removeOrphanedTemporaryRecordings();
+        mBroadcastConfigurations.addListener(new ConfigurationChangeListener());
+
+        //TODO: remove broadcast of change events and simply have the playlist manager register as a listener on the configs
+        //TODO: list to detect changes and execute playlist saves.
+    }
+
+    /**
+     * List of broadcast configurations with (optional) audio broadcasters created from each configuration
+     */
+    public ObservableList<ConfiguredBroadcast> getConfiguredBroadcasts()
+    {
+        return mConfiguredBroadcasts;
+    }
+
+    /**
+     * Removes all broadcast configurations and shuts down any running broadcasters.
+     */
+    public void clear()
+    {
+        List<BroadcastConfiguration> configsToRemove = new ArrayList<>(mBroadcastConfigurations);
+
+        for(BroadcastConfiguration configToRemove: configsToRemove)
+        {
+            removeBroadcastConfiguration(configToRemove);
+        }
     }
 
     /**
@@ -114,7 +143,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     /**
      * Current list of broadcastAudio configurations
      */
-    public List<BroadcastConfiguration> getBroadcastConfigurations()
+    public ObservableList<BroadcastConfiguration> getBroadcastConfigurations()
     {
         return mBroadcastConfigurations;
     }
@@ -133,7 +162,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     /**
      * Adds the broadcastAudio configuration to this model
      */
-    public void addBroadcastConfiguration(BroadcastConfiguration configuration)
+    public ConfiguredBroadcast addBroadcastConfiguration(BroadcastConfiguration configuration)
     {
         if(configuration != null)
         {
@@ -142,16 +171,20 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
             if(!mBroadcastConfigurations.contains(configuration))
             {
                 mBroadcastConfigurations.add(configuration);
+                ConfiguredBroadcast configuredBroadcast = new ConfiguredBroadcast(configuration);
+                mConfiguredBroadcasts.add(configuredBroadcast);
 
                 int index = mBroadcastConfigurations.size() - 1;
 
                 fireTableRowsInserted(index, index);
 
-                mBroadcastConfigurationMap.put(configuration.getName(), configuration);
-
                 process(new BroadcastEvent(configuration, BroadcastEvent.Event.CONFIGURATION_ADD));
+
+                return configuredBroadcast;
             }
         }
+
+        return null;
     }
 
     /**
@@ -264,7 +297,15 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
 
             mBroadcastConfigurations.remove(broadcastConfiguration);
 
-            mBroadcastConfigurationMap.remove(broadcastConfiguration.getName());
+            Iterator<ConfiguredBroadcast> it = mConfiguredBroadcasts.iterator();
+            while(it.hasNext())
+            {
+                if(it.next().getBroadcastConfiguration() == broadcastConfiguration)
+                {
+                    it.remove();
+                    break;
+                }
+            }
 
             process(new BroadcastEvent(broadcastConfiguration, BroadcastEvent.Event.CONFIGURATION_DELETE));
 
@@ -304,25 +345,31 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
      */
     private void createBroadcaster(BroadcastConfiguration broadcastConfiguration)
     {
-        if(broadcastConfiguration != null && broadcastConfiguration.isEnabled() && broadcastConfiguration.isValid() &&
-            !mBroadcasterMap.containsKey(broadcastConfiguration.getName()))
+        if(broadcastConfiguration != null && broadcastConfiguration.isEnabled() && broadcastConfiguration.isValid())
         {
+            //Remove current broadcaster if one exists
+            deleteBroadcaster(broadcastConfiguration.getId());
+
             AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration, mAliasModel);
 
             if(audioBroadcaster != null)
             {
-                audioBroadcaster.setListener(new Listener<BroadcastEvent>()
-                {
-                    @Override
-                    public void receive(BroadcastEvent broadcastEvent)
-                    {
-                        process(broadcastEvent);
-                    }
-                });
-
+                audioBroadcaster.setListener(broadcastEvent -> process(broadcastEvent));
                 audioBroadcaster.start();
 
-                mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getName(), audioBroadcaster);
+                Iterator<ConfiguredBroadcast> it = mConfiguredBroadcasts.iterator();
+                while(it.hasNext())
+                {
+                    ConfiguredBroadcast configuredBroadcast = it.next();
+
+                    if(configuredBroadcast.getBroadcastConfiguration() == broadcastConfiguration)
+                    {
+                        configuredBroadcast.setAudioBroadcaster(audioBroadcaster);
+                        break;
+                    }
+                }
+
+                mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getId(), audioBroadcaster);
 
                 int index = mBroadcastConfigurations.indexOf(audioBroadcaster.getBroadcastConfiguration());
 
@@ -339,16 +386,29 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     /**
      * Shut down a broadcaster created from the configuration and remove it from this model
      */
-    private void deleteBroadcaster(String name)
+    private void deleteBroadcaster(int id)
     {
-        if(name != null && mBroadcasterMap.containsKey(name))
+        if(mBroadcasterMap.containsKey(id))
         {
-            AudioBroadcaster audioBroadcaster = mBroadcasterMap.remove(name);
+            AudioBroadcaster audioBroadcaster = mBroadcasterMap.remove(id);
 
             if(audioBroadcaster != null)
             {
+                Iterator<ConfiguredBroadcast> it = mConfiguredBroadcasts.iterator();
+                while(it.hasNext())
+                {
+                    ConfiguredBroadcast configuredBroadcast = it.next();
+
+                    if(configuredBroadcast.getBroadcastConfiguration().getId() == id)
+                    {
+                        configuredBroadcast.setAudioBroadcaster(null);
+                        break;
+                    }
+                }
+
                 audioBroadcaster.stop();
                 audioBroadcaster.removeListener();
+                audioBroadcaster.dispose();
 
                 int index = mBroadcastConfigurations.indexOf(audioBroadcaster.getBroadcastConfiguration());
 
@@ -367,7 +427,15 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
      */
     public BroadcastConfiguration getBroadcastConfiguration(String streamName)
     {
-        return mBroadcastConfigurationMap.get(streamName);
+        for(BroadcastConfiguration config: mBroadcastConfigurations)
+        {
+            if(config.getName() != null && config.getName().contentEquals(streamName))
+            {
+                return config;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -408,24 +476,23 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
                     break;
                 case CONFIGURATION_CHANGE:
                     BroadcastConfiguration broadcastConfiguration = broadcastEvent.getBroadcastConfiguration();
-                    int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
 
-                    //Delete the existing broadcaster for any broadcast configuration changes
-                    String previousChannelName = cleanupMapAssociations(broadcastConfiguration);
-                    deleteBroadcaster(previousChannelName);
+                    //Delete the broadcaster if it exists
+                    deleteBroadcaster(broadcastConfiguration.getId());
 
                     //If the configuration is enabled, create a new broadcaster after a brief delay
                     if(broadcastConfiguration.isEnabled())
                     {
                         //Delay restarting the broadcaster to allow remote server time to cleanup
                         ThreadPool.SCHEDULED.schedule(new DelayedBroadcasterStartup(broadcastConfiguration),
-                            3, TimeUnit.SECONDS);
+                            1, TimeUnit.SECONDS);
                     }
 
+                    int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
                     fireTableRowsUpdated(index, index);
                     break;
                 case CONFIGURATION_DELETE:
-                    deleteBroadcaster(broadcastEvent.getBroadcastConfiguration().getName());
+                    deleteBroadcaster(broadcastEvent.getBroadcastConfiguration().getId());
                     break;
             }
         }
@@ -464,37 +531,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
 
         //Rebroadcast the event to any listeners of this model
         broadcast(broadcastEvent);
-    }
-
-    /**
-     * When the name of a broadcast configuration changes, remove the old map associations so that they can be replaced
-     * with the new map associations.  Remove any broadcaster that is associated with the old configuration name.
-     *
-     * @param broadcastConfiguration
-     * @return previous or current channel name that has been replaced with the current configuration channel name so
-     * that anything else associated with the previous name can be cleaned up.
-     */
-    private String cleanupMapAssociations(BroadcastConfiguration broadcastConfiguration)
-    {
-        String oldName = null;
-
-        for(Map.Entry<String,BroadcastConfiguration> entry : mBroadcastConfigurationMap.entrySet())
-        {
-            if(entry.getValue() == broadcastConfiguration)
-            {
-                oldName = entry.getKey();
-                continue;
-            }
-        }
-
-        if(oldName != null)
-        {
-            mBroadcastConfigurationMap.remove(oldName);
-        }
-
-        mBroadcastConfigurationMap.put(broadcastConfiguration.getName(), broadcastConfiguration);
-
-        return oldName;
     }
 
     @Override
@@ -657,37 +693,51 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
      */
     private void removeOrphanedTemporaryRecordings()
     {
-        Path path = SystemProperties.getInstance().getApplicationFolder(BroadcastModel.TEMPORARY_STREAM_DIRECTORY);
-
-        if(path != null && Files.isDirectory(path))
+        ThreadPool.SCHEDULED.submit(new Runnable()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.append(TEMPORARY_STREAM_FILE_SUFFIX);
-            sb.append("*.*");
-
-            try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path, sb.toString()))
+            @Override
+            public void run()
             {
-                directoryStream.forEach(new Consumer<Path>()
+                try
                 {
-                    @Override
-                    public void accept(Path path)
+                    Path path = SystemProperties.getInstance().getApplicationFolder(BroadcastModel.TEMPORARY_STREAM_DIRECTORY);
+
+                    if(path != null && Files.isDirectory(path))
                     {
-                        try
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(TEMPORARY_STREAM_FILE_SUFFIX);
+                        sb.append("*.*");
+
+                        try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path, sb.toString()))
                         {
-                            Files.delete(path);
+                            directoryStream.forEach(new Consumer<Path>()
+                            {
+                                @Override
+                                public void accept(Path path)
+                                {
+                                    try
+                                    {
+                                        Files.delete(path);
+                                    }
+                                    catch(IOException ioe)
+                                    {
+                                        mLog.error("Couldn't delete orphaned temporary recording: " + path.toString(), ioe);
+                                    }
+                                }
+                            });
                         }
                         catch(IOException ioe)
                         {
-                            mLog.error("Couldn't delete orphaned temporary recording: " + path.toString(), ioe);
+                            mLog.error("Error discovering orphaned temporary stream recording files", ioe);
                         }
                     }
-                });
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error during cleanup of orphaned temporary streaming recording files");
+                }
             }
-            catch(IOException ioe)
-            {
-                mLog.error("Error discovering orphaned temporary stream recording files", ioe);
-            }
-        }
+        });
     }
 
     /**
@@ -788,4 +838,29 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
             }
         }
     }
+
+    /**
+     * List change listener to detect broadcast configuration changes and broadcast a change event
+     */
+    public class ConfigurationChangeListener implements ListChangeListener<BroadcastConfiguration>
+    {
+        @Override
+        public void onChanged(Change<? extends BroadcastConfiguration> change)
+        {
+            while(change.next())
+            {
+                if(change.wasUpdated())
+                {
+                    for(int x = change.getFrom(); x < change.getTo(); x++)
+                    {
+                        BroadcastConfiguration config = change.getList().get(x);
+                        BroadcastEvent event = new BroadcastEvent(config, BroadcastEvent.Event.CONFIGURATION_CHANGE);
+                        process(event);
+                        broadcast(event);
+                    }
+                }
+            }
+        }
+    }
+
 }

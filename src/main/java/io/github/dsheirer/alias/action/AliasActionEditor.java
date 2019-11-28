@@ -1,20 +1,24 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+/*
+ *
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
+ *
+ *
+ */
 package io.github.dsheirer.alias.action;
 
 import io.github.dsheirer.alias.Alias;
@@ -26,10 +30,19 @@ import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.ListModel;
+import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import java.awt.*;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -178,7 +191,7 @@ public class AliasActionEditor extends Editor<Alias>
 	{
 		super.setItem( alias );
 		
-		if( alias == null || alias.getAction().isEmpty() )
+		if( alias == null || alias.getAliasActions().isEmpty() )
 		{
 			mAliasActionList.setModel( EMPTY_MODEL );
 		}
@@ -186,7 +199,7 @@ public class AliasActionEditor extends Editor<Alias>
 		{
 			DefaultListModel<AliasAction> model = new DefaultListModel<>();
 
-			List<AliasAction> actions = alias.getAction();
+			List<AliasAction> actions = alias.getAliasActions();
 			
 			Collections.sort( actions, new Comparator<AliasAction>()
 			{

@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -477,7 +477,10 @@ public class DecoderFactory
             switch(config.getDecoderType())
             {
                 case AM:
-                    return new DecodeConfigAM();
+                    DecodeConfigAM copyAM = new DecodeConfigAM();
+                    DecodeConfigAM origAM = (DecodeConfigAM)config;
+                    copyAM.setRecordAudio(origAM.getRecordAudio());
+                    return copyAM;
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
@@ -497,7 +500,11 @@ public class DecoderFactory
                     copyMPT.setTrafficChannelPoolSize(originalMPT.getTrafficChannelPoolSize());
                     return copyMPT;
                 case NBFM:
-                    return new DecodeConfigNBFM();
+                    DecodeConfigNBFM origNBFM = (DecodeConfigNBFM)config;
+                    DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
+                    copyNBFM.setRecordAudio(origNBFM.getRecordAudio());
+                    copyNBFM.setBandwidth(origNBFM.getBandwidth());
+                    return copyNBFM;
                 case P25_PHASE1:
                     DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;
                     DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();

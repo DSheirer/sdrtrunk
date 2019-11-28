@@ -124,6 +124,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Indicates if any channels are currently processing.
+     * @return true if channels are processing.
+     */
+    public boolean isProcessing()
+    {
+        return !mProcessingChains.isEmpty();
+    }
+
+    /**
      * Returns the current processing chain associated with the channel, or
      * null if a processing chain is not currently setup for the channel
      */
@@ -423,13 +432,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public void shutdown()
     {
-        mLog.debug("Stopping Channels ...");
-
         List<Channel> channelsToStop = new ArrayList<>(mProcessingChains.keySet());
 
         for(Channel channel : channelsToStop)
         {
-            mLog.debug("Stopping channel: " + channel.toString());
+            mLog.info("Stopping channel: " + channel.toString());
             stopProcessing(channel, true);
         }
     }

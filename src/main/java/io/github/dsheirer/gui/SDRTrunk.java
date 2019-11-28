@@ -60,6 +60,7 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconFontFX;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -164,6 +165,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         //Register FontAwesome so we can use the fonts in Swing windows
         IconFontSwing.register(FontAwesome.getIconFont());
+        IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
 
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
@@ -182,7 +184,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         RecorderManager recorderManager = new RecorderManager(aliasModel, mUserPreferences);
 
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
+        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, channelMapModel);
 
         mSourceManager = new SourceManager(tunerModel, mSettingsManager, mUserPreferences);
 
@@ -224,7 +226,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         tunerModel.addListener(this);
 
         PlaylistManager playlistManager = new PlaylistManager(aliasModel, mBroadcastModel, mChannelModel,
-            channelMapModel, mUserPreferences);
+            channelMapModel, tunerModel, mUserPreferences, mChannelProcessingManager);
 
         playlistManager.init();
 
