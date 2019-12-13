@@ -38,7 +38,7 @@ public enum DecoderType
     NBFM("NBFM", "NBFM", Protocol.UNKNOWN),
     PASSPORT("Passport", "Passport", Protocol.PASSPORT),
     P25_PHASE1("P25 Phase 1", "P25-1", Protocol.APCO25),
-    P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25),
+    P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),
 
     //Auxiliary Decoders
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
