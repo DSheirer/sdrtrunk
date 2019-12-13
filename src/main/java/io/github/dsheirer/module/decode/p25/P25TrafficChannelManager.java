@@ -98,7 +98,9 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     private List<Channel> mManagedPhase2TrafficChannels;
 
     private Map<APCO25Channel,Channel> mAllocatedTrafficChannelMap = new ConcurrentHashMap<>();
-    private Map<APCO25Channel,P25ChannelGrantEvent> mChannelGrantEventMap = new ConcurrentHashMap<>();
+    private Map<APCO25Channel,P25ChannelGrantEvent> mPhase1ChannelGrantEventMap = new ConcurrentHashMap<>();
+    private Map<APCO25Channel,P25ChannelGrantEvent> mPhase2TS0ChannelGrantEventMap = new ConcurrentHashMap<>();
+    private Map<APCO25Channel,P25ChannelGrantEvent> mPhase2TS1ChannelGrantEventMap = new ConcurrentHashMap<>();
 
     private Listener<ChannelEvent> mChannelEventListener;
     private Listener<IDecodeEvent> mDecodeEventListener;
@@ -271,7 +273,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                                     IdentifierCollection identifierCollection, Opcode opcode, long timestamp)
     {
 
-        P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
+        P25ChannelGrantEvent event = mPhase1ChannelGrantEventMap.get(apco25Channel);
 
         if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
         {
@@ -287,11 +289,11 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                     P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                         .channel(apco25Channel)
                         .eventDescription(getEventType(opcode, serviceOptions).toString() + " - Continue")
-                        .details("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+                        .details("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(identifierCollection)
                         .build();
 
-                    mChannelGrantEventMap.put(apco25Channel, continuationGrantEvent);
+                    mPhase1ChannelGrantEventMap.put(apco25Channel, continuationGrantEvent);
                     broadcast(continuationGrantEvent);
                 }
             }
@@ -309,7 +311,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 if(trafficChannel != null)
                 {
                     event.setEventDescription(getEventType(opcode, serviceOptions).toString());
-                    event.setDetails("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"));
+                    event.setDetails("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""));
                     event.setChannelDescriptor(apco25Channel);
                     broadcast(event);
                     SourceConfigTuner sourceConfig = new SourceConfigTuner();
@@ -328,11 +330,11 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                 .channel(apco25Channel)
                 .eventDescription(getEventType(opcode, serviceOptions).toString() + " - Ignored")
-                .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+                .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(identifierCollection)
                 .build();
 
-            mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
+            mPhase1ChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
 
             broadcast(channelGrantEvent);
             return;
@@ -341,11 +343,11 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
             .channel(apco25Channel)
             .eventDescription(getEventType(opcode, serviceOptions).toString())
-            .details("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+            .details("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
             .identifiers(identifierCollection)
             .build();
 
-        mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
+        mPhase1ChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
 
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
@@ -388,9 +390,25 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             ((MutableIdentifierCollection)identifierCollection).silentUpdate(ScrambleParameterIdentifier.create(mPhase2ScrambleParameters));
         }
 
-        P25ChannelGrantEvent event = mChannelGrantEventMap.get(apco25Channel);
+        int timeslot = apco25Channel.getTimeslot();
 
-        identifierCollection.setTimeslot(apco25Channel.getTimeslot());
+        P25ChannelGrantEvent event = null;
+
+        if(timeslot == 0)
+        {
+            event = mPhase2TS0ChannelGrantEventMap.get(apco25Channel);
+        }
+        else if(timeslot == 1)
+        {
+            event = mPhase2TS1ChannelGrantEventMap.get(apco25Channel);
+        }
+        else
+        {
+            mLog.error("Ignoring: Invalid timeslot [" + timeslot + "] detected for P25 Phase 2 Channel Grant.");
+            return;
+        }
+
+        identifierCollection.setTimeslot(timeslot);
 
         if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
         {
@@ -406,11 +424,19 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                     P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                         .channel(apco25Channel)
                         .eventDescription(getEventType(opcode, serviceOptions).toString() + " - Continue")
-                        .details("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+                        .details("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(identifierCollection)
                         .build();
 
-                    mChannelGrantEventMap.put(apco25Channel, continuationGrantEvent);
+                    if(timeslot == 0)
+                    {
+                        mPhase2TS0ChannelGrantEventMap.put(apco25Channel, continuationGrantEvent);
+                    }
+                    else
+                    {
+                        mPhase2TS1ChannelGrantEventMap.put(apco25Channel, continuationGrantEvent);
+                    }
+
                     broadcast(continuationGrantEvent);
                 }
             }
@@ -429,7 +455,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                 if(trafficChannel != null)
                 {
                     event.setEventDescription(getEventType(opcode, serviceOptions).toString());
-                    event.setDetails("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"));
+                    event.setDetails("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""));
                     event.setChannelDescriptor(apco25Channel);
                     broadcast(event);
                     SourceConfigTuner sourceConfig = new SourceConfigTuner();
@@ -456,11 +482,11 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
                 .channel(apco25Channel)
                 .eventDescription(getEventType(opcode, serviceOptions).toString() + " - Ignored")
-                .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+                .details("PHASE 2 DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(identifierCollection)
                 .build();
 
-            mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
+            mPhase1ChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
 
             broadcast(channelGrantEvent);
             return;
@@ -469,11 +495,18 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
             .channel(apco25Channel)
             .eventDescription(getEventType(opcode, serviceOptions).toString())
-            .details("CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : "UNKNOWN SERVICE OPTIONS"))
+            .details("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
             .identifiers(identifierCollection)
             .build();
 
-        mChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
+        if(timeslot == 0)
+        {
+            mPhase2TS0ChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
+        }
+        else
+        {
+            mPhase2TS1ChannelGrantEventMap.put(apco25Channel, channelGrantEvent);
+        }
 
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
@@ -735,6 +768,53 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
      */
     public class TrafficChannelTeardownMonitor implements Listener<ChannelEvent>
     {
+        /**
+         * Removes any call events that are associated with the specified channel.
+         * @param channel that was removed
+         */
+        private void cleanupCallEvents(Channel channel)
+        {
+            if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+            {
+                long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+
+                if(channel.getDecodeConfiguration().getDecoderType() == DecoderType.P25_PHASE1)
+                {
+                    List<APCO25Channel> channels = new ArrayList<>(mPhase1ChannelGrantEventMap.keySet());
+
+                    for(APCO25Channel p25Channel: channels)
+                    {
+                        if(p25Channel.getDownlinkFrequency() == frequency)
+                        {
+                            mPhase1ChannelGrantEventMap.remove(p25Channel);
+                        }
+                    }
+                }
+                else
+                {
+                    List<APCO25Channel> channels = new ArrayList<>(mPhase2TS0ChannelGrantEventMap.keySet());
+
+                    for(APCO25Channel p25Channel: channels)
+                    {
+                        if(p25Channel.getDownlinkFrequency() == frequency)
+                        {
+                            mPhase2TS0ChannelGrantEventMap.remove(p25Channel);
+                        }
+                    }
+
+                    channels = new ArrayList<>(mPhase2TS1ChannelGrantEventMap.keySet());
+
+                    for(APCO25Channel p25Channel: channels)
+                    {
+                        if(p25Channel.getDownlinkFrequency() == frequency)
+                        {
+                            mPhase2TS1ChannelGrantEventMap.remove(p25Channel);
+                        }
+                    }
+                }
+            }
+        }
+
         @Override
         public synchronized void receive(ChannelEvent channelEvent)
         {
@@ -773,15 +853,9 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                                 {
                                     mAvailablePhase2TrafficChannelQueue.add(channel);
                                 }
-
-                                P25ChannelGrantEvent event = mChannelGrantEventMap.remove(toRemove);
-
-                                if(event != null)
-                                {
-                                    event.end(System.currentTimeMillis());
-                                    broadcast(event);
-                                }
                             }
+
+                            cleanupCallEvents(channel);
                             break;
                         case NOTIFICATION_PROCESSING_START_REJECTED:
                             APCO25Channel rejected = null;
@@ -808,7 +882,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                                     mAvailablePhase2TrafficChannelQueue.add(channel);
                                 }
 
-                                P25ChannelGrantEvent event = mChannelGrantEventMap.get(rejected);
+                                P25ChannelGrantEvent event = mPhase1ChannelGrantEventMap.get(rejected);
 
                                 if(event != null)
                                 {
@@ -826,6 +900,8 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                                     broadcast(event);
                                 }
                             }
+
+                            cleanupCallEvents(channel);
                             break;
                     }
                 }
