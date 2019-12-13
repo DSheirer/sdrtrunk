@@ -41,6 +41,8 @@ import javax.swing.JCheckBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -83,46 +85,27 @@ public class P25P2DecoderEditor extends ValidatingEditor<Channel>
         add(new JLabel(" "));
         add(mAutoDetectCheckBox);
 
+        DocumentModificationListener documentModificationListener = new DocumentModificationListener();
+
         add(new JLabel("WACN:"));
         mWacnText = new JFormattedTextField();
         mWacnText.setToolTipText("Wide Area Communications Network (WACN) value in range: 0 - 1,048,575.  Set to 0 for auto-detect");
         mWacnText.setValue(Integer.valueOf(0));
-        mWacnText.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                setModified(true);
-            }
-        });
+        mWacnText.getDocument().addDocumentListener(documentModificationListener);
         add(mWacnText);
 
         add(new JLabel("SYSTEM:"));
         mSystemText = new JFormattedTextField();
         mSystemText.setToolTipText("System code in range: 0 - 4,095.  Set to 0 for auto-detect");
         mSystemText.setValue(Integer.valueOf(0));
-        mSystemText.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                setModified(true);
-            }
-        });
+        mSystemText.getDocument().addDocumentListener(documentModificationListener);
         add(mSystemText);
 
         add(new JLabel("NAC:"));
         mNacText = new JFormattedTextField();
         mSystemText.setToolTipText("Network Access Code (NAC): 0 - 4,095.  Set to 0 for auto-detect");
         mNacText.setValue(Integer.valueOf(0));
-        mNacText.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                setModified(true);
-            }
-        });
+        mNacText.getDocument().addDocumentListener(documentModificationListener);
         add(mNacText);
     }
 
@@ -271,6 +254,30 @@ public class P25P2DecoderEditor extends ValidatingEditor<Channel>
             mAutoDetectCheckBox.setSelected(false);
             setModified(false);
             setControlsEnabled(false);
+        }
+    }
+
+    /**
+     * Document change listener that sets the editor to modified (true) on any change to the document.
+     */
+    public class DocumentModificationListener implements DocumentListener
+    {
+        @Override
+        public void insertUpdate(DocumentEvent e)
+        {
+            setModified(true);
+        }
+
+        @Override
+        public void removeUpdate(DocumentEvent e)
+        {
+            setModified(true);
+        }
+
+        @Override
+        public void changedUpdate(DocumentEvent e)
+        {
+            setModified(true);
         }
     }
 }
