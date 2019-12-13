@@ -28,8 +28,6 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.channel.state.TimeslotDecoderState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
-import io.github.dsheirer.controller.channel.ChannelEvent;
-import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -87,7 +85,6 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToU
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.UnitToUnitVoiceChannelUserExtended;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
-import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,14 +93,13 @@ import org.slf4j.LoggerFactory;
  * by monitoring the decoded message stream.
  *
  */
-public class P25P2DecoderState extends TimeslotDecoderState implements IChannelEventListener, IdentifierUpdateListener
+public class P25P2DecoderState extends TimeslotDecoderState implements IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderState.class);
 
     private ChannelType mChannelType;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private P25P2NetworkConfigurationMonitor mNetworkConfigurationMonitor = new P25P2NetworkConfigurationMonitor();
-    private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
 
     /**
@@ -126,16 +122,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
     }
 
     /**
-     * Implements the IChannelEventListener interface to receive traffic channel teardown notifications so that the
-     * traffic channel manager can manage traffic channel allocations.
-     */
-    @Override
-    public Listener<ChannelEvent> getChannelEventListener()
-    {
-        return mChannelEventListener;
-    }
-
-    /**
      * Performs a full reset to prepare this object for reuse on a new channel
      */
     @Override
@@ -145,7 +131,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements IChannelE
         resetState();
     }
 
-/**
+    /**
      * Resets any temporal state details
      */
     protected void resetState()
