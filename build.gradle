@@ -32,7 +32,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.4.0-beta.1'
+version = '0.4.0-beta.2'
 sourceCompatibility = '11'
 
 sourceSets {
@@ -56,7 +56,7 @@ dependencies {
     compile 'com.jidesoft:jide-oss:3.6.18'
     compile 'com.miglayout:miglayout-swing:5.2'
     compile 'eu.hansolo:charts:1.0.5'
-    compile 'io.github.dsheirer:radio-reference-api:15.0.1'
+    compile 'io.github.dsheirer:radio-reference-api:15.1.2'
     compile 'javax.usb:usb-api:1.0.2'
     compile 'net.coderazzi:tablefilter-swing:5.4.0'
     compile 'org.apache.commons:commons-lang3:3.8.1'
@@ -102,7 +102,7 @@ jar {
         attributes (
             'Implementation-Title'  : 'sdrtrunk project',
             'Implementation-Version' : archiveVersion,
-            'Class-Path'            : 'jmbe-1.0.0.jar',
+            'Class-Path'            : 'jmbe-1.0.1.jar',
             'Created-By'            : "Gradle ${gradle.gradleVersion}",
             'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
             'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
@@ -126,11 +126,11 @@ def jdkWindows_x86 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-13.0.1'
 //def jfxLinux_arm32 = '/media/denny/WD250GB/java/bellsoft/linux-arm32/armv6hf-sdk/lib'
 
 runtime {
-    targetPlatform('linux-x64', jdkLinux_x64)
-    targetPlatform('linux-x86', jdkLinux_x86)
-    targetPlatform('osx-x64', jdkOsx_x64)
-    targetPlatform('windows-x64', jdkWindows_x64)
-    targetPlatform('windows-x86', jdkWindows_x86)
+    targetPlatform('linux-x86_64', jdkLinux_x64)
+    targetPlatform('linux-x86_32', jdkLinux_x86)
+    targetPlatform('osx-x86_64', jdkOsx_x64)
+    targetPlatform('windows-x86_64', jdkWindows_x64)
+    targetPlatform('windows-x86_32', jdkWindows_x86)
 //    targetPlatform('linux-aarch64', jdkLinux_aarch64)
 //    targetPlatform('linux-arm32', jdkLinux_arm32)
 
@@ -212,11 +212,11 @@ tasks.runtime.doFirst {
  * remove them from each build image
  */
 tasks.runtime.doLast {
-    delete(fileTree('build/image/sdr-trunk-linux-x64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-linux-x86/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-osx-x64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x86_64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x86_32/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-osx-x86_64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86_64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86_32/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
 
 //    delete(fileTree('build/image/sdr-trunk-linux-aarch64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
 //    delete(fileTree('build/image/sdr-trunk-linux-arm32/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
