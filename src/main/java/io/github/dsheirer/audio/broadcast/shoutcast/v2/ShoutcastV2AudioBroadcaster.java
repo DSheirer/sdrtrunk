@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast.shoutcast.v2;
 
@@ -278,6 +280,8 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
             if(identifierCollection != null)
             {
+                StringBuilder sbTitle2 = new StringBuilder();
+
                 AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
 
                 Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
@@ -289,37 +293,39 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
                 if(to != null)
                 {
-                    sb.append("TO:").append(to);
+                    sbTitle2.append("TO:").append(to);
 
                     List<Alias> aliases = aliasList.getAliases(to);
 
                     if(!aliases.isEmpty())
                     {
-                        sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
+                        sbTitle2.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
                     }
                 }
                 else
                 {
-                    sb.append("TO:UNKNOWN");
+                    sbTitle2.append("TO:UNKNOWN");
                 }
 
                 Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
 
                 if(from != null)
                 {
-                    sb.append(" FROM:").append(from);
+                    sbTitle2.append(" FROM:").append(from);
 
                     List<Alias> aliases = aliasList.getAliases(from);
 
                     if(!aliases.isEmpty())
                     {
-                        sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
+                        sbTitle2.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
                     }
                 }
                 else
                 {
-                    sb.append(" FROM:UNKNOWN");
+                    sbTitle2.append(" FROM:UNKNOWN");
                 }
+
+                sb.append(UltravoxMetadata.TITLE_2.asXML(sbTitle2.toString()));
             }
             else
             {
