@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast.icecast;
 
@@ -31,43 +33,26 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
-import org.apache.mina.core.RuntimeIoException;
-import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.http.HttpClientCodec;
-import org.apache.mina.http.HttpRequestImpl;
-import org.apache.mina.http.api.HttpMethod;
-import org.apache.mina.http.api.HttpRequest;
-import org.apache.mina.http.api.HttpVersion;
-import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.net.URLEncoder;
-import java.nio.channels.UnresolvedAddressException;
-import java.util.HashMap;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdater
 {
     private final static Logger mLog = LoggerFactory.getLogger(IcecastBroadcastMetadataUpdater.class);
     private final static String UTF8 = "UTF-8";
-
+    private HttpClient mHttpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
     private IcecastConfiguration mIcecastConfiguration;
     private AliasModel mAliasModel;
-    private NioSocketConnector mSocketConnector;
-    private AtomicBoolean mUpdating = new AtomicBoolean();
-    private Queue<String> mMetadataQueue = new LinkedTransferQueue<>();
-    private Map<String,String> mHTTPHeaders;
-    private boolean mStackTraceLoggingSuppressed;
+    private boolean mConnectionLoggingSuppressed = false;
 
     /**
      * Icecast song metadata updater.  Each metadata update is processed in the order received and the dispatch of
@@ -82,41 +67,6 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     }
 
     /**
-     * Socket connector - lazy constructor.
-     */
-    private NioSocketConnector getSocketConnector()
-    {
-        if(mSocketConnector == null)
-        {
-            mSocketConnector = new NioSocketConnector();
-//            mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastBroadcastMetadataUpdater.class));
-            mSocketConnector.getFilterChain().addLast("http_client_codec", new HttpClientCodec());
-
-            //Each metadata update session is single-use, so we'll shut it down upon success or failure
-            mSocketConnector.setHandler(new IoHandlerAdapter()
-            {
-                @Override
-                public void exceptionCaught(IoSession session, Throwable cause) throws Exception
-                {
-                    //Single-use session - close it after we receive an error
-                    session.closeNow();
-
-                    mLog.error("Metadata update failed");
-                }
-
-                @Override
-                public void messageReceived(IoSession session, Object message) throws Exception
-                {
-                    //Single-use session - close it after we receive a response
-                    session.closeNow();
-                }
-            });
-        }
-
-        return mSocketConnector;
-    }
-
-    /**
      * Sends a song metadata update to the remote server.  Additional metadata updates received while the updater
      * is in the process of sending an existing metadata update will be queued and processed in received order.
      *
@@ -126,66 +76,87 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      */
     public void update(IdentifierCollection identifierCollection)
     {
-        mMetadataQueue.offer(getSong(identifierCollection));
+        StringBuilder sb = new StringBuilder();
 
-        if(!mUpdating.get() && !mMetadataQueue.isEmpty())
+        try
         {
-            Runnable runnable =  new Runnable()
+            sb.append("http://");
+            sb.append(mIcecastConfiguration.getHost());
+            sb.append(":");
+            sb.append(mIcecastConfiguration.getPort());
+            sb.append("/admin/metadata?mode=updinfo&mount=");
+            sb.append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
+            sb.append("&charset=UTF%2d8");
+            sb.append("&song=").append(URLEncoder.encode(getSong(identifierCollection), UTF8));
+        }
+        catch(UnsupportedEncodingException uee)
+        {
+            mLog.error("Error encoding metadata information to UTF-8", uee);
+            sb = null;
+        }
+
+        if(sb != null)
+        {
+            final String metadataUpdateURL = sb.toString();
+            URI uri = URI.create(metadataUpdateURL);
+
+            ThreadPool.SCHEDULED.submit(new Runnable()
             {
                 @Override
                 public void run()
                 {
-                    if(!mMetadataQueue.isEmpty() && mUpdating.compareAndSet(false, true))
+                    try
                     {
+                        HttpRequest request = HttpRequest.newBuilder()
+                            .uri(uri)
+                            .header(IcecastHeader.AUTHORIZATION.getValue(), mIcecastConfiguration.getBase64EncodedCredentials())
+                            .header(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName())
+                            .GET()
+                            .build();
+
+                        HttpResponse<String> response = null;
+
                         try
                         {
-                            ConnectFuture connectFuture = getSocketConnector()
-                                .connect(new InetSocketAddress(mIcecastConfiguration.getHost(),
-                                    mIcecastConfiguration.getPort()));
-                            connectFuture.awaitUninterruptibly();
-                            IoSession session = connectFuture.getSession();
-
-                            if(session != null)
+                            response = mHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                        }
+                        catch(IOException ioe)
+                        {
+                            if(!mConnectionLoggingSuppressed)
                             {
-                                String song = mMetadataQueue.poll();
+                                mLog.error("IO Error submitting Icecast metadata update [" +
+                                    (metadataUpdateURL != null ? metadataUpdateURL : "no url"), ioe);
+                                mConnectionLoggingSuppressed = true;
+                            }
+                        }
+                        catch(InterruptedException ie)
+                        {
+                            mLog.error("Interrupted Exception Error", ie);
+                        }
 
-                                while(song != null)
+                        if(response != null)
+                        {
+                            if(response.statusCode() == 200)
+                            {
+                                mConnectionLoggingSuppressed = false;
+                            }
+                            else
+                            {
+                                if(!mConnectionLoggingSuppressed)
                                 {
-                                    HttpRequest updateRequest = createUpdateRequest(song);
-
-                                    if(updateRequest != null)
-                                    {
-                                        session.write(updateRequest);
-                                    }
-
-                                    //Fetch next metadata update to send
-                                    song = mMetadataQueue.poll();
+                                    mLog.info("Error submitting Icecast 2 Metadata update to URL [" + metadataUpdateURL +
+                                        "] HTTP Response Code [" + response.statusCode() + "] Body [" + response.body() + "]");
+                                    mConnectionLoggingSuppressed = true;
                                 }
-
-                                session.closeNow();
                             }
                         }
-                        catch(UnresolvedAddressException | RuntimeIoException ure)
-                        {
-                            //Do nothing - the server is temporarily unavailable
-                        }
-                        catch(Exception e)
-                        {
-                            Throwable throwableCause = e.getCause();
-
-                            if(!mStackTraceLoggingSuppressed)
-                            {
-                                mLog.error("Error sending metadata update.  Future errors will be suppressed", e);
-                                mStackTraceLoggingSuppressed = true;
-                            }
-                        }
-
-                        mUpdating.set(false);
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("There was an error submitting an Icecast metadata update", t);
                     }
                 }
-            };
-
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            });
         }
     }
 
@@ -213,7 +184,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
 
                 List<Alias> aliases = aliasList.getAliases(to);
 
-                if(!aliases.isEmpty())
+                if(aliases != null && !aliases.isEmpty())
                 {
                     sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
                 }
@@ -231,7 +202,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
 
                 List<Alias> aliases = aliasList.getAliases(from);
 
-                if(!aliases.isEmpty())
+                if(aliases != null && !aliases.isEmpty())
                 {
                     sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
                 }
@@ -247,47 +218,5 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
         }
 
         return sb.toString();
-    }
-
-    /**
-     * Creates an HTTP GET request to update the metadata on the remote server
-     */
-    private HttpRequest createUpdateRequest(String song)
-    {
-        try
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.append("mode=updinfo");
-            sb.append("&mount=").append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
-            sb.append("&charset=UTF%2d8");
-            sb.append("&song=").append(URLEncoder.encode(song, UTF8));
-
-            HttpRequestImpl request = new HttpRequestImpl(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/metadata",
-                sb.toString(), getHTTPHeaders());
-
-            return request;
-        }
-        catch(UnsupportedEncodingException e)
-        {
-            //This should never happen
-            mLog.error("UTF-8 encoding is not supported - can't update song metadata");
-        }
-
-        return null;
-    }
-
-    /**
-     * HTTP headers to use for a metadata update request.
-     */
-    private Map<String,String> getHTTPHeaders()
-    {
-        if(mHTTPHeaders == null)
-        {
-            mHTTPHeaders = new HashMap<>();
-            mHTTPHeaders.put(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
-            mHTTPHeaders.put(IcecastHeader.AUTHORIZATION.getValue(), mIcecastConfiguration.getBase64EncodedCredentials());
-        }
-
-        return mHTTPHeaders;
     }
 }
