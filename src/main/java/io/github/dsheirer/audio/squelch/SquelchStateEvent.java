@@ -69,4 +69,11 @@ public class SquelchStateEvent
     {
         return new SquelchStateEvent(squelchState, timeslot);
     }
+
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Squelch Event - State:").append(mSquelchState).append(" Timeslot:").append(mTimeslot);
+        return sb.toString();
+    }
 }
