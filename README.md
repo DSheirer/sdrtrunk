@@ -35,6 +35,11 @@ Once unzipped, open a command prompt to where you unzipped the release.  Change 
 ## Optional - P25 Audio
 If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) wiki page contains instructions for downloading the JMBE audio library source code and compiling the JMBE library.  Once you have compiled the library, launch the sdrtrunk application.  From the menu bar, choose **View >> Preferences**.  In the **JMBE Audio Codec** section, update the path to where your compiled JMBE library is located.  Any channels that are started after you set the path will be able to produce P25 audio.
 
+## Minimum System Requirements
+* **Operating System:** Windows (32 or 64-bit), Linux (32 or 64-bit) or Mac/Linux (64-bit)
+* **CPU:** 4-core
+* **RAM:** 8GB or more (preferred).  Depending on usage, 4GB may be sufficient.
+
 # Developer Instructions:
 
 If you're interested in modifying and/or compiling the source code, please follow these instructions to use gradle to compile the code. 
