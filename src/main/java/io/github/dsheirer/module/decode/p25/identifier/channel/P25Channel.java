@@ -122,7 +122,10 @@ public class P25Channel implements IChannelDescriptor
     @Override
     public void setFrequencyBand(IFrequencyBand frequencyBand)
     {
-        mFrequencyBand = frequencyBand;
+        if(frequencyBand.getIdentifier() == getDownlinkBandIdentifier())
+        {
+            mFrequencyBand = frequencyBand;
+        }
     }
 
     @Override
@@ -206,7 +209,6 @@ public class P25Channel implements IChannelDescriptor
                 .append("-")
                 .append(getDownlinkLogicalChannelNumber())
                 .append("/-----");
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/-----";
         }
 
         if(isTDMAChannel())
