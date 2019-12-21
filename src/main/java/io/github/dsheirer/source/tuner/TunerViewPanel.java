@@ -29,13 +29,16 @@ import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.recording.AddRecordingTunerDialog;
+import io.github.dsheirer.source.tuner.recording.RecordingTuner;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -144,19 +147,45 @@ public class TunerViewPanel extends JPanel
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                int column = mTunerTable.columnAtPoint(e.getPoint());
+                if(e.getButton() == MouseEvent.BUTTON1) //Left-Click
+                {
+                    int column = mTunerTable.columnAtPoint(e.getPoint());
 
-                if(column == TunerModel.SPECTRAL_DISPLAY_NEW)
+                    if(column == TunerModel.SPECTRAL_DISPLAY_NEW)
+                    {
+                        int tableRow = mTunerTable.rowAtPoint(e.getPoint());
+                        int modelRow = mTunerTable.convertRowIndexToModel(tableRow);
+
+                        Tuner tuner = mTunerModel.getTuner(modelRow);
+
+                        if(tuner != null)
+                        {
+                            mTunerModel.broadcast(new TunerEvent(tuner,
+                                Event.REQUEST_NEW_SPECTRAL_DISPLAY));
+                        }
+                    }
+                }
+                else if(e.getButton() == MouseEvent.BUTTON3) //Right-Click
                 {
                     int tableRow = mTunerTable.rowAtPoint(e.getPoint());
                     int modelRow = mTunerTable.convertRowIndexToModel(tableRow);
 
-                    Tuner tuner = mTunerModel.getTuner(modelRow);
+                    final Tuner tuner = mTunerModel.getTuner(modelRow);
 
-                    if(tuner != null)
+                    if(tuner instanceof RecordingTuner && tuner.getChannelSourceManager().getTunerChannelCount() == 0)
                     {
-                        mTunerModel.broadcast(new TunerEvent(tuner,
-                            Event.REQUEST_NEW_SPECTRAL_DISPLAY));
+                        JPopupMenu popupMenu = new JPopupMenu();
+                        JMenuItem removeTunerItem = new JMenuItem("Remove Recording Tuner");
+                        removeTunerItem.addActionListener(new ActionListener()
+                        {
+                            @Override
+                            public void actionPerformed(ActionEvent e)
+                            {
+                                mTunerModel.removeTuner(tuner);
+                            }
+                        });
+                        popupMenu.add(removeTunerItem);
+                        popupMenu.show(mTunerTable, e.getX(), e.getY());
                     }
                 }
             }
