@@ -30,16 +30,10 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
-import javax.swing.filechooser.FileFilter;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.io.File;
 
 public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
 {
@@ -48,7 +42,6 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
     private final static Logger mLog = LoggerFactory.getLogger(RecordingTunerConfigurationEditor.class);
 
     private JTextField mConfigurationName;
-    private JButton mRecordingChooserButton;
     private JLabel mRecordingPath;
     private boolean mLoading;
 
@@ -105,44 +98,7 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
         add(new JLabel("Name:"));
         add(mConfigurationName, "span, wrap");
 
-        mRecordingChooserButton = new JButton("Recording");
-        mRecordingChooserButton.setEnabled(false);
-        mRecordingChooserButton.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                final JFileChooser chooser = new JFileChooser();
-                chooser.setFileFilter(new FileFilter()
-                {
-                    @Override
-                    public boolean accept(File f)
-                    {
-                        return f.isDirectory() || f.getName().matches(".*.wav");
-                    }
-
-                    @Override
-                    public String getDescription()
-                    {
-                        return "Baseband Recordings (*.wav)";
-                    }
-                });
-                int returnVal = chooser.showOpenDialog(RecordingTunerConfigurationEditor.this);
-
-                if (returnVal == JFileChooser.APPROVE_OPTION)
-                {
-                    File file = chooser.getSelectedFile();
-
-                    if(file != null)
-                    {
-                        mRecordingPath.setText(file.getAbsolutePath());
-                        save();
-                    }
-                }
-            }
-        });
-        add(mRecordingChooserButton);
-
+        add(new JLabel("File:"));
         mRecordingPath = new JLabel();
         add(mRecordingPath);
     }
@@ -155,11 +111,6 @@ public class RecordingTunerConfigurationEditor extends TunerConfigurationEditor
         if(mConfigurationName.isEnabled() != enabled)
         {
             mConfigurationName.setEnabled(enabled);
-        }
-
-        if(mRecordingChooserButton.isEnabled() != enabled)
-        {
-            mRecordingChooserButton.setEnabled(enabled);
         }
     }
 
