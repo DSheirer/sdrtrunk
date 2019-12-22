@@ -25,10 +25,9 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
@@ -59,13 +58,13 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
 
     private List<Identifier> mIdentifiers;
     private VoiceServiceOptions mVoiceServiceOptionsA;
-    private TalkgroupIdentifier mGroupAddressA;
+    private Identifier mGroupAddressA;
     private APCO25Channel mChannelA;
     private VoiceServiceOptions mVoiceServiceOptionsB;
-    private TalkgroupIdentifier mGroupAddressB;
+    private Identifier mGroupAddressB;
     private APCO25Channel mChannelB;
     private VoiceServiceOptions mVoiceServiceOptionsC;
-    private TalkgroupIdentifier mGroupAddressC;
+    private Identifier mGroupAddressC;
     private APCO25Channel mChannelC;
 
     /**
@@ -192,11 +191,11 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
     /**
      * Talkgroup channel A
      */
-    public TalkgroupIdentifier getGroupAddressA()
+    public Identifier getGroupAddressA()
     {
         if(mGroupAddressA == null)
         {
-            mGroupAddressA = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_A, getOffset()));
+            mGroupAddressA = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS_A, getOffset()));
         }
 
         return mGroupAddressA;
@@ -205,11 +204,11 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
     /**
      * Talkgroup channel B
      */
-    public TalkgroupIdentifier getGroupAddressB()
+    public Identifier getGroupAddressB()
     {
         if(mGroupAddressB == null)
         {
-            mGroupAddressB = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_B, getOffset()));
+            mGroupAddressB = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS_B, getOffset()));
         }
 
         return mGroupAddressB;
@@ -218,11 +217,11 @@ public class GroupVoiceChannelGrantUpdateMultiple extends MacStructure implement
     /**
      * Talkgroup channel C
      */
-    public TalkgroupIdentifier getGroupAddressC()
+    public Identifier getGroupAddressC()
     {
         if(mGroupAddressC == null)
         {
-            mGroupAddressC = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_C, getOffset()));
+            mGroupAddressC = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS_C, getOffset()));
         }
 
         return mGroupAddressC;

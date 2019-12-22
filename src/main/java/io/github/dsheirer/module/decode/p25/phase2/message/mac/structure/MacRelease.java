@@ -24,9 +24,8 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -44,7 +43,7 @@ public class MacRelease extends MacStructure
     private static final int[] COLOR_CODE = {44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mTargetAddress;
+    private Identifier mTargetAddress;
     private Identifier mNac;
 
     /**
@@ -93,11 +92,11 @@ public class MacRelease extends MacStructure
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;

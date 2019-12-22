@@ -20,45 +20,23 @@
  *
  */
 
-package io.github.dsheirer.identifier.talkgroup;
+package io.github.dsheirer.identifier.radio;
 
-/**
- * Fully qualified radio identifier
- */
-public class FullyQualifiedIdentifier
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+
+public abstract class RadioIdentifier extends IntegerIdentifier
 {
-    private int mWacn;
-    private int mSystem;
-    private int mId;
-
-    /**
-     * Constructs an instance
-     * @param wacn
-     * @param system
-     * @param id
-     */
-    public FullyQualifiedIdentifier(int wacn, int system, int id)
+    public RadioIdentifier(Integer value, Role role)
     {
-        mWacn = wacn;
-        mSystem = system;
-        mId = id;
+        super(value, IdentifierClass.USER, Form.RADIO, role);
     }
 
     @Override
-    public String toString()
+    public boolean isValid()
     {
-        return mWacn + "." + mSystem + "." + mId;
-    }
-
-    /**
-     * Creates an instance with the specified values
-     * @param wacn value
-     * @param system value
-     * @param id value
-     * @return instance
-     */
-    public static FullyQualifiedIdentifier create(int wacn, int system, int id)
-    {
-        return new FullyQualifiedIdentifier(wacn, system, id);
+        return getValue() > 0;
     }
 }

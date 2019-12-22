@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
@@ -154,7 +154,7 @@ public class HeaderData
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = APCO25ToTalkgroup.createGroup(getMessage().getInt(TALKGROUP_ID));
+            mTalkgroup = APCO25Talkgroup.create(getMessage().getInt(TALKGROUP_ID));
         }
 
         return mTalkgroup;

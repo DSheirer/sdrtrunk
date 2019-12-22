@@ -25,10 +25,9 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
@@ -48,9 +47,9 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
     private static final int[] GROUP_ADDRESS_B = {56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mGroupAddressA;
+    private Identifier mGroupAddressA;
     private APCO25Channel mChannelA;
-    private TalkgroupIdentifier mGroupAddressB;
+    private Identifier mGroupAddressB;
     private APCO25Channel mChannelB;
 
     /**
@@ -104,11 +103,11 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
     /**
      * Talkgroup channel A
      */
-    public TalkgroupIdentifier getGroupAddressA()
+    public Identifier getGroupAddressA()
     {
         if(mGroupAddressA == null)
         {
-            mGroupAddressA = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_A, getOffset()));
+            mGroupAddressA = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS_A, getOffset()));
         }
 
         return mGroupAddressA;
@@ -117,11 +116,11 @@ public class GroupVoiceChannelGrantUpdate extends MacStructure implements IFrequ
     /**
      * Talkgroup channel B
      */
-    public TalkgroupIdentifier getGroupAddressB()
+    public Identifier getGroupAddressB()
     {
         if(mGroupAddressB == null)
         {
-            mGroupAddressB = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS_B, getOffset()));
+            mGroupAddressB = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS_B, getOffset()));
         }
 
         return mGroupAddressB;

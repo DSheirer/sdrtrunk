@@ -25,11 +25,10 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2ExplicitChannel;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
@@ -51,7 +50,7 @@ public class GroupVoiceChannelGrantUpdateExplicit extends MacStructure implement
 
     private List<Identifier> mIdentifiers;
     private VoiceServiceOptions mVoiceServiceOptions;
-    private TalkgroupIdentifier mGroupAddress;
+    private Identifier mGroupAddress;
     private APCO25Channel mChannel;
 
     /**
@@ -103,11 +102,11 @@ public class GroupVoiceChannelGrantUpdateExplicit extends MacStructure implement
     /**
      * Talkgroup channel A
      */
-    public TalkgroupIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mGroupAddress = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS, getOffset()));
         }
 
         return mGroupAddress;

@@ -22,21 +22,18 @@
 
 package io.github.dsheirer.module.decode.p25.identifier.talkgroup;
 
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.talkgroup.FullyQualifiedIdentifier;
+import io.github.dsheirer.identifier.talkgroup.FullyQualifiedTalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Fully Qualified Radio Identifier (talkgroup) that includes WACN, System, and Radio Address.
  */
-public class APCO25FullyQualifiedIdentifier extends Identifier<FullyQualifiedIdentifier>
+public class APCO25FullyQualifiedTalkgroupIdentifier extends FullyQualifiedTalkgroupIdentifier
 {
-    public APCO25FullyQualifiedIdentifier(FullyQualifiedIdentifier value, Role role)
+    public APCO25FullyQualifiedTalkgroupIdentifier(int wacn, int system, int id, Role role)
     {
-        super(value, IdentifierClass.USER, Form.FULLY_QUALIFIED_IDENTIFIER, role);
+        super(wacn, system, id, role);
     }
 
     @Override
@@ -45,13 +42,18 @@ public class APCO25FullyQualifiedIdentifier extends Identifier<FullyQualifiedIde
         return Protocol.APCO25;
     }
 
-    public static APCO25FullyQualifiedIdentifier createFrom(int wacn, int system, int id)
+    public static APCO25FullyQualifiedTalkgroupIdentifier createFrom(int wacn, int system, int id)
     {
-        return new APCO25FullyQualifiedIdentifier(FullyQualifiedIdentifier.create(wacn, system, id), Role.FROM);
+        return new APCO25FullyQualifiedTalkgroupIdentifier(wacn, system, id, Role.FROM);
     }
 
-    public static APCO25FullyQualifiedIdentifier createTo(int wacn, int system, int id)
+    public static APCO25FullyQualifiedTalkgroupIdentifier createTo(int wacn, int system, int id)
     {
-        return new APCO25FullyQualifiedIdentifier(FullyQualifiedIdentifier.create(wacn, system, id), Role.TO);
+        return new APCO25FullyQualifiedTalkgroupIdentifier(wacn, system, id, Role.TO);
+    }
+
+    public static APCO25FullyQualifiedTalkgroupIdentifier createAny(int wacn, int system, int id)
+    {
+        return new APCO25FullyQualifiedTalkgroupIdentifier(wacn, system, id, Role.ANY);
     }
 }

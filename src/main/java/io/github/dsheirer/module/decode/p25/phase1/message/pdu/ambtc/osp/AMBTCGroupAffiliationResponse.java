@@ -1,31 +1,32 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
-import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnnouncementTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FullyQualifiedTalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 
@@ -50,12 +51,8 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
     private static final int[] BLOCK_1_ANNOUNCEMENT_GROUP_ID = {0, 1, 2, 3, 4, 5, 6, 7};
 
     private Identifier mTargetAddress;
-    private Identifier mSourceWacn;
-    private Identifier mSourceSystem;
-    private Identifier mSourceId;
-    private Identifier mGroupWacn;
-    private Identifier mGroupSystem;
-    private Identifier mGroupId;
+    private APCO25FullyQualifiedRadioIdentifier mSourceId;
+    private APCO25FullyQualifiedTalkgroupIdentifier mGroupId;
     private Identifier mAnnouncementGroupId;
     private List<Identifier> mIdentifiers;
 
@@ -72,33 +69,17 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
         {
             sb.append(" TO:").append(getTargetAddress());
         }
-        if(getSourceWacn() != null)
-        {
-            sb.append(" FM WACN:").append(getSourceWacn());
-        }
-        if(getSourceSystem() != null)
-        {
-            sb.append(" FM SYSTEM:").append(getSourceSystem());
-        }
         if(getSourceId() != null)
         {
-            sb.append(" FM ID:").append(getSourceId());
-        }
-        if(getGroupWacn() != null)
-        {
-            sb.append(" GRP WACN:").append(getGroupWacn());
-        }
-        if(getGroupSystem() != null)
-        {
-            sb.append(" GRP SYSTEM:").append(getGroupSystem());
+            sb.append(" FM:").append(getSourceId());
         }
         if(getGroupId() != null)
         {
-            sb.append(" GRP ID:").append(getGroupId());
+            sb.append(" GROUP:").append(getGroupId());
         }
         if(getAnnouncementGroupId() != null)
         {
-            sb.append(" ANNOUNCEMENT GRP:").append(getAnnouncementGroupId());
+            sb.append(" ANNOUNCEMENT GROUP:").append(getAnnouncementGroupId());
         }
 
         return sb.toString();
@@ -108,70 +89,36 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
+            mTargetAddress = APCO25Radio.createTo(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
         }
 
         return mTargetAddress;
     }
 
-    public Identifier getSourceWacn()
-    {
-        if(mSourceWacn == null && hasDataBlock(0))
-        {
-            int value = getHeader().getMessage().getInt(HEADER_SOURCE_WACN);
-            value <<= 4;
-            value += getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_WACN);
-            mSourceWacn = APCO25Wacn.create(value);
-        }
-
-        return mSourceWacn;
-    }
-
-    public Identifier getSourceSystem()
-    {
-        if(mSourceSystem == null && hasDataBlock(0))
-        {
-            mSourceSystem = APCO25System.create(getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_SYSTEM));
-        }
-
-        return mSourceSystem;
-    }
-
-    public Identifier getSourceId()
+    public APCO25FullyQualifiedRadioIdentifier getSourceId()
     {
         if(mSourceId == null && hasDataBlock(0))
         {
-            mSourceId = APCO25FromTalkgroup.createIndividual(getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_ID));
+            int wacn = getHeader().getMessage().getInt(HEADER_SOURCE_WACN);
+            wacn <<= 4;
+            wacn += getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_WACN);
+            int system = getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_SYSTEM);
+            int id = getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_ID);
+
+            mSourceId = APCO25FullyQualifiedRadioIdentifier.createFrom(wacn, system, id);
         }
 
         return mSourceId;
     }
 
-    public Identifier getGroupWacn()
-    {
-        if(mGroupWacn == null && hasDataBlock(0))
-        {
-            mGroupWacn = APCO25Wacn.create(getDataBlock(0).getMessage().getInt(BLOCK_0_GROUP_WACN));
-        }
-
-        return mGroupWacn;
-    }
-
-    public Identifier getGroupSystem()
-    {
-        if(mGroupSystem == null && hasDataBlock(0))
-        {
-            mGroupSystem = APCO25System.create(getDataBlock(0).getMessage().getInt(BLOCK_0_GROUP_SYSTEM));
-        }
-
-        return mGroupSystem;
-    }
-
-    public Identifier getGroupId()
+    public APCO25FullyQualifiedTalkgroupIdentifier getGroupId()
     {
         if(mGroupId == null && hasDataBlock(0))
         {
-            mGroupId = APCO25ToTalkgroup.createGroup(getDataBlock(0).getMessage().getInt(BLOCK_0_GROUP_ID));
+            int wacn = getDataBlock(0).getMessage().getInt(BLOCK_0_GROUP_WACN);
+            int system = getDataBlock(0).getMessage().getInt(BLOCK_0_GROUP_SYSTEM);
+            int id = getDataBlock(0).getMessage().getInt(BLOCK_0_GROUP_ID);
+            mGroupId = APCO25FullyQualifiedTalkgroupIdentifier.createAny(wacn, system, id);
         }
 
         return mGroupId;
@@ -202,29 +149,9 @@ public class AMBTCGroupAffiliationResponse extends AMBTCMessage
             {
                 mIdentifiers.add(getTargetAddress());
             }
-            if(getSourceWacn() != null)
-            {
-                mIdentifiers.add(getSourceWacn());
-            }
-            if(getSourceSystem() != null)
-            {
-                mIdentifiers.add(getSourceSystem());
-            }
             if(getSourceId() != null)
             {
                 mIdentifiers.add(getSourceId());
-            }
-            if(getTargetAddress() != null)
-            {
-                mIdentifiers.add(getTargetAddress());
-            }
-            if(getGroupWacn() != null)
-            {
-                mIdentifiers.add(getGroupWacn());
-            }
-            if(getGroupSystem() != null)
-            {
-                mIdentifiers.add(getGroupSystem());
             }
             if(getGroupId() != null)
             {

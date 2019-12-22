@@ -24,9 +24,8 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FullyQualifiedIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.ExtendedFunction;
 
@@ -51,8 +50,8 @@ public class ExtendedFunctionCommandExtended extends MacStructure
 
     private ExtendedFunction mExtendedFunction;
     private String mArguments;
-    private TalkgroupIdentifier mTargetAddress;
-    private APCO25FullyQualifiedIdentifier mSourceSuid;
+    private Identifier mTargetAddress;
+    private Identifier mSourceSuid;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -104,17 +103,17 @@ public class ExtendedFunctionCommandExtended extends MacStructure
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;
     }
 
-    public APCO25FullyQualifiedIdentifier getSourceSuid()
+    public Identifier getSourceSuid()
     {
         if(mSourceSuid == null)
         {
@@ -122,7 +121,7 @@ public class ExtendedFunctionCommandExtended extends MacStructure
             int system = getMessage().getInt(FULLY_QUALIFIED_SOURCE_SYSTEM, getOffset());
             int id = getMessage().getInt(FULLY_QUALIFIED_SOURCE_ID, getOffset());
 
-            mSourceSuid = APCO25FullyQualifiedIdentifier.createFrom(wacn, system, id);
+            mSourceSuid = APCO25FullyQualifiedRadioIdentifier.createFrom(wacn, system, id);
         }
 
         return mSourceSuid;

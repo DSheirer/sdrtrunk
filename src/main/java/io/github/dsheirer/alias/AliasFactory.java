@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.alias;
 
@@ -37,30 +39,34 @@ import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
 import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncIDEditor;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200IDEditor;
+import io.github.dsheirer.alias.id.legacy.mobileID.MINEditor;
+import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327IDEditor;
 import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordableEditor;
-import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
-import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupIDEditor;
-import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
-import io.github.dsheirer.alias.id.lojack.LoJackIDEditor;
-import io.github.dsheirer.alias.id.legacy.mobileID.MINEditor;
-import io.github.dsheirer.alias.id.legacy.mobileID.Min;
-import io.github.dsheirer.alias.id.priority.Priority;
-import io.github.dsheirer.alias.id.priority.PriorityEditor;
-import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.record.RecordEditor;
 import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
 import io.github.dsheirer.alias.id.legacy.siteID.SiteIDEditor;
+import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
+import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupIDEditor;
+import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
+import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueIDEditor;
+import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.lojack.LoJackIDEditor;
+import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.alias.id.priority.PriorityEditor;
+import io.github.dsheirer.alias.id.radio.Radio;
+import io.github.dsheirer.alias.id.radio.RadioEditor;
+import io.github.dsheirer.alias.id.radio.RadioRange;
+import io.github.dsheirer.alias.id.radio.RadioRangeEditor;
+import io.github.dsheirer.alias.id.record.Record;
+import io.github.dsheirer.alias.id.record.RecordEditor;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.status.StatusIDEditor;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupEditor;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRangeEditor;
-import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
-import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueIDEditor;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
@@ -102,6 +108,15 @@ public class AliasFactory
                 Priority copyPriority = new Priority();
                 copyPriority.setPriority(originalPriority.getPriority());
                 return copyPriority;
+            case RADIO_ID:
+                Radio originalRadio = (Radio)id;
+                Radio copyRadio = new Radio(originalRadio.getProtocol(), originalRadio.getValue());
+                return copyRadio;
+            case RADIO_ID_RANGE:
+                RadioRange originalRadioRange = (RadioRange)id;
+                RadioRange copyRadioRange = new RadioRange(originalRadioRange.getProtocol(), originalRadioRange.getMinRadio(),
+                    originalRadioRange.getMaxRadio());
+                return copyRadioRange;
             case RECORD:
                 return new Record();
             case SITE:
@@ -213,6 +228,10 @@ public class AliasFactory
                     return new MINEditor(aliasID);
                 case PRIORITY:
                     return new PriorityEditor(aliasID);
+                case RADIO_ID:
+                    return new RadioEditor(aliasID);
+                case RADIO_ID_RANGE:
+                    return new RadioRangeEditor(aliasID);
                 case RECORD:
                     return new RecordEditor(aliasID);
                 case SITE:
@@ -286,6 +305,10 @@ public class AliasFactory
                 return new NonRecordable();
             case PRIORITY:
                 return new Priority();
+            case RADIO_ID:
+                return new Radio();
+            case RADIO_ID_RANGE:
+                return new RadioRange();
             case RECORD:
                 return new Record();
             case TALKGROUP:
