@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.playlist;
@@ -29,7 +31,10 @@ import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
 import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
+import io.github.dsheirer.alias.id.radio.Radio;
+import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -46,8 +51,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Playlist updater will automatically update a playlist from version 1 up to the current version specified by the
- * Playlist manager
+ * Playlist updater will automatically update a playlist to the current version specified by the Playlist manager
  */
 public class PlaylistUpdater
 {
@@ -75,22 +79,108 @@ public class PlaylistUpdater
     {
         boolean updated = false;
 
+        if(playlist.getVersion() != PlaylistManager.PLAYLIST_CURRENT_VERSION)
+        {
+            mLog.info("Updating Playlist from version [" + playlist.getVersion() + "] to version [" +
+                PlaylistManager.PLAYLIST_CURRENT_VERSION + "]");
+        }
+
         switch(playlist.getVersion())
         {
+            //Deliberate fall-through on case statements so that all updates are applied
             case 1:
             case 2:
-                mLog.info("Updating playlist from version [1] to version [" + PlaylistManager.PLAYLIST_CURRENT_VERSION + "]");
                 removeVersion1AudioRecordType(playlist);
                 removeVersion1BinaryMessageLogger(playlist);
                 removeVersion1NonRecordableAliasIdentifiers(playlist);
                 removeVersion1SiteIdentifiers(playlist);
                 updateVersion1Talkgroups(playlist);
                 updated = true;
+            case 3:
+                convertP25TalkgroupsToRadioIdentifiers(playlist);
+                updated = true;
                 break;
         }
 
-
         return updated;
+    }
+
+    /**
+     * Converts P25 alias talkgroup identifiers to use the new radio identifiers.  This update only impacts talkgroups
+     * that have a value greater than 65,535
+     * @param playlist to update.
+     */
+    private static void convertP25TalkgroupsToRadioIdentifiers(PlaylistV2 playlist)
+    {
+        int converted = 0;
+
+        for(Alias alias: playlist.getAliases())
+        {
+            Iterator<AliasID> it = alias.getId().iterator();
+
+            List<AliasID> convertedAliasIds = new ArrayList<>();
+
+            AliasID id = null;
+
+            while(it.hasNext())
+            {
+                id = it.next();
+
+                if(id instanceof Talkgroup)
+                {
+                    Talkgroup talkgroup = (Talkgroup)id;
+
+                    if(talkgroup.getProtocol() == Protocol.APCO25 && talkgroup.getValue() > 65535)
+                    {
+                        it.remove();
+
+                        Radio radio = new Radio();
+                        radio.setProtocol(Protocol.APCO25);
+                        radio.setValue(talkgroup.getValue());
+                        convertedAliasIds.add(radio);
+                    }
+                }
+                else if(id instanceof TalkgroupRange)
+                {
+                    TalkgroupRange talkgroupRange = (TalkgroupRange)id;
+
+                    if(talkgroupRange.getProtocol() == Protocol.APCO25)
+                    {
+                        if(talkgroupRange.getMinTalkgroup() > 65535)
+                        {
+                            it.remove();
+
+                            RadioRange radioRange = new RadioRange();
+                            radioRange.setProtocol(Protocol.APCO25);
+                            radioRange.setMinRadio(talkgroupRange.getMinTalkgroup());
+                            radioRange.setMaxRadio(talkgroupRange.getMaxTalkgroup());
+                            convertedAliasIds.add(radioRange);
+                        }
+                        else if(talkgroupRange.getMaxTalkgroup() > 65535)
+                        {
+                            RadioRange radioRange = new RadioRange();
+                            radioRange.setProtocol(Protocol.APCO25);
+                            radioRange.setMinRadio(65536);
+                            radioRange.setMaxRadio(talkgroupRange.getMaxTalkgroup());
+                            convertedAliasIds.add(radioRange);
+
+                            talkgroupRange.setMaxTalkgroup(65535);
+                        }
+                    }
+                }
+            }
+
+            for(AliasID aliasID: convertedAliasIds)
+            {
+                converted++;
+                alias.addAliasID(aliasID);
+            }
+        }
+
+        if(converted > 0)
+        {
+            mLog.info("Converted [" + converted + "] P25 talkgroups and/or talkgroup ranges to radio id or radio id ranges");
+        }
     }
 
     /**
