@@ -24,8 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 
@@ -79,7 +78,7 @@ public class RadioUnitMonitorCommand extends OSPMessage
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;
@@ -89,7 +88,7 @@ public class RadioUnitMonitorCommand extends OSPMessage
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS));
+            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS));
         }
 
         return mSourceAddress;

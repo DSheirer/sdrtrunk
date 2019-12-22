@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
@@ -24,8 +26,8 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.module.decode.p25.identifier.patch.APCO25PatchGroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
 import java.util.ArrayList;
@@ -80,7 +82,7 @@ public class LCMotorolaPatchGroupVoiceChannelUser extends MotorolaLinkControlWor
     {
         if(mGroupAddress == null)
         {
-            PatchGroup patchGroup = new PatchGroup(APCO25ToTalkgroup.createGroup(getMessage().getInt(PATCH_GROUP_ADDRESS)));
+            PatchGroup patchGroup = new PatchGroup(APCO25Talkgroup.create(getMessage().getInt(PATCH_GROUP_ADDRESS)));
             mGroupAddress = APCO25PatchGroup.create(patchGroup);
         }
 
@@ -94,7 +96,7 @@ public class LCMotorolaPatchGroupVoiceChannelUser extends MotorolaLinkControlWor
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS));
+            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS));
         }
 
         return mSourceAddress;

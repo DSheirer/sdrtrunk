@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 
@@ -81,7 +81,7 @@ public class ProtectionParameterUpdate extends OSPMessage
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(TARGET_ADDRESS));
+            mTargetAddress = APCO25Talkgroup.create(getMessage().getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;

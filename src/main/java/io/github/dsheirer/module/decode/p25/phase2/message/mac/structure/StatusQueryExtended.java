@@ -24,9 +24,8 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FullyQualifiedIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -46,8 +45,8 @@ public class StatusQueryExtended extends MacStructure
         81, 82, 83, 84, 85, 86, 87};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mTargetAddress;
-    private APCO25FullyQualifiedIdentifier mSourceSuid;
+    private Identifier mTargetAddress;
+    private Identifier mSourceSuid;
 
     /**
      * Constructs the message
@@ -75,11 +74,11 @@ public class StatusQueryExtended extends MacStructure
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;
@@ -88,11 +87,11 @@ public class StatusQueryExtended extends MacStructure
     /**
      * From Radio Unit
      */
-    public APCO25FullyQualifiedIdentifier getSourceSuid()
+    public Identifier getSourceSuid()
     {
         if(mSourceSuid == null)
         {
-            mSourceSuid = APCO25FullyQualifiedIdentifier.createFrom(getMessage().getInt(SOURCE_WACN, getOffset()),
+            mSourceSuid = APCO25FullyQualifiedRadioIdentifier.createFrom(getMessage().getInt(SOURCE_WACN, getOffset()),
                 getMessage().getInt(SOURCE_SYSTEM, getOffset()), getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 

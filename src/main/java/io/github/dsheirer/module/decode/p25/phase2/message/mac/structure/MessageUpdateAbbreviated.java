@@ -24,10 +24,8 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.message.APCO25ShortDataMessage;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -46,8 +44,8 @@ public class MessageUpdateAbbreviated extends MacStructure
 
     private List<Identifier> mIdentifiers;
     private Identifier mShortDataMessage;
-    private TalkgroupIdentifier mTargetAddress;
-    private TalkgroupIdentifier mSourceAddress;
+    private Identifier mTargetAddress;
+    private Identifier mSourceAddress;
 
     /**
      * Constructs the message
@@ -90,11 +88,11 @@ public class MessageUpdateAbbreviated extends MacStructure
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;
@@ -103,11 +101,11 @@ public class MessageUpdateAbbreviated extends MacStructure
     /**
      * From Radio Unit
      */
-    public TalkgroupIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;

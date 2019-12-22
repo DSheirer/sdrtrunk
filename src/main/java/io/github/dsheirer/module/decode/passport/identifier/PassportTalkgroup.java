@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.passport.identifier;
@@ -32,9 +34,9 @@ public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable
     /**
      * Constructs a Passport talkgroup with a TO role.
      */
-    public PassportTalkgroup(Integer value, Role role, boolean isGroup)
+    public PassportTalkgroup(Integer value, Role role)
     {
-        super(value, role, isGroup);
+        super(value, role);
     }
 
     @Override
@@ -48,7 +50,7 @@ public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable
      */
     public static PassportTalkgroup createTo(int value)
     {
-        return new PassportTalkgroup(value, Role.TO, true);
+        return new PassportTalkgroup(value, Role.TO);
     }
 
     /**
@@ -56,7 +58,7 @@ public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable
      */
     public static PassportTalkgroup createFrom(int value)
     {
-        return new PassportTalkgroup(value, Role.FROM, false);
+        return new PassportTalkgroup(value, Role.FROM);
     }
 
     @Override

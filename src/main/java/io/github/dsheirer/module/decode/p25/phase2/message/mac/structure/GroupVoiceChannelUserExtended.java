@@ -24,10 +24,9 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FullyQualifiedIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
@@ -52,9 +51,9 @@ public class GroupVoiceChannelUserExtended extends MacStructure
 
     private List<Identifier> mIdentifiers;
     private VoiceServiceOptions mServiceOptions;
-    private TalkgroupIdentifier mGroupAddress;
-    private TalkgroupIdentifier mSourceAddress;
-    private APCO25FullyQualifiedIdentifier mSourceSuid;
+    private Identifier mGroupAddress;
+    private Identifier mSourceAddress;
+    private Identifier mSourceSuid;
 
     /**
      * Constructs the message
@@ -97,11 +96,11 @@ public class GroupVoiceChannelUserExtended extends MacStructure
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mGroupAddress = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS, getOffset()));
         }
 
         return mGroupAddress;
@@ -110,17 +109,17 @@ public class GroupVoiceChannelUserExtended extends MacStructure
     /**
      * From Radio Unit
      */
-    public TalkgroupIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;
     }
 
-    public APCO25FullyQualifiedIdentifier getSourceSuid()
+    public Identifier getSourceSuid()
     {
         if(mSourceSuid == null)
         {
@@ -128,7 +127,7 @@ public class GroupVoiceChannelUserExtended extends MacStructure
             int system = getMessage().getInt(FULLY_QUALIFIED_SOURCE_SYSTEM, getOffset());
             int id = getMessage().getInt(FULLY_QUALIFIED_SOURCE_ID, getOffset());
 
-            mSourceSuid = APCO25FullyQualifiedIdentifier.createFrom(wacn, system, id);
+            mSourceSuid = APCO25FullyQualifiedRadioIdentifier.createFrom(wacn, system, id);
         }
 
         return mSourceSuid;

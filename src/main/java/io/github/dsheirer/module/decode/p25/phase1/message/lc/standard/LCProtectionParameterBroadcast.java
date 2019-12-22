@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 
 import java.util.ArrayList;
@@ -84,7 +84,7 @@ public class LCProtectionParameterBroadcast extends LinkControlWord
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;
