@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -280,13 +280,31 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
                 String toValue = ((IntegerIdentifier)to).getValue().toString().replace(":", "");
                 sb.append("_TO_").append(toValue);
             }
+            else
+            {
+                List<Identifier> toIdentifiers = identifierCollection.getIdentifiers(Role.TO);
 
-            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
+                if(!toIdentifiers.isEmpty())
+                {
+                    sb.append("_TO_").append(toIdentifiers.get(0)).toString();
+                }
+            }
+
+            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
 
             if(from != null)
             {
                 String fromValue = ((IntegerIdentifier)from).getValue().toString().replace(":", "");
                 sb.append("_FROM_").append(fromValue);
+            }
+            else
+            {
+                List<Identifier> fromIdentifiers = identifierCollection.getIdentifiers(Role.FROM);
+
+                if(!fromIdentifiers.isEmpty())
+                {
+                    sb.append("_FROM_").append(fromIdentifiers.get(0)).toString();
+                }
             }
         }
         else
