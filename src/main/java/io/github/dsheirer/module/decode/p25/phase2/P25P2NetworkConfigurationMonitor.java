@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
@@ -82,6 +83,31 @@ public class P25P2NetworkConfigurationMonitor
      */
     public P25P2NetworkConfigurationMonitor()
     {
+    }
+
+    /**
+     * Formats the identifier with an appended hexadecimal value when the identifier is an integer
+     * @param identifier to format
+     * @param width of the hex value with zero pre-padding
+     * @return formatted identifier
+     */
+    private String format(Identifier identifier, int width)
+    {
+        if(identifier.getValue() instanceof Integer)
+        {
+            String hex = Integer.toHexString((Integer)identifier.getValue());
+
+            while(hex.length() < width)
+            {
+                hex = "0" + hex;
+            }
+
+            return hex.toUpperCase() + "[" + identifier.getValue() + "]";
+        }
+        else
+        {
+            return identifier.toString();
+        }
     }
 
     /**
@@ -207,17 +233,17 @@ public class P25P2NetworkConfigurationMonitor
         sb.append("\n\nNetwork\n");
         if(mNetworkStatusBroadcastAbbreviated != null)
         {
-            sb.append("  NAC:").append(mNetworkStatusBroadcastAbbreviated.getNAC());
-            sb.append(" WACN:").append(mNetworkStatusBroadcastAbbreviated.getWACN());
-            sb.append(" SYSTEM:").append(mNetworkStatusBroadcastAbbreviated.getSystem());
-            sb.append(" LRA:").append(mNetworkStatusBroadcastAbbreviated.getLRA());
+            sb.append("  WACN:").append(format(mNetworkStatusBroadcastAbbreviated.getWACN(), 5));
+            sb.append(" SYSTEM:").append(format(mNetworkStatusBroadcastAbbreviated.getSystem(), 3));
+            sb.append(" NAC:").append(format(mNetworkStatusBroadcastAbbreviated.getNAC(), 3));
+            sb.append(" LRA:").append(format(mNetworkStatusBroadcastAbbreviated.getLRA(), 2));
         }
         else if(mNetworkStatusBroadcastExtended != null)
         {
-            sb.append("  NAC:").append(mNetworkStatusBroadcastExtended.getNAC());
-            sb.append(" WACN:").append(mNetworkStatusBroadcastExtended.getWACN());
-            sb.append(" SYSTEM:").append(mNetworkStatusBroadcastExtended.getSystem());
-            sb.append(" LRA:").append(mNetworkStatusBroadcastExtended.getLRA());
+            sb.append("  WACN:").append(format(mNetworkStatusBroadcastExtended.getWACN(), 5));
+            sb.append(" SYSTEM:").append(format(mNetworkStatusBroadcastExtended.getSystem(), 3));
+            sb.append(" NAC:").append(format(mNetworkStatusBroadcastExtended.getNAC(), 3));
+            sb.append(" LRA:").append(format(mNetworkStatusBroadcastExtended.getLRA(), 2));
         }
         else
         {
@@ -227,20 +253,20 @@ public class P25P2NetworkConfigurationMonitor
         sb.append("\n\nCurrent Site\n");
         if(mRFSSStatusBroadcastAbbreviated != null)
         {
-            sb.append("  SYSTEM:").append(mRFSSStatusBroadcastAbbreviated.getSystem());
-            sb.append(" SITE:").append(mRFSSStatusBroadcastAbbreviated.getSite());
-            sb.append(" RF SUBSYSTEM:").append(mRFSSStatusBroadcastAbbreviated.getRFSS());
-            sb.append(" LOCATION REGISTRATION AREA:").append(mRFSSStatusBroadcastAbbreviated.getLRA());
+            sb.append("  SYSTEM:").append(format(mRFSSStatusBroadcastAbbreviated.getSystem(), 3));
+            sb.append(" RFSS:").append(format(mRFSSStatusBroadcastAbbreviated.getRFSS(), 2));
+            sb.append(" SITE:").append(format(mRFSSStatusBroadcastAbbreviated.getSite(), 2));
+            sb.append(" LRA:").append(format(mRFSSStatusBroadcastAbbreviated.getLRA(), 2));
             sb.append("  PRI CONTROL CHANNEL:").append(mRFSSStatusBroadcastAbbreviated.getChannel());
             sb.append(" DOWNLINK:").append(mRFSSStatusBroadcastAbbreviated.getChannel().getDownlinkFrequency());
             sb.append(" UPLINK:").append(mRFSSStatusBroadcastAbbreviated.getChannel().getUplinkFrequency()).append("\n");
         }
         else if(mRFSSStatusBroadcastExtended != null)
         {
-            sb.append("  SYSTEM:").append(mRFSSStatusBroadcastExtended.getSystem());
-            sb.append(" SITE:").append(mRFSSStatusBroadcastExtended.getSite());
-            sb.append(" RF SUBSYSTEM:").append(mRFSSStatusBroadcastExtended.getRFSS());
-            sb.append(" LOCATION REGISTRATION AREA:").append(mRFSSStatusBroadcastExtended.getLRA());
+            sb.append("  SYSTEM:").append(format(mRFSSStatusBroadcastExtended.getSystem(), 3));
+            sb.append(" RFSS:").append(format(mRFSSStatusBroadcastExtended.getRFSS(), 2));
+            sb.append(" SITE:").append(format(mRFSSStatusBroadcastExtended.getSite(), 2));
+            sb.append(" LRA:").append(format(mRFSSStatusBroadcastExtended.getLRA(), 2));
             sb.append("  PRI CONTROL CHANNEL:").append(mRFSSStatusBroadcastExtended.getChannel());
             sb.append(" DOWNLINK:").append(mRFSSStatusBroadcastExtended.getChannel().getDownlinkFrequency());
             sb.append(" UPLINK:").append(mRFSSStatusBroadcastExtended.getChannel().getUplinkFrequency()).append("\n");
@@ -294,10 +320,10 @@ public class P25P2NetworkConfigurationMonitor
                 if(mNeighborSitesAbbreviated.containsKey(site))
                 {
                     AdjacentStatusBroadcastAbbreviated asb = mNeighborSitesAbbreviated.get(site);
-                    sb.append("  SYSTEM:").append(asb.getSystem());
-                    sb.append(" SITE:").append(asb.getSite());
-                    sb.append(" LRA:").append(asb.getLRA());
-                    sb.append(" RFSS:").append(asb.getRFSS());
+                    sb.append("  SYSTEM:").append(format(asb.getSystem(), 3));
+                    sb.append(" RFSS:").append(format(asb.getRFSS(), 2));
+                    sb.append(" SITE:").append(format(asb.getSite(), 2));
+                    sb.append(" LRA:").append(format(asb.getLRA(), 2));
                     sb.append(" CHANNEL:").append(asb.getChannel());
                     sb.append(" DOWNLINK:").append(asb.getChannel().getDownlinkFrequency());
                     sb.append(" UPLINK:").append(asb.getChannel().getUplinkFrequency());
@@ -306,10 +332,10 @@ public class P25P2NetworkConfigurationMonitor
                 else if(mNeighborSitesAbbreviated.containsKey(site))
                 {
                     AdjacentStatusBroadcastAbbreviated asb = mNeighborSitesAbbreviated.get(site);
-                    sb.append("  SYSTEM:").append(asb.getSystem());
-                    sb.append(" SITE:").append(asb.getSite());
-                    sb.append(" LRA:").append(asb.getLRA());
-                    sb.append(" RFSS:").append(asb.getRFSS());
+                    sb.append("  SYSTEM:").append(format(asb.getSystem(), 3));
+                    sb.append(" RFSS:").append(format(asb.getRFSS(), 2));
+                    sb.append(" SITE:").append(format(asb.getSite(), 2));
+                    sb.append(" LRA:").append(format(asb.getLRA(), 2));
                     sb.append(" CHANNEL:").append(asb.getChannel());
                     sb.append(" DOWNLINK:").append(asb.getChannel().getDownlinkFrequency());
                     sb.append(" UPLINK:").append(asb.getChannel().getUplinkFrequency());
