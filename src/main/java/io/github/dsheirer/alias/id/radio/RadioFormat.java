@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public enum RadioFormat
 {
-    APCO25("********", 1, 0xFFFFFF, "1 to 16,777,215",
-        "<html>APCO25 valid range is 1 to 16,777,215"),
+    APCO25("********", 0, 0xFFFFFF, "0 to 16,777,215",
+        "<html>APCO25 valid range is 0 to 16,777,215"),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
         "Unknown protocol valid value range is 1-16,777,215");
 
