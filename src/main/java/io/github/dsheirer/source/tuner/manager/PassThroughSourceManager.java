@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 
 package io.github.dsheirer.source.tuner.manager;
 
@@ -62,7 +68,6 @@ public class PassThroughSourceManager extends ChannelSourceManager
         PassThroughChannelSource channelSource = new PassThroughChannelSource(new SourceEventProxy(),
                 mTunerController, tunerChannel);
 
-        mLog.debug("Returning a pass through channel");
         mTunerChannels.add(tunerChannel);
 
         return channelSource;
@@ -77,16 +82,18 @@ public class PassThroughSourceManager extends ChannelSourceManager
                 if(event.hasSource() && event.getSource() instanceof PassThroughChannelSource)
                 {
                     mTunerController.addBufferListener((PassThroughChannelSource)event.getSource());
+                    broadcast(SourceEvent.channelCountChange(mTunerChannels.size()));
                 }
                 break;
             case REQUEST_STOP_SAMPLE_STREAM:
                 if(event.hasSource() && event.getSource() instanceof PassThroughChannelSource)
                 {
-                    mTunerController.removeBufferListener((PassThroughChannelSource)event.getSource());
+                    PassThroughChannelSource source = (PassThroughChannelSource)event.getSource();
+                    mTunerController.removeBufferListener(source);
+                    mTunerChannels.remove(source.getTunerChannel());
+                    broadcast(SourceEvent.channelCountChange(mTunerChannels.size()));
                 }
                 break;
-            default:
-                mLog.debug("Got source event: " + event);
         }
     }
 

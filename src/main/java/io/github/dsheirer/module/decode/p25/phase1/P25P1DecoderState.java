@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -1357,7 +1357,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                 //Network Configuration Messages
                 case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
                 case MOTOROLA_OSP_SYSTEM_LOADING:
-                case MOTOROLA_OSP_CONTROL_CHANNEL_ID:
+                case MOTOROLA_OSP_BASE_STATION_ID:
                 case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
                 case OSP_IDENTIFIER_UPDATE_TDMA:
                 case OSP_IDENTIFIER_UPDATE_VHF_UHF_BANDS:
