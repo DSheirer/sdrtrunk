@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,8 @@ public class P25ExplicitChannel extends P25Channel implements Comparable<P25Chan
     {
         if(mUplinkFrequencyBand != null)
         {
-            return mUplinkFrequencyBand.getUplinkFrequency(getUplinkChannelNumber());
+            //Note: we explicitly use the downlink frequency from the uplink channel frequency band here
+            return mUplinkFrequencyBand.getDownlinkFrequency(getUplinkChannelNumber());
         }
 
         return 0;

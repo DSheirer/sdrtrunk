@@ -177,7 +177,7 @@ public class P25P1NetworkConfigurationMonitor
                     mSNDCPDataChannel = (SNDCPDataChannelAnnouncementExplicit)tsbk;
                 }
                 break;
-            case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
+            case MOTOROLA_OSP_BASE_STATION_ID:
                 if(tsbk instanceof MotorolaBaseStationId)
                 {
                     mMotorolaBaseStationId = (MotorolaBaseStationId)tsbk;

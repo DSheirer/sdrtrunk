@@ -305,7 +305,7 @@ public class TSBKMessageFactory
 
             case MOTOROLA_ISP_UNKNOWN:
                 return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_CONTROL_CHANNEL_ID:
+            case MOTOROLA_OSP_BASE_STATION_ID:
                 return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
                 return new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);

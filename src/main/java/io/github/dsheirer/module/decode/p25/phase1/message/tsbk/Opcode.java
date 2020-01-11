@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -171,10 +171,10 @@ public enum Opcode
     MOTOROLA_OSP_PATCH_GROUP_DELETE(1, "PATCH GROUP DELE", "MOTOROLA PATCH GROUP DELETE"),
     MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT(2, "PTCH GRP VCHN GR", "MOTOROLA PATCH GROUP CHANNEL GRANT"),
     MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE(3, "PTCH GRP VCH UPD", "MOTOROLA PATCH GROUP CHANNEL GRANT UPDATE"),
-    MOTOROLA_OSP_TRAFFIC_CHANNEL_ID(5, "CHANNEL CWID", "CHANNEL CWID"),
+    MOTOROLA_OSP_TRAFFIC_CHANNEL_ID(5, "TRAFFIC CHANNEL", "TRAFFIC CHANNEL"),
     MOTOROLA_OSP_DENY_RESPONSE(7, "DENY RESPONSE", "MOTOROLA DENY RESPONSE"),
     MOTOROLA_OSP_SYSTEM_LOADING(9, "SYSTEM LOADING", "SYSTEM LOADING"),
-    MOTOROLA_OSP_CONTROL_CHANNEL_ID(11, "CCH BASE STAT ID", "CONTROL CHANNEL BASE STATION ID"),
+    MOTOROLA_OSP_BASE_STATION_ID(11, "CCH BASE STAT ID", "CONTROL CHANNEL BASE STATION ID"),
     MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN(14, "CCH PLND SHUTDWN", "CONTROL CHANNEL PLANNED SHUTDOWN"),
     MOTOROLA_OSP_UNKNOWN(-1, "MOTOROLA OSP UNKNOWN OPCODE", "MOTOROLA OSP UNKNOWN OPCODE"),
 
@@ -332,7 +332,7 @@ public enum Opcode
                         case 0x09:
                             return MOTOROLA_OSP_SYSTEM_LOADING;
                         case 0x0B:
-                            return MOTOROLA_OSP_CONTROL_CHANNEL_ID;
+                            return MOTOROLA_OSP_BASE_STATION_ID;
                         case 0x0E:
                             return MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN;
                         default:
