@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.4.0-beta.2'
+version = '0.4.0-beta.3'
 sourceCompatibility = '11'
 
 sourceSets {
@@ -112,27 +112,48 @@ jar {
 }
 
 /**
- * Java Development Kit (JDK) locations.  These paths must point to the 'bin' directory
- * within a JDK for each of the specified architectures.  These JDKs are used by the 
- * runtime and runtimeZip tasks to produce platform-specific builds
+ * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the 'bin' 
+ * directory within a JDK for each of the specified architectures.  These JDKs are used by the  runtime and runtimeZip 
+ * tasks to produce platform-specific builds.  If none of these paths exists, then an image will be created for the
+ * host OS using the installed JDK.
  */
-def jdkLinux_x64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-13.0.1'
-def jdkLinux_x86 = '/media/denny/WD250GB/java/bellsoft/linux-x86/jdk-13.0.1'
-def jdkOsx_x64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-13.0.1.jdk'
-def jdkWindows_x64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-13.0.1'
-def jdkWindows_x86 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-13.0.1'
-//def jdkLinux_aarch64 = '/media/denny/WD250GB/java/bellsoft/linux-aarch64/jdk-11.0.2'
-//def jdkLinux_arm32 = '/media/denny/WD250GB/java/bellsoft/linux-arm32/jdk-11.0.2'
-//def jfxLinux_arm32 = '/media/denny/WD250GB/java/bellsoft/linux-arm32/armv6hf-sdk/lib'
+def jdk_linux_x86_64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-13.0.1'
+def jdk_linux_x86_32 = '/media/denny/WD250GB/java/bellsoft/linux-x86/jdk-13.0.1'
+def jdk_osx_x86_64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-13.0.1.jdk'
+def jdk_windows_x86_64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-13.0.1'
+def jdk_windows_x86_32 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-13.0.1'
+
+def directory_linux_x86_64 = new File(jdk_linux_x86_64)
+def directory_linux_x86_32 = new File(jdk_linux_x86_32)
+def directory_osx_x86_64 = new File(jdk_osx_x86_64)
+def directory_windows_x86_64 = new File(jdk_windows_x86_64)
+def directory_windows_x86_32 = new File(jdk_windows_x86_32)
 
 runtime {
-    targetPlatform('linux-x86_64', jdkLinux_x64)
-    targetPlatform('linux-x86_32', jdkLinux_x86)
-    targetPlatform('osx-x86_64', jdkOsx_x64)
-    targetPlatform('windows-x86_64', jdkWindows_x64)
-    targetPlatform('windows-x86_32', jdkWindows_x86)
-//    targetPlatform('linux-aarch64', jdkLinux_aarch64)
-//    targetPlatform('linux-arm32', jdkLinux_arm32)
+    if(directory_linux_x86_64.exists())
+    {
+        targetPlatform('linux-x86_64', jdk_linux_x86_64)
+    }
+
+    if(directory_linux_x86_32.exists())
+    {
+        targetPlatform('linux-x86_32', jdk_linux_x86_32)
+    }
+
+    if(directory_osx_x86_64.exists())
+    {
+        targetPlatform('osx-x86_64', jdk_osx_x86_64)
+    }
+
+    if(directory_windows_x86_64.exists())
+    {
+        targetPlatform('windows-x86_64', jdk_windows_x86_64)
+    }
+
+    if(directory_windows_x86_32.exists())
+    {
+        targetPlatform('windows-x86_32', jdk_windows_x86_32)
+    }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
@@ -143,68 +164,31 @@ runtime {
  * Check for existence of JDK folders for each supported platform before creating runtime images
  */
 tasks.runtime.doFirst {
-    def linux_x64 = new File(jdkLinux_x64)
 
-    if(!linux_x64.exists())
+    if(!directory_linux_x86_64.exists())
     {
-        println("Linux x64 JDK was not found at " + jdkLinux_x64)
-        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-x64 architecture.  " +
-                "Please update the build.gradle script to provide the correct path")
+        println("Skipping OS Image - Linux x86 64-bit JDK was not found at " + jdk_linux_x86_64)
     }
 
-    def linux_x86 = new File(jdkLinux_x86)
-
-    if(!linux_x86.exists())
+    if(!directory_linux_x86_32.exists())
     {
-        println("Linux x86 JDK was not found at " + jdkLinux_x86)
-        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-x86 32-bit architecture.  " +
-                "Please update the build.gradle script to provide the correct path")
+        println("Skipping OS Image - Linux x86 32-bit JDK was not found at " + jdk_linux_x86_32)
     }
 
-    def osx_x64 = new File(jdkOsx_x64)
-
-    if(!osx_x64.exists())
+    if(!directory_osx_x86_64.exists())
     {
-        println("OSX x64 JDK was not found at " + jdkOsx_x64);
-        throw new GradleException("Cannot find Java Development Kit (JDK) for osx-x64 architecture.  " +
-                "Please update the build.gradle script to provide the correct path")
+        println("Skipping OS Image - OSX x86 64-bit JDK was not found at " + jdk_osx_x86_64);
     }
 
-    def windows_x64 = new File(jdkWindows_x64)
-
-    if(!windows_x64.exists())
+    if(!directory_windows_x86_64.exists())
     {
-        println("Windows x64 JDK was not found at " + jdkWindows_x64)
-        throw new GradleException("Cannot find Java Development Kit (JDK) for windows-x64 architecture.  " +
-                "Please update the build.gradle script to provide the correct path")
+        println("Skipping OS Image - Windows x86 64-bit JDK was not found at " + jdk_windows_x86_64)
     }
 
-    def windows_x86 = new File(jdkWindows_x86)
-
-    if(!windows_x86.exists())
+    if(!directory_windows_x86_32.exists())
     {
-        println("Windows x86 32-bit JDK was not found at " + jdkWindows_x86)
-        throw new GradleException("Cannot find Java Development Kit (JDK) for windows-x64 architecture.  " +
-                "Please update the build.gradle script to provide the correct path")
+        println("Skipping OS Image - Windows x86 32-bit JDK was not found at " + jdk_windows_x86_32)
     }
-
-//    def linux_aarch64 = new File(jdkLinux_aarch64)
-//
-//    if(!linux_aarch64.exists())
-//    {
-//        println("Linux aarch64 JDK was not found at " + jdkLinux_aarch64)
-//        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-aarch64 architecture.  " +
-//                "Please update the build.gradle script to provide the correct path")
-//    }
-//
-//    def linux_arm32 = new File(jdkLinux_arm32)
-//
-//    if(!linux_arm32.exists())
-//    {
-//        println("Linux arm32 JDK was not found at " + jdkLinux_arm32)
-//        throw new GradleException("Cannot find Java Development Kit (JDK) for linux-arm32 architecture.  " +
-//                "Please update the build.gradle script to provide the correct path")
-//    }
 }
 
 /**
@@ -217,11 +201,4 @@ tasks.runtime.doLast {
     delete(fileTree('build/image/sdr-trunk-osx-x86_64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x86_64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x86_32/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
-
-//    delete(fileTree('build/image/sdr-trunk-linux-aarch64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-//    delete(fileTree('build/image/sdr-trunk-linux-arm32/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-//    copy {
-//        from(jfxLinux_arm32).exclude("src.zip")
-//        into 'build/image/sdr-trunk-linux-arm32/lib'
-//    }
 }
