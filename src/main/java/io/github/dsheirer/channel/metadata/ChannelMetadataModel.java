@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -199,7 +199,8 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                         }
                         else
                         {
-                            return id.getValue() + " TS:" + channelMetadata.getTimeslot();
+                            String value = id.getValue().replace(" TS0", "").replace(" TS1", "");
+                            return value + " TS:" + channelMetadata.getTimeslot();
                         }
                     }
                     else

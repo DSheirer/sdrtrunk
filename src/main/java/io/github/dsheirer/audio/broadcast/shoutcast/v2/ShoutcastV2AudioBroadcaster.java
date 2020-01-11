@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -291,6 +291,16 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
                     to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
                 }
 
+                if(to == null)
+                {
+                    List<Identifier> toIdentifiers = identifierCollection.getIdentifiers(Role.TO);
+
+                    if(!toIdentifiers.isEmpty())
+                    {
+                        to = toIdentifiers.get(0);
+                    }
+                }
+
                 if(to != null)
                 {
                     sbTitle2.append("TO:").append(to);
@@ -307,7 +317,17 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
                     sbTitle2.append("TO:UNKNOWN");
                 }
 
-                Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.FROM);
+                Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
+
+                if(from == null)
+                {
+                    List<Identifier> fromIdentifiers = identifierCollection.getIdentifiers(Role.FROM);
+
+                    if(!fromIdentifiers.isEmpty())
+                    {
+                        from = fromIdentifiers.get(0);
+                    }
+                }
 
                 if(from != null)
                 {
