@@ -32,7 +32,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.4.0-beta.3'
+version = '0.4.0-beta.4'
 sourceCompatibility = '11'
 
 sourceSets {
@@ -156,7 +156,7 @@ runtime {
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop']
+    modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop', 'java.net.http']
     imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
 
