@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.alias;
 
@@ -24,6 +26,8 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.alias.id.radio.Radio;
+import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
@@ -32,6 +36,7 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.status.UnitStatusIdentifier;
 import io.github.dsheirer.identifier.status.UserStatusIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
@@ -48,10 +53,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * List of aliases that share the same alias list name and provides convenient methods for looking up alias
+ * objects that match an identifier.
+ */
 public class AliasList implements Listener<AliasEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
     private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new HashMap<>();
+    private Map<Protocol,RadioAliasList> mRadioProtocolMap = new HashMap<>();
     private Map<String,Alias> mESNMap = new HashMap<>();
     private Map<Integer,Alias> mStatusMap = new HashMap<>();
     private boolean mHasAliasActions = false;
@@ -123,6 +133,32 @@ public class AliasList implements Listener<AliasEvent>
                         }
 
                         talkgroupRangeAliasList.add(talkgroupRange, alias);
+                        break;
+                    case RADIO_ID:
+                        Radio radio = (Radio)id;
+
+                        RadioAliasList radioAliasList = mRadioProtocolMap.get(radio.getProtocol());
+
+                        if(radioAliasList == null)
+                        {
+                            radioAliasList = new RadioAliasList();
+                            mRadioProtocolMap.put(radio.getProtocol(), radioAliasList);
+                        }
+
+                        radioAliasList.add(radio, alias);
+                        break;
+                    case RADIO_ID_RANGE:
+                        RadioRange radioRange = (RadioRange)id;
+
+                        RadioAliasList radioRangeAliasList = mRadioProtocolMap.get(radioRange.getProtocol());
+
+                        if(radioRangeAliasList == null)
+                        {
+                            radioRangeAliasList = new RadioAliasList();
+                            mRadioProtocolMap.put(radioRange.getProtocol(), radioRangeAliasList);
+                        }
+
+                        radioRangeAliasList.add(radioRange, alias);
                         break;
                     case ESN:
                         String esn = ((Esn) id).getEsn();
@@ -253,14 +289,7 @@ public class AliasList implements Listener<AliasEvent>
 
                     if(talkgroupAliasList != null)
                     {
-                        Alias alias = talkgroupAliasList.getAlias(talkgroup);
-
-                        if(alias != null)
-                        {
-                            List<Alias> aliases = new ArrayList<>();
-                            aliases.add(alias);
-                            return aliases;
-                        }
+                        return toList(talkgroupAliasList.getAlias(talkgroup));
                     }
                     break;
                 case PATCH_GROUP:
@@ -293,53 +322,52 @@ public class AliasList implements Listener<AliasEvent>
                         return aliases;
                     }
                     break;
+                case RADIO:
+                    RadioIdentifier radio = (RadioIdentifier)identifier;
+
+                    RadioAliasList radioAliasList = mRadioProtocolMap.get(identifier.getProtocol());
+
+                    if(radioAliasList != null)
+                    {
+                        return toList(radioAliasList.getAlias(radio));
+                    }
+                    break;
                 case ESN:
                     if(identifier instanceof ESNIdentifier)
                     {
-                        Alias alias = getESNAlias(((ESNIdentifier)identifier).getValue());
-
-                        if(alias != null)
-                        {
-                            List<Alias> aliases = new ArrayList<>();
-                            aliases.add(alias);
-                            return aliases;
-                        }
+                        return toList(getESNAlias(((ESNIdentifier)identifier).getValue()));
                     }
                     break;
                 case UNIT_STATUS:
                     if(identifier instanceof UnitStatusIdentifier)
                     {
                         int status = ((UnitStatusIdentifier)identifier).getValue();
-
-                        Alias alias = mStatusMap.get(status);
-
-                        if(alias != null)
-                        {
-                            List<Alias> aliases = new ArrayList<>();
-                            aliases.add(alias);
-                            return aliases;
-                        }
+                        return toList(mStatusMap.get(status));
                     }
                     break;
                 case USER_STATUS:
                     if(identifier instanceof UserStatusIdentifier)
                     {
                         int status = ((UserStatusIdentifier)identifier).getValue();
-
-                        Alias alias = mStatusMap.get(status);
-
-                        if(alias != null)
-                        {
-                            List<Alias> aliases = new ArrayList<>();
-                            aliases.add(alias);
-                            return aliases;
-                        }
+                        return toList(mStatusMap.get(status));
                     }
                     break;
             }
         }
 
-        return Collections.EMPTY_LIST;
+        return Collections.emptyList();
+    }
+
+    private static List<Alias> toList(Alias alias)
+    {
+        if(alias != null)
+        {
+            List<Alias> aliases = new ArrayList<>();
+            aliases.add(alias);
+            return aliases;
+        }
+
+        return Collections.emptyList();
     }
 
     /**
@@ -551,6 +579,89 @@ public class AliasList implements Listener<AliasEvent>
         {
             AliasList.remove(alias, mTalkgroupAliasMap);
             AliasList.remove(alias, mTalkgroupRangeAliasMap);
+        }
+    }
+
+    /**
+     * Listing of radio IDs and ranges for a specific protocol
+     */
+    public class RadioAliasList
+    {
+        private Map<Integer,Alias> mRadioAliasMap = new TreeMap<>();
+        private Map<RadioRange, Alias> mRadioRangeAliasMap = new HashMap<>();
+
+        public RadioAliasList()
+        {
+        }
+
+        public Alias getAlias(RadioIdentifier identifier)
+        {
+            int value = identifier.getValue();
+
+            if(mRadioAliasMap.containsKey(value))
+            {
+                return mRadioAliasMap.get(value);
+            }
+
+            for(RadioRange radioRange: mRadioRangeAliasMap.keySet())
+            {
+                if(radioRange.contains(value))
+                {
+                    return mRadioRangeAliasMap.get(radioRange);
+                }
+            }
+
+            return null;
+        }
+
+        public void add(Radio radio, Alias alias)
+        {
+            //Detect collisions
+            if(mRadioAliasMap.containsKey(radio.getValue()))
+            {
+                Alias existing = mRadioAliasMap.get(radio.getValue());
+
+                mLog.warn("Alias [" + alias.getName() + "] radio ID [" + radio.getValue() +
+                    "] has the same value as alias [" + existing.getName() +
+                    "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+            }
+
+            mRadioAliasMap.put(radio.getValue(), alias);
+        }
+
+        public void add(RadioRange radioRange, Alias alias)
+        {
+            //Log warning if the new range overlaps with any existing ranges
+            for(Map.Entry<RadioRange,Alias> entry: mRadioRangeAliasMap.entrySet())
+            {
+                if(radioRange.overlaps(entry.getKey()))
+                {
+                    mLog.warn("Alias [" + alias.getName() + "] with radio ID range [" + radioRange.toString() +
+                        "] overlaps with alias [" + entry.getValue().getName() +
+                        "] with range [" + entry.getKey().toString() + "] for alias list [" + getName() + "]");
+                }
+            }
+
+            mRadioRangeAliasMap.put(radioRange, alias);
+        }
+
+        public void remove(Radio radio)
+        {
+            mRadioAliasMap.remove(radio.getValue());
+        }
+
+        public void remove(RadioRange radioRange)
+        {
+            mRadioRangeAliasMap.remove(radioRange);
+        }
+
+        /**
+         * Removes the alias from all internal maps
+         */
+        public void remove(Alias alias)
+        {
+            AliasList.remove(alias, mRadioAliasMap);
+            AliasList.remove(alias, mRadioRangeAliasMap);
         }
     }
 }

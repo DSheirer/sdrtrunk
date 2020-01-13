@@ -60,6 +60,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     private static final String METADATA_TYPE_CALL_PROGRESS = "CALL PROGRESS";
 
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
+    private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private MetadataProcessor mDtmfMetadataProcessor;
     private MetadataProcessor mKnoxMetadataProcessor;
     private MetadataProcessor mToneMetadataProcessor;
@@ -84,7 +85,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     @Override
     public Listener<SquelchStateEvent> getSquelchStateListener()
     {
-        return null;
+        return mSquelchStateListener;
     }
 
     @Override

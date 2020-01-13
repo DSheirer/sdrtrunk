@@ -212,7 +212,6 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implement
                     break;
                 case MOTOROLA_PATCH_GROUP_ADD:
                     mCallSequence.setToIdentifier(getPatchedTalkgroups(lcw));
-                    mLog.debug("MOTOROLA_PATCH_GROUP_ADD ");
                     break;
                 case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER:
                     LCMotorolaPatchGroupVoiceChannelUser mpgvcu = (LCMotorolaPatchGroupVoiceChannelUser)lcw;
@@ -229,7 +228,6 @@ public class P25P1CallSequenceRecorder extends MBECallSequenceRecorder implement
                     break;
                 case CALL_TERMINATION_OR_CANCELLATION:
                 case MOTOROLA_TALK_COMPLETE:
-                    mLog.debug("MOTOROLA TALK COMPETE");
                     if (mTunerId != "") {
                         mCallSequence.setTuner(mTunerId);
                     }

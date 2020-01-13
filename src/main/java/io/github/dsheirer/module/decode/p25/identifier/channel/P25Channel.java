@@ -122,7 +122,10 @@ public class P25Channel implements IChannelDescriptor
     @Override
     public void setFrequencyBand(IFrequencyBand frequencyBand)
     {
-        mFrequencyBand = frequencyBand;
+        if(frequencyBand.getIdentifier() == getDownlinkBandIdentifier())
+        {
+            mFrequencyBand = frequencyBand;
+        }
     }
 
     @Override
@@ -184,19 +187,36 @@ public class P25Channel implements IChannelDescriptor
      */
     public String toString()
     {
+        StringBuilder sb = new StringBuilder();
+
         if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
         {
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber());
+            sb.append(getDownlinkBandIdentifier()).append("-").append(getDownlinkLogicalChannelNumber());
         }
         else if(hasUplinkChannel())
         {
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/" +
-                getUplinkBandIdentifier() + "-" + (getUplinkLogicalChannelNumber());
+            sb.append(getDownlinkBandIdentifier())
+                .append("-")
+                .append(getDownlinkLogicalChannelNumber())
+                .append("/")
+                .append(getUplinkBandIdentifier())
+                .append("-")
+                .append(getUplinkLogicalChannelNumber());
         }
         else
         {
-            return getDownlinkBandIdentifier() + "-" + (getDownlinkLogicalChannelNumber()) + "/-----";
+            sb.append(getDownlinkBandIdentifier())
+                .append("-")
+                .append(getDownlinkLogicalChannelNumber())
+                .append("/-----");
         }
+
+        if(isTDMAChannel())
+        {
+            sb.append(" TS").append(getTimeslot());
+        }
+
+        return sb.toString();
     }
 
     /**

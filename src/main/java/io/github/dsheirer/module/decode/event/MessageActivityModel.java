@@ -23,6 +23,7 @@ package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
@@ -114,6 +115,12 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
 
     public void receive(final IMessage message)
     {
+        //Don't process tail bits or stuff bits message fragments
+        if(message instanceof StuffBitsMessage)
+        {
+            return;
+        }
+
         if(mMessageFilter.passes(message))
         {
             final MessageItem messageItem = new MessageItem(message);

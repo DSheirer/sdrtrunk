@@ -24,9 +24,8 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 
@@ -52,9 +51,9 @@ public class RadioUnitMonitorCommandEnhanced extends MacStructure
 
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mTargetAddress;
-    private TalkgroupIdentifier mTalkgroupId;
-    private TalkgroupIdentifier mSourceAddress;
+    private Identifier mTargetAddress;
+    private Identifier mTalkgroupId;
+    private Identifier mSourceAddress;
 
     /**
      * Constructs the message
@@ -109,11 +108,11 @@ public class RadioUnitMonitorCommandEnhanced extends MacStructure
     /**
      * To radio address
      */
-    public TalkgroupIdentifier getTargetAddress()
+    public Identifier getTargetAddress()
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;
@@ -122,11 +121,11 @@ public class RadioUnitMonitorCommandEnhanced extends MacStructure
     /**
      * Talkgroup to call
      */
-    public TalkgroupIdentifier getTalkgroupId()
+    public Identifier getTalkgroupId()
     {
         if(mTalkgroupId == null)
         {
-            mTalkgroupId = APCO25FromTalkgroup.createGroup(getMessage().getInt(TALKGROUP_ID, getOffset()));
+            mTalkgroupId = APCO25Talkgroup.create(getMessage().getInt(TALKGROUP_ID, getOffset()));
         }
 
         return mTalkgroupId;
@@ -135,11 +134,11 @@ public class RadioUnitMonitorCommandEnhanced extends MacStructure
     /**
      * From Radio Unit
      */
-    public TalkgroupIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;

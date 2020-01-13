@@ -25,11 +25,10 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.P25P2Channel;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25FromTalkgroup;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
@@ -51,8 +50,8 @@ public class GroupVoiceChannelGrantAbbreviated extends MacStructure implements I
 
     private List<Identifier> mIdentifiers;
     private APCO25Channel mChannel;
-    private TalkgroupIdentifier mGroupAddress;
-    private TalkgroupIdentifier mSourceAddress;
+    private Identifier mGroupAddress;
+    private Identifier mSourceAddress;
     private VoiceServiceOptions mServiceOptions;
 
     /**
@@ -110,11 +109,11 @@ public class GroupVoiceChannelGrantAbbreviated extends MacStructure implements I
     /**
      * To Talkgroup
      */
-    public TalkgroupIdentifier getGroupAddress()
+    public Identifier getGroupAddress()
     {
         if(mGroupAddress == null)
         {
-            mGroupAddress = APCO25ToTalkgroup.createGroup(getMessage().getInt(GROUP_ADDRESS, getOffset()));
+            mGroupAddress = APCO25Talkgroup.create(getMessage().getInt(GROUP_ADDRESS, getOffset()));
         }
 
         return mGroupAddress;
@@ -123,11 +122,11 @@ public class GroupVoiceChannelGrantAbbreviated extends MacStructure implements I
     /**
      * From Radio Unit
      */
-    public TalkgroupIdentifier getSourceAddress()
+    public Identifier getSourceAddress()
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25FromTalkgroup.createIndividual(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;

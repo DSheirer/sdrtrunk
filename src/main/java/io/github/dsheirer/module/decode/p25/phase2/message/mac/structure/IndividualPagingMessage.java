@@ -25,8 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25ToTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -52,10 +51,10 @@ public class IndividualPagingMessage extends MacStructure
         104, 105, 106, 107, 108, 109, 110, 111};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mTargetAddress1;
-    private TalkgroupIdentifier mTargetAddress2;
-    private TalkgroupIdentifier mTargetAddress3;
-    private TalkgroupIdentifier mTargetAddress4;
+    private Identifier mTargetAddress1;
+    private Identifier mTargetAddress2;
+    private Identifier mTargetAddress3;
+    private Identifier mTargetAddress4;
 
     /**
      * Constructs the message
@@ -194,11 +193,11 @@ public class IndividualPagingMessage extends MacStructure
     /**
      * To Talkgroup 1
      */
-    public TalkgroupIdentifier getTargetAddress1()
+    public Identifier getTargetAddress1()
     {
         if(mTargetAddress1 == null)
         {
-            mTargetAddress1 = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS_1, getOffset()));
+            mTargetAddress1 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_1, getOffset()));
         }
 
         return mTargetAddress1;
@@ -207,11 +206,11 @@ public class IndividualPagingMessage extends MacStructure
     /**
      * To Talkgroup 2
      */
-    public TalkgroupIdentifier getTargetAddress2()
+    public Identifier getTargetAddress2()
     {
         if(mTargetAddress2 == null && getCount() >= 2)
         {
-            mTargetAddress2 = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS_2, getOffset()));
+            mTargetAddress2 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_2, getOffset()));
         }
 
         return mTargetAddress2;
@@ -220,11 +219,11 @@ public class IndividualPagingMessage extends MacStructure
     /**
      * To Talkgroup 3
      */
-    public TalkgroupIdentifier getTargetAddress3()
+    public Identifier getTargetAddress3()
     {
         if(mTargetAddress3 == null && getCount() >= 3)
         {
-            mTargetAddress3 = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS_3, getOffset()));
+            mTargetAddress3 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_3, getOffset()));
         }
 
         return mTargetAddress3;
@@ -233,11 +232,11 @@ public class IndividualPagingMessage extends MacStructure
     /**
      * To Talkgroup 4
      */
-    public TalkgroupIdentifier getTargetAddress4()
+    public Identifier getTargetAddress4()
     {
         if(mTargetAddress4 == null && getCount() >= 4)
         {
-            mTargetAddress4 = APCO25ToTalkgroup.createIndividual(getMessage().getInt(TARGET_ADDRESS_4, getOffset()));
+            mTargetAddress4 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_4, getOffset()));
         }
 
         return mTargetAddress4;

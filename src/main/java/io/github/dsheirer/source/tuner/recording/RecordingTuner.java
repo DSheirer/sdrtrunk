@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
-import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.PassThroughSourceManager;
 import io.github.dsheirer.source.tuner.manager.PolyphaseChannelSourceManager;
@@ -49,8 +48,6 @@ public class RecordingTuner extends Tuner
         super("Recording Tuner", new RecordingTunerController());
 
         mUserPreferences = userPreferences;
-
-        ChannelSourceManager channelSourceManager = null;
 
         if(getTunerController().getCurrentSampleRate() < 100000.0d)
         {

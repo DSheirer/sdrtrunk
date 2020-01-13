@@ -1,27 +1,30 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.preference.identifier.talkgroup;
 
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 
@@ -43,11 +46,9 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
             {
                 case DECIMAL:
                 case FORMATTED:
-                    return toDecimal(identifier.getValue(),
-                        (identifier.isGroup() ? GROUP_DECIMAL_WIDTH : UNIT_DECIMAL_WIDTH));
+                    return toDecimal(identifier.getValue(), GROUP_DECIMAL_WIDTH);
                 case HEXADECIMAL:
-                    return toHex(identifier.getValue(),
-                        (identifier.isGroup() ? GROUP_HEXADECIMAL_WIDTH : UNIT_HEXADECIMAL_WIDTH));
+                    return toHex(identifier.getValue(), GROUP_HEXADECIMAL_WIDTH);
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
@@ -99,4 +100,38 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
 
         return identifier.toString();
     }
+
+    /**
+     * Formats the radio identifier to the specified format and width.
+     */
+    public static String format(RadioIdentifier identifier, IntegerFormat format, boolean fixedWidth)
+    {
+        if(fixedWidth)
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    return toDecimal(identifier.getValue(), UNIT_DECIMAL_WIDTH);
+                case HEXADECIMAL:
+                    return toHex(identifier.getValue(), UNIT_HEXADECIMAL_WIDTH);
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+        else
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    return identifier.getValue().toString();
+                case HEXADECIMAL:
+                    return toHex(identifier.getValue());
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+    }
+
 }

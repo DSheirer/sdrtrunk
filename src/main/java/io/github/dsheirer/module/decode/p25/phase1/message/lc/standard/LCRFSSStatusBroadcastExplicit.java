@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -42,12 +42,12 @@ import java.util.List;
 public class LCRFSSStatusBroadcastExplicit extends LinkControlWord implements IFrequencyBandReceiver
 {
     private static final int[] LRA = {8, 9, 10, 11, 12, 13, 14, 15};
-    private static final int[] DOWNLINK_FREQUENCY_BAND = {16, 17, 18, 19};
-    private static final int[] DOWNLINK_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int[] UPLINK_FREQUENCY_BAND = {16, 17, 18, 19};
+    private static final int[] UPLINK_CHANNEL_NUMBER = {20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
     private static final int[] RFSS = {32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] SITE = {40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] UPLINK_FREQUENCY_BAND = {48, 49, 50, 51};
-    private static final int[] UPLINK_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
+    private static final int[] DOWNLINK_FREQUENCY_BAND = {48, 49, 50, 51};
+    private static final int[] DOWNLINK_CHANNEL_NUMBER = {52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63};
     private static final int[] SERVICE_CLASS = {64, 65, 66, 67, 68, 69, 70, 71};
 
     private List<Identifier> mIdentifiers;

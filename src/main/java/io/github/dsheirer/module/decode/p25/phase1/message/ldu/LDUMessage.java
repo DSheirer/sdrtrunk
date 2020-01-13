@@ -48,6 +48,7 @@ public abstract class LDUMessage extends P25Message
     public LDUMessage(CorrectedBinaryMessage message, int nac, long timestamp)
     {
         super(message, nac, timestamp);
+        mLog.debug("get LSD " + getLowSpeedData());
     }
 
     /**

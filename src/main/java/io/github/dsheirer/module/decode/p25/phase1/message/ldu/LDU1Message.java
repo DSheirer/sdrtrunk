@@ -58,7 +58,7 @@ import java.util.List;
  * IMBE 9: 1424-1567
  */
 
-public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
+public class    LDU1Message extends LDUMessage implements IFrequencyBandReceiver
 {
     private final static Logger mLog = LoggerFactory.getLogger(LDU1Message.class);
 

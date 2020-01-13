@@ -137,7 +137,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        if(mDebug || t.getClass() == ChannelEvent.class)
+        if(mDebug)
         {
             for(Listener<T> listener : mListeners)
             {

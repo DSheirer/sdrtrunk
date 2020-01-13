@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -177,7 +177,7 @@ public class RecordingTunerController extends TunerController
             }
             catch(IOException ioe)
             {
-                mLog.debug("Error loading recording tuner baseband recording: " + rtc.getPath(), ioe);
+                mLog.debug("Error loading recording tuner baseband recording [" + rtc.getPath() + "] Error: " + ioe.getLocalizedMessage());
             }
         }
     }
@@ -185,14 +185,7 @@ public class RecordingTunerController extends TunerController
     @Override
     public void setFrequency(long frequency) throws SourceException
     {
-        if(hasBufferListeners())
-        {
-            mLog.debug("Set frequency [" + frequency + "] request ignored");
-        }
-        else
-        {
-            super.setFrequency(frequency);
-        }
+        mLog.debug("Set frequency [" + frequency + "] request ignored");
     }
 
     /**

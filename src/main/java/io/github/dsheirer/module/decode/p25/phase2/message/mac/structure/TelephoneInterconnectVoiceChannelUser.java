@@ -24,8 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25AnyTalkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 import io.github.dsheirer.module.decode.p25.reference.VoiceServiceOptions;
 
@@ -43,7 +42,7 @@ public class TelephoneInterconnectVoiceChannelUser extends MacStructure
         49, 50, 51, 52, 53, 54, 55};
 
     private List<Identifier> mIdentifiers;
-    private TalkgroupIdentifier mToOrFromAddress;
+    private Identifier mToOrFromAddress;
     private VoiceServiceOptions mServiceOptions;
 
     /**
@@ -108,11 +107,11 @@ public class TelephoneInterconnectVoiceChannelUser extends MacStructure
     /**
      * From Radio Unit
      */
-    public TalkgroupIdentifier getToOrFromAddress()
+    public Identifier getToOrFromAddress()
     {
         if(mToOrFromAddress == null)
         {
-            mToOrFromAddress = APCO25AnyTalkgroup.create(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mToOrFromAddress = APCO25Radio.createAny(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mToOrFromAddress;

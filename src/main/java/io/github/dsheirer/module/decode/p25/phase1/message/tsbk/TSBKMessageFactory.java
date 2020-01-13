@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.isp.Unk
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.ChannelLoading;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
+import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaTrafficChannel;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupAdd;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupDelete;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
@@ -118,12 +119,15 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.unknown.isp.Unkn
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.unknown.osp.UnknownVendorOSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory for creating Trunking Signalling Block (TSBK) message parser classes
  */
 public class TSBKMessageFactory
 {
+    private final static Logger mLog = LoggerFactory.getLogger(TSBKMessageFactory.class);
     private static final ViterbiDecoder_1_2_P25 VITERBI_HALF_RATE_DECODER = new ViterbiDecoder_1_2_P25();
 
     public static TSBKMessage create(Direction direction, P25P1DataUnitID dataUnitID,
@@ -301,14 +305,14 @@ public class TSBKMessageFactory
 
             case MOTOROLA_ISP_UNKNOWN:
                 return new UnknownMotorolaISPMessage(dataUnitID, message, nac, timestamp);
-            case MOTOROLA_OSP_CONTROL_CHANNEL_ID:
+            case MOTOROLA_OSP_BASE_STATION_ID:
                 return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN:
                 return new PlannedChannelShutdown(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_DENY_RESPONSE:
                 return new MotorolaDenyResponse(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_TRAFFIC_CHANNEL_ID:
-                return new MotorolaBaseStationId(dataUnitID, message, nac, timestamp);
+                return new MotorolaTrafficChannel(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_PATCH_GROUP_ADD:
                 return new PatchGroupAdd(dataUnitID, message, nac, timestamp);
             case MOTOROLA_OSP_PATCH_GROUP_DELETE:
