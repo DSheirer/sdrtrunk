@@ -347,6 +347,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                     break;
                 default:
                     P25Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
+                    // mLog.debug(message.toString());
                     mMessageListener.receive(message);
                     reset(mDataUnitID.getMessageLength());
                     break;
