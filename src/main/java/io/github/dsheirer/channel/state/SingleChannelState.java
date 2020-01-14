@@ -123,12 +123,10 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     private Thread handleIdleRestartThread;
     private void handleIdleState(State channelState) throws InterruptedException {
         if (channelState == State.IDLE && !idleStateThreadCreated) {
-            mLog.debug("start restart thread");
             handleIdleRestartThread = new Thread(new SingleChannelState.StateIdleRestartThread());
             handleIdleRestartThread.start();
             idleStateThreadCreated = true;
         } else if (channelState != State.IDLE && idleStateThreadCreated){
-            mLog.debug("cancel restart thread");
             idleStateThreadCreated = false;
             if (handleIdleRestartThread != null) {
                 handleIdleRestartThread.interrupt();

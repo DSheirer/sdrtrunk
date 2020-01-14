@@ -203,6 +203,9 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
                 //Ignore
                 break;
+	    case NOTIFICATION_TUNER_ID:
+		//Ignore
+		break;
             default:
                 mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent() + " from [" +
                     (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "") + "]");
