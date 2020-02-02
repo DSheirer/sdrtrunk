@@ -39,6 +39,7 @@ public enum DecoderType
     PASSPORT("Passport", "Passport", Protocol.PASSPORT),
     P25_PHASE1("P25 Phase 1", "P25-1", Protocol.APCO25),
     P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),
+    DMR("DMR","DMR", Protocol.DMR),
 
     //Auxiliary Decoders
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
@@ -68,7 +69,8 @@ public enum DecoderType
         DecoderType.NBFM,
         DecoderType.P25_PHASE1,
         DecoderType.P25_PHASE2,
-        DecoderType.PASSPORT);
+        DecoderType.PASSPORT,
+        DecoderType.DMR);
 
     /**
      * Auxiliary decoders that operate on in-band signalling in the decoded audio channel

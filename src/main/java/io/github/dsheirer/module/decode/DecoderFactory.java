@@ -38,6 +38,10 @@ import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DMRDecoderEditor;
+import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
+import io.github.dsheirer.module.decode.dmr.DMRStandardDecoder;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
 import io.github.dsheirer.module.decode.fleetsync2.FleetsyncMessageFilter;
@@ -182,6 +186,12 @@ public class DecoderFactory
                 break;
             case CQPSK:
                 modules.add(new P25P1DecoderLSM());
+                break;
+            case DMR:
+                modules.add(new DMRStandardDecoder());
+                modules.add(new DMRDecoderState(channel, 0));
+                modules.add(new DMRDecoderState(channel, 1));
+                //todo: what is that, decoder state, decoder, audo module
                 break;
             default:
                 throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
@@ -413,6 +423,8 @@ public class DecoderFactory
             case PASSPORT:
                 filters.add(new PassportMessageFilter());
                 break;
+            case DMR:
+                //filters.add(new DMR) //todo: not finished
             default:
                 break;
         }
@@ -447,6 +459,8 @@ public class DecoderFactory
                 return new DecodeConfigP25Phase1();
             case P25_PHASE2:
                 return new DecodeConfigP25Phase2();
+            case DMR:
+                return new DecodeConfigDMR();
             default:
                 throw new IllegalArgumentException("DecodeConfigFactory - unknown decoder type [" + decoder.toString() + "]");
         }
@@ -508,6 +522,8 @@ public class DecoderFactory
                     return copyP25P2;
                 case PASSPORT:
                     return new DecodeConfigPassport();
+                case DMR:
+                    return new DecodeConfigDMR();
                 default:
                     throw new IllegalArgumentException("Unrecognized decoder configuration type:" + config.getDecoderType());
             }

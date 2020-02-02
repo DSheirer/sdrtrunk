@@ -13,46 +13,26 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.bits;
+package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 
-public class SyncDetector implements ISyncProcessor
+/**
+ * Listener interface to be notified each time a sync pattern has been detected and/or when the sync
+ * has been lost.
+ */
+public interface IDMRSyncDetectListener extends ISyncDetectListener
 {
-    private long mPattern;
-    private ISyncDetectListener mListener;
+    /**
+     * Indicates that a sync pattern has been detected.
+     *
+     * @param bitErrors count for soft sync matching to indicate the number of bit positions
+     * of the sequence that didn't fully match the sync pattern
+     */
+    void syncDetected(int bitErrors, DMRSyncPattern pattern);
 
-    public SyncDetector(long pattern)
-    {
-        mPattern = pattern;
-    }
-
-    public SyncDetector(long pattern, ISyncDetectListener listener)
-    {
-        this(pattern);
-
-        mListener = listener;
-    }
-
-    public void setListener(ISyncDetectListener listener)
-    {
-        mListener = listener;
-    }
-
-    @Override
-    public boolean checkSync(long value)
-    {
-        if(value == mPattern)
-        {
-            //System.out.println(String.format("%x",value));
-            if(mListener != null)
-            {
-                mListener.syncDetected(0);
-            }
-
-            return true;
-        }
-
-        return false;
-    }
+    /**
+     * Indicates that sync has been lost
+     */
+    void syncLost();
 }
