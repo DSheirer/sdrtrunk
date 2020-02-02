@@ -31,7 +31,7 @@ public enum ModeDecoderType
 {
     AM("am", DecoderType.AM),
     APCO25("p25", DecoderType.P25_PHASE1),
-    DMR("dmr", null),
+    DMR("dmr", DecoderType.DMR),
     DSTAR("d-star", null),
     FM("fm", DecoderType.NBFM),
     FMN("fmn", DecoderType.NBFM),

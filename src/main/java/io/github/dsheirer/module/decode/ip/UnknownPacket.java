@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.ip;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+
 import java.util.Collections;
 import java.util.List;
 

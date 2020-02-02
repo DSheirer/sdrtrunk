@@ -23,7 +23,7 @@
 package io.github.dsheirer.module.decode.p25.phase2.message;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.edac.ReedSolomon_44_16_29;
+import io.github.dsheirer.edac.ReedSolomon_44_16_29_P25;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice2Timeslot;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.Voice4Timeslot;
@@ -177,7 +177,7 @@ public class EncryptionSynchronizationSequenceProcessor
 
             int[] output = new int[63];
 
-            ReedSolomon_44_16_29 rs = new ReedSolomon_44_16_29();
+            ReedSolomon_44_16_29_P25 rs = new ReedSolomon_44_16_29_P25();
 
             boolean irrecoverableErrors = rs.decode(input, output);
 

@@ -25,9 +25,13 @@ import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.text.DefaultCaret;
-import java.awt.*;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -109,6 +113,7 @@ public class ChannelDetailPanel extends JPanel implements Listener<ProcessingCha
             for(DecoderState decoderState : processingChain.getDecoderStates())
             {
                 sb.append(decoderState.getActivitySummary());
+                sb.append("============================================================\n");
             }
 
             details = sb.toString();

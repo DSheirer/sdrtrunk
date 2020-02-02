@@ -21,6 +21,10 @@
 package io.github.dsheirer.module.decode.ip.ars;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+
+import java.util.Collections;
+import java.util.List;
 
 public class QueryMessage extends ARSHeader
 {
@@ -40,5 +44,11 @@ public class QueryMessage extends ARSHeader
         StringBuilder sb = new StringBuilder();
         sb.append("ARS QUERY MESSAGE");
         return sb.toString();
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.emptyList();
     }
 }

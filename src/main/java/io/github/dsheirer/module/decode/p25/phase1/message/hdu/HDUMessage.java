@@ -24,7 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.hdu;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Golay18;
-import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.edac.ReedSolomon_63_47_17_P25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
@@ -77,8 +77,7 @@ public class HDUMessage extends P25Message
     private static final int[] RS_HEX_14 = {612, 613, 614, 615, 616, 617};
     private static final int[] RS_HEX_15 = {630, 631, 632, 633, 634, 635};
 
-    //Reed-Solomon(36,20,17) code protects the header word.  Maximum correctable errors are: 8
-    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(8);
+    private static final ReedSolomon_63_47_17_P25 reedSolomon_63_47_17 = new ReedSolomon_63_47_17_P25();
 
     private HeaderData mHeaderData;
 

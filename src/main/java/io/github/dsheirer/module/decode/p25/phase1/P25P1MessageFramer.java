@@ -450,7 +450,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
-        Path directory = Paths.get("/home/denny/Documents/TMR/APCO25/GPS/cnyicc_cellocator");
+        Path directory = Paths.get("/home/denny/Documents/TMR/APCO25/GPS/ken_426superbird@gmail.com");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
         UserPreferences userPreferences = new UserPreferences();
@@ -548,5 +548,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         {
             mLog.error("Error", ioe);
         }
+
+        mLog.info("Finished!");
     }
 }

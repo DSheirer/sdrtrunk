@@ -70,7 +70,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private Map<Integer,MutableIdentifierCollection> mIdentifierCollectionMap = new TreeMap<>();
     private Map<Integer,StateMachine> mStateMachineMap = new TreeMap<>();
     private Map<Integer,StateMonitoringSquelchController> mSquelchControllerMap = new TreeMap<>();
-    private int mTimeslotCount;
+    private int[] mTimeslots;
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateListener = new IdentifierUpdateListenerProxy();
 
     /**
@@ -90,13 +90,13 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
      * signal to the user that the call is ended, while continuing to display the call details for the user
      * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
      */
-    public MultiChannelState(Channel channel, AliasModel aliasModel, int timeslots)
+    public MultiChannelState(Channel channel, AliasModel aliasModel, int[] timeslots)
     {
         super(channel);
 
-        mTimeslotCount = timeslots;
+        mTimeslots = timeslots;
 
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: timeslots)
         {
             mChannelMetadataMap.put(timeslot, new ChannelMetadata(aliasModel, timeslot));
             MutableIdentifierCollection mutableIdentifierCollection = new MutableIdentifierCollection(timeslot);
@@ -230,7 +230,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
      */
     private void createConfigurationIdentifiers(Channel channel)
     {
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: mTimeslots)
         {
             MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
 
@@ -345,7 +345,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void reset()
     {
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: mTimeslots)
         {
             reset(timeslot);
         }
@@ -364,7 +364,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void start()
     {
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: mTimeslots)
         {
             mIdentifierCollectionMap.get(timeslot).broadcastIdentifiers();
             mStateMachineMap.get(timeslot).setState(State.RESET);
@@ -480,7 +480,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                     //Rebroadcast source frequency change events for the decoder(s) to process
                     long frequency = sourceEvent.getValue().longValue();
 
-                    for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+                    for(int timeslot: mTimeslots)
                     {
                         broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY,
                             mStateMachineMap.get(timeslot).getState(), frequency));
@@ -497,7 +497,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                     //Rebroadcast frequency error measurements to external listener if we're currently
                     //in an active (ie sync locked) state.
-                    for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+                    for(int timeslot: mTimeslots)
                     {
                         if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(mStateMachineMap.get(timeslot).getState()))
                         {

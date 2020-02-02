@@ -28,6 +28,9 @@ public class UDPHeader extends Header
     private static final int[] SOURCE_PORT = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] DESTINATION_PORT = {16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
 
+    private UDPPort mSourcePort;
+    private UDPPort mDestinationPort;
+
     /**
      * Constructs a parser for a header contained within a binary message starting at the offset.
      *
@@ -63,16 +66,26 @@ public class UDPHeader extends Header
      * Source UDP port number
      * @return
      */
-    public int getSourcePort()
+    public UDPPort getSourcePort()
     {
-        return getMessage().getInt(SOURCE_PORT, getOffset());
+        if(mSourcePort == null)
+        {
+            mSourcePort = UDPPort.createFrom(getMessage().getInt(SOURCE_PORT, getOffset()));
+        }
+
+        return mSourcePort;
     }
 
     /**
      * Destination UDP port number
      */
-    public int getDestinationPort()
+    public UDPPort getDestinationPort()
     {
-        return getMessage().getInt(DESTINATION_PORT, getOffset());
+        if(mDestinationPort == null)
+        {
+            mDestinationPort = UDPPort.createTo(getMessage().getInt(DESTINATION_PORT, getOffset()));
+        }
+
+        return mDestinationPort;
     }
 }

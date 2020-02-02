@@ -28,10 +28,14 @@ public class DecoderStateEvent
         new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 0);
     private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_1 =
         new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 1);
+    private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_2 =
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 2);
     private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_0 =
         new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 0);
     private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_1 =
         new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 1);
+    private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_2 =
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 2);
     private Object mSource;
     private Event mEvent;
     private State mState;
@@ -77,9 +81,13 @@ public class DecoderStateEvent
         {
             return ACTIVE_STATE_TIMESLOT_1;
         }
+        else if(timeslot == 2)
+        {
+            return ACTIVE_STATE_TIMESLOT_2;
+        }
         else
         {
-            throw new IllegalArgumentException("Only timeslots 0 and 1 are currently supported");
+            throw new IllegalArgumentException("Only timeslots 0 - 2 are currently supported");
         }
     }
 
@@ -108,9 +116,13 @@ public class DecoderStateEvent
         {
             return INACTIVE_STATE_TIMESLOT_1;
         }
+        else if(timeslot == 2)
+        {
+            return INACTIVE_STATE_TIMESLOT_2;
+        }
         else
         {
-            throw new IllegalArgumentException("Only timeslots 0 and 1 are currently supported");
+            throw new IllegalArgumentException("Only timeslots 0 - 2 are currently supported");
         }
     }
 

@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.ltrnet.message.osw;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ltrnet.LtrNetMessageType;
-import io.github.dsheirer.module.decode.ltrnet.identifier.SiteIdentifier;
+import io.github.dsheirer.module.decode.ltrnet.identifier.LtrSiteIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class SiteId extends LtrNetOswMessage
 {
-    private SiteIdentifier mSiteIdentifier;
+    private LtrSiteIdentifier mLtrSiteIdentifier;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -57,14 +57,14 @@ public class SiteId extends LtrNetOswMessage
         return sb.toString();
     }
 
-    public SiteIdentifier getSiteID()
+    public LtrSiteIdentifier getSiteID()
     {
-        if(mSiteIdentifier == null)
+        if(mLtrSiteIdentifier == null)
         {
-            mSiteIdentifier = SiteIdentifier.create(getMessage().getInt(23, 32));
+            mLtrSiteIdentifier = LtrSiteIdentifier.create(getMessage().getInt(23, 32));
         }
 
-        return mSiteIdentifier;
+        return mLtrSiteIdentifier;
     }
 
 

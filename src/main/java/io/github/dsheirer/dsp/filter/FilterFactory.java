@@ -599,9 +599,9 @@ public class FilterFactory
      * @param alpha - roll-off factor.
      * @return - filter coefficients
      */
-    public static float[] getRootRaisedCosine(int samplesPerSymbol, int symbolCount, float alpha)
+    public static float[] getRootRaisedCosine(double samplesPerSymbol, int symbolCount, float alpha)
     {
-        int taps = samplesPerSymbol * symbolCount;
+        int taps = (int)(samplesPerSymbol * symbolCount);
 
         float scale = 0;
 

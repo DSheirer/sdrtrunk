@@ -24,22 +24,32 @@ package io.github.dsheirer.dsp.symbol;
 
 public enum Dibit
 {
-    D01_PLUS_3(false, true, 1, 4),
-    D00_PLUS_1(false, false, 0, 0),
-    D10_MINUS_1(true, false, 2, 8),
-    D11_MINUS_3(true, true, 3, 12);
+    D01_PLUS_3(false, true, 1, 4, 1),
+    D00_PLUS_1(false, false, 0, 0, 0),
+    D10_MINUS_1(true, false, 2, 8, 2),
+    D11_MINUS_3(true, true, 3, 12, 3);
 
     private boolean mBit1;
     private boolean mBit2;
     private int mLowValue;
     private int mHighValue;
+    private int mValue;
 
-    private Dibit(boolean bit1, boolean bit2, int lowValue, int highValue)
+    private Dibit(boolean bit1, boolean bit2, int lowValue, int highValue, int value)
     {
         mBit1 = bit1;
         mBit2 = bit2;
         mLowValue = lowValue;
         mHighValue = highValue;
+        mValue = value;
+    }
+
+    /**
+     * Binary value of the symbol
+     */
+    public int getValue()
+    {
+        return mValue;
     }
 
     /**

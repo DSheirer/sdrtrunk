@@ -133,7 +133,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
         }
         else
         {
-            mChannelState = new MultiChannelState(channel, aliasModel, channel.getDecodeConfiguration().getTimeslotCount());
+            mChannelState = new MultiChannelState(channel, aliasModel, channel.getDecodeConfiguration().getTimeslots());
         }
 
         addModule(mChannelState);
@@ -155,10 +155,6 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         return mMessageActivityModel;
     }
-
-
-    //TODO: should we introduce the concept of getTimeslot() to messages and events and then use that to vector the
-    //TODO: inbound stream to the appropriate message and event models?
 
     public void setMessageActivityModel(MessageActivityModel model)
     {

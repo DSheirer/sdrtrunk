@@ -30,6 +30,22 @@ public class SyncLossMessage extends Message
 {
     private int mBitsProcessed;
     private Protocol mProtocol;
+    private int mTimeslot = 0;
+
+    /**
+     * Constructs a sync loss message.
+     *
+     * @param timestamp of the message
+     * @param bitsProcessed without a sync pattern detection of message decode
+     * @param timeslot that lost the sync
+     */
+    public SyncLossMessage(long timestamp, int bitsProcessed, Protocol protocol, int timeslot)
+    {
+        super(timestamp);
+        mBitsProcessed = bitsProcessed;
+        mProtocol = protocol;
+        mTimeslot = timeslot;
+    }
 
     /**
      * Constructs a sync loss message.
@@ -39,13 +55,21 @@ public class SyncLossMessage extends Message
      */
     public SyncLossMessage(long timestamp, int bitsProcessed, Protocol protocol)
     {
-        super(timestamp);
-        mBitsProcessed = bitsProcessed;
-        mProtocol = protocol;
+        this(timestamp, bitsProcessed, protocol, 0);
     }
 
     /**
-     * Indicates the number of bits that were processed without a sync dectection or message decode
+     * Timeslot that lost the sync
+     * @return timeslot or a default of 0
+     */
+    @Override
+    public int getTimeslot()
+    {
+        return mTimeslot;
+    }
+
+    /**
+     * Indicates the number of bits that were processed without a sync detection or message decode
      */
     public int getBitsProcessed()
     {

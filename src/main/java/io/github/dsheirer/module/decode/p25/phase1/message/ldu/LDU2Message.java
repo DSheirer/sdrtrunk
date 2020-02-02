@@ -23,7 +23,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.ldu;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Hamming10;
-import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.edac.ReedSolomon_24_16_9_P25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import org.slf4j.Logger;
@@ -63,8 +63,8 @@ public class LDU2Message extends LDUMessage
     private static final int[] RS_HEX_6 = {1228, 1229, 1230, 1231, 1232, 1233};
     private static final int[] RS_HEX_7 = {1238, 1239, 1240, 1241, 1242, 1243};
 
-    //Reed-Solomon(24,16,9) code protects the encryption sync word.  Maximum correctable errors are: 4
-    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(4);
+    //Reed-Solomon(24,16,9) code protects the encryption sync word.  Maximum correctable errors are floor(9/2) = 4
+    private static final ReedSolomon_24_16_9_P25 REED_SOLOMON_24_16_9_P25 = new ReedSolomon_24_16_9_P25();
 
     private EncryptionSyncParameters mEncryptionSyncParameters;
     private List<Identifier> mIdentifiers;
@@ -140,7 +140,7 @@ public class LDU2Message extends LDUMessage
         input[23] = getMessage().getInt(CW_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
+        boolean irrecoverableErrors = REED_SOLOMON_24_16_9_P25.decode(input, output);
 
         BinaryMessage binaryMessage = new BinaryMessage(96);
 

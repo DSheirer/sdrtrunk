@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.ip.cellocator;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -48,7 +48,7 @@ public class ProgrammingCommandMessage extends MCGPPacket
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public ProgrammingCommandMessage(MCGPHeader header, BinaryMessage message, int offset)
+    public ProgrammingCommandMessage(MCGPHeader header, CorrectedBinaryMessage message, int offset)
     {
         super(header, message, offset);
     }
