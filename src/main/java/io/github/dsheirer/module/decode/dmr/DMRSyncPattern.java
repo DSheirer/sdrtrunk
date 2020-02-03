@@ -16,11 +16,11 @@ public enum DMRSyncPattern
     RESERVED(0xDD7FF5D757DDl, "RESERVED"),
 
     //These are used to identify the sync-less sub frames of the voice super frame
-    VOICE_FRAME_B(-1, "VOICE B"),
-    VOICE_FRAME_C(-1, "VOICE C"),
-    VOICE_FRAME_D(-1, "VOICE D"),
-    VOICE_FRAME_E(-1, "VOICE E"),
-    VOICE_FRAME_F(-1, "VOICE F"),
+    VOICE_FRAME_B(-2, "VOICE B"),
+    VOICE_FRAME_C(-3, "VOICE C"),
+    VOICE_FRAME_D(-4, "VOICE D"),
+    VOICE_FRAME_E(-5, "VOICE E"),
+    VOICE_FRAME_F(-6, "VOICE F"),
 
     UNKNOWN(-1, "UNKNOWN");
 

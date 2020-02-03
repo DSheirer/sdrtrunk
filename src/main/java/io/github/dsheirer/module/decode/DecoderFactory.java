@@ -42,6 +42,7 @@ import io.github.dsheirer.module.decode.dmr.DMRDecoderEditor;
 import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRStandardDecoder;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.dmr.message.voice.DMRAudioModule;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
 import io.github.dsheirer.module.decode.fleetsync2.FleetsyncMessageFilter;
@@ -190,7 +191,8 @@ public class DecoderFactory
             case DMR:
                 modules.add(new DMRStandardDecoder());
                 modules.add(new DMRDecoderState(channel, 0));
-                modules.add(new DMRDecoderState(channel, 1));
+                //modules.add(new DMRDecoderState(channel, 1));
+                modules.add(new DMRAudioModule(userPreferences));
                 //todo: what is that, decoder state, decoder, audo module
                 break;
             default:

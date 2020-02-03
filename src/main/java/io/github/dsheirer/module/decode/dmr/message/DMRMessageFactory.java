@@ -1,11 +1,11 @@
 package io.github.dsheirer.module.decode.dmr.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.DataType;
+import io.github.dsheirer.module.decode.dmr.message.data.*;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.IDLEMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.TerminatorWithLCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.VoiceLCHeaderMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,6 +32,10 @@ public class DMRMessageFactory
                 return new IDLEMessage(pattern, message);
             case CSBK:
                 return new CSBKMessage(pattern, message);
+            case VOICE_HEADER:
+                return new VoiceLCHeaderMessage(pattern, message);
+            case TLC:
+                return new TerminatorWithLCMessage(pattern, message);
             default:
                 return new IDLEMessage(pattern, message); //new UnknownP25Message(message, nac, timestamp, dataUnitID);
         }

@@ -72,7 +72,6 @@ public class DMRStandardDecoder extends DMRDecoder
         super.setSampleRate(sampleRate);
 
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
-
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mPLLGainMonitor = new AdaptivePLLGainMonitor(mCostasLoop, this);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
@@ -104,7 +103,6 @@ public class DMRStandardDecoder extends DMRDecoder
     {
         //User accounting of the incoming buffer is handled by the filter
         ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
-
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
@@ -147,9 +145,10 @@ public class DMRStandardDecoder extends DMRDecoder
 
             try
             {
-                filter = FilterFactory.getTaps(specification);
+                filter = FilterFactory.getTaps(specification);//
+                //filter = FilterFactory.getRootRaisedCosine((int)getSamplesPerSymbol(), 10, 0.3f);////
             }
-            catch(FilterDesignException fde)
+            catch(Exception fde) //FilterDesignException
             {
                 mLog.error("Couldn't design low pass baseband filter for sample rate: " + getSampleRate());
             }
@@ -179,17 +178,15 @@ public class DMRStandardDecoder extends DMRDecoder
     public static void main(String[] args)
     {
         String path = "/Users/maozhenyu/Downloads/SDR/";
-//        String input = "DFWAirport_Site_857_3875_baseband_20181213_223236.wav";
-//        String output = "DFWAirport_Site_857_3875_baseband_20181213_223236";
 
-        String input = "gqrx_20200201_033859_454399900.wav";
+        String input = "System_Site_Pheonix_-_DMR_BM1_baseband_20200203_033944.wav";
         String output = "19240";
 
 
         DMRStandardDecoder decoder = new DMRStandardDecoder();
-        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.DMR);
-        decoder.setBufferListener(recorder.getReusableByteBufferListener());
-        recorder.start();
+        //BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.DMR);
+        //decoder.setBufferListener(recorder.getReusableByteBufferListener());
+        //recorder.start();
 
         File file = new File(path + input);
 
@@ -197,7 +194,7 @@ public class DMRStandardDecoder extends DMRDecoder
 
         try(ComplexWaveSource source = new ComplexWaveSource(file))
         {
-            decoder.setSampleRate(48000.0);
+            decoder.setSampleRate(50000.0);
             source.setListener(decoder);
             source.start();
 
@@ -212,7 +209,7 @@ public class DMRStandardDecoder extends DMRDecoder
             running = false;
         }
 
-        recorder.stop();
+        //recorder.stop();
     }
     @Override
     protected void process(SourceEvent sourceEvent)

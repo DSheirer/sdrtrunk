@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.dmr.message.data;
 public enum DataType
 {
     PI_HEADER(0, 276, true, "PI  "),
-    VOICE_HEADER(1, 276, false, "VH "),
+    VOICE_HEADER(1, 276, false, "VOICE LC "),
     TLC(2, 276, false, "TLC "),
     CSBK(3, 276, false, "CSBK "),
     MBC_HEADER(4, 276, false, "MBCH "),

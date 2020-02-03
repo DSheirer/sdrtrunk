@@ -34,7 +34,7 @@ import io.github.dsheirer.identifier.*;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
@@ -43,11 +43,7 @@ import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
-import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
-import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1NetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HeaderData;
@@ -177,6 +173,9 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
         {
             DataMessage message = (DataMessage)iMessage;
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CONTROL));
+        } else if(iMessage instanceof VoiceMessage) {
+            VoiceMessage vm = (VoiceMessage)iMessage;
+            System.out.print("<<<<<>>>>>>READING VOICE Message" + vm.getSyncPattern().name() + "\n");
         }
     }
 

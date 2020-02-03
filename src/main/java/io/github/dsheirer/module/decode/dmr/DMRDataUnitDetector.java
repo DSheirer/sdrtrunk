@@ -23,8 +23,8 @@ import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataType;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
@@ -42,12 +42,14 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
     private DMRSyncDetector mSyncDetector;
     private DibitDelayBuffer mSyncDelayBuffer = new DibitDelayBuffer(DATA_UNIT_DIBIT_LENGTH);
     private IDMRDataUnitDetectListener mDataUnitDetectListener;
+    private IDMRVoiceUnitDetectListener mVoiceUnitDetectListener;
     private boolean mInitialSyncTestProcessed = false;
     private int mDibitsProcessed = 0;
 
-    public DMRDataUnitDetector(IDMRDataUnitDetectListener dataUnitDetectListener, IPhaseLockedLoop phaseLockedLoop)
+    public DMRDataUnitDetector(IDMRDataUnitDetectListener dataUnitDetectListener, IDMRVoiceUnitDetectListener voicedl, IPhaseLockedLoop phaseLockedLoop)
     {
         mDataUnitDetectListener = dataUnitDetectListener;
+        mVoiceUnitDetectListener = voicedl;
         mSyncDetector = new DMRSyncDetector(this, phaseLockedLoop);
     }
 
@@ -76,7 +78,7 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
         if(pattern == DMRSyncPattern.BASE_STATION_DATA || pattern == DMRSyncPattern.MOBILE_STATION_DATA || pattern == DMRSyncPattern.DIRECT_MODE_DATA_TIMESLOT_1) {
             parseDataFrame(bitErrors, pattern);
         } else {
-            mLog.debug("VOICE FRAME");
+            parseVoiceFrame(bitErrors, pattern);
         }
         mDibitsProcessed = 0;
         mInitialSyncTestProcessed = true;
@@ -126,6 +128,25 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
             checkForNid(mSyncDetector.getPrimarySyncMatchErrorCount(), true);
         }
          */
+    }
+    private void parseVoiceFrame(int bitErrorCount, DMRSyncPattern pattern) {
+        if (bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS) {
+            Dibit[] db = mSyncDelayBuffer.getBuffer();
+            CorrectedBinaryMessage mesg = new CorrectedBinaryMessage(288);
+            for(int i = 0; i < db.length; i++) {
+                try {
+                    mesg.add(db[i].getBit1());
+                    mesg.add(db[i].getBit2());
+                } catch (BitSetFullException e) {
+                    e.printStackTrace();
+                }
+            }
+            VoiceAMessage va = new VoiceAMessage(pattern, mesg);
+            if(mVoiceUnitDetectListener != null)
+            {
+                mVoiceUnitDetectListener.voiceUnitDetected(va, (bitErrorCount));
+            }
+        }
     }
     private void parseDataFrame(int bitErrorCount, DMRSyncPattern pattern)
     {
@@ -279,11 +300,6 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
         }
 
         return reversed;
-    }
-
-    public static void logNID(int[] nid, boolean corrected)
-    {
-
     }
 
     public static int getBitErrorCount(int[] a, int[] b)

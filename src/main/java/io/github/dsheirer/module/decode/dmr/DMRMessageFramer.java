@@ -29,10 +29,9 @@ import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.DataType;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -48,18 +47,19 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageFramer.class);
 
     private DMRDataUnitDetector mDataUnitDetector;
-    //voiceUnitDetector
     private Listener<Message> mMessageListener;
-    private boolean mAssemblingMessage = false;
+    private boolean mCurrentSlotIsA = true;
+    private int mInVoiceReadingSlotA = 0;
+    private int mInVoiceReadingSlotB = 0;
+
     private CorrectedBinaryMessage mBinaryMessage;
-    private DataType mDataUnitID;
     private double mBitRate;
     private long mCurrentTime = System.currentTimeMillis();
     private ISyncDetectListener mSyncDetectListener;
 
     public DMRMessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
-        mDataUnitDetector = new DMRDataUnitDetector(this, phaseLockedLoop);
+        mDataUnitDetector = new DMRDataUnitDetector(this, this, phaseLockedLoop);
         mBitRate = bitRate;
     }
 
@@ -142,7 +142,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
     @Override
     public void receive(Dibit dibit)
     {
-        if(mAssemblingMessage) // when there is a VOICE
+        if(mCurrentSlotIsA && mInVoiceReadingSlotA > 0 || !mCurrentSlotIsA && mInVoiceReadingSlotB > 0) // This is a Voice Frame
         {
             try
             {
@@ -151,12 +151,8 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
             }
             catch(BitSetFullException bsfe)
             {
-//                mLog.debug("Message full exception - unexpected");
-
-                //Reset so that we can start over again
                 reset(0);
             }
-
             if(mBinaryMessage.isFull())
             {
                 dispatchMessage();
@@ -167,23 +163,31 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
             mDataUnitDetector.receive(dibit);
         }
     }
-
     private void dispatchMessage()
     {
         if(mMessageListener != null)
         {
-            System.out.println("DATA UNIT = " + mDataUnitID.getLabel());
-            int slottype = (mBinaryMessage.get(63) ? 8 : 0) | (mBinaryMessage.get(63) ? 4 : 0) | (mBinaryMessage.get(64) ? 2 : 0) | (mBinaryMessage.get(64) ? 1 : 0);
-            System.out.println("YOY, GET = " + DataType.fromValue(slottype));
-            mDataUnitID = DataType.fromValue(slottype);
-            switch(mDataUnitID)
-            {
+            System.out.print("++++[Voice Slot = " + (mCurrentSlotIsA ? "A" : "B" )+"]");
+            int slotCount = 0;
+            if(mCurrentSlotIsA) {
+                mInVoiceReadingSlotA ++;
+                slotCount = mInVoiceReadingSlotA;
+                if(slotCount == 6) {
+                    mInVoiceReadingSlotA = 0; //end of voice superframe
+                }
+            } else {
+                mInVoiceReadingSlotB ++;
 
+                slotCount = mInVoiceReadingSlotB;
+                if(slotCount == 6) {
+                    mInVoiceReadingSlotB = 0; //end of voice superframe
+                }
             }
-            DMRMessage message = DMRMessageFactory.createDataMessage(mDataUnitID, DMRSyncPattern.BASE_STATION_DATA, getTimestamp(), mBinaryMessage);
-            mMessageListener.receive(message);
-            reset(mDataUnitID.getMessageLength());
-            mBinaryMessage = new CorrectedBinaryMessage(288);
+            System.out.print(", Frame = " + (char)('A' + slotCount - 1) + "\n");
+            VoiceEMBMessage embMsg = new VoiceEMBMessage(DMRSyncPattern.fromValue( - slotCount), mBinaryMessage);
+            mMessageListener.receive(embMsg);
+            mCurrentSlotIsA = !mCurrentSlotIsA; //switch slot
+            mBinaryMessage = new CorrectedBinaryMessage(288); // ready for next message
         }
         else
         {
@@ -195,8 +199,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
     {
         updateBitsProcessed(bitsProcessed);
         mBinaryMessage = null;
-        mAssemblingMessage = false;
-        mDataUnitID = null;
+        mInVoiceReadingSlotA = 0;
         mDataUnitDetector.reset();
     }
 
@@ -221,12 +224,16 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
         buffer.decrementUserCount();
     }
     @Override
-    public void voiceUnitDetected(DataType typeID, int colorcode, int bitErrors) {
-        mDataUnitID = typeID;
-        mBinaryMessage = new CorrectedBinaryMessage(typeID.getMessageLength());
-        mBinaryMessage.incrementCorrectedBitCount(bitErrors);
-
-        mAssemblingMessage = true;
+    public void voiceUnitDetected(VoiceAMessage vam, int bitErrors) {
+        System.out.print(">>>>>>=========!!!! VOICE FRAME A [Channel = " + (mCurrentSlotIsA ? "A": "B") +"] !!!!=========<<<<<<\n");
+        mMessageListener.receive(vam);
+        if(mCurrentSlotIsA) { // A is now running
+            mInVoiceReadingSlotA = 1;
+        } else {
+            mInVoiceReadingSlotB = 1;
+        }
+        mCurrentSlotIsA = !mCurrentSlotIsA;
+        mBinaryMessage = new CorrectedBinaryMessage(288); //ready for B
     }
 
     @Override
@@ -237,13 +244,14 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
             return;
         }
         if(datamessage.getSyncPattern() == DMRSyncPattern.MOBILE_STATION_DATA) {
-            System.out.print(datamessage.getSyncPattern().toString() + " >>> TS = NO CC: " +
+            System.out.print(datamessage.getSyncPattern().toString() + " >>> TS =  "  + (mCurrentSlotIsA ? "A" : "B") +
                     datamessage.getSlotType().getColorCode() + " " +datamessage.getSlotType().getDataType().getLabel() + " <<<\n");
         } else {
-            System.out.print(datamessage.getSyncPattern().toString() + " >>> TS = " + datamessage.getCACH().getTimeslot() + ", " +
+            System.out.print(datamessage.getSyncPattern().toString() + " >>> TS = " + datamessage.getCACH().getTimeslot() + (mCurrentSlotIsA ? "A" : "B") + ", " +
                     datamessage.getCACH().getInboundChannelAccessType()+" -> CC: " +
                     datamessage.getSlotType().getColorCode() + " " +datamessage.getSlotType().getDataType().getLabel() + " <<<\n");
         }
+        mCurrentSlotIsA = !mCurrentSlotIsA;
         mMessageListener.receive(datamessage);
         if(mSyncDetectListener != null)
         {
@@ -255,7 +263,6 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
     public void syncLost(int bitsProcessed)
     {
         dispatchSyncLoss(bitsProcessed);
-
         if(mSyncDetectListener != null)
         {
             mSyncDetectListener.syncLost();
@@ -266,6 +273,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRDataUnitDetectList
     {
         //Updates current timestamp according to the number of bits procesed
         updateBitsProcessed(bitsProcessed);
+        mCurrentSlotIsA = true;
+        mInVoiceReadingSlotB = 0;
+        mInVoiceReadingSlotA = 0;
 
         if(bitsProcessed > 0 && mMessageListener != null)
         {

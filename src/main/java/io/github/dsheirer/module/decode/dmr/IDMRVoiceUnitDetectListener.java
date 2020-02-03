@@ -19,7 +19,7 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
-import io.github.dsheirer.module.decode.dmr.message.data.DataType;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 
 /**
  * Listener interface to be notified each time a P25 sync pattern and data unit has been detected
@@ -29,11 +29,10 @@ public interface IDMRVoiceUnitDetectListener
 {
     /**
      * Indicates that a DMR sync has been detected and a DMR data unit was successfully decoded.
-     * @param typeID that was contained in the detected NID
-     * @param colorcode Color Code
+     * @param message that was contained in the detected NID
      * @param bitErrors detected and corrected from both the sync pattern and the NID.
      */
-    void voiceUnitDetected(DataType typeID, int colorcode, int bitErrors);
+    void voiceUnitDetected(VoiceAMessage message, int bitErrors);
 
     /**
      * Indicates that sync has been lost on the dibit stream

@@ -4,6 +4,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.dmr.message.data.DataType;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.protocol.Protocol;
 
 public abstract class DMRMessage extends Message
 {
@@ -41,7 +42,10 @@ public abstract class DMRMessage extends Message
 
         return mCACH;
     }
-
+    @Override
+    public Protocol getProtocol() {
+        return Protocol.DMR;
+    }
     /**
      * Indicates if this frame contains Common Announcement Channel (CACH) frame data.
      */
