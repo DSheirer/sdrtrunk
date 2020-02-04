@@ -34,6 +34,7 @@ import io.github.dsheirer.identifier.*;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -173,9 +174,10 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
         {
             DataMessage message = (DataMessage)iMessage;
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CONTROL));
-        } else if(iMessage instanceof VoiceMessage) {
+        } else if(iMessage instanceof VoiceAMessage) {
             VoiceMessage vm = (VoiceMessage)iMessage;
-            System.out.print("<<<<<>>>>>>READING VOICE Message" + vm.getSyncPattern().name() + "\n");
+            processVoiceA(vm);
+            System.out.print("<<<<<>>>>>>Start A Message" + vm.getSyncPattern().name() + "\n");
         }
     }
 
@@ -689,27 +691,17 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
     /**
      * Processes a Header Data Unit message and starts a new call event.
      */
-    private void processHDU(HDUMessage message)
+    private void processVoiceA(VoiceMessage message)
     {
         if(message.isValid())
         {
-            HeaderData headerData = message.getHeaderData();
+            //HeaderData headerData = message.getHeaderData();
 
-            if(headerData.isValid())
-            {
-                closeCurrentCallEvent(message.getTimestamp());
+            closeCurrentCallEvent(message.getTimestamp());
 
-                for(Identifier identifier : headerData.getIdentifiers())
-                {
-                    //Add to the identifier collection after filtering through the patch group manager
-                    getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                }
+            updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
 
-                updateCurrentCall(headerData.isEncryptedAudio() ? DecodeEventType.CALL_ENCRYPTED :
-                    DecodeEventType.CALL, null, message.getTimestamp());
-
-                return;
-            }
+            return;
         }
 
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));

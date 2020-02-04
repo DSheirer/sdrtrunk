@@ -26,30 +26,27 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.DataType;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.sample.Listener;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListener
+public class DMRBurstDetector implements Listener<Dibit>, IDMRSyncDetectListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(DMRDataUnitDetector.class);
+    private final static Logger mLog = LoggerFactory.getLogger(DMRBurstDetector.class);
     private static final int DATA_UNIT_DIBIT_LENGTH = 144; //132 dibits + 12 dibits(CACHs)
     private static final int SYNC_DIBIT_LENGTH = 24;
     private static final int MAXIMUM_SYNC_MATCH_BIT_ERRORS = 9;
     private DMRSyncDetector mSyncDetector;
     private DibitDelayBuffer mSyncDelayBuffer = new DibitDelayBuffer(DATA_UNIT_DIBIT_LENGTH);
-    private IDMRDataUnitDetectListener mDataUnitDetectListener;
-    private IDMRVoiceUnitDetectListener mVoiceUnitDetectListener;
-    private boolean mInitialSyncTestProcessed = false;
+    private IDMRBurstDetectListener mBurstDetectListener;
+
     private int mDibitsProcessed = 0;
 
-    public DMRDataUnitDetector(IDMRDataUnitDetectListener dataUnitDetectListener, IDMRVoiceUnitDetectListener voicedl, IPhaseLockedLoop phaseLockedLoop)
+    public DMRBurstDetector(IDMRBurstDetectListener burstDetectListener, IPhaseLockedLoop phaseLockedLoop)
     {
-        mDataUnitDetectListener = dataUnitDetectListener;
-        mVoiceUnitDetectListener = voicedl;
+        mBurstDetectListener = burstDetectListener;
         mSyncDetector = new DMRSyncDetector(this, phaseLockedLoop);
     }
 
@@ -64,7 +61,6 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
     public void reset()
     {
         mDibitsProcessed = 0;
-        mInitialSyncTestProcessed = false;
     }
 
     @Override
@@ -75,13 +71,8 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
 
     @Override
     public void syncDetected(int bitErrors, DMRSyncPattern pattern) {
-        if(pattern == DMRSyncPattern.BASE_STATION_DATA || pattern == DMRSyncPattern.MOBILE_STATION_DATA || pattern == DMRSyncPattern.DIRECT_MODE_DATA_TIMESLOT_1) {
-            parseDataFrame(bitErrors, pattern);
-        } else {
-            parseVoiceFrame(bitErrors, pattern);
-        }
         mDibitsProcessed = 0;
-        mInitialSyncTestProcessed = true;
+        parseBurst(bitErrors, pattern);
     }
 
     @Override
@@ -92,9 +83,9 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
 
     private void dispatchSyncLoss(int bitsProcessed)
     {
-        if(mDataUnitDetectListener != null)
+        if(mBurstDetectListener != null)
         {
-            mDataUnitDetectListener.syncLost(bitsProcessed);
+            mBurstDetectListener.syncLost(bitsProcessed);
         }
     }
 
@@ -102,34 +93,28 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
     public void receive(Dibit dibit)
     {
         mDibitsProcessed++;
-
         //Broadcast a sync loss every 4800 dibits/9600 bits ... or 1x per second for phase 1
         if(mDibitsProcessed > 4864)
         {
             dispatchSyncLoss(9600);
             mDibitsProcessed -= 4800;
         }
-
         mSyncDetector.receive(mSyncDelayBuffer.getAndPut(dibit));
         /*
+        Dibit dibit = mSymbolEvaluator.getSymbolDecision();
         if(dibit == Dibit.D01_PLUS_3){
             System.out.print("1");
         }
         else if(dibit == Dibit.D11_MINUS_3) {
             System.out.print("3");
         }
-        */
-        /*
-        //If the sync detector doesn't fire and we've processed enough dibits for a sync/nid sequence
-        //immediately following a valid message, then test for a NID anyway ... maybe the sync was corrupted
-        if(!mInitialSyncTestProcessed && mDibitsProcessed == DATA_UNIT_DIBIT_LENGTH)
-        {
-            mInitialSyncTestProcessed = true;
-            checkForNid(mSyncDetector.getPrimarySyncMatchErrorCount(), true);
-        }
          */
+        /*
+        //If the sync detector doesn't fire and we've processed enough dibits for a sync,
+        then try to force decode
+        */
     }
-    private void parseVoiceFrame(int bitErrorCount, DMRSyncPattern pattern) {
+    private void parseBurst(int bitErrorCount, DMRSyncPattern pattern) {
         if (bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS) {
             Dibit[] db = mSyncDelayBuffer.getBuffer();
             CorrectedBinaryMessage mesg = new CorrectedBinaryMessage(288);
@@ -141,45 +126,11 @@ public class DMRDataUnitDetector implements Listener<Dibit>, IDMRSyncDetectListe
                     e.printStackTrace();
                 }
             }
-            VoiceAMessage va = new VoiceAMessage(pattern, mesg);
-            if(mVoiceUnitDetectListener != null)
+            if(mBurstDetectListener != null)
             {
-                mVoiceUnitDetectListener.voiceUnitDetected(va, (bitErrorCount));
+                mBurstDetectListener.burstDetectedWithSync(mesg, pattern, bitErrorCount);
             }
         }
-    }
-    private void parseDataFrame(int bitErrorCount, DMRSyncPattern pattern)
-    {
-        if(bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS)
-        {
-            Dibit[] db = mSyncDelayBuffer.getBuffer();
-            CorrectedBinaryMessage mesg = new CorrectedBinaryMessage(288);
-            for(int i = 0; i < db.length; i++) {
-                try {
-                    mesg.add(db[i].getBit1());
-                    mesg.add(db[i].getBit2());
-                } catch (BitSetFullException e) {
-                    e.printStackTrace();
-                }
-            }
-            SlotType sl = new SlotType(mesg);
-            DataMessage msg = DMRMessageFactory.createDataMessage(sl.getDataType(),pattern, 0, mesg);
-            if(mDataUnitDetectListener != null)
-            {
-                //mPreviousDataUnitId = getDataUnitID(correctedNid);
-                mDataUnitDetectListener.dataUnitDetected(msg, (bitErrorCount));
-            }
-        }
-    }
-
-    /**
-     * Determines the data unit ID present in the nid value.
-     * @param nid in reverse bit order
-     * @return
-     */
-    public DataType getDataUnitID(int[] nid)
-    {
-        return DataType.fromValue(0);
     }
 
     /**

@@ -20,20 +20,22 @@
 package io.github.dsheirer.module.decode.dmr;
 
 
-import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 
 /**
  * Listener interface to be notified each time a P25 sync pattern and data unit has been detected
  * and the data unit is correct after error detection and correction and/or when the sync has been lost.
  */
-public interface IDMRDataUnitDetectListener
+public interface IDMRBurstDetectListener
 {
     /**
      * Indicates that a DMR sync has been detected and a DMR data unit was successfully decoded.
-     * @param datamessage that was contained in the detected NID
+     * @param binaryMessage burst Binary Message
+     * @param pattern SyncPattern
      * @param bitErrors detected and corrected from both the sync pattern and the NID.
      */
-    void dataUnitDetected(DataMessage datamessage, int bitErrors);
+    void burstDetectedWithSync(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors);
 
     /**
      * Indicates that sync has been lost on the dibit stream

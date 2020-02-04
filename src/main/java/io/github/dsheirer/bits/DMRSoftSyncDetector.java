@@ -46,7 +46,6 @@ public class DMRSoftSyncDetector implements ISyncProcessor
     public boolean checkSync(long value)
     {
         long difference = value ^ mPattern;
-        //System.out.println(String.format("CHECKSYNC: %x ", value));
         if(difference == 0)
         {
             mListener.syncDetected(0, mDMRPattern);
@@ -55,7 +54,9 @@ public class DMRSoftSyncDetector implements ISyncProcessor
         else
         {
             mBitErrorCount = Long.bitCount(difference);
-
+            if(mPattern == DMRSyncPattern.BASE_STATION_DATA.getPattern()) {
+                //System.out.println(String.format("CHECKSYNC, notCorrect: %x ", value));
+            }
             if(mBitErrorCount <= mThreshold)
             {
                 mListener.syncDetected(mBitErrorCount, mDMRPattern);

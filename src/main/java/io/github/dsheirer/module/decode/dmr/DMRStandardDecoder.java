@@ -135,7 +135,7 @@ public class DMRStandardDecoder extends DMRDecoder
         {
             FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
                     .sampleRate((int)getSampleRate())
-                    .passBandCutoff(6100)
+                    .passBandCutoff(5700)
                     .passBandAmplitude(1.0)
                     .passBandRipple(0.01)
                     .stopBandAmplitude(0.0)
@@ -178,7 +178,7 @@ public class DMRStandardDecoder extends DMRDecoder
     public static void main(String[] args)
     {
         String path = "/Users/maozhenyu/Downloads/SDR/";
-
+//System_Site_Pheonix_-_DMR_BM1_baseband_20200203_202217.wav
         String input = "System_Site_Pheonix_-_DMR_BM1_baseband_20200203_033944.wav";
         String output = "19240";
 

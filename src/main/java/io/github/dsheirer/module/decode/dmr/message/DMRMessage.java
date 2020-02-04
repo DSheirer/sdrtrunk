@@ -13,7 +13,7 @@ public abstract class DMRMessage extends Message
     public static final int PAYLOAD_2_START = 180;
 
     private DMRSyncPattern mSyncPattern;
-    private CorrectedBinaryMessage mMessage;
+    protected CorrectedBinaryMessage mMessage;
     private CACH mCACH;
 
     /**
@@ -62,6 +62,11 @@ public abstract class DMRMessage extends Message
         return mSyncPattern;
     }
 
+    public static DMRSyncPattern getSyncType(CorrectedBinaryMessage message)
+    {
+        long syncExpected = message.getLong(SYNC_START, PAYLOAD_2_START - 1);
+        return DMRSyncPattern.fromValue(syncExpected);
+    }
     /**
      * The original message as captured over the wire with initial error detection and correction applied.
      */

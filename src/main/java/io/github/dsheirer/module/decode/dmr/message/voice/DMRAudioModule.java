@@ -96,11 +96,15 @@ public class DMRAudioModule extends AmbeAudioModule
             {
                 if(message instanceof LDUMessage)
                 {
-                    processAudio((LDUMessage)message);
+                    //processAudio((LDUMessage)message);
                 }
             }
             else
             {
+                if(message instanceof VoiceMessage) {
+                    processAudio((VoiceMessage)message);
+                }
+/*
                 if(message instanceof HDUMessage)
                 {
                     mEncryptedCallStateEstablished = true;
@@ -126,6 +130,8 @@ public class DMRAudioModule extends AmbeAudioModule
 
                     processAudio(ldu2);
                 }
+
+ */
             }
         }
     }
@@ -133,11 +139,11 @@ public class DMRAudioModule extends AmbeAudioModule
     /**
      * Processes an audio packet by decoding the AMBE audio frames and rebroadcasting them as PCM audio packets.
      */
-    private void processAudio(LDUMessage ldu)
+    private void processAudio(VoiceMessage ldu)
     {
         if(!mEncryptedCall)
         {
-            for(byte[] frame : ldu.getIMBEFrames())
+            for(byte[] frame : ldu.getAMBEFrames())
             {
                 float[] audio = getAudioCodec().getAudio(frame);
 

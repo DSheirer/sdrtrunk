@@ -5,6 +5,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class VoiceMessage extends DMRMessage {
@@ -21,6 +22,13 @@ public class VoiceMessage extends DMRMessage {
         super(syncPattern, message);
     }
 
+    public List<byte[]> getAMBEFrames()
+    {
+        List<byte[]> frames = new ArrayList<byte[]>();
+        frames.add(mMessage.get(24, 24 + 108 - 1).toByteArray());
+        frames.add(mMessage.get(180, 180 + 108 - 1).toByteArray());
+        return frames;
+    }
     @Override
     public String toString() {
         return null;
@@ -28,7 +36,7 @@ public class VoiceMessage extends DMRMessage {
 
     @Override
     public boolean isValid() {
-        return false;
+        return true;
     }
 
     @Override
