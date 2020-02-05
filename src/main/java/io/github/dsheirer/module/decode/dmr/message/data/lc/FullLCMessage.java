@@ -23,8 +23,8 @@ public class FullLCMessage extends DataMessage {
         int priority;
         StringBuilder sb=new StringBuilder(300);
         sb.append("Service Options : ");
-        if ((so & 0x80) > 0) sb.append("Non-emergency");           // Emergency
-        else sb.append("Emergency");
+        if ((so & 0x80) > 0) sb.append("EMG");           // Emergency
+        else sb.append("NONEMG");
         if ((so & 0x40) > 0) sb.append("/E2EE");         // Privacy
         if ((so & 0x08) > 0) sb.append("/Broadcast");
         if ((so & 0x04) > 0) sb.append("/OVCM Call");
@@ -44,23 +44,23 @@ public class FullLCMessage extends DataMessage {
             if(fid == 0) { //standard DMR
                 if(flco == 0) {
                     sb.append("Group Voice "+ getServiceOption(dataMessage.getByte(16)) +
-                            ", TG = " + dataMessage.getInt(24,48) +
-                            ", ID = " + dataMessage.getInt(48,62) +
-                            ", channelId = " + dataMessage.getInt(16,24) + " >>> ");
+                            ", TG = " + dataMessage.getInt(24,48 - 1) +
+                            ", ID = " + dataMessage.getInt(48,72 - 1) +
+                            ", channelId = " + dataMessage.getInt(16,24 - 1) + " >>> ");
                 } else if(flco == 3) {
                     sb.append("Unit Voice "+ getServiceOption(dataMessage.getByte(16)) +
-                            ", TG = " + dataMessage.getInt(24,48) +
-                            ", ID = " + dataMessage.getInt(48,62) +
-                            ", channelId = " + dataMessage.getInt(16,24) + " >>> ");
+                            ", TG = " + dataMessage.getInt(24,48 - 1) +
+                            ", ID = " + dataMessage.getInt(48,72 - 1) +
+                            ", channelId = " + dataMessage.getInt(16,24 - 1) + " >>> ");
                 } else if(flco == 48) {
                     sb.append("Data PDU: UnParsed >>> ");
                 }
             } else if(fid == 16) { //Motorola Capc+
                 sb.append("Capacity+: ");
                 if(flco == 4) {
-                    sb.append("Group Voice, TG = " + dataMessage.getInt(24,48) +
-                            ", fromID = " + dataMessage.getInt(48,62) +
-                            ", channelId = " + dataMessage.getInt(16,24) + " >>> ");
+                    sb.append("Group Voice, TG = " + dataMessage.getInt(24,48 - 1) +
+                            ", fromID = " + dataMessage.getInt(48,72 - 1) +
+                            ", channelId = " + dataMessage.getInt(16,24 - 1) + " >>> ");
                 } else {
                     sb.append("FLCO = "+flco+"\n");
                 }

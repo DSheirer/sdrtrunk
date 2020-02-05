@@ -20,18 +20,15 @@
 package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
-import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
+import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
-import io.github.dsheirer.protocol.Protocol;
-import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
@@ -40,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,7 +48,7 @@ public class DMRStandardDecoder extends DMRDecoder
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
-    protected AdaptivePLLGainMonitor mPLLGainMonitor;
+    protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
     protected DMRMessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
@@ -73,7 +69,8 @@ public class DMRStandardDecoder extends DMRDecoder
 
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mPLLGainMonitor = new AdaptivePLLGainMonitor(mCostasLoop, this);
+        mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
+        mFrequencyCorrectionSyncMonitor = new FrequencyCorrectionSyncMonitor(mCostasLoop, this);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
@@ -86,7 +83,7 @@ public class DMRStandardDecoder extends DMRDecoder
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
         mMessageFramer = new DMRMessageFramer(mCostasLoop, DecoderType.DMR.getProtocol().getBitRate());
-        mMessageFramer.setSyncDetectListener(mPLLGainMonitor);
+        mMessageFramer.setSyncDetectListener(mFrequencyCorrectionSyncMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
 
@@ -242,6 +239,6 @@ public class DMRStandardDecoder extends DMRDecoder
     public void reset()
     {
         mCostasLoop.reset();
-        mPLLGainMonitor.reset();
+        mFrequencyCorrectionSyncMonitor.reset();
     }
 }

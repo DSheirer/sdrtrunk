@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.module.decode.dmr.message.voice;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
@@ -28,14 +29,9 @@ import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Voice;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +45,9 @@ public class DMRAudioModule extends AmbeAudioModule
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private VoiceMessage[] cachedMessage = new VoiceMessage[6];
     private List<byte[]> frames = new ArrayList<byte[]>();
-    public DMRAudioModule(UserPreferences userPreferences)
+    public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
-        super(userPreferences);
+        super(userPreferences, aliasList);
     }
 
     @Override
@@ -73,18 +69,10 @@ public class DMRAudioModule extends AmbeAudioModule
     }
 
     @Override
-    public void stop()
-    {
-        if(hasAudioPacketListener())
-        {
-            ReusableAudioPacket endAudioPacket = getAudioPacketQueue().getEndAudioBuffer();
-            endAudioPacket.resetAttributes();
-            endAudioPacket.setAudioChannelId(getAudioChannelId());
-            endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-            endAudioPacket.incrementUserCount();
-            getAudioPacketListener().receive(endAudioPacket);
-        }
+    protected int getTimeslot() {
+        return 0;
     }
+
 
     /**
      * Processes call header (HDU) and voice frame (LDU1/LDU2) messages to decode audio and to determine the
@@ -95,7 +83,7 @@ public class DMRAudioModule extends AmbeAudioModule
      */
     public void receive(IMessage message)
     {
-        if(hasAudioCodec() && hasAudioPacketListener())
+        if(hasAudioCodec())
         {
             if(mEncryptedCallStateEstablished)
             {
@@ -160,16 +148,8 @@ public class DMRAudioModule extends AmbeAudioModule
             for(byte[] frame : frames)
             {
                 float[] audio = getAudioCodec().getAudio(frame);
-
                 audio = mGain.apply(audio);
-
-                ReusableAudioPacket audioPacket = getAudioPacketQueue().getBuffer(audio.length);
-                audioPacket.resetAttributes();
-                audioPacket.setAudioChannelId(getAudioChannelId());
-                audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                audioPacket.loadAudioFrom(audio);
-
-                getAudioPacketListener().receive(audioPacket);
+                addAudio(audio);
             }
         }
         else
@@ -190,16 +170,7 @@ public class DMRAudioModule extends AmbeAudioModule
         {
             if(event.getSquelchState() == SquelchState.SQUELCH)
             {
-                if(hasAudioPacketListener())
-                {
-                    ReusableAudioPacket endAudioPacket = getAudioPacketQueue().getEndAudioBuffer();
-                    endAudioPacket.resetAttributes();
-                    endAudioPacket.setAudioChannelId(getAudioChannelId());
-                    endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                    endAudioPacket.incrementUserCount();
-                    getAudioPacketListener().receive(endAudioPacket);
-                }
-
+                closeAudioSegment();
                 mEncryptedCallStateEstablished = false;
                 mEncryptedCall = false;
             }

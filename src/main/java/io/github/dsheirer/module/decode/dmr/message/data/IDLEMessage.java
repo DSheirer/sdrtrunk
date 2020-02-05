@@ -30,8 +30,4 @@ public class IDLEMessage extends DataMessage {
         return null;
     }
 
-    @Override
-    public List<Identifier> getIdentifiers() {
-        return null;
-    }
 }

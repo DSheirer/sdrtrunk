@@ -322,7 +322,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         dispatchSyncLoss(bitsProcessed);
         if(mSyncDetectListener != null)
         {
-            mSyncDetectListener.syncLost();
+            mSyncDetectListener.syncLost(bitsProcessed);
         }
     }
 

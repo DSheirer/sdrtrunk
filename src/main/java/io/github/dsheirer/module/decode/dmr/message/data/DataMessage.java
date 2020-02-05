@@ -9,6 +9,7 @@ import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.protocol.Protocol;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static io.github.dsheirer.edac.BPTC_196_96.*;
@@ -75,6 +76,6 @@ public class DataMessage extends DMRMessage
 
     @Override
     public List<Identifier> getIdentifiers() {
-        return null;
+        return new ArrayList<Identifier>();
     }
 }

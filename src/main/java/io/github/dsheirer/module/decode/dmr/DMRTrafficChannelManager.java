@@ -38,7 +38,6 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.p25.P25ChannelGrantEvent;
 import io.github.dsheirer.module.decode.p25.identifier.channel.*;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCGroupDataChannelGrant;
@@ -221,8 +220,7 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
      * @param opcode to identify the call type for the event description
      */
     public void processChannelGrant(int temp_lnc) {
-        return;
-        if(temp_lnc == 1) {
+        if(temp_lnc != -922) {
             return;
         }
         if(granted) {
@@ -235,7 +233,7 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
         //dmr.setFrequencyBand();
         ServiceOptions so = new ServiceOptions(0);
         List<Identifier> gcdg = new ArrayList<>();
-        gcdg.add(APCO25Radio.createFrom(0));
+        //gcdg.add(APCO25Radio.createFrom(0));
         MutableIdentifierCollection identifierCollection = new MutableIdentifierCollection();
         identifierCollection.remove(IdentifierClass.USER);
         identifierCollection.update(gcdg);

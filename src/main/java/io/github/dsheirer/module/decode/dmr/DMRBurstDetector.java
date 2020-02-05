@@ -76,7 +76,7 @@ public class DMRBurstDetector implements Listener<Dibit>, IDMRSyncDetectListener
     }
 
     @Override
-    public void syncLost()
+    public void syncLost(int bitProcessed)
     {
         dispatchSyncLoss(0);
     }

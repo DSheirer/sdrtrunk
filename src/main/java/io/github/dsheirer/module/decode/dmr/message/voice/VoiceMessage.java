@@ -62,6 +62,6 @@ public class VoiceMessage extends DMRMessage {
 
     @Override
     public List<Identifier> getIdentifiers() {
-        return null;
+        return new ArrayList<Identifier>();
     }
 }

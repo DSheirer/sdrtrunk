@@ -35,8 +35,4 @@ embedded signalling, as described in clause B.3.11, shall be used
         return true;
     }
 
-    @Override
-    public List<Identifier> getIdentifiers() {
-        return null;
-    }
 }

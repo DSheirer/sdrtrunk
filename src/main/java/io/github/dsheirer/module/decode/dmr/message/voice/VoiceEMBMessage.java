@@ -39,9 +39,4 @@ public class VoiceEMBMessage extends VoiceMessage{
 
         return Quadratic_16_7_6.quadres_16_7_check(mMessage.getInt(132,139),mMessage.getInt(EMB_PARITY));
     }
-
-    @Override
-    public List<Identifier> getIdentifiers() {
-        return null;
-    }
 }

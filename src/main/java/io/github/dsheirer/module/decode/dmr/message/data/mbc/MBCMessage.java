@@ -5,6 +5,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MBCMessage extends DMRMessage {
@@ -33,6 +34,6 @@ public class MBCMessage extends DMRMessage {
 
     @Override
     public List<Identifier> getIdentifiers() {
-        return null;
+        return new ArrayList<Identifier>();
     }
 }

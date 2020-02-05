@@ -62,8 +62,8 @@ public class DMRSyncDetector implements Listener<Dibit>
         mMSVSyncDetector = new DMRSoftSyncDetector(DMRSyncPattern.BASE_STATION_VOICE,SYNC_MATCH_THRESHOLD, syncDetectListener);
         mTDMATS1D = new DMRSoftSyncDetector(DMRSyncPattern.MOBILE_STATION_REVERSE_CHANNEL,SYNC_MATCH_THRESHOLD, syncDetectListener);
 
-
-        mInversionDetector90CW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CW,
+/*
+        mInversionDetector90CW = new PLLPhaseInversionDetector(DMRSyncPattern.P25_PHASE1_ERROR_90_CW,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_90_DEGREES);
         mMatcher.add(mInversionDetector90CW);
 
@@ -74,7 +74,7 @@ public class DMRSyncDetector implements Listener<Dibit>
         mInversionDetector180 = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_180,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_180_DEGREES);
         mMatcher.add(mInversionDetector180);
-
+*/
 
         mMatcher.add(mBSDSyncDetector);
         mMatcher.add(mBSVSyncDetector);
@@ -104,6 +104,7 @@ public class DMRSyncDetector implements Listener<Dibit>
     }
     public class PLLPhaseInversionDetector extends SyncDetector
     {
+        private FrameSync mFrameSync;
         private IPhaseLockedLoop mPhaseLockedLoop;
         private double mSampleRate;
         private double mFrequencyCorrection;
@@ -123,6 +124,7 @@ public class DMRSyncDetector implements Listener<Dibit>
                                          double frequencyCorrection)
         {
             super(frameSync.getSync());
+            mFrameSync = frameSync;
             mPhaseLockedLoop = phaseLockedLoop;
             mFrequencyCorrection = frequencyCorrection;
             setSampleRate(sampleRate);
@@ -136,7 +138,7 @@ public class DMRSyncDetector implements Listener<Dibit>
                 }
 
                 @Override
-                public void syncLost()
+                public void syncLost(int bitProcessed)
                 {
                     //no-op
                 }

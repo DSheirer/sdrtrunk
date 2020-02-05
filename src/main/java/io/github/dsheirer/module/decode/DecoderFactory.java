@@ -191,7 +191,7 @@ public class DecoderFactory
                 modules.add(trafficChannelManager);
                 modules.add(new DMRDecoderState(channel, trafficChannelManager));
                 //modules.add(new DMRDecoderState(channel, 1));
-                modules.add(new DMRAudioModule(userPreferences));
+                modules.add(new DMRAudioModule(userPreferences, aliasList));
                 //todo: what is that, decoder state, decoder, audo module
                 break;
             default:

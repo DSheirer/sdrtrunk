@@ -30,8 +30,4 @@ public class VoiceAMessage extends VoiceMessage{
         return false;
     }
 
-    @Override
-    public List<Identifier> getIdentifiers() {
-        return null;
-    }
 }

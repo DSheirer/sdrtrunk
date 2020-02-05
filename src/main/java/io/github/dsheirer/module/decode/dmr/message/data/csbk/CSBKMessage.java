@@ -131,8 +131,4 @@ public class CSBKMessage extends DataMessage {
         return true;
     }
 
-    @Override
-    public List<Identifier> getIdentifiers() {
-        return null;
-    }
 }

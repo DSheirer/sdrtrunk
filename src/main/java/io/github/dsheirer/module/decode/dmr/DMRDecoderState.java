@@ -190,7 +190,6 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
         } else if(iMessage instanceof VoiceAMessage) {
             VoiceMessage vm = (VoiceMessage)iMessage;
             processVoiceA(vm);
-            System.out.print("<<<<<>>>>>>Start A Message" + vm.getSyncPattern().name() + "\n");
         }
     }
 

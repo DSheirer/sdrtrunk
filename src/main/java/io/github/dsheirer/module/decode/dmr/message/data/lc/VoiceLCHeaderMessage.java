@@ -40,9 +40,4 @@ embedded signalling, as described in clause B.3.11, shall be used
     public boolean isValid() {
         return true;
     }
-
-    @Override
-    public List<Identifier> getIdentifiers() {
-        return null;
-    }
 }

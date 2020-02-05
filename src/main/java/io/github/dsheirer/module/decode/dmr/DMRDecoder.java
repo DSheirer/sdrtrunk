@@ -4,6 +4,7 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageProcessor;
 import io.github.dsheirer.sample.Broadcaster;
@@ -16,7 +17,7 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 
-public abstract class DMRDecoder extends Decoder implements ISourceEventListener, ISourceEventProvider,
+public abstract class DMRDecoder extends FeedbackDecoder implements ISourceEventListener, ISourceEventProvider,
         IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableByteBufferProvider {
     private double mSampleRate;
     private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();

@@ -34,5 +34,5 @@ public interface IDMRSyncDetectListener extends ISyncDetectListener
     /**
      * Indicates that sync has been lost
      */
-    void syncLost();
+    void syncLost(int Processed);
 }
