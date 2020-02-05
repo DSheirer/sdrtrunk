@@ -8,7 +8,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 public class FullLCMessage extends DataMessage {
     private static final int[] FLCO = new int[]{2, 3, 4, 5, 6, 7};
     private static final int[] FID = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
-    private CorrectedBinaryMessage _message;
     /**
      * DMR Data Message.
      *
@@ -17,30 +16,62 @@ public class FullLCMessage extends DataMessage {
      */
     public FullLCMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message) {
         super(syncPattern, message);
-        _message = getMessageBody(message);
+        dataMessage = getMessageBody(message);
     }
-    protected void printLC()
+    public static String getServiceOption(byte so)
     {
-        if(_message!=null) {
-            int result = ReedSolomon_12_9.checkReedSolomon(_message, 0, 72, 0x96);
-            int fid = _message.getInt(FID);
-            int flco = _message.getInt(FLCO);
-            if(fid == 16) { //Motorola Capc+
-                System.out.print("Capacity+: ");
+        int priority;
+        StringBuilder sb=new StringBuilder(300);
+        sb.append("Service Options : ");
+        if ((so & 0x80) > 0) sb.append("Non-emergency");           // Emergency
+        else sb.append("Emergency");
+        if ((so & 0x40) > 0) sb.append("/E2EE");         // Privacy
+        if ((so & 0x08) > 0) sb.append("/Broadcast");
+        if ((so & 0x04) > 0) sb.append("/OVCM Call");
+        priority = so & 0b11;
+        if (priority==0) sb.append("/No priority");
+        else sb.append("/Priority " + Integer.toString(priority));
+        return sb.toString();
+    }
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        if(dataMessage!=null) {
+            //TO BE CHECK
+            int result = ReedSolomon_12_9.checkReedSolomon(dataMessage, 0, 72, 0x96);
+            int fid = dataMessage.getInt(FID);
+            int flco = dataMessage.getInt(FLCO);
+            if(fid == 0) { //standard DMR
+                if(flco == 0) {
+                    sb.append("Group Voice "+ getServiceOption(dataMessage.getByte(16)) +
+                            ", TG = " + dataMessage.getInt(24,48) +
+                            ", ID = " + dataMessage.getInt(48,62) +
+                            ", channelId = " + dataMessage.getInt(16,24) + " >>> ");
+                } else if(flco == 3) {
+                    sb.append("Unit Voice "+ getServiceOption(dataMessage.getByte(16)) +
+                            ", TG = " + dataMessage.getInt(24,48) +
+                            ", ID = " + dataMessage.getInt(48,62) +
+                            ", channelId = " + dataMessage.getInt(16,24) + " >>> ");
+                } else if(flco == 48) {
+                    sb.append("Data PDU: UnParsed >>> ");
+                }
+            } else if(fid == 16) { //Motorola Capc+
+                sb.append("Capacity+: ");
                 if(flco == 4) {
-                    System.out.print("Group Voice, TG = " + _message.getInt(24,48) +
-                            ", fromID = " + _message.getInt(48,62) +
-                            ", channelId = " + _message.getInt(16,24) + " >>> ");
+                    sb.append("Group Voice, TG = " + dataMessage.getInt(24,48) +
+                            ", fromID = " + dataMessage.getInt(48,62) +
+                            ", channelId = " + dataMessage.getInt(16,24) + " >>> ");
                 } else {
-                    System.out.print("FLCO = "+flco+"\n");
+                    sb.append("FLCO = "+flco+"\n");
                 }
             } else {
-                System.out.print("VH, CCK = "+result+
+                sb.append("VH, CCK = " + result+
                         ", FLCO = " +flco+
                         ", FID = " + fid +
                         ">>> ");
             }
 
         }
+        return sb.toString();
     }
 }

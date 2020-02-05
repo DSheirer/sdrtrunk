@@ -15,8 +15,7 @@ public enum DMRSyncPattern
     DIRECT_MODE_DATA_TIMESLOT_2(0xD7557F5FF7F5l, "DM VOICE TS2"),
     RESERVED(0xDD7FF5D757DDl, "RESERVED"),
 
-    P25_PHASE1_ERROR_90_CCW( 0xFFEFAFAAEEAAl, "" ),
-    P25_PHASE1_NORMAL(       0x5575F5FF77FFl, "" ),  // +33333 -3 +33 -33 +33 -3333 +3 -3 +3 -33333
+    P25_PHASE1_ERROR_90_CCW( 0x96b07fdfe318l, "" ),//96b07fdfe318, 5ac1ff7f8c61, bcd0958e2b48
     P25_PHASE1_ERROR_90_CW(  0x001050551155l,"" ),
     P25_PHASE1_ERROR_180(    0xAA8A0A008800l,"" ),
 
@@ -101,6 +100,16 @@ public enum DMRSyncPattern
      */
     public static DMRSyncPattern fromValue(long value)
     {
+        if(value < 0) {
+            for(DMRSyncPattern pattern: VOICE_PATTERNS)
+            {
+                if(pattern.getPattern() == value)
+                {
+                    return pattern;
+                }
+            }
+            return UNKNOWN;
+        }
         for(DMRSyncPattern pattern: SYNC_PATTERNS)
         {
             if(pattern.getPattern() == value)

@@ -29,12 +29,11 @@ embedded signalling, as described in clause B.3.11, shall be used
     public VoiceLCHeaderMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage _message)
     {
         super(syncPattern, _message);
-        System.out.print("[VoiceLC] ");
-        super.printLC();
     }
     @Override
     public String toString() {
-        return null;
+
+        return "[VoiceLC] " + super.toString();
     }
 
     @Override

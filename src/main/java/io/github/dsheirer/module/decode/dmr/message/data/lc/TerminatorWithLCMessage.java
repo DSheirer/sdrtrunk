@@ -24,12 +24,10 @@ embedded signalling, as described in clause B.3.11, shall be used
     public TerminatorWithLCMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage _message)
     {
         super(syncPattern, _message);
-        System.out.print("[TermW/LC] ");
-        super.printLC();
     }
     @Override
     public String toString() {
-        return null;
+        return "[TermW/LC] " + super.toString();
     }
 
     @Override

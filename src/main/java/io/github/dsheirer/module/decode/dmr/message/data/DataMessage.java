@@ -16,7 +16,7 @@ import static io.github.dsheirer.edac.BPTC_196_96.*;
 public class DataMessage extends DMRMessage
 {
     private SlotType mSlotType;
-
+    protected CorrectedBinaryMessage dataMessage;
     /**
      * DMR Data Message.
      *

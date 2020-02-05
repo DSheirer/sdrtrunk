@@ -24,35 +24,33 @@ package io.github.dsheirer.module.decode.dmr.message.data;
  */
 public enum DataType
 {
-    PI_HEADER(0, 276, true, "PI  "),
-    VOICE_HEADER(1, 276, false, "VOICE LC "),
-    TLC(2, 276, false, "TLC "),
-    CSBK(3, 276, false, "CSBK "),
-    MBC_HEADER(4, 276, false, "MBCH "),
-    MBC(5, 276, false, "MBC "),
-    DATA_HEADER(6, 276, false, "DATA "),
-    RATE_1_OF_2_DATA(7, 276, false, "RATE 1/2 "),
-    RATE_3_OF_4_DATA(8, 276, false, "RATE 3/4 "),
-    SLOT_IDLE(9, 276, false, "IDLE "),
-    RATE_1_DATA(10, 276, false, "RATE 1  "),
-    PDT_CSBK_ENC_HEADER(11, 276, false, "CSBK ENCRYPTED "),
-    PDT_MBC_ENC_HEADER(12, 276, false, "MBC ENCRYPTED"),
-    PDT_DATA_ENC_HEADER(13, 276, false, "DATA ENCRYPTED "),
-    PDT_CHANNEL_CONTROL_ENC_HEADER(14, 276, false, "MBC ENCRYPTED "),
-    RESERVED_15(15, -1, false, "BAD "),
+    PI_HEADER(0, 288,  "PI  "), //TODO: not implemented
+    VOICE_HEADER(1, 288, "VOICE LC "),
+    TLC(2, 288,  "TLC "),
+    CSBK(3, 288, "CSBK "),
+    MBC_HEADER(4, 288, "MBC Header "), //TODO: not implemented
+    MBC(5, 276,  "MBC "), //TODO: not implemented
+    DATA_HEADER(6, 288,  "DATA "), //TODO: not implemented
+    RATE_1_OF_2_DATA(7, 276, "RATE 1/2 "), //TODO: not implemented
+    RATE_3_OF_4_DATA(8, 276,  "RATE 3/4 "), //TODO: not implemented
+    SLOT_IDLE(9, 276, "IDLE "),
+    RATE_1_DATA(10, 276,  "RATE 1  "), //TODO: not implemented
+    PDT_CSBK_ENC_HEADER(11, 276,  "CSBK ENCRYPTED "), //not implemented
+    PDT_MBC_ENC_HEADER(12, 276,  "MBC ENCRYPTED"), //not implemented
+    PDT_DATA_ENC_HEADER(13, 276, "DATA ENCRYPTED "), //not implemented
+    PDT_CHANNEL_CONTROL_ENC_HEADER(14, 276,  "MBC ENCRYPTED "), //not implemented
+    RESERVED_15(15, -1,  "BAD "),
 
-    UNKNOWN(-1, -1, false, "UNKN ");
+    UNKNOWN(-1, -1,  "UNKN ");
 
     private int mValue;
     private int mMessageLength;
-    private boolean mTrailingStatusDibit;
     private String mLabel;
 
-    DataType(int value, int length, boolean trailingStatusDibit, String label)
+    DataType(int value, int length, String label)
     {
         mValue = value;
         mMessageLength = length;
-        mTrailingStatusDibit = trailingStatusDibit;
         mLabel = label;
     }
 
@@ -78,14 +76,6 @@ public enum DataType
     public String getLabel()
     {
         return mLabel;
-    }
-
-    /**
-     * Indicates if the message has a trailing status dibit that must be processed
-     */
-    public boolean hasTrailingStatusDibit()
-    {
-        return mTrailingStatusDibit;
     }
 
     /**

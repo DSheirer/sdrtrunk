@@ -23,9 +23,9 @@ public class VoiceEMBMessage extends VoiceMessage{
      */
     public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message) {
         super(syncPattern, message);
-        System.out.print("EMB Frame, CC = " + message.getInt(COLOR_CODE) + "\n");
+        System.out.print("EMB Frame, CC = " + message.getInt(COLOR_CODE) + ", PI = "+message.getInt(PI) +"\n");
         LCSS lcss = LCSS.fromValue(message.getInt(LCSS_BI));
-        // verify will be implemented
+        // TODO: validation will be implemented
         //4 cc, 1 pi, 2 lcss, 9 embparity
     }
 

@@ -27,13 +27,18 @@ import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.p25.phase1.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.rrapi.type.Voice;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DMRAudioModule extends AmbeAudioModule
 {
@@ -42,8 +47,8 @@ public class DMRAudioModule extends AmbeAudioModule
 
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-    private LDU1Message mCachedLDU1Message = null;
-
+    private VoiceMessage[] cachedMessage = new VoiceMessage[6];
+    private List<byte[]> frames = new ArrayList<byte[]>();
     public DMRAudioModule(UserPreferences userPreferences)
     {
         super(userPreferences);
@@ -94,15 +99,24 @@ public class DMRAudioModule extends AmbeAudioModule
         {
             if(mEncryptedCallStateEstablished)
             {
-                if(message instanceof LDUMessage)
-                {
-                    //processAudio((LDUMessage)message);
-                }
+
             }
             else
             {
-                if(message instanceof VoiceMessage) {
-                    processAudio((VoiceMessage)message);
+                if(message instanceof VoiceAMessage) {
+                    cachedMessage[0] = (VoiceMessage) message;
+                } else if(message instanceof VoiceEMBMessage) {
+                    VoiceEMBMessage vm = (VoiceEMBMessage)message;
+                    cachedMessage[(int)-vm.getSyncPattern().getPattern()-1] = vm;
+
+                    if(vm.getSyncPattern() == DMRSyncPattern.VOICE_FRAME_F) {
+                        frames.clear();
+                        for(int i = 0; i < 6; i++) {
+                            cachedMessage[i].getAMBEFrames(frames);
+                        }
+                        processAudio();
+                        frames.clear();
+                    }
                 }
 /*
                 if(message instanceof HDUMessage)
@@ -139,11 +153,11 @@ public class DMRAudioModule extends AmbeAudioModule
     /**
      * Processes an audio packet by decoding the AMBE audio frames and rebroadcasting them as PCM audio packets.
      */
-    private void processAudio(VoiceMessage ldu)
+    private void processAudio()
     {
         if(!mEncryptedCall)
         {
-            for(byte[] frame : ldu.getAMBEFrames())
+            for(byte[] frame : frames)
             {
                 float[] audio = getAudioCodec().getAudio(frame);
 
@@ -188,7 +202,6 @@ public class DMRAudioModule extends AmbeAudioModule
 
                 mEncryptedCallStateEstablished = false;
                 mEncryptedCall = false;
-                mCachedLDU1Message = null;
             }
         }
     }

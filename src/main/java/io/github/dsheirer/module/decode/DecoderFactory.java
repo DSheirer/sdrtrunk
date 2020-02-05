@@ -38,10 +38,7 @@ import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.dmr.DMRDecoderEditor;
-import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
-import io.github.dsheirer.module.decode.dmr.DMRStandardDecoder;
-import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.dmr.*;
 import io.github.dsheirer.module.decode.dmr.message.voice.DMRAudioModule;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
@@ -190,7 +187,9 @@ public class DecoderFactory
                 break;
             case DMR:
                 modules.add(new DMRStandardDecoder());
-                modules.add(new DMRDecoderState(channel, 0));
+                DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(channel);
+                modules.add(trafficChannelManager);
+                modules.add(new DMRDecoderState(channel, trafficChannelManager));
                 //modules.add(new DMRDecoderState(channel, 1));
                 modules.add(new DMRAudioModule(userPreferences));
                 //todo: what is that, decoder state, decoder, audo module

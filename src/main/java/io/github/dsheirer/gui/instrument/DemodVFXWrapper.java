@@ -5,6 +5,7 @@ import io.github.dsheirer.dsp.filter.design.FilterViewer;
 
 public class DemodVFXWrapper {
     public static void main(String[] args) {
-        FilterViewer.main(args);
+        DemodulatorViewerFX.main(args);
+        //FilterViewer.main(args);
     }
 }

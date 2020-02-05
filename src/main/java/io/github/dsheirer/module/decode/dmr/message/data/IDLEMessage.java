@@ -16,7 +16,8 @@ public class IDLEMessage extends DataMessage {
     }
     @Override
     public String toString() {
-        return null;
+
+        return "[IDLE]";
     }
 
     @Override

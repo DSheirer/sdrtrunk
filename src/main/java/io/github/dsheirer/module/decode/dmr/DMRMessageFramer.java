@@ -161,6 +161,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             {
                 reset(0);
             }
+            catch(NullPointerException ex) {
+                mBinaryMessage = new CorrectedBinaryMessage(288);
+            }
             if(mBinaryMessage.isFull())
             {
                 dispatchMessage();
@@ -214,8 +217,8 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                 // data frame
                 processVoiceBurst(mBinaryMessage, currentPattern, 0);
             } else {
-                System.out.print("Hmmm, Lost Sync. " + DMRMessage.getSyncType(mBinaryMessage).name() + ", at "+getTimestamp()+" \n");
-                reset(0);
+                System.out.print("Lost Sync of TS = " + mCurrentSlot + ", at "+getTimestamp()+" \n");
+                mSlotSyncMatrix[mCurrentSlot] = null;
             }
             mCurrentSlot = (mCurrentSlot == 0 ? 1 : 0);
             mBinaryMessage = new CorrectedBinaryMessage(288); // ready for next message
@@ -259,7 +262,8 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 
     void processVoiceBurst(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors) {
         VoiceAMessage vam = new VoiceAMessage(pattern, binaryMessage);
-        System.out.print(">>>>>>=========!!!! VOICE FRAME A [Channel = " + (mCurrentSlot) +"] !!!!=========<<<<<<\n");
+        System.out.print(vam.getSyncPattern().toString()  + " >>> ");
+        System.out.print("[VOICE FRAME A] TS = " + (mCurrentSlot) +"] =========<<<<<<\n");
         mMessageListener.receive(vam);
         if(mCurrentSlot == 0) { // A is now running
             mInVoiceReadingSlotA = 1;
@@ -276,15 +280,21 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             dispatchSyncLoss(288); // CACH(24) + PAYLOAD(108 * 2) + SYNC(48)
             return;
         }
-        if(datamessage.getSyncPattern() == DMRSyncPattern.MOBILE_STATION_DATA) {
-            System.out.print(datamessage.getSyncPattern().toString() + " >>> TS =  "  + (mCurrentSlot) +
-                    datamessage.getSlotType().getColorCode() + " " +datamessage.getSlotType().getDataType().getLabel() + " <<<\n");
+        System.out.print(datamessage.getSyncPattern().toString() + ", CC: " +
+                datamessage.getSlotType().getColorCode() + " >>> ");
+        String messageText = datamessage.toString();
+        if(messageText != null) {
+            System.out.print(datamessage.toString() + ">>> ");
         } else {
-            System.out.print(datamessage.getSyncPattern().toString() + " >>> TS = " + datamessage.getCACH().getTimeslot() + (mCurrentSlot) + ", " +
-                    datamessage.getCACH().getInboundChannelAccessType()+" -> CC: " +
-                    datamessage.getSlotType().getColorCode() + " " +datamessage.getSlotType().getDataType().getLabel() + " <<<\n");
+            System.out.print("[" + datamessage.getSlotType().getDataType().getLabel() + "] Not Parsed >>> ");
         }
-
+        if(datamessage.getSyncPattern() == DMRSyncPattern.MOBILE_STATION_DATA) {
+            System.out.print("TS =  "  + (mCurrentSlot == 0 ? 'A' : 'B'));
+        } else {
+            System.out.print("TS = " + datamessage.getCACH().getTimeslot() + (mCurrentSlot == 0 ? 'A' : 'B') + ", " +
+                    datamessage.getCACH().getInboundChannelAccessType());
+        }
+        System.out.print("\n");
         mMessageListener.receive(datamessage);
         if(mSyncDetectListener != null)
         {
