@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.source.tuner.manager;
 
 import io.github.dsheirer.sample.Broadcaster;
@@ -55,6 +61,13 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      * @return tuner channel source or null
      */
     public abstract TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification);
+
+    /**
+     * Signals that the complex buffer provider has an error and can no long provider buffers.  The subclass should
+     * implement procedures to gracefully shutdown any tuner channel sources that have been provisioned.
+     * @param errorMessage describing the error state
+     */
+    public abstract void setErrorMessage(String errorMessage);
 
     /**
      * Adds a listener to receive source events

@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,15 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public long getFrequency()
     {
         return mTunerChannel.getFrequency();
+    }
+
+    /**
+     * Signals that this tuner channel source has an error state so that any channel processing can be shutdown.
+     * @param errorMessage describing the error
+     */
+    public void setError(String errorMessage)
+    {
+        broadcastConsumerSourceEvent(SourceEvent.errorState(this, errorMessage));
     }
 
     /**

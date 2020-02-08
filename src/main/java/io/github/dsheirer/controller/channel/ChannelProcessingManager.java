@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.Source;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
 import org.slf4j.Logger;
@@ -261,6 +262,30 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             {
                 processingChain.addDecodeEventListener(listener);
             }
+
+            //Add a listener to detect source error state that indicates the channel should be shutdown
+            processingChain.addSourceEventListener(sourceEvent ->
+            {
+                if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
+                {
+                    Channel toShutdown = null;
+
+                    for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChains.entrySet())
+                    {
+                        if(entry.getValue().hasSource(sourceEvent.getSource()))
+                        {
+                            toShutdown = entry.getKey();
+                            break;
+                        }
+                    }
+
+                    if(toShutdown != null)
+                    {
+                        mLog.info("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
+                        stopProcessing(toShutdown, true);
+                    }
+                }
+            });
 
             //Register this manager to receive channel events from traffic channel manager modules within
             //the processing chain

@@ -22,39 +22,11 @@
 
 package io.github.dsheirer.source.tuner;
 
-public class TunerEvent
+public interface ITunerErrorListener
 {
-    private Tuner mTuner;
-    private Event mEvent;
-
-    public TunerEvent(Tuner tuner, Event event)
-    {
-        mTuner = tuner;
-        mEvent = event;
-    }
-
-    public Tuner getTuner()
-    {
-        return mTuner;
-    }
-
-    public Event getEvent()
-    {
-        return mEvent;
-    }
-
-    public enum Event
-    {
-        CHANNEL_COUNT,
-        ERROR_STATE,
-        FREQUENCY_UPDATED,
-        FREQUENCY_ERROR_UPDATED,
-        LOCK_STATE_CHANGE,
-        MEASURED_FREQUENCY_ERROR_UPDATED,
-        SAMPLE_RATE_UPDATED,
-
-        CLEAR_MAIN_SPECTRAL_DISPLAY,
-        REQUEST_MAIN_SPECTRAL_DISPLAY,
-        REQUEST_NEW_SPECTRAL_DISPLAY;
-    }
+    /**
+     * Sets an error message for the tuner listener
+     * @param errorMessage to set
+     */
+    void setErrorMessage(String errorMessage);
 }

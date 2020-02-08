@@ -1,29 +1,30 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- *     Java version based on librtlsdr
- *     Copyright (C) 2012-2013 by Steve Markgraf <steve@steve-m.de>
- *     Copyright (C) 2012 by Dimitri Stolnikov <horiz0n@gmx.net>
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.source.tuner.rtl;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerManager;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
@@ -160,7 +161,7 @@ public abstract class RTL2832TunerController extends USBTunerController
         String deviceName = getTunerType().getLabel() + " " + getUniqueID();
 
         mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mNativeBufferConverter,
-            USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE);
+            USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE, this);
     }
 
     @Override
@@ -1563,10 +1564,13 @@ public abstract class RTL2832TunerController extends USBTunerController
          * @param deviceHandle to the USB bulk transfer device
          * @param nativeBufferConverter specific to the tuner's byte buffer format for converting to floating point I/Q samples
          * @param bufferSize in bytes.  Should be a multiple of two: 65536, 131072 or 262144.
+         * @param tunerErrorListener to receive error state message
          */
-        public RTL2832USBTransferProcessor(String deviceName, DeviceHandle deviceHandle, NativeBufferConverter nativeBufferConverter, int bufferSize)
+        public RTL2832USBTransferProcessor(String deviceName, DeviceHandle deviceHandle,
+                                           NativeBufferConverter nativeBufferConverter, int bufferSize,
+                                           ITunerErrorListener tunerErrorListener)
         {
-            super(deviceName, deviceHandle, nativeBufferConverter, bufferSize);
+            super(deviceName, deviceHandle, nativeBufferConverter, bufferSize, tunerErrorListener);
         }
 
         @Override
