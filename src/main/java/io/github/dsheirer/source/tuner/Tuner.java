@@ -110,6 +110,12 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
     }
 
     /**
+     * Maximum number of bytes per second (MBps) produced by this tuner.
+     * @return Bytes Per Second (Bps)
+     */
+    public abstract int getMaximumUSBBitsPerSecond();
+
+    /**
      * Optional error message that describes an error state.
      */
     public String getErrorMessage()

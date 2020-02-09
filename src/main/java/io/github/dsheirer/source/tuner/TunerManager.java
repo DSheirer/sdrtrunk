@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.source.tuner;
 
@@ -41,15 +43,22 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TunerManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerManager.class);
+    private static final int MAXIMUM_USB_2_DATA_RATE = 480000000;
 
     private MixerManager mMixerManager;
     private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
+    private Map<Integer,List<Tuner>> mUSBBusTunerMap = new TreeMap<>();
 
     /**
      * Application-wide LibUSB timeout processor for transfer buffers.  All classes that need to use USB transfer
@@ -70,6 +79,7 @@ public class TunerManager
         mUserPreferences = userPreferences;
 
         initTuners();
+        validateUSBBusTransferRates();
     }
 
     /**
@@ -141,10 +151,13 @@ public class TunerManager
 
                 StringBuilder sb = new StringBuilder();
 
-                sb.append("usb device [");
+                int bus = LibUsb.getBusNumber(device);
+                sb.append("USB Bus [").append(bus).append("]");
+                sb.append(" Device [");
                 sb.append(String.format("%04X", descriptor.idVendor()));
                 sb.append(":");
                 sb.append(String.format("%04X", descriptor.idProduct()));
+                sb.append("]");
 
                 if(status.isLoaded())
                 {
@@ -153,20 +166,21 @@ public class TunerManager
                     try
                     {
                         mTunerModel.addTuner(tuner);
-                        sb.append("] LOADED: ");
+                        sb.append(" LOADED: ");
                         sb.append(tuner.toString());
+                        sb.append(" Max Rate:").append(tuner.getMaximumUSBBitsPerSecond()).append(" bps");
+                        updateUSBBusTunerMap(bus, tuner);
                     }
                     catch(Exception e)
                     {
-                        sb.append("] NOT LOADED: ");
+                        sb.append(" NOT LOADED: ");
                         sb.append(status.getInfo());
                         sb.append(" Error:" + e.getMessage());
                     }
                 }
                 else
                 {
-                    sb.append("] NOT LOADED: ");
-                    sb.append(status.getInfo());
+                    sb.append(" ").append(getDeviceClass(descriptor.bDeviceClass()));
                 }
 
                 mLog.info(sb.toString());
@@ -174,6 +188,103 @@ public class TunerManager
         }
 
         LibUsb.freeDeviceList(deviceList, true);
+    }
+
+    private static String getDeviceClass(byte deviceClass)
+    {
+        switch(deviceClass)
+        {
+            case 0:
+                return "Unknown Device - Class 0";
+            case 2:
+                return "Communications Device";
+            case 3:
+                return "HID Device";
+            case 5:
+                return "Physical Device";
+            case 6:
+                return "Still Imaging Device";
+            case 7:
+                return "Printer Device";
+            case 8:
+                return "Mass Storage Device";
+            case 9:
+                return "Hub Device";
+            case 0xA:
+                return "Communications Device";
+            case 0xB:
+                return "Smart Card Device";
+            case 0xD:
+                return "Content Security Device";
+            case 0xE:
+                return "Video Device";
+            case 0xF:
+                return "Personal Healthcare Device";
+            case 0x10:
+                return "Audio/Video Device";
+            case (byte)0xDC:
+                return "Diagnostic Device";
+            case (byte)0xE0:
+                return "Wireless Controller Device";
+            case (byte)0xEF:
+                return "Miscellaneous Device";
+            default:
+                return "Unknown Device - Class " + deviceClass;
+        }
+    }
+
+    private void updateUSBBusTunerMap(int bus, Tuner tuner)
+    {
+        if(mUSBBusTunerMap.containsKey(bus))
+        {
+            mUSBBusTunerMap.get(bus).add(tuner);
+        }
+        else
+        {
+            List<Tuner> tuners = new ArrayList<>();
+            tuners.add(tuner);
+            mUSBBusTunerMap.put(bus, tuners);
+        }
+    }
+
+    private void validateUSBBusTransferRates()
+    {
+        mLog.info("-------------------------------------------------------------");
+        mLog.info("USB Bus - Potential Maximum Data Rates");
+
+        boolean warning = false;
+
+        List<Integer> buses = new ArrayList(mUSBBusTunerMap.keySet());
+        Collections.sort(buses);
+        for(Integer bus: buses)
+        {
+            int totalBPS = 0;
+
+            for(Tuner tuner: mUSBBusTunerMap.get(bus))
+            {
+                totalBPS += tuner.getMaximumUSBBitsPerSecond();
+            }
+
+            if(totalBPS > (MAXIMUM_USB_2_DATA_RATE * .7))
+            {
+                warning = true;
+            }
+
+            mLog.info("USB Bus [" + bus + "] Rate [" + totalBPS + "] bits per second" + (warning ? " *** WARNING ***" : ""));
+        }
+
+        if(warning)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append(
+                "\n\t\t******************************************************************************************************\n" +
+                "\t\t* WARNING: the combined data rates of tuner(s) on USB bus(es) above can potentially saturate or exceed\n" +
+                "\t\t* the maximum USB 2.0 data rate of 480 Mbps.  This can cause data loss and severely impact decoding\n" +
+                "\t\t* performance resulting in missed calls and stuttering audio.  Recommend moving tuner(s) to other\n" +
+                "\t\t* USB ports/buses to better balance data rates across available USB buses.\n" +
+                "\t\t******************************************************************************************************");
+            mLog.warn(sb.toString());
+        }
     }
 
     private TunerInitStatus initTuner(Device device,
