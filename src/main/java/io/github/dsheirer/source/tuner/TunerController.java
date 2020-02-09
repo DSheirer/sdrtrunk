@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.SortedSet;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>
+    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
     protected ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
@@ -52,6 +52,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     private Listener<SourceEvent> mSourceEventListener;
     private int mMeasuredFrequencyError;
     private ComplexBufferWaveRecorder mRecorder;
+    private ITunerErrorListener mTunerErrorListener;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -76,6 +77,24 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Dispose of this tuner controller and prepare for shutdown.
      */
     public abstract void dispose();
+
+    @Override
+    public void setErrorMessage(String errorMessage)
+    {
+        if(mTunerErrorListener != null)
+        {
+            mTunerErrorListener.setErrorMessage(errorMessage);
+        }
+    }
+
+    /**
+     * Sets the listener for tuner error messages that originate outside of the tuner.  This is normally the enclosing
+     * tuner so that it can receive error signals from the USB processor(s)..
+     */
+    public void setTunerErrorListener(ITunerErrorListener tunerErrorListener)
+    {
+        mTunerErrorListener = tunerErrorListener;
+    }
 
     /**
      * Number of samples contained in each complex buffer provided by this tuner.

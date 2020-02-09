@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.source;
 
@@ -39,6 +41,7 @@ public class SourceEvent
         NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_STOP_SAMPLE_STREAM,
+        NOTIFICATION_ERROR_STATE,
 
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
@@ -67,6 +70,14 @@ public class SourceEvent
         mSource = source;
         mValue = value;
         mEventDescription = eventDescription;
+    }
+
+    /**
+     * Private constructor.  Use the static constructor methods to create an event.
+     */
+    private SourceEvent(Event event, Source source, String eventDescription)
+    {
+        this(event, source, null, eventDescription);
     }
 
     /**
@@ -165,6 +176,15 @@ public class SourceEvent
     public boolean hasSource()
     {
         return mSource != null;
+    }
+
+
+    /**
+     * Creates a new error state for the specified source and error description
+     */
+    public static SourceEvent errorState(Source source, String errorDescription)
+    {
+        return new SourceEvent(Event.NOTIFICATION_ERROR_STATE, source, errorDescription);
     }
 
     /**

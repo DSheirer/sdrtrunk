@@ -1,30 +1,32 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.source.tuner.usb;
 
-import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsb;
 
-import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -38,10 +40,9 @@ public class USBMasterProcessor
     private static final long USB_TIMEOUT_MS = 2000l; //milliseconds
 
     private List<USBTransferProcessor> mRegisteredProcessors = new CopyOnWriteArrayList<>();
-    private ByteBuffer mStatusBuffer = ByteBuffer.allocateDirect(4);
     private AtomicBoolean mRunning = new AtomicBoolean();
     private Processor mProcessor = new Processor();
-    private ScheduledFuture mProcessorFuture;
+    private Thread mProcessorThread;
 
     /**
      * Registers the transfer processor so that LibUSB timeout processing will auto-start.
@@ -80,8 +81,25 @@ public class USBMasterProcessor
     {
         if(mRunning.compareAndSet(false, true))
         {
-            //Set periodicity to an odd multiple to avoid contention with transfer buffer receivers
-            mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mProcessor, 0L, 9L, TimeUnit.MILLISECONDS);
+            mLog.warn("Starting USB master processor thread");
+            if(mProcessorThread == null)
+            {
+                mProcessor.reset();
+                mProcessorThread = new Thread(mProcessor);
+                mProcessorThread.setName("USB Event Processor");
+                mProcessorThread.setDaemon(true);
+
+                try
+                {
+                    mProcessorThread.setPriority(Thread.MAX_PRIORITY);
+                }
+                catch(IllegalArgumentException iae)
+                {
+                    //Do nothing ... couldn't set the priority
+                }
+
+                mProcessorThread.start();
+            }
         }
     }
 
@@ -92,10 +110,22 @@ public class USBMasterProcessor
     {
         if(mRunning.compareAndSet(true, false))
         {
-            if(mProcessorFuture != null)
+            mLog.warn("Stopping USB master processor thread");
+            if(mProcessorThread != null)
             {
-                mProcessorFuture.cancel(true);
-                mProcessorFuture = null;
+                mProcessor.stop();
+                mProcessorThread.interrupt();
+
+                try
+                {
+                    mProcessorThread.join(1000);
+                }
+                catch(InterruptedException ie)
+                {
+                    //No action
+                }
+
+                mProcessorThread = null;
             }
         }
     }
@@ -114,23 +144,37 @@ public class USBMasterProcessor
      */
     class Processor implements Runnable
     {
+        private boolean mRunning = true;
+
+        /**
+         * Sets stop flag to signal to stop processing
+         */
+        public void stop()
+        {
+            mRunning = false;
+        }
+
+        /**
+         * Resets this processor so that it can be reused.
+         */
+        public void reset()
+        {
+            mRunning = true;
+        }
+
         @Override
         public void run()
         {
-            try
+            while(mRunning)
             {
-                int result = LibUsb.handleEventsTimeoutCompleted(null, USB_TIMEOUT_MS, mStatusBuffer.asIntBuffer());
-
-                if(result != LibUsb.SUCCESS)
+                try
                 {
-                    mLog.error("Error processing timeout events for LibUSB - error code:" + result);
+                    LibUsb.handleEvents(null);
                 }
-
-                mStatusBuffer.rewind();
-            }
-            catch(Throwable throwable)
-            {
-                mLog.error("Error while processing LibUSB timeout events", throwable);
+                catch(Throwable throwable)
+                {
+                    mLog.error("Error while processing LibUSB timeout events", throwable);
+                }
             }
         }
     }

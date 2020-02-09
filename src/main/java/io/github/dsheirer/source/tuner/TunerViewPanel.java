@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -191,8 +191,15 @@ public class TunerViewPanel extends JPanel
             }
         });
 
-        TableCellRenderer renderer = new LinkCellRenderer();
-        mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(renderer);
+        TableCellRenderer linkCellRenderer = new LinkCellRenderer();
+        mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(linkCellRenderer);
+
+        TableCellRenderer errorCellRenderer = new ErrorCellRenderer();
+        mTunerTable.getColumnModel().getColumn(TunerModel.SAMPLE_RATE).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.FREQUENCY).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.CHANNEL_COUNT).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.FREQUENCY_ERROR).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.MEASURED_FREQUENCY_ERROR).setCellRenderer(errorCellRenderer);
 
         mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTunerTable, TABLE_PREFERENCE_KEY);
         JScrollPane tunerTableScroller = new JScrollPane(mTunerTable);
@@ -236,6 +243,32 @@ public class TunerViewPanel extends JPanel
         mSplitPane.add(editorScroller);
 
         add(mSplitPane);
+    }
+
+    public class ErrorCellRenderer extends DefaultTableCellRenderer
+    {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            Tuner tuner = mTunerModel.getTuner(mTunerTable.convertRowIndexToModel(row));
+
+            if(isSelected)
+            {
+                component.setBackground(table.getSelectionBackground());
+            }
+            else if(tuner.hasError())
+            {
+                component.setBackground(Color.RED);
+            }
+            else
+            {
+                component.setBackground(table.getBackground());
+            }
+
+            return component;
+        }
     }
 
     public class LinkCellRenderer extends DefaultTableCellRenderer

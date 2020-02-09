@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.source.tuner;
 
@@ -36,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * Tuner provides an interface to a software or hardware tuner controller that provides I/Q sample data coupled with a
  * channel source manager to provide access to Digital Drop Channel (DDC) resources.
  */
-public abstract class Tuner implements ISourceEventProcessor
+public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(Tuner.class);
 
@@ -45,6 +47,7 @@ public abstract class Tuner implements ISourceEventProcessor
     private TunerController mTunerController;
     private TunerFrequencyErrorMonitor mTunerFrequencyErrorMonitor;
     private String mName;
+    private String mErrorMessage;
 
     public Tuner(String name, TunerController tunerController)
     {
@@ -52,7 +55,7 @@ public abstract class Tuner implements ISourceEventProcessor
         mTunerController = tunerController;
         //Register to receive frequency and sample rate change notifications
         mTunerController.addListener(this::process);
-
+        mTunerController.setTunerErrorListener(this);
         mTunerFrequencyErrorMonitor = new TunerFrequencyErrorMonitor(this);
         mTunerFrequencyErrorMonitor.start();
     }
@@ -92,6 +95,34 @@ public abstract class Tuner implements ISourceEventProcessor
 
         //Register to receive channel count change notifications
         mChannelSourceManager.addSourceEventListener(this::process);
+    }
+
+    /**
+     * Sets this tuner to an error state with the errorMessage description.
+     * @param errorMessage describing the error state
+     */
+    public void setErrorMessage(String errorMessage)
+    {
+        mLog.info("[" + getName() + "] tuner is now disabled for error [" + errorMessage + "]");
+        mErrorMessage = errorMessage;
+        broadcast(new TunerEvent(this, Event.ERROR_STATE));
+        getChannelSourceManager().setErrorMessage(errorMessage);
+    }
+
+    /**
+     * Optional error message that describes an error state.
+     */
+    public String getErrorMessage()
+    {
+        return mErrorMessage;
+    }
+
+    /**
+     * Indicates if this tuner has an error.
+     */
+    public boolean hasError()
+    {
+        return mErrorMessage != null;
     }
 
     @Override
@@ -148,7 +179,7 @@ public abstract class Tuner implements ISourceEventProcessor
      */
     public String toString()
     {
-        return mName;
+        return mName + (hasError() ? mErrorMessage : "");
     }
 
     /**

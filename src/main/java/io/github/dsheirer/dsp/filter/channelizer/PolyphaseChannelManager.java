@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -124,6 +124,18 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     public PolyphaseChannelManager(TunerController tunerController)
     {
         this(tunerController, tunerController.getFrequency(), tunerController.getSampleRate());
+    }
+
+    /**
+     * Signals to all provisioned tuner channel sources that the source complex buffer provider has an error and can
+     * no longer provide channels, so that the tuner channel source can notify the consumer of the error state.
+     */
+    public void setErrorMessage(String errorMessage)
+    {
+        for(TunerChannelSource tunerChannelSource: mChannelSources)
+        {
+            tunerChannelSource.setError(errorMessage);
+        }
     }
 
     /**

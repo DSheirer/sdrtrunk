@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -115,14 +115,12 @@ public class ProcessingChain implements Listener<ChannelEvent>
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private Broadcaster<IMessage> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchStateEvent> mSquelchStateEventBroadcaster = new Broadcaster<>();
-
     private AtomicBoolean mRunning = new AtomicBoolean();
-
-    protected Source mSource;
     private List<Module> mModules = new ArrayList<>();
     private DecodeEventModel mDecodeEventModel;
     private AbstractChannelState mChannelState;
     private MessageActivityModel mMessageActivityModel;
+    protected Source mSource;
 
     /**
      * Creates a processing chain for managing a set of modules
@@ -206,6 +204,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
     public boolean hasSource()
     {
         return mSource != null;
+    }
+
+    /**
+     * Indicates if this chain's source is the same as the source argument
+     */
+    public boolean hasSource(Source source)
+    {
+        return mSource != null && mSource.equals(source);
     }
 
     /**
@@ -798,6 +804,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
         {
             mMessageBroadcaster.addListener(listener);
         }
+    }
+
+    /**
+     * Adds a listener to receive source events from this processing chain
+     */
+    public void addSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mSourceEventBroadcaster.addListener(listener);
     }
 
     /**
