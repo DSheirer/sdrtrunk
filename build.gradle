@@ -100,20 +100,20 @@ javafx {
 jar {
     manifest {
         attributes (
-            'Implementation-Title'  : 'sdrtrunk project',
-            'Implementation-Version' : archiveVersion,
-            'Class-Path'            : 'jmbe-1.0.1.jar',
-            'Created-By'            : "Gradle ${gradle.gradleVersion}",
-            'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
-            'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
-            'Build-OS'              : "${System.properties['os.name']} (${System.properties['os.arch']} ${System.properties['os.version']}"
+                'Implementation-Title'  : 'sdrtrunk project',
+                'Implementation-Version' : archiveVersion,
+                'Class-Path'            : 'jmbe-1.0.1.jar',
+                'Created-By'            : "Gradle ${gradle.gradleVersion}",
+                'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+                'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
+                'Build-OS'              : "${System.properties['os.name']} (${System.properties['os.arch']} ${System.properties['os.version']}"
         )
     }
 }
 
 /**
  * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the 'bin' 
- * directory within a JDK for each of the specified architectures.  These JDKs are used by the  runtime and runtimeZip 
+ * directory within a JDK for each of the specified architectures.  These JDKs are used by the runtime and runtimeZip
  * tasks to produce platform-specific builds.  If none of these paths exists, then an image will be created for the
  * host OS using the installed JDK.
  */
@@ -123,41 +123,47 @@ def jdk_osx_x86_64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-13.0.1.jdk'
 def jdk_windows_x86_64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-13.0.1'
 def jdk_windows_x86_32 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-13.0.1'
 
-def directory_linux_x86_64 = new File(jdk_linux_x86_64)
-def directory_linux_x86_32 = new File(jdk_linux_x86_32)
-def directory_osx_x86_64 = new File(jdk_osx_x86_64)
-def directory_windows_x86_64 = new File(jdk_windows_x86_64)
-def directory_windows_x86_32 = new File(jdk_windows_x86_32)
+def file_jdk_linux_x86_64 = new File(jdk_linux_x86_64)
+def file_jdk_linux_x86_32 = new File(jdk_linux_x86_32)
+def file_jdk_osx_x86_64 = new File(jdk_osx_x86_64)
+def file_jdk_windows_x86_64 = new File(jdk_windows_x86_64)
+def file_jdk_windows_x86_32 = new File(jdk_windows_x86_32)
+
+def hasTargetJdk = file_jdk_linux_x86_32.exists() ||
+        file_jdk_linux_x86_64.exists() ||
+        file_jdk_osx_x86_64.exists() ||
+        file_jdk_windows_x86_32.exists() ||
+        file_jdk_windows_x86_64.exists()
 
 runtime {
-    if(directory_linux_x86_64.exists())
+    if(file_jdk_linux_x86_64.exists())
     {
-        targetPlatform('linux-x86_64', jdk_linux_x86_64)
+        targetPlatform('linux-x86_64-v' + version, jdk_linux_x86_64)
     }
 
-    if(directory_linux_x86_32.exists())
+    if(file_jdk_linux_x86_32.exists())
     {
-        targetPlatform('linux-x86_32', jdk_linux_x86_32)
+        targetPlatform('linux-x86_32-v' + version, jdk_linux_x86_32)
     }
 
-    if(directory_osx_x86_64.exists())
+    if(file_jdk_osx_x86_64.exists())
     {
-        targetPlatform('osx-x86_64', jdk_osx_x86_64)
+        targetPlatform('osx-x86_64-v' + version, jdk_osx_x86_64)
     }
 
-    if(directory_windows_x86_64.exists())
+    if(file_jdk_windows_x86_64.exists())
     {
-        targetPlatform('windows-x86_64', jdk_windows_x86_64)
+        targetPlatform('windows-x86_64-v' + version, jdk_windows_x86_64)
     }
 
-    if(directory_windows_x86_32.exists())
+    if(file_jdk_windows_x86_32.exists())
     {
-        targetPlatform('windows-x86_32', jdk_windows_x86_32)
+        targetPlatform('windows-x86_32-v' + version, jdk_windows_x86_32)
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     modules = ['java.desktop', 'java.naming', 'jdk.unsupported', 'jdk.unsupported.desktop', 'java.net.http']
-    imageZip = file("$buildDir/image/sdr-trunk-" + version + ".zip")
+    imageZip = hasTargetJdk ? file("$buildDir/image/sdr-trunk.zip") : file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
 
 /**
@@ -165,40 +171,39 @@ runtime {
  */
 tasks.runtime.doFirst {
 
-    if(!directory_linux_x86_64.exists())
+    if(!file_jdk_linux_x86_64.exists())
     {
         println("Skipping OS Image - Linux x86 64-bit JDK was not found at " + jdk_linux_x86_64)
     }
 
-    if(!directory_linux_x86_32.exists())
+    if(!file_jdk_linux_x86_32.exists())
     {
         println("Skipping OS Image - Linux x86 32-bit JDK was not found at " + jdk_linux_x86_32)
     }
 
-    if(!directory_osx_x86_64.exists())
+    if(!file_jdk_osx_x86_64.exists())
     {
         println("Skipping OS Image - OSX x86 64-bit JDK was not found at " + jdk_osx_x86_64);
     }
 
-    if(!directory_windows_x86_64.exists())
+    if(!file_jdk_windows_x86_64.exists())
     {
         println("Skipping OS Image - Windows x86 64-bit JDK was not found at " + jdk_windows_x86_64)
     }
 
-    if(!directory_windows_x86_32.exists())
+    if(!file_jdk_windows_x86_32.exists())
     {
         println("Skipping OS Image - Windows x86 32-bit JDK was not found at " + jdk_windows_x86_32)
     }
 }
 
 /**
- * Since we have to list each of the platform-specific JavaFX libraries as dependencies, 
- * remove them from each build image
+ * Remove unused JavaFX OS-specific libraries from each platform target directory
  */
 tasks.runtime.doLast {
-    delete(fileTree('build/image/sdr-trunk-linux-x86_64/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-linux-x86_32/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-osx-x86_64/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86_64/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86_32/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x86_32-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86_32-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
 }
