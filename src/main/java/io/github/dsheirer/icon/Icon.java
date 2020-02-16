@@ -81,7 +81,7 @@ public class Icon implements Comparable<Icon>
         {
             try
             {
-                if(mPath.startsWith("/"))
+                if(!mPath.startsWith("images"))
                 {
                     mImageIcon = new ImageIcon(mPath);
                 }
