@@ -178,7 +178,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         ChannelMapModel channelMapModel = new ChannelMapModel();
 
-        EventLogManager eventLogManager = new EventLogManager(mUserPreferences);
+        EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
 
         RecorderManager recorderManager = new RecorderManager(aliasModel, mUserPreferences);
 

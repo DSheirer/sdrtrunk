@@ -19,6 +19,7 @@
  */
 package io.github.dsheirer.module.log;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
@@ -37,9 +38,11 @@ public class EventLogManager
     private final static Logger mLog = LoggerFactory.getLogger(EventLogManager.class);
 
     private UserPreferences mUserPreferences;
+    private AliasModel mAliasModel;
 
-    public EventLogManager(UserPreferences userPreferences)
+    public EventLogManager(AliasModel aliasModel, UserPreferences userPreferences)
     {
+        mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
     }
 
@@ -93,11 +96,11 @@ public class EventLogManager
         switch(eventLogType)
         {
             case CALL_EVENT:
-                return new DecodeEventLogger(eventLogDirectory, sb.toString(), frequency);
+                return new DecodeEventLogger(mAliasModel, eventLogDirectory, sb.toString(), frequency);
             case DECODED_MESSAGE:
                 return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
             case TRAFFIC_CALL_EVENT:
-                return new DecodeEventLogger(eventLogDirectory, sb.toString(), frequency);
+                return new DecodeEventLogger(mAliasModel, eventLogDirectory, sb.toString(), frequency);
             case TRAFFIC_DECODED_MESSAGE:
                 return new MessageEventLogger(eventLogDirectory, sb.toString(), MessageEventLogger.Type.DECODED, frequency);
             default:
