@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -67,6 +67,7 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     private DibitDelayBuffer mFragmentBuffer = new DibitDelayBuffer(720);
     private int mDibitsProcessed = 0;
     private boolean mSynchronized = false;
+    private ISyncDetectListener mSyncDetectListener;
 
     public P25P2SuperFrameDetector(IPhaseLockedLoop phaseLockedLoop)
     {
@@ -80,6 +81,14 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     public void setScrambleParameters(ScrambleParameters scramblingSequence)
     {
         mScramblingSequence.update(scramblingSequence);
+    }
+
+    /**
+     * Sets an external sync detect listener to receive sync detect/loss notifications
+     */
+    public void setSyncDetectListener(ISyncDetectListener listener)
+    {
+        mSyncDetectListener = listener;
     }
 
     public void setListener(Listener<IMessage> listener)
@@ -103,11 +112,22 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
     public void syncDetected(int bitErrors)
     {
         checkFragmentSync(bitErrors);
+
+        //Rebroadcast to an external listener
+        if(mSyncDetectListener != null)
+        {
+            mSyncDetectListener.syncDetected(bitErrors);
+        }
     }
 
     @Override
-    public void syncLost()
+    public void syncLost(int bitsProcessed)
     {
+        //Rebroadcast to an external listener
+        if(mSyncDetectListener != null)
+        {
+            mSyncDetectListener.syncLost(bitsProcessed);
+        }
     }
 
     private long getCurrentTimestamp()
@@ -165,6 +185,7 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
         CorrectedBinaryMessage message = mFragmentBuffer.getMessage(0, 720);
         message.setCorrectedBitCount(bitErrors);
         SuperFrameFragment frameFragment = new SuperFrameFragment(message, getCurrentTimestamp(), mScramblingSequence);
+
         updateScramblingCode(frameFragment);
         broadcast(frameFragment);
     }
@@ -232,7 +253,7 @@ public class P25P2SuperFrameDetector implements Listener<Dibit>, ISyncDetectList
                     if(sync2BitErrorCount <= SYNCHRONIZED_SYNC_MATCH_THRESHOLD)
                     {
                         broadcastFragment(sync1BitErrorCount + sync2BitErrorCount);
-                        //broadcast message
+                        syncDetected(sync1BitErrorCount + sync2BitErrorCount);
                         return;
                     }
                     else

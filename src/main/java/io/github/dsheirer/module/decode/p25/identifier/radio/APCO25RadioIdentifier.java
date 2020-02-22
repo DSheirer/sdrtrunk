@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,9 @@ import io.github.dsheirer.protocol.Protocol;
 /**
  * APCO-25 Radio Identifier
  */
-public class APCO25Radio extends RadioIdentifier
+public class APCO25RadioIdentifier extends RadioIdentifier
 {
-    public APCO25Radio(Integer value, Role role)
+    public APCO25RadioIdentifier(Integer value, Role role)
     {
         super(value, role);
     }
@@ -47,7 +47,7 @@ public class APCO25Radio extends RadioIdentifier
      */
     public static RadioIdentifier createTo(int radioId)
     {
-        return new APCO25Radio(radioId, Role.TO);
+        return new APCO25RadioIdentifier(radioId, Role.TO);
     }
 
     /**
@@ -55,7 +55,7 @@ public class APCO25Radio extends RadioIdentifier
      */
     public static RadioIdentifier createFrom(int radioId)
     {
-        return new APCO25Radio(radioId, Role.FROM);
+        return new APCO25RadioIdentifier(radioId, Role.FROM);
     }
 
     /**
@@ -63,6 +63,6 @@ public class APCO25Radio extends RadioIdentifier
      */
     public static RadioIdentifier createAny(int radioId)
     {
-        return new APCO25Radio(radioId, Role.ANY);
+        return new APCO25RadioIdentifier(radioId, Role.ANY);
     }
 }

@@ -1,3 +1,25 @@
+/*
+ *
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
+ *
+ *
+ */
+
 package io.github.dsheirer.dsp.symbol;
 
 public enum Dibit
@@ -131,6 +153,89 @@ public enum Dibit
         }
 
         return Dibit.D00_PLUS_1;
+    }
+
+    public static enum Rotation {PLUS90, MINUS90, INVERT}
+
+    /**
+     * Returns the value of this dibit if the symbol were rotated in the direction indicated.
+     *
+     * This can be used for calculating phase rotation and phase inversion pattern derivatives from a normal sync pattern
+     * @param rotation to apply to this dibit
+     * @return rotated version of this dibit
+     */
+    public Dibit rotate(Rotation rotation)
+    {
+        switch(this)
+        {
+            case D00_PLUS_1:
+                switch(rotation)
+                {
+                    case PLUS90:
+                        return Dibit.D01_PLUS_3;
+                    case MINUS90:
+                        return Dibit.D10_MINUS_1;
+                    case INVERT:
+                        return Dibit.D11_MINUS_3;
+                }
+                break;
+            case D01_PLUS_3:
+                switch(rotation)
+                {
+                    case PLUS90:
+                        return Dibit.D11_MINUS_3;
+                    case MINUS90:
+                        return Dibit.D00_PLUS_1;
+                    case INVERT:
+                        return Dibit.D10_MINUS_1;
+                }
+                break;
+            case D10_MINUS_1:
+                switch(rotation)
+                {
+                    case PLUS90:
+                        return Dibit.D00_PLUS_1;
+                    case MINUS90:
+                        return Dibit.D11_MINUS_3;
+                    case INVERT:
+                        return Dibit.D01_PLUS_3;
+                }
+                break;
+            case D11_MINUS_3:
+                switch(rotation)
+                {
+                    case PLUS90:
+                        return Dibit.D10_MINUS_1;
+                    case MINUS90:
+                        return Dibit.D01_PLUS_3;
+                    case INVERT:
+                        return Dibit.D00_PLUS_1;
+                }
+        }
+
+        //We should never reach this point
+        return Dibit.D00_PLUS_1;
+    }
+
+    /**
+     * Returns the dibit that corresponds to the value
+     * @param value 0-3
+     * @return representative dibit or Dibit.00 if the value is outside of the range 0-3
+     */
+    public static Dibit fromValue(int value)
+    {
+        switch(value)
+        {
+            case 0:
+            default:
+                return Dibit.D00_PLUS_1;
+            case 1:
+                return Dibit.D01_PLUS_3;
+            case 2:
+                return Dibit.D10_MINUS_1;
+            case 3:
+                return Dibit.D11_MINUS_3;
+        }
     }
 
     public static void main(String[] args)

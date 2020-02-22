@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -29,14 +29,17 @@ import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
-import io.github.dsheirer.dsp.psk.pll.PLLGain;
+import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
+import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
-import io.github.dsheirer.protocol.Protocol;
-import io.github.dsheirer.record.binary.BinaryRecorder;
+import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
+import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
@@ -46,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,8 +58,7 @@ import java.util.Map;
 public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderHDQPSK.class);
-
-    protected static final float SYMBOL_TIMING_GAIN = 0.01f;
+    protected static final float SYMBOL_TIMING_GAIN = 0.1f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
@@ -66,6 +67,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
     private DecodeConfigP25Phase2 mDecodeConfigP25Phase2;
+    private FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
 
     public P25P2DecoderHDQPSK(DecodeConfigP25Phase2 decodeConfigP25Phase2)
     {
@@ -80,7 +82,8 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
 
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mCostasLoop.setPLLGain(PLLGain.LEVEL_8);
+        mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
+
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
         mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
@@ -92,6 +95,13 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
         mMessageFramer = new P25P2MessageFramer(mCostasLoop, DecoderType.P25_PHASE2.getProtocol().getBitRate());
+        if(mDecodeConfigP25Phase2 != null && !mDecodeConfigP25Phase2.isAutoDetectScrambleParameters())
+        {
+            mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
+        }
+
+        mFrequencyCorrectionSyncMonitor = new FrequencyCorrectionSyncMonitor(mCostasLoop, this);
+        mMessageFramer.setSyncDetectListener(mFrequencyCorrectionSyncMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
 
@@ -219,20 +229,58 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
         }
     }
 
+    public static class MessageErrorListener implements Listener<IMessage>
+    {
+        private int mMessageCount = 0;
+        private int mBitErrorCount = 0;
+
+        @Override
+        public void receive(IMessage iMessage)
+        {
+            if(!(iMessage instanceof SyncLossMessage) && !(iMessage instanceof EncryptionSynchronizationSequence))
+            {
+                mMessageCount++;
+            }
+
+            if(iMessage instanceof MacMessage)
+            {
+                mBitErrorCount += ((MacMessage)iMessage).getBitErrorCount();
+            }
+
+            mLog.debug("[" + mMessageCount + " | " + mBitErrorCount + "] " + iMessage.toString());
+        }
+    }
+
     public static void main(String[] args)
     {
-        String path = "/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/";
-        String input = "CNYICC_Rome_CNYICC_154_250_baseband_20190322_180331_good.wav";
-        String output = "CNYICC_ROME_154_250_8";
+//        String path = "/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/";
+//        String input = "CNYICC_Rome_CNYICC_154_250_baseband_20190322_180331_good.wav";
+//        String output = "CNYICC_ROME_154_250_8";
+
+        String path = "/home/denny/SDRTrunk/recordings/";
+        String input = "CNYICC_Site_P25P2_151.37_baseband_20200221_110306.wav";
+        String output = "P25P2_test";
 
         ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677); //CNYICC
         DecodeConfigP25Phase2 decodeConfigP25Phase2 = new DecodeConfigP25Phase2();
         decodeConfigP25Phase2.setScrambleParameters(scrambleParameters);
 
         P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK(decodeConfigP25Phase2);
-        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25_PHASE2);
-        decoder.setBufferListener(recorder.getReusableByteBufferListener());
-        recorder.start();
+        decoder.setMessageListener(new MessageErrorListener());
+
+//        decoder.setMessageListener(new Listener<IMessage>()
+//        {
+//            @Override
+//            public void receive(IMessage iMessage)
+//            {
+//                mLog.debug(iMessage.toString());
+//            }
+//        });
+        decoder.start();
+
+//        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25_PHASE2);
+//        decoder.setBufferListener(recorder.getReusableByteBufferListener());
+//        recorder.start();
 
         File file = new File(path + input);
 
@@ -255,7 +303,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
             running = false;
         }
 
-        recorder.stop();
+//        recorder.stop();
     }
 
     @Override

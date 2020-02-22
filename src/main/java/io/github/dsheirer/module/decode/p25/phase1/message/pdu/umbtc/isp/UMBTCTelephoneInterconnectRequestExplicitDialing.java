@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp;
 
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.telephone.APCO25TelephoneNumber;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.UMBTCMessage;
@@ -83,7 +83,7 @@ public class UMBTCTelephoneInterconnectRequestExplicitDialing extends UMBTCMessa
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25Radio.createFrom(getHeader().getMessage().getInt(HEADER_ADDRESS));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getHeader().getMessage().getInt(HEADER_ADDRESS));
         }
 
         return mSourceAddress;

@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -197,7 +197,7 @@ public class IndividualPagingMessage extends MacStructure
     {
         if(mTargetAddress1 == null)
         {
-            mTargetAddress1 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_1, getOffset()));
+            mTargetAddress1 = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS_1, getOffset()));
         }
 
         return mTargetAddress1;
@@ -210,7 +210,7 @@ public class IndividualPagingMessage extends MacStructure
     {
         if(mTargetAddress2 == null && getCount() >= 2)
         {
-            mTargetAddress2 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_2, getOffset()));
+            mTargetAddress2 = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS_2, getOffset()));
         }
 
         return mTargetAddress2;
@@ -223,7 +223,7 @@ public class IndividualPagingMessage extends MacStructure
     {
         if(mTargetAddress3 == null && getCount() >= 3)
         {
-            mTargetAddress3 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_3, getOffset()));
+            mTargetAddress3 = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS_3, getOffset()));
         }
 
         return mTargetAddress3;
@@ -236,7 +236,7 @@ public class IndividualPagingMessage extends MacStructure
     {
         if(mTargetAddress4 == null && getCount() >= 4)
         {
-            mTargetAddress4 = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS_4, getOffset()));
+            mTargetAddress4 = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS_4, getOffset()));
         }
 
         return mTargetAddress4;

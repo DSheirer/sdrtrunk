@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,10 @@ public enum FrameSync
 	P25_PHASE1_ERROR_90_CW(  0x001050551155l ),
 	P25_PHASE1_ERROR_180(    0xAA8A0A008800l ),
 
-	P25_PHASE2_NORMAL(0x575D57F7FFl);
+	P25_PHASE2_NORMAL(      0x575D57F7FFl),
+	P25_PHASE2_ERROR_90_CCW(0xFEFBFEAEAAl),
+	P25_PHASE2_ERROR_90_CW( 0x0104015155l),
+	P25_PHASE2_ERROR_180(   0xA8A2A80800l);
 	
 	private long mSync;
 	

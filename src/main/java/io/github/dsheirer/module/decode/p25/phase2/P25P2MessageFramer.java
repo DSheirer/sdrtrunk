@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -71,7 +71,6 @@ public class P25P2MessageFramer implements Listener<Dibit>
     private int mTrailingDibitsToSuppress = 0;
     private double mBitRate;
     private long mCurrentTime = System.currentTimeMillis();
-    private ISyncDetectListener mSyncDetectListener;
 
     public P25P2MessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
@@ -105,11 +104,14 @@ public class P25P2MessageFramer implements Listener<Dibit>
     }
 
     /**
-     * Registers a sync detect listener to be notified each time a sync pattern and NID are detected.
+     * Registers a sync detect listener to be notified each time sync is detected or lost.
+     *
+     * Note: this actually registers the listener on the enclosed super frame detector which has access to the
+     * actual sync pattern detector instance.
      */
-    public void setSyncDetectListener(ISyncDetectListener syncDetectListener)
+    public void setSyncDetectListener(ISyncDetectListener listener)
     {
-        mSyncDetectListener = syncDetectListener;
+        mSuperFrameDetector.setSyncDetectListener(listener);
     }
 
     /**

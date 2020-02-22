@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.audio.Phase2EncryptionSyncParameters;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
@@ -137,7 +137,7 @@ public class PushToTalk extends MacStructure
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;

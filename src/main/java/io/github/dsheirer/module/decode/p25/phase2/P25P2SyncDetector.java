@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -29,19 +29,24 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.FrameSync;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class P25P2SyncDetector implements Listener<Dibit>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(P25P2SyncDetector.class);
+
     /* Determines the threshold for sync pattern soft matching */
     private static final int SYNC_MATCH_THRESHOLD = 4;
 
     /* Costas Loop phase lock error correction values.  A phase lock error of
-     * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An
+     * 90 degrees requires a correction of 1/4 of the symbol rate (1500Hz).  An
      * error of 180 degrees requires a correction of 1/2 of the symbol rate */
     public static final double DEFAULT_SAMPLE_RATE = 50000.0;
+    public static final double DEFAULT_SYMBOL_RATE = 6000;
 
-    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = 1200.0;
-    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = 2400.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = DEFAULT_SYMBOL_RATE / 4.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = DEFAULT_SYMBOL_RATE / 2.0;
 
     private MultiSyncPatternMatcher mMatcher;
     private SoftSyncDetector mPrimarySyncDetector;
@@ -64,15 +69,15 @@ public class P25P2SyncDetector implements Listener<Dibit>
         {
             //Add additional sync pattern detectors to detect when we get 90/180 degree out of phase sync pattern
             //detections so that we can apply correction to the phase locked loop
-            mInversionDetector90CW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CW,
+            mInversionDetector90CW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE2_ERROR_90_CW,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_90_DEGREES);
             mMatcher.add(mInversionDetector90CW);
 
-            mInversionDetector90CCW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CCW,
+            mInversionDetector90CCW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE2_ERROR_90_CCW,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, -FREQUENCY_PHASE_CORRECTION_90_DEGREES);
             mMatcher.add(mInversionDetector90CCW);
 
-            mInversionDetector180 = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_180,
+            mInversionDetector180 = new PLLPhaseInversionDetector(FrameSync.P25_PHASE2_ERROR_180,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_180_DEGREES);
             mMatcher.add(mInversionDetector180);
         }
@@ -84,7 +89,7 @@ public class P25P2SyncDetector implements Listener<Dibit>
      */
     public int getPrimarySyncMatchErrorCount()
     {
-        return Long.bitCount(mMatcher.getCurrentValue() ^ FrameSync.P25_PHASE1_NORMAL.getSync());
+        return Long.bitCount(mMatcher.getCurrentValue() ^ FrameSync.P25_PHASE2_NORMAL.getSync());
     }
 
     @Override
@@ -116,6 +121,7 @@ public class P25P2SyncDetector implements Listener<Dibit>
      */
     public class PLLPhaseInversionDetector extends SyncDetector
     {
+        private FrameSync mFrameSync;
         private IPhaseLockedLoop mPhaseLockedLoop;
         private double mSampleRate;
         private double mFrequencyCorrection;
@@ -135,6 +141,7 @@ public class P25P2SyncDetector implements Listener<Dibit>
                                          double frequencyCorrection)
         {
             super(frameSync.getSync());
+            mFrameSync = frameSync;
             mPhaseLockedLoop = phaseLockedLoop;
             mFrequencyCorrection = frequencyCorrection;
             setSampleRate(sampleRate);
@@ -144,11 +151,12 @@ public class P25P2SyncDetector implements Listener<Dibit>
                 @Override
                 public void syncDetected(int bitErrors)
                 {
+                    mLog.debug("PLL Phase Inversion Lock Detected: " + mFrameSync.name());
                     mPhaseLockedLoop.correctInversion(mPllCorrection);
                 }
 
                 @Override
-                public void syncLost()
+                public void syncLost(int bitsProcessed)
                 {
                     //no-op
                 }

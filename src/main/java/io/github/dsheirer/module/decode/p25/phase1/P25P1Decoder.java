@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,8 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
-import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
@@ -32,10 +32,9 @@ import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
-import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 
-public abstract class P25P1Decoder extends Decoder implements ISourceEventListener, ISourceEventProvider,
+public abstract class P25P1Decoder extends FeedbackDecoder implements ISourceEventListener,
     IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableByteBufferProvider
 {
     private double mSampleRate;
@@ -131,24 +130,6 @@ public abstract class P25P1Decoder extends Decoder implements ISourceEventListen
         mMessageProcessor = null;
     }
 
-    /**
-     * Sets the source event listener to receive source events from this decoder.
-     */
-    @Override
-    public void setSourceEventListener(Listener<SourceEvent> listener)
-    {
-        mSourceEventListener = listener;
-    }
-
-    /**
-     * Removes a registered source event listener from receiving source events from this decoder
-     */
-    @Override
-    public void removeSourceEventListener()
-    {
-        mSourceEventListener = null;
-    }
-
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {
@@ -167,19 +148,6 @@ public abstract class P25P1Decoder extends Decoder implements ISourceEventListen
      * @param sourceEvent
      */
     protected abstract void process(SourceEvent sourceEvent);
-
-    /**
-     * Broadcasts the source event to an optional registered listener.  This method should primarily be used to
-     * issue frequency correction requests to the channel source.
-     * @param sourceEvent to broadcast
-     */
-    public void broadcast(SourceEvent sourceEvent)
-    {
-        if(mSourceEventListener != null)
-        {
-            mSourceEventListener.receive(sourceEvent);
-        }
-    }
 
     /**
      * Listener interface to receive reusable complex buffers

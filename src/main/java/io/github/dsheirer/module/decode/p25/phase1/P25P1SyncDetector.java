@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -37,9 +39,10 @@ public class P25P1SyncDetector implements Listener<Dibit>
      * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An
      * error of 180 degrees requires a correction of 1/2 of the symbol rate */
     public static final double DEFAULT_SAMPLE_RATE = 50000.0;
+    public static final double DEFAULT_SYMBOL_RATE = 4800;
 
-    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = 1200.0;
-    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = 2400.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = DEFAULT_SYMBOL_RATE / 4.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = DEFAULT_SYMBOL_RATE / 2.0;
 
     private MultiSyncPatternMatcher mMatcher;
     private SoftSyncDetector mPrimarySyncDetector;
@@ -146,7 +149,7 @@ public class P25P1SyncDetector implements Listener<Dibit>
                 }
 
                 @Override
-                public void syncLost()
+                public void syncLost(int bitsProcessed)
                 {
                     //no-op
                 }

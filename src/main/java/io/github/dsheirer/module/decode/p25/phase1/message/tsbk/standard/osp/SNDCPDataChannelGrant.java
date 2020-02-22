@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25ExplicitChannel;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
@@ -86,7 +86,7 @@ public class SNDCPDataChannelGrant extends OSPMessage implements IFrequencyBandR
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS));
         }
 
         return mTargetAddress;

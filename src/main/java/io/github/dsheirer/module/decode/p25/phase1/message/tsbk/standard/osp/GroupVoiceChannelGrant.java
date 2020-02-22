@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
@@ -110,7 +110,7 @@ public class GroupVoiceChannelGrant extends OSPMessage implements IFrequencyBand
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_ADDRESS));
         }
 
         return mSourceAddress;
