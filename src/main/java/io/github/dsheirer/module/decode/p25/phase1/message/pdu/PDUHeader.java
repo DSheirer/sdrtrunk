@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.IBitErrorProvider;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.PDUFormat;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
@@ -154,11 +154,11 @@ public class PDUHeader implements IBitErrorProvider
         {
             if(isOutbound())
             {
-                mLLID = APCO25Radio.createTo(getMessage().getInt(LOGICAL_LINK_ID));
+                mLLID = APCO25RadioIdentifier.createTo(getMessage().getInt(LOGICAL_LINK_ID));
             }
             else
             {
-                mLLID = APCO25Radio.createFrom(getMessage().getInt(LOGICAL_LINK_ID));
+                mLLID = APCO25RadioIdentifier.createFrom(getMessage().getInt(LOGICAL_LINK_ID));
             }
         }
 

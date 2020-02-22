@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,9 @@ import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
-import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
+import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryRecorder;
@@ -56,8 +57,8 @@ public class P25P1DecoderLSM extends P25P1Decoder
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected P25P1MessageFramer mMessageFramer;
     protected CostasLoop mCostasLoop;
-    protected AdaptivePLLGainMonitor mPLLGainMonitor;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
+    protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
 
     /**
      * P25 Phase 1 - linear simulcast modulation (LSM) decoder.  Uses Differential QPSK decoding with a Costas PLL and
@@ -81,7 +82,8 @@ public class P25P1DecoderLSM extends P25P1Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mPLLGainMonitor = new AdaptivePLLGainMonitor(mCostasLoop, this);
+        mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_200);
+        mFrequencyCorrectionSyncMonitor = new FrequencyCorrectionSyncMonitor(mCostasLoop, this);
 
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
@@ -95,7 +97,7 @@ public class P25P1DecoderLSM extends P25P1Decoder
         }
 
         mMessageFramer = new P25P1MessageFramer(mCostasLoop, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        mMessageFramer.setSyncDetectListener(mPLLGainMonitor);
+        mMessageFramer.setSyncDetectListener(mFrequencyCorrectionSyncMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
         mQPSKDemodulator.setSymbolListener(getDibitBroadcaster());
@@ -163,7 +165,7 @@ public class P25P1DecoderLSM extends P25P1Decoder
     public void reset()
     {
         mCostasLoop.reset();
-        mPLLGainMonitor.reset();
+        mFrequencyCorrectionSyncMonitor.reset();
     }
 
     public void dispose()

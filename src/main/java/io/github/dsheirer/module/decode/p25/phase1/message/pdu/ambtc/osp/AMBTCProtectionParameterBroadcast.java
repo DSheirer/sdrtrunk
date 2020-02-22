@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKeyIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.encryption.APCO25EncryptionKey;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
 
@@ -88,7 +88,7 @@ public class AMBTCProtectionParameterBroadcast extends AMBTCMessage
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
-            mTargetAddress = APCO25Radio.createTo(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
         }
 
         return mTargetAddress;

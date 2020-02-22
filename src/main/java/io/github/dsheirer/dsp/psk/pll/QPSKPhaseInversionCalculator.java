@@ -22,20 +22,26 @@
 
 package io.github.dsheirer.dsp.psk.pll;
 
+import io.github.dsheirer.dsp.symbol.Dibit;
+
 /**
  * Utility for calculating phase inverted sync pattern derivatives for QPSK constellations
  */
 public class QPSKPhaseInversionCalculator
 {
-    public static String[] LOOKUP_MINUS_90 = {"A","8","B","9","2","0","3","1","E","C","F","D","6","4","7","5"};
-    public static String[] LOOKUP_PLUS_90 = {"5","7","4","6","D","F","C","E","1","3","0","2","9","B","8","A"};
-    public static String[] LOOKUP_180 = {"F","E","D","C","B","A","9","8","7","6","5","4","3","2","1","0"};
-
     public static void main(String[] args)
     {
+
         //DMR sync patterns
-        String[] syncs = {"755FD7DF75F7", "DFF57D75DF5D", "7F7D5DD57DFD", "D5D7F77FD757", "77D55F7DFD77",
-            "5D577F7757FF", "F7FDD5DDFD55", "7DFFD5F55D5F", "D7557F5FF7F5", "DD7FF5D757DD"};
+//        String[] syncs = {"755FD7DF75F7", "DFF57D75DF5D", "7F7D5DD57DFD", "D5D7F77FD757", "77D55F7DFD77",
+//            "5D577F7757FF", "F7FDD5DDFD55", "7DFFD5F55D5F", "D7557F5FF7F5", "DD7FF5D757DD"};
+
+        //P25 Phase 2 sync pattern
+        String[] syncs = {"575D57F7FF"};
+
+        //P25 Phase 1 sync pattern
+//        String[] syncs = {"5575F5FF77FF"};
+
 
         for(String sync: syncs)
         {
@@ -56,10 +62,11 @@ public class QPSKPhaseInversionCalculator
                 {
                     value = letter - 48;
                 }
+
                 sbNorm.append(letter);
-                sbP90.append(LOOKUP_PLUS_90[value]);
-                sbM90.append(LOOKUP_MINUS_90[value]);
-                sb180.append(LOOKUP_180[value]);
+                sbP90.append(rotate(value, Dibit.Rotation.PLUS90));
+                sbM90.append(rotate(value, Dibit.Rotation.MINUS90));
+                sb180.append(rotate(value, Dibit.Rotation.INVERT));
             }
 
             System.out.println("NORMAL: " + sync);
@@ -67,5 +74,60 @@ public class QPSKPhaseInversionCalculator
             System.out.println("   -90: " + sbM90.toString());
             System.out.println("   180: " + sb180.toString());
         }
+    }
+
+    /**
+     * Converts the hexadecimal value to an integer, decomposes it into high and low order dibits, rotates the dibits
+     * in the specified direction, and recombines the rotated dibits into a 4-bit value, returned as a hex character.
+     * @param value to rotate
+     * @param direction direction
+     * @return rotated hex character
+     */
+    public static String rotate(int value, Dibit.Rotation direction)
+    {
+        try
+        {
+            Dibit dibitHigh = getHighDibit(value);
+            Dibit dibitLow = getLowDibit(value);
+            return getHex(dibitHigh.rotate(direction), dibitLow.rotate(direction));
+        }
+        catch(Exception e)
+        {
+            //ignore
+        }
+
+        return "-";
+    }
+
+    /**
+     * Combines the bit values from the two dibits and converts the integer value to a hex character
+     * @param d1 containing the high order bits
+     * @param d2 containing the low order bits
+     * @return string hex character representing the value of these dibits combined
+     */
+    public static String getHex(Dibit d1, Dibit d2)
+    {
+        int value = d1.getHighValue() + d2.getLowValue();
+        return Integer.toHexString(value).toUpperCase();
+    }
+
+    /**
+     * Calculates the dibit that represents the bits in the 0x8 and 0x4 bit positions of the value
+     * @param value
+     * @return a dibit
+     */
+    public static Dibit getHighDibit(int value)
+    {
+        return Dibit.fromValue((value >> 2) & 3);
+    }
+
+    /**
+     * Calculates the dibit that represents the bits in the 0x2 and 0x1 bit positions of the value
+     * @param value
+     * @return a dibit
+     */
+    public static Dibit getLowDibit(int value)
+    {
+        return Dibit.fromValue(value & 3);
     }
 }

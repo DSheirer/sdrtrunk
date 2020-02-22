@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -416,7 +416,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
         if(mSyncDetectListener != null)
         {
-            mSyncDetectListener.syncLost();
+            mSyncDetectListener.syncLost(bitsProcessed);
         }
     }
 

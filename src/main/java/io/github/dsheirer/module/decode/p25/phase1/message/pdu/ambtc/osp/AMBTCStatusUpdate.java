@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UnitStatus;
 import io.github.dsheirer.module.decode.p25.identifier.status.APCO25UserStatus;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
@@ -119,7 +119,7 @@ public class AMBTCStatusUpdate extends AMBTCMessage
     {
         if(mTargetAddress == null && hasDataBlock(0))
         {
-            mTargetAddress = APCO25Radio.createTo(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
         }
 
         return mTargetAddress;
@@ -129,7 +129,7 @@ public class AMBTCStatusUpdate extends AMBTCMessage
     {
         if(mSourceId == null && hasDataBlock(0))
         {
-            mSourceId = APCO25Radio.createFrom(getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_ID));
+            mSourceId = APCO25RadioIdentifier.createFrom(getDataBlock(0).getMessage().getInt(BLOCK_0_SOURCE_ID));
         }
 
         return mSourceId;

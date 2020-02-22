@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -21,35 +21,43 @@
  */
 package io.github.dsheirer.dsp.psk.pll;
 
+import java.util.Map;
+import java.util.TreeMap;
+
 /**
  * Phase Locked Loop (PLL) tracking bandwidth - controls how fast/slow the PLL tracks the carrier frequency
  */
-public enum PLLGain
+public enum PLLBandwidth
 {
-    //NOTE: static gain level of 200 produced the best results for releases prior to 0.3.4b2
+    //NOTE: static bandwidth of 200 produced the best results for P25P1 releases prior to 0.3.4b2
 
-    LEVEL_0(100.0, 0, 0),
-    LEVEL_1(150.0, 0, 1),
-    LEVEL_2(170.0, 2, 4),
-    LEVEL_3(190.0, 5, 6),
-    LEVEL_4(200.0, 7, 8),
-    LEVEL_5(200.0, 9, 10),
-    LEVEL_6(250.0, 11, 12),
-    LEVEL_7(275.0, 12,13),
-    LEVEL_8(325.0, 14, 15),
-    LEVEL_9(350.0, 16,17),
-    LEVEL_10(375.0, 18, 19),
-    LEVEL_11(400.0, 19,20);
+    BW_400(400.0, 0, 1),
+    BW_300(300.0, 2, 3),
+    BW_250(250.0, 4, 5),
+    BW_200(200.0, 6, 7);
 
     private double mLoopBandwidth;
     private int mRangeStart;
     private int mRangeEnd;
 
-    PLLGain(double loopBandwidth, int start, int end)
+    PLLBandwidth(double loopBandwidth, int start, int end)
     {
         mLoopBandwidth = loopBandwidth;
         mRangeStart = start;
         mRangeEnd = end;
+    }
+
+    private static Map<Integer,PLLBandwidth> LOOKUP_MAP = new TreeMap<>();
+
+    static
+    {
+        for(PLLBandwidth pllBandwidth : PLLBandwidth.values())
+        {
+            for(int x = pllBandwidth.getRangeStart(); x <= pllBandwidth.getRangeEnd(); x++)
+            {
+                LOOKUP_MAP.put(x, pllBandwidth);
+            }
+        }
     }
 
     /**
@@ -76,27 +84,13 @@ public enum PLLGain
      * @param syncCount 0-10
      * @return PLL gain appropriate for the sync detection value
      */
-    public static PLLGain fromSyncCount(int syncCount)
+    public static PLLBandwidth fromSyncCount(int syncCount)
     {
-        if(syncCount <= LEVEL_1.getRangeEnd())
+        if(LOOKUP_MAP.containsKey(syncCount))
         {
-            return LEVEL_1;
+            return LOOKUP_MAP.get(syncCount);
         }
-        else if(syncCount <= LEVEL_2.getRangeEnd())
-        {
-            return LEVEL_2;
-        }
-        else if(syncCount <= LEVEL_3.getRangeEnd())
-        {
-            return LEVEL_3;
-        }
-        else if(syncCount <= LEVEL_4.getRangeEnd())
-        {
-            return LEVEL_4;
-        }
-        else
-        {
-            return LEVEL_5;
-        }
+
+        return BW_200;
     }
 }
