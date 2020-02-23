@@ -25,6 +25,8 @@ package io.github.dsheirer.gui.playlist.alias;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
@@ -197,8 +199,13 @@ public class AliasEditor extends SplitPane
             streamColumn.setCellValueFactory(new PropertyValueFactory<>("streamable"));
             streamColumn.setCellFactory(new IconCell(FontAwesome.VOLUME_UP, Color.DARKBLUE));
 
-            TableColumn<Alias,String> idsColumn = new TableColumn("IDs");
-            TableColumn<Alias,String> actionsColumn = new TableColumn("Actions");
+            TableColumn<Alias,Integer> idsColumn = new TableColumn("IDs");
+//            idsColumn.setCellFactory(new CenteredCountCellFactory());
+            idsColumn.setCellValueFactory(new IdentifierCountCell());
+
+            TableColumn<Alias,Integer> actionsColumn = new TableColumn("Actions");
+//            actionsColumn.setCellFactory(new CenteredCountCellFactory());
+            actionsColumn.setCellValueFactory(new ActionCountCell());
 
 
             mAliasTableView.getColumns().addAll(aliasListNameColumn, groupColumn, nameColumn, colorColumn,
@@ -431,6 +438,55 @@ public class AliasEditor extends SplitPane
             tableCell.setAlignment(Pos.CENTER);
             tableCell.setGraphic(iconNode);
             return tableCell;
+        }
+    }
+
+    public class IdentifierCountCell implements Callback<TableColumn.CellDataFeatures<Alias,Integer>,ObservableValue<Integer>>
+    {
+        @Override
+        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias,Integer> param)
+        {
+            Integer count = null;
+
+            if(param.getValue() != null && param.getValue().getAliasIdentifiers().size() > 0)
+            {
+                count = param.getValue().getAliasIdentifiers().size();
+            }
+
+            return new ReadOnlyObjectWrapper<>(count);
+        }
+    }
+
+    public class ActionCountCell implements Callback<TableColumn.CellDataFeatures<Alias,Integer>,ObservableValue<Integer>>
+    {
+        @Override
+        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias,Integer> param)
+        {
+            Integer count = null;
+
+            if(param.getValue() != null && param.getValue().getAliasActions().size() > 0)
+            {
+                count = param.getValue().getAliasActions().size();
+            }
+
+            return new ReadOnlyObjectWrapper<>(count);
+        }
+    }
+
+    public class CenteredCountCellFactory implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
+    {
+        @Override
+        public TableCell<Alias,Integer> call(TableColumn<Alias,Integer> param)
+        {
+            return new CenteredCountCell();
+        }
+    }
+
+    public class CenteredCountCell extends TableCell<Alias,Integer>
+    {
+        public CenteredCountCell()
+        {
+            setAlignment(Pos.CENTER);
         }
     }
 }

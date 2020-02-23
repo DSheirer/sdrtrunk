@@ -71,7 +71,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private Button mResetButton;
     private VBox mButtonBox;
     private ToggleSwitch mMonitorAudioToggleSwitch;
-    private ComboBox mMonitorPriorityComboBox;
+    private ComboBox<Integer> mMonitorPriorityComboBox;
     private ToggleSwitch mRecordAudioToggleSwitch;
     private ColorPicker mColorPicker;
     private SuggestionProvider<String> mListSuggestionProvider;
@@ -119,6 +119,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
         getNameField().setDisable(alias == null);
         getRecordAudioToggleSwitch().setDisable(alias == null);
         getColorPicker().setDisable(alias == null);
+        getMonitorAudioToggleSwitch().setDisable(alias == null);
 
         updateStreamViews();
 
@@ -128,6 +129,20 @@ public class AliasConfigurationEditor extends Editor<Alias>
             getGroupField().setText(alias.getGroup());
             getNameField().setText(alias.getName());
             getRecordAudioToggleSwitch().setSelected(alias.isRecordable());
+
+            int monitorPriority = alias.getPlaybackPriority();
+
+            boolean canMonitor = (monitorPriority != io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR);
+            getMonitorAudioToggleSwitch().setSelected(canMonitor);
+
+            if(canMonitor && monitorPriority != io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY)
+            {
+                getMonitorPriorityComboBox().getSelectionModel().select(monitorPriority);
+            }
+            else
+            {
+                getMonitorPriorityComboBox().getSelectionModel().select(null);
+            }
 
             Color color = ColorUtil.fromInteger(alias.getColor());
             getColorPicker().setValue(color);
@@ -139,6 +154,8 @@ public class AliasConfigurationEditor extends Editor<Alias>
             getNameField().setText(null);
             getRecordAudioToggleSwitch().setSelected(false);
             getColorPicker().setValue(Color.BLACK);
+            getMonitorPriorityComboBox().getSelectionModel().select(null);
+            getMonitorAudioToggleSwitch().setSelected(false);
         }
 
         modifiedProperty().set(false);
@@ -158,6 +175,13 @@ public class AliasConfigurationEditor extends Editor<Alias>
                 alias.setName(getNameField().getText());
                 alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
+
+                boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
+                Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
+//                alias.setCallPriority();
+
+
+
             }
 
             modifiedProperty().set(false);
@@ -376,12 +400,20 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setConstraints(getMonitorAudioToggleSwitch(), 3, 2);
             mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
 
+            Label monitorPriorityLabel = new Label("Monitor Priority");
+            GridPane.setHalignment(monitorPriorityLabel, HPos.RIGHT);
+            GridPane.setConstraints(monitorPriorityLabel, 2, 3);
+            mTextFieldPane.getChildren().add(monitorPriorityLabel);
+
+            GridPane.setConstraints(getMonitorPriorityComboBox(), 3, 3);
+            mTextFieldPane.getChildren().add(getMonitorPriorityComboBox());
+
             Label recordAudioLabel = new Label("Record Audio");
             GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
-            GridPane.setConstraints(recordAudioLabel, 2, 3);
+            GridPane.setConstraints(recordAudioLabel, 2, 4);
             mTextFieldPane.getChildren().add(recordAudioLabel);
 
-            GridPane.setConstraints(getRecordAudioToggleSwitch(), 3, 3);
+            GridPane.setConstraints(getRecordAudioToggleSwitch(), 3, 4);
             mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
 
         }
@@ -400,6 +432,26 @@ public class AliasConfigurationEditor extends Editor<Alias>
         }
 
         return mMonitorAudioToggleSwitch;
+    }
+
+    private ComboBox<Integer> getMonitorPriorityComboBox()
+    {
+        if(mMonitorPriorityComboBox == null)
+        {
+            mMonitorPriorityComboBox = new ComboBox<>();
+            mMonitorPriorityComboBox.getItems().add(null);
+            for(int x = io.github.dsheirer.alias.id.priority.Priority.MIN_PRIORITY;
+                    x < io.github.dsheirer.alias.id.priority.Priority.MAX_PRIORITY; x++)
+            {
+                mMonitorPriorityComboBox.getItems().add(x);
+            }
+
+            mMonitorPriorityComboBox.disableProperty().bind(getMonitorAudioToggleSwitch().selectedProperty().not());
+            mMonitorPriorityComboBox.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mMonitorPriorityComboBox;
     }
 
     private ToggleSwitch getRecordAudioToggleSwitch()
