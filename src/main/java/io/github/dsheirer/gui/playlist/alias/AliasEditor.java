@@ -25,8 +25,6 @@ package io.github.dsheirer.gui.playlist.alias;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
