@@ -71,23 +71,25 @@ dependencies {
     implementation 'org.apache.commons:commons-io:1.3.2'
     implementation 'org.apache.mina:mina-core:2.0.19'
     implementation 'org.apache.mina:mina-http:2.0.19'
-    implementation "org.openjfx:javafx-base:11:win"
-    implementation "org.openjfx:javafx-base:11:linux"
-    implementation "org.openjfx:javafx-base:11:mac"
-    implementation "org.openjfx:javafx-controls:11.0.2:win"
-    implementation "org.openjfx:javafx-controls:11.0.2:linux"
-    implementation "org.openjfx:javafx-controls:11.0.2:mac"
-    implementation "org.openjfx:javafx-graphics:11.0.2:win"
-    implementation "org.openjfx:javafx-graphics:11.0.2:linux"
-    implementation "org.openjfx:javafx-graphics:11.0.2:mac"
-    implementation "org.openjfx:javafx-swing:11.0.2:win"
-    implementation "org.openjfx:javafx-swing:11.0.2:linux"
-    implementation "org.openjfx:javafx-swing:11.0.2:mac"
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation 'org.usb4java:libusb4java:1.3.0'
     implementation 'org.usb4java:usb4java:1.3.0'
     implementation 'org.usb4java:usb4java-javax:1.3.0'
     implementation 'pl.edu.icm:JLargeArrays:1.6'
+
+    //The must remain as compile options to ensure they are included in the build to produce multi-OS images
+    compile "org.openjfx:javafx-base:11:win"
+    compile "org.openjfx:javafx-base:11:linux"
+    compile "org.openjfx:javafx-base:11:mac"
+    compile "org.openjfx:javafx-controls:11.0.2:win"
+    compile "org.openjfx:javafx-controls:11.0.2:linux"
+    compile "org.openjfx:javafx-controls:11.0.2:mac"
+    compile "org.openjfx:javafx-graphics:11.0.2:win"
+    compile "org.openjfx:javafx-graphics:11.0.2:linux"
+    compile "org.openjfx:javafx-graphics:11.0.2:mac"
+    compile "org.openjfx:javafx-swing:11.0.2:win"
+    compile "org.openjfx:javafx-swing:11.0.2:linux"
+    compile "org.openjfx:javafx-swing:11.0.2:mac"
 }
 
 application {
