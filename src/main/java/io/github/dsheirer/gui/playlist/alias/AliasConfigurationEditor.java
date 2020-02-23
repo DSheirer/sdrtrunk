@@ -36,6 +36,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
@@ -69,7 +70,9 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private Button mSaveButton;
     private Button mResetButton;
     private VBox mButtonBox;
-    private ToggleSwitch mRecordToggleSwitch;
+    private ToggleSwitch mMonitorAudioToggleSwitch;
+    private ComboBox mMonitorPriorityComboBox;
+    private ToggleSwitch mRecordAudioToggleSwitch;
     private ColorPicker mColorPicker;
     private SuggestionProvider<String> mListSuggestionProvider;
     private SuggestionProvider<String> mGroupSuggestionProvider;
@@ -80,9 +83,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private ListView<String> mAvailableStreamsView;
     private ListView<BroadcastChannel> mSelectedStreamsView;
     private Button mAddStreamButton;
-    private Button mAddAllStreamsButton;
     private Button mRemoveStreamButton;
-    private Button mRemoveAllStreamsButton;
 
     public AliasConfigurationEditor(PlaylistManager playlistManager)
     {
@@ -116,7 +117,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
         getAliasListNameField().setDisable(alias == null);
         getGroupField().setDisable(alias == null);
         getNameField().setDisable(alias == null);
-        getRecordToggleSwitch().setDisable(alias == null);
+        getRecordAudioToggleSwitch().setDisable(alias == null);
         getColorPicker().setDisable(alias == null);
 
         updateStreamViews();
@@ -126,7 +127,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
             getAliasListNameField().setText(alias.getAliasListName());
             getGroupField().setText(alias.getGroup());
             getNameField().setText(alias.getName());
-            getRecordToggleSwitch().setSelected(alias.isRecordable());
+            getRecordAudioToggleSwitch().setSelected(alias.isRecordable());
 
             Color color = ColorUtil.fromInteger(alias.getColor());
             getColorPicker().setValue(color);
@@ -136,7 +137,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
             getAliasListNameField().setText(null);
             getGroupField().setText(null);
             getNameField().setText(null);
-            getRecordToggleSwitch().setSelected(false);
+            getRecordAudioToggleSwitch().setSelected(false);
             getColorPicker().setValue(Color.BLACK);
         }
 
@@ -155,7 +156,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
                 alias.setAliasListName(getAliasListNameField().getText());
                 alias.setGroup(getGroupField().getText());
                 alias.setName(getNameField().getText());
-                alias.setRecordable(getRecordToggleSwitch().isSelected());
+                alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
             }
 
@@ -292,20 +293,6 @@ public class AliasConfigurationEditor extends Editor<Alias>
         return mAddStreamButton;
     }
 
-    private Button getAddAllStreamsButton()
-    {
-        if(mAddAllStreamsButton == null)
-        {
-            mAddAllStreamsButton = new Button();
-            mAddAllStreamsButton.setDisable(true);
-            mAddAllStreamsButton.setMaxWidth(Double.MAX_VALUE);
-            mAddAllStreamsButton.setGraphic(new IconNode(FontAwesome.ANGLE_DOUBLE_RIGHT));
-            mAddAllStreamsButton.setAlignment(Pos.CENTER);
-        }
-
-        return mAddAllStreamsButton;
-    }
-
     private Button getRemoveStreamButton()
     {
         if(mRemoveStreamButton == null)
@@ -318,20 +305,6 @@ public class AliasConfigurationEditor extends Editor<Alias>
         }
 
         return mRemoveStreamButton;
-    }
-
-    private Button getRemoveAllStreamsButton()
-    {
-        if(mRemoveAllStreamsButton == null)
-        {
-            mRemoveAllStreamsButton = new Button();
-            mRemoveAllStreamsButton.setDisable(true);
-            mRemoveAllStreamsButton.setMaxWidth(Double.MAX_VALUE);
-            mRemoveAllStreamsButton.setGraphic(new IconNode(FontAwesome.ANGLE_DOUBLE_LEFT));
-            mRemoveAllStreamsButton.setAlignment(Pos.CENTER);
-        }
-
-        return mRemoveAllStreamsButton;
     }
 
     private TitledPane getActionPane()
@@ -364,13 +337,13 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setHgrow(getAliasListNameField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getAliasListNameField());
 
-            Label recordAudioLabel = new Label("Record Audio");
-            GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
-            GridPane.setConstraints(recordAudioLabel, 2, 0);
-            mTextFieldPane.getChildren().add(recordAudioLabel);
+            Label colorLabel = new Label("Color");
+            GridPane.setHalignment(colorLabel, HPos.RIGHT);
+            GridPane.setConstraints(colorLabel, 2, 0);
+            mTextFieldPane.getChildren().add(colorLabel);
 
-            GridPane.setConstraints(getRecordToggleSwitch(), 3, 0);
-            mTextFieldPane.getChildren().add(getRecordToggleSwitch());
+            GridPane.setConstraints(getColorPicker(), 3, 0);
+            mTextFieldPane.getChildren().add(getColorPicker());
 
             Label groupLabel = new Label("Group");
             GridPane.setHalignment(groupLabel, HPos.RIGHT);
@@ -395,28 +368,51 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setHgrow(getNameField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getNameField());
 
-            Label colorLabel = new Label("Color");
-            GridPane.setHalignment(colorLabel, HPos.RIGHT);
-            GridPane.setConstraints(colorLabel, 2, 2);
-            mTextFieldPane.getChildren().add(colorLabel);
+            Label monitorAudioLabel = new Label("Monitor Audio");
+            GridPane.setHalignment(monitorAudioLabel, HPos.RIGHT);
+            GridPane.setConstraints(monitorAudioLabel, 2, 2);
+            mTextFieldPane.getChildren().add(monitorAudioLabel);
 
-            GridPane.setConstraints(getColorPicker(), 3, 2);
-            mTextFieldPane.getChildren().add(getColorPicker());
+            GridPane.setConstraints(getMonitorAudioToggleSwitch(), 3, 2);
+            mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
+
+            Label recordAudioLabel = new Label("Record Audio");
+            GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
+            GridPane.setConstraints(recordAudioLabel, 2, 3);
+            mTextFieldPane.getChildren().add(recordAudioLabel);
+
+            GridPane.setConstraints(getRecordAudioToggleSwitch(), 3, 3);
+            mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
+
         }
 
         return mTextFieldPane;
     }
 
-    private ToggleSwitch getRecordToggleSwitch()
+    private ToggleSwitch getMonitorAudioToggleSwitch()
     {
-        if(mRecordToggleSwitch == null)
+        if(mMonitorAudioToggleSwitch == null)
         {
-            mRecordToggleSwitch = new ToggleSwitch();
-            mRecordToggleSwitch.setDisable(true);
-            mRecordToggleSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+            mMonitorAudioToggleSwitch = new ToggleSwitch();
+            mMonitorAudioToggleSwitch.setDisable(true);
+            mMonitorAudioToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
-        return mRecordToggleSwitch;
+        return mMonitorAudioToggleSwitch;
+    }
+
+    private ToggleSwitch getRecordAudioToggleSwitch()
+    {
+        if(mRecordAudioToggleSwitch == null)
+        {
+            mRecordAudioToggleSwitch = new ToggleSwitch();
+            mRecordAudioToggleSwitch.setDisable(true);
+            mRecordAudioToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mRecordAudioToggleSwitch;
     }
 
     private ColorPicker getColorPicker()
