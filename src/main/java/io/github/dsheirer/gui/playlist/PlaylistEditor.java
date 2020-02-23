@@ -91,7 +91,8 @@ public class PlaylistEditor extends Application
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
         mPlaylistManager = new PlaylistManager(aliasModel, broadcastModel, new ChannelModel(), channelMapModel,
-            tunerModel, mUserPreferences, new ChannelProcessingManager(channelMapModel, new EventLogManager(mUserPreferences),
+            tunerModel, mUserPreferences, new ChannelProcessingManager(channelMapModel,
+            new EventLogManager(aliasModel, mUserPreferences),
             new RecorderManager(aliasModel, mUserPreferences),
             new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel), mUserPreferences),
             aliasModel, mUserPreferences));

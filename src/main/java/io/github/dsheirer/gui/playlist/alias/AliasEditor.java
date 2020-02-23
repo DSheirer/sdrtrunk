@@ -25,8 +25,6 @@ package io.github.dsheirer.gui.playlist.alias;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
@@ -171,21 +169,25 @@ public class AliasEditor extends SplitPane
             TableColumn aliasListNameColumn = new TableColumn();
             aliasListNameColumn.setText("Alias List");
             aliasListNameColumn.setCellValueFactory(new PropertyValueFactory<>("aliasListName"));
-            aliasListNameColumn.setPrefWidth(175);
+            aliasListNameColumn.setPrefWidth(160);
 
             TableColumn groupColumn = new TableColumn();
             groupColumn.setText("Group");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
-            groupColumn.setPrefWidth(175);
+            groupColumn.setPrefWidth(160);
 
             TableColumn nameColumn = new TableColumn();
             nameColumn.setText("Alias");
             nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
-            nameColumn.setPrefWidth(175);
+            nameColumn.setPrefWidth(160);
 
             TableColumn<Alias,Integer> colorColumn = new TableColumn("Color");
             colorColumn.setCellValueFactory(new PropertyValueFactory<>("color"));
             colorColumn.setCellFactory(new ColorizedCell());
+
+            TableColumn<Alias,String> iconColumn = new TableColumn("Icon");
+
+            TableColumn<Alias,Integer> monitorColumn = new TableColumn("Monitor");
 
             TableColumn<Alias,Boolean> recordColumn = new TableColumn("Record");
             recordColumn.setCellValueFactory(new PropertyValueFactory<>("recordable"));
@@ -195,44 +197,43 @@ public class AliasEditor extends SplitPane
             streamColumn.setCellValueFactory(new PropertyValueFactory<>("streamable"));
             streamColumn.setCellFactory(new IconCell(FontAwesome.VOLUME_UP, Color.DARKBLUE));
 
+            TableColumn<Alias,String> idsColumn = new TableColumn("IDs");
+            TableColumn<Alias,String> actionsColumn = new TableColumn("Actions");
+
+
             mAliasTableView.getColumns().addAll(aliasListNameColumn, groupColumn, nameColumn, colorColumn,
-                recordColumn, streamColumn);
+                iconColumn, monitorColumn, recordColumn, streamColumn, idsColumn, actionsColumn);
+
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
             FilteredList<Alias> filteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
                 p -> true);
 
-            getSearchField().textProperty().addListener(new ChangeListener<String>()
-            {
-                @Override
-                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue)
+            getSearchField().textProperty()
+                .addListener((observable, oldValue, newValue) -> filteredList.setPredicate(alias -> {
+                if(newValue == null || newValue.isEmpty())
                 {
-                    filteredList.setPredicate(alias -> {
-                        if(newValue == null || newValue.isEmpty())
-                        {
-                            return true;
-                        }
-
-                        String filterText = newValue.toLowerCase();
-
-                        if(alias.getName() != null && alias.getName().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-                        else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-                        else if(alias.getAliasListName() != null && alias.getAliasListName().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-
-                        return false;
-                    });
+                    return true;
                 }
-            });
+
+                String filterText = newValue.toLowerCase();
+
+                if(alias.getName() != null && alias.getName().toLowerCase().contains(filterText))
+                {
+                    return true;
+                }
+                else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(filterText))
+                {
+                    return true;
+                }
+                else if(alias.getAliasListName() != null && alias.getAliasListName().toLowerCase().contains(filterText))
+                {
+                    return true;
+                }
+
+                return false;
+            }));
 
             SortedList<Alias> sortedList = new SortedList<>(filteredList);
 
