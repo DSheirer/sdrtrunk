@@ -418,6 +418,9 @@ public class Alias
      */
     public void setCallPriority(int priority)
     {
+        AliasID priorityID = null;
+
+        for(AliasID aliasID: getAliasIdentifiers())
         if(priority == Priority.DO_NOT_MONITOR ||
             (Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY))
         {
