@@ -225,6 +225,11 @@
       <option name="name" value="BintrayJCenter" />
       <option name="url" value="https://jcenter.bintray.com/" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven" />
+      <option name="name" value="maven" />
+      <option name="url" value="https://jitpack.io" />
+    </remote-repository>
   </component>
   <component name="SvnBranchConfigurationManager">
     <option name="mySupportsUserInfoFilter" value="true" />
@@ -333,6 +338,22 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.fazecast/jSerialComm/2.5.0/b9e6222384a17cb10474b7f25768edf4b742ec16/jSerialComm-2.5.0-sources.jar!/" />
       </SOURCES>
     </library>
+    <library name="Gradle: com.github.dnault:libresample4j:master">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.dnault/libresample4j/master/188fc23592420c3848916d34e1df327d45e5ccd3/libresample4j-master.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.dnault/libresample4j/master/169939a76de61aee15dc6a1b230569e82d115bb7/libresample4j-master-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: com.github.DSheirer.jmbe:jmbe-api:1.0.0">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.DSheirer.jmbe/jmbe-api/1.0.0/b914e8f914b7b3d535d1e7bbbbb09ddd37bef726/jmbe-api-1.0.0.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
     <library name="Gradle: com.github.jiconfont:jiconfont-font_awesome:4.7.0.1">
       <CLASSES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont-font_awesome/4.7.0.1/121d019023f631af04a1357e637dd05a2cc91f7b/jiconfont-font_awesome-4.7.0.1.jar!/" />
@@ -376,6 +397,13 @@
       <SOURCES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.jiconfont/jiconfont/1.0.0/e79316fba9458423ce944fba6da101262549464/jiconfont-1.0.0-sources.jar!/" />
       </SOURCES>
+    </library>
+    <library name="Gradle: com.github.nwaldispuehl:java-lame:v3.98.4">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.nwaldispuehl/java-lame/v3.98.4/b4917736b83335704dc5af44671ea27a339cc496/java-lame-v3.98.4.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
     </library>
     <library name="Gradle: com.github.wendykierp:JTransforms:3.1">
       <CLASSES>
@@ -505,15 +533,15 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/eu.hansolo/charts/1.0.5/aa26011a2c525ddf86cb92ed23558b18c0174fa4/charts-1.0.5-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: io.github.dsheirer:radio-reference-api:15.1.1">
+    <library name="Gradle: io.github.dsheirer:radio-reference-api:15.1.2">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.1.1/139e7344a7e3f554ad9482d8ef732757368cfe2d/radio-reference-api-15.1.1.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.1.2/5af53224d83af52ba68bd690c8101e5fe2a492ff/radio-reference-api-15.1.2.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.1.1/fb5b287b5c3bb01cb0ee5d051b0ba16d0aeb6b5f/radio-reference-api-15.1.1-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.1.2/75cfe3736f421290f6796d943c1a4b05b32d8526/radio-reference-api-15.1.2-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.1.1/447bfd2f7a7fe4d9e67aebb1423dfc4e2ddb1564/radio-reference-api-15.1.1-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/io.github.dsheirer/radio-reference-api/15.1.2/250df667ec2cea0219a9951d3b2144d87d0cf755/radio-reference-api-15.1.2-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: javax.usb:usb-api:1.0.2">
@@ -560,15 +588,15 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-lang3/3.8.1/e9748d7783594da3735ad9724390a10e7cebc01d/commons-lang3-3.8.1-sources.jar!/" />
       </SOURCES>
     </library>
-    <library name="Gradle: org.apache.commons:commons-math3:3.5">
+    <library name="Gradle: org.apache.commons:commons-math3:3.6.1">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.5/13af68e9a11576953f5c4b09436f8207be9d3a27/commons-math3-3.5.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.6.1/e4ba98f1d4b3c80ec46392f25e094a6a2e58fcbf/commons-math3-3.6.1.jar!/" />
       </CLASSES>
       <JAVADOC>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.5/e6106a9927c5ee66d0e647ad116af26c9b6b5f06/commons-math3-3.5-javadoc.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.6.1/2e894b7acae199b5dff08bb596334594b5f23c28/commons-math3-3.6.1-javadoc.jar!/" />
       </JAVADOC>
       <SOURCES>
-        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.5/1d3f412d28c8bff0e8f048240b08bcd21cfa432e/commons-math3-3.5-sources.jar!/" />
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.apache.commons/commons-math3/3.6.1/8fab23986ea8886af34818daf32a718e81dc98ba/commons-math3-3.6.1-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.apache.mina:mina-core:2.0.19">
@@ -637,6 +665,17 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.codehaus.woodstox/stax2-api/3.1.4/b40604d61c01cc081a4a7bdfc562aa9847ee8857/stax2-api-3.1.4-sources.jar!/" />
       </SOURCES>
     </library>
+    <library name="Gradle: org.controlsfx:controlsfx:11.0.1">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.controlsfx/controlsfx/11.0.1/66df6f3526734d37226ea36cc32940083e6fb697/controlsfx-11.0.1.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.controlsfx/controlsfx/11.0.1/79c5c32f926c8315a344a04eafa8dd250b545927/controlsfx-11.0.1-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.controlsfx/controlsfx/11.0.1/5d8b9a51a5b463f583e114e95fdecc0071564a0b/controlsfx-11.0.1-sources.jar!/" />
+      </SOURCES>
+    </library>
     <library name="Gradle: org.hamcrest:hamcrest-core:1.3">
       <CLASSES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.hamcrest/hamcrest-core/1.3/42a25dc3219429f0e5d060061f71acb49bf010a0/hamcrest-core-1.3.jar!/" />
@@ -690,6 +729,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-base/11.0.2/c082cdf645f9833408dcd960bf68344c9384f569/javafx-base-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-controls:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/4ab633cf1eea60f76e2ae9905aedac862da88b08/javafx-controls-11.0.2.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/baa088249ee757119688e78d9c3a256928189902/javafx-controls-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-controls/11.0.2/1535a8b57f01a712405a739a0d69e09ab99dbb6b/javafx-controls-11.0.2-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.openjfx:javafx-controls:linux:11.0.2">
@@ -769,6 +819,28 @@
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-graphics/11.0.2/15eadef01f327a851a6d3af0ac89d56292076b13/javafx-graphics-11.0.2-sources.jar!/" />
       </SOURCES>
     </library>
+    <library name="Gradle: org.openjfx:javafx-media:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-media/11.0.2/30b3246c67f308de4d7aefbf99acef8d1dce32ad/javafx-media-11.0.2.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-media/11.0.2/20c892c5aa52ce3d87e3c37c9f60be46e328e342/javafx-media-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-media/11.0.2/b189a6ab9f7abdd2ede840e5a90b7002c521f370/javafx-media-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-media:linux:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-media/11.0.2/8bc5daaa19f2ff103cd85f751ad021eb71ba7db7/javafx-media-11.0.2-linux.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-media/11.0.2/20c892c5aa52ce3d87e3c37c9f60be46e328e342/javafx-media-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-media/11.0.2/b189a6ab9f7abdd2ede840e5a90b7002c521f370/javafx-media-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
     <library name="Gradle: org.openjfx:javafx-swing:linux:11.0.2">
       <CLASSES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/cb57db3e5bd1e2b62b17c8a504858bfc26fa54b1/javafx-swing-11.0.2-linux.jar!/" />
@@ -800,6 +872,17 @@
       </JAVADOC>
       <SOURCES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-swing/11.0.2/bcc8c0a402ff01a89a50888c9dc26824a9f3f2cc/javafx-swing-11.0.2-sources.jar!/" />
+      </SOURCES>
+    </library>
+    <library name="Gradle: org.openjfx:javafx-web:linux:11.0.2">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-web/11.0.2/49ca03e2fd58cbb0ad94f6a6bd11e0c043e541a7/javafx-web-11.0.2-linux.jar!/" />
+      </CLASSES>
+      <JAVADOC>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-web/11.0.2/851a1c3ecb65f69d69e25cb63958b9a607f665f2/javafx-web-11.0.2-javadoc.jar!/" />
+      </JAVADOC>
+      <SOURCES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.openjfx/javafx-web/11.0.2/b33e1bfa75ebf5a6816525a4c77d2a8aea0915c4/javafx-web-11.0.2-sources.jar!/" />
       </SOURCES>
     </library>
     <library name="Gradle: org.slf4j:slf4j-api:1.7.25">

@@ -43,7 +43,6 @@ import javafx.util.Callback;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -58,6 +57,7 @@ public class Alias
     private BooleanProperty mRecordable = new SimpleBooleanProperty();
     private BooleanProperty mStreamable = new SimpleBooleanProperty();
     private IntegerProperty mColor = new SimpleIntegerProperty();
+    private IntegerProperty mPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private StringProperty mAliasListName = new SimpleStringProperty();
     private StringProperty mGroup = new SimpleStringProperty();
     private StringProperty mIconName = new SimpleStringProperty();
@@ -79,6 +79,14 @@ public class Alias
     public Alias(String name)
     {
         mName.set(name);
+    }
+
+    /**
+     * Audio playback priority
+     */
+    public IntegerProperty priorityProperty()
+    {
+        return mPriority;
     }
 
     /**
@@ -296,8 +304,11 @@ public class Alias
      */
     public void removeAliasID(AliasID id)
     {
-        mAliasIDs.remove(id);
-        validate();
+        if(id != null)
+        {
+            mAliasIDs.remove(id);
+            validate();
+        }
     }
 
     /**
@@ -341,6 +352,23 @@ public class Alias
 
 
     /**
+     * Updates the playback priority this alias
+     */
+    private void updatePriority()
+    {
+        for(AliasID aliasID: mAliasIDs)
+        {
+            if(aliasID instanceof Priority)
+            {
+                mPriority.set(((Priority)aliasID).getPriority());
+                return;
+            }
+        }
+
+        mPriority.set(Priority.DEFAULT_PRIORITY);
+    }
+
+    /**
      * Updates the recordable status for this alias
      */
     private void updateRecordable()
@@ -379,6 +407,7 @@ public class Alias
      */
     public void validate()
     {
+        updatePriority();
         updateRecordable();
         updateStreamable();
     }
@@ -420,23 +449,21 @@ public class Alias
     {
         AliasID priorityID = null;
 
-        for(AliasID aliasID: getAliasIdentifiers())
-        if(priority == Priority.DO_NOT_MONITOR ||
-            (Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY))
+        for(AliasID aliasID: mAliasIDs)
         {
-            for(AliasID id : mAliasIDs)
+            if(aliasID instanceof Priority)
             {
-                if(id.getType() == AliasIDType.PRIORITY)
-                {
-                    ((Priority)id).setPriority(priority);
-                    return;
-                }
+                priorityID = aliasID;
             }
+        }
 
-            //If we don't find a priority id, create one
-            Priority p = new Priority();
-            p.setPriority(priority);
-            addAliasID(p);
+        removeAliasID(priorityID);
+
+        //Don't add a priority alias id if the priority is MAX_PRIORITY or DEFAULT_PRIORITY since the getCallPriority()
+        //will return that as the default value
+        if(priority == Priority.DO_NOT_MONITOR || (Priority.MIN_PRIORITY <= priority && priority < Priority.MAX_PRIORITY))
+        {
+            addAliasID(new Priority(priority));
         }
     }
 
@@ -454,24 +481,19 @@ public class Alias
      */
     public void setRecordable(boolean recordable)
     {
-        boolean currentRecordable = false;
+        AliasID recordID = null;
 
-        Iterator<AliasID> it = mAliasIDs.iterator();
-
-        while(it.hasNext())
+        for(AliasID aliasID: mAliasIDs)
         {
-            if(it.next() instanceof Record)
+            if(aliasID instanceof Record)
             {
-                currentRecordable = true;
-
-                if(!recordable)
-                {
-                    it.remove();
-                }
+                recordID = aliasID;
             }
         }
 
-        if(!currentRecordable && recordable)
+        removeAliasID(recordID);
+
+        if(recordable)
         {
             addAliasID(new Record());
         }
@@ -543,6 +565,26 @@ public class Alias
         {
             if(aliasID instanceof BroadcastChannel &&
                 ((BroadcastChannel)aliasID).getChannelName().contentEquals(channel))
+            {
+                toRemove.add(aliasID);
+            }
+        }
+
+        for(AliasID aliasID: toRemove)
+        {
+            removeAliasID(aliasID);
+        }
+    }
+
+    /**
+     * Removes (clears) all broadcast channels from this alias
+     */
+    public void removeAllBroadcastChannels()
+    {
+        List<AliasID> toRemove = new ArrayList<>();
+        for(AliasID aliasID: mAliasIDs)
+        {
+            if(aliasID instanceof BroadcastChannel)
             {
                 toRemove.add(aliasID);
             }

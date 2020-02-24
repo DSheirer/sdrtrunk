@@ -28,6 +28,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.playlist.PlaylistManager;
+import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
@@ -178,9 +179,27 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
                 boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
                 Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
-//                alias.setCallPriority();
 
+                if(canMonitor)
+                {
+                    if(priority == null)
+                    {
+                        priority = io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY;
+                    }
 
+                    alias.setCallPriority(priority);
+                }
+                else
+                {
+                    alias.setCallPriority(io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR);
+                }
+
+                //Store broadcast streaming audio channels
+                alias.removeAllBroadcastChannels();
+                for(BroadcastChannel selected: getSelectedStreamsView().getItems())
+                {
+                    alias.addAliasID(selected);
+                }
 
             }
 
@@ -308,10 +327,22 @@ public class AliasConfigurationEditor extends Editor<Alias>
         if(mAddStreamButton == null)
         {
             mAddStreamButton = new Button();
-            mAddStreamButton.setDisable(true);
+            mAddStreamButton.disableProperty().bind(Bindings.isEmpty(getAvailableStreamsView().getItems())
+                    .or(Bindings.isNull(getAvailableStreamsView().getSelectionModel().selectedItemProperty())));
             mAddStreamButton.setMaxWidth(Double.MAX_VALUE);
             mAddStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_RIGHT));
             mAddStreamButton.setAlignment(Pos.CENTER);
+            mAddStreamButton.setOnAction(event -> {
+                String stream = getAvailableStreamsView().getSelectionModel().getSelectedItem();
+
+                if(stream != null)
+                {
+                    getAvailableStreamsView().getItems().remove(stream);
+                    getSelectedStreamsView().getItems().add(new BroadcastChannel(stream));
+                    modifiedProperty().set(true);
+                }
+            });
+
         }
 
         return mAddStreamButton;
@@ -322,10 +353,21 @@ public class AliasConfigurationEditor extends Editor<Alias>
         if(mRemoveStreamButton == null)
         {
             mRemoveStreamButton = new Button();
-            mRemoveStreamButton.setDisable(true);
+            mRemoveStreamButton.disableProperty().bind(Bindings.isEmpty(getSelectedStreamsView().getItems())
+                    .or(Bindings.isNull(getSelectedStreamsView().getSelectionModel().selectedItemProperty())));
             mRemoveStreamButton.setMaxWidth(Double.MAX_VALUE);
             mRemoveStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_LEFT));
             mRemoveStreamButton.setAlignment(Pos.CENTER);
+            mRemoveStreamButton.setOnAction(event -> {
+                BroadcastChannel broadcastChannel = getSelectedStreamsView().getSelectionModel().getSelectedItem();
+
+                if(broadcastChannel != null)
+                {
+                    getSelectedStreamsView().getItems().remove(broadcastChannel);
+                    getAvailableStreamsView().getItems().add(broadcastChannel.getChannelName());
+                    modifiedProperty().set(true);
+                }
+            });
         }
 
         return mRemoveStreamButton;
@@ -361,13 +403,13 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setHgrow(getAliasListNameField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getAliasListNameField());
 
-            Label colorLabel = new Label("Color");
-            GridPane.setHalignment(colorLabel, HPos.RIGHT);
-            GridPane.setConstraints(colorLabel, 2, 0);
-            mTextFieldPane.getChildren().add(colorLabel);
+            Label recordAudioLabel = new Label("Record Audio");
+            GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
+            GridPane.setConstraints(recordAudioLabel, 2, 0);
+            mTextFieldPane.getChildren().add(recordAudioLabel);
 
-            GridPane.setConstraints(getColorPicker(), 3, 0);
-            mTextFieldPane.getChildren().add(getColorPicker());
+            GridPane.setConstraints(getRecordAudioToggleSwitch(), 3, 0);
+            mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
 
             Label groupLabel = new Label("Group");
             GridPane.setHalignment(groupLabel, HPos.RIGHT);
@@ -378,10 +420,22 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setHgrow(getGroupField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getGroupField());
 
-            Label iconLabel = new Label("Icon");
-            GridPane.setHalignment(iconLabel, HPos.RIGHT);
-            GridPane.setConstraints(iconLabel, 2, 1);
-            mTextFieldPane.getChildren().add(iconLabel);
+            Label monitorAudioLabel = new Label("Monitor Audio");
+            GridPane.setHalignment(monitorAudioLabel, HPos.RIGHT);
+            GridPane.setConstraints(monitorAudioLabel, 2, 1);
+            mTextFieldPane.getChildren().add(monitorAudioLabel);
+
+            GridPane.setConstraints(getMonitorAudioToggleSwitch(), 3, 1);
+            mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
+
+            Label colorLabel = new Label("Color");
+            GridPane.setHalignment(colorLabel, HPos.RIGHT);
+            GridPane.setConstraints(colorLabel, 4, 1);
+            mTextFieldPane.getChildren().add(colorLabel);
+
+            GridPane.setConstraints(getColorPicker(), 5, 1);
+            mTextFieldPane.getChildren().add(getColorPicker());
+
 
             Label nameLabel = new Label("Alias");
             GridPane.setHalignment(nameLabel, HPos.RIGHT);
@@ -392,30 +446,18 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setHgrow(getNameField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getNameField());
 
-            Label monitorAudioLabel = new Label("Monitor Audio");
-            GridPane.setHalignment(monitorAudioLabel, HPos.RIGHT);
-            GridPane.setConstraints(monitorAudioLabel, 2, 2);
-            mTextFieldPane.getChildren().add(monitorAudioLabel);
-
-            GridPane.setConstraints(getMonitorAudioToggleSwitch(), 3, 2);
-            mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
-
             Label monitorPriorityLabel = new Label("Monitor Priority");
             GridPane.setHalignment(monitorPriorityLabel, HPos.RIGHT);
-            GridPane.setConstraints(monitorPriorityLabel, 2, 3);
+            GridPane.setConstraints(monitorPriorityLabel, 2, 2);
             mTextFieldPane.getChildren().add(monitorPriorityLabel);
 
-            GridPane.setConstraints(getMonitorPriorityComboBox(), 3, 3);
+            GridPane.setConstraints(getMonitorPriorityComboBox(), 3, 2);
             mTextFieldPane.getChildren().add(getMonitorPriorityComboBox());
 
-            Label recordAudioLabel = new Label("Record Audio");
-            GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
-            GridPane.setConstraints(recordAudioLabel, 2, 4);
-            mTextFieldPane.getChildren().add(recordAudioLabel);
-
-            GridPane.setConstraints(getRecordAudioToggleSwitch(), 3, 4);
-            mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
-
+            Label iconLabel = new Label("Icon");
+            GridPane.setHalignment(iconLabel, HPos.RIGHT);
+            GridPane.setConstraints(iconLabel, 4, 2);
+            mTextFieldPane.getChildren().add(iconLabel);
         }
 
         return mTextFieldPane;

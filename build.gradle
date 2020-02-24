@@ -71,6 +71,7 @@ dependencies {
     implementation 'org.apache.commons:commons-io:1.3.2'
     implementation 'org.apache.mina:mina-core:2.0.19'
     implementation 'org.apache.mina:mina-http:2.0.19'
+    implementation 'org.controlsfx:controlsfx:11.0.1'
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation 'org.usb4java:libusb4java:1.3.0'
     implementation 'org.usb4java:usb4java:1.3.0'
