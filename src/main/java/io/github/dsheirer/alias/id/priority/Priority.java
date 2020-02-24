@@ -39,6 +39,11 @@ public class Priority extends AliasID
     {
     }
 
+    public Priority(int priority)
+    {
+        mPriority = priority;
+    }
+
     @Override
     public boolean isValid()
     {

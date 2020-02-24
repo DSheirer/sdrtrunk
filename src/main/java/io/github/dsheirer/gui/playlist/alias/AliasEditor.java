@@ -171,17 +171,17 @@ public class AliasEditor extends SplitPane
             TableColumn aliasListNameColumn = new TableColumn();
             aliasListNameColumn.setText("Alias List");
             aliasListNameColumn.setCellValueFactory(new PropertyValueFactory<>("aliasListName"));
-            aliasListNameColumn.setPrefWidth(160);
+            aliasListNameColumn.setPrefWidth(140);
 
             TableColumn groupColumn = new TableColumn();
             groupColumn.setText("Group");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
-            groupColumn.setPrefWidth(160);
+            groupColumn.setPrefWidth(140);
 
             TableColumn nameColumn = new TableColumn();
             nameColumn.setText("Alias");
             nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
-            nameColumn.setPrefWidth(160);
+            nameColumn.setPrefWidth(140);
 
             TableColumn<Alias,Integer> colorColumn = new TableColumn("Color");
             colorColumn.setCellValueFactory(new PropertyValueFactory<>("color"));
@@ -189,7 +189,9 @@ public class AliasEditor extends SplitPane
 
             TableColumn<Alias,String> iconColumn = new TableColumn("Icon");
 
-            TableColumn<Alias,Integer> monitorColumn = new TableColumn("Monitor");
+            TableColumn<Alias,Integer> priorityColumn = new TableColumn("Priority");
+            priorityColumn.setCellFactory(new PriorityCellFactory());
+            priorityColumn.setCellValueFactory(new PropertyValueFactory<>("priority"));
 
             TableColumn<Alias,Boolean> recordColumn = new TableColumn("Record");
             recordColumn.setCellValueFactory(new PropertyValueFactory<>("recordable"));
@@ -209,7 +211,7 @@ public class AliasEditor extends SplitPane
 
 
             mAliasTableView.getColumns().addAll(aliasListNameColumn, groupColumn, nameColumn, colorColumn,
-                iconColumn, monitorColumn, recordColumn, streamColumn, idsColumn, actionsColumn);
+                iconColumn, priorityColumn, recordColumn, streamColumn, idsColumn, actionsColumn);
 
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
 
@@ -290,7 +292,7 @@ public class AliasEditor extends SplitPane
                 @Override
                 public void handle(ActionEvent event)
                 {
-                    Alias alias = new Alias();
+                    Alias alias = new Alias("New Alias");
                     mPlaylistManager.getAliasModel().addAlias(alias);
                     setAlias(alias);
                 }
@@ -487,6 +489,52 @@ public class AliasEditor extends SplitPane
         public CenteredCountCell()
         {
             setAlignment(Pos.CENTER);
+        }
+    }
+
+    public class PriorityCellFactory implements Callback<TableColumn<Alias, Integer>, TableCell<Alias, Integer>>
+    {
+        @Override
+        public TableCell<Alias, Integer> call(TableColumn<Alias, Integer> param)
+        {
+            TableCell tableCell = new TableCell<Alias,Integer>()
+            {
+                @Override
+                protected void updateItem(Integer item, boolean empty)
+                {
+                    if(empty)
+                    {
+                        setText(null);
+                        setGraphic(null);
+                    }
+                    else if(item == io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR)
+                    {
+                        setText(null);
+                        final IconNode iconNode = new IconNode(FontAwesome.VOLUME_OFF);
+                        iconNode.setIconSize(20);
+                        iconNode.setFill(Color.RED);
+                        setGraphic(iconNode);
+                    }
+                    else if(item == io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY)
+                    {
+                        setText("Default");
+                        final IconNode iconNode = new IconNode(FontAwesome.VOLUME_UP);
+                        iconNode.setIconSize(20);
+                        iconNode.setFill(Color.GREEN);
+                        setGraphic(iconNode);
+                    }
+                    else
+                    {
+                        setText(item.toString());
+                        final IconNode iconNode = new IconNode(FontAwesome.VOLUME_UP);
+                        iconNode.setIconSize(20);
+                        iconNode.setFill(Color.GREEN);
+                        setGraphic(iconNode);
+                    }
+                }
+            };
+
+            return tableCell;
         }
     }
 }
