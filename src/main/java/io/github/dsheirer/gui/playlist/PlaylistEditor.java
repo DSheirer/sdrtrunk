@@ -95,7 +95,7 @@ public class PlaylistEditor extends Application
             new EventLogManager(aliasModel, mUserPreferences),
             new RecorderManager(aliasModel, mUserPreferences),
             new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel), mUserPreferences),
-            aliasModel, mUserPreferences));
+            aliasModel, mUserPreferences), new IconManager());
 
         mPlaylistManager.init();
 

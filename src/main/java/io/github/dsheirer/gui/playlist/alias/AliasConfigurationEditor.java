@@ -27,6 +27,7 @@ import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.gui.playlist.Editor;
+import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
@@ -43,6 +44,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
+import javafx.scene.image.Image;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -75,6 +77,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private ToggleSwitch mRecordAudioToggleSwitch;
     private ColorPicker mColorPicker;
+    private ComboBox mIconNodeComboBox;
     private SuggestionProvider<String> mListSuggestionProvider;
     private SuggestionProvider<String> mGroupSuggestionProvider;
     private VBox mTitledPanesBox;
@@ -458,6 +461,9 @@ public class AliasConfigurationEditor extends Editor<Alias>
             GridPane.setHalignment(iconLabel, HPos.RIGHT);
             GridPane.setConstraints(iconLabel, 4, 2);
             mTextFieldPane.getChildren().add(iconLabel);
+
+            GridPane.setConstraints(getIconNodeComboBox(), 5, 2);
+            mTextFieldPane.getChildren().add(getIconNodeComboBox());
         }
 
         return mTextFieldPane;
@@ -521,6 +527,31 @@ public class AliasConfigurationEditor extends Editor<Alias>
         }
 
         return mColorPicker;
+    }
+
+    private ComboBox getIconNodeComboBox()
+    {
+        if(mIconNodeComboBox == null)
+        {
+            mIconNodeComboBox = new ComboBox<>();
+
+            Icon[] icons = mPlaylistManager.getIconManager().getIcons();
+
+            for(Icon icon: icons)
+            {
+                if(icon.getPath().startsWith("C:"))
+                {
+
+                }
+                else
+                {
+                    System.out.println("Url:" + icon.getPath());
+                    mIconNodeComboBox.getItems().add(new Image(icon.getPath()));
+                }
+            }
+        }
+
+        return mIconNodeComboBox;
     }
 
     /**
