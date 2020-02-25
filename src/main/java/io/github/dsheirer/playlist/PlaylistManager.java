@@ -35,6 +35,7 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapEvent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
@@ -64,6 +65,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
+    private IconManager mIconManager;
     private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
     private ChannelProcessingManager mChannelProcessingManager;
@@ -83,7 +85,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
      */
     public PlaylistManager(AliasModel aliasModel, BroadcastModel broadcastModel, ChannelModel channelModel,
                            ChannelMapModel channelMapModel, TunerModel tunerModel, UserPreferences userPreferences,
-                           ChannelProcessingManager channelProcessingManager)
+                           ChannelProcessingManager channelProcessingManager, IconManager iconManager)
     {
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
@@ -93,6 +95,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         mUserPreferences = userPreferences;
         mChannelProcessingManager = channelProcessingManager;
         mRadioReference = new RadioReference(mUserPreferences);
+        mIconManager = iconManager;
 
         //Register for alias, channel and channel map events so that we can
         //save the playlist when there are any changes
@@ -158,6 +161,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
     public AliasModel getAliasModel()
     {
         return mAliasModel;
+    }
+
+    /**
+     * Icon manager
+     */
+    public IconManager getIconManager()
+    {
+        return mIconManager;
     }
 
     /**
