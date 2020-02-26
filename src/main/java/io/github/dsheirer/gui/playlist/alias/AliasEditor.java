@@ -23,6 +23,7 @@
 package io.github.dsheirer.gui.playlist.alias;
 
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -45,6 +46,8 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -188,6 +191,8 @@ public class AliasEditor extends SplitPane
             colorColumn.setCellFactory(new ColorizedCell());
 
             TableColumn<Alias,String> iconColumn = new TableColumn("Icon");
+            iconColumn.setCellValueFactory(new PropertyValueFactory<>("iconName"));
+            iconColumn.setCellFactory(new IconTableCellFactory());
 
             TableColumn<Alias,Integer> priorityColumn = new TableColumn("Priority");
             priorityColumn.setCellFactory(new PriorityCellFactory());
@@ -509,7 +514,7 @@ public class AliasEditor extends SplitPane
                     }
                     else if(item == io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR)
                     {
-                        setText(null);
+                        setText("Mute");
                         final IconNode iconNode = new IconNode(FontAwesome.VOLUME_OFF);
                         iconNode.setIconSize(20);
                         iconNode.setFill(Color.RED);
@@ -530,6 +535,40 @@ public class AliasEditor extends SplitPane
                         iconNode.setIconSize(20);
                         iconNode.setFill(Color.GREEN);
                         setGraphic(iconNode);
+                    }
+                }
+            };
+
+            return tableCell;
+        }
+    }
+
+    public class IconTableCellFactory implements Callback<TableColumn<Alias, String>, TableCell<Alias, String>>
+    {
+        @Override
+        public TableCell<Alias, String> call(TableColumn<Alias, String> param)
+        {
+            TableCell<Alias,String> tableCell = new TableCell<>()
+            {
+                @Override
+                protected void updateItem(String item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+                    setAlignment(Pos.CENTER);
+
+                    if(empty)
+                    {
+                        setGraphic(null);
+                    }
+                    else
+                    {
+                        if(getTableRow() != null)
+                        {
+                            Alias alias = getTableRow().getItem();
+                            Icon icon = mPlaylistManager.getIconManager().getModel().getIcon(alias.getIconName());
+                            Image image = new Image(icon.getPath(), 0, 16, true, true);
+                            setGraphic(new ImageView(image));
+                        }
                     }
                 }
             };

@@ -40,17 +40,20 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
+import javafx.util.Callback;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconFontFX;
 import jiconfont.javafx.IconNode;
@@ -77,7 +80,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private ToggleSwitch mRecordAudioToggleSwitch;
     private ColorPicker mColorPicker;
-    private ComboBox mIconNodeComboBox;
+    private ComboBox<Icon> mIconNodeComboBox;
     private SuggestionProvider<String> mListSuggestionProvider;
     private SuggestionProvider<String> mGroupSuggestionProvider;
     private VBox mTitledPanesBox;
@@ -118,12 +121,14 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
         refreshAutoCompleteBindings();
 
-        getAliasListNameField().setDisable(alias == null);
-        getGroupField().setDisable(alias == null);
-        getNameField().setDisable(alias == null);
-        getRecordAudioToggleSwitch().setDisable(alias == null);
-        getColorPicker().setDisable(alias == null);
-        getMonitorAudioToggleSwitch().setDisable(alias == null);
+        boolean disable = (alias == null);
+        getAliasListNameField().setDisable(disable);
+        getGroupField().setDisable(disable);
+        getNameField().setDisable(disable);
+        getRecordAudioToggleSwitch().setDisable(disable);
+        getColorPicker().setDisable(disable);
+        getMonitorAudioToggleSwitch().setDisable(disable);
+        getIconNodeComboBox().setDisable(disable);
 
         updateStreamViews();
 
@@ -133,6 +138,14 @@ public class AliasConfigurationEditor extends Editor<Alias>
             getGroupField().setText(alias.getGroup());
             getNameField().setText(alias.getName());
             getRecordAudioToggleSwitch().setSelected(alias.isRecordable());
+
+            Icon icon = null;
+            String iconName = alias.getIconName();
+            if(iconName != null)
+            {
+                icon = mPlaylistManager.getIconManager().getModel().getIcon(iconName);
+            }
+            getIconNodeComboBox().getSelectionModel().select(icon);
 
             int monitorPriority = alias.getPlaybackPriority();
 
@@ -182,6 +195,9 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
                 boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
                 Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
+
+                Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
+                alias.setIconName(icon != null ? icon.getName() : null);
 
                 if(canMonitor)
                 {
@@ -529,26 +545,16 @@ public class AliasConfigurationEditor extends Editor<Alias>
         return mColorPicker;
     }
 
-    private ComboBox getIconNodeComboBox()
+    private ComboBox<Icon> getIconNodeComboBox()
     {
         if(mIconNodeComboBox == null)
         {
             mIconNodeComboBox = new ComboBox<>();
-
-            Icon[] icons = mPlaylistManager.getIconManager().getIcons();
-
-            for(Icon icon: icons)
-            {
-                if(icon.getPath().startsWith("C:"))
-                {
-
-                }
-                else
-                {
-                    System.out.println("Url:" + icon.getPath());
-                    mIconNodeComboBox.getItems().add(new Image(icon.getPath()));
-                }
-            }
+            mIconNodeComboBox.setDisable(true);
+            mIconNodeComboBox.getItems().addAll(mPlaylistManager.getIconManager().getIcons());
+            mIconNodeComboBox.setCellFactory(new IconCellFactory());
+            mIconNodeComboBox.getSelectionModel().selectedItemProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mIconNodeComboBox;
@@ -680,6 +686,45 @@ public class AliasConfigurationEditor extends Editor<Alias>
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue)
         {
             modifiedProperty().set(true);
+        }
+    }
+
+    /**
+     * Cell factory for combo box for dislaying icon name and graphic
+     */
+    public class IconCellFactory implements Callback<ListView<Icon>, ListCell<Icon>>
+    {
+        @Override
+        public ListCell<Icon> call(ListView<Icon> param)
+        {
+            ListCell<Icon> cell = new ListCell<>()
+            {
+                @Override
+                protected void updateItem(Icon item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+
+                    if(empty)
+                    {
+                        setText(null);
+                        setGraphic(null);
+                    }
+                    else
+                    {
+                        setText(item.getName());
+
+                        String path = item.getPath();
+
+                        if(path.startsWith("images"))
+                        {
+                            Image image = new Image(path, 0, 20, true, true);
+                            setGraphic(new ImageView(image));
+                        }
+                    }
+                }
+            };
+
+            return cell;
         }
     }
 
