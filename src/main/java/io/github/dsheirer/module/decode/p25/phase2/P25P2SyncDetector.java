@@ -151,7 +151,6 @@ public class P25P2SyncDetector implements Listener<Dibit>
                 @Override
                 public void syncDetected(int bitErrors)
                 {
-                    mLog.debug("PLL Phase Inversion Lock Detected: " + mFrameSync.name());
                     mPhaseLockedLoop.correctInversion(mPllCorrection);
                 }
 
