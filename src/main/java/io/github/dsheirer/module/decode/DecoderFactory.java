@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode;
 
@@ -135,16 +132,8 @@ public class DecoderFactory
     {
         List<Module> modules = new ArrayList<Module>();
 
-        //Adds an alias action manager when there are alias actions specified
-        if(channel.getAliasListName() != null && !channel.getAliasListName().isEmpty())
-        {
-            AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
-
-            if(aliasList != null && aliasList.hasAliasActions())
-            {
-                modules.add(new AliasActionManager(aliasList));
-            }
-        }
+        AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
+        modules.add(new AliasActionManager(aliasList));
 
         ChannelType channelType = channel.getChannelType();
 
@@ -157,12 +146,13 @@ public class DecoderFactory
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
 
+                AudioModule audioModuleAM = new AudioModule(aliasList);
+                modules.add(audioModuleAM);
+
                 //Check if the user wants all audio recorded ..
                 if(((DecodeConfigAM)decodeConfig).getRecordAudio())
                 {
-                    AudioModule audioModuleAM = new AudioModule();
                     audioModuleAM.setRecordAudio(true);
-                    modules.add(audioModuleAM);
                 }
 
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
@@ -173,7 +163,7 @@ public class DecoderFactory
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                AudioModule audioModuleFM = new AudioModule();
+                AudioModule audioModuleFM = new AudioModule(aliasList);
 
                 //Check if the user wants all audio recorded ..
                 if(((DecodeConfigNBFM)decodeConfig).getRecordAudio())
@@ -190,7 +180,7 @@ public class DecoderFactory
                 MessageDirection direction = ((DecodeConfigLTRStandard)decodeConfig).getMessageDirection();
                 modules.add(new LTRStandardDecoder(null, direction));
                 modules.add(new LTRStandardDecoderState());
-                modules.add(new AudioModule());
+                modules.add(new AudioModule(aliasList));
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -199,7 +189,7 @@ public class DecoderFactory
             case LTR_NET:
                 modules.add(new LTRNetDecoder((DecodeConfigLTRNet)decodeConfig));
                 modules.add(new LTRNetDecoderState());
-                modules.add(new AudioModule());
+                modules.add(new AudioModule(aliasList));
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -210,7 +200,7 @@ public class DecoderFactory
                 ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
                 Sync sync = mptConfig.getSync();
                 modules.add(new MPT1327Decoder(sync));
-                modules.add(new AudioModule());
+                modules.add(new AudioModule(aliasList));
                 SourceType sourceType = channel.getSourceConfiguration().getSourceType();
                 if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
                 {
@@ -242,7 +232,7 @@ public class DecoderFactory
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig));
                 modules.add(new PassportDecoderState());
-                modules.add(new AudioModule());
+                modules.add(new AudioModule(aliasList));
                 if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
                 {
                     modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
@@ -275,7 +265,7 @@ public class DecoderFactory
                     modules.add(new P25P1DecoderState(channel));
                 }
 
-                modules.add(new P25P1AudioModule(userPreferences));
+                modules.add(new P25P1AudioModule(userPreferences, aliasList));
 
                 //Add a channel rotation monitor when we have multiple control channel frequencies specified
                 if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
@@ -291,8 +281,8 @@ public class DecoderFactory
 
                 modules.add(new P25P2DecoderState(channel, 0));
                 modules.add(new P25P2DecoderState(channel, 1));
-                modules.add(new P25P2AudioModule(userPreferences, 0));
-                modules.add(new P25P2AudioModule(userPreferences, 1));
+                modules.add(new P25P2AudioModule(userPreferences, 0, aliasList));
+                modules.add(new P25P2AudioModule(userPreferences, 1, aliasList));
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");

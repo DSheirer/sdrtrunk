@@ -1,29 +1,28 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.IAudioPacketListener;
-import io.github.dsheirer.audio.IAudioPacketProvider;
+import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.AudioSegmentBroadcaster;
+import io.github.dsheirer.audio.IAudioSegmentListener;
+import io.github.dsheirer.audio.IAudioSegmentProvider;
 import io.github.dsheirer.audio.codec.mbe.MBECallSequenceRecorder;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
@@ -60,7 +59,6 @@ import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferListener;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
@@ -103,10 +101,10 @@ public class ProcessingChain implements Listener<ChannelEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ProcessingChain.class);
 
-    private ReusableBufferBroadcaster<ReusableAudioPacket> mAudioPacketBroadcaster = new ReusableBufferBroadcaster<>();
     private ReusableBufferBroadcaster<ReusableFloatBuffer> mDemodulatedAudioBufferBroadcaster = new ReusableBufferBroadcaster();
     private ReusableBufferBroadcaster<ReusableComplexBuffer> mBasebandComplexBufferBroadcaster = new ReusableBufferBroadcaster();
     private ReusableBufferBroadcaster<ReusableByteBuffer> mDemodulatedBitstreamBufferBroadcaster = new ReusableBufferBroadcaster();
+    private Broadcaster<AudioSegment> mAudioSegmentBroadcaster = new AudioSegmentBroadcaster<>();
     private Broadcaster<IDecodeEvent> mDecodeEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
@@ -180,7 +178,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
 
         mModules.clear();
 
-        mAudioPacketBroadcaster.dispose();
+        mAudioSegmentBroadcaster.dispose();
         mDecodeEventBroadcaster.dispose();
         mChannelEventBroadcaster.dispose();
         mBasebandComplexBufferBroadcaster.dispose();
@@ -196,14 +194,6 @@ public class ProcessingChain implements Listener<ChannelEvent>
     public boolean isProcessing()
     {
         return mRunning.get();
-    }
-
-    /**
-     * Indicates if this chain currently has a valid sample source.
-     */
-    public boolean hasSource()
-    {
-        return mSource != null;
     }
 
     /**
@@ -318,9 +308,9 @@ public class ProcessingChain implements Listener<ChannelEvent>
             mIdentifierUpdateNotificationBroadcaster.addListener(((IdentifierUpdateListener)module).getIdentifierUpdateListener());
         }
 
-        if(module instanceof IAudioPacketListener)
+        if(module instanceof IAudioSegmentListener)
         {
-            mAudioPacketBroadcaster.addListener(((IAudioPacketListener)module).getAudioPacketListener());
+            mAudioSegmentBroadcaster.addListener(((IAudioSegmentListener)module).getAudioSegmentListener());
         }
 
         if(module instanceof IDecodeEventListener)
@@ -390,9 +380,9 @@ public class ProcessingChain implements Listener<ChannelEvent>
             mIdentifierUpdateNotificationBroadcaster.removeListener(((IdentifierUpdateListener)module).getIdentifierUpdateListener());
         }
 
-        if(module instanceof IAudioPacketListener)
+        if(module instanceof IAudioSegmentListener)
         {
-            mAudioPacketBroadcaster.removeListener(((IAudioPacketListener)module).getAudioPacketListener());
+            mAudioSegmentBroadcaster.removeListener(((IAudioSegmentListener)module).getAudioSegmentListener());
         }
 
         if(module instanceof IDecodeEventListener)
@@ -457,9 +447,9 @@ public class ProcessingChain implements Listener<ChannelEvent>
             ((IdentifierUpdateProvider)module).setIdentifierUpdateListener(mIdentifierUpdateNotificationBroadcaster);
         }
 
-        if(module instanceof IAudioPacketProvider)
+        if(module instanceof IAudioSegmentProvider)
         {
-            ((IAudioPacketProvider)module).setAudioPacketListener(mAudioPacketBroadcaster);
+            ((IAudioSegmentProvider)module).setAudioSegmentListener(mAudioSegmentBroadcaster);
         }
 
         if(module instanceof IDecodeEventProvider)
@@ -524,9 +514,9 @@ public class ProcessingChain implements Listener<ChannelEvent>
             ((IdentifierUpdateProvider)module).removeIdentifierUpdateListener();
         }
 
-        if(module instanceof IAudioPacketProvider)
+        if(module instanceof IAudioSegmentProvider)
         {
-            ((IAudioPacketProvider)module).setAudioPacketListener(null);
+            ((IAudioSegmentProvider)module).setAudioSegmentListener(null);
         }
 
         if(module instanceof IReusableByteBufferProvider)
@@ -733,14 +723,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
     /**
      * Adds the listener to receive audio packets from all modules.
      */
-    public void addAudioPacketListener(Listener<ReusableAudioPacket> listener)
+    public void addAudioSegmentListener(Listener<AudioSegment> listener)
     {
-        mAudioPacketBroadcaster.addListener(listener);
+        mAudioSegmentBroadcaster.addListener(listener);
     }
 
-    public void removeAudioPacketListener(Listener<ReusableAudioPacket> listener)
+    public void removeAudioSegmentListener(Listener<AudioSegment> listener)
     {
-        mAudioPacketBroadcaster.removeListener(listener);
+        mAudioSegmentBroadcaster.removeListener(listener);
     }
 
     /**

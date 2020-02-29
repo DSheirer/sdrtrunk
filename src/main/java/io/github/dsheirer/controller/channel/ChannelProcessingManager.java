@@ -22,6 +22,7 @@
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
@@ -42,10 +43,8 @@ import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderFactory;
-import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
@@ -71,14 +70,13 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private static final String TUNER_UNAVAILABLE_DESCRIPTION = "TUNER UNAVAILABLE";
     private Map<Channel,ProcessingChain> mProcessingChains = new HashMap<>();
 
-    private List<Listener<ReusableAudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
+    private List<Listener<AudioSegment>> mAudioSegmentListeners = new CopyOnWriteArrayList<>();
     private List<Listener<IDecodeEvent>> mDecodeEventListeners = new CopyOnWriteArrayList<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
     private ChannelMapModel mChannelMapModel;
     private ChannelMetadataModel mChannelMetadataModel;
     private EventLogManager mEventLogManager;
-    private RecorderManager mRecorderManager;
     private SourceManager mSourceManager;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
@@ -88,18 +86,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      *
      * @param channelMapModel containing channel maps defined by the user
      * @param eventLogManager for adding event loggers to channels
-     * @param recorderManager for receiving audio packets produced by the channel
      * @param sourceManager for obtaining a tuner channel source for the channel
      * @param aliasModel for aliasing of identifiers produced by the channel
      * @param userPreferences for user defined behavior and settings
      */
     public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    RecorderManager recorderManager, SourceManager sourceManager,
-                                    AliasModel aliasModel, UserPreferences userPreferences)
+                                    SourceManager sourceManager, AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
-        mRecorderManager = recorderManager;
         mSourceManager = sourceManager;
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
@@ -253,9 +248,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             mChannelEventBroadcaster.addListener(processingChain);
 
             /* Register global listeners */
-            for(Listener<ReusableAudioPacket> listener : mAudioPacketListeners)
+            for(Listener<AudioSegment> listener : mAudioSegmentListeners)
             {
-                processingChain.addAudioPacketListener(listener);
+                processingChain.addAudioSegmentListener(listener);
             }
 
             for(Listener<IDecodeEvent> listener : mDecodeEventListeners)
@@ -314,7 +309,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         }
 
         //Add recorders
-        processingChain.addModules(RecorderFactory.getRecorders(mRecorderManager, mUserPreferences, channel));
+        processingChain.addModules(RecorderFactory.getRecorders(mUserPreferences, channel));
 
         //Set the samples source
         processingChain.setSource(source);
@@ -423,13 +418,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public void shutdown()
     {
-        mLog.debug("Stopping Channels ...");
-
         List<Channel> channelsToStop = new ArrayList<>(mProcessingChains.keySet());
 
         for(Channel channel : channelsToStop)
         {
-            mLog.debug("Stopping channel: " + channel.toString());
+            mLog.info("Stopping channel: " + channel.toString());
             stopProcessing(channel, true);
         }
     }
@@ -438,17 +431,17 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * Adds a message listener that will be added to all channels to receive
      * any messages.
      */
-    public void addAudioPacketListener(Listener<ReusableAudioPacket> listener)
+    public void addAudioSegmentListener(Listener<AudioSegment> listener)
     {
-        mAudioPacketListeners.add(listener);
+        mAudioSegmentListeners.add(listener);
     }
 
     /**
      * Removes a message listener.
      */
-    public void removeAudioPacketListener(Listener<ReusableAudioPacket> listener)
+    public void removeAudioSegmentListener(Listener<AudioSegment> listener)
     {
-        mAudioPacketListeners.remove(listener);
+        mAudioSegmentListeners.remove(listener);
     }
 
     /**

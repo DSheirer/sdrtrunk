@@ -19,7 +19,7 @@
 package io.github.dsheirer.audio.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.mixer.MixerChannel;
 
 import javax.sound.sampled.Mixer;
@@ -34,23 +34,21 @@ public class MonoAudioOutput extends AudioOutput
 {
     private final static int BUFFER_SIZE = 8000;
 
-    public MonoAudioOutput(Mixer mixer)
+    public MonoAudioOutput(Mixer mixer, UserPreferences userPreferences)
     {
         super(mixer, MixerChannel.MONO, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO,
-            AudioFormats.MONO_SOURCE_DATALINE_INFO, BUFFER_SIZE);
+            AudioFormats.MONO_SOURCE_DATALINE_INFO, BUFFER_SIZE, userPreferences);
     }
 
     /**
      * Converts the audio packet data into mono audio frames.
      */
-    protected ByteBuffer convert(ReusableAudioPacket packet)
+    protected ByteBuffer convert(float[] samples)
     {
         ByteBuffer buffer = null;
 
-        if(packet.hasAudioSamples())
+        if(samples.length > 0)
         {
-            float[] samples = packet.getAudioSamples();
-
 			/* Little-endian byte buffer */
             buffer = ByteBuffer.allocate(samples.length * 2).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -61,8 +59,6 @@ public class MonoAudioOutput extends AudioOutput
                 shortBuffer.put((short) (sample * Short.MAX_VALUE));
             }
         }
-
-        packet.decrementUserCount();
 
         return buffer;
     }

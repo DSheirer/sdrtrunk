@@ -1,27 +1,25 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.audio;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
@@ -39,7 +37,6 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToT
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,14 +67,14 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
 
-    public P25P2AudioModule(UserPreferences userPreferences, int timeslot)
+    public P25P2AudioModule(UserPreferences userPreferences, int timeslot, AliasList aliasList)
     {
-        super(userPreferences);
+        super(userPreferences, aliasList);
         mTimeslot = timeslot;
         getIdentifierCollection().setTimeslot(timeslot);
     }
 
-    private int getTimeslot()
+    protected int getTimeslot()
     {
         return mTimeslot;
     }
@@ -102,12 +99,6 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     public void start()
     {
         reset();
-    }
-
-    @Override
-    public void stop()
-    {
-
     }
 
     /**
@@ -149,7 +140,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 //There should not be any pending voice timeslots to process since the PTT message is the first in
                 //the audio call sequence
             }
-            else if(message instanceof EncryptionSynchronizationSequence)
+            else if(message instanceof EncryptionSynchronizationSequence && message.isValid())
             {
                 mEncryptedCallStateEstablished = true;
                 mEncryptedCall = ((EncryptionSynchronizationSequence)message).isEncrypted();
@@ -174,7 +165,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
     private void processAudio(List<BinaryMessage> voiceFrames)
     {
-        if(hasAudioCodec() && hasAudioPacketListener())
+        if(hasAudioCodec())
         {
             for(BinaryMessage voiceFrame: voiceFrames)
             {
@@ -182,13 +173,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
                 IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
                 processMetadata(audioWithMetadata);
-
-                ReusableAudioPacket audioPacket = getAudioPacketQueue().getBuffer(audioWithMetadata.getAudio().length);
-                audioPacket.resetAttributes();
-                audioPacket.setAudioChannelId(getAudioChannelId());
-                audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                audioPacket.loadAudioFrom(audioWithMetadata.getAudio());
-                getAudioPacketListener().receive(audioPacket);
+                addAudio(audioWithMetadata.getAudio());
             }
         }
     }
@@ -356,19 +341,13 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
         @Override
         public void receive(SquelchStateEvent event)
         {
-            if(event.getTimeslot() == getTimeslot() && event.getSquelchState() == SquelchState.SQUELCH)
+            if(event.getTimeslot() == getTimeslot())
             {
-                if(hasAudioPacketListener())
+                if(event.getSquelchState() == SquelchState.SQUELCH)
                 {
-                    ReusableAudioPacket endAudioPacket = getAudioPacketQueue().getEndAudioBuffer();
-                    endAudioPacket.resetAttributes();
-                    endAudioPacket.setAudioChannelId(getAudioChannelId());
-                    endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                    endAudioPacket.incrementUserCount();
-                    getAudioPacketListener().receive(endAudioPacket);
+                    closeAudioSegment();
+                    reset();
                 }
-
-                reset();
             }
         }
     }

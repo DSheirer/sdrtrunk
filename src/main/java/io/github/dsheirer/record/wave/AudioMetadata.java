@@ -18,49 +18,25 @@
 package io.github.dsheirer.record.wave;
 
 /**
- * WAVE audio metadata tags.
+ * WAVE and ID3 audio metadata tags.
  *
  * Metadata tag details:
  * LIST: https://sno.phy.queensu.ca/~phil/exiftool/TagNames/RIFF.html#Info
  * ID3: http://id3.org/id3v2.3.0
  *
  */
-public enum WaveMetadataType
+public enum AudioMetadata
 {
     //Primary tags
-    ARTIST_NAME("TPE1", "IART", true), //System
-    ALBUM_TITLE("TALB", "IPRD", true), //Site
-    TRACK_TITLE("TIT2", "INAM", true),  //Channel Name
+    ARTIST_NAME("TPE1", "IART", true),
+    ALBUM_TITLE("TALB", "IPRD", true),
+    GROUPING("TIT1", "ISBJ", true),
+    TRACK_TITLE("TIT2", "INAM", true),
     COMMENTS("COMM", "ICMT", true),
     DATE_CREATED("TDRC", "ICRD", true),
     GENRE("TCON", "IGNR", true),
-    SOFTWARE("TSSE", "ISFT", true),  //sdrtrunk application name
-    SOURCE_FORM("TMED", "ISRF", true), //protocol
-
-    //Secondary tags
-    ALIAS_LIST_NAME("TALN", "ALLN", false),
-    CHANNEL_FREQUENCY("TCHF", "CHFQ", false),
-    CHANNEL_ID("TCHI", "CHID", false),
-    CHANNEL_TIMESLOT("TCHT", "CHTS", false),
-    NETWORK_ID_1("TNT1", "NTW1", false),
-    NETWORK_ID_2("TNT2", "NTW2", false),
-    TALKGROUP_PRIMARY_PATCHED_1("TPP1", "TPP1", false),
-    TALKGROUP_PRIMARY_PATCHED_2("TPP2", "TPP2", false),
-    TALKGROUP_PRIMARY_PATCHED_3("TPP3", "TPP3", false),
-    TALKGROUP_PRIMARY_PATCHED_4("TPP4", "TPP4", false),
-    TALKGROUP_PRIMARY_PATCHED_5("TPP5", "TPP5", false),
-    TALKGROUP_PRIMARY_FROM("TPFM", "TPFM", false),
-    TALKGROUP_PRIMARY_FROM_ALIAS("TPFA", "TPFA", false),
-    TALKGROUP_PRIMARY_FROM_ICON("TPFI", "TPFI", false),
-    TALKGROUP_PRIMARY_TO("TPTO", "TPTO", false),
-    TALKGROUP_PRIMARY_TO_ALIAS("TOTA", "TPTA", false),
-    TALKGROUP_PRIMARY_TO_ICON("TPTI", "TPTI", false),
-    TALKGROUP_SECONDARY_FROM("TSFM", "TSFM", false),
-    TALKGROUP_SECONDARY_FROM_ALIAS("TSFA", "TSFA", false),
-    TALKGROUP_SECONDARY_FROM_ICON("TSFI", "TSFI", false),
-    TALKGROUP_SECONDARY_TO("TSTO", "TSTO", false),
-    TALKGROUP_SECONDARY_TO_ALIAS("TSTA", "TSTA", false),
-    TALKGROUP_SECONDARY_TO_ICON("TSTI", "TSTI", false);
+    YEAR("TYER", "ICOP", true),
+    COMPOSER("TCOM", "ISFT", true);
 
     private String mID3Tag;
     private String mLISTTag;
@@ -72,7 +48,7 @@ public enum WaveMetadataType
      * @param listTag used in the LIST chunk
      * @param PrimaryTag indicates if this is a custom LIST tag (true) or standard LIST tag (false)
      */
-    WaveMetadataType(String id3Tag, String listTag, boolean PrimaryTag)
+    AudioMetadata(String id3Tag, String listTag, boolean PrimaryTag)
     {
         mID3Tag = id3Tag;
         mLISTTag = listTag;

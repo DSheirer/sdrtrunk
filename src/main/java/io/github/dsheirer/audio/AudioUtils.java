@@ -16,7 +16,6 @@
 package io.github.dsheirer.audio;
 
 import io.github.dsheirer.sample.ConversionUtils;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +31,17 @@ public class AudioUtils
     /**
      * Converts the audio packets into a byte array of 16-bit, little-endian audio samples
      */
-    public static byte[] convertTo16BitSamples(List<ReusableAudioPacket> audioPackets)
+    public static byte[] convertTo16BitSamples(List<float[]> buffers)
     {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
         try
         {
-            for(ReusableAudioPacket audioPacket: audioPackets)
+            for(float[] audioBuffer: buffers)
             {
                 //Converting from 32-bit floats to signed 16-bit samples
-                ByteBuffer buffer = ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples());
+                ByteBuffer buffer = ConversionUtils.convertToSigned16BitSamples(audioBuffer);
                 stream.write(buffer.array());
-                audioPacket.decrementUserCount();
             }
         }
         catch(IOException e)
@@ -53,4 +51,29 @@ public class AudioUtils
 
         return stream.toByteArray();
     }
+
+    /**
+     * Converts the audio packets into a byte array of 16-bit, little-endian audio samples
+     */
+    public static byte[] convert(List<float[]> audioBuffers)
+    {
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        try
+        {
+            for(float[] audioBuffer: audioBuffers)
+            {
+                //Converting from 32-bit floats to signed 16-bit samples
+                ByteBuffer buffer = ConversionUtils.convertToSigned16BitSamples(audioBuffer);
+                stream.write(buffer.array());
+            }
+        }
+        catch(IOException e)
+        {
+            mLog.error("Error writing converted PCM bytes to output stream");
+        }
+
+        return stream.toByteArray();
+    }
+
 }

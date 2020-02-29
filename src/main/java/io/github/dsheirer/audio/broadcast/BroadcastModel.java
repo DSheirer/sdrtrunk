@@ -21,7 +21,6 @@
  */
 package io.github.dsheirer.audio.broadcast;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.icon.IconManager;
@@ -29,7 +28,6 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +49,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class BroadcastModel extends AbstractTableModel implements Listener<ReusableAudioPacket>
+public class BroadcastModel extends AbstractTableModel implements Listener<AudioRecording>
 {
     private final static Logger mLog = LoggerFactory.getLogger(BroadcastModel.class);
 
@@ -76,7 +74,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
     private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
     private IconManager mIconManager;
-    private StreamManager mStreamManager;
     private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
 
@@ -87,8 +84,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     {
         mAliasModel = aliasModel;
         mIconManager = iconManager;
-        mStreamManager = new StreamManager(new CompletedRecordingListener(), BroadcastFormat.MP3, userPreferences);
-        mStreamManager.start();
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
@@ -281,22 +276,28 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     }
 
     @Override
-    public void receive(ReusableAudioPacket audioPacket)
+    public void receive(AudioRecording audioRecording)
     {
-        if(audioPacket.isStreamable())
+        if(audioRecording != null && !audioRecording.getBroadcastChannels().isEmpty())
         {
-            for(BroadcastChannel channel: audioPacket.getBroadcastChannels())
+            for(BroadcastChannel broadcastChannel : audioRecording.getBroadcastChannels())
             {
-                if(mBroadcasterMap.containsKey(channel.getChannelName()))
+                String channelName = broadcastChannel.getChannelName();
+
+                if(channelName != null)
                 {
-                    audioPacket.incrementUserCount();
-                    mStreamManager.receive(audioPacket);
-                    return;
+                    AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
+
+                    if(audioBroadcaster != null)
+                    {
+                        audioRecording.addPendingReplay();
+                        audioBroadcaster.receive(audioRecording);
+                    }
                 }
             }
         }
 
-        audioPacket.decrementUserCount();
+        mRecordingQueue.add(audioRecording);
     }
 
     /**
@@ -311,19 +312,9 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
 
             if(audioBroadcaster != null)
             {
-                audioBroadcaster.setListener(new Listener<BroadcastEvent>()
-                {
-                    @Override
-                    public void receive(BroadcastEvent broadcastEvent)
-                    {
-                        process(broadcastEvent);
-                    }
-                });
-
+                audioBroadcaster.setListener(broadcastEvent -> process(broadcastEvent));
                 audioBroadcaster.start();
-
                 mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getName(), audioBroadcaster);
-
                 int index = mBroadcastConfigurations.indexOf(audioBroadcaster.getBroadcastConfiguration());
 
                 if(index >= 0)
@@ -707,43 +698,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
         public void run()
         {
             createBroadcaster(mBroadcastConfiguration);
-        }
-    }
-
-    /**
-     * Processes completed audio recordings and distributes them to the audio broadcasters.  Adds the recording to
-     * the audio recording queue to be monitored for deletion.
-     */
-    public class CompletedRecordingListener implements Listener<AudioRecording>
-    {
-        @Override
-        public void receive(AudioRecording audioRecording)
-        {
-            if(audioRecording != null && audioRecording.hasIdentifierCollection())
-            {
-                AliasList aliasList = mAliasModel.getAliasList(audioRecording.getIdentifierCollection());
-
-                if(aliasList != null)
-                {
-                    for(BroadcastChannel broadcastChannel : aliasList.getBroadcastChannels(audioRecording.getIdentifierCollection()))
-                    {
-                        String channelName = broadcastChannel.getChannelName();
-
-                        if(channelName != null)
-                        {
-                            AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
-
-                            if(audioBroadcaster != null)
-                            {
-                                audioRecording.addPendingReplay();
-                                audioBroadcaster.receive(audioRecording);
-                            }
-                        }
-                    }
-                }
-            }
-
-            mRecordingQueue.add(audioRecording);
         }
     }
 

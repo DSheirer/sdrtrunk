@@ -36,26 +36,19 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Utility class for accessing input, output and tuner mixers
+ */
 public class MixerManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(MixerManager.class);
 
-    private List<InputMixerConfiguration> mInputMixers = new ArrayList<>();
-    private List<MixerChannelConfiguration> mOutputMixers = new ArrayList<>();
-    private Map<String,MixerTunerDataLine> mMixerTuners = new HashMap<>();
+    public MixerManager() {}
 
-    public MixerManager()
-    {
-        loadMixers();
-    }
-
-    public RealMixerSource getSource(SourceConfiguration config)
+    public static RealMixerSource getSource(SourceConfiguration config)
     {
         RealMixerSource retVal = null;
 
@@ -131,14 +124,31 @@ public class MixerManager
         return null;
     }
 
-    public InputMixerConfiguration[] getInputMixers()
+    public static List<InputMixerConfiguration> getInputMixers()
     {
-        return mInputMixers.toArray(new InputMixerConfiguration[mInputMixers.size()]);
+        List<InputMixerConfiguration> inputMixers = new ArrayList<>();
+
+        for(Mixer.Info mixerInfo : AudioSystem.getMixerInfo())
+        {
+            Mixer mixer = AudioSystem.getMixer(mixerInfo);
+
+            if(mixer != null)
+            {
+                EnumSet<MixerChannel> inputChannels = getSupportedTargetChannels(mixer);
+
+                if(inputChannels != null)
+                {
+                    inputMixers.add(new InputMixerConfiguration(mixer, inputChannels));
+                }
+            }
+        }
+
+        return inputMixers;
     }
 
-    public InputMixerConfiguration getInputMixer(String name)
+    public static InputMixerConfiguration getInputMixer(String name)
     {
-        for(InputMixerConfiguration mixer : mInputMixers)
+        for(InputMixerConfiguration mixer : getInputMixers())
         {
             if(mixer.getMixerName().contentEquals(name))
             {
@@ -149,67 +159,50 @@ public class MixerManager
         return null;
     }
 
-    public MixerChannelConfiguration[] getOutputMixers()
+    public static MixerChannelConfiguration getDefaultOutputMixer()
     {
-        return mOutputMixers.toArray(new MixerChannelConfiguration[mOutputMixers.size()]);
+        List<MixerChannelConfiguration> outputMixers = getOutputMixers();
+
+        if(outputMixers.size() >= 1)
+        {
+            return outputMixers.get(0);
+        }
+
+        return null;
     }
 
-    public Collection<MixerTunerDataLine> getMixerTunerDataLines()
+    public static List<MixerChannelConfiguration> getOutputMixers()
     {
-        if(mMixerTuners.isEmpty())
+        List<MixerChannelConfiguration> outputMixers = new ArrayList<>();
+
+        for(Mixer.Info mixerInfo : AudioSystem.getMixerInfo())
         {
-            return Collections.emptyList();
+            Mixer mixer = AudioSystem.getMixer(mixerInfo);
+
+            if(mixer != null)
+            {
+                List<MixerChannel> outputChannels = getSupportedSourceChannels(mixer);
+
+                for(MixerChannel channel : outputChannels)
+                {
+                    outputMixers.add(new MixerChannelConfiguration(mixer, channel));
+                }
+            }
         }
-        else
-        {
-            return mMixerTuners.values();
-        }
+
+        return outputMixers;
     }
 
-    private void loadMixers()
+    public static Collection<MixerTunerDataLine> getMixerTunerDataLines()
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("loading system mixer devices\n");
+        List<MixerTunerDataLine> tuners = new ArrayList<>();
 
         for(Mixer.Info mixerInfo : AudioSystem.getMixerInfo())
         {
             //Sort between the mixers and the tuner mixers, and load each
             MixerTunerType mixerTunerType = MixerTunerType.getMixerTunerType(mixerInfo);
 
-            if(mixerTunerType == MixerTunerType.UNKNOWN)
-            {
-                Mixer mixer = AudioSystem.getMixer(mixerInfo);
-
-                if(mixer != null)
-                {
-                    EnumSet<MixerChannel> inputChannels = getSupportedTargetChannels(mixer);
-
-                    if(inputChannels != null)
-                    {
-                        mInputMixers.add(new InputMixerConfiguration(mixer, inputChannels));
-
-                        sb.append("\t[LOADED]     Input:  " + mixerInfo.getName() + " CHANNELS: " + inputChannels + "\n");
-                    }
-
-                    EnumSet<MixerChannel> outputChannels = getSupportedSourceChannels(mixer);
-
-                    if(outputChannels != null)
-                    {
-                        for(MixerChannel channel : outputChannels)
-                        {
-                            mOutputMixers.add(new MixerChannelConfiguration(mixer, channel));
-                        }
-
-                        sb.append("\t[LOADED]     Output: " + mixerInfo.getName() + " CHANNELS: " + outputChannels + "\n");
-                    }
-                }
-                else
-                {
-                    sb.append("\t[NOT LOADED] Mixer:" + mixerInfo.getName() + " - couldn't get mixer\n");
-                }
-            }
-            else
+            if(mixerTunerType != MixerTunerType.UNKNOWN)
             {
                 TargetDataLine tdl = getTargetDataLine(mixerInfo, mixerTunerType.getAudioFormat());
 
@@ -219,28 +212,17 @@ public class MixerManager
                     {
                         case FUNCUBE_DONGLE_PRO:
                         case FUNCUBE_DONGLE_PRO_PLUS:
-                            mMixerTuners.put(mixerInfo.getName(),
-                                new MixerTunerDataLine(tdl, mixerTunerType));
-                            sb.append("\t[LOADED]     FunCube Dongle Mixer Tuner:" + mixerInfo.getName() + "[" + mixerTunerType.getDisplayString() + "]\n");
-                            break;
-                        case UNKNOWN:
-                        default:
-                            sb.append("\t[NOT LOADED] Tuner:" + mixerInfo.getName() + " - unrecognized tuner type\n");
+                            tuners.add(new MixerTunerDataLine(tdl, mixerTunerType));
                             break;
                     }
                 }
             }
         }
 
-        mLog.info(sb.toString());
+        return tuners;
     }
 
-    public Map<String,MixerTunerDataLine> getMixerTuners()
-    {
-        return mMixerTuners;
-    }
-
-    private TargetDataLine getTargetDataLine(Mixer.Info mixerInfo, AudioFormat format)
+    private static TargetDataLine getTargetDataLine(Mixer.Info mixerInfo, AudioFormat format)
     {
         TargetDataLine retVal = null;
 
@@ -263,7 +245,7 @@ public class MixerManager
         return retVal;
     }
 
-    private EnumSet<MixerChannel> getSupportedTargetChannels(Mixer mixer)
+    private static EnumSet<MixerChannel> getSupportedTargetChannels(Mixer mixer)
     {
         DataLine.Info stereoInfo = new DataLine.Info(TargetDataLine.class,
                 AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
@@ -296,8 +278,10 @@ public class MixerManager
      * (MONO and/or STEREO) supported by the mixer, or null if the mixer doesn't
      * have any source data lines.
      */
-    private EnumSet<MixerChannel> getSupportedSourceChannels(Mixer mixer)
+    private static List<MixerChannel> getSupportedSourceChannels(Mixer mixer)
     {
+        List<MixerChannel> channels = new ArrayList<>();
+
         DataLine.Info stereoInfo = new DataLine.Info(SourceDataLine.class,
                 AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
 
@@ -307,20 +291,17 @@ public class MixerManager
 
         boolean monoSupported = mixer.isLineSupported(monoInfo);
 
-        if(stereoSupported && monoSupported)
+        if(stereoSupported)
         {
-            return EnumSet.of(MixerChannel.MONO, MixerChannel.STEREO);
-        }
-        else if(stereoSupported)
-        {
-            return EnumSet.of(MixerChannel.STEREO);
-        }
-        else if(monoSupported)
-        {
-            return EnumSet.of(MixerChannel.MONO);
+            channels.add(MixerChannel.STEREO);
         }
 
-        return null;
+        if(monoSupported)
+        {
+            channels.add(MixerChannel.MONO);
+        }
+
+        return channels;
     }
 
     public static String getMixerDevices()
@@ -369,7 +350,7 @@ public class MixerManager
         return sb.toString();
     }
 
-    public class InputMixerConfiguration
+    public static class InputMixerConfiguration
     {
         private Mixer mMixer;
         private EnumSet<MixerChannel> mChannels;
@@ -403,6 +384,14 @@ public class MixerManager
         public String toString()
         {
             return mMixer.getMixerInfo().getName();
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        for(MixerChannelConfiguration config : getOutputMixers())
+        {
+            mLog.debug(config.toString());
         }
     }
 }

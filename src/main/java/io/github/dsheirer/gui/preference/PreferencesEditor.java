@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.preference;
@@ -29,12 +28,13 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Control;
 import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -52,25 +52,19 @@ public class PreferencesEditor extends Application
 {
     private final static Logger mLog = LoggerFactory.getLogger(PreferencesEditor.class);
 
+    private Map<PreferenceEditorType,Node> mEditors = new HashMap<>();
     private UserPreferences mUserPreferences;
-    private BorderPane mBorderPane;
+    private HBox mParentBox;
     private TreeView mEditorSelectionTreeView;
-    private DecodeEventViewPreferenceEditor mDecodeEventViewPreferenceEditor;
-    private VBox mDefaultEditor;
-    private HBox mControlBox;
-
-    /**
-     * Constructs a preferences editor instance
-     */
-    public PreferencesEditor()
-    {
-    }
+    private VBox mEditorAndButtonsBox;
+    private Node mEditor;
+    private HBox mButtonsBox;
 
     public Stage getStage()
     {
         try
         {
-            Window window = getBorderPane().getScene().getWindow();
+            Window window = getParentBox().getScene().getWindow();
 
             if(window instanceof Stage)
             {
@@ -104,7 +98,7 @@ public class PreferencesEditor extends Application
     public void start(Stage stage) throws Exception
     {
         stage.setTitle("Preferences");
-        Scene scene = new Scene(getBorderPane(), 900, 500);
+        Scene scene = new Scene(getParentBox(), 900, 500);
         stage.setScene(scene);
         stage.show();
     }
@@ -130,8 +124,7 @@ public class PreferencesEditor extends Application
         {
             TreeItem treeItem = li.next();
 
-            if(treeItem.getValue() instanceof PreferenceEditorType &&
-                ((PreferenceEditorType)treeItem.getValue()).equals(type))
+            if(treeItem.getValue() instanceof PreferenceEditorType && (treeItem.getValue()).equals(type))
             {
                 return treeItem;
             }
@@ -153,31 +146,48 @@ public class PreferencesEditor extends Application
     /**
      * Primary layout for the editor window
      */
-    private BorderPane getBorderPane()
+    private HBox getParentBox()
     {
-        if(mBorderPane == null)
+        if(mParentBox == null)
         {
-            mBorderPane = new BorderPane();
-            mBorderPane.setLeft(getEditorSelectionTreeView());
-            mBorderPane.setCenter(getDefaultEditor());
-            mBorderPane.setBottom(getControlBox());
+            mParentBox = new HBox();
+            mParentBox.getChildren().add(getEditorSelectionTreeView());
+            HBox.setHgrow(getEditorAndButtonsBox(), Priority.ALWAYS);
+            mParentBox.getChildren().add(getEditorAndButtonsBox());
         }
 
-        return mBorderPane;
+        return mParentBox;
     }
 
-    private VBox getDefaultEditor()
+    private VBox getEditorAndButtonsBox()
     {
-        if(mDefaultEditor == null)
+        if(mEditorAndButtonsBox == null)
         {
-            mDefaultEditor = new VBox();
-            mDefaultEditor.setPadding(new Insets(10, 10, 10, 10));
-            Label label = new Label("Please select a preference ...");
-
-            mDefaultEditor.getChildren().add(label);
+            mEditorAndButtonsBox = new VBox();
+            mEditor = getDefaultEditor();
+            VBox.setVgrow(getDefaultEditor(), Priority.ALWAYS);
+            VBox.setVgrow(getButtonsBox(), Priority.NEVER);
+            mEditorAndButtonsBox.getChildren().addAll(getDefaultEditor(), getButtonsBox());
         }
 
-        return mDefaultEditor;
+        return mEditorAndButtonsBox;
+    }
+
+    private Node getDefaultEditor()
+    {
+        Node editor = mEditors.get(PreferenceEditorType.DEFAULT);
+
+        if(editor == null)
+        {
+            VBox defaultEditor = new VBox();
+            defaultEditor.setPadding(new Insets(10, 10, 10, 10));
+            Label label = new Label("Please select a preference ...");
+            defaultEditor.getChildren().add(label);
+            mEditors.put(PreferenceEditorType.DEFAULT, defaultEditor);
+            editor = defaultEditor;
+        }
+
+        return editor;
     }
 
     /**
@@ -188,6 +198,12 @@ public class PreferencesEditor extends Application
         if(mEditorSelectionTreeView == null)
         {
             TreeItem<String> treeRoot = new TreeItem<>("Root node");
+
+            TreeItem<String> audioItem = new TreeItem<>("Audio");
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_PLAYBACK));
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_RECORD));
+            treeRoot.getChildren().add(audioItem);
+            audioItem.setExpanded(true);
 
             TreeItem<String> decoderItem = new TreeItem<>("Decoder");
             decoderItem.getChildren().add(new TreeItem(PreferenceEditorType.JMBE_LIBRARY));
@@ -217,43 +233,56 @@ public class PreferencesEditor extends Application
             treeRoot.setExpanded(true);
             mEditorSelectionTreeView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             mEditorSelectionTreeView.getSelectionModel().selectedItemProperty().addListener(new EditorTreeSelectionListener());
+
+            mEditorSelectionTreeView.setMinWidth(Control.USE_PREF_SIZE);
         }
 
         return mEditorSelectionTreeView;
     }
 
     /**
-     * Decode event view preferences editor
-     */
-    private DecodeEventViewPreferenceEditor getDecodeEventViewPreferenceEditor()
-    {
-        if(mDecodeEventViewPreferenceEditor == null)
-        {
-            mDecodeEventViewPreferenceEditor = new DecodeEventViewPreferenceEditor(getUserPreferences());
-        }
-
-        return mDecodeEventViewPreferenceEditor;
-    }
-
-    /**
      * Control box with OK button.
      */
-    private HBox getControlBox()
+    private HBox getButtonsBox()
     {
-        if(mControlBox == null)
+        if(mButtonsBox == null)
         {
-            mControlBox = new HBox();
+            mButtonsBox = new HBox();
+            mButtonsBox.setMaxWidth(Double.MAX_VALUE);
             Button okButton = new Button("Ok");
             okButton.setOnAction(event -> {
-                Stage stage = (Stage)getBorderPane().getScene().getWindow();
+                Stage stage = (Stage)getParentBox().getScene().getWindow();
                 stage.close();
             });
             HBox.setMargin(okButton, new Insets(5, 5, 5, 5));
-            mControlBox.setAlignment(Pos.CENTER_RIGHT);
-            mControlBox.getChildren().add(okButton);
+            mButtonsBox.setAlignment(Pos.CENTER_RIGHT);
+            mButtonsBox.getChildren().add(okButton);
         }
 
-        return mControlBox;
+        return mButtonsBox;
+    }
+
+    private void setEditor(PreferenceEditorType type)
+    {
+        Node editor = mEditors.get(type);
+
+        if(editor == null)
+        {
+            if(type == PreferenceEditorType.DEFAULT)
+            {
+                editor = getDefaultEditor();
+            }
+            else
+            {
+                editor = PreferenceEditorFactory.getEditor(type, getUserPreferences());
+                mEditors.put(type, editor);
+            }
+        }
+
+        getEditorAndButtonsBox().getChildren().remove(mEditor);
+        VBox.setVgrow(editor, Priority.ALWAYS);
+        mEditor = editor;
+        getEditorAndButtonsBox().getChildren().add(0, mEditor);
     }
 
     /**
@@ -263,44 +292,22 @@ public class PreferencesEditor extends Application
      */
     public class EditorTreeSelectionListener implements ChangeListener
     {
-        private Map<PreferenceEditorType,Node> mEditors = new HashMap<>();
 
         @Override
         public void changed(ObservableValue observable, Object oldValue, Object newValue)
         {
-            Node editor = getEditor(newValue);
-            BorderPane.setAlignment(editor, Pos.CENTER_LEFT);
-            getBorderPane().setCenter(editor);
-        }
-
-        private Node getEditor(Object treeNodeItem)
-        {
-            if(treeNodeItem instanceof TreeItem)
+            if(newValue instanceof TreeItem)
             {
-                Object value = ((TreeItem)treeNodeItem).getValue();
+                Object value = ((TreeItem)newValue).getValue();
 
                 if(value instanceof PreferenceEditorType)
                 {
-                    PreferenceEditorType type = (PreferenceEditorType)value;
-
-                    Node editor = mEditors.get(type);
-
-                    if(editor != null)
-                    {
-                        return editor;
-                    }
-
-                    editor = PreferenceEditorFactory.getEditor(type, getUserPreferences());
-
-                    if(editor != null)
-                    {
-                        mEditors.put(type, editor);
-                        return editor;
-                    }
+                    setEditor((PreferenceEditorType)value);
+                    return;
                 }
             }
 
-            return getDefaultEditor();
+            setEditor(PreferenceEditorType.DEFAULT);
         }
     }
 

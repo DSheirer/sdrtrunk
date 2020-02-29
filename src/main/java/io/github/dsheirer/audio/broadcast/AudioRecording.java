@@ -18,22 +18,25 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class AudioRecording implements Comparable<AudioRecording>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(StreamManager.class);
+    private final static Logger mLog = LoggerFactory.getLogger(AudioRecording.class);
 
     private Path mPath;
     private long mStartTime;
     private long mRecordingLength;
     private AtomicInteger mPendingReplayCount = new AtomicInteger();
     private IdentifierCollection mIdentifierCollection;
+    private Collection<BroadcastChannel> mBroadcastChannels;
 
     /**
      * Audio recording that is ready to be streamed
@@ -43,9 +46,11 @@ public class AudioRecording implements Comparable<AudioRecording>
      * @param start time of recording in milliseconds since epoch
      * @param recordingLength in milliseconds
      */
-    public AudioRecording(Path path, IdentifierCollection identifierCollection, long start, long recordingLength)
+    public AudioRecording(Path path, Collection<BroadcastChannel> broadcastChannels,
+                          IdentifierCollection identifierCollection, long start, long recordingLength)
     {
         mPath = path;
+        mBroadcastChannels = broadcastChannels;
         mIdentifierCollection = identifierCollection;
         mStartTime = start;
         mRecordingLength = recordingLength;
@@ -57,6 +62,14 @@ public class AudioRecording implements Comparable<AudioRecording>
     public Path getPath()
     {
         return mPath;
+    }
+
+    /**
+     * Collection of broadcast channels that this recording should be streamed to
+     */
+    public Collection<BroadcastChannel> getBroadcastChannels()
+    {
+        return mBroadcastChannels;
     }
 
     /**

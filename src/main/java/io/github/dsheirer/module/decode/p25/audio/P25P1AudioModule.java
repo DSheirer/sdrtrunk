@@ -1,26 +1,24 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.audio;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
@@ -32,7 +30,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.ldu.LDUMessage;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 
 public class P25P1AudioModule extends ImbeAudioModule
 {
@@ -43,9 +40,15 @@ public class P25P1AudioModule extends ImbeAudioModule
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private LDU1Message mCachedLDU1Message = null;
 
-    public P25P1AudioModule(UserPreferences userPreferences)
+    public P25P1AudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
-        super(userPreferences);
+        super(userPreferences, aliasList);
+    }
+
+    @Override
+    protected int getTimeslot()
+    {
+        return 0;
     }
 
     @Override
@@ -63,21 +66,6 @@ public class P25P1AudioModule extends ImbeAudioModule
     @Override
     public void start()
     {
-
-    }
-
-    @Override
-    public void stop()
-    {
-        if(hasAudioPacketListener())
-        {
-            ReusableAudioPacket endAudioPacket = getAudioPacketQueue().getEndAudioBuffer();
-            endAudioPacket.resetAttributes();
-            endAudioPacket.setAudioChannelId(getAudioChannelId());
-            endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-            endAudioPacket.incrementUserCount();
-            getAudioPacketListener().receive(endAudioPacket);
-        }
     }
 
     /**
@@ -89,7 +77,7 @@ public class P25P1AudioModule extends ImbeAudioModule
      */
     public void receive(IMessage message)
     {
-        if(hasAudioCodec() && hasAudioPacketListener())
+        if(hasAudioCodec())
         {
             if(mEncryptedCallStateEstablished)
             {
@@ -139,16 +127,8 @@ public class P25P1AudioModule extends ImbeAudioModule
             for(byte[] frame : ldu.getIMBEFrames())
             {
                 float[] audio = getAudioCodec().getAudio(frame);
-
                 audio = mGain.apply(audio);
-
-                ReusableAudioPacket audioPacket = getAudioPacketQueue().getBuffer(audio.length);
-                audioPacket.resetAttributes();
-                audioPacket.setAudioChannelId(getAudioChannelId());
-                audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                audioPacket.loadAudioFrom(audio);
-
-                getAudioPacketListener().receive(audioPacket);
+                addAudio(audio);
             }
         }
         else
@@ -169,16 +149,7 @@ public class P25P1AudioModule extends ImbeAudioModule
         {
             if(event.getSquelchState() == SquelchState.SQUELCH)
             {
-                if(hasAudioPacketListener())
-                {
-                    ReusableAudioPacket endAudioPacket = getAudioPacketQueue().getEndAudioBuffer();
-                    endAudioPacket.resetAttributes();
-                    endAudioPacket.setAudioChannelId(getAudioChannelId());
-                    endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                    endAudioPacket.incrementUserCount();
-                    getAudioPacketListener().receive(endAudioPacket);
-                }
-
+                closeAudioSegment();
                 mEncryptedCallStateEstablished = false;
                 mEncryptedCall = false;
                 mCachedLDU1Message = null;

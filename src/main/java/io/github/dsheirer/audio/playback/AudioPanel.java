@@ -23,17 +23,24 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.AudioException;
 import io.github.dsheirer.audio.IAudioController;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
+import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
+import io.github.dsheirer.source.mixer.MixerManager;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.FloatControl;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JMenu;
@@ -51,6 +58,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.List;
 
 public class AudioPanel extends JPanel implements Listener<AudioEvent>
 {
@@ -169,34 +177,19 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                 JPopupMenu popup = new JPopupMenu();
 
 				/* Audio mixer/output selection menus */
-                JMenu outputMenu = new JMenu("Audio Output");
-
-                MixerChannelConfiguration[] mixerConfigurations =
-                    mSourceManager.getMixerManager().getOutputMixers();
-
-                for(MixerChannelConfiguration mixerConfig : mixerConfigurations)
+                JMenuItem outputMenu = new JMenuItem("Configure ...");
+                Icon icon = IconFontSwing.buildIcon(FontAwesome.COG, 14);
+                outputMenu.setIcon(icon);
+                outputMenu.addActionListener(new ActionListener()
                 {
-                    MixerSelectionItem mixerItem = new MixerSelectionItem(mixerConfig);
-
-                    try
+                    @Override
+                    public void actionPerformed(ActionEvent e)
                     {
-                        MixerChannelConfiguration current = mController.getMixerChannelConfiguration();
-
-                        if(current != null && current.equals(mixerConfig))
-                        {
-                            mixerItem.setSelected(true);
-                        }
+                        MyEventBus.getEventBus().post(new PreferenceEditorViewRequest(PreferenceEditorType.AUDIO_PLAYBACK));
                     }
-                    catch(AudioException e)
-                    {
-                        mLog.error("Error while detecting current mixer "
-                            + "channel configuration", e);
-                    }
-
-                    outputMenu.add(mixerItem);
-                }
-
+                });
                 popup.add(outputMenu);
+                popup.add(new JPopupMenu.Separator());
 
 				/* Audio output mute and volume control */
                 for(AudioOutput output : mController.getAudioOutputs())

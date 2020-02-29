@@ -19,7 +19,7 @@
 package io.github.dsheirer.audio.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.mixer.MixerChannel;
 
 import javax.sound.sampled.Mixer;
@@ -34,10 +34,10 @@ public class StereoAudioOutput extends AudioOutput
 {
     private final static int BUFFER_SIZE = 16000;
 
-    public StereoAudioOutput(Mixer mixer, MixerChannel channel)
+    public StereoAudioOutput(Mixer mixer, MixerChannel channel, UserPreferences userPreferences)
     {
         super(mixer, channel, AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO, AudioFormats.STEREO_SOURCE_DATALINE_INFO,
-            BUFFER_SIZE);
+            BUFFER_SIZE, userPreferences);
     }
 
     /**
@@ -45,14 +45,12 @@ public class StereoAudioOutput extends AudioOutput
      * channel containing the audio and the other channel containing zero
      * valued (silent) samples.
      */
-    protected ByteBuffer convert(ReusableAudioPacket packet)
+    protected ByteBuffer convert(float[] samples)
     {
         ByteBuffer buffer = null;
 
-        if(packet.hasAudioSamples())
+        if(samples.length > 0)
         {
-            float[] samples = packet.getAudioSamples();
-
 			/* Little-endian byte buffer */
             buffer = ByteBuffer.allocate(samples.length * 4).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -75,8 +73,6 @@ public class StereoAudioOutput extends AudioOutput
                 }
             }
         }
-
-        packet.decrementUserCount();
 
         return buffer;
     }

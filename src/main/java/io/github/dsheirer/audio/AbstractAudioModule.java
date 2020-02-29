@@ -20,41 +20,134 @@
 
 package io.github.dsheirer.audio;
 
-import io.github.dsheirer.audio.squelch.ISquelchStateListener;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base audio module implementation.
  */
-public abstract class AbstractAudioModule extends Module implements IAudioPacketProvider, IdentifierUpdateListener,
-    ISquelchStateListener
+public abstract class AbstractAudioModule extends Module implements IAudioSegmentProvider, IdentifierUpdateListener
 {
-    //Static unique audio channel identifier.
-    private static int AUDIO_CHANNEL_ID_GENERATOR = 1;
+    private final static Logger mLog = LoggerFactory.getLogger(AbstractAudioModule.class);
+    private static final int MAX_SEGMENT_AUDIO_SAMPLE_LENGTH = 8000 * 60 * 1; //8 kHz - 1 minute
 
-    private int mAudioChannelId = AUDIO_CHANNEL_ID_GENERATOR++;
-    private Listener<ReusableAudioPacket> mAudioPacketListener;
+    private Listener<AudioSegment> mAudioSegmentListener;
     private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
+    private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
+    private AliasList mAliasList;
+    private AudioSegment mAudioSegment;
+    private int mAudioSampleCount = 0;
+    private boolean mRecordAudioOverride;
 
     /**
      * Constructs an abstract audio module
      */
-    public AbstractAudioModule()
+    public AbstractAudioModule(AliasList aliasList)
     {
+        mAliasList = aliasList;
+        mIdentifierUpdateNotificationBroadcaster.addListener(mIdentifierCollection);
+    }
+
+    protected abstract int getTimeslot();
+
+    /**
+     * Closes the current audio segment
+     */
+    protected void closeAudioSegment()
+    {
+        synchronized(this)
+        {
+            if(mAudioSegment != null)
+            {
+                mAudioSegment.completeProperty().set(true);
+                mIdentifierUpdateNotificationBroadcaster.removeListener(mAudioSegment);
+                mAudioSegment = null;
+            }
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        closeAudioSegment();
     }
 
     /**
-     * Unique channel identifier for use in tagging audio packets with an audio channel ID so that they can
-     * be identified within a combined audio packet stream
+     * Gets the current audio segment, or creates a new audio segment as necessary and broadcasts it to any registered
+     * listener(s).
      */
-    public int getAudioChannelId()
+    protected AudioSegment getAudioSegment()
     {
-        return mAudioChannelId;
+        synchronized(this)
+        {
+            if(mAudioSegment == null)
+            {
+                mAudioSegment = new AudioSegment(mAliasList, getTimeslot());
+                mAudioSegment.addIdentifiers(mIdentifierCollection.getIdentifiers());
+                mIdentifierUpdateNotificationBroadcaster.addListener(mAudioSegment);
+
+                if(mRecordAudioOverride)
+                {
+                    mAudioSegment.recordAudioProperty().set(true);
+                }
+
+                if(mAudioSegmentListener != null)
+                {
+                    mAudioSegment.incrementConsumerCount();
+                    mAudioSegmentListener.receive(mAudioSegment);
+                }
+
+                mAudioSampleCount = 0;
+            }
+
+            return mAudioSegment;
+        }
+    }
+
+    protected void addAudio(float[] audioBuffer)
+    {
+        AudioSegment audioSegment = getAudioSegment();
+
+        //If the current segment exceeds the max samples length, close it so that a new segment gets generated
+        //and then link the segments together
+        if(mAudioSampleCount >= MAX_SEGMENT_AUDIO_SAMPLE_LENGTH)
+        {
+            AudioSegment previous = getAudioSegment();
+            closeAudioSegment();
+            audioSegment = getAudioSegment();
+            audioSegment.linkTo(previous);
+        }
+
+        audioSegment.addAudio(audioBuffer);
+        mAudioSampleCount += audioBuffer.length;
+    }
+
+    /**
+     * Sets all audio segments as recordable when the argument is true.  Otherwise, defers to the aliased identifiers
+     * from the identifier collection to determine whether to record the audio or not.
+     * @param recordAudio set to true to mark all audio as recordable.
+     */
+    public void setRecordAudio(boolean recordAudio)
+    {
+        mRecordAudioOverride = recordAudio;
+
+        if(mRecordAudioOverride)
+        {
+            synchronized(this)
+            {
+                if(mAudioSegment != null)
+                {
+                    mAudioSegment.recordAudioProperty().set(true);
+                }
+            }
+        }
     }
 
     /**
@@ -63,7 +156,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioPacket
     @Override
     public Listener<IdentifierUpdateNotification> getIdentifierUpdateListener()
     {
-        return mIdentifierCollection;
+        return mIdentifierUpdateNotificationBroadcaster;
     }
 
     /**
@@ -75,37 +168,20 @@ public abstract class AbstractAudioModule extends Module implements IAudioPacket
     }
 
     /**
-     * Registers an audio packet listener to receive the output from this audio module.
+     * Registers an audio segment listener to receive the output from this audio module.
      */
     @Override
-    public void setAudioPacketListener(Listener<ReusableAudioPacket> listener)
+    public void setAudioSegmentListener(Listener<AudioSegment> listener)
     {
-        mAudioPacketListener = listener;
+        mAudioSegmentListener = listener;
     }
 
     /**
-     * Unregisters the audio packet listener from receiving audio packets from this module.
+     * Unregisters the audio segment listener from receiving audio segments from this module.
      */
     @Override
-    public void removeAudioPacketListener()
+    public void removeAudioSegmentListener()
     {
-        mAudioPacketListener = null;
+        mAudioSegmentListener = null;
     }
-
-    /**
-     * Registered listener for receiving audio packets produced by this module
-     */
-    public Listener<ReusableAudioPacket> getAudioPacketListener()
-    {
-        return mAudioPacketListener;
-    }
-
-    /**
-     * Indicates if there is a listener registered to receive audio packets from this audio module.
-     */
-    public boolean hasAudioPacketListener()
-    {
-        return mAudioPacketListener != null;
-    }
-
 }

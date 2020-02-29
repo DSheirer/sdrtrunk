@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.audio.codec.mbe;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,9 +33,9 @@ public abstract class AmbeAudioModule extends JmbeAudioModule
     private static final String AMBE_CODEC = "AMBE 3600 x 2450";
     private static boolean sLibraryStatusLogged = false;
 
-    public AmbeAudioModule(UserPreferences userPreferences)
+    public AmbeAudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
-        super(userPreferences);
+        super(userPreferences, aliasList);
 
         if(!sLibraryStatusLogged)
         {

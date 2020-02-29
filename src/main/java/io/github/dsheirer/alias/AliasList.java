@@ -538,9 +538,12 @@ public class AliasList implements Listener<AliasEvent>
             {
                 Alias existing = mTalkgroupAliasMap.get(talkgroup.getValue());
 
-                mLog.warn("Alias [" + alias.getName() + "] talkgroup [" + talkgroup.getValue() +
-                    "] has the same talkgroup value as alias [" + existing.getName() +
-                    "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+                if(!existing.equals(alias))
+                {
+                    mLog.warn("Alias [" + alias.getName() + "] talkgroup [" + talkgroup.getValue() +
+                        "] has the same talkgroup value as alias [" + existing.getName() +
+                        "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+                }
             }
 
             mTalkgroupAliasMap.put(talkgroup.getValue(), alias);
@@ -551,7 +554,7 @@ public class AliasList implements Listener<AliasEvent>
             //Log warning if the new talkgroup range overlaps with any existing ranges
             for(Map.Entry<TalkgroupRange,Alias> entry: mTalkgroupRangeAliasMap.entrySet())
             {
-                if(talkgroupRange.overlaps(entry.getKey()))
+                if(talkgroupRange.overlaps(entry.getKey()) && !entry.getValue().equals(alias))
                 {
                     mLog.warn("Alias [" + alias.getName() + "] with talkgroup range [" + talkgroupRange.toString() +
                         "] overlaps with alias [" + entry.getValue().getName() +
@@ -621,9 +624,12 @@ public class AliasList implements Listener<AliasEvent>
             {
                 Alias existing = mRadioAliasMap.get(radio.getValue());
 
-                mLog.warn("Alias [" + alias.getName() + "] radio ID [" + radio.getValue() +
-                    "] has the same value as alias [" + existing.getName() +
-                    "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+                if(!existing.equals(alias))
+                {
+                    mLog.warn("Alias [" + alias.getName() + "] radio ID [" + radio.getValue() +
+                        "] has the same value as alias [" + existing.getName() +
+                        "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+                }
             }
 
             mRadioAliasMap.put(radio.getValue(), alias);
@@ -634,7 +640,7 @@ public class AliasList implements Listener<AliasEvent>
             //Log warning if the new range overlaps with any existing ranges
             for(Map.Entry<RadioRange,Alias> entry: mRadioRangeAliasMap.entrySet())
             {
-                if(radioRange.overlaps(entry.getKey()))
+                if(radioRange.overlaps(entry.getKey()) && !entry.getValue().equals(alias))
                 {
                     mLog.warn("Alias [" + alias.getName() + "] with radio ID range [" + radioRange.toString() +
                         "] overlaps with alias [" + entry.getValue().getName() +
