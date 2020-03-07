@@ -566,8 +566,16 @@ public class AliasEditor extends SplitPane
                         {
                             Alias alias = getTableRow().getItem();
                             Icon icon = mPlaylistManager.getIconManager().getModel().getIcon(alias.getIconName());
-                            Image image = new Image(icon.getPath(), 0, 16, true, true);
-                            setGraphic(new ImageView(image));
+
+                            try
+                            {
+                                Image image = new Image(icon.getPath(), 0, 16, true, true);
+                                setGraphic(new ImageView(image));
+                            }
+                            catch(Exception e)
+                            {
+
+                            }
                         }
                     }
                 }
