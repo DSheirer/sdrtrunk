@@ -717,8 +717,15 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
                         if(path.startsWith("images"))
                         {
-                            Image image = new Image(path, 0, 20, true, true);
-                            setGraphic(new ImageView(image));
+                            try
+                            {
+                                Image image = new Image(path, 0, 20, true, true);
+                                setGraphic(new ImageView(image));
+                            }
+                            catch(Exception e)
+                            {
+                                
+                            }
                         }
                     }
                 }
