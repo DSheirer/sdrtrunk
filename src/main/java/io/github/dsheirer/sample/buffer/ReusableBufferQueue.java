@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.sample.buffer;
 
 import org.slf4j.Logger;
@@ -47,6 +50,29 @@ public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableFlo
         }
 
         buffer.resize(size);
+        buffer.incrementUserCount();
+
+        return buffer;
+    }
+
+    /**
+     * Creates or reuses a buffer and loads it with the samples and timestamp and increments user count to one.
+     * @param samples to load
+     * @param timestamp to set
+     * @return loaded buffer with user count set to one
+     */
+    public ReusableFloatBuffer getBuffer(float[] samples, long timestamp)
+    {
+        ReusableFloatBuffer buffer = getRecycledBuffer();
+
+        if(buffer == null)
+        {
+            buffer = new ReusableFloatBuffer(this, new float[samples.length]);
+            buffer.setDebugName("Owner:" + getDebugName());
+            incrementBufferCount();
+        }
+
+        buffer.reloadFrom(samples, timestamp);
         buffer.incrementUserCount();
 
         return buffer;

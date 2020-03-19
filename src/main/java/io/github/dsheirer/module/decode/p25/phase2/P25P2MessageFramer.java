@@ -1,28 +1,24 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioPacketManager;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.controller.channel.Channel;
@@ -213,13 +209,13 @@ public class P25P2MessageFramer implements Listener<Dibit>
         UserPreferences userPreferences = new UserPreferences();
         AliasModel aliasModel = new AliasModel();
         SourceManager sourceManager = new SourceManager(null, new SettingsManager(new TunerConfigurationModel()), userPreferences);
-        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(sourceManager.getMixerManager());
+        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(userPreferences);
 
         //Audio packets are routed through the audio packet manager for metadata enrichment and then
         //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
-        AudioPacketManager audioPacketManager = new AudioPacketManager(aliasModel);
-        audioPacketManager.addListener(audioPlaybackManager);
-        audioPacketManager.start();
+//        AudioPacketManager audioPacketManager = new AudioPacketManager(aliasModel);
+//        audioPacketManager.addListener(audioPlaybackManager);
+//        audioPacketManager.start();
 
         Channel channel = new Channel();
         DecodeConfigP25Phase2 decodeP2 = new DecodeConfigP25Phase2();
@@ -230,7 +226,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
         MessageInjectionModule messageInjectionModule = new MessageInjectionModule();
         modules.add(messageInjectionModule);
         ProcessingChain processingChain = new ProcessingChain(channel, aliasModel);
-        processingChain.addAudioPacketListener(audioPacketManager);
+//        processingChain.addAudioPacketListener(audioPacketManager);
         processingChain.addModules(modules);
         processingChain.start();
 

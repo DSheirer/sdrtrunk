@@ -127,6 +127,12 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     {
         //Deregister from receiving preference update notifications
         MyEventBus.getEventBus().unregister(this);
+
+        if(mAudioOutput != null)
+        {
+            mAudioOutput.removeAudioEventListener(this);
+            mAudioOutput.removeAudioMetadataListener();
+        }
     }
 
     private void init()

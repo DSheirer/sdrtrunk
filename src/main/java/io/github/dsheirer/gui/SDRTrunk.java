@@ -1,30 +1,28 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.gui;
 
 import com.jidesoft.plaf.LookAndFeelFactory;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioPacketManager;
+import io.github.dsheirer.audio.broadcast.AudioStreamingManager;
+import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
@@ -45,7 +43,7 @@ import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
-import io.github.dsheirer.record.RecorderManager;
+import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
@@ -60,6 +58,7 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconFontFX;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -108,7 +107,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private static final String WINDOW_FRAME_IDENTIFIER = BASE_WINDOW_NAME + ".frame";
 
     private boolean mBroadcastStatusVisible;
-    private AudioPacketManager mAudioPacketManager;
+    private AudioRecordingManager mAudioRecordingManager;
+    private AudioStreamingManager mAudioStreamingManager;
     private IconManager mIconManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private BroadcastModel mBroadcastModel;
@@ -164,6 +164,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         //Register FontAwesome so we can use the fonts in Swing windows
         IconFontSwing.register(FontAwesome.getIconFont());
+        IconFontFX.register(FontAwesome.getIconFont());
 
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
@@ -180,14 +181,10 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
 
-        RecorderManager recorderManager = new RecorderManager(aliasModel, mUserPreferences);
-
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
-
         mSourceManager = new SourceManager(tunerModel, mSettingsManager, mUserPreferences);
-
-        mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, recorderManager,
-            mSourceManager, aliasModel, mUserPreferences);
+        mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, mSourceManager,
+            aliasModel, mUserPreferences);
 
         mChannelModel.addListener(mChannelProcessingManager);
         mChannelProcessingManager.addChannelEventListener(mChannelModel);
@@ -195,25 +192,26 @@ public class SDRTrunk implements Listener<TunerEvent>
         ChannelSelectionManager channelSelectionManager = new ChannelSelectionManager(mChannelModel);
         mChannelModel.addListener(channelSelectionManager);
 
-        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mSourceManager.getMixerManager());
+        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mUserPreferences);
+
+        mAudioRecordingManager = new AudioRecordingManager(mUserPreferences);
+        mAudioRecordingManager.start();
 
         mBroadcastModel = new BroadcastModel(aliasModel, mIconManager, mUserPreferences);
+        mAudioStreamingManager = new AudioStreamingManager(mBroadcastModel, BroadcastFormat.MP3,
+            mUserPreferences);
+        mAudioStreamingManager.start();
 
-        //Audio packets are routed through the audio packet manager for metadata enrichment and then
-        //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
-        mAudioPacketManager = new AudioPacketManager(aliasModel);
-        mAudioPacketManager.addListener(recorderManager);
-        mAudioPacketManager.addListener(audioPlaybackManager);
-        mAudioPacketManager.addListener(mBroadcastModel);
-        mAudioPacketManager.start();
-        mChannelProcessingManager.addAudioPacketListener(mAudioPacketManager);
+        mChannelProcessingManager.addAudioSegmentListener(audioPlaybackManager);
+        mChannelProcessingManager.addAudioSegmentListener(mAudioRecordingManager);
+        mChannelProcessingManager.addAudioSegmentListener(mAudioStreamingManager);
 
         MapService mapService = new MapService(mIconManager);
         mChannelProcessingManager.addDecodeEventListener(mapService);
 
         mControllerPanel = new ControllerPanel(audioPlaybackManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences, recorderManager);
+            mapService, mSettingsManager, mSourceManager, tunerModel, mUserPreferences);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager, tunerModel);
@@ -411,7 +409,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(new JSeparator());
         JMenuItem preferencesItem = new JMenuItem("Preferences");
         preferencesItem.addActionListener(e -> MyEventBus.getEventBus()
-            .post(new PreferenceEditorViewRequest(PreferenceEditorType.CHANNEL_EVENT)));
+            .post(new PreferenceEditorViewRequest(PreferenceEditorType.AUDIO_PLAYBACK)));
         viewMenu.add(preferencesItem);
 
         menuBar.add(viewMenu);
@@ -471,7 +469,8 @@ public class SDRTrunk implements Listener<TunerEvent>
         mJavaFxWindowManager.shutdown();
         mLog.info("Stopping channels ...");
         mChannelProcessingManager.shutdown();
-        mAudioPacketManager.stop();
+        mAudioRecordingManager.stop();
+
         mLog.info("Stopping spectral display ...");
         mSpectralPanel.clearTuner();
         mSourceManager.shutdown();

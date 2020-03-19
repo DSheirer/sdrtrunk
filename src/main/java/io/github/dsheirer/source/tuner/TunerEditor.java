@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.source.tuner;
@@ -26,7 +23,7 @@ import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.gui.control.JFrequencyControl;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
-import io.github.dsheirer.record.RecorderManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationFactory;
@@ -69,12 +66,12 @@ public class TunerEditor extends Editor<Tuner>
     private JScrollPane mEditorScroller;
     private Editor<TunerConfiguration> mEditor = new EmptyEditor<>("a tuner");
     private JideSplitPane mEditorSplitPane = new JideSplitPane();
-    private RecorderManager mRecorderManager;
+    private UserPreferences mRecorderManager;
 
-    public TunerEditor(TunerConfigurationModel tunerConfigurationModel, RecorderManager recorderManager)
+    public TunerEditor(TunerConfigurationModel tunerConfigurationModel, UserPreferences userPreferences)
     {
         mTunerConfigurationModel = tunerConfigurationModel;
-        mRecorderManager = recorderManager;
+        mRecorderManager = userPreferences;
         init();
     }
 

@@ -55,7 +55,6 @@ public class TunerManager
     private final static Logger mLog = LoggerFactory.getLogger(TunerManager.class);
     private static final int MAXIMUM_USB_2_DATA_RATE = 480000000;
 
-    private MixerManager mMixerManager;
     private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
     private Map<Integer,List<Tuner>> mUSBBusTunerMap = new TreeMap<>();
@@ -72,9 +71,8 @@ public class TunerManager
         LIBUSB_TRANSFER_PROCESSOR = new USBMasterProcessor();
     }
 
-    public TunerManager(MixerManager mixerManager, TunerModel tunerModel, UserPreferences userPreferences)
+    public TunerManager(TunerModel tunerModel, UserPreferences userPreferences)
     {
-        mMixerManager = mixerManager;
         mTunerModel = tunerModel;
         mUserPreferences = userPreferences;
 
@@ -563,8 +561,7 @@ public class TunerManager
      */
     private MixerTunerDataLine getMixerTunerDataLine(TunerType tunerClass)
     {
-        Collection<MixerTunerDataLine> datalines =
-            mMixerManager.getMixerTunerDataLines();
+        Collection<MixerTunerDataLine> datalines = MixerManager.getMixerTunerDataLines();
 
         for(MixerTunerDataLine mixerTDL : datalines)
         {

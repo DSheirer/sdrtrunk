@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.identifier;
@@ -41,7 +38,6 @@ public class IdentifierCollection
     private final static Logger mLog = LoggerFactory.getLogger(IdentifierCollection.class);
     protected List<Identifier> mIdentifiers = new ArrayList<>();
     protected AliasListConfigurationIdentifier mAliasListConfigurationIdentifier;
-    private boolean mUpdated = false;
     private int mTimeslot = 0;
 
     /**
@@ -92,19 +88,6 @@ public class IdentifierCollection
     public void setTimeslot(int timeslot)
     {
         mTimeslot = timeslot;
-    }
-
-    /**
-     * Indicates if this identifier collection contains an updated list of identifiers.
-     */
-    public boolean isUpdated()
-    {
-        return mUpdated;
-    }
-
-    public void setUpdated(boolean updated)
-    {
-        mUpdated = updated;
     }
 
     /**
@@ -319,4 +302,19 @@ public class IdentifierCollection
         return null;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Identifier Collection - Timeslot:").append(mTimeslot).append("\n");
+        for(Identifier identifier: getIdentifiers())
+        {
+            sb.append("\t").append(identifier.toString());
+            sb.append("\t{").append(identifier.getIdentifierClass().name()).append("|")
+                .append(identifier.getForm().name()).append("|")
+                .append(identifier.getRole().name()).append("}");
+            sb.append("\t").append(identifier.getClass()).append("\n");
+        }
+        return sb.toString();
+    }
 }

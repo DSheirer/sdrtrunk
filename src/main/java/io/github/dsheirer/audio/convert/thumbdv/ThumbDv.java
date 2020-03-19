@@ -36,8 +36,8 @@ import io.github.dsheirer.audio.convert.thumbdv.message.response.DecodeSpeechRes
 import io.github.dsheirer.audio.convert.thumbdv.message.response.ReadyResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.SetVocoderParameterResponse;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
+import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,14 +82,14 @@ public class ThumbDv implements AutoCloseable
     private ScheduledFuture mAudioDecodeProcessorHandle;
     private LinkedTransferQueue<DecodeSpeechRequest> mDecodeSpeechRequests = new LinkedTransferQueue<>();
     private AudioProtocol mAudioProtocol;
-    private Listener<ReusableAudioPacket> mAudioPacketListener;
-    private ReusableAudioPacketQueue mReusableAudioPacketQueue = new ReusableAudioPacketQueue("ThumbDv");
+    private Listener<ReusableFloatBuffer> mAudioBufferListener;
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("ThumbDv");
     private boolean mStarted;
 
-    public ThumbDv(AudioProtocol audioProtocol, Listener<ReusableAudioPacket> listener)
+    public ThumbDv(AudioProtocol audioProtocol, Listener<ReusableFloatBuffer> listener)
     {
         mAudioProtocol = audioProtocol;
-        mAudioPacketListener = listener;
+        mAudioBufferListener = listener;
     }
 
     /**
@@ -206,12 +206,11 @@ public class ThumbDv implements AutoCloseable
     {
         AmbeMessage message = AmbeMessageFactory.getMessage(bytes);
 
-        if(message instanceof DecodeSpeechResponse && mAudioPacketListener != null)
+        if(message instanceof DecodeSpeechResponse && mAudioBufferListener != null)
         {
             float[] samples = ((DecodeSpeechResponse)message).getSamples();
-            ReusableAudioPacket audioPacket = mReusableAudioPacketQueue.getBuffer(samples.length);
-            audioPacket.loadAudioFrom(samples);
-            mAudioPacketListener.receive(audioPacket);
+            ReusableFloatBuffer audioBuffer = mReusableBufferQueue.getBuffer(samples, System.currentTimeMillis());
+            mAudioBufferListener.receive(audioBuffer);
         }
         else if(message instanceof ReadyResponse && mAudioDecodeProcessorHandle == null)
         {
@@ -457,7 +456,7 @@ public class ThumbDv implements AutoCloseable
 
         mLog.debug("Starting thumb dv thread(s)");
 
-        final Listener<ReusableAudioPacket> listener = reusableAudioPacket -> {
+        final Listener<ReusableFloatBuffer> listener = reusableAudioPacket -> {
             mLog.info("Got an audio packet!");
             reusableAudioPacket.decrementUserCount();
         };
