@@ -422,7 +422,6 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         for(Channel channel : channelsToStop)
         {
-            mLog.info("Stopping channel: " + channel.toString());
             stopProcessing(channel, true);
         }
     }

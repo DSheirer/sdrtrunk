@@ -67,6 +67,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     private MixerChannelConfiguration mMixerChannelConfiguration;
     private List<AudioOutput> mAudioOutputs = new ArrayList<>();
     private List<AudioSegment> mAudioSegments = new ArrayList<>();
+    private List<AudioSegment> mPendingAudioSegments = new ArrayList<>();
     private LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
 
     /**
@@ -109,9 +110,50 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      */
     private void processAudioSegments()
     {
-        //Transfer new audio segments out of the concurrent queue and into the managed segments list.
-        mNewAudioSegmentQueue.drainTo(mAudioSegments);
+        //Process new audio segments queue.  If segment has audio, queue it for replay, otherwise place in pending queue
+        AudioSegment newSegment = mNewAudioSegmentQueue.poll();
 
+        while(newSegment != null)
+        {
+            if(newSegment.hasAudio())
+            {
+                mAudioSegments.add(newSegment);
+            }
+            else
+            {
+                mPendingAudioSegments.add(newSegment);
+            }
+
+            newSegment = mNewAudioSegmentQueue.poll();
+        }
+
+        //Transfer pending audio segments that now have audio or that completed without ever having audio
+        if(!mPendingAudioSegments.isEmpty())
+        {
+            Iterator<AudioSegment> it = mPendingAudioSegments.iterator();
+
+            AudioSegment audioSegment;
+
+            while(it.hasNext())
+            {
+                audioSegment = it.next();
+
+                if(audioSegment.hasAudio())
+                {
+                    //Queue it up for replay
+                    it.remove();
+                    mAudioSegments.add(audioSegment);
+                }
+                else if(audioSegment.completeProperty().get())
+                {
+                    //Rare situation: the audio segment completed but never had audio ... dispose it
+                    it.remove();
+                    audioSegment.decrementConsumerCount();
+                }
+            }
+        }
+
+        //Process all audio segments that have audio
         if(!mAudioSegments.isEmpty())
         {
             Iterator<AudioSegment> it = mAudioSegments.iterator();
@@ -119,15 +161,15 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
             //Remove any audio segments flagged as do not monitor.  Don't remove completed segments yet, because
             //we want to give them a brief chance at playback.  Automatically assign linked audio segments to the
-            //current audio output for audio continutity
+            //current audio output for audio continuity
             while(it.hasNext())
             {
                 audioSegment = it.next();
 
                 if(audioSegment.isDoNotMonitor())
                 {
-                    audioSegment.decrementConsumerCount();
                     it.remove();
+                    audioSegment.decrementConsumerCount();
                 }
                 else if(audioSegment.isLinked())
                 {
@@ -135,14 +177,14 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     {
                         if(audioOutput.isLinkedTo(audioSegment))
                         {
-                            audioOutput.play(audioSegment);
                             it.remove();
+                            audioOutput.play(audioSegment);
                         }
                     }
                 }
             }
 
-            //Assign audio segments to empty audio outputs
+            //Sort audio segments by playback priority and assign to empty audio outputs
             if(!mAudioSegments.isEmpty())
             {
                 Collections.sort(mAudioSegments, Comparator.comparingInt(o -> o.monitorPriorityProperty().get()));
@@ -165,7 +207,6 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             //Preempt ongoing audio segment playback when higher priority audio segments are available
             if(!mAudioSegments.isEmpty())
             {
-                //Assign empty audio outputs first
                 for(AudioOutput audioOutput: mAudioOutputs)
                 {
                     if(mAudioSegments.get(0).monitorPriorityProperty().get() < audioOutput.audioPriorityProperty().get())
@@ -180,7 +221,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
             }
 
-            //Remove any audio segments marked as completed
+            //Remove any audio segments marked as complete that didn't get assigned to an output
             it = mAudioSegments.iterator(); //reset the iterator
             while(it.hasNext())
             {
@@ -275,7 +316,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             }
 
             mProcessingTask = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
-                0, 250, TimeUnit.MILLISECONDS);
+                0, 100, TimeUnit.MILLISECONDS);
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
             mMixerChannelConfiguration = entry;
         }

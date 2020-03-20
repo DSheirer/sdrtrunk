@@ -71,10 +71,14 @@ public class PlaybackPreferenceEditor extends HBox
     private Button mTestStartToneButton;
     private ToggleSwitch mUseAudioSegmentPreemptToneSwitch;
     private Button mTestPreemptToneButton;
+    private ToggleSwitch mUseAudioSegmentDropToneSwitch;
+    private Button mTestDropToneButton;
     private ComboBox<ToneFrequency> mStartToneFrequencyComboBox;
     private ComboBox<ToneVolume> mStartToneVolumeComboBox;
     private ComboBox<ToneFrequency> mPreemptToneFrequencyComboBox;
     private ComboBox<ToneVolume> mPreemptToneVolumeComboBox;
+    private ComboBox<ToneFrequency> mDropToneFrequencyComboBox;
+    private ComboBox<ToneVolume> mDropToneVolumeComboBox;
 
     public PlaybackPreferenceEditor(UserPreferences userPreferences)
     {
@@ -100,6 +104,7 @@ public class PlaybackPreferenceEditor extends HBox
             mEditorPane.add(getMixerTestButton(), 5, row);
             mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, ++row, 6, 1);
             mEditorPane.add(new Label("Audio Playback Insert Tones"), 0, ++row, 2, 1);
+
             mEditorPane.add(getUseAudioSegmentStartToneSwitch(), 0, ++row);
             mEditorPane.add(new Label("Start Tone"), 1, row, 3, 1);
             Label startFrequencyLabel = new Label("Frequency:");
@@ -111,6 +116,7 @@ public class PlaybackPreferenceEditor extends HBox
             mEditorPane.add(startVolumeLabel, 3, row);
             mEditorPane.add(getStartToneVolumeComboBox(), 4, row);
             mEditorPane.add(getTestStartToneButton(), 5, row);
+
             mEditorPane.add(getUseAudioSegmentPreemptToneSwitch(), 0, ++row);
             mEditorPane.add(new Label("Priority Preempt Tone"), 1, row, 3, 1);
             Label preemptFrequencyLabel = new Label("Frequency:");
@@ -122,6 +128,18 @@ public class PlaybackPreferenceEditor extends HBox
             mEditorPane.add(preemptVolumeLabel, 3, row);
             mEditorPane.add(getPreemptToneVolumeComboBox(), 4, row);
             mEditorPane.add(getTestPreemptToneButton(), 5, row);
+
+            mEditorPane.add(getUseAudioSegmentDropToneSwitch(), 0, ++row);
+            mEditorPane.add(new Label("Drop Tone - Do Not Monitor"), 1, row, 3, 1);
+            Label dropFrequencyLabel = new Label("Frequency:");
+            GridPane.setHalignment(dropFrequencyLabel, HPos.RIGHT);
+            mEditorPane.add(dropFrequencyLabel, 1, ++row);
+            mEditorPane.add(getDropToneFrequencyComboBox(), 2, row);
+            Label dropVolumeLabel = new Label("Volume:");
+            GridPane.setHalignment(dropVolumeLabel, HPos.RIGHT);
+            mEditorPane.add(dropVolumeLabel, 3, row);
+            mEditorPane.add(getDropToneVolumeComboBox(), 4, row);
+            mEditorPane.add(getTestDropToneButton(), 5, row);
         }
 
         return mEditorPane;
@@ -194,6 +212,25 @@ public class PlaybackPreferenceEditor extends HBox
         return mUseAudioSegmentPreemptToneSwitch;
     }
 
+    private ToggleSwitch getUseAudioSegmentDropToneSwitch()
+    {
+        if(mUseAudioSegmentDropToneSwitch == null)
+        {
+            mUseAudioSegmentDropToneSwitch = new ToggleSwitch();
+            mUseAudioSegmentDropToneSwitch.setSelected(mPlaybackPreference.getUseAudioSegmentDropTone());
+            mUseAudioSegmentDropToneSwitch.selectedProperty().addListener(new ChangeListener<Boolean>()
+            {
+                @Override
+                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
+                {
+                    mPlaybackPreference.setUseAudioSegmentDropTone(newValue);
+                }
+            });
+        }
+
+        return mUseAudioSegmentDropToneSwitch;
+    }
+
     public Button getTestStartToneButton()
     {
         if(mTestStartToneButton == null)
@@ -238,6 +275,59 @@ public class PlaybackPreferenceEditor extends HBox
         }
 
         return mTestPreemptToneButton;
+    }
+
+    public Button getTestDropToneButton()
+    {
+        if(mTestDropToneButton == null)
+        {
+            mTestDropToneButton = new Button("Test");
+            IconNode iconNode = new IconNode(FontAwesome.PLAY);
+            iconNode.setFill(Color.CORNFLOWERBLUE);
+            mTestDropToneButton.setGraphic(iconNode);
+            mTestDropToneButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    play(mPlaybackPreference.getDropTone());
+                }
+            });
+
+            mTestDropToneButton.disableProperty().bind(getUseAudioSegmentDropToneSwitch().selectedProperty().not());
+        }
+
+        return mTestDropToneButton;
+    }
+
+    public ComboBox<ToneFrequency> getDropToneFrequencyComboBox()
+    {
+        if(mDropToneFrequencyComboBox == null)
+        {
+            mDropToneFrequencyComboBox = new ComboBox<>();
+            mDropToneFrequencyComboBox.getItems().addAll(ToneFrequency.values());
+            mDropToneFrequencyComboBox.getSelectionModel().select(mPlaybackPreference.getDropToneFrequency());
+            mDropToneFrequencyComboBox.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> mPlaybackPreference.setDropToneFrequency(newValue));
+            mDropToneFrequencyComboBox.disableProperty().bind(getUseAudioSegmentDropToneSwitch().selectedProperty().not());
+        }
+
+        return mDropToneFrequencyComboBox;
+    }
+
+    public ComboBox<ToneVolume> getDropToneVolumeComboBox()
+    {
+        if(mDropToneVolumeComboBox == null)
+        {
+            mDropToneVolumeComboBox = new ComboBox<>();
+            mDropToneVolumeComboBox.getItems().addAll(ToneVolume.values());
+            mDropToneVolumeComboBox.getSelectionModel().select(mPlaybackPreference.getDropToneVolume());
+            mDropToneVolumeComboBox.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> mPlaybackPreference.setDropToneVolume(newValue));
+            mDropToneVolumeComboBox.disableProperty().bind(getUseAudioSegmentDropToneSwitch().selectedProperty().not());
+        }
+
+        return mDropToneVolumeComboBox;
     }
 
     public ComboBox<ToneFrequency> getStartToneFrequencyComboBox()

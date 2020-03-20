@@ -38,12 +38,18 @@ import java.util.prefs.Preferences;
  */
 public class PlaybackPreference extends Preference
 {
+    private static final String PREFERENCE_KEY_USE_AUDIO_SEGMENT_DROP_TONE = "audio.playback.segment.drop.tone";
+    private static final String PREFERENCE_KEY_DROP_TONE_FREQUENCY = "audio.playback.segment.drop.frequency";
+    private static final String PREFERENCE_KEY_DROP_TONE_VOLUME = "audio.playback.segment.drop.volume";
+
     private static final String PREFERENCE_KEY_USE_AUDIO_SEGMENT_PREEMPT_TONE = "audio.playback.segment.preempt.tone";
+    private static final String PREFERENCE_KEY_PREEMPT_TONE_FREQUENCY = "audio.playback.segment.preempt.frequency";
+    private static final String PREFERENCE_KEY_PREEMPT_TONE_VOLUME = "audio.playback.segment.preempt.volume";
+
     private static final String PREFERENCE_KEY_USE_AUDIO_SEGMENT_START_TONE = "audio.playback.segment.start.tone";
     private static final String PREFERENCE_KEY_START_TONE_FREQUENCY = "audio.playback.segment.start.frequency";
     private static final String PREFERENCE_KEY_START_TONE_VOLUME = "audio.playback.segment.start.volume";
-    private static final String PREFERENCE_KEY_PREEMPT_TONE_FREQUENCY = "audio.playback.segment.preempt.frequency";
-    private static final String PREFERENCE_KEY_PREEMPT_TONE_VOLUME = "audio.playback.segment.preempt.volume";
+
     private static final String PREFERENCE_KEY_MIXER_CHANNEL_CONFIG = "audio.playback.mixer.channel.configuration";
     private static final int TONE_LENGTH_SAMPLES = 180;
 
@@ -51,10 +57,13 @@ public class PlaybackPreference extends Preference
     private Preferences mPreferences = Preferences.userNodeForPackage(PlaybackPreference.class);
     private Boolean mUseAudioSegmentStartTone;
     private Boolean mUseAudioSegmentPreemptTone;
+    private Boolean mUseAudioSegmentDropTone;
     private ToneFrequency mStartToneFrequency;
     private ToneVolume mStartToneVolume;
     private ToneFrequency mPreemptToneFrequency;
     private ToneVolume mPreemptToneVolume;
+    private ToneFrequency mDropToneFrequency;
+    private ToneVolume mDropToneVolume;
     private MixerChannelConfiguration mMixerChannelConfiguration;
 
     /**
@@ -70,6 +79,29 @@ public class PlaybackPreference extends Preference
     public PreferenceType getPreferenceType()
     {
         return PreferenceType.PLAYBACK;
+    }
+
+    /**
+     * Indicates if an audio segment drop tone should be used.
+     */
+    public boolean getUseAudioSegmentDropTone()
+    {
+        if(mUseAudioSegmentDropTone == null)
+        {
+            mUseAudioSegmentDropTone = mPreferences.getBoolean(PREFERENCE_KEY_USE_AUDIO_SEGMENT_DROP_TONE, true);
+        }
+
+        return mUseAudioSegmentDropTone;
+    }
+
+    /**
+     * Sets the preference for using an audio segment drop tone
+     */
+    public void setUseAudioSegmentDropTone(boolean use)
+    {
+        mUseAudioSegmentDropTone = use;
+        mPreferences.putBoolean(PREFERENCE_KEY_USE_AUDIO_SEGMENT_DROP_TONE, use);
+        notifyPreferenceUpdated();
     }
 
     /**
@@ -119,6 +151,30 @@ public class PlaybackPreference extends Preference
     }
 
     /**
+     * Frequency for the drop tone
+     */
+    public ToneFrequency getDropToneFrequency()
+    {
+        if(mDropToneFrequency == null)
+        {
+            int frequency = mPreferences.getInt(PREFERENCE_KEY_DROP_TONE_FREQUENCY, ToneFrequency.F500.getValue());
+            mDropToneFrequency = ToneFrequency.fromValue(frequency);
+        }
+
+        return mDropToneFrequency;
+    }
+
+    /**
+     * Sets the frequency for the drop tone
+     */
+    public void setDropToneFrequency(ToneFrequency toneFrequency)
+    {
+        mDropToneFrequency = toneFrequency;
+        mPreferences.putInt(PREFERENCE_KEY_DROP_TONE_FREQUENCY, toneFrequency.getValue());
+        notifyPreferenceUpdated();
+    }
+
+    /**
      * Frequency for the start tone
      */
     public ToneFrequency getStartToneFrequency()
@@ -163,6 +219,30 @@ public class PlaybackPreference extends Preference
     {
         mPreemptToneFrequency = toneFrequency;
         mPreferences.putInt(PREFERENCE_KEY_PREEMPT_TONE_FREQUENCY, toneFrequency.getValue());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Drop tone volume
+     */
+    public ToneVolume getDropToneVolume()
+    {
+        if(mDropToneVolume == null)
+        {
+            int volume = mPreferences.getInt(PREFERENCE_KEY_DROP_TONE_VOLUME, ToneVolume.V3.getValue());
+            mDropToneVolume = ToneVolume.fromValue(volume);
+        }
+
+        return mDropToneVolume;
+    }
+
+    /**
+     * Sets the drop tone volume
+     */
+    public void setDropToneVolume(ToneVolume toneVolume)
+    {
+        mDropToneVolume = toneVolume;
+        mPreferences.putInt(PREFERENCE_KEY_DROP_TONE_VOLUME, toneVolume.getValue());
         notifyPreferenceUpdated();
     }
 
@@ -235,6 +315,19 @@ public class PlaybackPreference extends Preference
         if(getUseAudioSegmentPreemptTone())
         {
             return ToneUtil.getTone(getPreemptToneFrequency(), getPreemptToneVolume(), TONE_LENGTH_SAMPLES);
+        }
+
+        return null;
+    }
+
+    /**
+     * Buffer with samples for the audio segment drop tone
+     */
+    public float[] getDropTone()
+    {
+        if(getUseAudioSegmentDropTone())
+        {
+            return ToneUtil.getTone(getDropToneFrequency(), getDropToneVolume(), TONE_LENGTH_SAMPLES);
         }
 
         return null;

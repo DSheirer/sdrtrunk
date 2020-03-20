@@ -161,7 +161,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
      */
     public boolean isDoNotMonitor()
     {
-        return mMonitorPriority.get() == Priority.DO_NOT_MONITOR;
+        return mMonitorPriority.get() <= Priority.DO_NOT_MONITOR;
     }
 
     /**
