@@ -85,6 +85,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private IntegerProperty mAudioPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private ByteBuffer mAudioSegmentStartTone;
     private ByteBuffer mAudioSegmentPreemptTone;
+    private ByteBuffer mAudioSegmentDropTone;
+    private boolean mRunning = false;
 
     /**
      * Single audio channel playback with automatic starting and stopping of the
@@ -147,9 +149,9 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                             mixer.getMixerInfo().getName() + " | " + getChannelName() + "]");
                     }
 
-					//Run the queue processor task every 250 milliseconds or 4 times a second
+					//Run the queue processor task every 100 milliseconds or 10 times a second
                     mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
-                        0, 250, TimeUnit.MILLISECONDS);
+                        0, 100, TimeUnit.MILLISECONDS);
                 }
 
                 mAudioStartEvent = new AudioEvent(AudioEvent.Type.AUDIO_STARTED, getChannelName());
@@ -255,12 +257,13 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     }
 
     /**
-     * Updates audio segment start and preempt tone insertion clips
+     * Updates audio segment start, drop and preempt tone insertion clips
      */
     private void updateToneInsertionAudioClips()
     {
         mAudioSegmentStartTone = null;
         mAudioSegmentPreemptTone = null;
+        mAudioSegmentDropTone = null;
 
         float[] start = mUserPreferences.getPlaybackPreference().getStartTone();
 
@@ -274,6 +277,13 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         if(start != null)
         {
             mAudioSegmentPreemptTone = convert(preempt);
+        }
+
+        float[] drop = mUserPreferences.getPlaybackPreference().getDropTone();
+
+        if(drop != null)
+        {
+            mAudioSegmentDropTone = convert(drop);
         }
     }
 
@@ -308,6 +318,15 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private ByteBuffer getAudioSegmentPreemptionTone()
     {
         return mAudioSegmentPreemptTone;
+    }
+
+    /**
+     * Generates a tone indicating that the current audio segment playback has been dropped because the audio segment
+     * has been flagged as Do Not Monitor after playback has started.
+     */
+    private ByteBuffer getAudioSegmentDropTone()
+    {
+        return mAudioSegmentDropTone;
     }
 
     /**
@@ -362,8 +381,18 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
             try
             {
+                //Remove an assigned audio segment that's subsequently flagged as do not monitor before playback
+                if(mNextAudioSegment.isDoNotMonitor())
+                {
+                    mNextAudioSegment = null;
+
+                    if(mCurrentAudioSegment == null)
+                    {
+                        mEmptyProperty.set(true);
+                    }
+                }
                 //For linked audio segments, allow the linked segment to complete first before assigning the next
-                if(mNextAudioSegment.isLinked())
+                else if(mNextAudioSegment.isLinked())
                 {
                     if(mCurrentAudioSegment == null)
                     {
@@ -427,10 +456,15 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
         if(mCurrentAudioSegment != null)
         {
-            //Check for completed audio segment
-            if(mCurrentAudioSegment.completeProperty().get() &&
-               mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount())
+            //Check for completed audio segment or a segment flagged as Do Not Monitor
+            if(mCurrentAudioSegment.isDoNotMonitor() || (mCurrentAudioSegment.completeProperty().get() &&
+               mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))
             {
+                if(mCurrentAudioSegment.isDoNotMonitor())
+                {
+                    playAudio(getAudioSegmentDropTone());
+                }
+
                 dispose(mCurrentAudioSegment);
                 mCurrentAudioSegment = null;
 
@@ -455,7 +489,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             //while processing, exit the loop so that we can evaluate the next for higher priority preempt.  If the next
             //segment is a linked segment, ignore it so that we can close out the current segment.
             while((mNextAudioSegment == null || mNextAudioSegment.isLinked()) &&
-                   mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount())
+                   mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount() &&
+                   !mCurrentAudioSegment.isDoNotMonitor())
             {
                 float[] audioBuffer = mCurrentAudioSegment.getAudioBuffers().get(mCurrentBufferIndex++);
 
@@ -595,6 +630,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         if(mCanProcessAudio && !mOutput.isRunning() && mOutput.available() <= mBufferStartThreshold)
         {
             mOutput.start();
+            mRunning = true;
         }
     }
 
@@ -606,11 +642,26 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
      */
     private void checkStop()
     {
-        if(mCanProcessAudio && mOutput.isRunning() && mOutput.available() >= mBufferStopThreshold)
+        if(mRunning)
         {
-            mOutput.drain();
-            mOutput.stop();
-            broadcast(null);
+            //If the output buffer falls below the threshold then drain the output and stop playback
+            if(mOutput.isRunning() && mOutput.available() >= mBufferStopThreshold)
+            {
+                mOutput.drain();
+                mOutput.stop();
+                mRunning = false;
+            }
+            //If output playback stopped on its own because the buffer emptied, then cleanup
+            else if(!mOutput.isRunning())
+            {
+                mRunning = false;
+            }
+
+            //If we stopped audio playback, broadcast a null identifier to clear the gui panel
+            if(!mRunning)
+            {
+                broadcast(null);
+            }
         }
     }
 
