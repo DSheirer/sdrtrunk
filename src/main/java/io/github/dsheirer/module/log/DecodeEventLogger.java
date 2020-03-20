@@ -114,11 +114,20 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
         if(toIdentifiers != null && !toIdentifiers.isEmpty())
         {
-            Identifier identifier = event.getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION,Form.ALIAS_LIST,Role.ANY);
+            Identifier identifier = event.getIdentifierCollection()
+                .getIdentifier(IdentifierClass.CONFIGURATION,Form.ALIAS_LIST,Role.ANY);
             mAliasList = mAliasModel.getAliasList((AliasListConfigurationIdentifier)identifier);
 
-            String mystring = (!mAliasList.getAliases(toIdentifiers.get(0)).isEmpty()) ? mAliasList.getAliases(toIdentifiers.get(0)).get(0).toString() : "";
-            sb.append(",\"").append(mystring).append(" (").append(toIdentifiers.get(0)).append(")\"");
+            if(mAliasList != null)
+            {
+                String mystring = (!mAliasList.getAliases(toIdentifiers.get(0)).isEmpty()) ?
+                    mAliasList.getAliases(toIdentifiers.get(0)).get(0).toString() : "";
+                sb.append(",\"").append(mystring).append(" (").append(toIdentifiers.get(0)).append(")\"");
+            }
+            else
+            {
+                sb.append(",\"\"");
+            }
         }
         else
         {
@@ -129,11 +138,13 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
         sb.append(",\"").append(descriptor != null ? descriptor : "").append("\"");
 
-        Identifier frequency = event.getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
+        Identifier frequency = event.getIdentifierCollection()
+            .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
 
         if(frequency instanceof FrequencyConfigurationIdentifier)
         {
-            sb.append(",\"").append(mFrequencyFormat.format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d)).append("\"");
+            sb.append(",\"").append(mFrequencyFormat
+                .format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d)).append("\"");
         }
         else
         {
