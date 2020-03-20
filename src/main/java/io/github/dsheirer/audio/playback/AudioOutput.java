@@ -274,7 +274,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
         float[] preempt = mUserPreferences.getPlaybackPreference().getPreemptTone();
 
-        if(start != null)
+        if(preempt != null)
         {
             mAudioSegmentPreemptTone = convert(preempt);
         }
