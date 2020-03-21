@@ -315,7 +315,6 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
         public List<String> process(String value)
         {
-            mLog.debug("Processing AMBE Tone Metadata Value: " + value);
             if(value != null)
             {
                 if(mLastInput != null && mLastInput.equalsIgnoreCase(value))
