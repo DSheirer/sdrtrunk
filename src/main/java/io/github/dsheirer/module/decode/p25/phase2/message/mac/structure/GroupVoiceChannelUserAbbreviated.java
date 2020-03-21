@@ -65,8 +65,8 @@ public class GroupVoiceChannelUserAbbreviated extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getGroupAddress());
         sb.append(" FM:").append(getSourceAddress());
+        sb.append(" TO:").append(getGroupAddress());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }

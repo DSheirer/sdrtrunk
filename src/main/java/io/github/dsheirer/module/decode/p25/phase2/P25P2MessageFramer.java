@@ -18,7 +18,11 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.alias.id.record.Record;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.controller.channel.Channel;
@@ -26,15 +30,21 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.MessageInjectionModule;
+import io.github.dsheirer.message.MessageProviderModule;
+import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageFramer;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageProcessor;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -44,9 +54,14 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * P25 Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
@@ -206,74 +221,101 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
     public static void main(String[] args)
     {
+        Path directory = Paths.get("/home/denny/temp/Harris P25-2 Logs/bits");
+//        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
+
+        ScrambleParameters scrambleParameters = new ScrambleParameters(123654, 813, 10);  //Hills
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(1, 972, 972));
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677)); //CNYICC - Rome
+
         UserPreferences userPreferences = new UserPreferences();
-        AliasModel aliasModel = new AliasModel();
-        SourceManager sourceManager = new SourceManager(null, new SettingsManager(new TunerConfigurationModel()), userPreferences);
-        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(userPreferences);
+        Channel channel = new Channel("Phase 2 Test");
+        channel.setDecodeConfiguration(new DecodeConfigP25Phase2());
+        AliasList aliasList = new AliasList("Test Alias List");
+        Alias alias = new Alias("TG Range 1-65535");
+        alias.addAliasID(new Record());
+        alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
+        aliasList.addAlias(alias);
+        AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
+        recordingManager.start();
+        ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
 
-        //Audio packets are routed through the audio packet manager for metadata enrichment and then
-        //distributed to the audio packet processors (ie playback, recording, streaming, etc.)
-//        AudioPacketManager audioPacketManager = new AudioPacketManager(aliasModel);
-//        audioPacketManager.addListener(audioPlaybackManager);
-//        audioPacketManager.start();
+        processingChain.addAudioSegmentListener(recordingManager);
+        processingChain.addModule(new P25P2DecoderState(channel, 0));
+        processingChain.addModule(new P25P2DecoderState(channel, 1));
+        processingChain.addModule(new P25P2AudioModule(userPreferences, 0, aliasList));
+        processingChain.addModule(new P25P2AudioModule(userPreferences, 1, aliasList));
+        MessageProviderModule messageProviderModule = new MessageProviderModule();
+        processingChain.addModule(messageProviderModule);
 
-        Channel channel = new Channel();
-        DecodeConfigP25Phase2 decodeP2 = new DecodeConfigP25Phase2();
-//        decodeP2.setScrambleParameters(new ScrambleParameters(1, 972, 972));
-        decodeP2.setScrambleParameters(new ScrambleParameters(781824, 686, 677)); //CNYICC - Rome
-        channel.setDecodeConfiguration(decodeP2);
-        List<Module> modules = DecoderFactory.getModules(null, channel, aliasModel, userPreferences);
-        MessageInjectionModule messageInjectionModule = new MessageInjectionModule();
-        modules.add(messageInjectionModule);
-        ProcessingChain processingChain = new ProcessingChain(channel, aliasModel);
-//        processingChain.addAudioPacketListener(audioPacketManager);
-        processingChain.addModules(modules);
-        processingChain.start();
-
-        P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        messageFramer.setScrambleParameters(decodeP2.getScrambleParameters());
-        P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
-//        P25P2CallSequenceRecorder frameRecorder = new P25P2CallSequenceRecorder(new UserPreferences(), 154250000);
-        messageFramer.setListener(messageProcessor);
-        messageProcessor.setMessageListener(new Listener<IMessage>()
+        try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
         {
-            @Override
-            public void receive(IMessage message)
+            try
             {
-//                if(message.getTimeslot() == 0)
-//                {
-                    mLog.debug(message.toString());
-//                }
+                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*PHASE2_Hills*TRAFFIC.bits");
 
-                messageInjectionModule.receive(message);
-//                frameRecorder.receive(message);
+                stream.forEach(new Consumer<Path>()
+                               {
+                                   @Override
+                                   public void accept(Path path)
+                                   {
+                                       mLog.debug("Processing:" + path.toString());
+                                       try
+                                       {
+                                           logOutput.write(("Processing:" + path.toString() + "\n").getBytes());
+                                       }
+                                       catch(IOException ioe)
+                                       {
+                                           mLog.error("Error", ioe);
+                                       }
+
+                                       P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE2.getProtocol().getBitRate());
+                                       messageFramer.setScrambleParameters(scrambleParameters);
+                                       P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
+                                       messageFramer.setListener(messageProcessor);
+                                       messageProcessor.setMessageListener(new Listener<IMessage>()
+                                       {
+                                           @Override
+                                           public void receive(IMessage message)
+                                           {
+                                               messageProviderModule.receive(message);
+                                               try
+                                               {
+                                                   logOutput.write(message.toString().getBytes());
+                                                   logOutput.write("\n".getBytes());
+                                               }
+                                               catch(IOException ioe)
+                                               {
+                                                   mLog.error("Error", ioe);
+                                               }
+//                                                   mLog.debug(message.toString());
+                                           }
+                                       });
+
+                                       try(BinaryReader reader = new BinaryReader(path, 200))
+                                       {
+                                           while(reader.hasNext())
+                                           {
+                                               ReusableByteBuffer buffer = reader.next();
+                                               messageFramer.receive(buffer);
+                                           }
+                                       }
+                                       catch(Exception ioe)
+                                       {
+                                           ioe.printStackTrace();
+                                       }
+                                   }
+                               }
+                );
             }
-        });
-
-
-
-
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190321_192101_12000BPS_APCO25PHASE2_DFW_Irving_DFW_Phase_II_baseband_20181015_182924_good_phase_2.wav.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/DFW Airport Encrypted/20190224_101332_12000BPS_APCO25PHASE2_DFWAirport_Site_857_3875_baseband_20181213_223136.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042605_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_1.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042806_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_3.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042830_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_4.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042853_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_5.bits");
-        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042917_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_6.bits");
-//        Path path = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/20190323_042938_12000BPS_APCO25PHASE2_CNYICC_ROME_154_250_7.bits");
-
-        try(BinaryReader reader = new BinaryReader(path, 200))
-        {
-            while(reader.hasNext())
+            catch(IOException ioe)
             {
-                messageFramer.receive(reader.next());
+                mLog.error("Error", ioe);
             }
         }
-        catch(Exception ioe)
+        catch(IOException ioe)
         {
-            ioe.printStackTrace();
+            mLog.error("Error", ioe);
         }
-
-//        frameRecorder.stop();
     }
 }

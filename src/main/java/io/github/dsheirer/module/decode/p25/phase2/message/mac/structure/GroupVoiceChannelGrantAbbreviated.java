@@ -72,8 +72,8 @@ public class GroupVoiceChannelGrantAbbreviated extends MacStructure implements I
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getGroupAddress());
         sb.append(" FM:").append(getSourceAddress());
+        sb.append(" TO:").append(getGroupAddress());
         sb.append(" CHAN:").append(getChannel());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();

@@ -72,8 +72,8 @@ public class StatusUpdateExtended extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceSuid());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" UNIT:").append(getUnitStatus());
         sb.append(" USER:").append(getUserStatus());
         return sb.toString();

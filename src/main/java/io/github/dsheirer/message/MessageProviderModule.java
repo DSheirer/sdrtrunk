@@ -28,11 +28,11 @@ import io.github.dsheirer.sample.Listener;
 /**
  * Testing module to use for injecting IMessages into a processing chain
  */
-public class MessageInjectionModule extends Module implements IMessageProvider
+public class MessageProviderModule extends Module implements IMessageProvider
 {
     private Listener<IMessage> mMessageListener;
 
-    public MessageInjectionModule()
+    public MessageProviderModule()
     {
 
     }

@@ -78,7 +78,7 @@ public class PushToTalk extends MacStructure
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FROM:").append(getSourceAddress());
+        sb.append("FM:").append(getSourceAddress());
         sb.append(" TO:").append(getGroupAddress());
 
         if(isEncrypted())

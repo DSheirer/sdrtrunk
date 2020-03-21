@@ -72,8 +72,8 @@ public class ExtendedFunctionCommandExtended extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceSuid());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FUNCTION:").append(getExtendedFunction());
         sb.append(" ARGUMENTS:").append(getArguments());
         return sb.toString();
