@@ -62,8 +62,8 @@ public class StatusQueryAbbreviated extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceAddress());
+        sb.append(" TO:").append(getTargetAddress());
         return sb.toString();
     }
 

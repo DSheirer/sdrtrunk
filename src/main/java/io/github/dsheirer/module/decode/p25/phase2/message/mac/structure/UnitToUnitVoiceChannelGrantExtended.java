@@ -75,8 +75,8 @@ public class UnitToUnitVoiceChannelGrantExtended extends MacStructure implements
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceSuid());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" CHAN:").append(getChannel());
         return sb.toString();
     }

@@ -65,8 +65,8 @@ public class UnitToUnitAnswerRequestAbbreviated extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceAddress());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" ").append(getServiceOptions());
         return sb.toString();
     }

@@ -85,6 +85,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
         return mSquelchStateListener;
     }
 
+    /**
+     * Resets this audio module upon completion of an audio call to prepare for the next call.  This method is
+     * controlled by the squelch state listener and squelch state is controlled by the P25P2DecoderState.
+     */
     @Override
     public void reset()
     {
@@ -93,6 +97,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
         mKnoxMetadataProcessor = null;
         mToneMetadataProcessor = null;
         mQueuedAudioTimeslots.clear();
+
+        //Reset encrypted call handling flags
+        mEncryptedCallStateEstablished = false;
+        mEncryptedCall = false;
     }
 
     @Override
@@ -307,6 +315,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 
         public List<String> process(String value)
         {
+            mLog.debug("Processing AMBE Tone Metadata Value: " + value);
             if(value != null)
             {
                 if(mLastInput != null && mLastInput.equalsIgnoreCase(value))

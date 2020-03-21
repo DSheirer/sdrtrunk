@@ -42,6 +42,7 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacPduType;
@@ -96,7 +97,7 @@ import org.slf4j.LoggerFactory;
 public class P25P2DecoderState extends TimeslotDecoderState implements IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderState.class);
-
+    private static int SYSTEM_CONTROLLER = 0xFFFFFF;
     private ChannelType mChannelType;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private P25P2NetworkConfigurationMonitor mNetworkConfigurationMonitor = new P25P2NetworkConfigurationMonitor();
@@ -216,12 +217,28 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     //the closing event.
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                        if(identifier.getRole() == Role.FROM && identifier instanceof APCO25RadioIdentifier)
+                        {
+                            int value = ((APCO25RadioIdentifier)identifier).getValue();
+
+                            if(value == SYSTEM_CONTROLLER)
+                            {
+                                //ignore so we don't overwrite the real from radio identifier
+                            }
+                            else
+                            {
+                                //Add to the identifier collection after filtering through the patch group manager
+                                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                            }
+                        }
+                        else
+                        {
+                            //Add to the identifier collection after filtering through the patch group manager
+                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                        }
                     }
 
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(IdentifierClass.USER);
+                    closeCurrentCallEvent(message.getTimestamp(), true);
                 }
                 break;
             case TDMA_0_NULL_INFORMATION_MESSAGE:

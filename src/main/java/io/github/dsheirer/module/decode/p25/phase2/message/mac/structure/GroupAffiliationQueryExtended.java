@@ -66,8 +66,8 @@ public class GroupAffiliationQueryExtended extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceSuid());
+        sb.append(" TO:").append(getTargetAddress());
         return sb.toString();
     }
 
