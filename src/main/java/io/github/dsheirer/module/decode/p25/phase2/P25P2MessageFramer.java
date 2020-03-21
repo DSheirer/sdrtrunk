@@ -22,6 +22,7 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.record.Record;
+import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
@@ -29,6 +30,7 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageProviderModule;
 import io.github.dsheirer.message.StuffBitsMessage;
@@ -221,6 +223,11 @@ public class P25P2MessageFramer implements Listener<Dibit>
 
     public static void main(String[] args)
     {
+        UserPreferences userPreferences = new UserPreferences();
+        userPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(Path.of("/home/denny/JMBE/jmbe-1.0.2.jar"));
+        ApplicationLog applicationLog = new ApplicationLog(userPreferences);
+        applicationLog.start();
+
         Path directory = Paths.get("/home/denny/temp/Harris P25-2 Logs/bits");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
@@ -228,13 +235,13 @@ public class P25P2MessageFramer implements Listener<Dibit>
 //        ScrambleParameters scrambleParameters = new ScrambleParameters(1, 972, 972));
 //        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677)); //CNYICC - Rome
 
-        UserPreferences userPreferences = new UserPreferences();
         Channel channel = new Channel("Phase 2 Test");
         channel.setDecodeConfiguration(new DecodeConfigP25Phase2());
         AliasList aliasList = new AliasList("Test Alias List");
         Alias alias = new Alias("TG Range 1-65535");
         alias.addAliasID(new Record());
-        alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
+//        alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
+        alias.addAliasID(new Talkgroup(Protocol.APCO25, 11185));
         aliasList.addAlias(alias);
         AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
         recordingManager.start();
@@ -247,6 +254,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
         processingChain.addModule(new P25P2AudioModule(userPreferences, 1, aliasList));
         MessageProviderModule messageProviderModule = new MessageProviderModule();
         processingChain.addModule(messageProviderModule);
+        processingChain.start();
 
         try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
         {
@@ -288,7 +296,8 @@ public class P25P2MessageFramer implements Listener<Dibit>
                                                {
                                                    mLog.error("Error", ioe);
                                                }
-//                                                   mLog.debug(message.toString());
+
+                                               mLog.debug(message.toString());
                                            }
                                        });
 

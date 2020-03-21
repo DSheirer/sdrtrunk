@@ -242,7 +242,12 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 }
                 break;
             case TDMA_0_NULL_INFORMATION_MESSAGE:
-                closeCurrentCallEvent(message.getTimestamp(), true);
+                MacPduType type = message.getMacPduType();
+
+                if(type == MacPduType.MAC_3_IDLE || type == MacPduType.MAC_6_HANGTIME)
+                {
+                    closeCurrentCallEvent(message.getTimestamp(), true);
+                }
                 continueState(State.ACTIVE);
                 break;
             case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
