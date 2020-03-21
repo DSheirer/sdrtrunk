@@ -75,6 +75,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private long mStartTimestamp = System.currentTimeMillis();
     private boolean mDisposing = false;
     private AudioSegment mLinkedAudioSegment;
+    private int mTimeslot;
 
     /**
      * Constructs an instance
@@ -84,7 +85,16 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public AudioSegment(AliasList aliasList, int timeslot)
     {
         mAliasList = aliasList;
+        mTimeslot = timeslot;
         mIdentifierCollection.setTimeslot(timeslot);
+    }
+
+    /**
+     * Timeslot for this audio segment
+     */
+    public int getTimeslot()
+    {
+        return mTimeslot;
     }
 
     /**
@@ -211,7 +221,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     }
 
     /**
-     * Identifier collection for this audio segment
+     * Immutable identifier collection for this audio segment
      */
     public IdentifierCollection getIdentifierCollection()
     {
@@ -226,7 +236,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     {
         for(Identifier identifier: identifiers)
         {
-            mIdentifierCollection.update(identifier);
+            addIdentifier(identifier);
         }
     }
 
@@ -355,6 +365,40 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     }
 
     /**
+     * Adds the identifier to this audio segment and updates record, priority and streaming properties.
+     *
+     * Note: identifiers pass to this method must be checked for timeslot match.
+     */
+    public void addIdentifier(Identifier identifier)
+    {
+        mIdentifierCollection.update(identifier);
+
+        List<Alias> aliases = mAliasList.getAliases(identifier);
+
+        for(Alias alias: aliases)
+        {
+            if(alias.isRecordable())
+            {
+                mRecordAudio.set(true);
+            }
+
+            //Add all broadcast channels for the alias ... let the set handle duplication.
+            for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+            {
+                mBroadcastChannels.add(broadcastChannel);
+            }
+
+            //Only assign a playback priority if it is lower priority than the current setting.
+            int playbackPriority = alias.getPlaybackPriority();
+
+            if(playbackPriority < mMonitorPriority.get())
+            {
+                mMonitorPriority.set(playbackPriority);
+            }
+        }
+    }
+
+    /**
      * Processes identifier update notifications and updates audio segment properties using the associated aliases
      * from the alias list.
      *
@@ -363,38 +407,11 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     @Override
     public void receive(IdentifierUpdateNotification identifierUpdateNotification)
     {
-        IdentifierUpdateNotification.Operation operation = identifierUpdateNotification.getOperation();
-
-        //Only process ADD updates.  Ignore REMOVE to preserve the full metadata set
-        if(operation == IdentifierUpdateNotification.Operation.ADD ||
-           operation == IdentifierUpdateNotification.Operation.SILENT_ADD)
+        //Only process add updates that match this timeslot
+        if(identifierUpdateNotification.getTimeslot() == getTimeslot() &&
+            (identifierUpdateNotification.isAdd() || identifierUpdateNotification.isSilentAdd()))
         {
-            mIdentifierCollection.receive(identifierUpdateNotification);
-
-            List<Alias> aliases = mAliasList.getAliases(identifierUpdateNotification.getIdentifier());
-
-            for(Alias alias: aliases)
-            {
-                if(alias.isRecordable())
-                {
-                    mRecordAudio.set(true);
-                }
-
-                //Add all broadcast channels for the alias ... let the set handle duplication.
-                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
-                {
-                    mBroadcastChannels.add(broadcastChannel);
-                }
-
-                //Only assign a playback priority if it is lower priority than the current setting.
-                int playbackPriority = alias.getPlaybackPriority();
-
-                if(playbackPriority < mMonitorPriority.get())
-                {
-                    mMonitorPriority.set(playbackPriority);
-                }
-            }
-
+            addIdentifier(identifierUpdateNotification.getIdentifier());
             mIdentifierUpdateNotificationBroadcaster.broadcast(identifierUpdateNotification);
         }
     }
