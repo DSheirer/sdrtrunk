@@ -40,6 +40,7 @@ import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.EnumSet;
 
 public class HackRFTunerController extends USBTunerController
 {
@@ -56,7 +57,7 @@ public class HackRFTunerController extends USBTunerController
     public static final long MIN_FREQUENCY = 10000000l;
     public static final long MAX_FREQUENCY = 6000000000l;
     public static final long DEFAULT_FREQUENCY = 101100000;
-    public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
+    public static final double USABLE_BANDWIDTH_PERCENT = 0.75;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
     private NativeBufferConverter mNativeBufferConverter = new ByteSampleConverter();
@@ -337,8 +338,14 @@ public class HackRFTunerController extends USBTunerController
     {
         if(config instanceof HackRFTunerConfiguration)
         {
-            HackRFTunerConfiguration hackRFConfig =
-                (HackRFTunerConfiguration)config;
+            HackRFTunerConfiguration hackRFConfig = (HackRFTunerConfiguration)config;
+
+            //Convert legacy sample rate setting to new sample rates
+            if(!hackRFConfig.getSampleRate().isValidSampleRate())
+            {
+                mLog.warn("Changing legacy HackRF Sample Rates Setting [" + hackRFConfig.getSampleRate().name() + "] to current valid setting");
+                hackRFConfig.setSampleRate(HackRFSampleRate.RATE_2_3);
+            }
 
             try
             {
@@ -499,6 +506,11 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setSampleRate(HackRFSampleRate rate) throws UsbException, SourceException
     {
+        if(!rate.isValidSampleRate())
+        {
+            rate = HackRFSampleRate.RATE_2_3;
+        }
+
         setSampleRateManual(rate.getRate(), 1);
 
         mFrequencyController.setSampleRate(rate.getRate());
@@ -566,29 +578,44 @@ public class HackRFTunerController extends USBTunerController
 
     public enum HackRFSampleRate
     {
-        RATE2_016MHZ(2016000, "2.016 MHz", BasebandFilter.F3_50),
-        RATE3_024MHZ(3024000, "3.024 MHz", BasebandFilter.F5_00),
-        RATE4_464MHZ(4464000, "4.464 MHz", BasebandFilter.F6_00),
-        RATE5_376MHZ(5376000, "5.376 MHz", BasebandFilter.F7_00),
-        RATE7_488MHZ(7488000, "7.488 MHz", BasebandFilter.F9_00),
-        RATE10_080MHZ(10080000, "10.080 MHz", BasebandFilter.F12_00),
-        RATE12_000MHZ(12000000, "12.000 MHz", BasebandFilter.F14_00),
-        RATE13_440MHZ(13440000, "13.440 MHz", BasebandFilter.F15_00),
-        RATE14_976MHZ(14976000, "14.976 MHz", BasebandFilter.F20_00),
-        RATE19_968MHZ(19968000, "19.968 MHz", BasebandFilter.F24_00);
+        RATE_2_3(2300000, "2.300 MHz", BasebandFilter.F1_75),
+        RATE_3_3(3300000, "3.300 MHz", BasebandFilter.F2_50),
+        RATE_4_6(4600000, "4.600 MHz", BasebandFilter.F3_50),
+        RATE_6_6(6600000, "6.600 MHz", BasebandFilter.F5_00),
+        RATE_7_3(7300000, "7.300 MHz", BasebandFilter.F5_50),
+        RATE_8_0(8000000, "8.000 MHz", BasebandFilter.F6_00),
+        RATE_9_3(9300000, "9.300 MHz", BasebandFilter.F7_00),
+        RATE_10_6(10600000, "10.600 MHz", BasebandFilter.F8_00),
+        RATE_12_0(12000000, "12.000 MHz", BasebandFilter.F9_00),
+        RATE_13_3(13300000, "13.300 MHz", BasebandFilter.F10_00),
+        RATE_16_0(16000000, "16.000 MHz", BasebandFilter.F12_00),
+        RATE_18_6(18600000, "18.600 MHz", BasebandFilter.F14_00),
+        RATE_20_0(20000000, "20.000 MHz", BasebandFilter.F15_00),
+
+        //These sample rates are deprecated.  They're maintained here for backward compatibility with user settings
+        RATE2_016MHZ(2016000, "*2.016 MHz", BasebandFilter.F3_50),
+        RATE3_024MHZ(3024000, "*3.024 MHz", BasebandFilter.F5_00),
+        RATE4_464MHZ(4464000, "*4.464 MHz", BasebandFilter.F6_00),
+        RATE5_376MHZ(5376000, "*5.376 MHz", BasebandFilter.F7_00),
+        RATE7_488MHZ(7488000, "*7.488 MHz", BasebandFilter.F9_00),
+        RATE10_080MHZ(10080000, "*10.080 MHz", BasebandFilter.F12_00),
+        RATE12_000MHZ(12000000, "*12.000 MHz", BasebandFilter.F14_00),
+        RATE13_440MHZ(13440000, "*13.440 MHz", BasebandFilter.F15_00),
+        RATE14_976MHZ(14976000, "*14.976 MHz", BasebandFilter.F20_00),
+        RATE19_968MHZ(19968000, "*19.968 MHz", BasebandFilter.F24_00);
 
         private int mRate;
         private String mLabel;
         private BasebandFilter mFilter;
 
-        private HackRFSampleRate(int rate,
-                                 String label,
-                                 BasebandFilter filter)
+        private HackRFSampleRate(int rate, String label, BasebandFilter filter)
         {
             mRate = rate;
             mLabel = label;
             mFilter = filter;
         }
+
+        public static EnumSet<HackRFSampleRate> VALID_SAMPLE_RATES = EnumSet.range(RATE_2_3, RATE_20_0);
 
         public int getRate()
         {
@@ -608,6 +635,11 @@ public class HackRFTunerController extends USBTunerController
         public BasebandFilter getFilter()
         {
             return mFilter;
+        }
+
+        public boolean isValidSampleRate()
+        {
+            return VALID_SAMPLE_RATES.contains(this);
         }
     }
 
