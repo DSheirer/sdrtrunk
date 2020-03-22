@@ -23,7 +23,7 @@ plugins {
     id 'application'
     id 'java'
     id 'idea'
-    id 'org.openjfx.javafxplugin' version '0.0.6'
+    id 'org.openjfx.javafxplugin' version '0.0.8'
     id 'org.beryx.runtime' version '1.8.0'
 }
 
@@ -34,7 +34,7 @@ repositories {
 }
 
 version = '0.4.0-beta.6'
-sourceCompatibility = '11'
+sourceCompatibility = '13'
 
 sourceSets {
     main.java.srcDirs 'src/main'
@@ -80,18 +80,18 @@ dependencies {
     implementation 'pl.edu.icm:JLargeArrays:1.6'
 
     //The must remain as compile options to ensure they are included in the build to produce multi-OS images
-    compile "org.openjfx:javafx-base:11:win"
-    compile "org.openjfx:javafx-base:11:linux"
-    compile "org.openjfx:javafx-base:11:mac"
-    compile "org.openjfx:javafx-controls:11.0.2:win"
-    compile "org.openjfx:javafx-controls:11.0.2:linux"
-    compile "org.openjfx:javafx-controls:11.0.2:mac"
-    compile "org.openjfx:javafx-graphics:11.0.2:win"
-    compile "org.openjfx:javafx-graphics:11.0.2:linux"
-    compile "org.openjfx:javafx-graphics:11.0.2:mac"
-    compile "org.openjfx:javafx-swing:11.0.2:win"
-    compile "org.openjfx:javafx-swing:11.0.2:linux"
-    compile "org.openjfx:javafx-swing:11.0.2:mac"
+    compile "org.openjfx:javafx-base:13:win"
+    compile "org.openjfx:javafx-base:13:linux"
+    compile "org.openjfx:javafx-base:13:mac"
+    compile "org.openjfx:javafx-controls:13.0.1:win"
+    compile "org.openjfx:javafx-controls:13.0.1:linux"
+    compile "org.openjfx:javafx-controls:13.0.1:mac"
+    compile "org.openjfx:javafx-graphics:13.0.1:win"
+    compile "org.openjfx:javafx-graphics:13.0.1:linux"
+    compile "org.openjfx:javafx-graphics:13.0.1:mac"
+    compile "org.openjfx:javafx-swing:13.0.1:win"
+    compile "org.openjfx:javafx-swing:13.0.1:linux"
+    compile "org.openjfx:javafx-swing:13.0.1:mac"
 }
 
 application {
@@ -218,4 +218,11 @@ tasks.runtime.doLast {
     delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x86_32-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+
+    //JavaFX web and media modules are transitive dependencies of ControlsFX but are not required for this application
+    delete(fileTree('build/image/sdr-trunk-linux-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-linux-x86_32-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
+    delete(fileTree('build/image/sdr-trunk-windows-x86_32-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
 }
