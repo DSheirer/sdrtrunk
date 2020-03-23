@@ -105,6 +105,19 @@ public class AudioRecordingManager implements Listener<AudioSegment>
      */
     public void processCompletedAudioSegment(AudioSegment audioSegment)
     {
+        //Debug
+        if(audioSegment.getAudioBufferCount() == 0)
+        {
+            mLog.debug("Audio Segment detected with 0 audio buffers");
+        }
+
+        List<Identifier> toIdentifiers = audioSegment.getIdentifierCollection().getIdentifiers(Role.TO);
+
+        if(toIdentifiers.isEmpty())
+        {
+            mLog.debug("Audio Segment detected with NO TO identifiers");
+        }
+
         if(audioSegment.recordAudioProperty().get())
         {
             mCompletedAudioSegmentQueue.add(audioSegment);
