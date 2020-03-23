@@ -350,19 +350,26 @@ public class PlaybackPreference extends Preference
         {
             MixerChannelConfiguration defaultConfig = MixerManager.getDefaultOutputMixer();
 
-            String configName = mPreferences.get(PREFERENCE_KEY_MIXER_CHANNEL_CONFIG, defaultConfig.toString());
-
-            for(MixerChannelConfiguration config: MixerManager.getOutputMixers())
+            if(defaultConfig != null)
             {
-                if(config.toString().contentEquals(configName))
+                String configName = mPreferences.get(PREFERENCE_KEY_MIXER_CHANNEL_CONFIG, defaultConfig.toString());
+
+                for(MixerChannelConfiguration config: MixerManager.getOutputMixers())
                 {
-                    mMixerChannelConfiguration = config;
+                    if(config.toString().contentEquals(configName))
+                    {
+                        mMixerChannelConfiguration = config;
+                    }
+                }
+
+                if(mMixerChannelConfiguration == null)
+                {
+                    mMixerChannelConfiguration = defaultConfig;
                 }
             }
-
-            if(mMixerChannelConfiguration == null)
+            else
             {
-                mMixerChannelConfiguration = defaultConfig;
+                mLog.error("Error - no system audio devices available");
             }
         }
 

@@ -81,15 +81,23 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
         MyEventBus.getEventBus().register(this);
 
         MixerChannelConfiguration configuration = mUserPreferences.getPlaybackPreference().getMixerChannelConfiguration();
-        try
+
+        if(configuration != null)
         {
-            setMixerChannelConfiguration(configuration);
+            try
+            {
+                setMixerChannelConfiguration(configuration);
+            }
+            catch(AudioException ae)
+            {
+                mLog.error("Error during setup of audio playback configuration.  Attempted to use audio mixer [" +
+                    (configuration != null ? configuration.getMixer().toString() : "null") + "] and channel [" +
+                    (configuration != null ? configuration.getMixerChannel().name() : "null") + "]", ae);
+            }
         }
-        catch(AudioException ae)
+        else
         {
-            mLog.error("Error during setup of audio playback configuration.  Attempted to use audio mixer [" +
-                (configuration != null ? configuration.getMixer().toString() : "null") + "] and channel [" +
-                (configuration != null ? configuration.getMixerChannel().name() : "null") + "]", ae);
+            mLog.warn("No audio output devices available");
         }
     }
 
