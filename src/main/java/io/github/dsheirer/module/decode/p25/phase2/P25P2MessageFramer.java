@@ -224,25 +224,30 @@ public class P25P2MessageFramer implements Listener<Dibit>
     public static void main(String[] args)
     {
         UserPreferences userPreferences = new UserPreferences();
-        userPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(Path.of("/home/denny/JMBE/jmbe-1.0.2.jar"));
+        userPreferences.getJmbeLibraryPreference().setPathJmbeLibrary(Path.of("/home/denny/JMBE/jmbe-1.0.3.jar"));
         ApplicationLog applicationLog = new ApplicationLog(userPreferences);
         applicationLog.start();
 
+//        Path directory = Paths.get("/home/denny/SDRTrunk/recordings");
         Path directory = Paths.get("/home/denny/temp/Harris P25-2 Logs/bits");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 1186, 1189);  //Nugent
         ScrambleParameters scrambleParameters = new ScrambleParameters(123654, 813, 10);  //Hills
 //        ScrambleParameters scrambleParameters = new ScrambleParameters(1, 972, 972));
-//        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677)); //CNYICC - Rome
+//        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677); //CNYICC - Rome
 
-        Channel channel = new Channel("Phase 2 Test");
+//        Channel channel = new Channel("Phase 2 Test", Channel.ChannelType.STANDARD);
+        Channel channel = new Channel("Phase 2 Test", Channel.ChannelType.TRAFFIC);
+
         channel.setDecodeConfiguration(new DecodeConfigP25Phase2());
         AliasList aliasList = new AliasList("Test Alias List");
-        Alias alias = new Alias("TG Range 1-65535");
-        alias.addAliasID(new Record());
+//        Alias alias = new Alias("TG Range 1-65535");
+//        alias.addAliasID(new Record());
 //        alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
-        alias.addAliasID(new Talkgroup(Protocol.APCO25, 11185));
-        aliasList.addAlias(alias);
+//        alias.addAliasID(new Talkgroup(Protocol.APCO25, 11857));
+//        alias.addAliasID(new Talkgroup(Protocol.APCO25, 12601));
+//        aliasList.addAlias(alias);
         AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
         recordingManager.start();
         ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
@@ -254,20 +259,21 @@ public class P25P2MessageFramer implements Listener<Dibit>
         processingChain.addModule(new P25P2AudioModule(userPreferences, 1, aliasList));
         MessageProviderModule messageProviderModule = new MessageProviderModule();
         processingChain.addModule(messageProviderModule);
-        processingChain.start();
 
         try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
         {
             try
             {
-                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*PHASE2_Hills*TRAFFIC.bits");
+//                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*042102*TRAFFIC.bits");
+//                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*042102*.bits");
+                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*214601*Hills*TRAFFIC.bits");
 
                 stream.forEach(new Consumer<Path>()
                                {
                                    @Override
                                    public void accept(Path path)
                                    {
-                                       mLog.debug("Processing:" + path.toString());
+                                       mLog.debug("\n\nProcessing:" + path.toString() + "\n\n");
                                        try
                                        {
                                            logOutput.write(("Processing:" + path.toString() + "\n").getBytes());
@@ -276,6 +282,8 @@ public class P25P2MessageFramer implements Listener<Dibit>
                                        {
                                            mLog.error("Error", ioe);
                                        }
+
+                                       processingChain.start();
 
                                        P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE2.getProtocol().getBitRate());
                                        messageFramer.setScrambleParameters(scrambleParameters);
@@ -313,6 +321,12 @@ public class P25P2MessageFramer implements Listener<Dibit>
                                        {
                                            ioe.printStackTrace();
                                        }
+
+                                       mLog.debug("**STOPPING PROCESSING CHAIN**");
+
+                                       processingChain.stop();
+
+                                       mLog.debug("\n============================================================================================================================\n");
                                    }
                                }
                 );
@@ -326,5 +340,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
         {
             mLog.error("Error", ioe);
         }
+
+        recordingManager.stop();
     }
 }

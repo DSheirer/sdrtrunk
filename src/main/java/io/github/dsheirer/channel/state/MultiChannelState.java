@@ -105,7 +105,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             //Set the proxy as a listener so that echo'd updates are broadcast externally
             mutableIdentifierCollection.setIdentifierUpdateListener(mIdentifierUpdateNotificationProxy);
 
-            StateMachine stateMachine = new StateMachine(timeslot);
+            StateMachine stateMachine = new StateMachine(timeslot, State.MULTI_CHANNEL_ACTIVE_STATES);
             mStateMachineMap.put(timeslot, stateMachine);
             stateMachine.addListener(this);
 
@@ -133,7 +133,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     public void stateChanged(State state, int timeslot)
     {
         //Broadcast current channel state so that channel rotation monitor can track
-        if(state.isActiveState())
+        if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(state))
         {
             broadcast(DecoderStateEvent.activeState(timeslot));
         }
@@ -148,9 +148,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
         switch(state)
         {
-            case IDLE:
-                broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
-                break;
             case RESET:
                 reset(timeslot);
                 mStateMachineMap.get(timeslot).setState(State.IDLE);
@@ -173,19 +170,49 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
      */
     private void checkTeardown()
     {
-        boolean teardown = true;
+        boolean teardown = false;
+        boolean active = false;
 
         for(StateMachine stateMachine: mStateMachineMap.values())
         {
-            if(stateMachine.getState().isActiveState())
+            State state = stateMachine.getState();
+
+            //If we have an active state in either timeslot, don't teardown.  IDLE is a special state that is active
+            //but doesn't prevent a teardown when the other timeslot is in TEARDOWN
+            if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(state) && state != State.IDLE)
             {
-                teardown = false;
+                active = true;
+            }
+            else if(state == State.TEARDOWN)
+            {
+                teardown = true;
             }
         }
 
-        if(teardown)
+        if(teardown && !active)
         {
-            broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
+            if(mChannel.isTrafficChannel())
+            {
+                broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
+            }
+            else
+            {
+                for(StateMachine stateMachine: mStateMachineMap.values())
+                {
+                    stateMachine.setState(State.RESET);
+                }
+            }
+        }
+        //If one timeslot is teardown but the other is still active, reset the teardown timeslot to IDLE
+        else if(teardown && active)
+        {
+            for(StateMachine stateMachine: mStateMachineMap.values())
+            {
+                if(stateMachine.getState() == State.TEARDOWN)
+                {
+                    stateMachine.setState(State.RESET);
+                }
+            }
         }
     }
 
@@ -340,11 +367,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
         {
             mIdentifierCollectionMap.get(timeslot).broadcastIdentifiers();
-
-            if(mChannel.getChannelType() == ChannelType.TRAFFIC)
-            {
-                mStateMachineMap.get(timeslot).setState(State.ACTIVE);
-            }
+            mStateMachineMap.get(timeslot).setState(State.RESET);
         }
     }
 
@@ -476,7 +499,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                     //in an active (ie sync locked) state.
                     for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
                     {
-                        if(mStateMachineMap.get(timeslot).getState().isActiveState())
+                        if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(mStateMachineMap.get(timeslot).getState()))
                         {
                             broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
                                 mChannel.getChannelType().name()));
@@ -511,7 +534,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                     case CONTINUATION:
                     case DECODE:
                     case START:
-                        if(State.CALL_STATES.contains(event.getState()))
+                        if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(event.getState()))
                         {
                             mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
                         }
@@ -519,11 +542,11 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                     case END:
                         if(mChannel.isTrafficChannel())
                         {
-                            mStateMachineMap.get(event.getTimeslot()).setState(State.TEARDOWN);
+                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
                         }
                         else
                         {
-                            mStateMachineMap.get(event.getTimeslot()).setState(State.FADE);
+                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
                         }
                         break;
                     case RESET:

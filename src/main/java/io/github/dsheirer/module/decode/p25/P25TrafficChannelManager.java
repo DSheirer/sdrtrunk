@@ -572,7 +572,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
         if(type == null)
         {
-            mLog.debug("Unrecognized opcode for determining decode event type: " + opcode.name());
+            mLog.error("Unrecognized opcode for determining decode event type: " + opcode.name());
             type = DecodeEventType.CALL;
         }
 
@@ -697,7 +697,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
         //Issue a disable request for each traffic channel
         for(Channel channel: channels)
         {
-            mLog.debug("Stopping traffic channel: " + channel);
+            mLog.info("Stopping traffic channel: " + channel);
             broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
         }
     }

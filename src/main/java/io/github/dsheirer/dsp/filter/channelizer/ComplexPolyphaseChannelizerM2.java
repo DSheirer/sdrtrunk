@@ -28,6 +28,7 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -62,7 +63,7 @@ import java.util.List;
 public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChannelizer
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
-
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
     private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 25000;
 
     //Sized at 152 buffers a second where max = 5 seconds and reset = 2 seconds worth of buffers
@@ -154,7 +155,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             channels--;
         }
 
-        mLog.debug("Sample Rate [" + sampleRate + "] providing [" + channels + "] channels at [" + (sampleRate / (double)channels) + "] Hz each");
+        mLog.info("Sample Rate [" + DECIMAL_FORMAT.format(sampleRate) + "] providing [" + channels +
+            "] channels at [" + DECIMAL_FORMAT.format(sampleRate / (double)channels) + "] Hz each");
+
         return channels;
     }
 

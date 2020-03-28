@@ -39,7 +39,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     private static final int MAX_SEGMENT_AUDIO_SAMPLE_LENGTH = 8000 * 60 * 1; //8 kHz - 1 minute
 
     private Listener<AudioSegment> mAudioSegmentListener;
-    private MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
+    protected MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private AliasList mAliasList;
     private AudioSegment mAudioSegment;
