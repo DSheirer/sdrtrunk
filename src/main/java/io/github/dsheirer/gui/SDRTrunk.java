@@ -181,7 +181,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
 
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
+        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, channelMapModel);
         mSourceManager = new SourceManager(tunerModel, mSettingsManager, mUserPreferences);
         mChannelProcessingManager = new ChannelProcessingManager(channelMapModel, eventLogManager, mSourceManager,
             aliasModel, mUserPreferences);

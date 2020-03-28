@@ -724,7 +724,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
                             }
                             catch(Exception e)
                             {
-                                
+
                             }
                         }
                     }
