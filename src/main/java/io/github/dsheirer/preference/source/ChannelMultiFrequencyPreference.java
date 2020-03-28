@@ -37,7 +37,7 @@ public class ChannelMultiFrequencyPreference extends Preference
     private Preferences mPreferences = Preferences.userNodeForPackage(ChannelMultiFrequencyPreference.class);
     private static final String PREFERENCE_KEY_ROTATION_DELAY = "rotation.delay";
     private static final long DEFAULT_ROTATION_DELAY = 5000; //5 seconds
-    private Long mRotationDelay = DEFAULT_ROTATION_DELAY;
+    private Long mRotationDelay;
 
     /**
      * Constructs a tuner preference with the update listener
