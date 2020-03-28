@@ -20,6 +20,7 @@
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.AudioSegmentRecorder;
 import io.github.dsheirer.record.RecordFormat;
@@ -145,8 +146,11 @@ public class AudioStreamingManager implements Listener<AudioSegment>
                     try
                     {
                         AudioSegmentRecorder.record(audioSegment, path, RecordFormat.MP3);
+                        IdentifierCollection identifierCollectionCopy =
+                            new IdentifierCollection(audioSegment.getIdentifierCollection().getIdentifiers());
+
                         AudioRecording audioRecording = new AudioRecording(path, audioSegment.getBroadcastChannels(),
-                            audioSegment.getIdentifierCollection(), audioSegment.getStartTimestamp(), length);
+                            identifierCollectionCopy, audioSegment.getStartTimestamp(), length);
                         mAudioRecordingListener.receive(audioRecording);
                     }
                     catch(IOException ioe)
