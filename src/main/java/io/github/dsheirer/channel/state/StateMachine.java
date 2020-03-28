@@ -30,8 +30,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
+/**
+ * State machine for tracking a channel state.
+ */
 public class StateMachine
 {
     private final static Logger mLog = LoggerFactory.getLogger(StateMachine.class);
@@ -42,13 +46,21 @@ public class StateMachine
     protected long mEndTimeout;
     protected long mEndTimeoutBuffer = 0;
     private int mTimeslot;
+    private EnumSet<State> mActiveStates;
     private Channel.ChannelType mChannelType = Channel.ChannelType.STANDARD;
     private List<IStateMachineListener> mStateMachineListeners = new ArrayList<>();
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateListener;
 
-    public StateMachine(int timeslot)
+    /**
+     * Constructs an instance
+     *
+     * @param timeslot for this state machine
+     * @param activeStates set of states considered active for updating the fade timeout
+     */
+    public StateMachine(int timeslot, EnumSet<State> activeStates)
     {
         mTimeslot = timeslot;
+        mActiveStates = activeStates;
     }
 
     public void addListener(IStateMachineListener listener)
@@ -73,7 +85,7 @@ public class StateMachine
 
     public void checkState()
     {
-        if(mState.isActiveState() && mFadeTimeout <= System.currentTimeMillis())
+        if(mActiveStates.contains(mState) && mFadeTimeout <= System.currentTimeMillis())
         {
             setState(State.FADE);
         }
@@ -92,18 +104,22 @@ public class StateMachine
     {
         if(state == mState)
         {
-            if(State.CALL_STATES.contains(state))
+            if(mActiveStates.contains(state))
             {
                 updateFadeTimeout();
             }
         }
         else if(mState.canChangeTo(state))
         {
+            if(mActiveStates.contains(state))
+            {
+                updateFadeTimeout();
+            }
+
             switch(state)
             {
                 case ACTIVE:
                     mState = state;
-                    updateFadeTimeout();
                     broadcast(ChannelStateIdentifier.ACTIVE);
                     break;
                 case CONTROL:
@@ -111,23 +127,19 @@ public class StateMachine
                     if(mChannelType == Channel.ChannelType.STANDARD)
                     {
                         mState = state;
-                        updateFadeTimeout();
                         broadcast(ChannelStateIdentifier.CONTROL);
                     }
                     break;
                 case DATA:
                     mState = state;
-                    updateFadeTimeout();
                     broadcast(ChannelStateIdentifier.DATA);
                     break;
                 case ENCRYPTED:
                     mState = state;
-                    updateFadeTimeout();
                     broadcast(ChannelStateIdentifier.ENCRYPTED);
                     break;
                 case CALL:
                     mState = state;
-                    updateFadeTimeout();
                     broadcast(ChannelStateIdentifier.CALL);
                     break;
                 case FADE:

@@ -37,6 +37,6 @@ public abstract class RadioIdentifier extends IntegerIdentifier
     @Override
     public boolean isValid()
     {
-        return getValue() > 0;
+        return getValue() >= 0;
     }
 }

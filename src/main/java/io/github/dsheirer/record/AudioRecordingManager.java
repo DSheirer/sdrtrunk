@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -55,6 +54,8 @@ public class AudioRecordingManager implements Listener<AudioSegment>
     private ScheduledFuture<?> mQueueProcessorHandle;
     private UserPreferences mUserPreferences;
     private int mUnknownAudioRecordingIndex = 1;
+    private int mDuplicateAudioRecordingSuffix = 1;
+    private String mPreviousRecordingPath = null;
 
     /**
      * Constructs an instance
@@ -105,19 +106,6 @@ public class AudioRecordingManager implements Listener<AudioSegment>
      */
     public void processCompletedAudioSegment(AudioSegment audioSegment)
     {
-        //Debug
-        if(audioSegment.getAudioBufferCount() == 0)
-        {
-            mLog.debug("Audio Segment detected with 0 audio buffers");
-        }
-
-        List<Identifier> toIdentifiers = audioSegment.getIdentifierCollection().getIdentifiers(Role.TO);
-
-        if(toIdentifiers.isEmpty())
-        {
-            mLog.debug("Audio Segment detected with NO TO identifiers");
-        }
-
         if(audioSegment.recordAudioProperty().get())
         {
             mCompletedAudioSegmentQueue.add(audioSegment);
@@ -133,28 +121,26 @@ public class AudioRecordingManager implements Listener<AudioSegment>
      */
     private void processAudioSegments()
     {
-        List<AudioSegment> audioSegments = new ArrayList<>();
-        mCompletedAudioSegmentQueue.drainTo(audioSegments);
+        RecordFormat recordFormat = mUserPreferences.getRecordPreference().getAudioRecordFormat();
+        AudioSegment audioSegment = mCompletedAudioSegmentQueue.poll();
 
-        if(!audioSegments.isEmpty())
+        while(audioSegment != null)
         {
-            RecordFormat recordFormat = mUserPreferences.getRecordPreference().getAudioRecordFormat();
+            Path path = getAudioRecordingPath(audioSegment.getIdentifierCollection(), recordFormat);
 
-            for(AudioSegment audioSegment: audioSegments)
+            try
             {
-                Path path = getAudioRecordingPath(audioSegment.getIdentifierCollection(), recordFormat);
-
-                try
-                {
-                    AudioSegmentRecorder.record(audioSegment, path, recordFormat);
-                }
-                catch(IOException ioe)
-                {
-                    mLog.error("Error recording audio segment to [" + path.toString() + "]");
-                }
-
-                audioSegment.decrementConsumerCount();
+                AudioSegmentRecorder.record(audioSegment, path, recordFormat);
             }
+            catch(IOException ioe)
+            {
+                mLog.error("Error recording audio segment to [" + path.toString() + "]");
+            }
+
+            audioSegment.decrementConsumerCount();
+
+            //Grab the next one to record
+            audioSegment = mCompletedAudioSegmentQueue.poll();
         }
     }
 
@@ -210,7 +196,7 @@ public class AudioRecordingManager implements Listener<AudioSegment>
 
                 if(!toIdentifiers.isEmpty())
                 {
-                    sb.append("_TO_").append(toIdentifiers.get(0)).toString();
+                    sb.append("_TO_").append(toIdentifiers.get(0));
                 }
             }
 
@@ -227,7 +213,14 @@ public class AudioRecordingManager implements Listener<AudioSegment>
 
                 if(!fromIdentifiers.isEmpty())
                 {
-                    sb.append("_FROM_").append(fromIdentifiers.get(0)).toString();
+                    for(Identifier identifier: fromIdentifiers)
+                    {
+                        if(identifier.getForm() != Form.TONE)
+                        {
+                            sb.append("_FROM_").append(identifier);
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -246,6 +239,26 @@ public class AudioRecordingManager implements Listener<AudioSegment>
 
         //Remove any illegal filename characters
         sbFinal.append(StringUtils.replaceIllegalCharacters(sb.toString()));
+
+        if(mPreviousRecordingPath != null && mPreviousRecordingPath.contentEquals(sbFinal.toString()))
+        {
+            sbFinal.append("_V").append(mDuplicateAudioRecordingSuffix++);
+        }
+        else
+        {
+            mDuplicateAudioRecordingSuffix = 2;
+            mPreviousRecordingPath = sbFinal.toString();
+        }
+
+        for(Identifier identifier: identifierCollection.getIdentifiers(Role.FROM))
+        {
+            if(identifier.getForm() == Form.TONE)
+            {
+                sbFinal.append("_WITH_TONES");
+                break;
+            }
+        }
+
         sbFinal.append(recordFormat.getExtension());
 
         return getRecordingBasePath().resolve(sbFinal.toString());

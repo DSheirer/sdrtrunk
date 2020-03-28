@@ -78,8 +78,8 @@ public class Radio extends AliasID
             return false;
         }
 
-        TalkgroupFormat talkgroupFormat = TalkgroupFormat.get(mProtocol);
-        return talkgroupFormat.getMinimumValidValue() <= mValue && mValue <= talkgroupFormat.getMaximumValidValue();
+        RadioFormat radioFormat = RadioFormat.get(mProtocol);
+        return radioFormat.getMinimumValidValue() <= mValue && mValue <= radioFormat.getMaximumValidValue();
     }
 
     public String toString()

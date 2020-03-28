@@ -81,7 +81,7 @@ public class USBMasterProcessor
     {
         if(mRunning.compareAndSet(false, true))
         {
-            mLog.warn("Starting USB master processor thread");
+            mLog.info("Starting USB master processor thread");
             if(mProcessorThread == null)
             {
                 mProcessor.reset();
@@ -110,7 +110,7 @@ public class USBMasterProcessor
     {
         if(mRunning.compareAndSet(true, false))
         {
-            mLog.warn("Stopping USB master processor thread");
+            mLog.info("Stopping USB master processor thread");
             if(mProcessorThread != null)
             {
                 mProcessor.stop();

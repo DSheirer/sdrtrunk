@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.module.decode.p25.audio;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
@@ -27,9 +28,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
-import io.github.dsheirer.identifier.tone.P25CallProgressIdentifier;
-import io.github.dsheirer.identifier.tone.P25DtmfIdentifier;
-import io.github.dsheirer.identifier.tone.P25KnoxIdentifier;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.tone.P25ToneIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
@@ -51,17 +50,9 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2AudioModule.class);
 
-    private static final String METADATA_TYPE_DTMF = "DTMF";
-    private static final String METADATA_TYPE_KNOX = "KNOX";
-    private static final String METADATA_TYPE_TONE = "TONE";
-    private static final String METADATA_TYPE_CALL_PROGRESS = "CALL PROGRESS";
-
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-    private MetadataProcessor mDtmfMetadataProcessor;
-    private MetadataProcessor mKnoxMetadataProcessor;
-    private MetadataProcessor mToneMetadataProcessor;
-    private MetadataProcessor mCallProcessMetadataProcessor;
+    private ToneMetadataProcessor mToneMetadataProcessor = new ToneMetadataProcessor();
     private int mTimeslot;
     private Queue<AbstractVoiceTimeslot> mQueuedAudioTimeslots = new ArrayDeque<>();
     private boolean mEncryptedCallStateEstablished = false;
@@ -92,10 +83,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     @Override
     public void reset()
     {
-        mCallProcessMetadataProcessor = null;
-        mDtmfMetadataProcessor = null;
-        mKnoxMetadataProcessor = null;
-        mToneMetadataProcessor = null;
+        //Explicitly clear FROM identifiers to ensure previous call TONE identifiers are cleared.
+        mIdentifierCollection.remove(Role.FROM);
+
+        mToneMetadataProcessor.reset();
         mQueuedAudioTimeslots.clear();
 
         //Reset encrypted call handling flags
@@ -179,107 +170,44 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
             {
                 byte[] voiceFrameBytes = voiceFrame.getBytes();
 
-                IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
-                processMetadata(audioWithMetadata);
-                addAudio(audioWithMetadata.getAudio());
+                try
+                {
+                    IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
+                    addAudio(audioWithMetadata.getAudio());
+                    processMetadata(audioWithMetadata);
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error synthesizing AMBE audio - continuing [" + e.getLocalizedMessage() + "]");
+                }
             }
         }
     }
 
     /**
-     * Processes optional metadata that can be included with decoded audio (ie dtmf, tones, knox, etc.)
+     * Processes optional metadata that can be included with decoded audio (ie dtmf, tones, knox, etc.) so that the
+     * tone metadata can be converted into a FROM identifier and included with any call segment.
      */
     private void processMetadata(IAudioWithMetadata audioWithMetadata)
     {
-        if(mIdentifierUpdateNotificationListener != null)
+        if(audioWithMetadata.hasMetadata() && mIdentifierUpdateNotificationListener != null)
         {
-            if(audioWithMetadata.hasMetadata())
+            for(Map.Entry<String,String> entry: audioWithMetadata.getMetadata().entrySet())
             {
-                Map<String,String> metadata = audioWithMetadata.getMetadata();
+                //Each metadata map entry contains a tone-type (key) and tone (value)
+                Identifier metadataIdentifier = mToneMetadataProcessor.process(entry.getKey(), entry.getValue());
 
-                if(metadata.containsKey(METADATA_TYPE_DTMF))
+                if(metadataIdentifier != null)
                 {
-                    String dtmf = metadata.get(METADATA_TYPE_DTMF);
-
-                    if(dtmf != null)
-                    {
-                        if(mDtmfMetadataProcessor == null)
-                        {
-                            mDtmfMetadataProcessor = new MetadataProcessor();
-                        }
-
-                        List<String> dtmfTones = mDtmfMetadataProcessor.process(dtmf);
-                        broadcast(P25DtmfIdentifier.create(dtmfTones));
-                    }
-                }
-                else if(metadata.containsKey(METADATA_TYPE_KNOX))
-                {
-                    String knox = metadata.get(METADATA_TYPE_KNOX);
-
-                    if(knox != null)
-                    {
-                        if(mKnoxMetadataProcessor == null)
-                        {
-                            mKnoxMetadataProcessor = new MetadataProcessor();
-                        }
-
-                        List<String> knoxTones = mKnoxMetadataProcessor.process(knox);
-                        broadcast(P25KnoxIdentifier.create(knoxTones));
-                    }
-                }
-                else if(metadata.containsKey(METADATA_TYPE_TONE))
-                {
-                    String tone = metadata.get(METADATA_TYPE_TONE);
-
-                    if(tone != null)
-                    {
-                        if(mToneMetadataProcessor == null)
-                        {
-                            mToneMetadataProcessor = new MetadataProcessor();
-                        }
-
-                        List<String> tones = mToneMetadataProcessor.process(tone);
-                        broadcast(P25ToneIdentifier.create(tones));
-                    }
-                }
-                else if(metadata.containsKey(METADATA_TYPE_CALL_PROGRESS))
-                {
-                    String callProgressTone = metadata.get(METADATA_TYPE_CALL_PROGRESS);
-
-                    if(callProgressTone != null)
-                    {
-                        if(mCallProcessMetadataProcessor == null)
-                        {
-                            mCallProcessMetadataProcessor = new MetadataProcessor();
-                        }
-
-                        List<String> tones = mCallProcessMetadataProcessor.process(callProgressTone);
-                        broadcast(P25CallProgressIdentifier.create(tones));
-                    }
-                }
-            }
-            else
-            {
-                if(mDtmfMetadataProcessor != null)
-                {
-                    mDtmfMetadataProcessor.noMetadata();
-                }
-                if(mKnoxMetadataProcessor != null)
-                {
-                    mKnoxMetadataProcessor.noMetadata();
-                }
-                if(mCallProcessMetadataProcessor != null)
-                {
-                    mCallProcessMetadataProcessor.noMetadata();
-                }
-                if(mToneMetadataProcessor != null)
-                {
-                    mToneMetadataProcessor.noMetadata();
+                    broadcast(metadataIdentifier);
                 }
             }
         }
     }
 
+    /**
+     * Broadcasts the identifier to a registered listener
+     */
     private void broadcast(Identifier identifier)
     {
         if(mIdentifierUpdateNotificationListener != null)
@@ -289,12 +217,18 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
         }
     }
 
+    /**
+     * Registers the listener to receive identifier updates
+     */
     @Override
     public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
     {
         mIdentifierUpdateNotificationListener = listener;
     }
 
+    /**
+     * Unregisters a listener from receiving identifier updates
+     */
     @Override
     public void removeIdentifierUpdateListener()
     {
@@ -302,40 +236,124 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     }
 
     /**
-     * Processes metadata string values to provide a de-duplicated list of metadata values.
-     *
-     * This is necessary for metadata such as DTMF where a tone can span multiple 20ms voice frames but is intended
-     * to be represented as a single tone.  An empty (no-metadata) frame causes the repeat checker to stop and allow
-     * the next metadata value to be added to the list.
+     * Process AMBE audio frame tone metadata.  Tracks the count of sequential frames containing tone metadata to
+     * provide a list of each unique tone and a time duration (milliseconds) for the tone.  Tones are concatenated into
+     * a comma separated list and included as call segment metadata.
      */
-    public class MetadataProcessor
+    public class ToneMetadataProcessor
     {
-        private List<String> mValues = new ArrayList<>();
-        private String mLastInput;
+        private List<ToneMetadata> mToneMetadata = new ArrayList<>();
 
-        public List<String> process(String value)
+        /**
+         * Resets or clears any accumulated call tone metadata to prepare for the next call.
+         */
+        public void reset()
         {
-            if(value != null)
-            {
-                if(mLastInput != null && mLastInput.equalsIgnoreCase(value))
-                {
-                    //Suppress the repeat and return the current value
-                    return mValues;
-                }
-                else
-                {
-                    mLastInput = value;
-                    mValues.add(value);
-                    return mValues;
-                }
-            }
-
-            return mValues;
+            mToneMetadata.clear();
         }
 
-        public void noMetadata()
+        /**
+         * Process the tone metadata
+         * @param type of tone
+         * @param value of tone
+         * @return an identifier with the accumulated tone metadata set
+         */
+        public Identifier process(String type, String value)
         {
-            mLastInput = null;
+            if(type == null || value == null)
+            {
+                return null;
+            }
+
+            ToneMetadata toneMetadata = (mToneMetadata.size() > 0 ? mToneMetadata.get(mToneMetadata.size() - 1) : null);
+
+            if(toneMetadata == null || !toneMetadata.matches(type, value))
+            {
+                toneMetadata = new ToneMetadata(type, value);
+                mToneMetadata.add(toneMetadata);
+            }
+
+            toneMetadata.incrementCount();
+
+            return P25ToneIdentifier.create(Joiner.on(",").join(mToneMetadata));
+        }
+    }
+
+    /**
+     * Metadata about the tone type being transmitted and the duration.
+     *
+     * Note: each AMBE frame is 20 milliseconds in duration, so total duration is the count of 20 ms tone frames
+     * of the same metadata type.
+     */
+    public class ToneMetadata
+    {
+        private String mType;
+        private String mValue;
+        private int mCount;
+
+        /**
+         * Constructs an instance
+         * @param type of tone
+         * @param value of the tone
+         */
+        public ToneMetadata(String type, String value)
+        {
+            mType = type;
+            mValue = value;
+            mCount = 0;
+        }
+
+        /**
+         * Indicates if this tone metadata matches the tone metadata represented by the arguments
+         * @param type of tone
+         * @param value of tone
+         * @return true if they match
+         */
+        public boolean matches(String type, String value)
+        {
+            return type != null && value != null && type.matches(mType) && value.matches(mValue);
+        }
+
+        /**
+         * Type of tone
+         */
+        public String getType()
+        {
+            return mType;
+        }
+
+        /**
+         * Value of tone
+         */
+        public String getValue()
+        {
+            return mValue;
+        }
+
+        /**
+         * Number of times this tone has occurred sequentially
+         */
+        public int getCount()
+        {
+            return mCount;
+        }
+
+        /**
+         * Increments the count of the number of sequential frames that contained the tone
+         */
+        public void incrementCount()
+        {
+            mCount++;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append(mType);
+            sb.append(" ").append(mValue);
+            sb.append(" (").append(mCount * 20).append("ms)");
+            return sb.toString();
         }
     }
 
@@ -359,5 +377,4 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
             }
         }
     }
-
 }

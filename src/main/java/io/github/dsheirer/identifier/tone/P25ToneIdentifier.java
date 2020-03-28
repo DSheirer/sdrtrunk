@@ -26,11 +26,14 @@ import io.github.dsheirer.protocol.Protocol;
 
 import java.util.List;
 
+/**
+ * P25 Phase II AMBE audio codec tone metadata
+ */
 public class P25ToneIdentifier extends ToneIdentifier
 {
-    public P25ToneIdentifier(List<String> values)
+    public P25ToneIdentifier(String value)
     {
-        super(values);
+        super(value);
     }
 
     @Override
@@ -39,8 +42,8 @@ public class P25ToneIdentifier extends ToneIdentifier
         return Protocol.APCO25;
     }
 
-    public static P25ToneIdentifier create(List<String> values)
+    public static P25ToneIdentifier create(String value)
     {
-        return new P25ToneIdentifier(values);
+        return new P25ToneIdentifier(value);
     }
 }

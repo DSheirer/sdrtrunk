@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -408,11 +409,28 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public void receive(IdentifierUpdateNotification identifierUpdateNotification)
     {
         //Only process add updates that match this timeslot
-        if(identifierUpdateNotification.getTimeslot() == getTimeslot() &&
-            (identifierUpdateNotification.isAdd() || identifierUpdateNotification.isSilentAdd()))
+        if(identifierUpdateNotification.getTimeslot() == getTimeslot())
         {
-            addIdentifier(identifierUpdateNotification.getIdentifier());
+            if(identifierUpdateNotification.isAdd() || identifierUpdateNotification.isSilentAdd())
+            {
+                addIdentifier(identifierUpdateNotification.getIdentifier());
+            }
+
             mIdentifierUpdateNotificationBroadcaster.broadcast(identifierUpdateNotification);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Audio Segment\n      Timeslot:").append(getTimeslot()).append("\n");
+        sb.append("    Start Time:").append(new Date(getStartTimestamp()));
+        sb.append("        Linked:").append(isLinked()).append("\n");
+        sb.append("    Recordable:").append(recordAudioProperty().get()).append("\n");
+        sb.append("Do Not Monitor:").append(isDoNotMonitor()).append("\n");
+        sb.append("     Stream To:").append(getBroadcastChannels()).append("\n");
+        sb.append("   Identifiers:\n").append(getIdentifierCollection()).append("\n");
+        return sb.toString();
     }
 }
