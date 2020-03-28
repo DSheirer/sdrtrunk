@@ -26,6 +26,7 @@ import io.github.dsheirer.edac.CRCPassport;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageType;
+import io.github.dsheirer.module.decode.passport.identifier.PassportRadioId;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.protocol.Protocol;
 
@@ -49,7 +50,7 @@ public class PassportMessage extends Message
     private CorrectedBinaryMessage mMessage;
     private CRC mCRC;
     private PassportMessage mIdleMessage;
-    private PassportTalkgroup mFromIdentifier;
+    private PassportRadioId mFromIdentifier;
     private PassportTalkgroup mToIdentifier;
     private List<Identifier> mIdentifiers;
 
@@ -74,17 +75,17 @@ public class PassportMessage extends Message
     {
         if(mToIdentifier == null)
         {
-            mToIdentifier = PassportTalkgroup.createTo(getMessage().getInt(GROUP));
+            mToIdentifier = PassportTalkgroup.create(getMessage().getInt(GROUP));
         }
 
         return mToIdentifier;
     }
 
-    public PassportTalkgroup getFromIdentifier()
+    public PassportRadioId getFromIdentifier()
     {
         if(mFromIdentifier == null)
         {
-            mFromIdentifier = PassportTalkgroup.createFrom(getMessage().getInt(RADIO_ID));
+            mFromIdentifier = PassportRadioId.create(getMessage().getInt(RADIO_ID));
         }
 
         return mFromIdentifier;

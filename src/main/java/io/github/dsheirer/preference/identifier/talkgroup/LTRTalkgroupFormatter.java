@@ -41,7 +41,7 @@ public class LTRTalkgroupFormatter extends IntegerFormatter
     private static final int HOME_REPEATER_DECIMAL_WIDTH = 2;
     private static final int TALKGROUP_DECIMAL_WIDTH = 3;
     private static final String SEPARATOR = "-";
-    private static final Pattern LTR_PATTERN = Pattern.compile("(\\d{1,2})-(\\d{1,3})");
+    private static final Pattern LTR_PATTERN = Pattern.compile("([01])-(\\d{1,2})-(\\d{1,3})");
 
     /**
      * Formats the group identifier to the specified format and width.
@@ -97,11 +97,19 @@ public class LTRTalkgroupFormatter extends IntegerFormatter
 
             if(m.matches())
             {
-                String rawLcn = m.group(1);
-                String rawGroup = m.group(2);
+                String rawArea = m.group(1);
+                String rawLcn = m.group(2);
+                String rawGroup = m.group(3);
 
                 try
                 {
+                    int area = Integer.parseInt(rawArea);
+
+                    if(area < 0 || area > 1)
+                    {
+                        throw new ParseException("LTR area must be in range 0-1.  Error parsing [" + formattedTalkgroup + "]", 0);
+                    }
+
                     int lcn = Integer.parseInt(rawLcn);
 
                     if(lcn < 1 || lcn > 20)
@@ -116,7 +124,7 @@ public class LTRTalkgroupFormatter extends IntegerFormatter
                         throw new ParseException("LTR talkgroup must be in range 1-255.  Error parsing [" + formattedTalkgroup + "]", 0);
                     }
 
-                    return (lcn << 8) + group;
+                    return (area << 13) + (lcn << 8) + group;
                 }
                 catch(Exception e)
                 {
@@ -136,8 +144,19 @@ public class LTRTalkgroupFormatter extends IntegerFormatter
      */
     public String format(int talkgroup)
     {
-        return toDecimal(getLcn(talkgroup), HOME_REPEATER_DECIMAL_WIDTH) + SEPARATOR +
-            toDecimal(getTalkgroup(talkgroup), TALKGROUP_DECIMAL_WIDTH);
+        return getArea(talkgroup) + SEPARATOR +
+               toDecimal(getLcn(talkgroup), HOME_REPEATER_DECIMAL_WIDTH) + SEPARATOR +
+               toDecimal(getTalkgroup(talkgroup), TALKGROUP_DECIMAL_WIDTH);
+    }
+
+    /**
+     * Area value for the talkgroup, 0 or 1
+     * @param value of talkgroup
+     * @return area code
+     */
+    public static int getArea(int value)
+    {
+        return (value >> 13) & 0x1;
     }
 
     /**

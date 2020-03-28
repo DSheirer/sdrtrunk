@@ -37,7 +37,6 @@ import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.tuner.TunerModel;
@@ -93,7 +92,6 @@ public class PlaylistEditor extends Application
         mPlaylistManager = new PlaylistManager(aliasModel, broadcastModel, new ChannelModel(), channelMapModel,
             tunerModel, mUserPreferences, new ChannelProcessingManager(channelMapModel,
             new EventLogManager(aliasModel, mUserPreferences),
-            new RecorderManager(aliasModel, mUserPreferences),
             new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel), mUserPreferences),
             aliasModel, mUserPreferences), new IconManager());
 

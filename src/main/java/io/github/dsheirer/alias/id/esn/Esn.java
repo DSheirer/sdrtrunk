@@ -29,6 +29,12 @@ public class Esn extends AliasID
 	{
 	}
 
+	@Override
+	public boolean isAudioIdentifier()
+	{
+		return false;
+	}
+
 	@JacksonXmlProperty(isAttribute = true, localName = "esn")
 	public String getEsn()
 	{

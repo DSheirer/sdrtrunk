@@ -31,6 +31,12 @@ public class FleetsyncID extends AliasID
 	{
 	}
 
+	@Override
+	public boolean isAudioIdentifier()
+	{
+		return false;
+	}
+
 	@JacksonXmlProperty(isAttribute = true, localName = "ident")
 	public String getIdent()
 	{

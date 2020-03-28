@@ -48,6 +48,12 @@ public class Radio extends AliasID
         mValue = value;
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "value")
     public int getValue()
     {
@@ -57,6 +63,7 @@ public class Radio extends AliasID
     public void setValue(int value)
     {
         mValue = value;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -68,6 +75,7 @@ public class Radio extends AliasID
     public void setProtocol(Protocol protocol)
     {
         mProtocol = protocol;
+        updateValueProperty();
     }
 
     @Override

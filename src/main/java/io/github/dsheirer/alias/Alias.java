@@ -43,6 +43,7 @@ import javafx.util.Callback;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -593,6 +594,22 @@ public class Alias
         for(AliasID aliasID: toRemove)
         {
             removeAliasID(aliasID);
+        }
+    }
+
+    /**
+     * Removes all non audio identifiers to prepare for replacing them from an editor.
+     */
+    public void removeNonAudioIdentifiers()
+    {
+        Iterator<AliasID> it = mAliasIDs.iterator();
+
+        while(it.hasNext())
+        {
+            if(!it.next().isAudioIdentifier())
+            {
+                it.remove();
+            }
         }
     }
 

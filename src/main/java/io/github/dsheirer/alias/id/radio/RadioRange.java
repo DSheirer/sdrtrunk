@@ -41,6 +41,12 @@ public class RadioRange extends AliasID
         //No arg JAXB constructor
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     /**
      * Creates a radio range of from - to radio values (inclusive) for the specified protocol
      * @param protocol for the radio range

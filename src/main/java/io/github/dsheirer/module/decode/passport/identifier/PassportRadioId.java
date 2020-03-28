@@ -23,20 +23,21 @@
 package io.github.dsheirer.module.decode.passport.identifier;
 
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
- * Passport Talkgroup
+ * Passport Radio ID
  */
-public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable<PassportTalkgroup>
+public class PassportRadioId extends RadioIdentifier implements Comparable<PassportRadioId>
 {
     /**
      * Constructs a Passport talkgroup with a TO role.
      */
-    public PassportTalkgroup(Integer value)
+    public PassportRadioId(Integer value)
     {
-        super(value, Role.TO);
+        super(value, Role.FROM);
     }
 
     @Override
@@ -46,15 +47,15 @@ public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable
     }
 
     /**
-     * Creates a Passport talkgroup with the value as the TO role
+     * Creates a Passport talkgroup (ie mobile id) with the value as the TO role
      */
-    public static PassportTalkgroup create(int value)
+    public static PassportRadioId create(int value)
     {
-        return new PassportTalkgroup(value);
+        return new PassportRadioId(value);
     }
 
     @Override
-    public int compareTo(PassportTalkgroup o)
+    public int compareTo(PassportRadioId o)
     {
         return Integer.compare(getValue(), o.getValue());
     }

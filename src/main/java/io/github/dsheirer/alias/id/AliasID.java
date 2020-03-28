@@ -43,6 +43,10 @@ import io.github.dsheirer.alias.id.record.Record;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
+import io.github.dsheirer.controller.channel.Channel;
+import javafx.beans.Observable;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.util.Callback;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
@@ -68,8 +72,31 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 @JacksonXmlRootElement(localName = "id")
 public abstract class AliasID
 {
+    private SimpleStringProperty mValueProperty = new SimpleStringProperty();
+
     public AliasID()
     {
+    }
+
+    /**
+     * String property representation of this alias ID
+     */
+    @JsonIgnore
+    public SimpleStringProperty valueProperty()
+    {
+        return mValueProperty;
+    }
+
+    /**
+     * Updates the value property for this alias ID.  Note: this method is intended to be invoked by all subclasses
+     * each time that any of the subclass member variable values change.
+     */
+    protected void updateValueProperty()
+    {
+        valueProperty().set(toString());
+
+        //Hack: harmless, but the list extractor does not consistently update unless we do this.
+        valueProperty().get();
     }
 
     @JsonIgnore
@@ -79,4 +106,18 @@ public abstract class AliasID
 
     @JsonIgnore
     public abstract boolean isValid();
+
+    /**
+     * Indicates if the identifier is an audio identifier (monitor, record, stream)
+     */
+    @JsonIgnore
+    public abstract boolean isAudioIdentifier();
+
+    /**
+     * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
+     */
+    public static Callback<AliasID,Observable[]> extractor()
+    {
+        return (AliasID aid) -> new Observable[] {aid.valueProperty()};
+    }
 }

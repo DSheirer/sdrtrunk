@@ -194,7 +194,7 @@ public class AliasEditor extends SplitPane
             iconColumn.setCellValueFactory(new PropertyValueFactory<>("iconName"));
             iconColumn.setCellFactory(new IconTableCellFactory());
 
-            TableColumn<Alias,Integer> priorityColumn = new TableColumn("Priority");
+            TableColumn<Alias,Integer> priorityColumn = new TableColumn("Listen");
             priorityColumn.setCellFactory(new PriorityCellFactory());
             priorityColumn.setCellValueFactory(new PropertyValueFactory<>("priority"));
 
@@ -210,13 +210,13 @@ public class AliasEditor extends SplitPane
 //            idsColumn.setCellFactory(new CenteredCountCellFactory());
             idsColumn.setCellValueFactory(new IdentifierCountCell());
 
-            TableColumn<Alias,Integer> actionsColumn = new TableColumn("Actions");
+//            TableColumn<Alias,Integer> actionsColumn = new TableColumn("Actions");
 //            actionsColumn.setCellFactory(new CenteredCountCellFactory());
-            actionsColumn.setCellValueFactory(new ActionCountCell());
+//            actionsColumn.setCellValueFactory(new ActionCountCell());
 
 
             mAliasTableView.getColumns().addAll(aliasListNameColumn, groupColumn, nameColumn, colorColumn,
-                iconColumn, priorityColumn, recordColumn, streamColumn, idsColumn, actionsColumn);
+                iconColumn, priorityColumn, recordColumn, streamColumn, idsColumn);
 
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
 
@@ -565,16 +565,20 @@ public class AliasEditor extends SplitPane
                         if(getTableRow() != null)
                         {
                             Alias alias = getTableRow().getItem();
-                            Icon icon = mPlaylistManager.getIconManager().getModel().getIcon(alias.getIconName());
 
-                            try
+                            if(alias != null)
                             {
-                                Image image = new Image(icon.getPath(), 0, 16, true, true);
-                                setGraphic(new ImageView(image));
-                            }
-                            catch(Exception e)
-                            {
+                                Icon icon = mPlaylistManager.getIconManager().getModel().getIcon(alias.getIconName());
 
+                                try
+                                {
+                                    Image image = new Image(icon.getPath(), 0, 16, true, true);
+                                    setGraphic(new ImageView(image));
+                                }
+                                catch(Exception e)
+                                {
+
+                                }
                             }
                         }
                     }

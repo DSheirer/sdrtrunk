@@ -35,6 +35,12 @@ public class BroadcastChannel extends AliasID implements Comparable<BroadcastCha
     }
 
     @Override
+    public boolean isAudioIdentifier()
+    {
+        return true;
+    }
+
+    @Override
     public int compareTo(BroadcastChannel other)
     {
         if(mChannelName != null && other.getChannelName() != null)

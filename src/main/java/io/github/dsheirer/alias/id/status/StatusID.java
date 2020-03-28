@@ -29,6 +29,12 @@ public class StatusID extends AliasID
     {
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "status")
     public int getStatus()
     {

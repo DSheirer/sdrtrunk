@@ -52,6 +52,12 @@ public class TalkgroupRange extends AliasID
         mMaxTalkgroup = maxTalkgroup;
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "min")
     public int getMinTalkgroup()
     {
@@ -61,6 +67,7 @@ public class TalkgroupRange extends AliasID
     public void setMinTalkgroup(int minTalkgroup)
     {
         mMinTalkgroup = minTalkgroup;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "max")
@@ -72,6 +79,7 @@ public class TalkgroupRange extends AliasID
     public void setMaxTalkgroup(int maxTalkgroup)
     {
         mMaxTalkgroup = maxTalkgroup;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -83,6 +91,7 @@ public class TalkgroupRange extends AliasID
     public void setProtocol(Protocol protocol)
     {
         mProtocol = protocol;
+        updateValueProperty();
     }
 
     @Override

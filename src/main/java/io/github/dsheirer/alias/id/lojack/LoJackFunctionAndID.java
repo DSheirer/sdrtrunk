@@ -32,6 +32,12 @@ public class LoJackFunctionAndID extends AliasID
     {
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "id")
     public String getID()
     {

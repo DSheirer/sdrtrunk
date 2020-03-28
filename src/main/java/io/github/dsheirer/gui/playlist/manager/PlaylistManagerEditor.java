@@ -122,8 +122,8 @@ public class PlaylistManagerEditor extends HBox
         if(mPlaylistTableView == null)
         {
             mPlaylistTableView = new TableView<>();
-            TableColumn<Path,String> iconColumn = new TableColumn();
-            iconColumn.setPrefWidth(25);
+            TableColumn<Path,String> iconColumn = new TableColumn("Selected");
+            iconColumn.setPrefWidth(100);
             iconColumn.setCellFactory(new Callback<TableColumn<Path,String>,TableCell<Path,String>>()
             {
                 @Override
@@ -164,7 +164,7 @@ public class PlaylistManagerEditor extends HBox
                         }
                     };
 
-                    tableCell.setAlignment(Pos.CENTER);
+                    tableCell.setAlignment(Pos.BASELINE_RIGHT);
                     return tableCell;
                 }
             });

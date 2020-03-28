@@ -25,13 +25,18 @@ package io.github.dsheirer.gui.playlist.alias;
 import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.gui.playlist.Editor;
+import io.github.dsheirer.gui.playlist.alias.identifier.EmptyIdentifierEditor;
+import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditorFactory;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -42,6 +47,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
@@ -58,8 +64,12 @@ import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconFontFX;
 import jiconfont.javafx.IconNode;
 import org.controlsfx.control.ToggleSwitch;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -67,6 +77,8 @@ import java.util.Set;
  */
 public class AliasConfigurationEditor extends Editor<Alias>
 {
+    private static final Logger mLog = LoggerFactory.getLogger(AliasConfigurationEditor.class);
+
     private PlaylistManager mPlaylistManager;
     private EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private TextField mAliasListNameField;
@@ -89,8 +101,15 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private TitledPane mActionPane;
     private ListView<String> mAvailableStreamsView;
     private ListView<BroadcastChannel> mSelectedStreamsView;
+    private ListView<AliasID> mIdentifiersList;
     private Button mAddStreamButton;
     private Button mRemoveStreamButton;
+    private MenuButton mAddIdentifierButton;
+    private Button mDeleteIdentifierButton;
+    private Map<AliasIDType,Editor<AliasID>> mIdentifierEditorMap = new HashMap<>();
+    private EmptyIdentifierEditor mEmptyIdentifierEditor = new EmptyIdentifierEditor();
+    private Editor<AliasID> mIdentifierEditor;
+    private VBox mIdentifierEditorBox;
 
     public AliasConfigurationEditor(PlaylistManager playlistManager)
     {
@@ -129,6 +148,8 @@ public class AliasConfigurationEditor extends Editor<Alias>
         getColorPicker().setDisable(disable);
         getMonitorAudioToggleSwitch().setDisable(disable);
         getIconNodeComboBox().setDisable(disable);
+        getIdentifiersList().setDisable(disable);
+        getIdentifiersList().getItems().clear();
 
         updateStreamViews();
 
@@ -163,6 +184,15 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
             Color color = ColorUtil.fromInteger(alias.getColor());
             getColorPicker().setValue(color);
+
+            //Only add non-audio identifiers to the list -- audio identifiers are managed separately
+            for(AliasID aliasID: alias.getAliasIdentifiers())
+            {
+                if(!aliasID.isAudioIdentifier())
+                {
+                    getIdentifiersList().getItems().add(aliasID);
+                }
+            }
         }
         else
         {
@@ -220,6 +250,11 @@ public class AliasConfigurationEditor extends Editor<Alias>
                     alias.addAliasID(selected);
                 }
 
+                alias.removeNonAudioIdentifiers();
+                for(AliasID aliasID: getIdentifiersList().getItems())
+                {
+                    alias.addAliasID(aliasID);
+                }
             }
 
             modifiedProperty().set(false);
@@ -247,11 +282,112 @@ public class AliasConfigurationEditor extends Editor<Alias>
     {
         if(mIdentifierPane == null)
         {
-            HBox hbox = new HBox();
-            mIdentifierPane = new TitledPane("Identifiers", hbox);
+            mIdentifierPane = new TitledPane("Identifiers", getIdentifierEditorBox());
         }
 
         return mIdentifierPane;
+    }
+
+    private VBox getIdentifierEditorBox()
+    {
+        if(mIdentifierEditorBox == null)
+        {
+            VBox buttonsBox = new VBox();
+            buttonsBox.setSpacing(10);
+            buttonsBox.getChildren().addAll(getAddIdentifierButton(), getDeleteIdentifierButton());
+
+            HBox hbox = new HBox();
+            hbox.setSpacing(10);
+            HBox.setHgrow(getIdentifiersList(), Priority.ALWAYS);
+            hbox.getChildren().addAll(getIdentifiersList(), buttonsBox);
+
+            mIdentifierEditorBox = new VBox();
+            mIdentifierEditorBox.setSpacing(10);
+            mIdentifierEditorBox.getChildren().addAll(hbox, getIdentifierEditor());
+        }
+
+        return mIdentifierEditorBox;
+    }
+
+    private Editor<AliasID> getIdentifierEditor()
+    {
+        if(mIdentifierEditor == null)
+        {
+            mIdentifierEditor = mEmptyIdentifierEditor;
+        }
+
+        return mIdentifierEditor;
+    }
+
+    /**
+     * Updates the editor and loads the alias id for editing/viewing
+     * @param aliasID
+     */
+    private void setIdentifier(AliasID aliasID)
+    {
+        Editor<AliasID> editor = null;
+
+        if(aliasID != null)
+        {
+            editor = mIdentifierEditorMap.get(aliasID.getType());
+
+            if(editor == null)
+            {
+                editor = IdentifierEditorFactory.getEditor(aliasID.getType());
+                mIdentifierEditorMap.put(aliasID.getType(), editor);
+            }
+        }
+
+        if(editor == null)
+        {
+            editor = mEmptyIdentifierEditor;
+        }
+
+        if(mIdentifierEditor != editor)
+        {
+            getIdentifierEditorBox().getChildren().remove(mIdentifierEditor);
+            mIdentifierEditor = editor;
+            getIdentifierEditorBox().getChildren().add(mIdentifierEditor);
+        }
+
+        mIdentifierEditor.setItem(aliasID);
+    }
+
+    private ListView<AliasID> getIdentifiersList()
+    {
+        if(mIdentifiersList == null)
+        {
+            mIdentifiersList = new ListView<>(FXCollections.observableArrayList(AliasID.extractor()));
+            mIdentifiersList.setPrefHeight(75);
+            mIdentifiersList.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> setIdentifier(newValue));
+        }
+
+        return mIdentifiersList;
+    }
+
+    private MenuButton getAddIdentifierButton()
+    {
+        if(mAddIdentifierButton == null)
+        {
+            mAddIdentifierButton = new MenuButton("Add");
+            mAddIdentifierButton.setMaxWidth(Double.MAX_VALUE);
+            mAddIdentifierButton.setDisable(true);
+        }
+
+        return mAddIdentifierButton;
+    }
+
+    private Button getDeleteIdentifierButton()
+    {
+        if(mDeleteIdentifierButton == null)
+        {
+            mDeleteIdentifierButton = new Button("Delete");
+            mDeleteIdentifierButton.setMaxWidth(Double.MAX_VALUE);
+            mDeleteIdentifierButton.setDisable(true);
+        }
+
+        return mDeleteIdentifierButton;
     }
 
     private TitledPane getStreamPane()
@@ -734,6 +870,4 @@ public class AliasConfigurationEditor extends Editor<Alias>
             return cell;
         }
     }
-
-
 }
