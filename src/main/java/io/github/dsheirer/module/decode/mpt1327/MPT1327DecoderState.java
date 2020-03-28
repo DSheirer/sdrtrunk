@@ -280,7 +280,13 @@ public class MPT1327DecoderState extends DecoderState
     @Override
     public void start()
     {
-
+        //Send call start event for traffic channels to unsquelch the audio.  Decoded return to channel message
+        //or fade timeout expire will end the call event.
+        if(mChannelType == ChannelType.TRAFFIC)
+        {
+            //Broadcast a start call event so the squelch kicks on and the audio path opens
+            broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
+        }
     }
 
     @Override
