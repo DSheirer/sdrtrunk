@@ -24,7 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.lc.motorola;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
 
 import java.util.ArrayList;
@@ -94,7 +94,7 @@ public class LCMotorolaTalkComplete extends LinkControlWord
     {
         if(mAddress == null)
         {
-            mAddress = APCO25Talkgroup.create(getMessage().getInt(ADDRESS));
+            mAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(ADDRESS));
         }
 
         return mAddress;
