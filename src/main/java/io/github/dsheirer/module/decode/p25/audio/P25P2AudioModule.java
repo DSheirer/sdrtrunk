@@ -190,8 +190,9 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
      */
     private void processMetadata(IAudioWithMetadata audioWithMetadata)
     {
-        if(audioWithMetadata.hasMetadata() && mIdentifierUpdateNotificationListener != null)
+        if(audioWithMetadata.hasMetadata())
         {
+            //JMBE only places 1 entry in the map, but for consistency we'll process the map entry set
             for(Map.Entry<String,String> entry: audioWithMetadata.getMetadata().entrySet())
             {
                 //Each metadata map entry contains a tone-type (key) and tone (value)
@@ -202,6 +203,10 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                     broadcast(metadataIdentifier);
                 }
             }
+        }
+        else
+        {
+            mToneMetadataProcessor.closeMetadata();
         }
     }
 
@@ -243,6 +248,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     public class ToneMetadataProcessor
     {
         private List<ToneMetadata> mToneMetadata = new ArrayList<>();
+        private ToneMetadata mCurrentToneMetadata;
 
         /**
          * Resets or clears any accumulated call tone metadata to prepare for the next call.
@@ -265,17 +271,26 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 return null;
             }
 
-            ToneMetadata toneMetadata = (mToneMetadata.size() > 0 ? mToneMetadata.get(mToneMetadata.size() - 1) : null);
-
-            if(toneMetadata == null || !toneMetadata.matches(type, value))
+            if(mCurrentToneMetadata != null && mCurrentToneMetadata.matches(type, value))
             {
-                toneMetadata = new ToneMetadata(type, value);
-                mToneMetadata.add(toneMetadata);
+                mCurrentToneMetadata.incrementCount();
+            }
+            else
+            {
+                mCurrentToneMetadata = new ToneMetadata(type, value);
+                mToneMetadata.add(mCurrentToneMetadata);
+                mCurrentToneMetadata.incrementCount();
             }
 
-            toneMetadata.incrementCount();
-
             return P25ToneIdentifier.create(Joiner.on(",").join(mToneMetadata));
+        }
+
+        /**
+         * Closes current tone metadata when there is no metadata for the current audio frame.
+         */
+        public void closeMetadata()
+        {
+            mCurrentToneMetadata = null;
         }
     }
 

@@ -336,11 +336,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -373,11 +370,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -410,11 +404,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -447,11 +438,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -484,11 +472,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
