@@ -50,6 +50,7 @@ public class Esn extends AliasID
 	public void setEsn(String esn )
 	{
 		mEsn = esn;
+		updateValueProperty();
 	}
 	
 	public String toString()

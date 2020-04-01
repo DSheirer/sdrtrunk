@@ -23,15 +23,15 @@
 package io.github.dsheirer.gui.playlist.alias;
 
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -39,12 +39,17 @@ import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -58,7 +63,10 @@ import jiconfont.IconCode;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
 import org.controlsfx.control.textfield.TextFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -66,30 +74,37 @@ import java.util.Optional;
  */
 public class AliasEditor extends SplitPane
 {
+    private static final Logger mLog = LoggerFactory.getLogger(AliasEditor.class);
+
     private PlaylistManager mPlaylistManager;
+    private UserPreferences mUserPreferences;
     private AliasConfigurationEditor mAliasConfigurationEditor;
     private TableView<Alias> mAliasTableView;
     private Label mPlaceholderLabel;
-    private Button mNewButton;
-    private Button mDeleteButton;
-    private Button mCloneButton;
+    private Button mNewAliasButton;
+    private Button mDeleteAliasButton;
+    private Button mCloneAliasButton;
+    private MenuButton mMoveToAliasButton;
     private VBox mButtonBox;
-    private HBox mSearchBox;
+    private HBox mSearchAndListSelectionBox;
     private TextField mSearchField;
+    private ComboBox<String> mAliasListNameComboBox;
+    private Button mNewAliasListButton;
+    private FilteredList<Alias> mAliasFilteredList;
+    private AliasFilterMonitor mAliasFilterMonitor;
 
-    public AliasEditor(PlaylistManager playlistManager)
+    public AliasEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mUserPreferences = userPreferences;
 
-        HBox channelsBox = new HBox();
-        channelsBox.setPadding(new Insets(5, 5, 5, 5));
-        channelsBox.setSpacing(5.0);
-        HBox.setHgrow(getAliasTableView(), Priority.ALWAYS);
-        channelsBox.getChildren().addAll(getAliasTableView(), getButtonBox());
+        VBox leftBox = new VBox();
+        VBox.setVgrow(getAliasTableView(), Priority.ALWAYS);
+        leftBox.getChildren().addAll(getSearchAndListSelectionBox(), getAliasTableView());
 
-        VBox topBox = new VBox();
-        VBox.setVgrow(channelsBox, Priority.ALWAYS);
-        topBox.getChildren().addAll(getSearchBox(), channelsBox);
+        HBox topBox = new HBox();
+        HBox.setHgrow(leftBox, Priority.ALWAYS);
+        topBox.getChildren().addAll(leftBox, getButtonBox());
 
         setOrientation(Orientation.VERTICAL);
         getItems().addAll(topBox, getAliasConfigurationEditor());
@@ -122,8 +137,9 @@ public class AliasEditor extends SplitPane
             }
         }
 
-        getCloneButton().setDisable(alias == null);
-        getDeleteButton().setDisable(alias == null);
+        getCloneAliasButton().setDisable(alias == null);
+        getDeleteAliasButton().setDisable(alias == null);
+        getMoveToAliasButton().setDisable(alias == null);
         getAliasConfigurationEditor().setItem(alias);
     }
 
@@ -131,27 +147,37 @@ public class AliasEditor extends SplitPane
     {
         if(mAliasConfigurationEditor == null)
         {
-            mAliasConfigurationEditor = new AliasConfigurationEditor(mPlaylistManager);
+            mAliasConfigurationEditor = new AliasConfigurationEditor(mPlaylistManager, mUserPreferences);
         }
 
         return mAliasConfigurationEditor;
     }
 
-    private HBox getSearchBox()
+    private HBox getSearchAndListSelectionBox()
     {
-        if(mSearchBox == null)
+        if(mSearchAndListSelectionBox == null)
         {
-            mSearchBox = new HBox();
-            mSearchBox.setAlignment(Pos.CENTER_LEFT);
-            mSearchBox.setPadding(new Insets(5, 5, 0, 15));
-            mSearchBox.setSpacing(5);
+            mSearchAndListSelectionBox = new HBox();
+            mSearchAndListSelectionBox.setAlignment(Pos.CENTER_LEFT);
+            mSearchAndListSelectionBox.setPadding(new Insets(10, 0, 10, 10));
+            mSearchAndListSelectionBox.setSpacing(5);
 
-            Label searchLabel = new Label("Search:");
+
+            Label listLabel = new Label("Alias List");
+            Label searchLabel = new Label("Search");
             searchLabel.setAlignment(Pos.CENTER_RIGHT);
-            mSearchBox.getChildren().addAll(searchLabel, getSearchField());
+
+            HBox searchBox = new HBox();
+            searchBox.setSpacing(5);
+            searchBox.getChildren().addAll(searchLabel, getSearchField());
+            HBox.setHgrow(searchBox, Priority.ALWAYS);
+            searchBox.setAlignment(Pos.BASELINE_RIGHT);
+
+            mSearchAndListSelectionBox.getChildren().addAll(listLabel, getAliasListNameComboBox(),
+                getNewAliasListButton(), searchBox);
         }
 
-        return mSearchBox;
+        return mSearchAndListSelectionBox;
     }
 
     private TextField getSearchField()
@@ -165,26 +191,76 @@ public class AliasEditor extends SplitPane
         return mSearchField;
     }
 
+    private ComboBox<String> getAliasListNameComboBox()
+    {
+        if(mAliasListNameComboBox == null)
+        {
+            mAliasListNameComboBox = new ComboBox<>(mPlaylistManager.getAliasModel().aliasListNames());
+            mAliasListNameComboBox.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> getNewAliasButton()
+                    .setDisable(newValue == null || newValue.contentEquals(AliasModel.NO_ALIAS_LIST)));
+
+            if(mAliasListNameComboBox.getItems().size() > 1)
+            {
+                if(!mAliasListNameComboBox.getItems().get(0).contentEquals(AliasModel.NO_ALIAS_LIST))
+                {
+                    mAliasListNameComboBox.getSelectionModel().select(0);
+                }
+                else
+                {
+                    mAliasListNameComboBox.getSelectionModel().select(1);
+                }
+            }
+            else if(mAliasListNameComboBox.getItems().size() == 1)
+            {
+                mAliasListNameComboBox.getSelectionModel().select(0);
+           }
+        }
+
+        return mAliasListNameComboBox;
+    }
+
+    private Button getNewAliasListButton()
+    {
+        if(mNewAliasListButton == null)
+        {
+            mNewAliasListButton = new Button("New Alias List");
+            mNewAliasListButton.setOnAction(event -> {
+                TextInputDialog dialog = new TextInputDialog();
+                dialog.setTitle("Create New Alias List");
+                dialog.setHeaderText("New Alias List");
+                dialog.setContentText("Please enter a name?");
+                Optional<String> result = dialog.showAndWait();
+
+                String name = result.get();
+
+                if(name != null && !name.isEmpty())
+                {
+                    name = name.trim();
+                    mPlaylistManager.getAliasModel().addAliasList(name);
+                    getAliasListNameComboBox().getSelectionModel().select(name);
+                }
+            });
+        }
+
+        return mNewAliasListButton;
+    }
+
     private TableView<Alias> getAliasTableView()
     {
         if(mAliasTableView == null)
         {
             mAliasTableView = new TableView<>();
 
-            TableColumn aliasListNameColumn = new TableColumn();
-            aliasListNameColumn.setText("Alias List");
-            aliasListNameColumn.setCellValueFactory(new PropertyValueFactory<>("aliasListName"));
-            aliasListNameColumn.setPrefWidth(140);
+            TableColumn nameColumn = new TableColumn();
+            nameColumn.setText("Alias");
+            nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
+            nameColumn.setPrefWidth(140);
 
             TableColumn groupColumn = new TableColumn();
             groupColumn.setText("Group");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
             groupColumn.setPrefWidth(140);
-
-            TableColumn nameColumn = new TableColumn();
-            nameColumn.setText("Alias");
-            nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
-            nameColumn.setPrefWidth(140);
 
             TableColumn<Alias,Integer> colorColumn = new TableColumn("Color");
             colorColumn.setCellValueFactory(new PropertyValueFactory<>("color"));
@@ -207,54 +283,21 @@ public class AliasEditor extends SplitPane
             streamColumn.setCellFactory(new IconCell(FontAwesome.VOLUME_UP, Color.DARKBLUE));
 
             TableColumn<Alias,Integer> idsColumn = new TableColumn("IDs");
-//            idsColumn.setCellFactory(new CenteredCountCellFactory());
             idsColumn.setCellValueFactory(new IdentifierCountCell());
 
-//            TableColumn<Alias,Integer> actionsColumn = new TableColumn("Actions");
-//            actionsColumn.setCellFactory(new CenteredCountCellFactory());
-//            actionsColumn.setCellValueFactory(new ActionCountCell());
-
-
-            mAliasTableView.getColumns().addAll(aliasListNameColumn, groupColumn, nameColumn, colorColumn,
-                iconColumn, priorityColumn, recordColumn, streamColumn, idsColumn);
+            mAliasTableView.getColumns().addAll(nameColumn, groupColumn, colorColumn, iconColumn, priorityColumn,
+                recordColumn, streamColumn, idsColumn);
 
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
-            FilteredList<Alias> filteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
-                p -> true);
+            mAliasFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
+                alias -> alias.matchesAliasList(getAliasListNameComboBox().getSelectionModel().getSelectedItem()));
+            mAliasFilterMonitor = new AliasFilterMonitor();
 
-            getSearchField().textProperty()
-                .addListener((observable, oldValue, newValue) -> filteredList.setPredicate(alias -> {
-                if(newValue == null || newValue.isEmpty())
-                {
-                    return true;
-                }
-
-                String filterText = newValue.toLowerCase();
-
-                if(alias.getName() != null && alias.getName().toLowerCase().contains(filterText))
-                {
-                    return true;
-                }
-                else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(filterText))
-                {
-                    return true;
-                }
-                else if(alias.getAliasListName() != null && alias.getAliasListName().toLowerCase().contains(filterText))
-                {
-                    return true;
-                }
-
-                return false;
-            }));
-
-            SortedList<Alias> sortedList = new SortedList<>(filteredList);
-
+            SortedList<Alias> sortedList = new SortedList<>(mAliasFilteredList);
             sortedList.comparatorProperty().bind(mAliasTableView.comparatorProperty());
-
             mAliasTableView.setItems(sortedList);
-
             mAliasTableView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setAlias(newValue));
         }
@@ -266,7 +309,7 @@ public class AliasEditor extends SplitPane
     {
         if(mPlaceholderLabel == null)
         {
-            mPlaceholderLabel = new Label("No Channel Configurations Available");
+            mPlaceholderLabel = new Label("Select an Alias List and click the New button to create new aliases");
         }
 
         return mPlaceholderLabel;
@@ -277,79 +320,77 @@ public class AliasEditor extends SplitPane
         if(mButtonBox == null)
         {
             mButtonBox = new VBox();
-            mButtonBox.setPadding(new Insets(0, 5, 5, 5));
+            mButtonBox.setPadding(new Insets(10, 10, 10, 10));
             mButtonBox.setSpacing(10);
-            mButtonBox.getChildren().addAll(getNewButton(), getCloneButton(), getDeleteButton());
+
+            Button fillerButton = new Button();
+            fillerButton.setVisible(false);
+            mButtonBox.getChildren().addAll(fillerButton, getNewAliasButton(), getCloneAliasButton(),
+                getMoveToAliasButton(), getDeleteAliasButton());
         }
 
         return mButtonBox;
     }
 
-    private Button getNewButton()
+    private Button getNewAliasButton()
     {
-        if(mNewButton == null)
+        if(mNewAliasButton == null)
         {
-            mNewButton = new Button("New");
-            mNewButton.setAlignment(Pos.CENTER);
-            mNewButton.setMaxWidth(Double.MAX_VALUE);
-            mNewButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    Alias alias = new Alias("New Alias");
-                    mPlaylistManager.getAliasModel().addAlias(alias);
-                    setAlias(alias);
-                }
+            mNewAliasButton = new Button("New");
+            mNewAliasButton.setDisable(true);
+            mNewAliasButton.setAlignment(Pos.CENTER);
+            mNewAliasButton.setMaxWidth(Double.MAX_VALUE);
+            mNewAliasButton.setOnAction(event -> {
+                Alias alias = new Alias();
+                alias.setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
+                mPlaylistManager.getAliasModel().addAlias(alias);
+
+                //Queue a select alias action to allow table to update filter predicate and display the alias
+                Platform.runLater(() -> getAliasTableView().getSelectionModel().select(alias));
             });
         }
 
-        return mNewButton;
+        return mNewAliasButton;
     }
 
-    private Button getDeleteButton()
+    private Button getDeleteAliasButton()
     {
-        if(mDeleteButton == null)
+        if(mDeleteAliasButton == null)
         {
-            mDeleteButton = new Button("Delete");
-            mDeleteButton.setDisable(true);
-            mDeleteButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mDeleteAliasButton = new Button("Delete");
+            mDeleteAliasButton.setDisable(true);
+            mDeleteAliasButton.setMaxWidth(Double.MAX_VALUE);
+            mDeleteAliasButton.setOnAction(event -> {
+                Alias selected = getAliasTableView().getSelectionModel().getSelectedItem();
+
+                if(selected != null)
                 {
-                    Alias selected = getAliasTableView().getSelectionModel().getSelectedItem();
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Do you want to delete the selected alias?", ButtonType.NO, ButtonType.YES);
+                    alert.setTitle("Delete Alias");
+                    alert.setHeaderText("Are you sure?");
+                    alert.initOwner(((Node)getDeleteAliasButton()).getScene().getWindow());
 
-                    if(selected != null)
+                    Optional<ButtonType> result = alert.showAndWait();
+
+                    if(result.get() == ButtonType.YES)
                     {
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                            "Do you want to delete the selected alias?", ButtonType.NO, ButtonType.YES);
-                        alert.setTitle("Delete Alias");
-                        alert.setHeaderText("Are you sure?");
-                        alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
-
-                        Optional<ButtonType> result = alert.showAndWait();
-
-                        if(result.get() == ButtonType.YES)
-                        {
-                            mPlaylistManager.getAliasModel().removeAlias(selected);
-                        }
+                        mPlaylistManager.getAliasModel().removeAlias(selected);
                     }
                 }
             });
         }
 
-        return mDeleteButton;
+        return mDeleteAliasButton;
     }
 
-    private Button getCloneButton()
+    private Button getCloneAliasButton()
     {
-        if(mCloneButton == null)
+        if(mCloneAliasButton == null)
         {
-            mCloneButton = new Button("Clone");
-            mCloneButton.setDisable(true);
-            mCloneButton.setMaxWidth(Double.MAX_VALUE);
+            mCloneAliasButton = new Button("Clone");
+            mCloneAliasButton.setDisable(true);
+            mCloneAliasButton.setMaxWidth(Double.MAX_VALUE);
 //            mCloneButton.setOnAction(event -> {
 //                Channel selected = getAliasTableView().getSelectionModel().getSelectedItem();
 //                Channel copy = selected.copyOf();
@@ -358,7 +399,54 @@ public class AliasEditor extends SplitPane
 //            });
         }
 
-        return mCloneButton;
+        return mCloneAliasButton;
+    }
+
+    private MenuButton getMoveToAliasButton()
+    {
+        if(mMoveToAliasButton == null)
+        {
+            mMoveToAliasButton = new MenuButton("Move To");
+            mMoveToAliasButton.setDisable(true);
+            mMoveToAliasButton.setOnShowing(event -> {
+                mMoveToAliasButton.getItems().clear();
+
+                MenuItem emptyItem = new MenuItem("Alias Lists");
+                emptyItem.setDisable(true);
+                mMoveToAliasButton.getItems().addAll(emptyItem, new SeparatorMenuItem());
+
+                List<String> aliasLists = mPlaylistManager.getAliasModel().getListNames();
+
+                for(String aliasList: aliasLists)
+                {
+                    if(!aliasList.contentEquals(AliasModel.NO_ALIAS_LIST) &&
+                       !aliasList.contentEquals(getAliasListNameComboBox().getSelectionModel().getSelectedItem()))
+                    {
+                        mMoveToAliasButton.getItems().add(new MoveToAliasListItem(aliasList));
+                    }
+                }
+            });
+        }
+
+        return mMoveToAliasButton;
+    }
+
+    public class MoveToAliasListItem extends MenuItem
+    {
+        public MoveToAliasListItem(String aliasList)
+        {
+            super(aliasList);
+
+            setOnAction(event -> {
+                Alias selected = getAliasTableView().getSelectionModel().getSelectedItem();
+
+                if(selected != null)
+                {
+                    selected.setAliasListName(getText());
+                    mLog.warn("************ TODO:  - save the alias list here");
+                }
+            });
+        }
     }
 
     public class ColorizedCell implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
@@ -586,6 +674,46 @@ public class AliasEditor extends SplitPane
             };
 
             return tableCell;
+        }
+    }
+
+    /**
+     * Updates the filtered set of aliases any time there is a change in the selected alias list name box, or when the
+     * user types text in the search box.
+     */
+    public class AliasFilterMonitor
+    {
+        public AliasFilterMonitor()
+        {
+            getAliasListNameComboBox().getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> refresh());
+
+            getSearchField().textProperty().addListener((observable, oldValue, newValue) -> refresh());
+        }
+        public void refresh()
+        {
+            final String aliasListName = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
+            final String filter = getSearchField().getText();
+
+            mAliasFilteredList.setPredicate(alias -> {
+                if(filter == null || filter.isEmpty())
+                {
+                    return alias.matchesAliasList(aliasListName);
+                }
+
+                String lowerFilter = filter.toLowerCase();
+
+                if(alias.getName() != null && alias.getName().toLowerCase().contains(lowerFilter))
+                {
+                    return alias.matchesAliasList(aliasListName);
+                }
+                else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(lowerFilter))
+                {
+                    return alias.matchesAliasList(aliasListName);
+                }
+
+                return false;
+            });
         }
     }
 }

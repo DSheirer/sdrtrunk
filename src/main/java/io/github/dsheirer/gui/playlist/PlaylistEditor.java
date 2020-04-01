@@ -27,12 +27,15 @@ import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.JavaFxWindowManager;
 import io.github.dsheirer.gui.playlist.alias.AliasEditor;
 import io.github.dsheirer.gui.playlist.channel.ChannelEditor;
 import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
+import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -42,6 +45,8 @@ import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Menu;
@@ -136,6 +141,20 @@ public class PlaylistEditor extends Application
             fileMenu.getItems().add(closeItem);
 
             mMenuBar.getMenus().add(fileMenu);
+
+            Menu editMenu = new Menu("Edit");
+            MenuItem userPreferenceItem = new MenuItem("User Preferences");
+            userPreferenceItem.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    MyEventBus.getEventBus()
+                        .post(new PreferenceEditorViewRequest(PreferenceEditorType.TALKGROUP_FORMAT));
+                }
+            });
+            editMenu.getItems().add(userPreferenceItem);
+            mMenuBar.getMenus().add(editMenu);
         }
 
         return mMenuBar;
@@ -159,7 +178,7 @@ public class PlaylistEditor extends Application
         if(mAliasesTab == null)
         {
             mAliasesTab = new Tab("Aliases");
-            mAliasesTab.setContent(new AliasEditor(mPlaylistManager));
+            mAliasesTab.setContent(new AliasEditor(mPlaylistManager, mUserPreferences));
         }
 
         return mAliasesTab;

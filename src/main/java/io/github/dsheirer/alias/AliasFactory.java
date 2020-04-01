@@ -61,8 +61,9 @@ import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.radio.RadioRangeEditor;
 import io.github.dsheirer.alias.id.record.Record;
 import io.github.dsheirer.alias.id.record.RecordEditor;
-import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.status.StatusIDEditor;
+import io.github.dsheirer.alias.id.status.UnitStatusID;
+import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupEditor;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
@@ -70,9 +71,13 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRangeEditor;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AliasFactory
 {
+    private static final Logger mLog = LoggerFactory.getLogger(AliasFactory.class);
+
     public static AliasID copyOf(AliasID id)
     {
         switch(id.getType())
@@ -87,11 +92,6 @@ public class AliasFactory
                 Esn copyESN = new Esn();
                 copyESN.setEsn(originalESN.getEsn());
                 return copyESN;
-            case LTR_NET_UID:
-                UniqueID originalUniqueID = (UniqueID)id;
-                UniqueID copyUniqueID = new UniqueID();
-                copyUniqueID.setUid(originalUniqueID.getUid());
-                return copyUniqueID;
             case LOJACK:
                 LoJackFunctionAndID originalLoJackFunctionAndID = (LoJackFunctionAndID)id;
                 LoJackFunctionAndID copyLoJackFunctionAndID = new LoJackFunctionAndID();
@@ -125,10 +125,10 @@ public class AliasFactory
                 copySiteID.setSite(originalSiteID.getSite());
                 return copySiteID;
             case STATUS:
-                StatusID originalStatusID = (StatusID)id;
-                StatusID copyStatusID = new StatusID();
-                copyStatusID.setStatus(originalStatusID.getStatus());
-                return copyStatusID;
+                UserStatusID originalUserStatusID = (UserStatusID)id;
+                UserStatusID copyUserStatusID = new UserStatusID();
+                copyUserStatusID.setStatus(originalUserStatusID.getStatus());
+                return copyUserStatusID;
             case TALKGROUP:
                 Talkgroup originalTalkgroup = (Talkgroup)id;
                 Talkgroup copyTalkgroup = new Talkgroup(originalTalkgroup.getProtocol(), originalTalkgroup.getValue());
@@ -138,14 +138,23 @@ public class AliasFactory
                 TalkgroupRange copyRange = new TalkgroupRange(originalRange.getProtocol(), originalRange.getMinTalkgroup(),
                     originalRange.getMaxTalkgroup());
                 return copyRange;
+            case UNIT_STATUS:
+                UnitStatusID originalUnitStatus = (UnitStatusID)id;
+                UnitStatusID copyUnitStatusID = new UnitStatusID();
+                copyUnitStatusID.setStatus(originalUnitStatus.getStatus());
+                return copyUnitStatusID;
 
             //Legacy identifiers ... not supported
             case FLEETSYNC:
             case LEGACY_TALKGROUP:
+            case LTR_NET_UID:
             case MDC1200:
             case MPT1327:
             case NON_RECORDABLE:
+                return null;
             default:
+                mLog.warn("Unrecognized Alias ID Type [" + id.getType() + "] cannot make copy of instance");
+                break;
         }
 
         return null;
@@ -155,7 +164,11 @@ public class AliasFactory
     {
         if(action instanceof BeepAction)
         {
-            return new BeepAction();
+            BeepAction original = (BeepAction)action;
+            BeepAction copyBeep = new BeepAction();
+            copyBeep.setInterval(original.getInterval());
+            copyBeep.setPeriod(original.getPeriod());
+            return copyBeep;
         }
         else if(action instanceof ClipAction)
         {
@@ -318,7 +331,7 @@ public class AliasFactory
             case SITE:
                 return new SiteID();
             case STATUS:
-                return new StatusID();
+                return new UserStatusID();
             case LEGACY_TALKGROUP:
                 return new LegacyTalkgroupID();
             default:

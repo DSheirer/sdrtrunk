@@ -34,7 +34,9 @@ public enum AliasIDType
     RADIO_ID_RANGE("Radio ID Range"),
     RECORD("Record"),
     SITE("Site"),
-    STATUS("Status"),
+    STATUS("User Status"),
+    TONES("Tone Sequence"),
+    UNIT_STATUS("Unit Status"),
     TALKGROUP("Talkgroup"),
     TALKGROUP_RANGE("Talkgroup Range"),
 

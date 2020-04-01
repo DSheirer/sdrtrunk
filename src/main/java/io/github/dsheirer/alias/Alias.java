@@ -40,6 +40,8 @@ import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ import java.util.TreeSet;
 @JacksonXmlRootElement(localName = "alias")
 public class Alias
 {
+    private final static Logger mLog = LoggerFactory.getLogger(Alias.class);
+
     private BooleanProperty mRecordable = new SimpleBooleanProperty();
     private BooleanProperty mStreamable = new SimpleBooleanProperty();
     private IntegerProperty mColor = new SimpleIntegerProperty();
@@ -197,6 +201,24 @@ public class Alias
     public void setAliasListName(String aliasListName)
     {
         mAliasListName.set(aliasListName);
+    }
+
+    @JsonIgnore
+    public boolean matchesAliasList(String aliasList)
+    {
+        boolean isEmptyArgument = aliasList == null || aliasList.isEmpty() || aliasList.contentEquals(AliasModel.NO_ALIAS_LIST);
+        boolean isEmptyThis = getAliasListName() == null || getAliasListName().isEmpty();
+
+        if(isEmptyArgument && isEmptyThis)
+        {
+            return true;
+        }
+        else if(!isEmptyArgument && !isEmptyThis && aliasList.contentEquals(getAliasListName()))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -611,6 +633,14 @@ public class Alias
                 it.remove();
             }
         }
+    }
+
+    /**
+     * Removes all alias actions from this alias
+     */
+    public void removeAllActions()
+    {
+        mAliasActions.clear();
     }
 
     /**

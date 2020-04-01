@@ -31,6 +31,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+@Deprecated
 public class LoJackIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;

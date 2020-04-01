@@ -45,6 +45,7 @@ public class ClipAction extends RecurringAction
 
     public ClipAction()
     {
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
@@ -62,6 +63,7 @@ public class ClipAction extends RecurringAction
     public void setPath(String path)
     {
         mFilePath = path;
+        updateValueProperty();
     }
 
     @Override
@@ -87,8 +89,7 @@ public class ClipAction extends RecurringAction
                 {
                     mClip = AudioSystem.getClip();
 
-                    AudioInputStream ais =
-                        AudioSystem.getAudioInputStream(new File(mFilePath));
+                    AudioInputStream ais = AudioSystem.getAudioInputStream(new File(mFilePath));
 
                     mClip.open(ais);
                 }
@@ -113,17 +114,33 @@ public class ClipAction extends RecurringAction
         }
     }
 
-
     @Override
     public String toString()
     {
-        if(mFilePath == null)
+        StringBuilder sb = new StringBuilder();
+        sb.append("Play Audio Clip");
+
+        if(getInterval() != null)
         {
-            return "Play Clip";
+            switch(getInterval())
+            {
+                case ONCE:
+                    sb.append(" Once");
+                    break;
+                case DELAYED_RESET:
+                    sb.append(" Once, Reset After ").append(getPeriod()).append(" Seconds");
+                    break;
+                case UNTIL_DISMISSED:
+                    sb.append(" Every ").append(getPeriod()).append(" Seconds Until Dismissed");
+                    break;
+            }
         }
-        else
+
+        if(getPath() == null)
         {
-            return "Play Clip: " + mFilePath;
+            sb.append(" - (audio file empty)");
         }
+
+        return sb.toString();
     }
 }

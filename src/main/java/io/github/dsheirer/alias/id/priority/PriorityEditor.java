@@ -28,6 +28,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+@Deprecated
 public class PriorityEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;

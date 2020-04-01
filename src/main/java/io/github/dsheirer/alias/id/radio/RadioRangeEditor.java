@@ -42,6 +42,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.ParseException;
 
+@Deprecated
 public class RadioRangeEditor extends DocumentListenerEditor<AliasID>
 {
     private final static Logger mLog = LoggerFactory.getLogger(RadioRangeEditor.class);

@@ -24,12 +24,12 @@ import io.github.dsheirer.gui.control.HexFormatter;
 import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.control.LtrFormatter;
 import io.github.dsheirer.gui.control.PrefixIdentFormatter;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
@@ -39,27 +39,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+/**
+ * Editor for talkgroup alias identifiers
+ */
 public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
 {
     private static final Logger mLog = LoggerFactory.getLogger(TalkgroupEditor.class);
 
+    private UserPreferences mUserPreferences;
     private Label mProtocolLabel;
     private Label mFormatLabel;
     private TextField mTalkgroupField;
     private TextFormatter<Integer> mIntegerTextFormatter;
-    private ComboBox<IntegerFormat> mFormatComboBox;
     private List<TalkgroupDetail> mTalkgroupDetails = new ArrayList<>();
     private TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
 
-    public TalkgroupEditor()
+    /**
+     * Constructs an instance
+     * @param userPreferences for determining user preferred talkgroup formats
+     */
+    public TalkgroupEditor(UserPreferences userPreferences)
     {
+        mUserPreferences = userPreferences;
+
         loadTalkgroupDetails();
 
         GridPane gridPane = new GridPane();
-        gridPane.setHgap(10);
+        gridPane.setHgap(5);
         gridPane.setVgap(3);
 
         GridPane.setConstraints(getProtocolLabel(), 0, 0);
@@ -73,10 +81,7 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
         GridPane.setConstraints(getTalkgroupField(), 2, 0);
         gridPane.getChildren().add(getTalkgroupField());
 
-        GridPane.setConstraints(getFormatComboBox(), 3, 0);
-        gridPane.getChildren().add(getFormatComboBox());
-
-        GridPane.setConstraints(getFormatLabel(), 1, 1, 3, 1);
+        GridPane.setConstraints(getFormatLabel(), 3, 0);
         gridPane.getChildren().add(getFormatLabel());
 
         getChildren().add(gridPane);
@@ -95,22 +100,6 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
         if(talkgroup != null)
         {
             getProtocolLabel().setText(talkgroup.getProtocol().toString());
-
-            List<IntegerFormat> formats = getFormats(talkgroup.getProtocol());
-            getFormatComboBox().getItems().clear();
-            getFormatComboBox().getItems().addAll(formats);
-            if(formats.size() == 1)
-            {
-                getFormatComboBox().setVisible(false);
-            }
-            else
-            {
-                getFormatComboBox().setVisible(true);
-            }
-
-            //TODO: select the preferred format from the pref service here
-            getFormatComboBox().getSelectionModel().select(0);
-
             updateTextFormatter();
         }
         else
@@ -128,7 +117,7 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
             mIntegerTextFormatter.valueProperty().removeListener(mTalkgroupValueChangeListener);
         }
 
-        IntegerFormat format = getFormatComboBox().getSelectionModel().getSelectedItem();
+        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(getItem().getProtocol());
 
         if(format != null)
         {
@@ -196,26 +185,9 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
         {
             mTalkgroupField = new TextField();
             mTalkgroupField.setTextFormatter(mIntegerTextFormatter);
-
-            //Force the text field to commit the text value to the formatter with each key press
-//            mTalkgroupField.textProperty()
-//                .addListener((observable, oldValue, newValue) -> mTalkgroupField.commitValue());
         }
 
         return mTalkgroupField;
-    }
-
-    private ComboBox<IntegerFormat> getFormatComboBox()
-    {
-        if(mFormatComboBox == null)
-        {
-            mFormatComboBox = new ComboBox<>();
-            mFormatComboBox.setVisible(false);
-            mFormatComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> updateTextFormatter());
-        }
-
-        return mFormatComboBox;
     }
 
     public class TalkgroupValueChangeListener implements ChangeListener<Integer>
@@ -225,36 +197,10 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
         {
             if(getItem() != null)
             {
-                mLog.debug("Updating talkgroup value to: " + newValue);
                 getItem().setValue(newValue != null ? newValue : 0);
+                modifiedProperty().set(true);
             }
         }
-    }
-
-    /**
-     * Retrieves a list of integer formats for the specified protocol
-     * @param protocol to search for
-     * @return list of formats or the DECIMAL format at a minimum.
-     */
-    public List<IntegerFormat> getFormats(Protocol protocol)
-    {
-        List<IntegerFormat> formats = new ArrayList<>();
-
-        for(TalkgroupDetail talkgroupDetail: mTalkgroupDetails)
-        {
-            if(talkgroupDetail.getProtocol() == protocol)
-            {
-                formats.add(talkgroupDetail.getIntegerFormat());
-            }
-        }
-
-        if(formats.isEmpty())
-        {
-            formats.add(IntegerFormat.DECIMAL);
-        }
-
-        Collections.sort(formats);
-        return formats;
     }
 
     /**

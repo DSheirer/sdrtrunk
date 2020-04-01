@@ -28,9 +28,11 @@ import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioRange;
-import io.github.dsheirer.alias.id.status.StatusID;
+import io.github.dsheirer.alias.id.status.UnitStatusID;
+import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
+import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
@@ -40,6 +42,9 @@ import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.status.UnitStatusIdentifier;
 import io.github.dsheirer.identifier.status.UserStatusIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.identifier.tone.Tone;
+import io.github.dsheirer.identifier.tone.ToneIdentifier;
+import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -63,7 +68,9 @@ public class AliasList implements Listener<AliasEvent>
     private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new HashMap<>();
     private Map<Protocol,RadioAliasList> mRadioProtocolMap = new HashMap<>();
     private Map<String,Alias> mESNMap = new HashMap<>();
-    private Map<Integer,Alias> mStatusMap = new HashMap<>();
+    private Map<Integer,Alias> mUnitStatusMap = new HashMap<>();
+    private Map<Integer,Alias> mUserStatusMap = new HashMap<>();
+    private Map<ToneSequence,Alias> mToneSequenceMap = new HashMap<>();
     private boolean mHasAliasActions = false;
     private String mName;
 
@@ -169,7 +176,30 @@ public class AliasList implements Listener<AliasEvent>
                         }
                         break;
                     case STATUS:
-                        mStatusMap.put(((StatusID) id).getStatus(), alias);
+                        mUserStatusMap.put(((UserStatusID)id).getStatus(), alias);
+                        break;
+                    case UNIT_STATUS:
+                        mUnitStatusMap.put(((UnitStatusID)id).getStatus(), alias);
+                        break;
+                    case TONES:
+                        ToneSequence toneSequence = ((TonesID)id).getToneSequence();
+
+                        if(toneSequence != null)
+                        {
+                            if(mToneSequenceMap.containsKey(toneSequence))
+                            {
+                                Alias existing = mToneSequenceMap.get(toneSequence);
+
+                                mLog.warn("Alias List Error. Can't map alias [" + alias.getName() +
+                                    "] to tone Sequence [" + toneSequence +
+                                    "] - that sequence is already mapped to alias [" +
+                                    (existing.getName() != null ? existing.getName() : "alias without a name") + "]");
+                            }
+                            else
+                            {
+                                mToneSequenceMap.put(toneSequence, alias);
+                            }
+                        }
                         break;
                 }
             }
@@ -190,7 +220,7 @@ public class AliasList implements Listener<AliasEvent>
             talkgroupAliasList.remove(alias);
         }
 
-        remove(alias, mStatusMap);
+        remove(alias, mUserStatusMap);
         remove(alias, mESNMap);
     }
 
@@ -342,14 +372,31 @@ public class AliasList implements Listener<AliasEvent>
                     if(identifier instanceof UnitStatusIdentifier)
                     {
                         int status = ((UnitStatusIdentifier)identifier).getValue();
-                        return toList(mStatusMap.get(status));
+                        return toList(mUserStatusMap.get(status));
                     }
                     break;
                 case USER_STATUS:
                     if(identifier instanceof UserStatusIdentifier)
                     {
                         int status = ((UserStatusIdentifier)identifier).getValue();
-                        return toList(mStatusMap.get(status));
+                        return toList(mUserStatusMap.get(status));
+                    }
+                    break;
+                case TONE:
+                    if(identifier instanceof ToneIdentifier)
+                    {
+                        ToneSequence toneSequence = ((ToneIdentifier)identifier).getValue();
+
+                        if(toneSequence != null && toneSequence.hasTones())
+                        {
+                            for(Map.Entry<ToneSequence,Alias> entry: mToneSequenceMap.entrySet())
+                            {
+                                if(entry.getKey().isContainedIn(toneSequence))
+                                {
+                                    return toList(entry.getValue());
+                                }
+                            }
+                        }
                     }
                     break;
             }

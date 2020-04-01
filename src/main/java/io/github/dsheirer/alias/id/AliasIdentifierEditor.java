@@ -51,6 +51,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+@Deprecated
 public class AliasIdentifierEditor extends Editor<Alias>
 {
     private static final long serialVersionUID = 1L;

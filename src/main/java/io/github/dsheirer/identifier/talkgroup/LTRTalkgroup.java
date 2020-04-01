@@ -38,7 +38,7 @@ public class LTRTalkgroup extends TalkgroupIdentifier implements Comparable<LTRT
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.LTR_NET;
+        return Protocol.LTR;
     }
 
     /**

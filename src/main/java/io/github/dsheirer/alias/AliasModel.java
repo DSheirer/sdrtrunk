@@ -53,18 +53,25 @@ public class AliasModel extends AbstractTableModel
     public static final int COLUMN_NAME = 2;
     public static final int COLUMN_ICON = 3;
     public static final int COLUMN_COLOR = 4;
-
+    public static final String NO_ALIAS_LIST = "(No Alias List)";
     private ObservableList<Alias> mAliases = FXCollections.observableArrayList(Alias.extractor());
+    private ObservableList<String> mAliasListNames = FXCollections.observableArrayList();
     private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
     private Map<String,AliasList> mAliasListMap = new HashMap<>();
 
     public AliasModel()
     {
+        mAliasListNames.add(NO_ALIAS_LIST);
     }
 
     public ObservableList<Alias> aliasList()
     {
         return mAliases;
+    }
+
+    public ObservableList<String> aliasListNames()
+    {
+        return mAliasListNames;
     }
 
     /**
@@ -169,19 +176,7 @@ public class AliasModel extends AbstractTableModel
      */
     public List<String> getListNames()
     {
-        List<String> listNames = new ArrayList<>();
-
-        for(Alias alias : mAliases)
-        {
-            if(alias.hasList() && !listNames.contains(alias.getAliasListName()))
-            {
-                listNames.add(alias.getAliasListName());
-            }
-        }
-
-        Collections.sort(listNames);
-
-        return listNames;
+        return mAliasListNames;
     }
 
     /**
@@ -250,6 +245,7 @@ public class AliasModel extends AbstractTableModel
         if(alias != null)
         {
             mAliases.add(alias);
+            addAliasList(alias.getAliasListName());
             int index = mAliases.size() - 1;
             fireTableRowsInserted(index, index);
             broadcast(new AliasEvent(alias, AliasEvent.Event.ADD));
@@ -257,6 +253,19 @@ public class AliasModel extends AbstractTableModel
         }
 
         return -1;
+    }
+
+    public void addAliasList(String aliasListName)
+    {
+        if(aliasListName != null && !aliasListName.isEmpty())
+        {
+            if(!mAliasListNames.contains(aliasListName))
+            {
+                mAliasListNames.add(aliasListName);
+                Collections.sort(mAliasListNames);
+            }
+        }
+
     }
 
     /**

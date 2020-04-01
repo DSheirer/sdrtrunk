@@ -27,6 +27,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
+@Deprecated
 public class StatusIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
@@ -87,11 +88,11 @@ public class StatusIDEditor extends DocumentListenerEditor<AliasID>
 		add( help, "align left" );
 	}
 	
-	public StatusID getStatusID()
+	public UserStatusID getStatusID()
 	{
-		if( getItem() instanceof StatusID )
+		if( getItem() instanceof UserStatusID)
 		{
-			return (StatusID)getItem();
+			return (UserStatusID)getItem();
 		}
 		
 		return null;
@@ -102,11 +103,11 @@ public class StatusIDEditor extends DocumentListenerEditor<AliasID>
 	{
 		super.setItem( aliasID );
 		
-		StatusID statusID = getStatusID();
+		UserStatusID userStatusID = getStatusID();
 		
-		if( statusID != null )
+		if( userStatusID != null )
 		{
-			mTextField.setText( String.format( "%03d", statusID.getStatus() ) );
+			mTextField.setText( String.format( "%03d", userStatusID.getStatus() ) );
 		}
 		
 		setModified( false );
@@ -117,9 +118,9 @@ public class StatusIDEditor extends DocumentListenerEditor<AliasID>
 	@Override
 	public void save()
 	{
-		StatusID statusID = getStatusID();
+		UserStatusID userStatusID = getStatusID();
 		
-		if( statusID != null )
+		if( userStatusID != null )
 		{
 			int status = 0;
 			
@@ -132,7 +133,7 @@ public class StatusIDEditor extends DocumentListenerEditor<AliasID>
 				//Do nothing, we couldn't parse the value
 			}
 			
-			statusID.setStatus( status );
+			userStatusID.setStatus( status );
 		}
 		
 		setModified( false );

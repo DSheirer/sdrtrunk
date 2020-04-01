@@ -103,6 +103,7 @@ public class BroadcastChannel extends AliasID implements Comparable<BroadcastCha
     public void setChannelName(String channel)
     {
         mChannelName = channel;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")

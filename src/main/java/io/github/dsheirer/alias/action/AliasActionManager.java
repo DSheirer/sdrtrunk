@@ -78,13 +78,13 @@ public class AliasActionManager extends Module implements IMessageListener, List
     @Override
     public void reset()
     {
-        //No actions neeeded
+        //No actions needed
     }
 
     @Override
     public void start()
     {
-        //No actions neeeded
+        //No actions needed
     }
 
     @Override

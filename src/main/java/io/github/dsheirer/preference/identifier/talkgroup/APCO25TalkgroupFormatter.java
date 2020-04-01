@@ -28,7 +28,7 @@ import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 
-public class APCO25TalkgroupFormatter extends IntegerFormatter
+public class APCO25TalkgroupFormatter extends AbstractIntegerFormatter
 {
     public static final int GROUP_DECIMAL_WIDTH = 5;
     public static final int UNIT_DECIMAL_WIDTH = 8;
@@ -131,4 +131,18 @@ public class APCO25TalkgroupFormatter extends IntegerFormatter
         }
     }
 
+    @Override
+    public String format(int value, IntegerFormat integerFormat)
+    {
+        switch(integerFormat)
+        {
+            case DECIMAL:
+            case FORMATTED:
+                return format(value);
+            case HEXADECIMAL:
+                return toHex(value);
+            default:
+                throw new IllegalArgumentException("Unrecognized integer format: " + integerFormat);
+        }
+    }
 }

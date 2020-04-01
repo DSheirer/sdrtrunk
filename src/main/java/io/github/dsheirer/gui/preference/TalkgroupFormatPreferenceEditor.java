@@ -34,6 +34,8 @@ import javafx.scene.control.Separator;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 
+import java.util.Set;
+
 
 /**
  * Preference settings for channel event view
@@ -68,7 +70,8 @@ public class TalkgroupFormatPreferenceEditor extends HBox
                 GridPane.setMargin(label, new Insets(0, 10, 0, 0));
                 GridPane.setHalignment(label, HPos.LEFT);
                 mEditorPane.add(label, 0, row);
-                IntegerFormatEditor editor = new IntegerFormatEditor(mTalkgroupFormatPreference, protocol);
+                IntegerFormatEditor editor = new IntegerFormatEditor(mTalkgroupFormatPreference, protocol,
+                    TalkgroupFormatPreference.getFormats(protocol));
                 GridPane.setMargin(editor, new Insets(5,5,5,5));
                 mEditorPane.add(editor, 1, row);
                 FixedWidthEditor fixedWidthEditor = new FixedWidthEditor(mTalkgroupFormatPreference, protocol);
@@ -89,13 +92,13 @@ public class TalkgroupFormatPreferenceEditor extends HBox
         private TalkgroupFormatPreference mTalkgroupFormatPreference;
         private Protocol mProtocol;
 
-        public IntegerFormatEditor(TalkgroupFormatPreference preference, Protocol protocol)
+        public IntegerFormatEditor(TalkgroupFormatPreference preference, Protocol protocol, Set<IntegerFormat> formats)
         {
             mTalkgroupFormatPreference = preference;
             mProtocol = protocol;
-            getItems().addAll(IntegerFormat.values());
+            setMaxWidth(Double.MAX_VALUE);
+            getItems().addAll(formats);
             getSelectionModel().select(mTalkgroupFormatPreference.getTalkgroupFormat(mProtocol));
-
             setOnAction(event -> {
                 IntegerFormat selected = getSelectionModel().getSelectedItem();
                 mTalkgroupFormatPreference.setTalkgroupFormat(mProtocol, selected);

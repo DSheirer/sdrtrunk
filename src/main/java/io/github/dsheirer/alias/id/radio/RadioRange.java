@@ -69,6 +69,7 @@ public class RadioRange extends AliasID
     public void setMinRadio(int minRadio)
     {
         mMinRadio = minRadio;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "max")
@@ -80,6 +81,7 @@ public class RadioRange extends AliasID
     public void setMaxRadio(int maxRadio)
     {
         mMaxRadio = maxRadio;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -105,7 +107,8 @@ public class RadioRange extends AliasID
         return radioFormat.getMinimumValidValue() <= mMinRadio &&
                mMinRadio <= radioFormat.getMaximumValidValue() &&
                radioFormat.getMinimumValidValue() <= mMaxRadio &&
-               mMaxRadio <= radioFormat.getMaximumValidValue();
+               mMaxRadio <= radioFormat.getMaximumValidValue() &&
+               mMinRadio < mMaxRadio;
     }
 
     public String toString()

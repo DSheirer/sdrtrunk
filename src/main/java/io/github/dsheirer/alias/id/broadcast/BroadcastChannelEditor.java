@@ -32,6 +32,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
+@Deprecated
 public class BroadcastChannelEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;

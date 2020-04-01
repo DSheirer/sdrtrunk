@@ -47,6 +47,7 @@ public class LoJackFunctionAndID extends AliasID
     public void setID(String id)
     {
         mID = id;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "function")
@@ -58,6 +59,7 @@ public class LoJackFunctionAndID extends AliasID
     public void setFunction(LJ1200Message.Function function)
     {
         mFunction = function;
+        updateValueProperty();
     }
 
     @Override

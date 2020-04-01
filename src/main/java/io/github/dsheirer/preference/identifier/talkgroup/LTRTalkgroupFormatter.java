@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Formats LTR identifiers
  */
-public class LTRTalkgroupFormatter extends IntegerFormatter
+public class LTRTalkgroupFormatter extends AbstractIntegerFormatter
 {
     private final static Logger mLog = LoggerFactory.getLogger(LTRTalkgroupFormatter.class);
     private static final int IDENTIFIER_DECIMAL_WIDTH = 4;
@@ -136,6 +136,18 @@ public class LTRTalkgroupFormatter extends IntegerFormatter
         throw new ParseException("Error parsing LTR talkgroup [" + formattedTalkgroup + "]", 0);
     }
 
+    @Override
+    public String format(int value, IntegerFormat format)
+    {
+        switch(format)
+        {
+            case DECIMAL:
+            case FORMATTED:
+            case HEXADECIMAL:
+            default:
+                return format(value);
+        }
+    }
 
     /**
      * Formats the talkgroup as a string

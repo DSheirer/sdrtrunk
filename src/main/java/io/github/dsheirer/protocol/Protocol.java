@@ -54,9 +54,8 @@ public enum Protocol
         mBitRate = bitRate;
     }
 
-    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, FLEETSYNC, LTR_NET, LTR_STANDARD, MDC1200,
-        MPT1327, PASSPORT);
-    public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25);
+    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, FLEETSYNC, LTR, MDC1200, MPT1327, PASSPORT);
+    public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25, PASSPORT);
 
     @Override
     public String toString()

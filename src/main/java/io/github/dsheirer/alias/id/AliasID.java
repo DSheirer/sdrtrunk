@@ -40,10 +40,11 @@ import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.status.StatusID;
+import io.github.dsheirer.alias.id.status.UnitStatusID;
+import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.alias.id.tone.TonesID;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.util.Callback;
@@ -53,20 +54,22 @@ import javafx.util.Callback;
     @JsonSubTypes.Type(value = BroadcastChannel.class, name = "broadcastChannel"),
     @JsonSubTypes.Type(value = Esn.class, name = "esn"),
     @JsonSubTypes.Type(value = FleetsyncID.class, name = "fleetsyncID"),
+    @JsonSubTypes.Type(value = LegacyTalkgroupID.class, name = "talkgroupID"),
     @JsonSubTypes.Type(value = LoJackFunctionAndID.class, name = "loJackFunctionAndID"),
     @JsonSubTypes.Type(value = MDC1200ID.class, name = "mdc1200ID"),
     @JsonSubTypes.Type(value = Min.class, name = "min"),
     @JsonSubTypes.Type(value = MPT1327ID.class, name = "mpt1327ID"),
     @JsonSubTypes.Type(value = NonRecordable.class, name = "nonRecordable"),
+    @JsonSubTypes.Type(value = Priority.class, name = "priority"),
     @JsonSubTypes.Type(value = Radio.class, name = "radio"),
     @JsonSubTypes.Type(value = RadioRange.class, name = "radioRange"),
-    @JsonSubTypes.Type(value = Talkgroup.class, name = "talkgroup"),
-    @JsonSubTypes.Type(value = TalkgroupRange.class, name = "talkgroupRange"),
-    @JsonSubTypes.Type(value = Priority.class, name = "priority"),
     @JsonSubTypes.Type(value = Record.class, name = "record"),
     @JsonSubTypes.Type(value = SiteID.class, name = "siteID"),
-    @JsonSubTypes.Type(value = StatusID.class, name = "statusID"),
-    @JsonSubTypes.Type(value = LegacyTalkgroupID.class, name = "talkgroupID"),
+    @JsonSubTypes.Type(value = Talkgroup.class, name = "talkgroup"),
+    @JsonSubTypes.Type(value = TalkgroupRange.class, name = "talkgroupRange"),
+    @JsonSubTypes.Type(value = TonesID.class, name = "tones"),
+    @JsonSubTypes.Type(value = UserStatusID.class, name = "statusID"),
+    @JsonSubTypes.Type(value = UnitStatusID.class, name = "unitStatusID"),
     @JsonSubTypes.Type(value = UniqueID.class, name = "uniqueID")
 })
 @JacksonXmlRootElement(localName = "id")
@@ -91,7 +94,7 @@ public abstract class AliasID
      * Updates the value property for this alias ID.  Note: this method is intended to be invoked by all subclasses
      * each time that any of the subclass member variable values change.
      */
-    protected void updateValueProperty()
+    public void updateValueProperty()
     {
         valueProperty().set(toString());
 

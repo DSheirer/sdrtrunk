@@ -20,6 +20,7 @@
 
 package io.github.dsheirer.preference.identifier.talkgroup;
 
+import io.github.dsheirer.preference.identifier.IntegerFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +29,9 @@ import java.text.ParseException;
 /**
  * Base formatter class for integer values
  */
-public class IntegerFormatter
+public abstract class AbstractIntegerFormatter
 {
-    private final static Logger mLog = LoggerFactory.getLogger(IntegerFormatter.class);
+    private final static Logger mLog = LoggerFactory.getLogger(AbstractIntegerFormatter.class);
 
     public static String toHex(int value)
     {
@@ -56,6 +57,8 @@ public class IntegerFormatter
     {
         return String.valueOf(value);
     }
+
+    public abstract String format(int value, IntegerFormat integerFormat);
 
     /**
      * Parses an integer value from the formatted string value

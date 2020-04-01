@@ -36,9 +36,9 @@ public enum TalkgroupFormat
 {
     APCO25("********", 0, 0xFFFFFF, "0 to 65,535",
         "<html>APCO25 talkgroup valid range is 0 to 65,535"),
-    FLEETSYNC("###-####", 1, 0x7FFFFF, "001-0001 to 127-8192",
+    FLEETSYNC("###-####", 0, 0x7FFFFF, "001-0001 to 127-8192",
         "<html>Fleetsync valid ranges are 1-127(prefix)<br>and 1-8192(ident) (ie. 001-0001 to 127-8192)"),
-    LTR("##-###", 257, 5375, "01-001 to 20-255",
+    LTR("##-###", 0x101, 0x3FFF, "01-001 to 20-255",
         "<html>LTR valid ranges are 1-20(repeater) and 1-255(talkgroup) (ie. 01-001 to 20-255)"),
     MDC1200("*****", 1, 0xFFFF, "1 to 65,535",
         "MDC-1200 valid value range is 1-65,535"),

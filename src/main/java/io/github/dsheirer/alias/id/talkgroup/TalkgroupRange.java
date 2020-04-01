@@ -106,7 +106,8 @@ public class TalkgroupRange extends AliasID
         return talkgroupFormat.getMinimumValidValue() <= mMinTalkgroup &&
                mMinTalkgroup <= talkgroupFormat.getMaximumValidValue() &&
                talkgroupFormat.getMinimumValidValue() <= mMaxTalkgroup &&
-               mMaxTalkgroup <= talkgroupFormat.getMaximumValidValue();
+               mMaxTalkgroup <= talkgroupFormat.getMaximumValidValue() &&
+               mMinTalkgroup < mMaxTalkgroup;
     }
 
     public String toString()
