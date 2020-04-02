@@ -25,7 +25,7 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import io.github.dsheirer.source.tuner.usb.converter.ByteSampleConverter;
+import io.github.dsheirer.source.tuner.usb.converter.SignedByteSampleConverter;
 import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
@@ -60,7 +60,7 @@ public class HackRFTunerController extends USBTunerController
     public static final double USABLE_BANDWIDTH_PERCENT = 0.75;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
-    private NativeBufferConverter mNativeBufferConverter = new ByteSampleConverter();
+    private NativeBufferConverter mNativeBufferConverter = new SignedByteSampleConverter();
     private USBTransferProcessor mUSBTransferProcessor;
 
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
