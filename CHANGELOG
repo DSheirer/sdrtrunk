@@ -1,5 +1,5 @@
 0.4.0 20200404
- - Release includes embedded Java & JavaFX 13 runtime
+ - Release includes embedded Java 14 & JavaFX 13 runtime
  - Adds Polyphase Channelizer with 2x channel oversampling and redesigned source management
  - Adds P25 Phase 2 decoder
  - Adds P25 radio identifier aliasing
