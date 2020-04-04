@@ -1,3 +1,18 @@
+0.4.0 20200404
+ - Release includes embedded Java & JavaFX 13 runtime
+ - Adds Polyphase Channelizer with 2x channel oversampling and redesigned source management
+ - Adds P25 Phase 2 decoder
+ - Adds P25 radio identifier aliasing
+ - JMBE library 1.0.4 with support for AMBE tone metadata
+ - New JavaFX User Preferences dialog
+ - HackRF tuner enhanced (sample rates and saturation issues)
+ - Adds support for Airspy mini tuner
+ - Redesigned audio sub-system that uses AudioSegments
+ - USB tuner bus saturation management/monitoring
+ - Bitstream (.bits) recording
+ - MP3 Audio Recording
+ - Numerous bug fixes
+
 0.3.4 20180418
  - New P25 C4FM decoder that uses Differential QPSK decoder instead of FM demodulation with 4FSK.
  - Adds channel auto-start and ordering capability with startup dialog allowing user to invoke or bypass channel
