@@ -33,7 +33,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.4.0-beta.8'
+version = '0.4.0'
 sourceCompatibility = '13'
 
 sourceSets {
@@ -114,7 +114,7 @@ jar {
         attributes (
                 'Implementation-Title'  : 'sdrtrunk project',
                 'Implementation-Version' : archiveVersion,
-                'Class-Path'            : 'jmbe-1.0.1.jar',
+                'Class-Path'            : 'jmbe-1.0.4.jar',
                 'Created-By'            : "Gradle ${gradle.gradleVersion}",
                 'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
                 'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
@@ -129,11 +129,11 @@ jar {
  * tasks to produce platform-specific builds.  If none of these paths exists, then an image will be created for the
  * host OS using the installed JDK.
  */
-def jdk_linux_x86_64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-13.0.1'
-def jdk_linux_x86_32 = '/media/denny/WD250GB/java/bellsoft/linux-x86/jdk-13.0.1'
-def jdk_osx_x86_64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-13.0.1.jdk'
-def jdk_windows_x86_64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-13.0.1'
-def jdk_windows_x86_32 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-13.0.1'
+def jdk_linux_x86_64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-14'
+def jdk_linux_x86_32 = '/media/denny/WD250GB/java/bellsoft/linux-x86/jdk-14'
+def jdk_osx_x86_64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-14.jdk'
+def jdk_windows_x86_64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-14'
+def jdk_windows_x86_32 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-14'
 
 def file_jdk_linux_x86_64 = new File(jdk_linux_x86_64)
 def file_jdk_linux_x86_32 = new File(jdk_linux_x86_32)
