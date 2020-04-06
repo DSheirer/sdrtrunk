@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.preference;
@@ -27,12 +24,15 @@ import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
+import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
+import io.github.dsheirer.preference.record.RecordPreference;
 import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.mixer.MixerManager;
 
 /**
  * User Preferences.  A collection of preferences that can be accessed by preference type.
@@ -56,8 +56,10 @@ public class UserPreferences implements Listener<PreferenceType>
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
+    private PlaybackPreference mPlaybackPreference;
     private PlaylistPreference mPlaylistPreference;
     private RadioReferencePreference mRadioReferencePreference;
+    private RecordPreference mRecordPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
     private SwingPreference mSwingPreference = new SwingPreference();
@@ -103,6 +105,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Audio playback preferences
+     */
+    public PlaybackPreference getPlaybackPreference()
+    {
+        return mPlaybackPreference;
+    }
+
+    /**
      * Playlist preferences
      */
     public PlaylistPreference getPlaylistPreference()
@@ -116,6 +126,14 @@ public class UserPreferences implements Listener<PreferenceType>
     public RadioReferencePreference getRadioReferencePreference()
     {
         return mRadioReferencePreference;
+    }
+
+    /**
+     * Recording preferences
+     */
+    public RecordPreference getRecordPreference()
+    {
+        return mRecordPreference;
     }
 
     /**
@@ -152,8 +170,10 @@ public class UserPreferences implements Listener<PreferenceType>
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
+        mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);
+        mRecordPreference = new RecordPreference(this::receive);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this::receive);
         mTunerPreference = new TunerPreference(this::receive);
     }

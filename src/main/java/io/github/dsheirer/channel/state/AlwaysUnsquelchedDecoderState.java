@@ -1,29 +1,33 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.string.SimpleStringIdentifier;
+import io.github.dsheirer.identifier.string.StringIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +39,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 {
     private final static Logger mLog = LoggerFactory.getLogger(AlwaysUnsquelchedDecoderState.class);
     private static final String NO_SQUELCH = "No Squelch";
+    private Identifier mChannelNameIdentifier;
 
     private DecoderType mDecoderType;
     private String mChannelName;
@@ -42,7 +47,8 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     public AlwaysUnsquelchedDecoderState(DecoderType decoderType, String channelName)
     {
         mDecoderType = decoderType;
-        mChannelName = channelName;
+        mChannelName = (channelName != null && !channelName.isEmpty()) ? channelName : decoderType.name() + " CHANNEL";
+        mChannelNameIdentifier = new SimpleStringIdentifier(mChannelName, IdentifierClass.USER, Form.CHANNEL_NAME, Role.TO);
     }
 
     @Override
@@ -74,9 +80,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     {
         if(event.getEvent() == Event.RESET)
         {
-            //Each time we're reset, set the PRIMARY TO attribute back to the channel name, otherwise we won't have
-            //a primary ID for any audio produced by this state.
-//            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, NO_SQUELCH));
+            getIdentifierCollection().update(mChannelNameIdentifier);
         }
     }
 
@@ -89,8 +93,8 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     @Override
     public void start()
     {
-//        broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, NO_SQUELCH));
         broadcast(new DecoderStateEvent(this, Event.ALWAYS_UNSQUELCH, State.IDLE));
+        getIdentifierCollection().update(mChannelNameIdentifier);
     }
 
     @Override

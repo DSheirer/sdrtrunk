@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.message.APCO25ShortDataMessage;
 import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25FullyQualifiedRadioIdentifier;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
 
 import java.util.ArrayList;
@@ -69,8 +69,8 @@ public class MessageUpdateExtended extends MacStructure
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getOpcode());
-        sb.append(" TO:").append(getTargetAddress());
         sb.append(" FM:").append(getSourceSuid());
+        sb.append(" TO:").append(getTargetAddress());
         sb.append(" MSG:").append(getShortDataMessage());
         return sb.toString();
     }
@@ -96,7 +96,7 @@ public class MessageUpdateExtended extends MacStructure
     {
         if(mTargetAddress == null)
         {
-            mTargetAddress = APCO25Radio.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
+            mTargetAddress = APCO25RadioIdentifier.createTo(getMessage().getInt(TARGET_ADDRESS, getOffset()));
         }
 
         return mTargetAddress;

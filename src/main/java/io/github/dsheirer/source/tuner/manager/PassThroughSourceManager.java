@@ -33,17 +33,21 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- *
+ * Pass through source manager for relatively small bandwidth complex streams that don't warrant the overhead of
+ * a polyphase or heterodyne channelizer.
  */
 public class PassThroughSourceManager extends ChannelSourceManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(PassThroughSourceManager.class);
     private TunerController mTunerController;
     private SortedSet<TunerChannel> mTunerChannels = new TreeSet<>();
+    private List<TunerChannelSource> mTunerChannelSources = new CopyOnWriteArrayList<>();
 
     public PassThroughSourceManager(TunerController tunerController)
     {
@@ -69,6 +73,7 @@ public class PassThroughSourceManager extends ChannelSourceManager
                 mTunerController, tunerChannel);
 
         mTunerChannels.add(tunerChannel);
+        mTunerChannelSources.add(channelSource);
 
         return channelSource;
     }
@@ -91,9 +96,19 @@ public class PassThroughSourceManager extends ChannelSourceManager
                     PassThroughChannelSource source = (PassThroughChannelSource)event.getSource();
                     mTunerController.removeBufferListener(source);
                     mTunerChannels.remove(source.getTunerChannel());
+                    mTunerChannelSources.remove(source);
                     broadcast(SourceEvent.channelCountChange(mTunerChannels.size()));
                 }
                 break;
+        }
+    }
+
+    @Override
+    public void setErrorMessage(String errorMessage)
+    {
+        for(TunerChannelSource tunerChannelSource: mTunerChannelSources)
+        {
+            tunerChannelSource.setError(errorMessage);
         }
     }
 

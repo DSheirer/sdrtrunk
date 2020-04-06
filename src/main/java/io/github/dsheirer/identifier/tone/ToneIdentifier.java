@@ -22,27 +22,18 @@
 
 package io.github.dsheirer.identifier.tone;
 
-import com.google.common.base.Joiner;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.string.StringListIdentifier;
-
-import java.util.List;
+import io.github.dsheirer.identifier.string.StringIdentifier;
 
 /**
  * Pass-band audio tones identifier
  */
-public abstract class ToneIdentifier extends StringListIdentifier
+public abstract class ToneIdentifier extends StringIdentifier
 {
-    public ToneIdentifier(List<String> values)
+    public ToneIdentifier(String value)
     {
-        super(values, IdentifierClass.USER, Form.TONE, Role.TO);
-    }
-
-    @Override
-    public String toString()
-    {
-        return "TONES:" + Joiner.on("").join(getValue());
+        super(value, IdentifierClass.USER, Form.TONE, Role.FROM);
     }
 }

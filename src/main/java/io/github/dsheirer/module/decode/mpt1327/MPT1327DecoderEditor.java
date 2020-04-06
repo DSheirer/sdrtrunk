@@ -30,6 +30,8 @@ import io.github.dsheirer.gui.editor.EditorValidationException;
 import io.github.dsheirer.gui.editor.ValidatingEditor;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -41,10 +43,13 @@ import javax.swing.event.ChangeListener;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.List;
 
 public class MPT1327DecoderEditor extends ValidatingEditor<Channel>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(MPT1327DecoderEditor.class);
     private static final long serialVersionUID = 1L;
 
     private JComboBox<ChannelMap> mComboChannelMaps;
@@ -65,12 +70,17 @@ public class MPT1327DecoderEditor extends ValidatingEditor<Channel>
     {
         setLayout(new MigLayout("insets 0 0 0 0,wrap 4", "[right][grow,fill][right][grow,fill]", ""));
 
-        List<ChannelMap> maps = mChannelMapModel.getChannelMaps();
-        ChannelMap[] mapArray = maps.toArray(new ChannelMap[maps.size()]);
-
         mComboChannelMaps = new JComboBox<ChannelMap>();
-        mComboChannelMaps.setModel(new DefaultComboBoxModel<ChannelMap>(mapArray));
+        refreshChannelMaps();
         mComboChannelMaps.setEnabled(false);
+        mComboChannelMaps.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                setModified(true);
+            }
+        });
         add(new JLabel("Channel Map:"));
         add(mComboChannelMaps);
 
@@ -80,8 +90,17 @@ public class MPT1327DecoderEditor extends ValidatingEditor<Channel>
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                final ChannelMapManagerFrame manager =
-                    new ChannelMapManagerFrame(mChannelMapModel);
+                final ChannelMapManagerFrame manager = new ChannelMapManagerFrame(mChannelMapModel);
+                manager.addWindowListener(new WindowAdapter()
+                {
+                    @Override
+                    public void windowClosed(WindowEvent e)
+                    {
+                        super.windowClosed(e);
+                        mLog.debug("Refreshing channel maps combo box");
+                        refreshChannelMaps();
+                    }
+                });
 
                 EventQueue.invokeLater(new Runnable()
                 {
@@ -137,6 +156,22 @@ public class MPT1327DecoderEditor extends ValidatingEditor<Channel>
 
         add(mCallTimeoutLabel);
         add(mCallTimeout);
+    }
+
+    private void refreshChannelMaps()
+    {
+        List<ChannelMap> maps = mChannelMapModel.getChannelMaps();
+
+        ChannelMap[] mapArray = new ChannelMap[maps.size() + 1];
+
+        int index = 1;
+
+        for(ChannelMap channelMap: maps)
+        {
+            mapArray[index++] = channelMap;
+        }
+
+        mComboChannelMaps.setModel(new DefaultComboBoxModel<ChannelMap>(mapArray));
     }
 
     @Override

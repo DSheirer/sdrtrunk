@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -20,17 +20,20 @@
  *
  */
 
-package io.github.dsheirer.identifier.tone;
+package io.github.dsheirer.module.decode.p25.identifier.radio;
 
+import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
-import java.util.List;
-
-public class P25CallProgressIdentifier extends CallProgressIdentifier
+/**
+ * APCO-25 Radio Identifier
+ */
+public class APCO25RadioIdentifier extends RadioIdentifier
 {
-    public P25CallProgressIdentifier(List<String> values)
+    public APCO25RadioIdentifier(Integer value, Role role)
     {
-        super(values);
+        super(value, role);
     }
 
     @Override
@@ -39,8 +42,27 @@ public class P25CallProgressIdentifier extends CallProgressIdentifier
         return Protocol.APCO25;
     }
 
-    public static P25CallProgressIdentifier create(List<String> values)
+    /**
+     * Creates an APCO-25 TO radio identifier
+     */
+    public static RadioIdentifier createTo(int radioId)
     {
-        return new P25CallProgressIdentifier(values);
+        return new APCO25RadioIdentifier(radioId, Role.TO);
+    }
+
+    /**
+     * Creates an APCO-25 FROM radio identifier
+     */
+    public static RadioIdentifier createFrom(int radioId)
+    {
+        return new APCO25RadioIdentifier(radioId, Role.FROM);
+    }
+
+    /**
+     * Creates an APCO-25 ANY radio identifier
+     */
+    public static RadioIdentifier createAny(int radioId)
+    {
+        return new APCO25RadioIdentifier(radioId, Role.ANY);
     }
 }

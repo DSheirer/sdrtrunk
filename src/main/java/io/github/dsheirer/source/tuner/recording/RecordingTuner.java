@@ -136,4 +136,10 @@ public class RecordingTuner extends Tuner
             }
         }
     }
+
+    @Override
+    public int getMaximumUSBBitsPerSecond()
+    {
+        return 0;
+    }
 }

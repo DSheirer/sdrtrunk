@@ -23,14 +23,15 @@
 package io.github.dsheirer.audio.codec.mbe;
 
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.AbstractAudioModule;
+import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
 import jmbe.iface.IAudioCodec;
 import jmbe.iface.IAudioCodecLibrary;
 import org.slf4j.Logger;
@@ -44,17 +45,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class JmbeAudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener
+public abstract class JmbeAudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener,
+    ISquelchStateListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(JmbeAudioModule.class);
     private static final String JMBE_AUDIO_LIBRARY = "JMBE";
     private static List<String> mLibraryLoadStatusLogged = new ArrayList<>();
     private IAudioCodec mAudioCodec;
     private UserPreferences mUserPreferences;
-    private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("JmbeAudioModule");
 
-    public JmbeAudioModule(UserPreferences userPreferences)
+    public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
+        super(aliasList);
         mUserPreferences = userPreferences;
         MyEventBus.getEventBus().register(this);
         loadConverter();
@@ -71,11 +73,6 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     protected boolean hasAudioCodec()
     {
         return getAudioCodec() != null;
-    }
-
-    protected ReusableAudioPacketQueue getAudioPacketQueue()
-    {
-        return mAudioPacketQueue;
     }
 
     @Override

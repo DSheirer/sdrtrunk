@@ -1,21 +1,23 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -26,8 +28,9 @@ import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
-import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
+import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
@@ -45,7 +48,7 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
-    protected AdaptivePLLGainMonitor mPLLGainMonitor;
+    protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
     protected P25P1MessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
@@ -68,7 +71,8 @@ public class P25P1DecoderC4FM extends P25P1Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mPLLGainMonitor = new AdaptivePLLGainMonitor(mCostasLoop, this);
+        mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
+        mFrequencyCorrectionSyncMonitor = new FrequencyCorrectionSyncMonitor(mCostasLoop, this);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
@@ -81,7 +85,7 @@ public class P25P1DecoderC4FM extends P25P1Decoder
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
         mMessageFramer = new P25P1MessageFramer(mCostasLoop, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-        mMessageFramer.setSyncDetectListener(mPLLGainMonitor);
+        mMessageFramer.setSyncDetectListener(mFrequencyCorrectionSyncMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
 
@@ -202,6 +206,6 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     public void reset()
     {
         mCostasLoop.reset();
-        mPLLGainMonitor.reset();
+        mFrequencyCorrectionSyncMonitor.reset();
     }
 }

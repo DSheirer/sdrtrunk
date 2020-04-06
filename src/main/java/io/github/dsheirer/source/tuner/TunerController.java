@@ -1,27 +1,25 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner;
 
-import io.github.dsheirer.record.RecorderManager;
+import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.record.RecorderFactory;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferProvider;
@@ -42,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.util.SortedSet;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>
+    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
     protected ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
@@ -52,6 +50,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     private Listener<SourceEvent> mSourceEventListener;
     private int mMeasuredFrequencyError;
     private ComplexBufferWaveRecorder mRecorder;
+    private ITunerErrorListener mTunerErrorListener;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -76,6 +75,24 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Dispose of this tuner controller and prepare for shutdown.
      */
     public abstract void dispose();
+
+    @Override
+    public void setErrorMessage(String errorMessage)
+    {
+        if(mTunerErrorListener != null)
+        {
+            mTunerErrorListener.setErrorMessage(errorMessage);
+        }
+    }
+
+    /**
+     * Sets the listener for tuner error messages that originate outside of the tuner.  This is normally the enclosing
+     * tuner so that it can receive error signals from the USB processor(s)..
+     */
+    public void setTunerErrorListener(ITunerErrorListener tunerErrorListener)
+    {
+        mTunerErrorListener = tunerErrorListener;
+    }
 
     /**
      * Number of samples contained in each complex buffer provided by this tuner.
@@ -457,11 +474,11 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Records the complex I/Q buffers produced by the tuner
      * @param recorderManager to obtain a baseband recorder
      */
-    public void startRecorder(RecorderManager recorderManager)
+    public void startRecorder(UserPreferences userPreferences)
     {
         if(!isRecording())
         {
-            mRecorder = recorderManager.getBasebandRecorder("TUNER_" + getFrequency());
+            mRecorder = RecorderFactory.getBasebandRecorder("TUNER_" + getFrequency(), userPreferences);
             mRecorder.setSampleRate((float)getSampleRate());
             mRecorder.start();
             addBufferListener(mRecorder);

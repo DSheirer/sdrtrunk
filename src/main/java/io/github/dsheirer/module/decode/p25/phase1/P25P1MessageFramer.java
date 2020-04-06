@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,12 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.alias.id.record.Record;
+import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
+import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.controller.channel.Channel;
@@ -28,10 +34,15 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.MessageProviderModule;
 import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
+import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
@@ -39,17 +50,23 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
+import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
+import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2MessageFramer;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2MessageProcessor;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -431,7 +448,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
         if(mSyncDetectListener != null)
         {
-            mSyncDetectListener.syncLost();
+            mSyncDetectListener.syncLost(bitsProcessed);
         }
     }
 
@@ -455,84 +472,93 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
-        Path directory = Paths.get("/media/denny/500G1EXT4/RadioRecordings/Harris APCO25 Phase II");
+        Path directory = Paths.get("/home/denny/temp/Harris P25-2 Logs/bits");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
-        final boolean phase1 = false;
+        UserPreferences userPreferences = new UserPreferences();
+        Channel channel = new Channel("Phase 1 Test");
+        channel.setDecodeConfiguration(new DecodeConfigP25Phase1());
+        AliasList aliasList = new AliasList("Test Alias List");
+        Alias alias = new Alias("TG Range 1-65535");
+        alias.addAliasID(new Record());
+        alias.addAliasID(new TalkgroupRange(Protocol.APCO25, 1, 65535));
+        aliasList.addAlias(alias);
+        AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
+        recordingManager.start();
+        ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
 
-        try
+        processingChain.addAudioSegmentListener(recordingManager);
+        processingChain.addModule(new P25P1DecoderState(channel));
+        processingChain.addModule(new P25P1AudioModule(userPreferences, aliasList));
+        MessageProviderModule messageProviderModule = new MessageProviderModule();
+        processingChain.addModule(messageProviderModule);
+
+        try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
         {
-            DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*Hills*TRAFFIC.bits");
+            try
+            {
+                DirectoryStream<Path> stream = Files.newDirectoryStream(directory, "*PHASE1_Hills*TRAFFIC.bits");
 
-            stream.forEach(new Consumer<Path>()
-               {
-                   @Override
-                   public void accept(Path path)
-                   {
-                       mLog.debug("Processing:" + path.toString());
-
-                       if(phase1)
-                       {
-                           P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
-                           P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
-                           messageFramer.setListener(messageProcessor);
-                           messageProcessor.setMessageListener(new Listener<IMessage>()
-                           {
-                               @Override
-                               public void receive(IMessage message)
+                stream.forEach(new Consumer<Path>()
                                {
-                                   if(!(message instanceof StuffBitsMessage))
+                                   @Override
+                                   public void accept(Path path)
                                    {
-                                       mLog.debug(message.toString());
+                                       mLog.debug("Processing:" + path.toString());
+                                       try
+                                       {
+                                           logOutput.write(("Processing:" + path.toString() + "\n").getBytes());
+                                       }
+                                       catch(IOException ioe)
+                                       {
+                                           mLog.error("Error", ioe);
+                                       }
+
+                                       P25P1MessageFramer messageFramer = new P25P1MessageFramer(null, DecoderType.P25_PHASE1.getProtocol().getBitRate());
+                                       P25P1MessageProcessor messageProcessor = new P25P1MessageProcessor();
+                                       messageFramer.setListener(messageProcessor);
+                                       messageProcessor.setMessageListener(new Listener<IMessage>()
+                                       {
+                                           @Override
+                                           public void receive(IMessage message)
+                                           {
+                                               if(!(message instanceof StuffBitsMessage))
+                                               {
+                                                   messageProviderModule.receive(message);
+                                                   try
+                                                   {
+                                                       logOutput.write(message.toString().getBytes());
+                                                       logOutput.write("\n".getBytes());
+                                                   }
+                                                   catch(IOException ioe)
+                                                   {
+                                                       mLog.error("Error", ioe);
+                                                   }
+                                                   mLog.debug(message.toString());
+                                               }
+                                           }
+                                       });
+
+                                       try(BinaryReader reader = new BinaryReader(path, 200))
+                                       {
+                                           while(reader.hasNext())
+                                           {
+                                               ReusableByteBuffer buffer = reader.next();
+                                               messageFramer.receive(buffer);
+                                           }
+                                       }
+                                       catch(Exception ioe)
+                                       {
+                                           ioe.printStackTrace();
+                                       }
                                    }
                                }
-                           });
-
-                           try(BinaryReader reader = new BinaryReader(path, 200))
-                           {
-                               while(reader.hasNext())
-                               {
-                                   ReusableByteBuffer buffer = reader.next();
-                                   messageFramer.receive(buffer);
-                               }
-                           }
-                           catch(Exception ioe)
-                           {
-                               ioe.printStackTrace();
-                           }
-                       }
-                       else
-                       {
-                           P25P2MessageFramer messageFramer = new P25P2MessageFramer(null, DecoderType.P25_PHASE2.getProtocol().getBitRate());
-                           ScrambleParameters scrambleParameters = new ScrambleParameters(123654, 813, 10);  //Hills County
-                           messageFramer.setScrambleParameters(scrambleParameters);
-                           P25P2MessageProcessor messageProcessor = new P25P2MessageProcessor();
-                           messageFramer.setListener(messageProcessor);
-                           messageProcessor.setMessageListener(new Listener<IMessage>()
-                           {
-                               @Override
-                               public void receive(IMessage message)
-                               {
-                                   mLog.debug(message.toString());
-                               }
-                           });
-
-                           try(BinaryReader reader = new BinaryReader(path, 200))
-                           {
-                               while(reader.hasNext())
-                               {
-                                   ReusableByteBuffer buffer = reader.next();
-                                   messageFramer.receive(buffer);
-                               }
-                           }
-                           catch(Exception ioe)
-                           {
-                               ioe.printStackTrace();
-                           }
-                       }
-                   }
-               }
-            );
+                );
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error", ioe);
+            }
         }
         catch(IOException ioe)
         {

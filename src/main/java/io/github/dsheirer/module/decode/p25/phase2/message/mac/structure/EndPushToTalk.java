@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase2.message.mac.structure;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Nac;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacOpcode;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacStructure;
@@ -73,7 +73,7 @@ public class EndPushToTalk extends MacStructure
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("FROM:").append(getSourceAddress());
+        sb.append("FM:").append(getSourceAddress());
         sb.append(" TO:").append(getGroupAddress());
         sb.append(" NAC:").append(getNAC());
 
@@ -100,7 +100,7 @@ public class EndPushToTalk extends MacStructure
     {
         if(mSourceAddress == null)
         {
-            mSourceAddress = APCO25Radio.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getMessage().getInt(SOURCE_ADDRESS, getOffset()));
         }
 
         return mSourceAddress;

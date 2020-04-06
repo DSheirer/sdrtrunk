@@ -98,7 +98,6 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     private void notifyAdd(Identifier identifier)
     {
-        setUpdated(true);
         if(mListener != null)
         {
             mListener.receive(new IdentifierUpdateNotification(identifier, IdentifierUpdateNotification.Operation.ADD, getTimeslot()));
@@ -110,7 +109,6 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     private void notifyRemove(Identifier identifier)
     {
-        setUpdated(true);
         if(mListener != null)
         {
             mListener.receive(new IdentifierUpdateNotification(identifier,
@@ -409,8 +407,6 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
     public IdentifierCollection copyOf()
     {
         IdentifierCollection copy = new IdentifierCollection(getIdentifiers(), getTimeslot());
-        copy.setUpdated(isUpdated());
-        setUpdated(false);
         return copy;
     }
 }

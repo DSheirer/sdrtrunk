@@ -85,8 +85,6 @@ public enum ChannelType
             return ChannelType.values()[value];
         }
 
-        mLog.warn("Unrecognized Channel Type Value [" + value + "]");
-
         return ChannelType.UNKNOWN;
     }
 

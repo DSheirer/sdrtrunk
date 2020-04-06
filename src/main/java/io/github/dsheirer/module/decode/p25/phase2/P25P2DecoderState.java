@@ -42,6 +42,8 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.identifier.channel.APCO25Channel;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
+import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacPduType;
@@ -96,11 +98,12 @@ import org.slf4j.LoggerFactory;
 public class P25P2DecoderState extends TimeslotDecoderState implements IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2DecoderState.class);
-
+    private static int SYSTEM_CONTROLLER = 0xFFFFFF;
     private ChannelType mChannelType;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private P25P2NetworkConfigurationMonitor mNetworkConfigurationMonitor = new P25P2NetworkConfigurationMonitor();
     private DecodeEvent mCurrentCallEvent;
+    private int mEndPttOnFacchCounter = 0;
 
     /**
      * Constructs an APCO-25 decoder state for a traffic channel.
@@ -137,7 +140,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     protected void resetState()
     {
         super.resetState();
-        closeCurrentCallEvent(System.currentTimeMillis(), true);
+        closeCurrentCallEvent(System.currentTimeMillis(), true, MacPduType.MAC_3_IDLE);
+        mEndPttOnFacchCounter = 0;
     }
 
     /**
@@ -150,25 +154,65 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         {
             if(message instanceof MacMessage)
             {
-                processMacMessage((MacMessage)message);
+                MacMessage macMessage = (MacMessage)message;
+                processMacMessage(macMessage);
+
+                MacPduType macPduType = macMessage.getMacPduType();
+
+                //Ignore End PTT - this is handled in the processMacMessage() method
+                if(macPduType != MacPduType.MAC_2_END_PTT)
+                {
+                    mEndPttOnFacchCounter = 0;
+                    continueState(getStateFromPduType(macPduType));
+                }
+
+                if(macPduType == MacPduType.MAC_3_IDLE)
+                {
+                    closeCurrentCallEvent(message.getTimestamp(), true, macPduType);
+                }
             }
             else if(message instanceof AbstractVoiceTimeslot)
             {
-                if(isEncrypted())
+                if(mCurrentCallEvent != null)
                 {
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED, getTimeslot()));
-                }
-                else
-                {
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
+                    if(isEncrypted())
+                    {
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED, getTimeslot()));
+                    }
+                    else
+                    {
+                        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
+                    }
                 }
 
                 updateCurrentCall(null, null, message.getTimestamp());
             }
             else if(message instanceof EncryptionSynchronizationSequence)
             {
+                //We don't send any state events for this message since it can only occur in conjunction with
+                //an audio frame that already sends the call state event
                 getIdentifierCollection().update(message.getIdentifiers());
             }
+        }
+    }
+
+    /**
+     * Updates the channel state according to the PDU type
+     */
+    private static State getStateFromPduType(MacPduType macPduType)
+    {
+        switch(macPduType)
+        {
+            case MAC_1_PTT:
+                return State.CALL;
+            case MAC_2_END_PTT:
+                return State.TEARDOWN;
+            case MAC_4_ACTIVE:
+            case MAC_6_HANGTIME:
+                return State.ACTIVE;
+            case MAC_3_IDLE:
+            default:
+                return State.IDLE;
         }
     }
 
@@ -214,33 +258,86 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 {
                     //Add the set of identifiers before we close out the call event to ensure they're captured in
                     //the closing event.
-                    for(Identifier identifier : mac.getIdentifiers())
+                    if(mCurrentCallEvent != null)
                     {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                        for(Identifier identifier : mac.getIdentifiers())
+                        {
+                            if(identifier.getRole() == Role.FROM)
+                            {
+                                if(identifier instanceof APCO25RadioIdentifier)
+                                {
+                                    int value = ((APCO25RadioIdentifier)identifier).getValue();
+
+                                    //Group call End PTT uses a FROM value of 0xFFFFFF - don't overwrite the correct id
+                                    if(value != SYSTEM_CONTROLLER)
+                                    {
+                                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                                    }
+                                }
+                            }
+                            else if(identifier.getRole() == Role.TO)
+                            {
+                                if(identifier instanceof APCO25Talkgroup)
+                                {
+                                    int value = ((APCO25Talkgroup)identifier).getValue();
+
+                                    //Individual call End PTT uses a TO value of 0 - don't overwrite the correct id
+                                    if(value != 0)
+                                    {
+                                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                            }
+                        }
                     }
 
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(IdentifierClass.USER);
+                    if(message.getDataUnitID().isFACCH())
+                    {
+                        mEndPttOnFacchCounter++;
+
+                        //FNE sending 2 or more End PTT in FACCH timeslots indicates a channel teardown event.
+                        if(mEndPttOnFacchCounter > 1)
+                        {
+                            if(mChannelType == ChannelType.TRAFFIC)
+                            {
+                                closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_2_END_PTT);
+                                //Don't send a continue state here ... the close() method will send the TEARDOWN state
+                            }
+                            //Otherwise the channel state is set to ACTIVE in anticipation of further call activity
+                            else
+                            {
+                                closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_4_ACTIVE);
+                                continueState(State.RESET);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_4_ACTIVE);
+                    }
                 }
                 break;
             case TDMA_0_NULL_INFORMATION_MESSAGE:
-                closeCurrentCallEvent(message.getTimestamp(), true);
-                continueState(State.ACTIVE);
+                MacPduType type = message.getMacPduType();
+
+                if(type == MacPduType.MAC_3_IDLE || type == MacPduType.MAC_6_HANGTIME)
+                {
+                    closeCurrentCallEvent(message.getTimestamp(), true, type);
+                }
                 break;
             case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
                 if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
                 {
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(Role.FROM);
+                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -269,16 +366,12 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case TDMA_33_GROUP_VOICE_CHANNEL_USER_EXTENDED:
                 if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
                 {
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(Role.FROM);
+                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -307,16 +400,12 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case TDMA_2_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
                 if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
                 {
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(Role.FROM);
+                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -345,16 +434,12 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
                 if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
                 {
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(Role.FROM);
+                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -383,16 +468,12 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case TDMA_3_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
                 if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
                 {
-                    closeCurrentCallEvent(message.getTimestamp(), false);
-                    getIdentifierCollection().remove(Role.FROM);
+                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
 
                     for(Identifier identifier : mac.getIdentifiers())
                     {
-                        if(!(identifier.getForm() == Form.TALKGROUP && identifier.getRole() == Role.FROM))
-                        {
-                            //Add to the identifier collection after filtering through the patch group manager
-                            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                        }
+                        //Add to the identifier collection after filtering through the patch group manager
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
                     }
                 }
                 else
@@ -417,7 +498,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         }
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case TDMA_5_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE:
                 if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateMultiple)
@@ -439,7 +519,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(gvcgum.getChannelC());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case TDMA_37_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE_EXPLICIT:
                 if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateMultipleExplicit)
@@ -456,7 +535,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(gvcgume.getChannelB());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_64_GROUP_VOICE_CHANNEL_GRANT_ABBREVIATED:
                 if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantAbbreviated)
@@ -468,7 +546,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(gvcga.getChannel());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_66_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                 if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdate)
@@ -485,7 +562,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(gvcgu.getChannelB());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_70_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_ABBREVIATED:
                 if(getCurrentChannel() == null && mac instanceof UnitToUnitVoiceChannelGrantAbbreviated)
@@ -497,7 +573,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(uuvcga.getChannel());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_195_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
                 if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateExplicit)
@@ -509,7 +584,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(gvcgue.getChannel());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_198_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_EXTENDED:
                 if(getCurrentChannel() == null && mac instanceof UnitToUnitVoiceChannelGrantUpdateExtended)
@@ -521,7 +595,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         broadcastCurrentChannel(uuvcgue.getChannel());
                     }
                 }
-                continueState(State.ACTIVE);
                 break;
             case TDMA_17_INDIRECT_GROUP_PAGING:
                 MutableIdentifierCollection icGroupPaging = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -534,7 +607,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     .details("GROUP PAGE")
                     .identifiers(icGroupPaging)
                     .build());
-                continueState(State.ACTIVE);
                 break;
             case TDMA_18_INDIVIDUAL_PAGING_MESSAGE_WITH_PRIORITY:
                 if(mac instanceof IndividualPagingMessage)
@@ -553,7 +625,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icIndividualPaging)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case TDMA_48_POWER_CONTROL_SIGNAL_QUALITY:
                 if(mac instanceof PowerControlSignalQuality)
@@ -571,7 +642,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icPowerControl)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case TDMA_49_MAC_RELEASE:
                 if(mac instanceof MacRelease)
@@ -582,7 +652,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     icMacRelease.remove(IdentifierClass.USER);
                     icMacRelease.update(mac.getIdentifiers());
 
-                    closeCurrentCallEvent(message.getTimestamp(), true);
+                    closeCurrentCallEvent(message.getTimestamp(), true, message.getMacPduType());
 
                     broadcast(P25DecodeEvent.builder(message.getTimestamp())
                         .channel(getCurrentChannel())
@@ -608,7 +678,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icMacRelease)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_68_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_ABBREVIATED:
                 if(mac instanceof UnitToUnitVoiceChannelGrantAbbreviated)
@@ -625,7 +694,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icGrant)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_69_UNIT_TO_UNIT_ANSWER_REQUEST_ABBREVIATED:
                 if(mac instanceof UnitToUnitAnswerRequestAbbreviated)
@@ -642,7 +710,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icRequest)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_74_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 if(mac instanceof TelephoneInterconnectAnswerRequest)
@@ -659,7 +726,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icRequest)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_76_RADIO_UNIT_MONITOR_COMMAND_ABBREVIATED:
                 if(mac instanceof RadioUnitMonitorCommand)
@@ -677,7 +743,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icRequest)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_84_SNDCP_DATA_CHANNEL_GRANT:
                 if(mac instanceof SNDCPDataChannelGrant)
@@ -694,7 +759,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icGrant)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_85_SNDCP_DATA_PAGE_REQUEST:
                 if(mac instanceof SNDCPDataPageRequest)
@@ -711,7 +775,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icPage)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_88_STATUS_UPDATE_ABBREVIATED:
                 if(mac instanceof StatusUpdateAbbreviated)
@@ -728,7 +791,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icStatusUpdate)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_90_STATUS_QUERY_ABBREVIATED:
                 if(mac instanceof StatusQueryAbbreviated)
@@ -744,7 +806,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icStatusUpdate)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_92_MESSAGE_UPDATE_ABBREVIATED:
                 if(mac instanceof MessageUpdateAbbreviated)
@@ -761,7 +822,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icStatusUpdate)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_94_RADIO_UNIT_MONITOR_COMMAND_ENHANCED:
                 if(mac instanceof RadioUnitMonitorCommandEnhanced)
@@ -780,7 +840,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icRequest)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_95_CALL_ALERT_ABBREVIATED:
                 MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -792,7 +851,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     .eventDescription(DecodeEventType.CALL_ALERT.toString())
                     .identifiers(icCallAlert)
                     .build());
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_96_ACK_RESPONSE:
                 if(mac instanceof AcknowledgeResponse)
@@ -809,7 +867,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icAckResponse)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_97_QUEUED_RESPONSE:
                 if(mac instanceof QueuedResponse)
@@ -828,7 +885,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icQueuedResponse)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_100_EXTENDED_FUNCTION_COMMAND_ABBREVIATED:
                 if(mac instanceof ExtendedFunctionCommand)
@@ -846,7 +902,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icExtendedFunction)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_103_DENY_RESPONSE:
                 if(mac instanceof DenyResponse)
@@ -863,7 +918,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icDenyResponse)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_106_GROUP_AFFILIATION_QUERY_ABBREVIATED:
                 MutableIdentifierCollection icGroupAffiliationQuery = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -876,7 +930,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     .details("GROUP AFFILIATION")
                     .identifiers(icGroupAffiliationQuery)
                     .build());
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_109_UNIT_REGISTRATION_COMMAND_ABBREVIATED:
                 MutableIdentifierCollection icUnitRegisterCommand = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -889,7 +942,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     .details("UNIT REGISTRATION")
                     .identifiers(icUnitRegisterCommand)
                     .build());
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_197_UNIT_TO_UNIT_ANSWER_REQUEST_EXTENDED:
                 if(mac instanceof UnitToUnitAnswerRequestExtended)
@@ -908,7 +960,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icUnitAnswerRequestExtended)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_204_RADIO_UNIT_MONITOR_COMMAND_EXTENDED:
                 if(mac instanceof RadioUnitMonitorCommandExtended)
@@ -926,7 +977,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icRequest)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_216_STATUS_UPDATE_EXTENDED:
                 if(mac instanceof StatusUpdateExtended)
@@ -943,7 +993,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icStatusUpdate)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_218_STATUS_QUERY_EXTENDED:
                 MutableIdentifierCollection icStatusQueryExtended = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
@@ -956,7 +1005,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                     .details("STATUS QUERY")
                     .identifiers(icStatusQueryExtended)
                     .build());
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_220_MESSAGE_UPDATE_EXTENDED:
                 if(mac instanceof MessageUpdateExtended)
@@ -973,7 +1021,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icStatusUpdate)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_223_CALL_ALERT_EXTENDED:
                 if(mac instanceof CallAlertExtended)
@@ -988,7 +1035,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icCallAlertExtended)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_228_EXTENDED_FUNCTION_COMMAND_EXTENDED:
                 if(mac instanceof ExtendedFunctionCommandExtended)
@@ -1006,7 +1052,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icExtendedFunction)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
             case PHASE1_234_GROUP_AFFILIATION_QUERY_EXTENDED:
                 if(mac instanceof GroupAffiliationQueryExtended)
@@ -1023,7 +1068,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                         .identifiers(icGroupAffiliationQueryExtended)
                         .build());
                 }
-                continueState(State.ACTIVE);
                 break;
 
             case PHASE1_115_IDENTIFIER_UPDATE_TDMA:
@@ -1049,8 +1093,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case PHASE1_196_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_EXTENDED:
             case UNKNOWN:
             default:
-                continueState(State.ACTIVE);
-                //ignore
                 break;
         }
     }
@@ -1113,7 +1155,15 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 .build();
 
             broadcast(mCurrentCallEvent);
-            broadcast(new DecoderStateEvent(this, Event.START, State.CALL, getTimeslot()));
+
+            if(isEncrypted())
+            {
+                broadcast(new DecoderStateEvent(this, Event.START, State.ENCRYPTED, getTimeslot()));
+            }
+            else
+            {
+                broadcast(new DecoderStateEvent(this, Event.START, State.CALL, getTimeslot()));
+            }
         }
         else
         {
@@ -1130,7 +1180,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
         }
     }
 
@@ -1138,8 +1187,10 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
      * Ends/closes the current call event.
      *
      * @param timestamp of the message that indicates the event has ended.
+     * @param resetIdentifiers to reset the FROM/TO identifiers
+     * @param pduType of the message that caused the close call event - to determine channel state after call
      */
-    private void closeCurrentCallEvent(long timestamp, boolean resetIdentifiers)
+    private void closeCurrentCallEvent(long timestamp, boolean resetIdentifiers, MacPduType pduType)
     {
         if(mCurrentCallEvent != null)
         {
@@ -1147,21 +1198,21 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
 
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
-        }
-        else
-        {
-            continueState(State.ACTIVE);
-        }
+            broadcast(new DecoderStateEvent(this, Event.END, getStateFromPduType(pduType), getTimeslot()));
 
-        if(resetIdentifiers)
-        {
-            getIdentifierCollection().remove(IdentifierClass.USER);
+            if(resetIdentifiers)
+            {
+                getIdentifierCollection().remove(IdentifierClass.USER);
+            }
+            else
+            {
+                //Only clear the from identifier at this point ... the channel may still be allocated to the TO talkgroup
+                getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
+            }
         }
-        else
+        else if(pduType == MacPduType.MAC_2_END_PTT)
         {
-            //Only clear the from identifier at this point ... the channel may still be allocated to the TO talkgroup
-            getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
+            broadcast(new DecoderStateEvent(this, Event.END, getStateFromPduType(pduType), getTimeslot()));
         }
     }
 
@@ -1193,14 +1244,17 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
-        switch(event.getEvent())
+        if(event.getTimeslot() == getTimeslot())
         {
-            case RESET:
-                resetState();
-                mNetworkConfigurationMonitor.reset();
-                break;
-            default:
-                break;
+            switch(event.getEvent())
+            {
+                case RESET:
+                    resetState();
+                    mNetworkConfigurationMonitor.reset();
+                    break;
+                default:
+                    break;
+            }
         }
     }
 

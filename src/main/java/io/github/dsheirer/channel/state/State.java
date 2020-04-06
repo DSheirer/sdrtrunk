@@ -43,6 +43,7 @@ public enum State
                        state == DATA ||
                        state == ENCRYPTED ||
                        state == FADE ||
+                       state == IDLE ||
                        state == TEARDOWN ||
                        state == RESET;
             }
@@ -60,6 +61,7 @@ public enum State
                        state == DATA ||
                        state == ENCRYPTED ||
                        state == FADE ||
+                       state == IDLE ||
                        state == TEARDOWN ||
                        state == RESET;
             }
@@ -121,7 +123,8 @@ public enum State
             }
         },
     /**
-     * Indicates the channel is idle and not actively decoding any messages
+     * Indicates the channel is idle and not actively decoding any messages or in a multiple timeslot decoder this
+     * state reflects active decoding that indicates the timeslot is idle.
      */
     IDLE("IDLE")
         {
@@ -159,8 +162,8 @@ public enum State
 
     private String mDisplayValue;
 
-    public static final EnumSet<State> CALL_STATES = EnumSet.of(ACTIVE, CALL, CONTROL, DATA, ENCRYPTED);
-    public static final EnumSet<State> IDLE_STATES = EnumSet.of(IDLE, FADE);
+    public static final EnumSet<State> SINGLE_CHANNEL_ACTIVE_STATES = EnumSet.of(ACTIVE, CALL, CONTROL, DATA, ENCRYPTED);
+    public static final EnumSet<State> MULTI_CHANNEL_ACTIVE_STATES = EnumSet.of(ACTIVE, CALL, CONTROL, DATA, ENCRYPTED, IDLE);
 
     private State(String displayValue)
     {
@@ -168,17 +171,6 @@ public enum State
     }
 
     public abstract boolean canChangeTo(State state);
-
-    /**
-     * Indicates that this state is an active (ie decoding) state and is one of the states
-     * enumerated in the CALL_STATES enumeration set.
-     *
-     * @return true if this state is an active state
-     */
-    public boolean isActiveState()
-    {
-        return CALL_STATES.contains(this);
-    }
 
     public String getDisplayValue()
     {

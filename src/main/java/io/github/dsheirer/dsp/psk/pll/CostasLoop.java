@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.dsp.psk.pll;
 
 import io.github.dsheirer.sample.complex.Complex;
@@ -41,7 +47,7 @@ public class CostasLoop implements IPhaseLockedLoop
     private double mDamping = Math.sqrt(2.0) / 2.0;
     private double mAlphaGain;
     private double mBetaGain;
-    private PLLGain mPLLGain = PLLGain.LEVEL_1;
+    private PLLBandwidth mPLLBandwidth = PLLBandwidth.BW_400;
     private double mSymbolRate;
     private double mSampleRate;
     private IFrequencyErrorProcessor mFrequencyErrorProcessor;
@@ -63,8 +69,7 @@ public class CostasLoop implements IPhaseLockedLoop
     }
 
     /**
-     * Registers the listener to receive the measured frequency error as tracked by the PLL at one
-     * second intervals.
+     * Registers the listener to receive the measured frequency error as tracked by the PLL once per second
      *
      * @param listener to receive frequency error measurement.
      */
@@ -102,22 +107,25 @@ public class CostasLoop implements IPhaseLockedLoop
      */
     private void updateLoopBandwidth()
     {
-        double bandwidth = TWO_PI / mPLLGain.getLoopBandwidth();
+        double bandwidth = TWO_PI / mPLLBandwidth.getLoopBandwidth();
 
         mAlphaGain = (4.0 * mDamping * bandwidth) / (1.0 + (2.0 * mDamping * bandwidth) + (bandwidth * bandwidth));
         mBetaGain = (4.0 * bandwidth * bandwidth) / (1.0 + (2.0 * mDamping * bandwidth) + (bandwidth * bandwidth));
     }
 
     /**
-     * Sets the PLLGain state for this costas loop.  The PLLGain state affects the aggressiveness of the alpha/beta
+     * Sets the PLLBandwidth state for this costas loop.  The bandwidth affects the aggressiveness of the alpha/beta
      * gain values in synchronizing with the signal carrier.
      *
-     * @param PLLGain
+     * @param pllBandwidth
      */
-    public void setPLLGain(PLLGain PLLGain)
+    public void setPLLBandwidth(PLLBandwidth pllBandwidth)
     {
-        mPLLGain = PLLGain;
-        updateLoopBandwidth();
+        if(mPLLBandwidth != pllBandwidth)
+        {
+            mPLLBandwidth = pllBandwidth;
+            updateLoopBandwidth();
+        }
     }
 
     /**
@@ -162,8 +170,7 @@ public class CostasLoop implements IPhaseLockedLoop
     }
 
     /**
-     * Updates the costas loop frequency and phase to adjust for the phase
-     * error value
+     * Updates the costas loop frequency and phase to adjust for the phase error value
      *
      * @param phaseError - (-)= late and (+)= early
      */

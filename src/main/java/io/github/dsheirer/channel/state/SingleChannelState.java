@@ -94,7 +94,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
     private SourceEventListener mInternalSourceEventListener;
     private ChannelMetadata mChannelMetadata;
-    private StateMachine mStateMachine = new StateMachine(0);
+    private StateMachine mStateMachine = new StateMachine(0, State.SINGLE_CHANNEL_ACTIVE_STATES);
     private StateMonitoringSquelchController mSquelchController = new StateMonitoringSquelchController(0);
 
     public SingleChannelState(Channel channel, AliasModel aliasModel)
@@ -140,7 +140,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     public void stateChanged(State state, int timeslot)
     {
         //Broadcast current channel state so that channel rotation monitor can track
-        if(state.isActiveState())
+        if(State.SINGLE_CHANNEL_ACTIVE_STATES.contains(state))
         {
             broadcast(DecoderStateEvent.activeState(timeslot));
         }
@@ -399,7 +399,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                     //Rebroadcast frequency error measurements to external listener if we're currently
                     //in an active (ie sync locked) state.
-                    if(mStateMachine.getState().isActiveState())
+                    if(State.SINGLE_CHANNEL_ACTIVE_STATES.contains(mStateMachine.getState()))
                     {
                         broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
                             mChannel.getChannelType().name()));
@@ -433,7 +433,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                     case CONTINUATION:
                     case DECODE:
                     case START:
-                        if(State.CALL_STATES.contains(event.getState()))
+                        if(State.SINGLE_CHANNEL_ACTIVE_STATES.contains(event.getState()))
                         {
                             mStateMachine.setState(event.getState());
                         }

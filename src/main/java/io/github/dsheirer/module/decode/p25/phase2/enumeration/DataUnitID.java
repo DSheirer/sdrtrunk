@@ -65,6 +65,22 @@ public enum DataUnitID
         return mValueWithParity;
     }
 
+    /**
+     * Indicates if this DUID is a SACCH, either scrambled or unscrambled
+     */
+    public boolean isSACCH()
+    {
+        return this == SCRAMBLED_SACCH || this == UNSCRAMBLED_SACCH;
+    }
+
+    /**
+     * Indicates if this DUID is a FACCH, either scrambled or unscrambled
+     */
+    public boolean isFACCH()
+    {
+        return this == SCRAMBLED_FACCH || this == UNSCRAMBLED_FACCH;
+    }
+
     @Override
     public String toString()
     {

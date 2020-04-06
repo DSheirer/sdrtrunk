@@ -21,6 +21,8 @@
  */
 package io.github.dsheirer.audio;
 
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
@@ -29,23 +31,19 @@ import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
-import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides packaging of demodulated audio sample buffers into audio packets for broadcast to registered audio packet
- * listeners.  Includes audio packet metadata in constructed audio packets.
+ * Provides packaging of demodulated audio sample buffers into audio segments for broadcast to registered listeners.
+ * Includes audio packet metadata in constructed audio segments.
  *
  * Incorporates audio squelch state listener to control if audio packets are broadcast or ignored.
- *
- * This class is designed to support 8 kHz sample rate demodulated audio.
  */
-public class AudioModule extends AbstractAudioModule implements IReusableBufferListener, Listener<ReusableFloatBuffer>
+public class AudioModule extends AbstractAudioModule implements ISquelchStateListener, IReusableBufferListener,
+    Listener<ReusableFloatBuffer>
 {
-
     private static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
     private static float[] sHighPassFilterCoefficients;
 
@@ -75,34 +73,29 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
         }
     }
 
-    private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("AudioModule");
     private RealFIRFilter2 mHighPassFilter = new RealFIRFilter2(sHighPassFilterCoefficients);
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private SquelchState mSquelchState = SquelchState.SQUELCH;
-    private boolean mRecordAudioOverride;
 
     /**
      * Creates an Audio Module.
      */
-    public AudioModule()
+    public AudioModule(AliasList aliasList)
     {
+        super(aliasList);
+    }
+
+    @Override
+    protected int getTimeslot()
+    {
+        return 0;
     }
 
     @Override
     public void dispose()
     {
-        removeAudioPacketListener();
+        removeAudioSegmentListener();
         mSquelchStateListener = null;
-    }
-
-    /**
-     * Sets all audio packets as recordable when the argument is true.  Otherwise, defers to the aliased identifiers
-     * from the identifier collection to determine whether to record the audio or not.
-     * @param recordAudio set to true to mark all audio as recordable.
-     */
-    public void setRecordAudio(boolean recordAudio)
-    {
-        mRecordAudioOverride = recordAudio;
     }
 
     @Override
@@ -114,29 +107,7 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
     @Override
     public void start()
     {
-        /* No start operations provided */
     }
-
-    @Override
-    public void stop()
-    {
-        /* Issue an end-audio packet in case a recorder is still rolling */
-        if(hasAudioPacketListener())
-        {
-            ReusableAudioPacket endAudioPacket = mAudioPacketQueue.getEndAudioBuffer();
-            endAudioPacket.resetAttributes();
-            endAudioPacket.setAudioChannelId(getAudioChannelId());
-            endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-
-            if(mRecordAudioOverride)
-            {
-                endAudioPacket.setRecordable(true);
-            }
-            endAudioPacket.incrementUserCount();
-            getAudioPacketListener().receive(endAudioPacket);
-        }
-    }
-
 
     @Override
     public Listener<SquelchStateEvent> getSquelchStateListener()
@@ -147,23 +118,11 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
     @Override
     public void receive(ReusableFloatBuffer reusableFloatBuffer)
     {
-        if(hasAudioPacketListener() && mSquelchState == SquelchState.UNSQUELCH)
+        if(mSquelchState == SquelchState.UNSQUELCH)
         {
-            ReusableFloatBuffer highPassFiltered = mHighPassFilter.filter(reusableFloatBuffer);
-
-            ReusableAudioPacket audioPacket = mAudioPacketQueue.getBuffer(highPassFiltered.getSampleCount());
-            audioPacket.resetAttributes();
-            audioPacket.setAudioChannelId(getAudioChannelId());
-            audioPacket.loadAudioFrom(highPassFiltered);
-            if(mRecordAudioOverride)
-            {
-                audioPacket.setRecordable(true);
-            }
-            audioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-
-            getAudioPacketListener().receive(audioPacket);
-
-            highPassFiltered.decrementUserCount();
+            ReusableFloatBuffer buffer = mHighPassFilter.filter(reusableFloatBuffer);
+            addAudio(buffer.getSamples());
+            buffer.decrementUserCount();
         }
         else
         {
@@ -186,16 +145,12 @@ public class AudioModule extends AbstractAudioModule implements IReusableBufferL
         @Override
         public void receive(SquelchStateEvent event)
         {
-            if(event.getSquelchState() == SquelchState.SQUELCH && hasAudioPacketListener())
-            {
-                ReusableAudioPacket endAudioPacket = mAudioPacketQueue.getEndAudioBuffer();
-                endAudioPacket.resetAttributes();
-                endAudioPacket.setAudioChannelId(getAudioChannelId());
-                endAudioPacket.setIdentifierCollection(getIdentifierCollection().copyOf());
-                getAudioPacketListener().receive(endAudioPacket);
-            }
-
             mSquelchState = event.getSquelchState();
+
+            if(mSquelchState == SquelchState.SQUELCH)
+            {
+                closeAudioSegment();
+            }
         }
     }
 }

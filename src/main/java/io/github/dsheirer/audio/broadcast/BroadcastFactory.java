@@ -44,12 +44,8 @@ import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.record.AudioRecorder;
-import io.github.dsheirer.record.mp3.MP3Recorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
 
 public class BroadcastFactory
 {
@@ -184,21 +180,6 @@ public class BroadcastFactory
         editor.setItem(configuration);
 
         return editor;
-    }
-
-    /**
-     * Creates an audio recorder for the specified broadcastAudio format using the specified path output file name
-     */
-    public static AudioRecorder getAudioRecorder(Path path, BroadcastFormat broadcastFormat)
-    {
-        switch(broadcastFormat)
-        {
-            case MP3:
-                return new MP3Recorder(path);
-            default:
-                mLog.debug("Unrecognized broadcastAudio format [" + broadcastFormat + "] cannot create audio recorder");
-                return null;
-        }
     }
 
     public static ISilenceGenerator getSilenceGenerator(BroadcastFormat format)

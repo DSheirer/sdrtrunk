@@ -46,6 +46,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
+import java.util.Collections;
 
 public class HackRFTunerEditor extends TunerConfigurationEditor
 {
@@ -122,15 +123,18 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
         });
         add(mTunerInfo);
 
-        mComboSampleRate = new JComboBox<>(HackRFSampleRate.values());
+
+        HackRFSampleRate[] validRates = HackRFSampleRate.VALID_SAMPLE_RATES
+            .toArray(new HackRFSampleRate[HackRFSampleRate.VALID_SAMPLE_RATES.size()]);
+        mComboSampleRate = new JComboBox<>(validRates);
         mComboSampleRate.setEnabled(false);
         mComboSampleRate.addActionListener(new ActionListener()
         {
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                HackRFSampleRate sampleRate =
-                    (HackRFSampleRate)mComboSampleRate.getSelectedItem();
+                HackRFSampleRate sampleRate = (HackRFSampleRate)mComboSampleRate.getSelectedItem();
+
                 try
                 {
 

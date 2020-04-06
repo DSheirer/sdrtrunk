@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.source.tuner;
@@ -25,7 +22,6 @@ package io.github.dsheirer.source.tuner;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
-import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.recording.AddRecordingTunerDialog;
@@ -74,10 +70,10 @@ public class TunerViewPanel extends JPanel
     private TunerEditor mTunerEditor;
     private UserPreferences mUserPreferences;
 
-    public TunerViewPanel(TunerModel tunerModel, UserPreferences userPreferences, RecorderManager recorderManager)
+    public TunerViewPanel(TunerModel tunerModel, UserPreferences userPreferences)
     {
         mTunerModel = tunerModel;
-        mTunerEditor = new TunerEditor(mTunerModel.getTunerConfigurationModel(), recorderManager);
+        mTunerEditor = new TunerEditor(mTunerModel.getTunerConfigurationModel(), userPreferences);
         mUserPreferences = userPreferences;
 
         init();
@@ -191,8 +187,15 @@ public class TunerViewPanel extends JPanel
             }
         });
 
-        TableCellRenderer renderer = new LinkCellRenderer();
-        mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(renderer);
+        TableCellRenderer linkCellRenderer = new LinkCellRenderer();
+        mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(linkCellRenderer);
+
+        TableCellRenderer errorCellRenderer = new ErrorCellRenderer();
+        mTunerTable.getColumnModel().getColumn(TunerModel.SAMPLE_RATE).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.FREQUENCY).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.CHANNEL_COUNT).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.FREQUENCY_ERROR).setCellRenderer(errorCellRenderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.MEASURED_FREQUENCY_ERROR).setCellRenderer(errorCellRenderer);
 
         mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTunerTable, TABLE_PREFERENCE_KEY);
         JScrollPane tunerTableScroller = new JScrollPane(mTunerTable);
@@ -236,6 +239,32 @@ public class TunerViewPanel extends JPanel
         mSplitPane.add(editorScroller);
 
         add(mSplitPane);
+    }
+
+    public class ErrorCellRenderer extends DefaultTableCellRenderer
+    {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            Tuner tuner = mTunerModel.getTuner(mTunerTable.convertRowIndexToModel(row));
+
+            if(isSelected)
+            {
+                component.setBackground(table.getSelectionBackground());
+            }
+            else if(tuner.hasError())
+            {
+                component.setBackground(Color.RED);
+            }
+            else
+            {
+                component.setBackground(table.getBackground());
+            }
+
+            return component;
+        }
     }
 
     public class LinkCellRenderer extends DefaultTableCellRenderer

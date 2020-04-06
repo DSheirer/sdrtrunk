@@ -47,7 +47,7 @@ public class JavaFxWindowManager
     }
 
     /**
-     * Closes all JavaFX windows and shutsdown the FX thread
+     * Closes all JavaFX windows and shuts down the FX thread
      */
     public void shutdown()
     {
@@ -84,6 +84,8 @@ public class JavaFxWindowManager
                 {
                     Stage stage = mPreferencesEditor.getStage();
                     stage.show();
+                    stage.toFront();
+                    stage.requestFocus();
                     mPreferencesEditor.showEditor(request);
                 }
                 catch(Throwable t)

@@ -279,13 +279,11 @@ public class WaveWriter implements AutoCloseable
     }
 
     /**
-     * Writes the metadata to the end of the file if there is sufficient space without exceeding the
-     * max file size.
+     * Writes the wave LIST chunk and the ID3 metadata chunk to the end of the file if there is sufficient space
+     * without exceeding the max file size.
      */
-    public void writeMetadata(WaveMetadata metadata) throws IOException
+    public void writeMetadata(ByteBuffer listChunk, ByteBuffer id3Chunk) throws IOException
     {
-        ByteBuffer listChunk = metadata.getLISTChunk();
-
         if(mFileChannel.size() + listChunk.capacity() >= mMaxSize)
         {
             throw new IOException("Cannot write LIST metadata chunk - insufficient file space remaining");
@@ -301,8 +299,6 @@ public class WaveWriter implements AutoCloseable
         }
 
         updateTotalSize();
-
-        ByteBuffer id3Chunk = metadata.getID3Chunk();
 
         if(mFileChannel.size() + id3Chunk.capacity() >= mMaxSize)
         {

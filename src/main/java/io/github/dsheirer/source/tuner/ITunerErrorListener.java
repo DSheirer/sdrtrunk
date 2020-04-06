@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -20,27 +20,13 @@
  *
  */
 
-package io.github.dsheirer.identifier.tone;
+package io.github.dsheirer.source.tuner;
 
-import io.github.dsheirer.protocol.Protocol;
-
-import java.util.List;
-
-public class P25DtmfIdentifier extends DtmfIdentifier
+public interface ITunerErrorListener
 {
-    public P25DtmfIdentifier(List<String> values)
-    {
-        super(values);
-    }
-
-    @Override
-    public Protocol getProtocol()
-    {
-        return Protocol.APCO25;
-    }
-
-    public static P25DtmfIdentifier create(List<String> values)
-    {
-        return new P25DtmfIdentifier(values);
-    }
+    /**
+     * Sets an error message for the tuner listener
+     * @param errorMessage to set
+     */
+    void setErrorMessage(String errorMessage);
 }

@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.isp;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25System;
 import io.github.dsheirer.module.decode.p25.identifier.APCO25Wacn;
-import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25Radio;
+import io.github.dsheirer.module.decode.p25.identifier.radio.APCO25RadioIdentifier;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
@@ -110,7 +110,7 @@ public class AMBTCGroupAffiliationRequest extends AMBTCMessage
     {
         if(mSourceAddress == null && hasDataBlock(0))
         {
-            mSourceAddress = APCO25Radio.createFrom(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
+            mSourceAddress = APCO25RadioIdentifier.createFrom(getDataBlock(0).getMessage().getInt(HEADER_ADDRESS));
         }
 
         return mSourceAddress;

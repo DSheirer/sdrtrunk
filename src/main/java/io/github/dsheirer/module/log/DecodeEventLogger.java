@@ -20,12 +20,14 @@
  *
  */
 package io.github.dsheirer.module.log;
-
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
@@ -42,16 +44,19 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 {
     private SimpleDateFormat mTimestampFormat = TimestampFormat.TIMESTAMP_COLONS.getFormatter();
     private DecimalFormat mFrequencyFormat = new DecimalFormat("0.000000");
+    private AliasList mAliasList;
+    private AliasModel mAliasModel;
 
-    public DecodeEventLogger(Path logDirectory, String fileNameSuffix, long frequency)
+    public DecodeEventLogger(AliasModel aliasModel, Path logDirectory, String fileNameSuffix, long frequency)
     {
         super(logDirectory, fileNameSuffix, frequency);
+        mAliasModel = aliasModel;
     }
 
     @Override
     public void receive(IDecodeEvent decodeEvent)
     {
-        write(toCSV(decodeEvent));
+                write(toCSV(decodeEvent));
     }
 
     @Override
@@ -84,6 +89,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
     private String toCSV(IDecodeEvent event)
     {
+
         StringBuilder sb = new StringBuilder();
 
         sb.append("\"").append(mTimestampFormat.format(new Date(event.getTimeStart()))).append("\"");
@@ -105,9 +111,23 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         }
 
         List<Identifier> toIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.TO);
+
         if(toIdentifiers != null && !toIdentifiers.isEmpty())
         {
-            sb.append(",\"").append(toIdentifiers.get(0)).append("\"");
+            Identifier identifier = event.getIdentifierCollection()
+                .getIdentifier(IdentifierClass.CONFIGURATION,Form.ALIAS_LIST,Role.ANY);
+            mAliasList = mAliasModel.getAliasList((AliasListConfigurationIdentifier)identifier);
+
+            if(mAliasList != null)
+            {
+                String mystring = (!mAliasList.getAliases(toIdentifiers.get(0)).isEmpty()) ?
+                    mAliasList.getAliases(toIdentifiers.get(0)).get(0).toString() : "";
+                sb.append(",\"").append(mystring).append(" (").append(toIdentifiers.get(0)).append(")\"");
+            }
+            else
+            {
+                sb.append(",\"\"");
+            }
         }
         else
         {
@@ -118,11 +138,13 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
         sb.append(",\"").append(descriptor != null ? descriptor : "").append("\"");
 
-        Identifier frequency = event.getIdentifierCollection().getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
+        Identifier frequency = event.getIdentifierCollection()
+            .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
 
         if(frequency instanceof FrequencyConfigurationIdentifier)
         {
-            sb.append(",\"").append(mFrequencyFormat.format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d)).append("\"");
+            sb.append(",\"").append(mFrequencyFormat
+                .format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d)).append("\"");
         }
         else
         {

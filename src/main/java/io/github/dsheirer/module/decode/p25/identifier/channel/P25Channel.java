@@ -189,25 +189,40 @@ public class P25Channel implements IChannelDescriptor
     {
         StringBuilder sb = new StringBuilder();
 
+        int downlinkChannelNumber = getDownlinkChannelNumber();
+
+        if(isTDMAChannel())
+        {
+            downlinkChannelNumber -= downlinkChannelNumber % getTimeslotCount();
+        }
+
         if(getDownlinkBandIdentifier() == getUplinkBandIdentifier() && getDownlinkChannelNumber() == getUplinkChannelNumber())
         {
-            sb.append(getDownlinkBandIdentifier()).append("-").append(getDownlinkLogicalChannelNumber());
+            sb.append(getDownlinkBandIdentifier()).append("-").append(downlinkChannelNumber);
         }
         else if(hasUplinkChannel())
         {
+
+            int uplinkChannelNumber = getUplinkChannelNumber();
+
+            if(isTDMAChannel())
+            {
+                uplinkChannelNumber -= uplinkChannelNumber % getTimeslotCount();
+            }
+
             sb.append(getDownlinkBandIdentifier())
                 .append("-")
-                .append(getDownlinkLogicalChannelNumber())
+                .append(downlinkChannelNumber)
                 .append("/")
                 .append(getUplinkBandIdentifier())
                 .append("-")
-                .append(getUplinkLogicalChannelNumber());
+                .append(uplinkChannelNumber);
         }
         else
         {
             sb.append(getDownlinkBandIdentifier())
                 .append("-")
-                .append(getDownlinkLogicalChannelNumber())
+                .append(downlinkChannelNumber)
                 .append("/-----");
         }
 
