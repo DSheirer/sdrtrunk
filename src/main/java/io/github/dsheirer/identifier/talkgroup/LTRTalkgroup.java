@@ -30,6 +30,10 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public class LTRTalkgroup extends TalkgroupIdentifier implements Comparable<LTRTalkgroup>
 {
+    private static final int AREA_MASK = 0x2000;
+    private static final int HOME_MASK = 0x1F00;
+    private static final int GROUP_MASK = 0xFF;
+
     public LTRTalkgroup(Integer talkgroup, Role role)
     {
         super(talkgroup, role);
@@ -49,12 +53,17 @@ public class LTRTalkgroup extends TalkgroupIdentifier implements Comparable<LTRT
         return String.format("%02d-%03d", getHomeChannel(), getTalkgroup());
     }
 
+    public int getArea()
+    {
+        return (getValue() & AREA_MASK) >> 13;
+    }
+
     /**
      * Home channel for the identifier
      */
     public int getHomeChannel()
     {
-        return (getValue() >> 8) & 0x1F;
+        return (getValue() & HOME_MASK) >> 8;
     }
 
     /**
@@ -62,15 +71,24 @@ public class LTRTalkgroup extends TalkgroupIdentifier implements Comparable<LTRT
      */
     public int getTalkgroup()
     {
-        return getValue() & 0xFF;
+        return getValue() & GROUP_MASK;
     }
 
     /**
-     * Creates an LTR-Net identifier from the integer value that contains both the fleet and the ident with a TO role
+     * Creates an LTR identifier from the integer value that contains both the fleet and the ident with a TO role
      */
     public static LTRTalkgroup create(int talkgroup)
     {
         return new LTRTalkgroup(talkgroup, Role.TO);
+    }
+
+    public static int create(int area, int home, int group)
+    {
+        int value = (area << 13);
+        value += (home << 8);
+        value += group;
+
+        return value;
     }
 
     @Override

@@ -626,6 +626,11 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
     {
         FontMetrics fontMetrics = graphics.getFontMetrics(font);
 
+        if(text == null || text.isEmpty())
+        {
+            return 0;
+        }
+
         Rectangle2D label = fontMetrics.getStringBounds(text, graphics);
 
         double offset = label.getWidth() / 2.0d;

@@ -28,7 +28,7 @@ public enum PreferenceEditorType
     DIRECTORY("Directories"),
     JMBE_LIBRARY("JMBE Audio Library"),
     AUDIO_RECORD("Record"),
-    AUDIO_PLAYBACK("Playback"),
+    AUDIO_OUTPUT("Output/Tones"),
     SOURCE_CHANNEL_MULTIPLE_FREQUENCY("Channel - Multiple Frequency"),
     SOURCE_TUNER_CHANNELIZER("Tuner Channelizer"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),

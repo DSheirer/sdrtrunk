@@ -22,51 +22,52 @@
 
 package io.github.dsheirer.gui.playlist;
 
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.BroadcastModel;
-import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.JavaFxWindowManager;
 import io.github.dsheirer.gui.playlist.alias.AliasEditor;
+import io.github.dsheirer.gui.playlist.alias.AliasTabRequest;
 import io.github.dsheirer.gui.playlist.channel.ChannelEditor;
+import io.github.dsheirer.gui.playlist.channel.ChannelTabRequest;
 import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
-import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.module.log.EventLogManager;
+import io.github.dsheirer.gui.preference.UserPreferenceEditorViewRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.TunerModel;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
-import javafx.application.Application;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import io.github.dsheirer.util.ThreadPool;
+import io.github.dsheirer.util.TimeStamp;
+import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
-import javafx.stage.Stage;
+import javafx.scene.paint.Color;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Path;
 
 /**
- * JavaFX playlist (channels, aliases, etc) editor
+ * JavaFX playlist, channels, aliases, streaming and radioreference.com import editor
  */
-public class PlaylistEditor extends Application
+public class PlaylistEditor extends BorderPane
 {
+    private static final Logger mLog = LoggerFactory.getLogger(PlaylistEditor.class);
+
     private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
-    private JavaFxWindowManager mJavaFxWindowManager;
-    private Stage mStage;
-    private BorderPane mContent;
     private MenuBar mMenuBar;
     private TabPane mTabPane;
     private Tab mPlaylistsTab;
@@ -74,57 +75,58 @@ public class PlaylistEditor extends Application
     private Tab mAliasesTab;
     private Tab mRadioReferenceTab;
     private Tab mStreamingTab;
+    private AliasEditor mAliasEditor;
+    private ChannelEditor mChannelEditor;
 
-    public PlaylistEditor(PlaylistManager playlistManager, UserPreferences userPreferences, JavaFxWindowManager manager)
+    /**
+     * Constructs an instance
+     * @param playlistManager for alias and channel models
+     * @param userPreferences for settings
+     */
+    public PlaylistEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
         mUserPreferences = userPreferences;
-        mJavaFxWindowManager = manager;
+
+        //Throw a new runnable back onto the FX thread to lazy load the editor content after the editor has been
+        //constructed and shown.
+        Platform.runLater(() -> {
+            setTop(getMenuBar());
+            setCenter(getTabPane());
+        });
     }
 
     /**
-     * Test constructor - do not use!!
+     * Process requests for sub-editor actions like view an alias or view a channel.
+     *
+     * Note: this method must be invoked on the JavaFX platform thread
+     * @param request to process
      */
-    public PlaylistEditor()
+    public void process(PlaylistEditorRequest request)
     {
-        mUserPreferences = new UserPreferences();
-
-        AliasModel aliasModel = new AliasModel();
-        BroadcastModel broadcastModel = new BroadcastModel(aliasModel, new IconManager(), mUserPreferences);
-        ChannelMapModel channelMapModel = new ChannelMapModel();
-        TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
-        TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
-        mPlaylistManager = new PlaylistManager(aliasModel, broadcastModel, new ChannelModel(), channelMapModel,
-            tunerModel, mUserPreferences, new ChannelProcessingManager(channelMapModel,
-            new EventLogManager(aliasModel, mUserPreferences),
-            new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel), mUserPreferences),
-            aliasModel, mUserPreferences), new IconManager());
-
-        mPlaylistManager.init();
-
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, channelMapModel);
-    }
-
-    @Override
-    public void start(Stage primaryStage) throws Exception
-    {
-        mStage = primaryStage;
-        mStage.setTitle("Playlist Editor");
-        Scene scene = new Scene(getContent(), 1000, 750);
-        mStage.setScene(scene);
-        mStage.show();
-    }
-
-    private Parent getContent()
-    {
-        if(mContent == null)
+        switch(request.getTabName())
         {
-            mContent = new BorderPane();
-            mContent.setTop(getMenuBar());
-            mContent.setCenter(getTabPane());
+            case ALIAS:
+                if(request instanceof AliasTabRequest)
+                {
+                    getTabPane().getSelectionModel().select(getAliasesTab());
+                    getAliasEditor().process((AliasTabRequest)request);
+                }
+                break;
+            case CHANNEL:
+                if(request instanceof ChannelTabRequest)
+                {
+                    getTabPane().getSelectionModel().select(getChannelsTab());
+                    getChannelEditor().process((ChannelTabRequest)request);
+                }
+                break;
+            case PLAYLIST:
+                //Ignore - this is a request to simply show te playlist editor
+                break;
+            default:
+                mLog.warn("Unrecognized playlist editor request: " + request.getClass());
+                break;
         }
-
-        return mContent;
     }
 
     private MenuBar getMenuBar()
@@ -134,27 +136,51 @@ public class PlaylistEditor extends Application
             mMenuBar = new MenuBar();
 
             //File Menu
-            Menu fileMenu = new Menu("File");
+            Menu fileMenu = new Menu("_File");
+            fileMenu.setAccelerator(new KeyCodeCombination(KeyCode.F, KeyCombination.ALT_ANY));
 
-            MenuItem closeItem = new MenuItem("Close");
-            closeItem.setOnAction(event -> mStage.close());
+            MenuItem closeItem = new MenuItem("_Close");
+            closeItem.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.ALT_ANY));
+            closeItem.setOnAction(event -> getMenuBar().getParent().getScene().getWindow().hide());
             fileMenu.getItems().add(closeItem);
-
             mMenuBar.getMenus().add(fileMenu);
 
-            Menu editMenu = new Menu("Edit");
-            MenuItem userPreferenceItem = new MenuItem("User Preferences");
-            userPreferenceItem.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    MyEventBus.getEventBus()
-                        .post(new PreferenceEditorViewRequest(PreferenceEditorType.TALKGROUP_FORMAT));
-                }
+            Menu viewMenu = new Menu("_View");
+            viewMenu.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.ALT_ANY));
+            MenuItem userPreferenceItem = new MenuItem("_User Preferences");
+            userPreferenceItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_ANY));
+            userPreferenceItem.setOnAction(event -> MyEventBus.getEventBus()
+                .post(new UserPreferenceEditorViewRequest(PreferenceEditorType.TALKGROUP_FORMAT)));
+            viewMenu.getItems().add(userPreferenceItem);
+            mMenuBar.getMenus().add(viewMenu);
+
+            Menu screenShot = new Menu("_Screenshot");
+            IconNode cameraNode = new IconNode(FontAwesome.CAMERA);
+            cameraNode.setFill(Color.DARKGRAY);
+            screenShot.setGraphic(cameraNode);
+            MenuItem menuItem = new MenuItem();
+            screenShot.getItems().add(menuItem);
+            screenShot.setOnShowing(event -> screenShot.hide());
+            screenShot.setOnShown(event -> menuItem.fire());
+            menuItem.setOnAction(event -> {
+                WritableImage image = getMenuBar().getScene().snapshot(null);
+                final BufferedImage bufferedImage = SwingFXUtils.fromFXImage(image, null);
+                String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
+                final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
+
+                ThreadPool.SCHEDULED.execute(() -> {
+                    try
+                    {
+                        ImageIO.write(bufferedImage, "png", captureFile.toFile());
+                    }
+                    catch(IOException e)
+                    {
+                        mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
+                    }
+                });
             });
-            editMenu.getItems().add(userPreferenceItem);
-            mMenuBar.getMenus().add(editMenu);
+            mMenuBar.getMenus().add(screenShot);
+
         }
 
         return mMenuBar;
@@ -178,10 +204,20 @@ public class PlaylistEditor extends Application
         if(mAliasesTab == null)
         {
             mAliasesTab = new Tab("Aliases");
-            mAliasesTab.setContent(new AliasEditor(mPlaylistManager, mUserPreferences));
+            mAliasesTab.setContent(getAliasEditor());
         }
 
         return mAliasesTab;
+    }
+
+    private AliasEditor getAliasEditor()
+    {
+        if(mAliasEditor == null)
+        {
+            mAliasEditor = new AliasEditor(mPlaylistManager, mUserPreferences);
+        }
+
+        return mAliasEditor;
     }
 
     private Tab getChannelsTab()
@@ -189,10 +225,20 @@ public class PlaylistEditor extends Application
         if(mChannelsTab == null)
         {
             mChannelsTab = new Tab("Channels");
-            mChannelsTab.setContent(new ChannelEditor(mPlaylistManager));
+            mChannelsTab.setContent(getChannelEditor());
         }
 
         return mChannelsTab;
+    }
+
+    private ChannelEditor getChannelEditor()
+    {
+        if(mChannelEditor == null)
+        {
+            mChannelEditor = new ChannelEditor(mPlaylistManager);
+        }
+
+        return mChannelEditor;
     }
 
     private Tab getPlaylistsTab()
@@ -211,8 +257,7 @@ public class PlaylistEditor extends Application
         if(mRadioReferenceTab == null)
         {
             mRadioReferenceTab = new Tab("Radio Reference");
-            mRadioReferenceTab.setContent(new RadioReferenceEditor(mUserPreferences,
-                mPlaylistManager.getRadioReference(), mJavaFxWindowManager));
+            mRadioReferenceTab.setContent(new RadioReferenceEditor(mUserPreferences, mPlaylistManager));
         }
 
         return mRadioReferenceTab;
@@ -227,10 +272,5 @@ public class PlaylistEditor extends Application
         }
 
         return mStreamingTab;
-    }
-
-    public static void main(String[] args)
-    {
-        launch(args);
     }
 }

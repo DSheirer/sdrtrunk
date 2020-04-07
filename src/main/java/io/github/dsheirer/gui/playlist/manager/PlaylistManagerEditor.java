@@ -24,6 +24,8 @@ package io.github.dsheirer.gui.playlist.manager;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.Files;
+import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.PreferenceType;
@@ -263,6 +265,45 @@ public class PlaylistManagerEditor extends HBox
                             mLog.error("Error reverting to previous playlist [" +
                                 (current != null ? current.toString() : "null") + "]");
                         }
+                    }
+
+                    final List<Channel> autoStartChannels = mPlaylistManager.getChannelModel().getAutoStartChannels();
+
+                    if(autoStartChannels.size() > 0)
+                    {
+                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                            "Would you like to auto-start your channels?", ButtonType.YES, ButtonType.NO);
+                        alert.setTitle("Auto-Start Channels");
+                        alert.setHeaderText("Discovered [" + autoStartChannels.size() + "] auto-start channel" +
+                            (autoStartChannels.size() > 1 ? "s" : ""));
+                        alert.showAndWait().ifPresent(buttonType -> {
+                            if(buttonType == ButtonType.YES)
+                            {
+                                boolean error = false;
+
+                                for(Channel channel: autoStartChannels)
+                                {
+                                    try
+                                    {
+                                        mPlaylistManager.getChannelProcessingManager().start(channel);
+                                    }
+                                    catch(ChannelException ce)
+                                    {
+                                        error = true;
+                                    }
+                                }
+
+                                if(error)
+                                {
+                                    Alert errorAlert = new Alert(Alert.AlertType.ERROR,
+                                        "Unable to start some or all of the auto-start channels",
+                                        ButtonType.OK);
+                                    errorAlert.setTitle("Channel Auto-Start Error(s)");
+                                    errorAlert.setHeaderText("Auto-Start Error");
+                                    errorAlert.showAndWait();
+                                }
+                            }
+                        });
                     }
                 }
             });

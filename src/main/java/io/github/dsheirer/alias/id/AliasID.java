@@ -46,6 +46,8 @@ import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
 import javafx.beans.Observable;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.util.Callback;
 
@@ -76,6 +78,7 @@ import javafx.util.Callback;
 public abstract class AliasID
 {
     private SimpleStringProperty mValueProperty = new SimpleStringProperty();
+    private BooleanProperty mOverlapProperty = new SimpleBooleanProperty();
 
     public AliasID()
     {
@@ -91,12 +94,38 @@ public abstract class AliasID
     }
 
     /**
+     * Indicates if this alias identifier overlaps with any other alias identifier in the same alias list
+     */
+    @JsonIgnore
+    public BooleanProperty overlapProperty()
+    {
+        return mOverlapProperty;
+    }
+
+    /**
+     * Sets the overlap flag for this alias id.  Overlap indicates that this identifier collides with another
+     * identifier within the same alias list.
+     */
+    public void setOverlap(boolean overlap)
+    {
+        mOverlapProperty.set(overlap);
+        updateValueProperty();
+    }
+
+    /**
      * Updates the value property for this alias ID.  Note: this method is intended to be invoked by all subclasses
      * each time that any of the subclass member variable values change.
      */
     public void updateValueProperty()
     {
-        valueProperty().set(toString());
+        if(overlapProperty().get())
+        {
+            valueProperty().set(toString() + " - Error: Overlap");
+        }
+        else
+        {
+            valueProperty().set(toString());
+        }
 
         //Hack: harmless, but the list extractor does not consistently update unless we do this.
         valueProperty().get();
@@ -106,6 +135,16 @@ public abstract class AliasID
     public abstract AliasIDType getType();
 
     public abstract boolean matches(AliasID id);
+
+    /**
+     * Indicates if this alias ID overlaps with another alias ID.
+     * Note: this method is intended to be overridden by certain subclass implementations.
+     */
+    @JsonIgnore
+    public boolean overlaps(AliasID id)
+    {
+        return false;
+    }
 
     @JsonIgnore
     public abstract boolean isValid();
@@ -121,6 +160,6 @@ public abstract class AliasID
      */
     public static Callback<AliasID,Observable[]> extractor()
     {
-        return (AliasID aid) -> new Observable[] {aid.valueProperty()};
+        return (AliasID aid) -> new Observable[] {aid.valueProperty(), aid.overlapProperty()};
     }
 }

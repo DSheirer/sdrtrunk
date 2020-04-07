@@ -154,8 +154,8 @@ public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> ext
                     alert.getButtonTypes().clear();
                     alert.getButtonTypes().addAll(ButtonType.NO, ButtonType.YES);
                     alert.setTitle("Update Aliases");
-                    alert.setHeaderText("Aliases must be updated to new stream name");
-                    alert.setContentText("Do you want to update these aliases?");
+                    alert.setHeaderText("Rename requires updating aliases for this stream");
+                    alert.setContentText("Do you want to update aliases to new stream name?");
                     alert.initOwner(((Node)getSaveButton()).getScene().getWindow());
 
                     //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073

@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Frequency editor that supports editing single or multiple frequencies.
@@ -461,17 +460,16 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
                 mRemoveButton.setDisable(true);
                 mRemoveButton.setOnAction(event -> {
                     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                        "Click OK to remove this frequency", ButtonType.OK, ButtonType.CANCEL);
+                        "Do you want to remove this frequency?", ButtonType.YES, ButtonType.NO);
                     confirm.setTitle("Remove Frequency");
                     confirm.setHeaderText("Remove frequency?");
                     confirm.initOwner(((Node)event.getTarget()).getScene().getWindow());
-
-                    Optional<ButtonType> result = confirm.showAndWait();
-
-                    if(result.get() == ButtonType.OK)
-                    {
-                        removeFrequencyBox(FrequencyBox.this);
-                    }
+                    confirm.showAndWait().ifPresent(buttonType -> {
+                        if(buttonType == ButtonType.YES)
+                        {
+                            removeFrequencyBox(FrequencyBox.this);
+                        }
+                    });
                 });
             }
 

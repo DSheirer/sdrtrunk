@@ -34,6 +34,7 @@ import io.github.dsheirer.rrapi.type.Frequency;
 import io.github.dsheirer.rrapi.type.Site;
 import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.rrapi.type.SystemInformation;
+import io.github.dsheirer.rrapi.type.Talkgroup;
 
 import java.util.List;
 
@@ -48,6 +49,7 @@ public class CachingRadioReferenceService extends RadioReferenceService
     private LoadingCache<Integer,SystemInformation> mSystemInfoCache;
     private LoadingCache<Integer,List<Site>> mSystemSitesCache;
     private LoadingCache<Integer,List<Frequency>> mSubCategoryFrequencyCache;
+    private LoadingCache<Integer,List<Talkgroup>> mTalkgroupCache;
 
     /**
      * Constructs an instance of the service
@@ -122,6 +124,17 @@ public class CachingRadioReferenceService extends RadioReferenceService
                 public List<Frequency> load(Integer key) throws Exception
                 {
                     return CachingRadioReferenceService.super.getSubCategoryFrequencies(key);
+                }
+            });
+
+        mTalkgroupCache = CacheBuilder.newBuilder()
+            .maximumSize(100)
+            .build(new CacheLoader<Integer,List<Talkgroup>>()
+            {
+                @Override
+                public List<Talkgroup> load(Integer key) throws Exception
+                {
+                    return CachingRadioReferenceService.super.getTalkgroups(key);
                 }
             });
     }
@@ -201,6 +214,20 @@ public class CachingRadioReferenceService extends RadioReferenceService
         catch(Exception e)
         {
             return CachingRadioReferenceService.super.getSubCategoryFrequencies(subCategoryId);
+        }
+    }
+
+
+    @Override
+    public List<Talkgroup> getTalkgroups(int systemId) throws RadioReferenceException
+    {
+        try
+        {
+            return mTalkgroupCache.get(systemId);
+        }
+        catch(Exception e)
+        {
+            return CachingRadioReferenceService.super.getTalkgroups(systemId);
         }
     }
 }

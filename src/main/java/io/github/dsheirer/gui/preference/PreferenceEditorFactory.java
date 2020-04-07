@@ -37,7 +37,7 @@ public class PreferenceEditorFactory
     {
         switch(preferenceEditorType)
         {
-            case AUDIO_PLAYBACK:
+            case AUDIO_OUTPUT:
                 return new PlaybackPreferenceEditor(userPreferences);
             case AUDIO_RECORD:
                 return new RecordPreferenceEditor(userPreferences);

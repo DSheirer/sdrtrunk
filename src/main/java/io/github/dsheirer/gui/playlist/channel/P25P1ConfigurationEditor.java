@@ -30,21 +30,27 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
+import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +73,9 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private ToggleSwitch mIgnoreDataCallsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
+    private SegmentedButton mModulationSegmentedButton;
+    private ToggleButton mC4FMToggleButton;
+    private ToggleButton mLSMToggleButton;
 
     /**
      * Constructs an instance
@@ -103,7 +112,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         if(mDecoderPane == null)
         {
             mDecoderPane = new TitledPane();
-            mDecoderPane.setText("Decoder: P25 Phase 1");
+            mDecoderPane.setText("Decoder: P25 Phase 1 (or P25 Phase 2 Control Channel)");
             mDecoderPane.setExpanded(true);
 
             GridPane gridPane = new GridPane();
@@ -111,21 +120,33 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
+            Label modulationLabel = new Label("Modulation");
+            GridPane.setHalignment(modulationLabel, HPos.RIGHT);
+            GridPane.setConstraints(modulationLabel, 0, 0);
+            gridPane.getChildren().add(modulationLabel);
+
+            GridPane.setConstraints(getModulationSegmentedButton(), 1, 0);
+            gridPane.getChildren().addAll(getModulationSegmentedButton());
+
             Label poolSizeLabel = new Label("Max Traffic Channels");
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
-            GridPane.setConstraints(poolSizeLabel, 0, 0);
+            GridPane.setConstraints(poolSizeLabel, 2, 0);
             gridPane.getChildren().add(poolSizeLabel);
 
-            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 1, 0);
+            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 3, 0);
             gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
 
-            GridPane.setConstraints(getIgnoreDataCallsButton(), 2, 0);
+            GridPane.setConstraints(getIgnoreDataCallsButton(), 4, 0);
             gridPane.getChildren().add(getIgnoreDataCallsButton());
 
             Label directionLabel = new Label("Ignore Data Calls");
             GridPane.setHalignment(directionLabel, HPos.LEFT);
-            GridPane.setConstraints(directionLabel, 3, 0);
+            GridPane.setConstraints(directionLabel, 5, 0);
             gridPane.getChildren().add(directionLabel);
+
+            Label modulationHelpLabel = new Label("C4FM: repeaters and non-simulcast trunked systems.  LSM: simulcast trunked systems.");
+            GridPane.setConstraints(modulationHelpLabel, 0, 1, 6, 1);
+            gridPane.getChildren().add(modulationHelpLabel);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -196,6 +217,54 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         return mEventLogConfigurationEditor;
     }
 
+    private SegmentedButton getModulationSegmentedButton()
+    {
+        if(mModulationSegmentedButton == null)
+        {
+            mModulationSegmentedButton = new SegmentedButton();
+            mModulationSegmentedButton.getButtons().addAll(getC4FMToggleButton(), getLSMToggleButton());
+            mModulationSegmentedButton.getToggleGroup().selectedToggleProperty().addListener(new ChangeListener<Toggle>()
+            {
+                @Override
+                public void changed(ObservableValue<? extends Toggle> observable, Toggle oldValue, Toggle newValue)
+                {
+                    if(newValue == null)
+                    {
+                        //Ensure at least one toggle is always selected
+                        oldValue.setSelected(true);
+                    }
+                    else if(oldValue != null && newValue != null)
+                    {
+                        //Only set modified if the toggle changed from one to the other
+                        modifiedProperty().set(true);
+                    }
+                }
+            });
+        }
+
+        return mModulationSegmentedButton;
+    }
+
+    private ToggleButton getC4FMToggleButton()
+    {
+        if(mC4FMToggleButton == null)
+        {
+            mC4FMToggleButton = new ToggleButton("C4FM");
+        }
+
+        return mC4FMToggleButton;
+    }
+
+    private ToggleButton getLSMToggleButton()
+    {
+        if(mLSMToggleButton == null)
+        {
+            mLSMToggleButton = new ToggleButton("LSM");
+        }
+
+        return mLSMToggleButton;
+    }
+
     private ToggleSwitch getIgnoreDataCallsButton()
     {
         if(mIgnoreDataCallsButton == null)
@@ -258,6 +327,16 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
             DecodeConfigP25Phase1 decodeConfig = (DecodeConfigP25Phase1)config;
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
+            if(decodeConfig.getModulation() == P25P1Decoder.Modulation.C4FM)
+            {
+                getC4FMToggleButton().setSelected(true);
+                getLSMToggleButton().setSelected(false);
+            }
+            else
+            {
+                getC4FMToggleButton().setSelected(false);
+                getLSMToggleButton().setSelected(true);
+            }
         }
         else
         {
@@ -282,6 +361,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
 
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
+        config.setModulation(getC4FMToggleButton().isSelected() ? P25P1Decoder.Modulation.C4FM : P25P1Decoder.Modulation.CQPSK);
         getItem().setDecodeConfiguration(config);
     }
 

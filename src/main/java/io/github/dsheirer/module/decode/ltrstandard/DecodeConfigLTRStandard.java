@@ -35,7 +35,7 @@ public class DecodeConfigLTRStandard extends DecodeConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     public DecoderType getDecoderType()
     {
-        return DecoderType.LTR_STANDARD;
+        return DecoderType.LTR;
     }
 
 

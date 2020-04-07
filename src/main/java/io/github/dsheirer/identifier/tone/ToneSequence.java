@@ -50,6 +50,19 @@ public class ToneSequence
     {
     }
 
+    /**
+     * Creates a deep copy of this tone sequence
+     */
+    public ToneSequence copyOf()
+    {
+        ToneSequence toneSequence = new ToneSequence();
+        for(Tone tone: mTones)
+        {
+            toneSequence.addTone(tone.copyOf());
+        }
+        return toneSequence;
+    }
+
     public ObservableList<Tone> tonesProperty()
     {
         return mTones;

@@ -122,6 +122,16 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.getChildren().add(getBandwidthButton());
 
             mDecoderPane.setContent(gridPane);
+
+            //Special handling - the pill button doesn't like to set a selected state if the pane is not expanded,
+            //so detect when the pane is expanded and refresh the config view
+            mDecoderPane.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue)
+                {
+                    //Reset the config so the editor gets updated
+                    setDecoderConfiguration(getItem().getDecodeConfiguration());
+                }
+            });
         }
 
         return mDecoderPane;
@@ -283,27 +293,14 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)config;
             DecodeConfigNBFM.Bandwidth bandwidth = decodeConfigNBFM.getBandwidth();
 
-            if(bandwidth != null)
+            if(bandwidth == null)
             {
-                for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
-                {
-                    if(toggle.getUserData() == bandwidth)
-                    {
-                        toggle.setSelected(true);
-                        continue;
-                    }
-                }
+                bandwidth = DecodeConfigNBFM.Bandwidth.BW_12_5;
             }
-            else
+
+            for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
             {
-                for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
-                {
-                    if(toggle.getUserData() == DecodeConfigNBFM.Bandwidth.BW_12_5)
-                    {
-                        toggle.setSelected(true);
-                        continue;
-                    }
-                }
+                toggle.setSelected(toggle.getUserData() == bandwidth);
             }
 
             getAudioRecordSwitch().setDisable(false);

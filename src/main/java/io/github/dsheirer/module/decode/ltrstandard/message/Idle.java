@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * Indicates the repeater is IDLE and available for use
  */
-public class Idle extends LTRStandardMessage
+public class Idle extends LTRMessage
 {
     public Idle(CorrectedBinaryMessage message, MessageDirection direction, CRC crc)
     {

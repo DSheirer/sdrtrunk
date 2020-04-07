@@ -28,7 +28,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -40,28 +39,40 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.util.Callback;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconNode;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.textfield.TextFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * JavaFX editor for managing channel configurations.
  */
 public class ChannelEditor extends SplitPane
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelEditor.class);
     private PlaylistManager mPlaylistManager;
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
@@ -69,11 +80,17 @@ public class ChannelEditor extends SplitPane
     private Button mDeleteButton;
     private Button mCloneButton;
     private VBox mButtonBox;
-    private HBox mSearchBox;
+    private HBox mSearchAndViewBox;
     private TextField mSearchField;
+    private SegmentedButton mViewSegmentedButton;
+    private ToggleButton mAllToggleButton;
+    private ToggleButton mAutoStartToggleButton;
+    private ToggleButton mPlayingToggleButton;
     private ChannelConfigurationEditor mChannelConfigurationEditor;
     private UnknownConfigurationEditor mUnknownConfigurationEditor;
     private Map<DecoderType,ChannelConfigurationEditor> mChannelConfigurationEditorMap = new HashMap();
+    private FilteredList<Channel> mChannelFilteredList;
+    private ChannelListFilter mChannelListFilter = new ChannelListFilter();
 
     /**
      * Constructs an instance
@@ -81,24 +98,44 @@ public class ChannelEditor extends SplitPane
      */
     public ChannelEditor(PlaylistManager playlistManager)
     {
-
         mPlaylistManager = playlistManager;
         mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager);
 
         HBox channelsBox = new HBox();
-        channelsBox.setPadding(new Insets(5, 5, 5, 5));
-        channelsBox.setSpacing(5.0);
+        channelsBox.setSpacing(10.0);
         HBox.setHgrow(getChannelTableView(), Priority.ALWAYS);
         channelsBox.getChildren().addAll(getChannelTableView(), getButtonBox());
 
         VBox topBox = new VBox();
+        topBox.setPadding(new Insets(10,10,10,10));
+        topBox.setSpacing(10);
         VBox.setVgrow(channelsBox, Priority.ALWAYS);
-        topBox.getChildren().addAll(getSearchBox(), channelsBox);
+        topBox.getChildren().addAll(getSearchAndViewBox(), channelsBox);
 
         setOrientation(Orientation.VERTICAL);
         getItems().addAll(topBox, getChannelConfigurationEditor());
+    }
 
-        //TODO: add a 'Features' column that has icons: enabled/running, auto-start, logging, or recording
+    /**
+     * Processes the channel view request.
+     *
+     * Note: this method must be invoked on the JavaFX platform thread
+     *
+     * @param channelTabRequest to process
+     */
+    public void process(ChannelTabRequest channelTabRequest)
+    {
+        if(channelTabRequest instanceof ViewChannelRequest)
+        {
+            Channel channel = ((ViewChannelRequest)channelTabRequest).getChannel();
+
+            if(channel != null)
+            {
+                getSearchField().setText(null);
+                getChannelTableView().getSelectionModel().select(channel);
+                getChannelTableView().scrollTo(channel);
+            }
+        }
     }
 
     private void setChannel(Channel channel)
@@ -185,6 +222,61 @@ public class ChannelEditor extends SplitPane
         channel.setDecodeConfiguration(DecoderFactory.getDecodeConfiguration(decoderType));
         mPlaylistManager.getChannelModel().addChannel(channel);
         getChannelTableView().getSelectionModel().select(channel);
+        getChannelTableView().scrollTo(channel);
+    }
+
+    private SegmentedButton getViewSegmentedButton()
+    {
+        if(mViewSegmentedButton == null)
+        {
+            mViewSegmentedButton = new SegmentedButton(getAllToggleButton(), getPlayingToggleButton(),
+                getAutoStartToggleButton());
+            getAllToggleButton().setSelected(true);
+            mViewSegmentedButton.getToggleGroup().selectedToggleProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                //Don't allow toggles to be de-selected
+                if(newValue == null)
+                {
+                    oldValue.setSelected(true);
+                }
+                else
+                {
+                    updateChannelListFilter();
+                }
+            });
+        }
+
+        return mViewSegmentedButton;
+    }
+
+    private ToggleButton getAllToggleButton()
+    {
+        if(mAllToggleButton == null)
+        {
+            mAllToggleButton = new ToggleButton("All");
+        }
+
+        return mAllToggleButton;
+    }
+
+    private ToggleButton getAutoStartToggleButton()
+    {
+        if(mAutoStartToggleButton == null)
+        {
+            mAutoStartToggleButton = new ToggleButton("Auto-Start");
+        }
+
+        return mAutoStartToggleButton;
+    }
+
+    private ToggleButton getPlayingToggleButton()
+    {
+        if(mPlayingToggleButton == null)
+        {
+            mPlayingToggleButton = new ToggleButton("Playing");
+        }
+
+        return mPlayingToggleButton;
     }
 
     /**
@@ -211,21 +303,31 @@ public class ChannelEditor extends SplitPane
         return mChannelConfigurationEditor;
     }
 
-    private HBox getSearchBox()
+    private HBox getSearchAndViewBox()
     {
-        if(mSearchBox == null)
+        if(mSearchAndViewBox == null)
         {
-            mSearchBox = new HBox();
-            mSearchBox.setAlignment(Pos.CENTER_LEFT);
-            mSearchBox.setPadding(new Insets(5, 5, 0, 15));
-            mSearchBox.setSpacing(5);
+            mSearchAndViewBox = new HBox();
+            mSearchAndViewBox.setAlignment(Pos.CENTER_LEFT);
+            mSearchAndViewBox.setSpacing(10);
 
+            HBox searchBox = new HBox();
+            searchBox.setSpacing(5);
+            searchBox.setAlignment(Pos.CENTER);
             Label searchLabel = new Label("Search:");
             searchLabel.setAlignment(Pos.CENTER_RIGHT);
-            mSearchBox.getChildren().addAll(searchLabel, getSearchField());
+            searchBox.getChildren().addAll(searchLabel, getSearchField());
+
+            HBox viewBox = new HBox();
+            viewBox.setSpacing(5);
+            viewBox.setAlignment(Pos.CENTER);
+            Label viewLabel = new Label("View Channels:");
+            viewBox.getChildren().addAll(viewLabel, getViewSegmentedButton());
+
+            mSearchAndViewBox.getChildren().addAll(searchBox, viewBox);
         }
 
-        return mSearchBox;
+        return mSearchAndViewBox;
     }
 
     private TextField getSearchField()
@@ -233,9 +335,34 @@ public class ChannelEditor extends SplitPane
         if(mSearchField == null)
         {
             mSearchField = TextFields.createClearableTextField();
+            mSearchField.textProperty().addListener((observable, oldValue, newValue) -> updateChannelListFilter());
         }
 
         return mSearchField;
+    }
+
+    /**
+     * Updates the predicate on the channel list to apply search string and view settings
+     */
+    private void updateChannelListFilter()
+    {
+        mChannelListFilter.setFilterText(getSearchField().getText());
+
+        if(getAllToggleButton().isSelected())
+        {
+            mChannelListFilter.setView(ChannelListFilter.View.ALL);
+        }
+        else if(getAutoStartToggleButton().isSelected())
+        {
+            mChannelListFilter.setView(ChannelListFilter.View.AUTO_START);
+        }
+        else if(getPlayingToggleButton().isSelected())
+        {
+            mChannelListFilter.setView(ChannelListFilter.View.PLAYING);
+        }
+
+        mChannelFilteredList.setPredicate(null);
+        mChannelFilteredList.setPredicate(mChannelListFilter);
     }
 
     private TableView<Channel> getChannelTableView()
@@ -244,74 +371,87 @@ public class ChannelEditor extends SplitPane
         {
             mChannelTableView = new TableView<>();
 
-            TableColumn systemColumn = new TableColumn();
-            systemColumn.setText("System");
+            TableColumn<Channel,Boolean> playingColumn = new TableColumn("Playing");
+            playingColumn.setPrefWidth(75);
+            playingColumn.setCellValueFactory(new PropertyValueFactory<>("processing"));
+            playingColumn.setCellFactory(param -> {
+                TableCell<Channel,Boolean> tableCell = new TableCell<>()
+                {
+                    @Override
+                    protected void updateItem(Boolean item, boolean empty)
+                    {
+                        setAlignment(Pos.CENTER);
+                        setText(null);
+
+                        if(empty || item == null || !item)
+                        {
+                            setGraphic(null);
+                        }
+                        else
+                        {
+                            IconNode iconNode = new IconNode(FontAwesome.CHECK);
+                            iconNode.setFill(Color.GREEN);
+                            setGraphic(iconNode);
+                        }
+                    }
+                };
+
+                return tableCell;
+            });
+
+            TableColumn<Channel,Boolean> autoStartColumn = new TableColumn<>("Auto-Start");
+            autoStartColumn.setCellValueFactory(new PropertyValueFactory<>("autoStart"));
+            autoStartColumn.setPrefWidth(95);
+            autoStartColumn.setCellFactory(param -> {
+                TableCell<Channel,Boolean> tableCell = new TableCell<>()
+                {
+                    @Override
+                    protected void updateItem(Boolean item, boolean empty)
+                    {
+                        setAlignment(Pos.CENTER);
+                        setText(null);
+
+                        if(empty || item == null || !item)
+                        {
+                            setGraphic(null);
+                        }
+                        else
+                        {
+                            IconNode iconNode = new IconNode(FontAwesome.CHECK);
+                            iconNode.setFill(Color.GREEN);
+                            setGraphic(iconNode);
+                        }
+                    }
+                };
+
+                return tableCell;
+            });
+
+            TableColumn systemColumn = new TableColumn("System");
             systemColumn.setCellValueFactory(new PropertyValueFactory<>("system"));
             systemColumn.setPrefWidth(175);
 
-            TableColumn siteColumn = new TableColumn();
-            siteColumn.setText("Site");
+            TableColumn siteColumn = new TableColumn("Site");
             siteColumn.setCellValueFactory(new PropertyValueFactory<>("site"));
             siteColumn.setPrefWidth(175);
 
-            TableColumn nameColumn = new TableColumn();
-            nameColumn.setText("Name");
+            TableColumn nameColumn = new TableColumn("Name");
             nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-            nameColumn.setPrefWidth(400);
+            nameColumn.setPrefWidth(200);
 
-            TableColumn protocolColumn = new TableColumn();
-            protocolColumn.setText("Protocol");
+            TableColumn protocolColumn = new TableColumn("Protocol");
             protocolColumn.setCellValueFactory(new ProtocolCellValueFactory());
             protocolColumn.setPrefWidth(100);
 
-            mChannelTableView.getColumns().addAll(systemColumn, siteColumn, nameColumn, protocolColumn);
+            mChannelTableView.getColumns().addAll(systemColumn, siteColumn, nameColumn, protocolColumn, playingColumn,
+                autoStartColumn);
             mChannelTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
-            FilteredList<Channel> filteredList = new FilteredList<>(mPlaylistManager.getChannelModel().channelList(),
-                p -> true);
-
-            getSearchField().textProperty().addListener(new ChangeListener<String>()
-            {
-                @Override
-                public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue)
-                {
-                    filteredList.setPredicate(channel -> {
-                        if(newValue == null || newValue.isEmpty())
-                        {
-                            return true;
-                        }
-
-                        String filterText = newValue.toLowerCase();
-
-                        if(channel.getSystem() != null && channel.getSystem().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-                        else if(channel.getSite() != null && channel.getSite().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-                        else if(channel.getName() != null && channel.getName().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-                        else if(channel.getDecodeConfiguration().getDecoderType().getDisplayString().toLowerCase().contains(filterText))
-                        {
-                            return true;
-                        }
-
-                        return false;
-                    });
-                }
-            });
-
-            SortedList<Channel> sortedList = new SortedList<>(filteredList);
-
+            mChannelFilteredList = new FilteredList<>(mPlaylistManager.getChannelModel().channelList(), mChannelListFilter);
+            SortedList<Channel> sortedList = new SortedList<>(mChannelFilteredList);
             sortedList.comparatorProperty().bind(mChannelTableView.comparatorProperty());
-
             mChannelTableView.setItems(sortedList);
-
             mChannelTableView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> setChannel(newValue));
         }
@@ -334,7 +474,6 @@ public class ChannelEditor extends SplitPane
         if(mButtonBox == null)
         {
             mButtonBox = new VBox();
-            mButtonBox.setPadding(new Insets(0, 5, 5, 5));
             mButtonBox.setSpacing(10);
             mButtonBox.getChildren().addAll(getNewButton(), getCloneButton(), getDeleteButton());
         }
@@ -350,9 +489,20 @@ public class ChannelEditor extends SplitPane
             mNewButton.setAlignment(Pos.CENTER);
             mNewButton.setMaxWidth(Double.MAX_VALUE);
 
+            MenuItem decodersItem = new MenuItem("Decoder");
+            decodersItem.setDisable(true);
+            mNewButton.getItems().addAll(decodersItem, new SeparatorMenuItem());
+
             for(DecoderType decoderType: DecoderType.PRIMARY_DECODERS)
             {
-                mNewButton.getItems().add(new NewChannelMenuItem(decoderType));
+                if(decoderType == DecoderType.P25_PHASE2)
+                {
+                    mNewButton.getItems().add(new NewP25P2ChannelMenu());
+                }
+                else
+                {
+                    mNewButton.getItems().add(new NewChannelMenuItem(decoderType));
+                }
             }
         }
 
@@ -381,6 +531,18 @@ public class ChannelEditor extends SplitPane
 
                     if(result.get() == ButtonType.YES)
                     {
+                        if(selected.isProcessing())
+                        {
+                            try
+                            {
+                                mPlaylistManager.getChannelProcessingManager().stop(selected);
+                            }
+                            catch(Exception e)
+                            {
+                                mLog.error("Couldn't stop channel [" + selected.getName() + "] prior to delete by user");
+                            }
+                        }
+
                         mPlaylistManager.getChannelModel().removeChannel(selected);
                     }
                 }
@@ -427,6 +589,22 @@ public class ChannelEditor extends SplitPane
         }
     }
 
+    /**
+     * Menu item for creating new P25 Phase 2 channel configurations
+     */
+    public class NewP25P2ChannelMenu extends Menu
+    {
+        public NewP25P2ChannelMenu()
+        {
+            setText(DecoderType.P25_PHASE2.getDisplayString());
+            MenuItem trunked = new MenuItem("Trunked System");
+            trunked.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE1));
+            MenuItem channel = new MenuItem("Individual Channel");
+            channel.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE2));
+            getItems().addAll(trunked, channel);
+        }
+    }
+
     public class ProtocolCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
         ObservableValue<String>>
     {
@@ -447,6 +625,91 @@ public class ChannelEditor extends SplitPane
             }
 
             return mProtocol;
+        }
+    }
+
+    /**
+     * Filter predicate for a filterec channel list
+     */
+    public static class ChannelListFilter implements Predicate<Channel>
+    {
+        public enum View{ALL,AUTO_START,PLAYING};
+
+        private String mFilterText;
+        private View mView = View.ALL;
+
+        /**
+         * Sets the filter text to search for
+         */
+        public void setFilterText(String filterText)
+        {
+            if(filterText == null || filterText.trim().isEmpty())
+            {
+                mFilterText = null;
+            }
+            else
+            {
+                mFilterText = filterText.toLowerCase();
+            }
+        }
+
+        /**
+         * Sets the channel view
+         */
+        public void setView(View view)
+        {
+            mView = view;
+        }
+
+        /**
+         * Tests the channel to see if it matches the current view setting and the search filter text
+         */
+        @Override
+        public boolean test(Channel channel)
+        {
+            switch(mView)
+            {
+                case ALL:
+                default:
+                    return matchesFilter(channel);
+                case AUTO_START:
+                    return channel.isAutoStart() && matchesFilter(channel);
+                case PLAYING:
+                    return channel.isProcessing() && matchesFilter(channel);
+            }
+        }
+
+        /**
+         * Tests the channel to see if the system, site or name values match the filter text
+         */
+        private boolean matchesFilter(Channel channel)
+        {
+            if(mFilterText == null)
+            {
+                return true;
+            }
+
+            if(channel.getName() != null && channel.getName().toLowerCase().contains(mFilterText))
+            {
+                return true;
+            }
+
+            if(channel.getSite() != null && channel.getSite().toLowerCase().contains(mFilterText))
+            {
+                return true;
+            }
+
+            if(channel.getSystem() != null && channel.getSystem().toLowerCase().contains(mFilterText))
+            {
+                return true;
+            }
+
+            if(channel.getDecodeConfiguration().getDecoderType().toString().toLowerCase().contains(mFilterText))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
