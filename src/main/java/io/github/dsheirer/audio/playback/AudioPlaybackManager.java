@@ -114,7 +114,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
         // mIsMuted = properties.get(AUDIO_MUTED_PROPERTY, false);
 
-        MixerChannelConfiguration[] mixerConfigurations = mMixerManager.getOutputMixers();
+        // MixerChannelConfiguration[] mixerConfigurations = mMixerManager.getOutputMixers();
     /**
      * Processes new audio segments and automatically assigns them to audio outputs.
      *

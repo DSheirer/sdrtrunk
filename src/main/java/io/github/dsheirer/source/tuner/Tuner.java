@@ -46,7 +46,7 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
     private ChannelSourceManager mChannelSourceManager;
     private TunerController mTunerController;
     private TunerFrequencyErrorMonitor mTunerFrequencyErrorMonitor;
-    private String mName;
+    protected String mName;
     private String mErrorMessage;
 
     public Tuner(String name, TunerController tunerController)
