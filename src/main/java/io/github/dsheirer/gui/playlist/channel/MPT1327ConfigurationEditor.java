@@ -24,7 +24,7 @@ package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.channelMap.ChannelMapEditorViewRequest;
+import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditorViewRequest;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
 import io.github.dsheirer.gui.playlist.source.FrequencyEditor;

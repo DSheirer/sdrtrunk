@@ -32,7 +32,7 @@ public enum DecoderType
 {
     //Primary Decoders
     AM("AM", "AM", Protocol.UNKNOWN),
-    LTR_STANDARD("LTR-Standard", "LTR", Protocol.LTR_STANDARD),
+    LTR("LTR", "LTR", Protocol.LTR),
     LTR_NET("LTR-Net", "LTR-Net", Protocol.LTR_NET),
     MPT1327("MPT1327", "MPT1327", Protocol.MPT1327),
     NBFM("NBFM", "NBFM", Protocol.UNKNOWN),
@@ -63,7 +63,7 @@ public enum DecoderType
     public static EnumSet<DecoderType> PRIMARY_DECODERS =
         EnumSet.of(DecoderType.AM,
         DecoderType.LTR_NET,
-        DecoderType.LTR_STANDARD,
+        DecoderType.LTR,
         DecoderType.MPT1327,
         DecoderType.NBFM,
         DecoderType.P25_PHASE1,

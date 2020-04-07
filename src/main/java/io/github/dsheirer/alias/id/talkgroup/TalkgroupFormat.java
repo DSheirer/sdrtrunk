@@ -124,7 +124,6 @@ public enum TalkgroupFormat
                 return FLEETSYNC;
             case LTR:
             case LTR_NET:
-            case LTR_STANDARD:
                 return LTR;
             case MDC1200:
                 return MDC1200;

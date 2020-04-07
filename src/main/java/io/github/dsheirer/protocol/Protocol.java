@@ -35,7 +35,6 @@ public enum Protocol
     LOJACK("LoJack", "LOJACK", 1200),
     LTR("LTR", "LTR", 300),
     LTR_NET("LTR-Net", "LTRNET", 300),
-    LTR_STANDARD("LTR-Standard", "LTRSTANDARD", 300),
     MDC1200("MDC-1200", "MDC1200", 1200),
     MPT1327("MPT-1327", "MPT1327", 1200),
     PASSPORT("Passport", "PASSPORT", 300),

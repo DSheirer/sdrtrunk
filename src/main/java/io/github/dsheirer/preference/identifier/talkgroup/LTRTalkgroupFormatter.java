@@ -59,7 +59,8 @@ public class LTRTalkgroupFormatter extends AbstractIntegerFormatter
                     case DECIMAL:
                         return toDecimal(ltr.getValue(), IDENTIFIER_DECIMAL_WIDTH);
                     case FORMATTED:
-                        return toDecimal(ltr.getHomeChannel(), HOME_REPEATER_DECIMAL_WIDTH) + SEPARATOR +
+                        return ltr.getArea() + SEPARATOR +
+                            toDecimal(ltr.getHomeChannel(), HOME_REPEATER_DECIMAL_WIDTH) + SEPARATOR +
                             toDecimal(ltr.getTalkgroup(), TALKGROUP_DECIMAL_WIDTH);
                     case HEXADECIMAL:
                         return toHex(ltr.getValue(), IDENTIFIER_HEXADECIMAL_WIDTH);
@@ -74,7 +75,7 @@ public class LTRTalkgroupFormatter extends AbstractIntegerFormatter
                     case DECIMAL:
                         return ltr.toString();
                     case FORMATTED:
-                        return ltr.getHomeChannel() + SEPARATOR + ltr.getTalkgroup();
+                        return ltr.getArea() + SEPARATOR + ltr.getHomeChannel() + SEPARATOR + ltr.getTalkgroup();
                     case HEXADECIMAL:
                         return toHex(identifier.getValue());
                     default:

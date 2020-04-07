@@ -83,7 +83,7 @@ public class LtrChannel implements IChannelDescriptor, Comparable<LtrChannel>
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.LTR_STANDARD;
+        return Protocol.LTR;
     }
 
     @Override

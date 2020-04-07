@@ -146,7 +146,6 @@ public class TalkgroupFormatPreference extends Preference
             case FLEETSYNC:
             case LTR:
             case LTR_NET:
-            case LTR_STANDARD:
             case MPT1327:
                 return IntegerFormat.FORMATTED;
             case APCO25:
@@ -165,7 +164,6 @@ public class TalkgroupFormatPreference extends Preference
             case FLEETSYNC:
             case LTR:
             case LTR_NET:
-            case LTR_STANDARD:
             case MPT1327:
                 return IntegerFormat.DECIMAL_FORMATTED;
             case APCO25:
@@ -188,7 +186,6 @@ public class TalkgroupFormatPreference extends Preference
             case FLEETSYNC:
             case LTR:
             case LTR_NET:
-            case LTR_STANDARD:
             case MPT1327:
             case UNKNOWN:
             default:

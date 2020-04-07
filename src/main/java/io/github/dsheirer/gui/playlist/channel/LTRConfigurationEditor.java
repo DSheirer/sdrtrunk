@@ -88,7 +88,7 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
     @Override
     public DecoderType getDecoderType()
     {
-        return DecoderType.LTR_STANDARD;
+        return DecoderType.LTR;
     }
 
     private TitledPane getSourcePane()
@@ -109,6 +109,36 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
             mDecoderPane = new TitledPane();
             mDecoderPane.setText("Decoder: LTR");
             mDecoderPane.setExpanded(false);
+            mDecoderPane.expandedProperty().addListener((observable, oldValue, newValue) -> {
+                //There's a bug either in the toggle group or the segmented button where setting the toggle to selected
+                //when the control is hidden in a titled pane prevents the selection, so we have to select the toggle
+                //again when the pane is expanded.  This state is detected by a null selected toggle.
+                if(newValue)
+                {
+                    if(getDirectionButton().getToggleGroup().getSelectedToggle() == null)
+                    {
+                        if(getItem().getDecodeConfiguration() instanceof DecodeConfigLTRStandard)
+                        {
+                            DecodeConfigLTRStandard decodeConfig = (DecodeConfigLTRStandard)getItem().getDecodeConfiguration();
+                            MessageDirection direction = decodeConfig.getMessageDirection();
+
+                            if(direction == null)
+                            {
+                                direction = MessageDirection.OSW;
+                            }
+
+                            //This will cause the modified property to trigger, so capture the modified state before
+                            //and re-apply after
+                            boolean modified = modifiedProperty().get();
+                            for(Toggle toggle: getDirectionButton().getToggleGroup().getToggles())
+                            {
+                                toggle.setSelected(toggle.getUserData() == direction);
+                            }
+                            modifiedProperty().set(modified);
+                        }
+                    }
+                }
+            });
 
             GridPane gridPane = new GridPane();
             gridPane.setPadding(new Insets(10,10,10,10));
@@ -121,6 +151,10 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
 
             GridPane.setConstraints(getDirectionButton(), 1, 0);
             gridPane.getChildren().add(getDirectionButton());
+
+            Label instructions = new Label("OSW: repeater output signaling (default).  ISW: repeater input signaling");
+            GridPane.setConstraints(instructions, 2, 0);
+            gridPane.getChildren().addAll(instructions);
 
             mDecoderPane.setContent(gridPane);
         }

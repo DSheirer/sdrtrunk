@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.gui.control;
 
-import io.github.dsheirer.gui.playlist.alias.AliasConfigurationEditor;
+import io.github.dsheirer.gui.playlist.alias.AliasItemEditor;
 import javafx.scene.control.TextFormatter;
 import javafx.util.converter.IntegerStringConverter;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ import java.util.function.UnaryOperator;
  */
 public class IntegerFormatter extends TextFormatter<Integer>
 {
-    private static final Logger mLog = LoggerFactory.getLogger(AliasConfigurationEditor.class);
+    private static final Logger mLog = LoggerFactory.getLogger(AliasItemEditor.class);
 
     /**
      * Constructs an instance

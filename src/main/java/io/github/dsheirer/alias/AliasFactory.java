@@ -24,53 +24,29 @@ package io.github.dsheirer.alias;
 import io.github.dsheirer.alias.action.AliasAction;
 import io.github.dsheirer.alias.action.AliasActionType;
 import io.github.dsheirer.alias.action.beep.BeepAction;
-import io.github.dsheirer.alias.action.beep.BeepActionEditor;
 import io.github.dsheirer.alias.action.clip.ClipAction;
-import io.github.dsheirer.alias.action.clip.ClipActionEditor;
 import io.github.dsheirer.alias.action.script.ScriptAction;
-import io.github.dsheirer.alias.action.script.ScriptActionEditor;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.alias.id.broadcast.BroadcastChannelEditor;
-import io.github.dsheirer.alias.id.esn.ESNEditor;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
-import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncIDEditor;
 import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
-import io.github.dsheirer.alias.id.legacy.mdc.MDC1200IDEditor;
-import io.github.dsheirer.alias.id.legacy.mobileID.MINEditor;
 import io.github.dsheirer.alias.id.legacy.mobileID.Min;
 import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
-import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327IDEditor;
 import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordable;
-import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordableEditor;
 import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
-import io.github.dsheirer.alias.id.legacy.siteID.SiteIDEditor;
 import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
-import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupIDEditor;
 import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
-import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueIDEditor;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
-import io.github.dsheirer.alias.id.lojack.LoJackIDEditor;
 import io.github.dsheirer.alias.id.priority.Priority;
-import io.github.dsheirer.alias.id.priority.PriorityEditor;
 import io.github.dsheirer.alias.id.radio.Radio;
-import io.github.dsheirer.alias.id.radio.RadioEditor;
 import io.github.dsheirer.alias.id.radio.RadioRange;
-import io.github.dsheirer.alias.id.radio.RadioRangeEditor;
 import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.record.RecordEditor;
-import io.github.dsheirer.alias.id.status.StatusIDEditor;
 import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupEditor;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupRangeEditor;
-import io.github.dsheirer.audio.broadcast.BroadcastModel;
-import io.github.dsheirer.gui.editor.Editor;
-import io.github.dsheirer.gui.editor.EmptyEditor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,11 +87,13 @@ public class AliasFactory
             case RADIO_ID:
                 Radio originalRadio = (Radio)id;
                 Radio copyRadio = new Radio(originalRadio.getProtocol(), originalRadio.getValue());
+                copyRadio.setOverlap(originalRadio.overlapProperty().get());
                 return copyRadio;
             case RADIO_ID_RANGE:
                 RadioRange originalRadioRange = (RadioRange)id;
                 RadioRange copyRadioRange = new RadioRange(originalRadioRange.getProtocol(), originalRadioRange.getMinRadio(),
                     originalRadioRange.getMaxRadio());
+                copyRadioRange.setOverlap(originalRadioRange.overlapProperty().get());
                 return copyRadioRange;
             case RECORD:
                 return new Record();
@@ -128,20 +106,24 @@ public class AliasFactory
                 UserStatusID originalUserStatusID = (UserStatusID)id;
                 UserStatusID copyUserStatusID = new UserStatusID();
                 copyUserStatusID.setStatus(originalUserStatusID.getStatus());
+                copyUserStatusID.setOverlap(originalUserStatusID.overlapProperty().get());
                 return copyUserStatusID;
             case TALKGROUP:
                 Talkgroup originalTalkgroup = (Talkgroup)id;
                 Talkgroup copyTalkgroup = new Talkgroup(originalTalkgroup.getProtocol(), originalTalkgroup.getValue());
+                copyTalkgroup.setOverlap(originalTalkgroup.overlapProperty().get());
                 return copyTalkgroup;
             case TALKGROUP_RANGE:
                 TalkgroupRange originalRange = (TalkgroupRange)id;
                 TalkgroupRange copyRange = new TalkgroupRange(originalRange.getProtocol(), originalRange.getMinTalkgroup(),
                     originalRange.getMaxTalkgroup());
+                copyRange.setOverlap(originalRange.overlapProperty().get());
                 return copyRange;
             case UNIT_STATUS:
                 UnitStatusID originalUnitStatus = (UnitStatusID)id;
                 UnitStatusID copyUnitStatusID = new UnitStatusID();
                 copyUnitStatusID.setStatus(originalUnitStatus.getStatus());
+                copyUnitStatusID.setOverlap(originalUnitStatus.overlapProperty().get());
                 return copyUnitStatusID;
 
             //Legacy identifiers ... not supported
@@ -221,77 +203,6 @@ public class AliasFactory
         }
 
         return copy;
-    }
-
-    public static Editor<AliasID> getEditor(AliasID aliasID, BroadcastModel broadcastModel)
-    {
-        if(aliasID != null)
-        {
-            switch(aliasID.getType())
-            {
-                case BROADCAST_CHANNEL:
-                    return new BroadcastChannelEditor(aliasID, broadcastModel);
-                case ESN:
-                    return new ESNEditor(aliasID);
-                case LTR_NET_UID:
-                    return new UniqueIDEditor(aliasID);
-                case LOJACK:
-                    return new LoJackIDEditor(aliasID);
-                case MIN:
-                    return new MINEditor(aliasID);
-                case PRIORITY:
-                    return new PriorityEditor(aliasID);
-                case RADIO_ID:
-                    return new RadioEditor(aliasID);
-                case RADIO_ID_RANGE:
-                    return new RadioRangeEditor(aliasID);
-                case RECORD:
-                    return new RecordEditor(aliasID);
-                case SITE:
-                    return new SiteIDEditor(aliasID);
-                case STATUS:
-                    return new StatusIDEditor(aliasID);
-                case TALKGROUP:
-                    return new TalkgroupEditor(aliasID);
-                case TALKGROUP_RANGE:
-                    return new TalkgroupRangeEditor(aliasID);
-
-                case FLEETSYNC:
-                    return new FleetsyncIDEditor(aliasID);
-                case LEGACY_TALKGROUP:
-                    return new LegacyTalkgroupIDEditor(aliasID);
-                case MDC1200:
-                    return new MDC1200IDEditor(aliasID);
-                case MPT1327:
-                    return new MPT1327IDEditor(aliasID);
-                case NON_RECORDABLE:
-                    return new NonRecordableEditor(aliasID);
-                default:
-                    break;
-            }
-        }
-
-        return new EmptyEditor<AliasID>();
-    }
-
-    public static Editor<AliasAction> getEditor(AliasAction aliasAction)
-    {
-        if(aliasAction != null)
-        {
-            switch(aliasAction.getType())
-            {
-                case BEEP:
-                    return new BeepActionEditor(aliasAction);
-                case CLIP:
-                    return new ClipActionEditor(aliasAction);
-                case SCRIPT:
-                    return new ScriptActionEditor(aliasAction);
-                default:
-                    break;
-            }
-        }
-
-        return new EmptyEditor<AliasAction>();
     }
 
     public static AliasID getAliasID(AliasIDType type)

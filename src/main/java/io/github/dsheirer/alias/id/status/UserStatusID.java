@@ -59,7 +59,9 @@ public class UserStatusID extends AliasID
 
     public String toString()
     {
-        return "User Status: " + String.format("%03d", mStatus);
+        StringBuilder sb = new StringBuilder();
+        sb.append("User Status: ").append(String.format("%03d", mStatus));
+        return sb.toString();
     }
 
     @Override

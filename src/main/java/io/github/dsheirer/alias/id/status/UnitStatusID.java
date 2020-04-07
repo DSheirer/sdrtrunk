@@ -59,7 +59,9 @@ public class UnitStatusID extends AliasID
 
     public String toString()
     {
-        return "Unit Status: " + String.format("%03d", mStatus);
+        StringBuilder sb = new StringBuilder();
+        sb.append("Unit Status: ").append(String.format("%03d", mStatus));
+        return sb.toString();
     }
 
     @Override

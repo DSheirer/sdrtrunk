@@ -22,1014 +22,373 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
-import com.google.common.eventbus.Subscribe;
-import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
-import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasFactory;
-import io.github.dsheirer.alias.action.AliasAction;
-import io.github.dsheirer.alias.action.AliasActionType;
-import io.github.dsheirer.alias.action.beep.BeepAction;
-import io.github.dsheirer.alias.action.clip.ClipAction;
-import io.github.dsheirer.alias.action.script.ScriptAction;
-import io.github.dsheirer.alias.id.AliasID;
-import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.alias.id.esn.Esn;
-import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
-import io.github.dsheirer.alias.id.radio.Radio;
-import io.github.dsheirer.alias.id.radio.RadioFormatter;
-import io.github.dsheirer.alias.id.radio.RadioRange;
-import io.github.dsheirer.alias.id.status.UnitStatusID;
-import io.github.dsheirer.alias.id.status.UserStatusID;
-import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormatter;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.alias.id.tone.TonesID;
-import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.playlist.Editor;
-import io.github.dsheirer.gui.playlist.alias.action.ActionEditor;
-import io.github.dsheirer.gui.playlist.alias.action.ActionEditorFactory;
-import io.github.dsheirer.gui.playlist.alias.action.EmptyActionEditor;
-import io.github.dsheirer.gui.playlist.alias.identifier.EmptyIdentifierEditor;
-import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditor;
-import io.github.dsheirer.gui.playlist.alias.identifier.IdentifierEditorFactory;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.preference.identifier.IntegerFormat;
-import io.github.dsheirer.protocol.Protocol;
-import javafx.beans.binding.Bindings;
-import javafx.beans.value.ChangeListener;
+import javafx.application.Platform;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.HPos;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.Menu;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TitledPane;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.text.TextAlignment;
+import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
+import jiconfont.IconCode;
 import jiconfont.icons.font_awesome.FontAwesome;
-import jiconfont.javafx.IconFontFX;
 import jiconfont.javafx.IconNode;
-import org.controlsfx.control.ToggleSwitch;
+import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
 
 /**
- * Editor for configuring aliases
+ * Editor for aliases
  */
-public class AliasConfigurationEditor extends Editor<Alias>
+public class AliasConfigurationEditor extends SplitPane
 {
     private static final Logger mLog = LoggerFactory.getLogger(AliasConfigurationEditor.class);
 
     private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
-    private EditorModificationListener mEditorModificationListener = new EditorModificationListener();
-    private IdentifierEditorModificationListener mIdentifierEditorModificationListener = new IdentifierEditorModificationListener();
-    private ActionEditorModificationListener mActionEditorModificationListener = new ActionEditorModificationListener();
-    private TextField mGroupField;
-    private TextField mNameField;
-    private GridPane mTextFieldPane;
-    private Button mSaveButton;
-    private Button mResetButton;
+    private AliasItemEditor mAliasItemEditor;
+    private TableView<Alias> mAliasTableView;
+    private Label mPlaceholderLabel;
+    private Button mNewAliasButton;
+    private Button mDeleteAliasButton;
+    private Button mCloneAliasButton;
+    private MenuButton mMoveToAliasButton;
     private VBox mButtonBox;
-    private ToggleSwitch mMonitorAudioToggleSwitch;
-    private ComboBox<Integer> mMonitorPriorityComboBox;
-    private ToggleSwitch mRecordAudioToggleSwitch;
-    private ColorPicker mColorPicker;
-    private ComboBox<Icon> mIconNodeComboBox;
-    private SuggestionProvider<String> mGroupSuggestionProvider;
-    private VBox mTitledPanesBox;
-    private TitledPane mIdentifierPane;
-    private TitledPane mStreamPane;
-    private TitledPane mActionPane;
-    private ListView<String> mAvailableStreamsView;
-    private ListView<BroadcastChannel> mSelectedStreamsView;
-    private ListView<AliasID> mIdentifiersList;
-    private ListView<AliasAction> mActionsList;
-    private Button mAddStreamButton;
-    private Button mRemoveStreamButton;
-    private MenuButton mAddIdentifierButton;
-    private Button mDeleteIdentifierButton;
-    private MenuButton mAddActionButton;
-    private Button mDeleteActionButton;
-    private VBox mActionEditorBox;
-    private VBox mIdentifierEditorBox;
-
-    private Map<AliasIDType,IdentifierEditor> mIdentifierEditorMap = new HashMap<>();
-    private EmptyIdentifierEditor mEmptyIdentifierEditor = new EmptyIdentifierEditor();
-    private IdentifierEditor mIdentifierEditor;
-
-    private Map<AliasActionType,ActionEditor> mActionEditorMap = new HashMap<>();
-    private EmptyActionEditor mEmptyActionEditor = new EmptyActionEditor();
-    private ActionEditor mActionEditor;
-
+    private HBox mSearchAndListSelectionBox;
+    private TextField mSearchField;
+    private ComboBox<String> mAliasListNameComboBox;
+    private Button mNewAliasListButton;
+    private FilteredList<Alias> mAliasFilteredList;
+    private AliasFilterMonitor mAliasFilterMonitor;
 
     public AliasConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
         mUserPreferences = userPreferences;
-        MyEventBus.getEventBus().register(this);
 
-        IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
+        VBox leftBox = new VBox();
+        VBox.setVgrow(getAliasTableView(), Priority.ALWAYS);
+        leftBox.getChildren().addAll(getSearchAndListSelectionBox(), getAliasTableView());
 
-        setMaxWidth(Double.MAX_VALUE);
+        HBox topBox = new HBox();
+        HBox.setHgrow(leftBox, Priority.ALWAYS);
+        topBox.getChildren().addAll(leftBox, getButtonBox());
 
-        VBox vbox = new VBox();
-        vbox.getChildren().addAll(getTextFieldPane(), getTitledPanesBox());
-
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setContent(vbox);
-
-        HBox hbox = new HBox();
-        hbox.setMaxWidth(Double.MAX_VALUE);
-        hbox.setSpacing(10);
-        HBox.setHgrow(scrollPane, Priority.ALWAYS);
-        HBox.setHgrow(getButtonBox(), Priority.NEVER);
-        hbox.getChildren().addAll(scrollPane, getButtonBox());
-
-        getChildren().add(hbox);
+        setOrientation(Orientation.VERTICAL);
+        getItems().addAll(topBox, getAliasItemEditor());
     }
 
-
-    @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
+    /**
+     * Request to show the specified alias in the editor.
+     *
+     * Note: this must be called on the FX platform thread
+     * @param alias to show
+     */
+    public void show(Alias alias)
     {
-        mLog.debug("Preference updated: " + preferenceType);
-        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
-        {
-            //When the talkgroup format changes, refresh any alias identifiers in the identifier list so that the
-            //display string is correctly formatted.
-            for(AliasID id: mIdentifiersList.getItems())
-            {
-                id.valueProperty().setValue(null);
-                id.updateValueProperty();
-            }
-        }
-
-        //Re-set the selected identifier to force it to update controls with the preference change.
-        AliasID selected = getIdentifiersList().getSelectionModel().getSelectedItem();
-
-        if(selected != null)
-        {
-            getIdentifierEditor().setItem(selected);
-        }
-    }
-
-    @Override
-    public void setItem(Alias alias)
-    {
-        super.setItem(alias);
-
-        refreshAutoCompleteBindings();
-
-        boolean disable = (alias == null);
-        getGroupField().setDisable(disable);
-        getNameField().setDisable(disable);
-        getRecordAudioToggleSwitch().setDisable(disable);
-        getColorPicker().setDisable(disable);
-        getMonitorAudioToggleSwitch().setDisable(disable);
-        getIconNodeComboBox().setDisable(disable);
-
-        getIdentifiersList().setDisable(disable);
-        getIdentifiersList().getItems().clear();
-        getAddIdentifierButton().setDisable(disable);
-
-        getActionsList().setDisable(disable);
-        getActionsList().getItems().clear();
-        getAddActionButton().setDisable(disable);
-
-        updateStreamViews();
-
+        mLog.debug("Showing: " + alias.getName());
         if(alias != null)
         {
-            getGroupField().setText(alias.getGroup());
-            getNameField().setText(alias.getName());
-            getRecordAudioToggleSwitch().setSelected(alias.isRecordable());
+            String aliasList = alias.getAliasListName();
 
-            Icon icon = null;
-            String iconName = alias.getIconName();
-            if(iconName != null)
+            if(aliasList == null || aliasList.isEmpty())
             {
-                icon = mPlaylistManager.getIconManager().getModel().getIcon(iconName);
-            }
-            getIconNodeComboBox().getSelectionModel().select(icon);
-
-            int monitorPriority = alias.getPlaybackPriority();
-
-            boolean canMonitor = (monitorPriority != io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR);
-            getMonitorAudioToggleSwitch().setSelected(canMonitor);
-
-            if(canMonitor && monitorPriority != io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY)
-            {
-                getMonitorPriorityComboBox().getSelectionModel().select(monitorPriority);
-            }
-            else
-            {
-                getMonitorPriorityComboBox().getSelectionModel().select(null);
+                aliasList = AliasModel.NO_ALIAS_LIST;
             }
 
-            Color color = ColorUtil.fromInteger(alias.getColor());
-            getColorPicker().setValue(color);
+            getAliasListNameComboBox().getSelectionModel().select(aliasList);
+            getAliasTableView().getSelectionModel().clearSelection();
+            getAliasTableView().getSelectionModel().select(alias);
+            getAliasTableView().scrollTo(alias);
+        }
+    }
 
-            //Only add non-audio identifiers to the list -- audio identifiers are managed separately
-            for(AliasID aliasID: alias.getAliasIdentifiers())
+    private void setAlias(Alias alias)
+    {
+        //Prompt the user to save if the contents of the current channel editor have been modified
+        if(getAliasItemEditor().modifiedProperty().get())
+        {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.getButtonTypes().clear();
+            alert.getButtonTypes().addAll(ButtonType.NO, ButtonType.YES);
+            alert.setTitle("Save Changes");
+            alert.setHeaderText("Alias configuration has been modified");
+            alert.setContentText("Do you want to save these changes?");
+            alert.initOwner(((Node)getButtonBox()).getScene().getWindow());
+
+            //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
+            alert.setResizable(true);
+            alert.onShownProperty().addListener(e -> {
+                Platform.runLater(() -> alert.setResizable(false));
+            });
+
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if(result.get() == ButtonType.YES)
             {
-                if(!aliasID.isAudioIdentifier())
-                {
-                    AliasID copy = AliasFactory.copyOf(aliasID);
-
-                    if(copy != null)
-                    {
-                        getIdentifiersList().getItems().add(copy);
-                    }
-                    else
-                    {
-                        //Use the original, but changes won't be reversible.  This should only impact legacy
-                        //identifiers which can't be edited anyway
-                        getIdentifiersList().getItems().add(aliasID);
-                    }
-                }
+                getAliasItemEditor().save();
             }
+        }
 
-            for(AliasAction original: alias.getAliasActions())
-            {
-                AliasAction copy = AliasFactory.copyOf(original);
+        getCloneAliasButton().setDisable(alias == null || getAliasTableView().getSelectionModel().getSelectedItems().size() > 1);
+        getDeleteAliasButton().setDisable(alias == null);
+        getMoveToAliasButton().setDisable(alias == null);
 
-                if(copy != null)
-                {
-                    getActionsList().getItems().add(copy);
-                }
-                else
-                {
-                    mLog.warn("Unable to create copy of alias action [" + original.getType() +
-                        "] for alias [" + alias.getName() + "] - action will be lost if alias is saved");
-                }
-            }
+        if(getAliasTableView().getSelectionModel().getSelectedItems().size() <= 1)
+        {
+            getAliasItemEditor().setItem(alias);
         }
         else
         {
-            getGroupField().setText(null);
-            getNameField().setText(null);
-            getRecordAudioToggleSwitch().setSelected(false);
-            getColorPicker().setValue(Color.BLACK);
-            getMonitorPriorityComboBox().getSelectionModel().select(null);
-            getMonitorAudioToggleSwitch().setSelected(false);
+            getAliasItemEditor().setItem(null);
         }
-
-        modifiedProperty().set(false);
     }
 
-    @Override
-    public void save()
+    private AliasItemEditor getAliasItemEditor()
     {
-        if(modifiedProperty().get())
+        if(mAliasItemEditor == null)
         {
-            Alias alias = getItem();
+            mAliasItemEditor = new AliasItemEditor(mPlaylistManager, mUserPreferences);
+        }
 
-            if(alias != null)
+        return mAliasItemEditor;
+    }
+
+    private HBox getSearchAndListSelectionBox()
+    {
+        if(mSearchAndListSelectionBox == null)
+        {
+            mSearchAndListSelectionBox = new HBox();
+            mSearchAndListSelectionBox.setAlignment(Pos.CENTER_LEFT);
+            mSearchAndListSelectionBox.setPadding(new Insets(10, 0, 10, 10));
+            mSearchAndListSelectionBox.setSpacing(5);
+
+
+            Label listLabel = new Label("Alias List");
+            Label searchLabel = new Label("Search");
+            searchLabel.setAlignment(Pos.CENTER_RIGHT);
+
+            HBox searchBox = new HBox();
+            searchBox.setSpacing(5);
+            searchBox.getChildren().addAll(searchLabel, getSearchField());
+            HBox.setHgrow(searchBox, Priority.ALWAYS);
+            searchBox.setAlignment(Pos.BASELINE_RIGHT);
+
+            mSearchAndListSelectionBox.getChildren().addAll(listLabel, getAliasListNameComboBox(),
+                getNewAliasListButton(), searchBox);
+        }
+
+        return mSearchAndListSelectionBox;
+    }
+
+    private TextField getSearchField()
+    {
+        if(mSearchField == null)
+        {
+            mSearchField = TextFields.createClearableTextField();
+
+        }
+
+        return mSearchField;
+    }
+
+    private ComboBox<String> getAliasListNameComboBox()
+    {
+        if(mAliasListNameComboBox == null)
+        {
+            mAliasListNameComboBox = new ComboBox<>(mPlaylistManager.getAliasModel().aliasListNames());
+            mAliasListNameComboBox.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                    getNewAliasButton().setDisable(newValue == null || newValue.contentEquals(AliasModel.NO_ALIAS_LIST));
+                });
+
+            if(mAliasListNameComboBox.getItems().size() > 1)
             {
-                alias.setGroup(getGroupField().getText());
-                alias.setName(getNameField().getText());
-                alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
-                alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
-
-                boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
-                Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
-
-                Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
-                alias.setIconName(icon != null ? icon.getName() : null);
-
-                if(canMonitor)
+                if(!mAliasListNameComboBox.getItems().get(0).contentEquals(AliasModel.NO_ALIAS_LIST))
                 {
-                    if(priority == null)
-                    {
-                        priority = io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY;
-                    }
-
-                    alias.setCallPriority(priority);
+                    mAliasListNameComboBox.getSelectionModel().select(0);
                 }
                 else
                 {
-                    alias.setCallPriority(io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR);
-                }
-
-                //Store broadcast streaming audio channels
-                alias.removeAllBroadcastChannels();
-                for(BroadcastChannel selected: getSelectedStreamsView().getItems())
-                {
-                    alias.addAliasID(selected);
-                }
-
-                //Store remaining non-audio identifiers
-                alias.removeNonAudioIdentifiers();
-                for(AliasID aliasID: getIdentifiersList().getItems())
-                {
-                    alias.addAliasID(aliasID);
-                }
-
-                //Remove and replace alias actions
-                alias.removeAllActions();
-                for(AliasAction aliasAction: getActionsList().getItems())
-                {
-                    alias.addAliasAction(aliasAction);
+                    mAliasListNameComboBox.getSelectionModel().select(1);
                 }
             }
-
-            modifiedProperty().set(false);
-        }
-    }
-
-    @Override
-    public void dispose()
-    {
-    }
-
-    private VBox getTitledPanesBox()
-    {
-        if(mTitledPanesBox == null)
-        {
-            mTitledPanesBox = new VBox();
-            mTitledPanesBox.setMaxWidth(Double.MAX_VALUE);
-            mTitledPanesBox.getChildren().addAll(getIdentifierPane(), getStreamPane(), getActionPane());
-        }
-
-        return mTitledPanesBox;
-    }
-
-    private TitledPane getIdentifierPane()
-    {
-        if(mIdentifierPane == null)
-        {
-            VBox buttonsBox = new VBox();
-            buttonsBox.setSpacing(10);
-            buttonsBox.getChildren().addAll(getAddIdentifierButton(), getDeleteIdentifierButton());
-
-            HBox identifiersAndButtonsBox = new HBox();
-            identifiersAndButtonsBox.setSpacing(10);
-            HBox.setHgrow(getIdentifierEditorBox(), Priority.ALWAYS);
-            identifiersAndButtonsBox.getChildren().addAll(getIdentifierEditorBox(), buttonsBox);
-
-            mIdentifierPane = new TitledPane("Identifiers", identifiersAndButtonsBox);
-        }
-
-        return mIdentifierPane;
-    }
-
-    private VBox getIdentifierEditorBox()
-    {
-        if(mIdentifierEditorBox == null)
-        {
-            mIdentifierEditorBox = new VBox();
-            mIdentifierEditorBox.setSpacing(10);
-            mIdentifierEditorBox.getChildren().addAll(getIdentifiersList(), getIdentifierEditor());
-        }
-
-        return mIdentifierEditorBox;
-    }
-
-    private Editor<AliasID> getIdentifierEditor()
-    {
-        if(mIdentifierEditor == null)
-        {
-            mIdentifierEditor = mEmptyIdentifierEditor;
-        }
-
-        return mIdentifierEditor;
-    }
-
-    private Editor<AliasAction> getActionEditor()
-    {
-        if(mActionEditor == null)
-        {
-            mActionEditor = mEmptyActionEditor;
-        }
-
-        return mActionEditor;
-    }
-
-    private void setAction(AliasAction aliasAction)
-    {
-        ActionEditor editor = null;
-
-        if(aliasAction != null)
-        {
-            editor = mActionEditorMap.get(aliasAction.getType());
-
-            if(editor == null)
+            else if(mAliasListNameComboBox.getItems().size() == 1)
             {
-                editor = ActionEditorFactory.getEditor(aliasAction.getType(), mUserPreferences);
-                mActionEditorMap.put(aliasAction.getType(), editor);
-            }
+                mAliasListNameComboBox.getSelectionModel().select(0);
+           }
         }
 
-        getDeleteActionButton().setDisable(aliasAction == null);
-
-        if(editor == null)
-        {
-            editor = mEmptyActionEditor;
-        }
-
-        //Remove the modification listener from the editor
-        if(mActionEditor != null)
-        {
-            mActionEditor.modifiedProperty().removeListener(mActionEditorModificationListener);
-        }
-
-        if(mActionEditor != editor)
-        {
-            getActionEditorBox().getChildren().remove(mActionEditor);
-            mActionEditor = editor;
-            getActionEditorBox().getChildren().add(mActionEditor);
-        }
-
-        mActionEditor.setItem(aliasAction);
-
-        //Add the modification listener back to the editor
-        mActionEditor.modifiedProperty().addListener(mActionEditorModificationListener);
+        return mAliasListNameComboBox;
     }
 
-    private ListView<AliasAction> getActionsList()
+    private Button getNewAliasListButton()
     {
-        if(mActionsList == null)
+        if(mNewAliasListButton == null)
         {
-            mActionsList = new ListView<>(FXCollections.observableArrayList(AliasAction.extractor()));
-            mActionsList.setPrefHeight(75);
-            mActionsList.setDisable(true);
-            mActionsList.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> setAction(newValue));
-        }
+            mNewAliasListButton = new Button("New Alias List");
+            mNewAliasListButton.setOnAction(event -> {
+                TextInputDialog dialog = new TextInputDialog();
+                dialog.setTitle("Create New Alias List");
+                dialog.setHeaderText("Please enter an alias list name (max 25 chars).");
+                dialog.setContentText("Name:");
+                dialog.getEditor().setTextFormatter(new TextFormatter<String>(new MaxLengthUnaryOperator(25)));
+                Optional<String> result = dialog.showAndWait();
 
-        return mActionsList;
-    }
+                result.ifPresent(s -> {
+                    String name = result.get();
 
-    private MenuButton getAddActionButton()
-    {
-        if(mAddActionButton == null)
-        {
-            mAddActionButton = new MenuButton("Add Action");
-            mAddActionButton.setDisable(true);
-            mAddActionButton.setMaxWidth(Double.MAX_VALUE);
-            mAddActionButton.getItems().addAll(new AddAudioClipActionItem(), new AddBeepActionItem(),
-                new AddScriptActionItem());
-        }
-
-        return mAddActionButton;
-    }
-
-    private Button getDeleteActionButton()
-    {
-        if(mDeleteActionButton == null)
-        {
-            mDeleteActionButton = new Button("Delete Action");
-            mDeleteActionButton.setDisable(true);
-            mDeleteActionButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteActionButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    AliasAction selected = getActionsList().getSelectionModel().getSelectedItem();
-
-                    if(selected != null)
+                    if(name != null && !name.isEmpty())
                     {
-                        getActionsList().getItems().remove(selected);
-                        modifiedProperty().set(true);
+                        name = name.trim();
+                        mPlaylistManager.getAliasModel().addAliasList(name);
+                        getAliasListNameComboBox().getSelectionModel().select(name);
                     }
-                }
+                });
             });
         }
 
-        return mDeleteActionButton;
+        return mNewAliasListButton;
     }
 
-    /**
-     * Updates the editor and loads the alias id for editing/viewing
-     * @param aliasID
-     */
-    private void setIdentifier(AliasID aliasID)
+    private TableView<Alias> getAliasTableView()
     {
-        IdentifierEditor editor = null;
-
-        if(aliasID != null)
+        if(mAliasTableView == null)
         {
-            editor = mIdentifierEditorMap.get(aliasID.getType());
+            mAliasTableView = new TableView<>();
 
-            if(editor == null)
-            {
-                editor = IdentifierEditorFactory.getEditor(aliasID.getType(), mUserPreferences);
-                mIdentifierEditorMap.put(aliasID.getType(), editor);
-            }
-        }
+            TableColumn nameColumn = new TableColumn();
+            nameColumn.setText("Alias");
+            nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
+            nameColumn.setPrefWidth(140);
 
-        getDeleteIdentifierButton().setDisable(aliasID == null);
+            TableColumn groupColumn = new TableColumn();
+            groupColumn.setText("Group");
+            groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
+            groupColumn.setPrefWidth(140);
 
-        if(editor == null)
-        {
-            editor = mEmptyIdentifierEditor;
-        }
+            TableColumn<Alias,Integer> colorColumn = new TableColumn("Color");
+            colorColumn.setCellValueFactory(new PropertyValueFactory<>("color"));
+            colorColumn.setCellFactory(new ColorizedCell());
 
-        //Remove the modification listener from the editor
-        if(mIdentifierEditor != null)
-        {
-            mIdentifierEditor.modifiedProperty().removeListener(mIdentifierEditorModificationListener);
-        }
+            TableColumn<Alias,String> iconColumn = new TableColumn("Icon");
+            iconColumn.setCellValueFactory(new PropertyValueFactory<>("iconName"));
+            iconColumn.setCellFactory(new IconTableCellFactory());
 
-        if(mIdentifierEditor != editor)
-        {
-            getIdentifierEditorBox().getChildren().remove(mIdentifierEditor);
-            mIdentifierEditor = editor;
-            getIdentifierEditorBox().getChildren().add(mIdentifierEditor);
-        }
+            TableColumn<Alias,Integer> priorityColumn = new TableColumn("Listen");
+            priorityColumn.setCellFactory(new PriorityCellFactory());
+            priorityColumn.setCellValueFactory(new PropertyValueFactory<>("priority"));
 
-        mIdentifierEditor.setItem(aliasID);
+            TableColumn<Alias,Boolean> recordColumn = new TableColumn("Record");
+            recordColumn.setCellValueFactory(new PropertyValueFactory<>("recordable"));
+            recordColumn.setCellFactory(new IconCell(FontAwesome.SQUARE, Color.RED));
 
-        //Add the modification listener back to the editor
-        mIdentifierEditor.modifiedProperty().addListener(mIdentifierEditorModificationListener);
-    }
+            TableColumn<Alias,Boolean> streamColumn = new TableColumn("Stream");
+            streamColumn.setCellValueFactory(new PropertyValueFactory<>("streamable"));
+            streamColumn.setCellFactory(new IconCell(FontAwesome.VOLUME_UP, Color.DARKBLUE));
 
-    private ListView<AliasID> getIdentifiersList()
-    {
-        if(mIdentifiersList == null)
-        {
-            mIdentifiersList = new ListView<>(FXCollections.observableArrayList(AliasID.extractor()));
-            mIdentifiersList.setDisable(true);
-            mIdentifiersList.setPrefHeight(75);
-            mIdentifiersList.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> setIdentifier(newValue));
-            mIdentifiersList.setCellFactory(param -> new AliasIdentifierCell());
-        }
+            TableColumn<Alias,Integer> idsColumn = new TableColumn("IDs");
+            idsColumn.setCellValueFactory(new IdentifierCountCell());
 
-        return mIdentifiersList;
-    }
-
-
-
-    private MenuButton getAddIdentifierButton()
-    {
-        if(mAddIdentifierButton == null)
-        {
-            mAddIdentifierButton = new MenuButton("Add Identifier");
-            mAddIdentifierButton.setMaxWidth(Double.MAX_VALUE);
-            mAddIdentifierButton.setDisable(true);
-
-            Menu talkgroup = new Menu("Talkgroup");
-            for(Protocol protocol: Protocol.TALKGROUP_PROTOCOLS)
-            {
-                talkgroup.getItems().add(new AddTalkgroupItem(protocol));
-            }
-            mAddIdentifierButton.getItems().add(talkgroup);
-
-            Menu talkgroupRange = new Menu("Talkgroup Range");
-            for(Protocol protocol: Protocol.TALKGROUP_PROTOCOLS)
-            {
-                talkgroupRange.getItems().add(new AddTalkgroupRangeItem(protocol));
-            }
-            mAddIdentifierButton.getItems().add(talkgroupRange);
-
-            mAddIdentifierButton.getItems().add(new SeparatorMenuItem());
-
-            Menu radioId = new Menu("Radio ID");
-            for(Protocol protocol: Protocol.RADIO_ID_PROTOCOLS)
-            {
-                radioId.getItems().add(new AddRadioIdItem(protocol));
-            }
-            mAddIdentifierButton.getItems().add(radioId);
-
-            Menu radioIdRange = new Menu("Radio ID Range");
-            for(Protocol protocol: Protocol.RADIO_ID_PROTOCOLS)
-            {
-                radioIdRange.getItems().add(new AddRadioIdRangeItem(protocol));
-            }
-            mAddIdentifierButton.getItems().add(radioIdRange);
-
-            mAddIdentifierButton.getItems().add(new SeparatorMenuItem());
-            mAddIdentifierButton.getItems().add(new AddUnitStatusItem());
-            mAddIdentifierButton.getItems().add(new AddUserStatusItem());
-            mAddIdentifierButton.getItems().add(new SeparatorMenuItem());
-            Menu tonesMenu = new Menu("Tones");
-            tonesMenu.getItems().add(new AddTonesItem("P25 Phase 2"));
-            mAddIdentifierButton.getItems().add(tonesMenu);
-            mAddIdentifierButton.getItems().add(new SeparatorMenuItem());
-            mAddIdentifierButton.getItems().add(new AddEsnItem());
-            mAddIdentifierButton.getItems().add(new SeparatorMenuItem());
-            mAddIdentifierButton.getItems().add(new AddLojackItem());
-        }
-
-        return mAddIdentifierButton;
-    }
-
-    private Button getDeleteIdentifierButton()
-    {
-        if(mDeleteIdentifierButton == null)
-        {
-            mDeleteIdentifierButton = new Button("Delete Identifier");
-            mDeleteIdentifierButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteIdentifierButton.setDisable(true);
-            mDeleteIdentifierButton.setOnAction(event -> {
-                AliasID selected = getIdentifiersList().getSelectionModel().getSelectedItem();
-
-                if(selected != null)
+            TableColumn<Alias,Boolean> errorsColumn = new TableColumn<>("Error");
+            errorsColumn.setPrefWidth(80);
+            errorsColumn.setCellValueFactory(new PropertyValueFactory<>("overlap"));
+            errorsColumn.setCellFactory(param -> {
+                TableCell<Alias,Boolean> tableCell = new TableCell<>()
                 {
-                    getIdentifiersList().getItems().remove(selected);
-                    modifiedProperty().set(true);
-                }
-            });
-        }
+                    @Override
+                    protected void updateItem(Boolean item, boolean empty)
+                    {
+                        setAlignment(Pos.CENTER);
+                        setText(null);
 
-        return mDeleteIdentifierButton;
-    }
+                        if(empty || item == null || !item)
+                        {
+                            setGraphic(null);
+                        }
+                        else
+                        {
+                            IconNode iconNode = new IconNode(FontAwesome.EXCLAMATION_CIRCLE);
+                            iconNode.setFill(Color.RED);
+                            setGraphic(iconNode);
+                            setText("Identifier Overlap");
+                        }
+                    }
+                };
 
-    private TitledPane getStreamPane()
-    {
-        if(mStreamPane == null)
-        {
-            VBox buttonBox = new VBox();
-            buttonBox.setMaxHeight(Double.MAX_VALUE);
-            buttonBox.setAlignment(Pos.CENTER);
-            buttonBox.setSpacing(5);
-            buttonBox.getChildren().addAll(new Label(" "), getAddStreamButton(), getRemoveStreamButton());
-
-            VBox availableBox = new VBox();
-            VBox.setVgrow(getAvailableStreamsView(), Priority.ALWAYS);
-            availableBox.getChildren().addAll(new Label("Available"), getAvailableStreamsView());
-
-            VBox selectedBox = new VBox();
-            VBox.setVgrow(getSelectedStreamsView(), Priority.ALWAYS);
-            selectedBox.getChildren().addAll(new Label("Selected"),getSelectedStreamsView());
-
-            HBox hbox = new HBox();
-            hbox.setSpacing(10);
-            HBox.setHgrow(availableBox, Priority.ALWAYS);
-            HBox.setHgrow(selectedBox, Priority.ALWAYS);
-            hbox.getChildren().addAll(availableBox, buttonBox, selectedBox);
-
-            mStreamPane = new TitledPane("Streaming", hbox);
-            mStreamPane.setExpanded(false);
-        }
-
-        return mStreamPane;
-    }
-
-    private void updateStreamViews()
-    {
-        getAvailableStreamsView().getItems().clear();
-        getSelectedStreamsView().getItems().clear();
-        getAvailableStreamsView().setDisable(getItem() == null);
-        getSelectedStreamsView().setDisable(getItem() == null);
-
-        if(getItem() != null)
-        {
-            List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
-
-            Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
-
-            for(BroadcastChannel channel: selectedChannels)
-            {
-                if(availableStreams.contains(channel.getChannelName()))
-                {
-                    availableStreams.remove(channel.getChannelName());
-                }
-            }
-
-            getSelectedStreamsView().getItems().addAll(selectedChannels);
-            getAvailableStreamsView().getItems().addAll(availableStreams);
-        }
-    }
-
-    private ListView<String> getAvailableStreamsView()
-    {
-        if(mAvailableStreamsView == null)
-        {
-            mAvailableStreamsView = new ListView<>();
-            mAvailableStreamsView.setDisable(true);
-            mAvailableStreamsView.setPrefHeight(75);
-        }
-
-        return mAvailableStreamsView;
-    }
-
-    private ListView<BroadcastChannel> getSelectedStreamsView()
-    {
-        if(mSelectedStreamsView == null)
-        {
-            mSelectedStreamsView = new ListView<>();
-            mSelectedStreamsView.setDisable(true);
-            mSelectedStreamsView.setPrefHeight(75);
-            mSelectedStreamsView.getItems().addListener((ListChangeListener<BroadcastChannel>)c -> {
-                String title = "Streaming";
-
-                if(getSelectedStreamsView().getItems().size() > 0)
-                {
-                    title += " (" + getSelectedStreamsView().getItems().size() + ")";
-                }
-
-                getStreamPane().setText(title);
-            });
-        }
-
-        return mSelectedStreamsView;
-    }
-
-    private Button getAddStreamButton()
-    {
-        if(mAddStreamButton == null)
-        {
-            mAddStreamButton = new Button();
-            mAddStreamButton.disableProperty().bind(Bindings.isEmpty(getAvailableStreamsView().getItems())
-                    .or(Bindings.isNull(getAvailableStreamsView().getSelectionModel().selectedItemProperty())));
-            mAddStreamButton.setMaxWidth(Double.MAX_VALUE);
-            mAddStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_RIGHT));
-            mAddStreamButton.setAlignment(Pos.CENTER);
-            mAddStreamButton.setOnAction(event -> {
-                String stream = getAvailableStreamsView().getSelectionModel().getSelectedItem();
-
-                if(stream != null)
-                {
-                    getAvailableStreamsView().getItems().remove(stream);
-                    getSelectedStreamsView().getItems().add(new BroadcastChannel(stream));
-                    modifiedProperty().set(true);
-                }
+                return tableCell;
             });
 
+
+            mAliasTableView.getColumns().addAll(nameColumn, groupColumn, colorColumn, iconColumn, priorityColumn,
+                recordColumn, streamColumn, idsColumn, errorsColumn);
+
+            mAliasTableView.setPlaceholder(getPlaceholderLabel());
+
+            //Sorting and filtering for the table
+            mAliasFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
+                alias -> alias.matchesAliasList(getAliasListNameComboBox().getSelectionModel().getSelectedItem()));
+            mAliasFilterMonitor = new AliasFilterMonitor();
+
+            SortedList<Alias> sortedList = new SortedList<>(mAliasFilteredList);
+            sortedList.comparatorProperty().bind(mAliasTableView.comparatorProperty());
+            mAliasTableView.setItems(sortedList);
+            mAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            mAliasTableView.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                    setAlias(newValue);
+                });
         }
 
-        return mAddStreamButton;
+        return mAliasTableView;
     }
 
-    private Button getRemoveStreamButton()
+    private Label getPlaceholderLabel()
     {
-        if(mRemoveStreamButton == null)
+        if(mPlaceholderLabel == null)
         {
-            mRemoveStreamButton = new Button();
-            mRemoveStreamButton.disableProperty().bind(Bindings.isEmpty(getSelectedStreamsView().getItems())
-                    .or(Bindings.isNull(getSelectedStreamsView().getSelectionModel().selectedItemProperty())));
-            mRemoveStreamButton.setMaxWidth(Double.MAX_VALUE);
-            mRemoveStreamButton.setGraphic(new IconNode(FontAwesome.ANGLE_LEFT));
-            mRemoveStreamButton.setAlignment(Pos.CENTER);
-            mRemoveStreamButton.setOnAction(event -> {
-                BroadcastChannel broadcastChannel = getSelectedStreamsView().getSelectionModel().getSelectedItem();
-
-                if(broadcastChannel != null)
-                {
-                    getSelectedStreamsView().getItems().remove(broadcastChannel);
-                    getAvailableStreamsView().getItems().add(broadcastChannel.getChannelName());
-                    modifiedProperty().set(true);
-                }
-            });
+            mPlaceholderLabel = new Label("Select an Alias List and click the New button to create new aliases");
         }
 
-        return mRemoveStreamButton;
-    }
-
-    private TitledPane getActionPane()
-    {
-        if(mActionPane == null)
-        {
-            VBox buttonsBox = new VBox();
-            buttonsBox.setSpacing(10);
-            buttonsBox.getChildren().addAll(getAddActionButton(), getDeleteActionButton());
-
-            HBox hbox = new HBox();
-            hbox.setSpacing(10);
-            HBox.setHgrow(getActionEditorBox(), Priority.ALWAYS);
-            hbox.getChildren().addAll(getActionEditorBox(), buttonsBox);
-
-            mActionPane = new TitledPane("Actions", hbox);
-            mActionPane.setExpanded(false);
-        }
-
-        return mActionPane;
-    }
-
-    private VBox getActionEditorBox()
-    {
-        if(mActionEditorBox == null)
-        {
-            mActionEditorBox = new VBox();
-            mActionEditorBox.setSpacing(10);
-            mActionEditorBox.getChildren().addAll(getActionsList(), getActionEditor());
-        }
-
-        return mActionEditorBox;
-    }
-
-    private GridPane getTextFieldPane()
-    {
-        if(mTextFieldPane == null)
-        {
-            mTextFieldPane = new GridPane();
-            mTextFieldPane.setPadding(new Insets(10, 10, 10,10));
-            mTextFieldPane.setVgap(10);
-            mTextFieldPane.setHgap(10);
-
-            int row = 0;
-
-            Label nameLabel = new Label("Alias");
-            GridPane.setHalignment(nameLabel, HPos.RIGHT);
-            GridPane.setConstraints(nameLabel, 0, row);
-            mTextFieldPane.getChildren().add(nameLabel);
-            GridPane.setConstraints(getNameField(), 1, row);
-            GridPane.setHgrow(getNameField(), Priority.ALWAYS);
-            mTextFieldPane.getChildren().add(getNameField());
-
-            Label monitorAudioLabel = new Label("Listen");
-            GridPane.setHalignment(monitorAudioLabel, HPos.RIGHT);
-            GridPane.setConstraints(monitorAudioLabel, 2, row);
-            mTextFieldPane.getChildren().add(monitorAudioLabel);
-            GridPane.setConstraints(getMonitorAudioToggleSwitch(), 3, row);
-            mTextFieldPane.getChildren().add(getMonitorAudioToggleSwitch());
-
-            Label monitorPriorityLabel = new Label("Priority");
-            GridPane.setHalignment(monitorPriorityLabel, HPos.RIGHT);
-            GridPane.setConstraints(monitorPriorityLabel, 4, row);
-            mTextFieldPane.getChildren().add(monitorPriorityLabel);
-            GridPane.setConstraints(getMonitorPriorityComboBox(), 5, row);
-            mTextFieldPane.getChildren().add(getMonitorPriorityComboBox());
-
-            Label colorLabel = new Label("Color");
-            GridPane.setHalignment(colorLabel, HPos.RIGHT);
-            GridPane.setConstraints(colorLabel, 6, row);
-            mTextFieldPane.getChildren().add(colorLabel);
-            GridPane.setConstraints(getColorPicker(), 7, row);
-            mTextFieldPane.getChildren().add(getColorPicker());
-
-            Label groupLabel = new Label("Group");
-            GridPane.setHalignment(groupLabel, HPos.RIGHT);
-            GridPane.setConstraints(groupLabel, 0, ++row);
-            mTextFieldPane.getChildren().add(groupLabel);
-            GridPane.setConstraints(getGroupField(), 1, row);
-            GridPane.setHgrow(getGroupField(), Priority.ALWAYS);
-            mTextFieldPane.getChildren().add(getGroupField());
-
-            Label recordAudioLabel = new Label("Record");
-            GridPane.setHalignment(recordAudioLabel, HPos.RIGHT);
-            GridPane.setConstraints(recordAudioLabel, 2, row);
-            mTextFieldPane.getChildren().add(recordAudioLabel);
-            GridPane.setConstraints(getRecordAudioToggleSwitch(), 3, row);
-            mTextFieldPane.getChildren().add(getRecordAudioToggleSwitch());
-
-            Label iconLabel = new Label("Icon");
-            GridPane.setHalignment(iconLabel, HPos.RIGHT);
-            GridPane.setConstraints(iconLabel, 4, row);
-            mTextFieldPane.getChildren().add(iconLabel);
-            GridPane.setConstraints(getIconNodeComboBox(), 5, row, 3, 1);
-            mTextFieldPane.getChildren().add(getIconNodeComboBox());
-        }
-
-        return mTextFieldPane;
-    }
-
-    private ToggleSwitch getMonitorAudioToggleSwitch()
-    {
-        if(mMonitorAudioToggleSwitch == null)
-        {
-            mMonitorAudioToggleSwitch = new ToggleSwitch();
-            mMonitorAudioToggleSwitch.setDisable(true);
-            mMonitorAudioToggleSwitch.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mMonitorAudioToggleSwitch;
-    }
-
-    private ComboBox<Integer> getMonitorPriorityComboBox()
-    {
-        if(mMonitorPriorityComboBox == null)
-        {
-            mMonitorPriorityComboBox = new ComboBox<>();
-            mMonitorPriorityComboBox.getItems().add(null);
-            for(int x = io.github.dsheirer.alias.id.priority.Priority.MIN_PRIORITY;
-                    x < io.github.dsheirer.alias.id.priority.Priority.MAX_PRIORITY; x++)
-            {
-                mMonitorPriorityComboBox.getItems().add(x);
-            }
-
-            mMonitorPriorityComboBox.disableProperty().bind(getMonitorAudioToggleSwitch().selectedProperty().not());
-            mMonitorPriorityComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mMonitorPriorityComboBox;
-    }
-
-    private ToggleSwitch getRecordAudioToggleSwitch()
-    {
-        if(mRecordAudioToggleSwitch == null)
-        {
-            mRecordAudioToggleSwitch = new ToggleSwitch();
-            mRecordAudioToggleSwitch.setDisable(true);
-            mRecordAudioToggleSwitch.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mRecordAudioToggleSwitch;
-    }
-
-    private ColorPicker getColorPicker()
-    {
-        if(mColorPicker == null)
-        {
-            mColorPicker = new ColorPicker(Color.BLACK);
-            mColorPicker.setDisable(true);
-            mColorPicker.setEditable(true);
-            mColorPicker.setStyle("-fx-color-rect-width: 60px; -fx-color-label-visible: false;");
-            mColorPicker.setOnAction(event -> modifiedProperty().set(true));
-        }
-
-        return mColorPicker;
-    }
-
-    private ComboBox<Icon> getIconNodeComboBox()
-    {
-        if(mIconNodeComboBox == null)
-        {
-            mIconNodeComboBox = new ComboBox<>();
-            mIconNodeComboBox.setMaxWidth(Double.MAX_VALUE);
-            mIconNodeComboBox.setDisable(true);
-            mIconNodeComboBox.getItems().addAll(mPlaylistManager.getIconManager().getIcons());
-            mIconNodeComboBox.setCellFactory(new IconCellFactory());
-            mIconNodeComboBox.getSelectionModel().selectedItemProperty()
-                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mIconNodeComboBox;
-    }
-
-    /**
-     * Refreshes the system and site text field auto-completion lists.
-     */
-    private void refreshAutoCompleteBindings()
-    {
-        getGroupSuggestionProvider().clearSuggestions();
-        getGroupSuggestionProvider().addPossibleSuggestions(mPlaylistManager.getAliasModel().getGroupNames());
-    }
-
-    private SuggestionProvider<String> getGroupSuggestionProvider()
-    {
-        if(mGroupSuggestionProvider == null)
-        {
-            mGroupSuggestionProvider = SuggestionProvider.create(mPlaylistManager.getAliasModel().getGroupNames());
-        }
-
-        return mGroupSuggestionProvider;
-    }
-
-    protected TextField getGroupField()
-    {
-        if(mGroupField == null)
-        {
-            mGroupField = new TextField();
-            mGroupField.setDisable(true);
-            mGroupField.setMaxWidth(Double.MAX_VALUE);
-            mGroupField.textProperty().addListener(mEditorModificationListener);
-            new AutoCompletionTextFieldBinding<>(mGroupField, getGroupSuggestionProvider());
-        }
-
-        return mGroupField;
-    }
-
-    protected TextField getNameField()
-    {
-        if(mNameField == null)
-        {
-            mNameField = new TextField();
-            mNameField.setDisable(true);
-            mNameField.setMaxWidth(Double.MAX_VALUE);
-            mNameField.textProperty().addListener(mEditorModificationListener);
-        }
-
-        return mNameField;
+        return mPlaceholderLabel;
     }
 
     private VBox getButtonBox()
@@ -1037,463 +396,416 @@ public class AliasConfigurationEditor extends Editor<Alias>
         if(mButtonBox == null)
         {
             mButtonBox = new VBox();
+            mButtonBox.setPadding(new Insets(10, 10, 10, 10));
             mButtonBox.setSpacing(10);
-            mButtonBox.setPadding(new Insets(10, 10, 10, 0));
-            mButtonBox.getChildren().addAll(getSaveButton(), getResetButton());
+
+            Button fillerButton = new Button();
+            fillerButton.setVisible(false);
+            mButtonBox.getChildren().addAll(fillerButton, getNewAliasButton(), getCloneAliasButton(),
+                getMoveToAliasButton(), getDeleteAliasButton());
         }
 
         return mButtonBox;
     }
 
-    private Button getSaveButton()
+    private Button getNewAliasButton()
     {
-        if(mSaveButton == null)
+        if(mNewAliasButton == null)
         {
-            mSaveButton = new Button(" Save ");
-            mSaveButton.setTextAlignment(TextAlignment.CENTER);
-            mSaveButton.setMaxWidth(Double.MAX_VALUE);
-            mSaveButton.disableProperty().bind(modifiedProperty().not());
-            mSaveButton.setOnAction(event -> save());
+            mNewAliasButton = new Button("New");
+            mNewAliasButton.setDisable(true);
+            mNewAliasButton.setAlignment(Pos.CENTER);
+            mNewAliasButton.setMaxWidth(Double.MAX_VALUE);
+            mNewAliasButton.setOnAction(event -> {
+                Alias alias = new Alias();
+                alias.setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
+                mPlaylistManager.getAliasModel().addAlias(alias);
 
-        }
-
-        return mSaveButton;
-    }
-
-    private Button getResetButton()
-    {
-        if(mResetButton == null)
-        {
-            mResetButton = new Button("Reset");
-            mResetButton.setTextAlignment(TextAlignment.CENTER);
-            mResetButton.setMaxWidth(Double.MAX_VALUE);
-            mResetButton.disableProperty().bind(modifiedProperty().not());
-            mResetButton.setOnAction(event -> {
-                modifiedProperty().set(false);
-                setItem(getItem());
+                //Queue a select alias action to allow table to update filter predicate and display the alias
+                Platform.runLater(() -> {
+                    getAliasTableView().getSelectionModel().clearSelection();
+                    getAliasTableView().getSelectionModel().select(alias);
+                    getAliasTableView().scrollTo(alias);
+                });
             });
         }
 
-        return mResetButton;
+        return mNewAliasButton;
     }
 
-    /**
-     * Menu Item for adding a new ESN alias identifier
-     */
-    public class AddEsnItem extends MenuItem
+    private Button getDeleteAliasButton()
     {
-        public AddEsnItem()
+        if(mDeleteAliasButton == null)
         {
-            super("ESN");
-            setOnAction(event -> {
-                Esn esn = new Esn();
-                getIdentifiersList().getItems().add(esn);
-                getIdentifiersList().getSelectionModel().select(esn);
-                getIdentifiersList().scrollTo(esn);
-                modifiedProperty().set(true);
-            });
-        }
-    }
+            mDeleteAliasButton = new Button("Delete");
+            mDeleteAliasButton.setDisable(true);
+            mDeleteAliasButton.setMaxWidth(Double.MAX_VALUE);
+            mDeleteAliasButton.setOnAction(event -> {
 
-    /**
-     * Menu Item for adding a new lojack aliasidentifier
-     */
-    public class AddLojackItem extends MenuItem
-    {
-        public AddLojackItem()
-        {
-            super("LoJack Function/ID");
-            setOnAction(event -> {
-                LoJackFunctionAndID lojack = new LoJackFunctionAndID();
-                getIdentifiersList().getItems().add(lojack);
-                getIdentifiersList().getSelectionModel().select(lojack);
-                getIdentifiersList().scrollTo(lojack);
-                modifiedProperty().set(true);
-            });
-        }
-    }
+                boolean multiple = getAliasTableView().getSelectionModel().getSelectedItems().size() > 1;
 
-    /**
-     * Menu Item for adding a new unit status alias identifier
-     */
-    public class AddUnitStatusItem extends MenuItem
-    {
-        public AddUnitStatusItem()
-        {
-            super("Unit Status");
-            setOnAction(event -> {
-                UnitStatusID unitStatus = new UnitStatusID();
-                getIdentifiersList().getItems().add(unitStatus);
-                getIdentifiersList().getSelectionModel().select(unitStatus);
-                getIdentifiersList().scrollTo(unitStatus);
-                modifiedProperty().set(true);
-            });
-        }
-    }
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                    "Do you want to delete the selected alias" + (multiple ? "es?" : "?"),
+                    ButtonType.NO, ButtonType.YES);
+                alert.setTitle("Delete Alias");
+                alert.setHeaderText("Are you sure?");
+                alert.initOwner(((Node)getDeleteAliasButton()).getScene().getWindow());
 
-    /**
-     * Menu Item for adding a new user status alias identifier
-     */
-    public class AddUserStatusItem extends MenuItem
-    {
-        public AddUserStatusItem()
-        {
-            super("User Status");
-            setOnAction(event -> {
-                UserStatusID userStatus = new UserStatusID();
-                getIdentifiersList().getItems().add(userStatus);
-                getIdentifiersList().getSelectionModel().select(userStatus);
-                getIdentifiersList().scrollTo(userStatus);
-                modifiedProperty().set(true);
-            });
-        }
-    }
+                Optional<ButtonType> result = alert.showAndWait();
 
-    public class AddTonesItem extends MenuItem
-    {
-        public AddTonesItem(String label)
-        {
-            super(label);
-            setOnAction(event -> {
-                TonesID tonesId = new TonesID();
-                getIdentifiersList().getItems().add(tonesId);
-                getIdentifiersList().getSelectionModel().select(tonesId);
-                getIdentifiersList().scrollTo(tonesId);
-                modifiedProperty().set(true);
-            });
-        }
-    }
-
-    /**
-     * Menu Item for adding a new protocol-specific Radio ID alias identifier
-     */
-    public class AddRadioIdItem extends MenuItem
-    {
-        private Protocol mProtocol;
-
-        public AddRadioIdItem(Protocol protocol)
-        {
-            super(protocol.toString());
-            mProtocol = protocol;
-            setOnAction(event -> {
-                Radio radioId = new Radio();
-                radioId.setProtocol(mProtocol);
-                getIdentifiersList().getItems().add(radioId);
-                getIdentifiersList().getSelectionModel().select(radioId);
-                getIdentifiersList().scrollTo(radioId);
-                modifiedProperty().set(true);
-            });
-        }
-    }
-
-    /**
-     * Menu Item for adding a new protocol-specific Radio ID range alias identifier
-     */
-    public class AddRadioIdRangeItem extends MenuItem
-    {
-        private Protocol mProtocol;
-
-        public AddRadioIdRangeItem(Protocol protocol)
-        {
-            super(protocol.toString());
-            mProtocol = protocol;
-            setOnAction(event -> {
-                RadioRange radioRange = new RadioRange();
-                radioRange.setProtocol(mProtocol);
-                getIdentifiersList().getItems().add(radioRange);
-                getIdentifiersList().getSelectionModel().select(radioRange);
-                getIdentifiersList().scrollTo(radioRange);
-                modifiedProperty().set(true);
-            });
-        }
-    }
-
-    /**
-     * Menu Item for adding a new protocol-specific Talkgroup alias identifier
-     */
-    public class AddTalkgroupItem extends MenuItem
-    {
-        private Protocol mProtocol;
-
-        public AddTalkgroupItem(Protocol protocol)
-        {
-            super(protocol.toString());
-            mProtocol = protocol;
-            setOnAction(event -> {
-                Talkgroup talkgroup = new Talkgroup();
-                talkgroup.setProtocol(mProtocol);
-                getIdentifiersList().getItems().add(talkgroup);
-                getIdentifiersList().getSelectionModel().select(talkgroup);
-                getIdentifiersList().scrollTo(talkgroup);
-                modifiedProperty().set(true);
-            });
-        }
-    }
-
-    /**
-     * Menu Item for adding a new protocol-specific Talkgroup Range alias identifier
-     */
-    public class AddTalkgroupRangeItem extends MenuItem
-    {
-        private Protocol mProtocol;
-
-        public AddTalkgroupRangeItem(Protocol protocol)
-        {
-            super(protocol.toString());
-            mProtocol = protocol;
-            setOnAction(event -> {
-                TalkgroupRange talkgroupRange = new TalkgroupRange();
-                talkgroupRange.setProtocol(mProtocol);
-                getIdentifiersList().getItems().add(talkgroupRange);
-                getIdentifiersList().getSelectionModel().select(talkgroupRange);
-                getIdentifiersList().scrollTo(talkgroupRange);
-                modifiedProperty().set(true);
-            });
-        }
-    }
-
-    /**
-     * Menu item to add a new beep alias action
-     */
-    public class AddBeepActionItem extends MenuItem
-    {
-        public AddBeepActionItem()
-        {
-            super("Beep");
-
-            setOnAction(event -> {
-                if(getItem() != null)
+                if(result.get() == ButtonType.YES)
                 {
-                    BeepAction beepAction = new BeepAction();
-                    getActionsList().getItems().add(beepAction);
-                    getActionsList().getSelectionModel().select(beepAction);
-                    getActionsList().scrollTo(beepAction);
-                    modifiedProperty().set(true);
-                }
-            });
-        }
-    }
+                    List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
 
-    /**
-     * Menu item to add a new audio clip alias action
-     */
-    public class AddAudioClipActionItem extends MenuItem
-    {
-        public AddAudioClipActionItem()
-        {
-            super("Audio Clip");
-
-            setOnAction(event -> {
-                if(getItem() != null)
-                {
-                    ClipAction clipAction = new ClipAction();
-                    getActionsList().getItems().add(clipAction);
-                    getActionsList().getSelectionModel().select(clipAction);
-                    getActionsList().scrollTo(clipAction);
-                    modifiedProperty().set(true);
-                }
-            });
-        }
-    }
-
-    /**
-     * Menu item to add a new script alias action
-     */
-    public class AddScriptActionItem extends MenuItem
-    {
-        public AddScriptActionItem()
-        {
-            super("Script");
-
-            setOnAction(event -> {
-                if(getItem() != null)
-                {
-                    ScriptAction scriptAction = new ScriptAction();
-                    getActionsList().getItems().add(scriptAction);
-                    getActionsList().getSelectionModel().select(scriptAction);
-                    getActionsList().scrollTo(scriptAction);
-                    modifiedProperty().set(true);
-                }
-            });
-        }
-    }
-
-    /**
-     * Monitors for changes to the identifier editors modified property to in-turn set this editor's modified property
-     */
-    public class IdentifierEditorModificationListener implements ChangeListener<Boolean>
-    {
-        @Override
-        public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
-        {
-            if(newValue)
-            {
-                modifiedProperty().set(true);
-            }
-        }
-    }
-
-    /**
-     * Monitors for changes to the identifier editors modified property to in-turn set this editor's modified property
-     */
-    public class ActionEditorModificationListener implements ChangeListener<Boolean>
-    {
-        @Override
-        public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
-        {
-            if(newValue)
-            {
-                modifiedProperty().set(true);
-            }
-        }
-    }
-
-    /**
-     * Simple string change listener that sets the editor modified flag to true any time text fields are edited.
-     */
-    public class EditorModificationListener implements ChangeListener<String>
-    {
-        @Override
-        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue)
-        {
-            modifiedProperty().set(true);
-        }
-    }
-
-    public class AliasIdentifierCell extends ListCell<AliasID>
-    {
-        @Override
-        protected void updateItem(AliasID item, boolean empty)
-        {
-            super.updateItem(item, empty);
-
-            if(item != null)
-            {
-                if(item instanceof Talkgroup)
-                {
-                    Talkgroup talkgroup = (Talkgroup)item;
-                    Protocol protocol = talkgroup.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
-                        .getTalkgroupFormat(protocol);
-                    String formatted = TalkgroupFormatter.format(protocol, talkgroup.getValue(), integerFormat);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("Talkgroup:").append(formatted);
-                    sb.append(" Protocol:").append((talkgroup.getProtocol()));
-
-                    if(!talkgroup.isValid())
+                    for(Alias selected: selectedAliases)
                     {
-                        sb.append(" **NOT VALID**");
+                        mPlaylistManager.getAliasModel().removeAlias(selected);
                     }
-                    setText(sb.toString());
                 }
-                if(item instanceof TalkgroupRange)
-                {
-                    TalkgroupRange talkgroupRange = (TalkgroupRange)item;
-                    Protocol protocol = talkgroupRange.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
-                        .getTalkgroupFormat(protocol);
-                    String formattedMin = TalkgroupFormatter.format(protocol, talkgroupRange.getMinTalkgroup(), integerFormat);
-                    String formattedMax = TalkgroupFormatter.format(protocol, talkgroupRange.getMaxTalkgroup(), integerFormat);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("Talkgroup Range:").append(formattedMin).append(" to ").append(formattedMax);
-                    sb.append(" Protocol:").append((talkgroupRange.getProtocol()));
+            });
+        }
 
-                    if(!talkgroupRange.isValid())
-                    {
-                        sb.append(" **NOT VALID**");
-                    }
-                    setText(sb.toString());
-                }
-                if(item instanceof Radio)
-                {
-                    Radio radio = (Radio)item;
-                    Protocol protocol = radio.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
-                        .getTalkgroupFormat(protocol);
-                    String formatted = RadioFormatter.format(protocol, radio.getValue(), integerFormat);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("Radio ID:").append(formatted);
-                    sb.append(" Protocol:").append((radio.getProtocol()));
+        return mDeleteAliasButton;
+    }
 
-                    if(!radio.isValid())
-                    {
-                        sb.append(" **NOT VALID**");
-                    }
-                    setText(sb.toString());
-                }
-                if(item instanceof RadioRange)
-                {
-                    RadioRange radionRange = (RadioRange)item;
-                    Protocol protocol = radionRange.getProtocol();
-                    IntegerFormat integerFormat = mUserPreferences.getTalkgroupFormatPreference()
-                        .getTalkgroupFormat(protocol);
-                    String formattedMin = TalkgroupFormatter.format(protocol, radionRange.getMinRadio(), integerFormat);
-                    String formattedMax = TalkgroupFormatter.format(protocol, radionRange.getMaxRadio(), integerFormat);
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("Radio ID Range:").append(formattedMin).append(" to ").append(formattedMax);
-                    sb.append(" Protocol:").append((radionRange.getProtocol()));
+    private Button getCloneAliasButton()
+    {
+        if(mCloneAliasButton == null)
+        {
+            mCloneAliasButton = new Button("Clone");
+            mCloneAliasButton.setDisable(true);
+            mCloneAliasButton.setMaxWidth(Double.MAX_VALUE);
+            mCloneAliasButton.setOnAction(event -> {
+                Alias original = getAliasTableView().getSelectionModel().getSelectedItem();
+                Alias copy = AliasFactory.copyOf(original);
+                mPlaylistManager.getAliasModel().addAlias(copy);
+                getAliasTableView().getSelectionModel().clearSelection();
+                getAliasTableView().getSelectionModel().select(copy);
+                getAliasTableView().scrollTo(copy);
+            });
+        }
 
-                    if(!radionRange.isValid())
-                    {
-                        sb.append(" **NOT VALID**");
-                    }
-                    setText(sb.toString());
-                }
-                else
+        return mCloneAliasButton;
+    }
+
+    private MenuButton getMoveToAliasButton()
+    {
+        if(mMoveToAliasButton == null)
+        {
+            mMoveToAliasButton = new MenuButton("Move To");
+            mMoveToAliasButton.setDisable(true);
+            mMoveToAliasButton.setOnShowing(event -> {
+                mMoveToAliasButton.getItems().clear();
+
+                MenuItem emptyItem = new MenuItem("Alias Lists");
+                emptyItem.setDisable(true);
+                mMoveToAliasButton.getItems().addAll(emptyItem, new SeparatorMenuItem());
+
+                List<String> aliasLists = mPlaylistManager.getAliasModel().getListNames();
+
+                for(String aliasList: aliasLists)
                 {
-                    setText(item.toString());
+                    if(!aliasList.contentEquals(AliasModel.NO_ALIAS_LIST) &&
+                       !aliasList.contentEquals(getAliasListNameComboBox().getSelectionModel().getSelectedItem()))
+                    {
+                        mMoveToAliasButton.getItems().add(new MoveToAliasListItem(aliasList));
+                    }
                 }
-            }
-            else
-            {
-                setText(null);
-            }
+            });
+        }
+
+        return mMoveToAliasButton;
+    }
+
+    public class MoveToAliasListItem extends MenuItem
+    {
+        public MoveToAliasListItem(String aliasList)
+        {
+            super(aliasList);
+
+            setOnAction(event -> {
+                List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
+                for(Alias selected: selectedAliases)
+                {
+                    AliasList existing = mPlaylistManager.getAliasModel().getAliasList(selected.getAliasListName());
+                    existing.removeAlias(selected);
+
+                    selected.setAliasListName(getText());
+                    AliasList moveToList = mPlaylistManager.getAliasModel().getAliasList(selected.getAliasListName());
+                    moveToList.addAlias(selected);
+                }
+            });
         }
     }
 
-    /**
-     * Cell factory for combo box for dislaying icon name and graphic
-     */
-    public class IconCellFactory implements Callback<ListView<Icon>, ListCell<Icon>>
+    public class ColorizedCell implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
     {
         @Override
-        public ListCell<Icon> call(ListView<Icon> param)
+        public TableCell<Alias,Integer> call(TableColumn<Alias,Integer> param)
         {
-            ListCell<Icon> cell = new ListCell<>()
+            final Rectangle rectangle = new Rectangle(20,20);
+            rectangle.setArcHeight(10);
+            rectangle.setArcWidth(10);
+
+            TableCell<Alias,Integer> tableCell = new TableCell<>()
             {
                 @Override
-                protected void updateItem(Icon item, boolean empty)
+                protected void updateItem(Integer item, boolean empty)
                 {
                     super.updateItem(item, empty);
 
+                    if(!empty && getTableRow() != null)
+                    {
+                        Alias alias = getTableRow().getItem();
+
+                        if(alias != null)
+                        {
+                            rectangle.setVisible(true);
+                            rectangle.setFill(ColorUtil.fromInteger(alias.getColor()));
+                        }
+                        else
+                        {
+                            rectangle.setVisible(false);
+                        }
+                    }
+                    else
+                    {
+                        rectangle.setVisible(false);
+                    }
+                }
+            };
+            tableCell.setAlignment(Pos.CENTER);
+            tableCell.setGraphic(rectangle);
+
+            return tableCell;
+        }
+    }
+
+    /**
+     * Boolean table cell with an icon visibility bound to the boolean value
+     */
+    public class IconCell implements Callback<TableColumn<Alias,Boolean>,TableCell<Alias,Boolean>>
+    {
+        private IconCode mIconCode;
+        private Color mColor;
+
+        public IconCell(IconCode iconCode, Color color)
+        {
+            mIconCode = iconCode;
+            mColor = color;
+        }
+
+        @Override
+        public TableCell<Alias,Boolean> call(TableColumn<Alias,Boolean> param)
+        {
+            final IconNode iconNode = new IconNode(mIconCode);
+            iconNode.setIconSize(20);
+            iconNode.setFill(mColor);
+
+            TableCell<Alias,Boolean> tableCell = new TableCell<>()
+            {
+                @Override
+                protected void updateItem(Boolean item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+
+                    if(!empty && getTableRow() != null)
+                    {
+                        iconNode.setVisible(item);
+                    }
+                    else
+                    {
+                        iconNode.setVisible(false);
+                    }
+                }
+            };
+            tableCell.setAlignment(Pos.CENTER);
+            tableCell.setGraphic(iconNode);
+            return tableCell;
+        }
+    }
+
+    public class IdentifierCountCell implements Callback<TableColumn.CellDataFeatures<Alias,Integer>,ObservableValue<Integer>>
+    {
+        @Override
+        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias,Integer> param)
+        {
+            if(param.getValue() != null)
+            {
+                return param.getValue().nonAudioIdentifierCountProperty().asObject();
+            }
+
+            return null;
+        }
+    }
+
+    public class ActionCountCell implements Callback<TableColumn.CellDataFeatures<Alias,Integer>,ObservableValue<Integer>>
+    {
+        @Override
+        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias,Integer> param)
+        {
+            Integer count = null;
+
+            if(param.getValue() != null && param.getValue().getAliasActions().size() > 0)
+            {
+                count = param.getValue().getAliasActions().size();
+            }
+
+            return new ReadOnlyObjectWrapper<>(count);
+        }
+    }
+
+    public class CenteredCountCellFactory implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
+    {
+        @Override
+        public TableCell<Alias,Integer> call(TableColumn<Alias,Integer> param)
+        {
+            return new CenteredCountCell();
+        }
+    }
+
+    public class CenteredCountCell extends TableCell<Alias,Integer>
+    {
+        public CenteredCountCell()
+        {
+            setAlignment(Pos.CENTER);
+        }
+    }
+
+    public class PriorityCellFactory implements Callback<TableColumn<Alias, Integer>, TableCell<Alias, Integer>>
+    {
+        @Override
+        public TableCell<Alias, Integer> call(TableColumn<Alias, Integer> param)
+        {
+            TableCell tableCell = new TableCell<Alias,Integer>()
+            {
+                @Override
+                protected void updateItem(Integer item, boolean empty)
+                {
                     if(empty)
                     {
                         setText(null);
                         setGraphic(null);
                     }
+                    else if(item == io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR)
+                    {
+                        setText("Mute");
+                        final IconNode iconNode = new IconNode(FontAwesome.VOLUME_OFF);
+                        iconNode.setIconSize(20);
+                        iconNode.setFill(Color.RED);
+                        setGraphic(iconNode);
+                    }
+                    else if(item == io.github.dsheirer.alias.id.priority.Priority.DEFAULT_PRIORITY)
+                    {
+                        setText("Default");
+                        final IconNode iconNode = new IconNode(FontAwesome.VOLUME_UP);
+                        iconNode.setIconSize(20);
+                        iconNode.setFill(Color.GREEN);
+                        setGraphic(iconNode);
+                    }
                     else
                     {
-                        setText(item.getName());
+                        setText(item.toString());
+                        final IconNode iconNode = new IconNode(FontAwesome.VOLUME_UP);
+                        iconNode.setIconSize(20);
+                        iconNode.setFill(Color.GREEN);
+                        setGraphic(iconNode);
+                    }
+                }
+            };
 
-                        String path = item.getPath();
+            return tableCell;
+        }
+    }
 
-                        if(path.startsWith("images"))
+    public class IconTableCellFactory implements Callback<TableColumn<Alias, String>, TableCell<Alias, String>>
+    {
+        @Override
+        public TableCell<Alias, String> call(TableColumn<Alias, String> param)
+        {
+            TableCell<Alias,String> tableCell = new TableCell<>()
+            {
+                @Override
+                protected void updateItem(String item, boolean empty)
+                {
+                    super.updateItem(item, empty);
+                    setAlignment(Pos.CENTER);
+
+                    if(empty)
+                    {
+                        setGraphic(null);
+                    }
+                    else
+                    {
+                        if(getTableRow() != null)
                         {
-                            try
-                            {
-                                Image image = new Image(path, 0, 20, true, true);
-                                setGraphic(new ImageView(image));
-                            }
-                            catch(Exception e)
-                            {
+                            Alias alias = getTableRow().getItem();
 
+                            if(alias != null)
+                            {
+                                Icon icon = mPlaylistManager.getIconManager().getModel().getIcon(alias.getIconName());
+
+                                try
+                                {
+                                    Image image = new Image(icon.getPath(), 0, 16, true, true);
+                                    setGraphic(new ImageView(image));
+                                }
+                                catch(Exception e)
+                                {
+
+                                }
                             }
                         }
                     }
                 }
             };
 
-            return cell;
+            return tableCell;
+        }
+    }
+
+    /**
+     * Updates the filtered set of aliases any time there is a change in the selected alias list name box, or when the
+     * user types text in the search box.
+     */
+    public class AliasFilterMonitor
+    {
+        public AliasFilterMonitor()
+        {
+            getAliasListNameComboBox().getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                    refresh();
+                });
+
+            getSearchField().textProperty().addListener((observable, oldValue, newValue) -> {
+                refresh();
+            });
+        }
+
+        public void refresh()
+        {
+            final String aliasListName = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
+            final String filter = getSearchField().getText();
+
+            mAliasFilteredList.setPredicate(alias -> {
+                if(filter == null || filter.isEmpty())
+                {
+                    return alias.matchesAliasList(aliasListName);
+                }
+
+                String lowerFilter = filter.toLowerCase();
+
+                if(alias.getName() != null && alias.getName().toLowerCase().contains(lowerFilter))
+                {
+                    return alias.matchesAliasList(aliasListName);
+                }
+                else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(lowerFilter))
+                {
+                    return alias.matchesAliasList(aliasListName);
+                }
+
+                return false;
+            });
         }
     }
 }

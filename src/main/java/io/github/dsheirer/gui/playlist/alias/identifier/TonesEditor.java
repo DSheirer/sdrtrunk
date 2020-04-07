@@ -35,6 +35,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -286,6 +287,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
         if(mAmbeToneComboBox == null)
         {
             mAmbeToneComboBox = new ComboBox<>();
+            mAmbeToneComboBox.setTooltip(new Tooltip("Tone to match"));
             mAmbeToneComboBox.getItems().addAll(AmbeTone.ALL_VALID_TONES);
             mAmbeToneComboBox.setDisable(true);
             mAmbeToneComboBox.setOnAction(mAmbeToneComboBoxEventHandler);
@@ -299,6 +301,7 @@ public class TonesEditor extends IdentifierEditor<TonesID>
         if(mDurationTextField == null)
         {
             mDurationTextField = new TextField();
+            mDurationTextField.setTooltip(new Tooltip("Duration in 20 millisecond units"));
             mDurationTextField.setMaxWidth(Double.MAX_VALUE);
             mDurationTextField.setTextFormatter(getDurationIntegerFormatter());
             mDurationTextField.setDisable(true);

@@ -15,8 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner;
 
-import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
@@ -27,20 +26,15 @@ import java.awt.EventQueue;
 public class TunerSpectralDisplayManager implements Listener<TunerEvent>
 {
     private SpectralDisplayPanel mSpectralDisplayPanel;
-    private ChannelModel mChannelModel;
-    private ChannelProcessingManager mChannelProcessingManager;
+    private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
     private TunerModel mTunerModel;
 
-    public TunerSpectralDisplayManager(SpectralDisplayPanel panel,
-                                       ChannelModel channelModel,
-                                       ChannelProcessingManager channelProcessingManager,
-                                       SettingsManager settingsManager,
-                                       TunerModel tunerModel)
+    public TunerSpectralDisplayManager(SpectralDisplayPanel panel, PlaylistManager playlistManager,
+                                       SettingsManager settingsManager, TunerModel tunerModel)
     {
         mSpectralDisplayPanel = panel;
-        mChannelModel = channelModel;
-        mChannelProcessingManager = channelProcessingManager;
+        mPlaylistManager = playlistManager;
         mSettingsManager = settingsManager;
         mTunerModel = tunerModel;
     }
@@ -57,17 +51,8 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
                 mSpectralDisplayPanel.showTuner(event.getTuner());
                 break;
             case REQUEST_NEW_SPECTRAL_DISPLAY:
-                final SpectrumFrame frame = new SpectrumFrame(mChannelModel,
-                    mChannelProcessingManager, mSettingsManager, mTunerModel, event.getTuner());
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        frame.setVisible(true);
-                    }
-                });
+                final SpectrumFrame frame = new SpectrumFrame(mPlaylistManager, mSettingsManager, mTunerModel, event.getTuner());
+                EventQueue.invokeLater(() -> frame.setVisible(true));
                 break;
             default:
                 break;

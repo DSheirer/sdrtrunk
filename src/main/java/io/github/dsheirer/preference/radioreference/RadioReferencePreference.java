@@ -22,9 +22,12 @@
 
 package io.github.dsheirer.preference.radioreference;
 
+import io.github.dsheirer.gui.playlist.radioreference.Level;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.service.radioreference.RadioReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,18 +48,34 @@ public class RadioReferencePreference extends Preference
     private static final String PREFERRED_COUNTRY_ID = "preferred.country";
     private static final String PREFERRED_STATE_ID = "preferred.state";
     private static final String PREFERRED_COUNTY_ID = "preferred.county";
-    private static final String PREFERRED_SYSTEM_ID = "preferred.system";
-    private static final String PREFERRED_AGENCY_ID = "preferred.agency";
+    private static final String PREFERRED_SYSTEM_ID_STATE = "preferred.system.state";
+    private static final String PREFERRED_SYSTEM_ID_COUNTY = "preferred.system.county";
+    private static final String PREFERRED_AGENCY_ID_NATIONAL = "preferred.agency.national";
+    private static final String PREFERRED_AGENCY_ID_STATE = "preferred.agency.state";
+    private static final String PREFERRED_AGENCY_ID_COUNTY = "preferred.agency.county";
+    private static final String SHOW_CHANNEL_EDITOR_NATIONAL = "create.and.show.editor.national";
+    private static final String SHOW_CHANNEL_EDITOR_STATE = "create.and.show.editor.state";
+    private static final String SHOW_CHANNEL_EDITOR_COUNTY = "create.and.show.editor.county";
+    private static final String ENCRYPTED_TALKGROUP_DO_NOT_MONITOR = "encrypted.talkgroup.import.do.not.monitor";
+    private static final String CREATE_AND_SHOW_CHANNEL_EDITOR = "create.and.show.channel.editor";
 
     private String mUserName;
     private String mPassword;
     private Boolean mStoreCredentials;
     private Boolean mShowPassword;
+    private Boolean mShowChannelEditorNational;
+    private Boolean mShowChannelEditorState;
+    private Boolean mShowChannelEditorCounty;
+    private Boolean mEncryptedTalkgroupImport;
+    private Boolean mCreateAndShowChannelEditor;
     private int mPreferredCountryId = INVALID_ID;
     private int mPreferredStateId = INVALID_ID;
     private int mPreferredCountyId = INVALID_ID;
-    private int mPreferredAgencyId = INVALID_ID;
-    private int mPreferredSystemId = INVALID_ID;
+    private int mPreferredAgencyIdNational = INVALID_ID;
+    private int mPreferredAgencyIdState = INVALID_ID;
+    private int mPreferredAgencyIdCounty = INVALID_ID;
+    private int mPreferredSystemIdState = INVALID_ID;
+    private int mPreferredSystemIdCounty = INVALID_ID;
 
     /**
      * Constructs an instance.
@@ -97,6 +116,23 @@ public class RadioReferencePreference extends Preference
     public boolean hasStoredCredentials()
     {
         return mPreferences.get(USER_NAME, null) != null || mPreferences.get(PASSWORD, null) != null;
+    }
+
+    /**
+     * Creates an authorization information instance with stored login credentials when available.
+     * @return information or null if there are no stored credentials.
+     */
+    public AuthorizationInformation getAuthorizationInformation()
+    {
+        if(hasStoredCredentials())
+        {
+            String username = getUserName();
+            String password = getPassword();
+
+            return RadioReference.getAuthorizatonInformation(username, password);
+        }
+
+        return null;
     }
 
     /**
@@ -212,6 +248,7 @@ public class RadioReferencePreference extends Preference
     {
         mShowPassword = show;
         mPreferences.putBoolean(SHOW_PASSWORD, show);
+        notifyPreferenceUpdated();
     }
 
     /**
@@ -232,6 +269,7 @@ public class RadioReferencePreference extends Preference
     {
         mPreferredCountryId = countryId;
         mPreferences.putInt(PREFERRED_COUNTRY_ID, countryId);
+        notifyPreferenceUpdated();
     }
 
     /**
@@ -251,6 +289,7 @@ public class RadioReferencePreference extends Preference
     {
         mPreferredStateId = state;
         mPreferences.putInt(PREFERRED_STATE_ID, mPreferredStateId);
+        notifyPreferenceUpdated();
     }
 
     /**
@@ -270,43 +309,208 @@ public class RadioReferencePreference extends Preference
     {
         mPreferredCountyId = county;
         mPreferences.putInt(PREFERRED_COUNTY_ID, mPreferredCountyId);
+        notifyPreferenceUpdated();
     }
 
     /**
      * Preferred system to use with the service
      */
-    public int getPreferredSystemId()
+    public int getPreferredSystemId(Level level)
     {
-        if(mPreferredSystemId < 0)
+        switch(level)
         {
-            mPreferredSystemId = mPreferences.getInt(PREFERRED_COUNTY_ID, INVALID_ID);
-        }
+            case STATE:
+                if(mPreferredSystemIdState < 0)
+                {
+                    mPreferredSystemIdState = mPreferences.getInt(PREFERRED_SYSTEM_ID_STATE, INVALID_ID);
+                }
 
-        return mPreferredSystemId;
+                return mPreferredSystemIdState;
+            case COUNTY:
+            default:
+                if(mPreferredSystemIdCounty < 0)
+                {
+                    mPreferredSystemIdCounty = mPreferences.getInt(PREFERRED_SYSTEM_ID_COUNTY, INVALID_ID);
+                }
+
+                return mPreferredSystemIdCounty;
+        }
     }
 
-    public void setPreferredSystemId(int systemId)
+    public void setPreferredSystemId(int systemId, Level level)
     {
-        mPreferredSystemId = systemId;
-        mPreferences.putInt(PREFERRED_SYSTEM_ID, mPreferredSystemId);
+        switch(level)
+        {
+            case STATE:
+                mPreferredSystemIdState = systemId;
+                mPreferences.putInt(PREFERRED_SYSTEM_ID_STATE, mPreferredSystemIdState);
+                notifyPreferenceUpdated();
+                break;
+            case COUNTY:
+            default:
+                mPreferredSystemIdCounty = systemId;
+                mPreferences.putInt(PREFERRED_SYSTEM_ID_COUNTY, mPreferredSystemIdCounty);
+                notifyPreferenceUpdated();
+                break;
+        }
     }
 
     /**
-     * Preferred agency to use with the service
+     * Preferred country agency to use with the service
      */
-    public int getPreferredAgencyId()
+    public int getPreferredAgencyId(Level level)
     {
-        if(mPreferredAgencyId < 0)
+        switch(level)
         {
-            mPreferredAgencyId = mPreferences.getInt(PREFERRED_AGENCY_ID, INVALID_ID);
-        }
+            case NATIONAL:
+                if(mPreferredAgencyIdNational < 0)
+                {
+                    mPreferredAgencyIdNational = mPreferences.getInt(PREFERRED_AGENCY_ID_NATIONAL, INVALID_ID);
+                }
 
-        return mPreferredAgencyId;
+                return mPreferredAgencyIdNational;
+            case STATE:
+                if(mPreferredAgencyIdState < 0)
+                {
+                    mPreferredAgencyIdState = mPreferences.getInt(PREFERRED_AGENCY_ID_STATE, INVALID_ID);
+                }
+
+                return mPreferredAgencyIdState;
+            case COUNTY:
+            default:
+                if(mPreferredAgencyIdCounty < 0)
+                {
+                    mPreferredAgencyIdCounty = mPreferences.getInt(PREFERRED_AGENCY_ID_COUNTY, INVALID_ID);
+                }
+
+                return mPreferredAgencyIdCounty;
+        }
     }
 
-    public void setPreferredAgencyId(int agencyId)
+    public void setPreferredAgencyId(int agencyId, Level level)
     {
-        mPreferredAgencyId = agencyId;
-        mPreferences.putInt(PREFERRED_AGENCY_ID, mPreferredAgencyId);
+        switch(level)
+        {
+            case NATIONAL:
+                mPreferredAgencyIdNational = agencyId;
+                mPreferences.putInt(PREFERRED_AGENCY_ID_NATIONAL, mPreferredAgencyIdNational);
+                notifyPreferenceUpdated();
+                break;
+            case STATE:
+                mPreferredAgencyIdState = agencyId;
+                mPreferences.putInt(PREFERRED_AGENCY_ID_STATE, mPreferredAgencyIdState);
+                notifyPreferenceUpdated();
+                break;
+            case COUNTY:
+            default:
+                mPreferredAgencyIdCounty = agencyId;
+                mPreferences.putInt(PREFERRED_AGENCY_ID_COUNTY, mPreferredAgencyIdCounty);
+                notifyPreferenceUpdated();
+                break;
+        }
+    }
+
+    /**
+     * Preference for showing a channel editor after creating a national agency channel
+     */
+    public boolean getShowChannelEditor(Level level)
+    {
+        switch(level)
+        {
+            case NATIONAL:
+                if(mShowChannelEditorNational == null)
+                {
+                    mShowChannelEditorNational = mPreferences.getBoolean(SHOW_CHANNEL_EDITOR_NATIONAL, true);
+                }
+
+                return mShowChannelEditorNational;
+            case STATE:
+                if(mShowChannelEditorState == null)
+                {
+                    mShowChannelEditorState = mPreferences.getBoolean(SHOW_CHANNEL_EDITOR_STATE, true);
+                }
+
+                return mShowChannelEditorState;
+            case COUNTY:
+            default:
+                if(mShowChannelEditorCounty == null)
+                {
+                    mShowChannelEditorCounty = mPreferences.getBoolean(SHOW_CHANNEL_EDITOR_COUNTY, true);
+                }
+
+                return mShowChannelEditorCounty;
+        }
+    }
+
+    public void setShowChannelEditor(boolean show, Level level)
+    {
+        switch(level)
+        {
+            case NATIONAL:
+                mShowChannelEditorNational = show;
+                mPreferences.putBoolean(SHOW_CHANNEL_EDITOR_NATIONAL, mShowChannelEditorNational);
+                notifyPreferenceUpdated();
+                break;
+            case STATE:
+                mShowChannelEditorState = show;
+                mPreferences.putBoolean(SHOW_CHANNEL_EDITOR_STATE, mShowChannelEditorState);
+                notifyPreferenceUpdated();
+                break;
+            case COUNTY:
+            default:
+                mShowChannelEditorCounty = show;
+                mPreferences.putBoolean(SHOW_CHANNEL_EDITOR_COUNTY, mShowChannelEditorCounty);
+                notifyPreferenceUpdated();
+                break;
+        }
+    }
+
+    /**
+     * Indicates if radio reference encrypted talgkroups should be imported as Do Not Monitor priority.
+     * @return true if set to do not monitor
+     */
+    public boolean isEncryptedTalkgroupDoNotMonitor()
+    {
+        if(mEncryptedTalkgroupImport == null)
+        {
+            mEncryptedTalkgroupImport = mPreferences.getBoolean(ENCRYPTED_TALKGROUP_DO_NOT_MONITOR, true);
+        }
+
+        return mEncryptedTalkgroupImport;
+    }
+
+    /**
+     * Set the import encrypted talkgroups as Do Not Monitor
+     * @param doNotMonitor true if set to do not monitor
+     */
+    public void setEncryptedTalkgroupDoNotMonitor(boolean doNotMonitor)
+    {
+        mEncryptedTalkgroupImport = doNotMonitor;
+        mPreferences.putBoolean(ENCRYPTED_TALKGROUP_DO_NOT_MONITOR, doNotMonitor);
+        notifyPreferenceUpdated();
+    }
+
+
+    /**
+     * Indicates if should show channel editor after trunked channel configuration create
+     */
+    public boolean isCreateAndShowChannelEditor()
+    {
+        if(mCreateAndShowChannelEditor == null)
+        {
+            mCreateAndShowChannelEditor = mPreferences.getBoolean(CREATE_AND_SHOW_CHANNEL_EDITOR, true);
+        }
+
+        return mCreateAndShowChannelEditor;
+    }
+
+    /**
+     * Sets preference to show channel editor after channel configuration create
+     */
+    public void setCreateAndShowChannelEditor(boolean show)
+    {
+        mCreateAndShowChannelEditor = show;
+        mPreferences.putBoolean(CREATE_AND_SHOW_CHANNEL_EDITOR, show);
+        notifyPreferenceUpdated();
     }
 }

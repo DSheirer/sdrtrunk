@@ -25,14 +25,13 @@ package io.github.dsheirer.alias.id.radio;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormat;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Integer radio identifier with protocol.
  */
-public class Radio extends AliasID
+public class Radio extends AliasID implements Comparable<Radio>
 {
     private Protocol mProtocol = Protocol.UNKNOWN;
     private int mValue;
@@ -122,5 +121,23 @@ public class Radio extends AliasID
     public AliasIDType getType()
     {
         return AliasIDType.RADIO_ID;
+    }
+
+    @Override
+    public int compareTo(Radio other)
+    {
+        if(other == null)
+        {
+            return -1;
+        }
+
+        if(getProtocol().equals(other.getProtocol()))
+        {
+            return Integer.compare(getValue(), other.getValue());
+        }
+        else
+        {
+            return getProtocol().compareTo(other.getProtocol());
+        }
     }
 }

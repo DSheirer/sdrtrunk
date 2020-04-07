@@ -54,7 +54,7 @@ public class ChannelConfigurationEditorFactory
                 return new NBFMConfigurationEditor(playlistManager);
             case LTR_NET:
                 return new LTRNetConfigurationEditor(playlistManager);
-            case LTR_STANDARD:
+            case LTR:
                 return new LTRConfigurationEditor(playlistManager);
             case MPT1327:
                 return new MPT1327ConfigurationEditor(playlistManager);

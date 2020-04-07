@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Integer talkgroup identifier with protocol.
  */
-public class Talkgroup extends AliasID
+public class Talkgroup extends AliasID implements Comparable<Talkgroup>
 {
     private static final Logger mLog = LoggerFactory.getLogger(Talkgroup.class);
     private Protocol mProtocol = Protocol.UNKNOWN;
@@ -132,5 +132,23 @@ public class Talkgroup extends AliasID
     public AliasIDType getType()
     {
         return AliasIDType.TALKGROUP;
+    }
+
+    @Override
+    public int compareTo(Talkgroup other)
+    {
+        if(other == null)
+        {
+            return -1;
+        }
+
+        if(getProtocol().equals(other.getProtocol()))
+        {
+            return Integer.compare(getValue(), other.getValue());
+        }
+        else
+        {
+            return getProtocol().compareTo(other.getProtocol());
+        }
     }
 }

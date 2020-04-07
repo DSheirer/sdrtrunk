@@ -22,9 +22,6 @@
 
 package io.github.dsheirer.service.radioreference;
 
-import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
@@ -32,22 +29,29 @@ import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.UserInfo;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Scanner;
 
 /**
- * Service interface to radioreference.com data API
+ * Service interface to radioreference.com data API with caching for Flavor, Mode, Type and Tag values.
  */
 public class RadioReference
 {
+    private static final Logger mLog = LoggerFactory.getLogger(RadioReference.class);
+
     public static final String SDRTRUNK_APP_KEY = "88969092";
     private RadioReferenceService mRadioReferenceService;
     private UserPreferences mUserPreferences;
-    private Boolean mStoreCredentials;
-    private String mUserName;
-    private String mPassword;
     private AuthorizationInformation mAuthorizationInformation;
-    private BooleanProperty mLoggedOn = new SimpleBooleanProperty();
+    private StringProperty mUserName = new SimpleStringProperty();
+    private StringProperty mPassword = new SimpleStringProperty();
+    private StringProperty mAccountExpiresProperty = new SimpleStringProperty();
+    private BooleanProperty mAvailable = new SimpleBooleanProperty();
+
 
     /**
      * Constructs an instance of the radio reference service
@@ -56,17 +60,38 @@ public class RadioReference
     public RadioReference(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
-
-        //Register to receive notifications of user preference changes
-        MyEventBus.getEventBus().register(this);
     }
 
     /**
      * Externally monitored and controlled status indicator for the service logged-on state
      */
-    public BooleanProperty loggedOnProperty()
+    public BooleanProperty availableProperty()
     {
-        return mLoggedOn;
+        return mAvailable;
+    }
+
+    /**
+     * User name for radio reference account
+     */
+    public StringProperty userNameProperty()
+    {
+        return mUserName;
+    }
+
+    /**
+     * User name for radio reference account
+     */
+    public StringProperty passwordProperty()
+    {
+        return mPassword;
+    }
+
+    /**
+     * Read only user name for radio reference account
+     */
+    public StringProperty accountExpiresProperty()
+    {
+        return mAccountExpiresProperty;
     }
 
     /**
@@ -99,8 +124,6 @@ public class RadioReference
         return mRadioReferenceService;
     }
 
-
-
     /**
      * Tests the connection to radio reference service using the provided credentials.
      * @param userName for radio reference account
@@ -114,6 +137,24 @@ public class RadioReference
         RadioReferenceService service = new RadioReferenceService(credentials);
         service.getUserInfo();
         return true;
+    }
+
+    /**
+     * Login with credentials
+     */
+    private void login()
+    {
+        try
+        {
+            UserInfo userInfo = getService().getUserInfo();
+            accountExpiresProperty().setValue(userInfo.getExpirationDate());
+            availableProperty().set(true);
+        }
+        catch(RadioReferenceException rre)
+        {
+            accountExpiresProperty().setValue(null);
+            availableProperty().set(false);
+        }
     }
 
     /**
@@ -133,160 +174,58 @@ public class RadioReference
      */
     private AuthorizationInformation getAuthorizationInformation()
     {
-        if(mAuthorizationInformation == null && hasCredentials())
-        {
-            mAuthorizationInformation = new AuthorizationInformation(SDRTRUNK_APP_KEY, getUserName(), getPassword());
-        }
-
         return mAuthorizationInformation;
     }
 
+    /**
+     * Applies the credentials and attempts to login to the radio reference service
+     * @param authorizationInformation
+     */
     public void setAuthorizationInformation(AuthorizationInformation authorizationInformation)
     {
         mAuthorizationInformation = authorizationInformation;
-        mUserName = authorizationInformation.getUserName();
-        mPassword = authorizationInformation.getPassword();
+        mUserName.setValue(authorizationInformation.getUserName());
+        mPassword.setValue(authorizationInformation.getPassword());
 
         //Set the service to null so that the next call to getService() will recreate it
         if(mRadioReferenceService != null)
         {
             mRadioReferenceService = null;
         }
-    }
 
-    public boolean hasCredentials()
-    {
-        return getUserName() != null && getPassword() != null;
-    }
-
-    /**
-     * Sets the preference to store (or not) user credentials.  If this value is false, any stored
-     * username or password will be cleared from the user preferences.
-     *
-     * @param store true if the username and password should be stored in user preferences
-     */
-    public void setStoreCredentials(boolean store)
-    {
-        mStoreCredentials = store;
-
-        if(mStoreCredentials)
-        {
-            mUserPreferences.getRadioReferencePreference().setStoreCredentials(mStoreCredentials);
-        }
-        else
-        {
-            mUserPreferences.getRadioReferencePreference().removeStoredCredentials();
-        }
-    }
-
-    /**
-     * Indicates if the user credentials (username and password) should be stored in user preferences
-     */
-    public boolean getStoreCredentials()
-    {
-        if(mStoreCredentials == null)
-        {
-            mStoreCredentials = mUserPreferences.getRadioReferencePreference().isStoreCredentials();
-        }
-
-        return mStoreCredentials;
-    }
-
-    /**
-     * Sets the user name
-     * @param userName for login to radio reference service
-     */
-    public void setUserName(String userName)
-    {
-        mUserName = userName;
-
-        if(getStoreCredentials())
-        {
-            mUserPreferences.getRadioReferencePreference().setUserName(mUserName);
-        }
-    }
-
-    /**
-     * User name for radio reference service
-     * @return user name
-     */
-    public String getUserName()
-    {
-        if(mUserName == null)
-        {
-            mUserName = mUserPreferences.getRadioReferencePreference().getUserName();
-        }
-
-        return mUserName;
-    }
-
-    /**
-     * Sets the password for radio reference service
-     * @param password for service
-     */
-    public void setPassword(String password)
-    {
-        mPassword = password;
-
-        if(getStoreCredentials())
-        {
-            mUserPreferences.getRadioReferencePreference().setPassword(mPassword);
-        }
-    }
-
-    /**
-     * Password for radio reference service
-     * @return password
-     */
-    public String getPassword()
-    {
-        if(mPassword == null)
-        {
-            mPassword = mUserPreferences.getRadioReferencePreference().getPassword();
-        }
-
-        return mPassword;
-    }
-
-    @Subscribe
-    public void preferenceUpdated(PreferenceType preferenceType)
-    {
-        if(preferenceType == PreferenceType.RADIO_REFERENCE)
-        {
-            //Clear all of the locally stored variables so that they are updated upon access from preferences
-            mStoreCredentials = null;
-            mUserName = null;
-            mPassword = null;
-            mRadioReferenceService = null;
-        }
+        login();
     }
 
     public static void main(String[] args)
     {
-        RadioReference radioReference = new RadioReference(new UserPreferences());
+        UserPreferences userPreferences = new UserPreferences();
+        RadioReference radioReference = new RadioReference(userPreferences);
 
-        if(!radioReference.hasCredentials())
+        AuthorizationInformation credentials = userPreferences.getRadioReferencePreference().getAuthorizationInformation();
+
+        if(credentials == null)
         {
             Scanner scanner = new Scanner(System.in);
             System.out.print("Username: ");
             String username = scanner.next();
             System.out.print("Password: ");
             String password = scanner.next();
-
-            radioReference.setStoreCredentials(true);
-            radioReference.setUserName(username);
-            radioReference.setPassword(password);
+            credentials = getAuthorizatonInformation(username, password);
         }
 
-        try
+        radioReference.setAuthorizationInformation(credentials);
+
+        if(radioReference.availableProperty().get())
         {
-            UserInfo userInfo = radioReference.getService().getUserInfo();
-            System.out.println("User Name: " + userInfo.getUserName() + " Account Expires:" + userInfo.getExpirationDate());
+            try
+            {
+                UserInfo userInfo = radioReference.getService().getUserInfo();
+                System.out.println("User Name: " + userInfo.getUserName() + " Account Expires:" + userInfo.getExpirationDate());
+            }
+            catch(RadioReferenceException rre)
+            {
+                mLog.error("Error", rre);
+            }
         }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
-
     }
 }
