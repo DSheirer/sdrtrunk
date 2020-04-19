@@ -25,8 +25,8 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import io.github.dsheirer.source.tuner.usb.converter.SignedByteSampleConverter;
 import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
+import io.github.dsheirer.source.tuner.usb.converter.SignedByteSampleConverter;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -582,8 +582,8 @@ public class HackRFTunerController extends USBTunerController
         RATE_1_75(1750000, "1.750 MHz", BasebandFilter.F1_75),
         RATE_2_5(2500000, "2.500 MHz", BasebandFilter.F2_50),
         RATE_3_5(3500000, "3.500 MHz", BasebandFilter.F3_50),
-		 RATE_5_0(5000000, "5.000 MHz", BasebandFilter.F5_00),
-		 RATE_5_5(5500000, "5.500 MHz", BasebandFilter.F5_50),
+        RATE_5_0(5000000, "5.000 MHz", BasebandFilter.F5_00),
+		RATE_5_5(5500000, "5.500 MHz", BasebandFilter.F5_50),
         RATE_6_0(6000000, "6.000 MHz", BasebandFilter.F6_00),
         RATE_7_0(7000000, "7.000 MHz", BasebandFilter.F7_00),
         RATE_8_0(8000000, "8.000 MHz", BasebandFilter.F8_00),
@@ -593,9 +593,18 @@ public class HackRFTunerController extends USBTunerController
         RATE_14_0(14000000, "14.000 MHz", BasebandFilter.F14_00),
         RATE_15_0(15000000, "15.000 MHz", BasebandFilter.F15_00),
         RATE_20_0(20000000, "20.000 MHz", BasebandFilter.F20_00),
-        RATE_24_0(24000000, "24.000 MHz", BasebandFilter.F24_00),
 
         //These sample rates are deprecated.  They're maintained here for backward compatibility with user settings
+        RATE_2_3(2300000, "2.300 MHz", BasebandFilter.F1_75),
+        RATE_3_3(3300000, "3.300 MHz", BasebandFilter.F2_50),
+        RATE_4_6(4600000, "4.600 MHz", BasebandFilter.F3_50),
+        RATE_6_6(6600000, "6.600 MHz", BasebandFilter.F5_00),
+        RATE_7_3(7300000, "7.300 MHz", BasebandFilter.F5_50),
+        RATE_9_3(9300000, "9.300 MHz", BasebandFilter.F7_00),
+        RATE_10_6(10600000, "10.600 MHz", BasebandFilter.F8_00),
+        RATE_13_3(13300000, "13.300 MHz", BasebandFilter.F10_00),
+        RATE_16_0(16000000, "16.000 MHz", BasebandFilter.F12_00),
+        RATE_18_6(18600000, "18.600 MHz", BasebandFilter.F14_00),
         RATE2_016MHZ(2016000, "*2.016 MHz", BasebandFilter.F3_50),
         RATE3_024MHZ(3024000, "*3.024 MHz", BasebandFilter.F5_00),
         RATE4_464MHZ(4464000, "*4.464 MHz", BasebandFilter.F6_00),
@@ -606,7 +615,6 @@ public class HackRFTunerController extends USBTunerController
         RATE13_440MHZ(13440000, "*13.440 MHz", BasebandFilter.F15_00),
         RATE14_976MHZ(14976000, "*14.976 MHz", BasebandFilter.F20_00),
         RATE19_968MHZ(19968000, "*19.968 MHz", BasebandFilter.F24_00);
-
         private int mRate;
         private String mLabel;
         private BasebandFilter mFilter;
@@ -618,7 +626,7 @@ public class HackRFTunerController extends USBTunerController
             mFilter = filter;
         }
 
-        public static EnumSet<HackRFSampleRate> VALID_SAMPLE_RATES = EnumSet.range(RATE_1_75, RATE_24_0);
+        public static EnumSet<HackRFSampleRate> VALID_SAMPLE_RATES = EnumSet.range(RATE_1_75, RATE_20_0);
 
         public int getRate()
         {
