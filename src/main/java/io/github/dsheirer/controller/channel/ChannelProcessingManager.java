@@ -184,6 +184,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                             break;
                     }
                 }
+                break;
             case NOTIFICATION_DELETE:
                 if(channel.isProcessing())
                 {

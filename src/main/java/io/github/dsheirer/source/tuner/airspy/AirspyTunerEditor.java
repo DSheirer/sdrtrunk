@@ -528,6 +528,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
                     mMixerAGC.setEnabled(true);
                     mMixerGain.setEnabled(true);
                 }
+                break;
             default:
                 break;
         }

@@ -646,6 +646,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         .details("ANSWER REQUEST")
                         .identifiers(icUUAnswerRequest)
                         .build());
+                    break;
                 case OSP_CALL_ALERT:
                     MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                     icCallAlert.remove(IdentifierClass.USER);
@@ -2122,6 +2123,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             .identifiers(ic)
                             .build());
                     }
+                    break;
                 default:
 //                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
 //                        " OPCODE:" + tsbk.getOpcodeNumber());
