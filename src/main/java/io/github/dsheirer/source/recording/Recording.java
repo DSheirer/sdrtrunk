@@ -114,4 +114,10 @@ public class Recording implements Comparable<Recording>, ISourceEventProcessor
 	    return getRecordingConfiguration().getAlias()
 	    		.compareTo( other.getRecordingConfiguration().getAlias() );
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Recording)) return false;
+        return compareTo((Recording) o) == 0;
+    }
 }

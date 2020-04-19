@@ -46,4 +46,10 @@ public class FilterElement<T> implements Comparable<FilterElement<T>>
     {
 	    return toString().compareTo( other.toString() );
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof FilterElement)) return false;
+        return compareTo((FilterElement) o) == 0;
+    }
 }

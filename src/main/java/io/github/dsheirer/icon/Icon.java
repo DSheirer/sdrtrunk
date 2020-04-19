@@ -114,4 +114,10 @@ public class Icon implements Comparable<Icon>
     {
         return getName().compareTo(otherIcon.getName());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Icon)) return false;
+        return compareTo((Icon) o) == 0;
+    }
 }

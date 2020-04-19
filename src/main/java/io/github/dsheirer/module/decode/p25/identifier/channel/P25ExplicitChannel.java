@@ -86,4 +86,10 @@ public class P25ExplicitChannel extends P25Channel implements Comparable<P25Chan
             return Integer.compare(getDownlinkBandIdentifier(), other.getDownlinkBandIdentifier());
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof P25ExplicitChannel)) return false;
+        return compareTo((P25ExplicitChannel) o) == 0;
+    }
 }
