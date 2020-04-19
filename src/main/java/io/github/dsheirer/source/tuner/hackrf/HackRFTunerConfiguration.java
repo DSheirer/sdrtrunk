@@ -27,10 +27,10 @@ import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGai
 
 public class HackRFTunerConfiguration extends TunerConfiguration
 {
-    private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
-    private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_16;
-    private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_10;
-    private boolean mAmplifierEnabled = true;
+    private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE_5_0;
+    private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_16;  // We can see some signal at this gain
+    private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_16;  // We can see some signal at this gain
+    private boolean mAmplifierEnabled = false;  //Probably should start off disabled
     private double mFrequencyCorrection = 0.0d;
 
     /**
