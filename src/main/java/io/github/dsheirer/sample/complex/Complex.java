@@ -360,14 +360,7 @@ public class Complex implements Serializable
      */
     public float maximumAbsolute()
     {
-        if(Math.abs(mLeft) > Math.abs(mRight))
-        {
-            return Math.abs(mLeft);
-        }
-        else
-        {
-            return Math.abs(mRight);
-        }
+        return Math.max(Math.abs(mLeft), Math.abs(mRight));
     }
 
     /**

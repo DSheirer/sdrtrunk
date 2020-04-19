@@ -910,8 +910,8 @@ public class FIRFilterSpecification
     {
         double df = Math.abs(frequency2 - frequency1) / sampleRate;
 
-        double ddp = Math.log10(stopBandRipple <= passBandRipple ? passBandRipple : stopBandRipple);
-        double dds = Math.log10(stopBandRipple <= passBandRipple ? stopBandRipple : passBandRipple);
+        double ddp = Math.log10(Math.max(stopBandRipple, passBandRipple));
+        double dds = Math.log10(Math.min(stopBandRipple, passBandRipple));
 
         double a1 = 5.309e-3;
         double a2 = 7.114e-2;

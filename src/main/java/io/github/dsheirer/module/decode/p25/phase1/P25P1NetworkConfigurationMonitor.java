@@ -48,6 +48,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SND
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcast;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.SystemServiceBroadcast;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -334,12 +335,7 @@ public class P25P1NetworkConfigurationMonitor
     {
         if(identifier.getValue() instanceof Integer)
         {
-            String hex = Integer.toHexString((Integer)identifier.getValue());
-
-            while(hex.length() < width)
-            {
-                hex = "0" + hex;
-            }
+            String hex = StringUtils.leftPad(Integer.toHexString((Integer)identifier.getValue()), width, '0');
 
             return hex.toUpperCase() + "[" + identifier.getValue() + "]";
         }

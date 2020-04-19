@@ -185,36 +185,36 @@ public class AudioMetadataUtils
     {
         ID3v24Tag tag = new ID3v24Tag();
 
-        for(AudioMetadata metadata: metadataMap.keySet())
+        for(Map.Entry<AudioMetadata, String> entry : metadataMap.entrySet())
         {
-            switch(metadata)
+            switch(entry.getKey())
             {
                 case ALBUM_TITLE:
-                    tag.setAlbum(metadataMap.get(metadata));
+                    tag.setAlbum(entry.getValue());
                     break;
                 case ARTIST_NAME:
-                    tag.setArtist(metadataMap.get(metadata));
+                    tag.setArtist(entry.getValue());
                     break;
                 case COMMENTS:
-                    tag.setComment(metadataMap.get(metadata));
+                    tag.setComment(entry.getValue());
                     break;
                 case COMPOSER:
-                    tag.setComposer(metadataMap.get(metadata));
+                    tag.setComposer(entry.getValue());
                     break;
                 case DATE_CREATED:
-                    tag.setDate(metadataMap.get(metadata));
+                    tag.setDate(entry.getValue());
                     break;
                 case GENRE:
-                    tag.setGenreDescription(metadataMap.get(metadata));
+                    tag.setGenreDescription(entry.getValue());
                     break;
                 case GROUPING:
-                    tag.setGrouping(metadataMap.get(metadata));
+                    tag.setGrouping(entry.getValue());
                     break;
                 case TRACK_TITLE:
-                    tag.setTitle(metadataMap.get(metadata));
+                    tag.setTitle(entry.getValue());
                     break;
                 case YEAR:
-                    tag.setYear(metadataMap.get(metadata));
+                    tag.setYear(entry.getValue());
                     break;
             }
         }

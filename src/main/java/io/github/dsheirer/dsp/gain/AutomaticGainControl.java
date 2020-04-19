@@ -212,7 +212,7 @@ public class AutomaticGainControl
                 mDecayAverage = ((1.0 - DECAY_FALL_ALPHA) * mDecayAverage) + (DECAY_RISE_ALPHA * mPeakMagnitude);
             }
 
-            double magnitude = (mAttackAverage > mDecayAverage) ? mAttackAverage : mDecayAverage;
+            double magnitude = Math.max(mAttackAverage, mDecayAverage);
 
             if(magnitude < KNEE)
             {

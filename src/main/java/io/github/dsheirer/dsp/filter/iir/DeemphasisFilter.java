@@ -41,12 +41,7 @@ public class DeemphasisFilter
 		{
 			return MAX_SAMPLE_VALUE;
 		}
-		else if( value < -MAX_SAMPLE_VALUE )
-		{
-			return -MAX_SAMPLE_VALUE;
-		}
-		
-		else return value;
+		else return Math.max(value, -MAX_SAMPLE_VALUE);
 	}
 	
 	public float[] filter( float[] samples )

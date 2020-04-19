@@ -487,15 +487,7 @@ public class AliasList implements Listener<AliasEvent>
      */
     public static void remove(Alias alias, Map map)
     {
-        Iterator<Map.Entry> it = map.entrySet().iterator();
-
-        while(it.hasNext())
-        {
-            if(it.next().getValue().equals(alias))
-            {
-                it.remove();
-            }
-        }
+        map.entrySet().removeIf(entry -> alias.equals(((Map.Entry)entry).getValue()));
     }
 
 
@@ -520,11 +512,11 @@ public class AliasList implements Listener<AliasEvent>
                 return mTalkgroupAliasMap.get(value);
             }
 
-            for(TalkgroupRange talkgroupRange: mTalkgroupRangeAliasMap.keySet())
+            for(Map.Entry<TalkgroupRange, Alias> entry : mTalkgroupRangeAliasMap.entrySet())
             {
-                if(talkgroupRange.contains(value))
+                if(entry.getKey().contains(value))
                 {
-                    return mTalkgroupRangeAliasMap.get(talkgroupRange);
+                    return entry.getValue();
                 }
             }
 
@@ -606,11 +598,11 @@ public class AliasList implements Listener<AliasEvent>
                 return mRadioAliasMap.get(value);
             }
 
-            for(RadioRange radioRange: mRadioRangeAliasMap.keySet())
+            for(Map.Entry<RadioRange, Alias> entry : mRadioRangeAliasMap.entrySet())
             {
-                if(radioRange.contains(value))
+                if(entry.getKey().contains(value))
                 {
-                    return mRadioRangeAliasMap.get(radioRange);
+                    return entry.getValue();
                 }
             }
 

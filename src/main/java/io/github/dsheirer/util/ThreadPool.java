@@ -35,7 +35,7 @@ public class ThreadPool
     static
     {
         //Create a scheduled thread pool sized according to the available processors/cores, minimum 2
-        CORES = (CORES < 2 ? 2 : CORES);
+        CORES = (Math.max(CORES, 2));
 
         SCHEDULED = Executors.newScheduledThreadPool(CORES, new NamingThreadFactory("sdrtrunk"));
     }

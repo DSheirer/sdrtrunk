@@ -39,13 +39,11 @@ public class USBUtils
 	public static List<UsbDevice> getDevices() 
 			throws SecurityException, UsbException, UnsupportedEncodingException
 	{
-		ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
-		
 		UsbServices services = UsbHostManager.getUsbServices();
 
 		UsbHub root = services.getRootUsbHub();
-		
-		devices.addAll( getHubDevices( root ) );
+
+		ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>(getHubDevices(root));
 
 		return devices;
 	}

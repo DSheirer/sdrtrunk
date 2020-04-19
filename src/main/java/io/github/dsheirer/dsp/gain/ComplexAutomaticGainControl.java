@@ -195,8 +195,7 @@ public class ComplexAutomaticGainControl implements Listener<Complex>,
 				        ( DECAY_RISE_ALPHA * mPeakMagnitude );
 			}
 
-			double magnitude = ( mAttackAverage > mDecayAverage ) ? 
-								 mAttackAverage : mDecayAverage;
+			double magnitude = Math.max(mAttackAverage, mDecayAverage);
 
 			if( magnitude < KNEE )
 			{

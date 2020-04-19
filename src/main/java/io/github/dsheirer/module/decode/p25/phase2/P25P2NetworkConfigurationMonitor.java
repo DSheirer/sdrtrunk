@@ -39,6 +39,7 @@ import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.RfssSta
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.SecondaryControlChannelBroadcastAbbreviated;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.SecondaryControlChannelBroadcastExplicit;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.SystemServiceBroadcast;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,12 +96,7 @@ public class P25P2NetworkConfigurationMonitor
     {
         if(identifier.getValue() instanceof Integer)
         {
-            String hex = Integer.toHexString((Integer)identifier.getValue());
-
-            while(hex.length() < width)
-            {
-                hex = "0" + hex;
-            }
+            String hex = StringUtils.leftPad(Integer.toHexString((Integer)identifier.getValue()), width, '0');
 
             return hex.toUpperCase() + "[" + identifier.getValue() + "]";
         }

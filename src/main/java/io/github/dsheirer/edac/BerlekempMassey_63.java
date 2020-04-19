@@ -304,14 +304,7 @@ public class BerlekempMassey_63
 
                     /* have now found q such that d[u]!=0 and u_lu[q] is maximum */
                     /* store degree of new elp polynomial */
-                    if( l[ u ] > l[ q ] + u - q )
-                    {
-                        l[ u + 1 ] = l[ u ];
-                    }
-                    else
-                    {
-                        l[ u + 1 ] = l[ q ] + u - q;
-                    }
+                    l[u + 1] = Math.max(l[u], l[q] + u - q);
 
                     /* form new elp(x) */
                     for( int i = 0; i < NN - KK; i++ )
@@ -373,10 +366,7 @@ public class BerlekempMassey_63
             	}
 
                 /* find roots of the error location polynomial */
-            	for( int i = 1; i <= l[u]; i++ )
-            	{
-                    reg[ i ] = elp[ u ][ i ];
-            	}
+                if (l[u] >= 0) System.arraycopy(elp[u], 1, reg, 1, l[u]);
             	
                 count = 0;
                 
