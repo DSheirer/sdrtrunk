@@ -101,13 +101,12 @@ public class GoertzelFilter
     	double s = 0.0D;
     	double s_prev = 0.0D;
     	double s_prev2 = 0.0D;
-    
-    	for ( int x = 0; x < samples.length; x++ )
-    	{
-    	    s = samples[x] + ( mCoefficient * s_prev ) - s_prev2;
-    	    s_prev2 = s_prev;
-    	    s_prev = s;
-    	}
+
+        for (float sample : samples) {
+            s = sample + (mCoefficient * s_prev) - s_prev2;
+            s_prev2 = s_prev;
+            s_prev = s;
+        }
     
     	//power = s_prev2 * s_prev2 + s_prev * s_prev - coeff * s_prev * s_prev2 ;
     
@@ -125,10 +124,9 @@ public class GoertzelFilter
     private int getBinZeroPower( float[] samples )
     {
         int retVal = 0;
-        
-        for( int x = 0; x < samples.length; x++ )
-        {
-            retVal += samples[ x ];
+
+        for (float sample : samples) {
+            retVal += sample;
         }
         
         return retVal;

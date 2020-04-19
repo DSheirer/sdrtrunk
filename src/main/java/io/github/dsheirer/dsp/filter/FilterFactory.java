@@ -109,9 +109,8 @@ public class FilterFactory
     {
         float accumulator = 0;
 
-        for(int x = 0; x < coefficients.length; x++)
-        {
-            accumulator += Math.abs(coefficients[x]);
+        for (float coefficient : coefficients) {
+            accumulator += Math.abs(coefficient);
         }
 
         for(int x = 0; x < coefficients.length; x++)
@@ -133,9 +132,8 @@ public class FilterFactory
     {
         float accumulator = 0;
 
-        for(int x = 0; x < coefficients.length; x++)
-        {
-            accumulator += Math.abs(coefficients[x]);
+        for (float coefficient : coefficients) {
+            accumulator += Math.abs(coefficient);
         }
 
         accumulator /= objective;

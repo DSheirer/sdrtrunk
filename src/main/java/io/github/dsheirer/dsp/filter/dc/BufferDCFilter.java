@@ -43,9 +43,8 @@ public class BufferDCFilter
     {
         mAccumulator = 0.0;
 
-        for(int x = 0; x < samples.length; x++)
-        {
-            mAccumulator += samples[x];
+        for (float sample : samples) {
+            mAccumulator += sample;
         }
 
         return (float)(mAccumulator / (double)samples.length);

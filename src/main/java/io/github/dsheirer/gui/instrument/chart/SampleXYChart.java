@@ -85,9 +85,7 @@ public class SampleXYChart extends PolarChart<XYChartItem> implements Listener<R
 
         series.getItems().clear();
 
-        for(int x = 0; x < complexSamples.length; x++)
-        {
-            Complex sample = complexSamples[x];
+        for (Complex sample : complexSamples) {
             series.getItems().add(new XYChartItem(sample.polarAngleDegrees(), sample.magnitude(), Color.BLUE));
         }
 

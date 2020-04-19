@@ -118,22 +118,14 @@ public class PreferencesEditor extends Application
 
     private TreeItem recursivelyFindEditorType(TreeItem parent, PreferenceEditorType type)
     {
-        ListIterator<TreeItem> li = parent.getChildren().listIterator();
 
-        while(li.hasNext())
-        {
-            TreeItem treeItem = li.next();
-
-            if(treeItem.getValue() instanceof PreferenceEditorType && (treeItem.getValue()).equals(type))
-            {
+        for (TreeItem treeItem : (Iterable<TreeItem>) parent.getChildren()) {
+            if (treeItem.getValue() instanceof PreferenceEditorType && (treeItem.getValue()).equals(type)) {
                 return treeItem;
-            }
-            else
-            {
+            } else {
                 TreeItem item = recursivelyFindEditorType(treeItem, type);
 
-                if(item != null)
-                {
+                if (item != null) {
                     return item;
                 }
             }

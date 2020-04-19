@@ -298,11 +298,9 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            Iterator<PassportTalkgroup> it = mTalkgroups.iterator();
 
-            while(it.hasNext())
-            {
-                sb.append("  ").append(it.next()).append("\n");
+            for (PassportTalkgroup mTalkgroup : mTalkgroups) {
+                sb.append("  ").append(mTalkgroup).append("\n");
             }
         }
 
@@ -314,11 +312,9 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            Iterator<PassportTalkgroup> it = mMobileIDs.iterator();
 
-            while(it.hasNext())
-            {
-                sb.append("  ").append(it.next()).append("\n");
+            for (PassportTalkgroup mMobileID : mMobileIDs) {
+                sb.append("  ").append(mMobileID).append("\n");
             }
         }
 

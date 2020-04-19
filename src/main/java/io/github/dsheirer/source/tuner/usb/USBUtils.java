@@ -58,20 +58,12 @@ public class USBUtils
 		
 		@SuppressWarnings( "unchecked" )
 		List<UsbDevice> children = hub.getAttachedUsbDevices();
-		
-		Iterator<UsbDevice> it = children.iterator();
-		
-		while( it.hasNext() )
-		{
-			UsbDevice child = it.next();
-			
-			if( child.isUsbHub() )
-			{
-				devices.addAll( getHubDevices( (UsbHub)child ) );
-			}
-			else
-			{
-				devices.add( child );
+
+		for (UsbDevice child : children) {
+			if (child.isUsbHub()) {
+				devices.addAll(getHubDevices((UsbHub) child));
+			} else {
+				devices.add(child);
 			}
 		}
 				

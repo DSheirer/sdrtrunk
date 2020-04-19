@@ -171,9 +171,8 @@ public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>,
             this(messageLength);
 
             /* Pre-load the message with the sync pattern */
-            for(int x = 0; x < initialFill.length; x++)
-            {
-                receive(initialFill[x]);
+            for (boolean b : initialFill) {
+                receive(b);
             }
         }
 
