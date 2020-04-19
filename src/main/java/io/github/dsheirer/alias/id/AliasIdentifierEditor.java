@@ -227,14 +227,7 @@ public class AliasIdentifierEditor extends Editor<Alias>
 
             List<AliasID> ids = alias.getId();
 
-            Collections.sort(ids, new Comparator<AliasID>()
-            {
-                @Override
-                public int compare(AliasID o1, AliasID o2)
-                {
-                    return o1.toString().compareTo(o2.toString());
-                }
-            });
+            ids.sort(Comparator.comparing(Object::toString));
 
             for(AliasID id : ids)
             {

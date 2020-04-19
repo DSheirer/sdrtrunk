@@ -251,26 +251,16 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
             }
         }
 
-        Collections.sort(autoStartChannels, new Comparator<Channel>()
-        {
-            @Override
-            public int compare(Channel channel1, Channel channel2)
-            {
-                if(channel1.hasAutoStartOrder() && channel2.hasAutoStartOrder())
-                {
-                    return Integer.compare(channel1.getAutoStartOrder(), channel2.getAutoStartOrder());
-                }
-                else if(channel1.hasAutoStartOrder())
-                {
-                    return -1;
-                }
-                else if(channel2.hasAutoStartOrder())
-                {
-                    return 1;
-                }
-
-                return 0;
+        autoStartChannels.sort((channel1, channel2) -> {
+            if (channel1.hasAutoStartOrder() && channel2.hasAutoStartOrder()) {
+                return Integer.compare(channel1.getAutoStartOrder(), channel2.getAutoStartOrder());
+            } else if (channel1.hasAutoStartOrder()) {
+                return -1;
+            } else if (channel2.hasAutoStartOrder()) {
+                return 1;
             }
+
+            return 0;
         });
 
         return autoStartChannels;
