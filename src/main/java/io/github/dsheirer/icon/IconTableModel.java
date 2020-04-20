@@ -168,7 +168,7 @@ public class IconTableModel extends AbstractTableModel
 
         Collections.sort(icons);
 
-        return icons.toArray(new Icon[icons.size()]);
+        return icons.toArray(new Icon[0]);
     }
 
     /**

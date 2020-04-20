@@ -266,15 +266,15 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
         List<String> listNames = mAliasModel.getListNames();
         listNames.add(0, "");
         mListCombo.setModel(new DefaultComboBoxModel<String>(
-                listNames.toArray(new String[listNames.size()])));
+                listNames.toArray(new String[0])));
 
         List<String> groupNames = mAliasModel.getGroupNames();
         groupNames.add(0, "");
         mGroupCombo.setModel(new DefaultComboBoxModel<String>(
-                groupNames.toArray(new String[groupNames.size()])));
+                groupNames.toArray(new String[0])));
 
         List<String> streamNames = mBroadcastModel.getBroadcastConfigurationNames();
-        mStreamCombo.setModel(new DefaultComboBoxModel<String>(streamNames.toArray(new String[streamNames.size()])));
+        mStreamCombo.setModel(new DefaultComboBoxModel<String>(streamNames.toArray(new String[0])));
 
         mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
 
@@ -300,12 +300,12 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
         List<String> listNames = mAliasModel.getListNames();
         listNames.add(0, "");
         mListCombo.setModel(new DefaultComboBoxModel<String>(
-                listNames.toArray(new String[listNames.size()])));
+                listNames.toArray(new String[0])));
 
         List<String> groupNames = mAliasModel.getGroupNames();
         groupNames.add(0, "");
         mGroupCombo.setModel(new DefaultComboBoxModel<String>(
-                groupNames.toArray(new String[groupNames.size()])));
+                groupNames.toArray(new String[0])));
 
         mButtonColor.setForeground(getForeground());
         mButtonColor.setBackground(getBackground());

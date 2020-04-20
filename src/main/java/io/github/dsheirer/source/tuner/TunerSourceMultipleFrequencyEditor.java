@@ -71,7 +71,7 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
 //        mFrequencyEditor.setSize(new Dimension(100, 30));
         add(mFrequencyEditor, "span 2 2");
 
-        mTunerNameComboBox = new JComboBox<>(mCurrentTunerNames.toArray(new String[mCurrentTunerNames.size()]));
+        mTunerNameComboBox = new JComboBox<>(mCurrentTunerNames.toArray(new String[0]));
         mTunerNameComboBox.addActionListener(new ActionListener()
         {
             @Override
@@ -105,13 +105,13 @@ public class TunerSourceMultipleFrequencyEditor extends Editor<Channel>
             List<String> updatedTunerNameList = new ArrayList<>(mCurrentTunerNames);
             String unavailableTuner = preferredTuner + UNAVAILABLE_TUNER;
             updatedTunerNameList.add(unavailableTuner);
-            String[] tunerNameArray = updatedTunerNameList.toArray(new String[updatedTunerNameList.size()]);
+            String[] tunerNameArray = updatedTunerNameList.toArray(new String[0]);
             mTunerNameComboBox.setModel(new DefaultComboBoxModel<>(tunerNameArray));
             mTunerNameComboBox.setSelectedItem(unavailableTuner);
         }
         else
         {
-            String[] tunerNameArray = mCurrentTunerNames.toArray(new String[mCurrentTunerNames.size()]);
+            String[] tunerNameArray = mCurrentTunerNames.toArray(new String[0]);
             mTunerNameComboBox.setModel(new DefaultComboBoxModel<>(tunerNameArray));
 
             if(preferredTuner == null)

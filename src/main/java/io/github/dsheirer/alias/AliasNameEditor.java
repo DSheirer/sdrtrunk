@@ -115,7 +115,7 @@ public class AliasNameEditor extends Editor<Alias>
                     else
                     {
                         mGroupCombo.setModel(new DefaultComboBoxModel<String>(
-                            groups.toArray(new String[groups.size()])));
+                            groups.toArray(new String[0])));
                         ;
                     }
                 }
@@ -243,7 +243,7 @@ public class AliasNameEditor extends Editor<Alias>
             else
             {
                 mListCombo.setModel(new DefaultComboBoxModel<String>(
-                    listNames.toArray(new String[listNames.size()])));
+                    listNames.toArray(new String[0])));
                 ;
             }
 
@@ -258,7 +258,7 @@ public class AliasNameEditor extends Editor<Alias>
             else
             {
                 mGroupCombo.setModel(new DefaultComboBoxModel<String>(
-                    groupNames.toArray(new String[groupNames.size()])));
+                    groupNames.toArray(new String[0])));
                 ;
             }
 
