@@ -28,9 +28,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class TSBKMessageFilterSet extends FilterSet<IMessage>
 {
@@ -69,8 +67,7 @@ public class TSBKMessageFilterSet extends FilterSet<IMessage>
 
     public class StandardOpcodeFilter extends Filter<IMessage>
     {
-        private HashMap<Opcode, FilterElement<Opcode>> mStandardElements =
-                new HashMap<Opcode, FilterElement<Opcode>>();
+        private Map<Opcode, FilterElement<Opcode>> mStandardElements = new EnumMap<>(Opcode.class);
 
         public StandardOpcodeFilter()
         {

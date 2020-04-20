@@ -4,15 +4,13 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
+import io.github.dsheirer.protocol.Protocol;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PassportMessageFilter extends Filter<IMessage>
 {
-    private Map<MessageType, FilterElement<MessageType>> mElements = new HashMap<MessageType, FilterElement<MessageType>>();
+    private Map<MessageType, FilterElement<MessageType>> mElements = new EnumMap<>(MessageType.class);
 
     public PassportMessageFilter()
     {

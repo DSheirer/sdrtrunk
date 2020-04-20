@@ -20,6 +20,7 @@
 package io.github.dsheirer.gui.preference;
 
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.protocol.Protocol;
 import javafx.application.Application;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -41,6 +42,7 @@ import javafx.stage.Window;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.ListIterator;
 import java.util.Map;
@@ -52,7 +54,7 @@ public class PreferencesEditor extends Application
 {
     private final static Logger mLog = LoggerFactory.getLogger(PreferencesEditor.class);
 
-    private Map<PreferenceEditorType,Node> mEditors = new HashMap<>();
+    private Map<PreferenceEditorType,Node> mEditors = new EnumMap<>(PreferenceEditorType.class);
     private UserPreferences mUserPreferences;
     private HBox mParentBox;
     private TreeView mEditorSelectionTreeView;

@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,7 +39,7 @@ import java.util.Map;
 public class RadioFormatter
 {
     private final static Logger mLog = LoggerFactory.getLogger(RadioFormatter.class);
-    private static Map<Protocol,IntegerFormatter> mFormatterMap = new HashMap<>();
+    private static Map<Protocol,IntegerFormatter> mFormatterMap = new EnumMap<>(Protocol.class);
 
     static
     {

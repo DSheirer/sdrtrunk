@@ -42,11 +42,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AudioMetadataUtils
 {
@@ -78,7 +74,7 @@ public class AudioMetadataUtils
      */
     public static Map<AudioMetadata, String> getMetadataMap(IdentifierCollection identifierCollection, AliasList aliasList)
     {
-        Map<AudioMetadata, String> audioMetadata = new HashMap<>();
+        Map<AudioMetadata, String> audioMetadata = new EnumMap<>(AudioMetadata.class);
         StringBuilder comments = new StringBuilder();
         audioMetadata.put(AudioMetadata.COMPOSER, SystemProperties.getInstance().getApplicationName());
         String dateCreated = SDF.format(new Date(System.currentTimeMillis()));
