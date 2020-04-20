@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.jdesktop.swingx.mapviewer.bmng;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
@@ -50,7 +51,7 @@ public class CylindricalProjectionTileFactory extends DefaultTileFactory
 		int midpoint = ((SLMapServerInfo) getInfo()).getMidpoint();
 		if (zoom < midpoint)
 		{
-			int w = (int) Math.pow(2, midpoint - zoom);
+			int w = (int) FastMath.pow(2, midpoint - zoom);
 			return new Dimension(w, w / 2);
 			// return super.getMapSize(zoom);
 		}

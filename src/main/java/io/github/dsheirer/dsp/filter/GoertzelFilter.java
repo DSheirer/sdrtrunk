@@ -18,6 +18,7 @@
 package io.github.dsheirer.dsp.filter;
 
 import io.github.dsheirer.dsp.filter.Window.WindowType;
+import org.apache.commons.math3.util.FastMath;
 
 
 /**
@@ -68,7 +69,7 @@ public class GoertzelFilter
     private void init()
     {
     	double normalizedFrequency = (double) mTargetFrequency / mSampleRate;
-    	mCoefficient = 2.0D * Math.cos( 2 * Math.PI * normalizedFrequency );
+    	mCoefficient = 2.0D * FastMath.cos( 2 * FastMath.PI * normalizedFrequency );
     }
 
     
@@ -113,7 +114,7 @@ public class GoertzelFilter
     	double magnitude = ( s_prev2 * s_prev2 ) + ( s_prev * s_prev) - (mCoefficient * s_prev * s_prev2);
     	int binZero = getBinZeroPower( samples );
     	
-    	int power = (int) (20 * Math.log10( magnitude / binZero ) );
+    	int power = (int) (20 * FastMath.log10( magnitude / binZero ) );
     	
     	return power;
     }

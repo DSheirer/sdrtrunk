@@ -30,6 +30,7 @@ import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -303,7 +304,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
     {
         Validate.isTrue(2.0 <= sampleSize && sampleSize <= 64.0);
 
-        mDBScale = (float)(20.0 * Math.log10(Math.pow(2.0, sampleSize - 1)));
+        mDBScale = (float)(20.0 * FastMath.log10(FastMath.pow(2.0, sampleSize - 1)));
     }
 
     /**
@@ -387,7 +388,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
 
     private int getZoomMultiplier()
     {
-        return (int)Math.pow(2.0, mZoom);
+        return (int) FastMath.pow(2.0, mZoom);
     }
 
     /**

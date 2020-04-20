@@ -17,6 +17,7 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +73,7 @@ public class TwoChannelSynthesizerM2
      */
     private void init(float[] filter)
     {
-        int tapsPerChannel = (int)Math.ceil(filter.length / 2);
+        int tapsPerChannel = (int) FastMath.ceil(filter.length / 2);
 
         mIQInterleavedFilter = getInterleavedFilter(filter, tapsPerChannel);
         mSerpentineDataBuffer = new float[mIQInterleavedFilter.length];

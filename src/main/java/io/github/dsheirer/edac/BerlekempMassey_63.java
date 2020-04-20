@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.edac;
 
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -304,7 +305,7 @@ public class BerlekempMassey_63
 
                     /* have now found q such that d[u]!=0 and u_lu[q] is maximum */
                     /* store degree of new elp polynomial */
-                    l[u + 1] = Math.max(l[u], l[q] + u - q);
+                    l[u + 1] = FastMath.max(l[u], l[q] + u - q);
 
                     /* form new elp(x) */
                     for( int i = 0; i < NN - KK; i++ )

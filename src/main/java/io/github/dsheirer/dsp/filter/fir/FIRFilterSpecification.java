@@ -2,6 +2,7 @@ package io.github.dsheirer.dsp.filter.fir;
 
 import io.github.dsheirer.dsp.filter.fir.remez.FIRLinearPhaseFilterType;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -887,7 +888,7 @@ public class FIRFilterSpecification
      */
     private static int getFilterOrder(double length)
     {
-        return (int)(Math.ceil(length) - 1);
+        return (int)(FastMath.ceil(length) - 1);
     }
 
     /**
@@ -908,10 +909,10 @@ public class FIRFilterSpecification
     public static int estimateFilterOrder(double sampleRate, double frequency1, double frequency2,
                                           double passBandRipple, double stopBandRipple)
     {
-        double df = Math.abs(frequency2 - frequency1) / sampleRate;
+        double df = FastMath.abs(frequency2 - frequency1) / sampleRate;
 
-        double ddp = Math.log10(Math.max(stopBandRipple, passBandRipple));
-        double dds = Math.log10(Math.min(stopBandRipple, passBandRipple));
+        double ddp = FastMath.log10(FastMath.max(stopBandRipple, passBandRipple));
+        double dds = FastMath.log10(FastMath.min(stopBandRipple, passBandRipple));
 
         double a1 = 5.309e-3;
         double a2 = 7.114e-2;
@@ -932,7 +933,7 @@ public class FIRFilterSpecification
         double ff = b1 + b2 * (ddp - dds);
         double n = dinf / df - ff * df + 1.0;
 
-        return (int)Math.ceil(n);
+        return (int)FastMath.ceil(n);
     }
 
     /**
@@ -946,9 +947,9 @@ public class FIRFilterSpecification
     public static int estimateBandPassOrder(double sampleRate, int passBandStart, int passBandEnd,
                                             double passBandRippleDb, double stopBandRippleDb)
     {
-        double df = (double)Math.abs(passBandEnd - passBandStart) / sampleRate;
-        double ddp = Math.log10(passBandRippleDb);
-        double dds = Math.log10(stopBandRippleDb);
+        double df = (double)FastMath.abs(passBandEnd - passBandStart) / sampleRate;
+        double ddp = FastMath.log10(passBandRippleDb);
+        double dds = FastMath.log10(stopBandRippleDb);
 
         double a1 = 0.01201;
         double a2 = 0.09664;
@@ -963,10 +964,10 @@ public class FIRFilterSpecification
         double t4 = a5 * ddp;
 
         double cinf = dds * (t1 + t2 + a3) + t3 + t4 + a6;
-        double ginf = -14.6f * (double)Math.log10(passBandRippleDb / stopBandRippleDb) - 16.9;
+        double ginf = -14.6f * (double)FastMath.log10(passBandRippleDb / stopBandRippleDb) - 16.9;
         double n = cinf / df + ginf * df + 1.0;
 
-        return (int)Math.ceil(n);
+        return (int)FastMath.ceil(n);
     }
 
     /**
@@ -1040,7 +1041,7 @@ public class FIRFilterSpecification
 
         public void setGridSize(int totalGridSize, double totalBandwidth)
         {
-            mGridSize = Math.max(1, (int)Math.ceil((double)totalGridSize * (getBandWidth() / totalBandwidth)));
+            mGridSize = FastMath.max(1, (int)FastMath.ceil((double)totalGridSize * (getBandWidth() / totalBandwidth)));
         }
 
         public String toString()
@@ -1104,8 +1105,8 @@ public class FIRFilterSpecification
          */
         public double getRippleAmplitude()
         {
-            return (Math.pow(10.0, (mRippleDB / 20)) - 1)
-                / (Math.pow(10.0, (mRippleDB / 20)) + 1);
+            return (FastMath.pow(10.0, (mRippleDB / 20)) - 1)
+                / (FastMath.pow(10.0, (mRippleDB / 20)) + 1);
         }
 
         /**

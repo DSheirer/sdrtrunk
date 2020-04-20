@@ -9,6 +9,8 @@
 
 package org.jdesktop.swingx.mapviewer;
 
+import org.apache.commons.math3.util.FastMath;
+
 import java.awt.geom.Point2D;
 
 /**
@@ -140,7 +142,7 @@ public class TileFactoryInfo
 			// how wide is each degree of longitude in pixels
 			longitudeDegreeWidthInPixels[z] = tilesize / 360.0;
 			// how wide is each radian of longitude in pixels
-			longitudeRadianWidthInPixels[z] = tilesize / (2.0 * Math.PI);
+			longitudeRadianWidthInPixels[z] = tilesize / (2.0 * FastMath.PI);
 			int t2 = tilesize / 2;
 			mapCenterInPixelsAtZoom[z] = new Point2D.Double(t2, t2);
 			mapWidthInTilesAtZoom[z] = tilesize / this.getTileSize(0);

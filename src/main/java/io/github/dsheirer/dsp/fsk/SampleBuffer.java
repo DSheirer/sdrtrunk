@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.fsk;
 
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class SampleBuffer
         mIntegerSamplesPerSymbol = (int)(samplesPerSymbol + 0.5f);
         mHalfIntegerSamplesPerSymbol = (int)(samplesPerSymbol / 2.0f + 0.5f);
         mMidSymbolSamplingPoint = samplesPerSymbol + mHalfIntegerSamplesPerSymbol;
-        mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
+        mTwiceSamplesPerSymbol = (int) FastMath.floor(2.0 * samplesPerSymbol);
         mDelayLine = new boolean[2 * mTwiceSamplesPerSymbol];
     }
 

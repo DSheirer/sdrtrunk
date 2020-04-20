@@ -26,6 +26,7 @@ import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -247,7 +248,7 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
                 //Add the absolute value of correlation accumulator value to the averaging buffer and store the current
                 //average as the correlation value for this sample.  We use absolute value because we don't care if the
                 //signal is out of phase with the reference samples
-                mCorrelationValues[x] = mAveragingBuffer.get(Math.abs(mCorrelationAccumulator));
+                mCorrelationValues[x] = mAveragingBuffer.get(FastMath.abs(mCorrelationAccumulator));
             }
 
             return mCorrelationValues;

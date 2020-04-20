@@ -9,6 +9,7 @@
 
 package org.jdesktop.swingx.mapviewer.wms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 
@@ -32,7 +33,7 @@ public class WMSTileFactory extends DefaultTileFactory
 			{
 				int zz = 17 - zoom;
 				int z = 4;
-				z = (int) Math.pow(2, (double) zz - 1);
+				z = (int) FastMath.pow(2, (double) zz - 1);
 				return wms.toWMSURL(x - z, z - 1 - y, zz, getTileSize(zoom));
 			}
 

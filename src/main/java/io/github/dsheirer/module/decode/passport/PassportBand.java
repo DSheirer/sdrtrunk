@@ -18,6 +18,8 @@
 package io.github.dsheirer.module.decode.passport;
 
 
+import org.apache.commons.math3.util.FastMath;
+
 public enum PassportBand
 {
     BAND_800( "800", 800000000 ),
@@ -69,7 +71,7 @@ public enum PassportBand
     
     public int getChannel( long frequency )
     {
-    	return Math.round( (float)( frequency - mBase ) / 
+    	return FastMath.round( (float)( frequency - mBase ) /
     					   (float)CHANNEL_BANDWIDTH );
     }
     

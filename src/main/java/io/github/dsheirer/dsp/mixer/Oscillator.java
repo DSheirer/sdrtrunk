@@ -16,6 +16,7 @@
 package io.github.dsheirer.dsp.mixer;
 
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class Oscillator extends AbstractOscillator
 {
@@ -62,7 +63,7 @@ public class Oscillator extends AbstractOscillator
     @Override
     protected void update()
     {
-        float anglePerSample = (float)(2.0d * Math.PI * getFrequency() / getSampleRate());
+        float anglePerSample = (float)(2.0d * FastMath.PI * getFrequency() / getSampleRate());
         mAnglePerSample = Complex.fromAngle(anglePerSample);
     }
 }

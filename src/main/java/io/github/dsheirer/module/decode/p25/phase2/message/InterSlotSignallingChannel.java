@@ -28,6 +28,7 @@ import io.github.dsheirer.module.decode.p25.phase2.enumeration.ISCHSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.SuperframeSequence;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -231,7 +232,7 @@ public class InterSlotSignallingChannel
         double[] values = new double[9];
         for(int x = 0; x < 7; x++)
         {
-            int mask = (int)Math.pow(2, x);
+            int mask = (int) FastMath.pow(2, x);
             if((value & mask) == mask)
             {
                 values[8 - x] = 1;
@@ -257,7 +258,7 @@ public class InterSlotSignallingChannel
 
             if((value & 1) == 1)
             {
-                decoded += (long)Math.pow(2, x);
+                decoded += (long)FastMath.pow(2, x);
             }
         }
 

@@ -2,6 +2,7 @@ package io.github.dsheirer.dsp.filter.interpolator;
 
 import io.github.dsheirer.sample.complex.Complex;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,13 +71,13 @@ public class RealInterpolator extends Interpolator
         RealInterpolator interpolator = new RealInterpolator(1.0f);
         DecimalFormat decimalFormat = new DecimalFormat("0.0000");
 
-        double TWO_PI = Math.PI * 2.0;
+        double TWO_PI = FastMath.PI * 2.0;
 
 		float[] samples = new float[16];
 
 		for(int x = 0; x < 16; x++)
         {
-            samples[x] = (float)Math.sin(TWO_PI * (double)x / 8.0);
+            samples[x] = (float) FastMath.sin(TWO_PI * (double)x / 8.0);
         }
 
         mLog.debug("Samples: " + Arrays.toString(samples));

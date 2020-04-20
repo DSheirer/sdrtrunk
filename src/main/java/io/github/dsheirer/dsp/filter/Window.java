@@ -36,6 +36,7 @@
  */
 package io.github.dsheirer.dsp.filter;
 
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,10 +49,10 @@ public class Window
 {
     private final static Logger mLog = LoggerFactory.getLogger(Window.class);
 
-    private static final double TWO_PI = Math.PI * 2.0d;
-    private static final double FOUR_PI = Math.PI * 4.0d;
-    private static final double SIX_PI = Math.PI * 6.0d;
-    private static final double EIGHT_PI = Math.PI * 8.0d;
+    private static final double TWO_PI = FastMath.PI * 2.0d;
+    private static final double FOUR_PI = FastMath.PI * 4.0d;
+    private static final double SIX_PI = FastMath.PI * 6.0d;
+    private static final double EIGHT_PI = FastMath.PI * 8.0d;
 
     /**
      * Creates a window of the specified type and length.
@@ -121,8 +122,8 @@ public class Window
 
             for(int x = -half; x < length / 2 + 1; x++)
             {
-                coefficients[x + half] = Math.cos(
-                    ((double)x * Math.PI) / ((double)length + 1.0d));
+                coefficients[x + half] = FastMath.cos(
+                    ((double)x * FastMath.PI) / ((double)length + 1.0d));
             }
         }
         else //Odd length
@@ -131,8 +132,8 @@ public class Window
 
             for(int x = -half; x < half + 1; x++)
             {
-                coefficients[x + half] = Math.cos(
-                    ((double)x * Math.PI) / ((double)length + 1.0d));
+                coefficients[x + half] = FastMath.cos(
+                    ((double)x * FastMath.PI) / ((double)length + 1.0d));
             }
         }
 
@@ -158,8 +159,8 @@ public class Window
         for(int x = 0; x < length; x++)
         {
             coefficients[x] = a0 -
-                (a1 * Math.cos((TWO_PI * (double)x) / denominator)) +
-                (a2 * Math.cos((FOUR_PI * (double)x) / denominator));
+                (a1 * FastMath.cos((TWO_PI * (double)x) / denominator)) +
+                (a2 * FastMath.cos((FOUR_PI * (double)x) / denominator));
         }
 
         return coefficients;
@@ -184,9 +185,9 @@ public class Window
         for(int x = 0; x < length; x++)
         {
             coefficients[x] = a0 -
-                (a1 * Math.cos(TWO_PI * (double)x / denominator)) +
-                (a2 * Math.cos(FOUR_PI * (double)x / denominator)) -
-                (a3 * Math.cos(SIX_PI * (double)x / denominator));
+                (a1 * FastMath.cos(TWO_PI * (double)x / denominator)) +
+                (a2 * FastMath.cos(FOUR_PI * (double)x / denominator)) -
+                (a3 * FastMath.cos(SIX_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -211,9 +212,9 @@ public class Window
         for(int x = 0; x < length; x++)
         {
             coefficients[x] = a0 -
-                (a1 * Math.cos(TWO_PI * (double)x / denominator)) +
-                (a2 * Math.cos(FOUR_PI * (double)x / denominator)) -
-                (a3 * Math.cos(SIX_PI * (double)x / denominator));
+                (a1 * FastMath.cos(TWO_PI * (double)x / denominator)) +
+                (a2 * FastMath.cos(FOUR_PI * (double)x / denominator)) -
+                (a3 * FastMath.cos(SIX_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -238,9 +239,9 @@ public class Window
         for(int x = 0; x < length; x++)
         {
             coefficients[x] = a0 -
-                (a1 * Math.cos(TWO_PI * (double)x / denominator)) +
-                (a2 * Math.cos(FOUR_PI * (double)x / denominator)) -
-                (a3 * Math.cos(SIX_PI * (double)x / denominator));
+                (a1 * FastMath.cos(TWO_PI * (double)x / denominator)) +
+                (a2 * FastMath.cos(FOUR_PI * (double)x / denominator)) -
+                (a3 * FastMath.cos(SIX_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -272,12 +273,12 @@ public class Window
             double w = TWO_PI * (double)x / denominator;
 
             coefficients[x] = a0 -
-                (a1 * Math.cos(w)) +
-                (a2 * Math.cos(2.0 * w)) -
-                (a3 * Math.cos(3.0 * w)) +
-                (a4 * Math.cos(4.0 * w)) -
-                (a5 * Math.cos(5.0 * w)) +
-                (a6 * Math.cos(6.0 * w));
+                (a1 * FastMath.cos(w)) +
+                (a2 * FastMath.cos(2.0 * w)) -
+                (a3 * FastMath.cos(3.0 * w)) +
+                (a4 * FastMath.cos(4.0 * w)) -
+                (a5 * FastMath.cos(5.0 * w)) +
+                (a6 * FastMath.cos(6.0 * w));
         }
 
         return coefficients;
@@ -299,7 +300,7 @@ public class Window
 
         for(int x = 0; x < length; x++)
         {
-            coefficients[x] = a0 - (a1 * Math.cos(TWO_PI * (double)x / denominator));
+            coefficients[x] = a0 - (a1 * FastMath.cos(TWO_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -321,7 +322,7 @@ public class Window
 
         for(int x = 0; x < length; x++)
         {
-            coefficients[x] = a0 - (a1 * Math.cos(TWO_PI * (double)x / denominator));
+            coefficients[x] = a0 - (a1 * FastMath.cos(TWO_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -348,10 +349,10 @@ public class Window
         for(int x = 0; x < length; x++)
         {
             coefficients[x] = a0 -
-                (a1 * Math.cos(TWO_PI * (double)x / denominator)) +
-                (a2 * Math.cos(FOUR_PI * (double)x / denominator)) -
-                (a3 * Math.cos(SIX_PI * (double)x / denominator)) +
-                (a4 * Math.cos(EIGHT_PI * (double)x / denominator));
+                (a1 * FastMath.cos(TWO_PI * (double)x / denominator)) +
+                (a2 * FastMath.cos(FOUR_PI * (double)x / denominator)) -
+                (a3 * FastMath.cos(SIX_PI * (double)x / denominator)) +
+                (a4 * FastMath.cos(EIGHT_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -371,7 +372,7 @@ public class Window
         }
         else if(attenuation >= 21.0)
         {
-            return (0.5842 * Math.pow(attenuation - 21.0, 0.4)) + (0.07886 * (attenuation - 21.0));
+            return (0.5842 * FastMath.pow(attenuation - 21.0, 0.4)) + (0.07886 * (attenuation - 21.0));
         }
         else
         {
@@ -398,7 +399,7 @@ public class Window
 
         for(int x = 0; x < coefficients.length; x++)
         {
-            temp = beta * Math.sqrt(1.0 - Math.pow(2.0 * x / (length - 1) - 1.0, 2));
+            temp = beta * FastMath.sqrt(1.0 - FastMath.pow(2.0 * x / (length - 1) - 1.0, 2));
             coefficients[x] = getBesselZerothOrder(temp) / betaBesselZerothOrder;
         }
 

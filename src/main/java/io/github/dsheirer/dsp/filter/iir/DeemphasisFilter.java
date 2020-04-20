@@ -15,6 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.iir;
 
+import org.apache.commons.math3.util.FastMath;
+
 public class DeemphasisFilter
 {
 	private static final float MAX_SAMPLE_VALUE = 0.95f;
@@ -24,7 +26,7 @@ public class DeemphasisFilter
 	
 	public DeemphasisFilter( float sampleRate, float cutoff, float gain )
 	{
-		mAlpha = (float)Math.exp( -2.0 * Math.PI * cutoff * ( 1.0 / sampleRate ) );
+		mAlpha = (float)FastMath.exp( -2.0 * FastMath.PI * cutoff * ( 1.0 / sampleRate ) );
 		mGain = gain;
 	}
 	
@@ -41,7 +43,7 @@ public class DeemphasisFilter
 		{
 			return MAX_SAMPLE_VALUE;
 		}
-		else return Math.max(value, -MAX_SAMPLE_VALUE);
+		else return FastMath.max(value, -MAX_SAMPLE_VALUE);
 	}
 	
 	public float[] filter( float[] samples )

@@ -26,6 +26,7 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
+import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +111,7 @@ public class FilterFactory
         float accumulator = 0;
 
         for (float coefficient : coefficients) {
-            accumulator += Math.abs(coefficient);
+            accumulator += FastMath.abs(coefficient);
         }
 
         for(int x = 0; x < coefficients.length; x++)
@@ -133,7 +134,7 @@ public class FilterFactory
         float accumulator = 0;
 
         for (float coefficient : coefficients) {
-            accumulator += Math.abs(coefficient);
+            accumulator += FastMath.abs(coefficient);
         }
 
         accumulator /= objective;
@@ -169,7 +170,7 @@ public class FilterFactory
 
         if(length % 2 == 0) //even length
         {
-            int binCount = (int)((Math.round((float)frequency / (float)sampleRate * (float)length)));
+            int binCount = (int)((FastMath.round((float)frequency / (float)sampleRate * (float)length)));
 
             for(int x = 0; x < binCount; x++)
             {
@@ -179,7 +180,7 @@ public class FilterFactory
         }
         else //odd length
         {
-            int binCount = (int)((Math.round((float)frequency / (float)sampleRate * (float)length + 0.5)));
+            int binCount = (int)((FastMath.round((float)frequency / (float)sampleRate * (float)length + 0.5)));
 
             unityArray[0] = 1.0f;
 
@@ -352,7 +353,7 @@ public class FilterFactory
     {
         double frequency = ((double)stop - (double)pass) / sampleRate;
 
-        return (int)(Math.round((double)attenuation / (22.0d * frequency)));
+        return (int)(FastMath.round((double)attenuation / (22.0d * frequency)));
     }
 
     /**
@@ -429,7 +430,7 @@ public class FilterFactory
 
         for(Integer factor : factors)
         {
-            int testDelta = Math.abs(desiredFactor - factor);
+            int testDelta = FastMath.abs(desiredFactor - factor);
 
             if(testDelta < bestDelta)
             {
@@ -482,7 +483,7 @@ public class FilterFactory
     {
         double ratio = getBandwidthRatio(passFrequency, stopFrequency);
 
-        double numerator = 1.0d - (Math.sqrt((double)decimation * ratio / (2.0d - ratio)));
+        double numerator = 1.0d - (FastMath.sqrt((double)decimation * ratio / (2.0d - ratio)));
 
         double denominator = 2.0d - (ratio * (decimation + 1.0d));
 
@@ -557,18 +558,18 @@ public class FilterFactory
     {
         float[] cicArray = new float[length * 2];
 
-        int binCount = (int)((Math.round(
+        int binCount = (int)((FastMath.round(
             (double)frequency / (double)sampleRate * 2.0d * (double)length)));
 
         cicArray[0] = 1.0f;
 
-        float unityResponse = (float)(Math.sin(1.0d / (double)length) /
+        float unityResponse = (float)(FastMath.sin(1.0d / (double)length) /
             (1.0d / (double)length));
 
         for(int x = 1; x <= binCount; x++)
         {
             /* Calculate unity response plus amplification for droop */
-            float compensated = 1.0f + (unityResponse - (float)(Math.sin((double)x / (double)length) / ((double)x / (double)length)));
+            float compensated = 1.0f + (unityResponse - (float)(FastMath.sin((double)x / (double)length) / ((double)x / (double)length)));
 
             cicArray[x] = compensated;
             cicArray[length - x] = compensated;
@@ -610,25 +611,25 @@ public class FilterFactory
         {
             float index = (float)x - ((float)taps / 2.0f);
 
-            float x1 = (float)Math.PI * index / (float)samplesPerSymbol;
+            float x1 = (float)FastMath.PI * index / (float)samplesPerSymbol;
             float x2 = 4.0f * alpha * index / (float)samplesPerSymbol;
             float x3 = x2 * x2 - 1.0f;
 
             float numerator, denominator;
 
-            if(Math.abs(x3) >= 0.000001)
+            if(FastMath.abs(x3) >= 0.000001)
             {
                 if(x != taps / 2)
                 {
-                    numerator = (float)Math.cos((1.0 + alpha) * x1) +
-                        (float)Math.sin((1.0f - alpha) * x1) / (4.0f * alpha * index / (float)samplesPerSymbol);
+                    numerator = (float)FastMath.cos((1.0 + alpha) * x1) +
+                        (float)FastMath.sin((1.0f - alpha) * x1) / (4.0f * alpha * index / (float)samplesPerSymbol);
                 }
                 else
                 {
-                    numerator = (float)Math.cos((1.0f + alpha) * x1) + (1.0f - alpha) * (float)Math.PI / (4.0f * alpha);
+                    numerator = (float)FastMath.cos((1.0f + alpha) * x1) + (1.0f - alpha) * (float)FastMath.PI / (4.0f * alpha);
                 }
 
-                denominator = x3 * (float)Math.PI;
+                denominator = x3 * (float)FastMath.PI;
             }
             else
             {
@@ -641,11 +642,11 @@ public class FilterFactory
                 x3 = (1.0f - alpha) * x1;
                 x2 = (1.0f + alpha) * x1;
 
-                numerator = (float)(Math.sin(x2) * (1.0f + alpha) * Math.PI - Math.cos(x3) * ((1.0 - alpha) * Math.PI *
-                    (double)samplesPerSymbol) / (4.0 * alpha * index) + Math.sin(x3) * (double)samplesPerSymbol *
+                numerator = (float)(FastMath.sin(x2) * (1.0f + alpha) * FastMath.PI - FastMath.cos(x3) * ((1.0 - alpha) * FastMath.PI *
+                    (double)samplesPerSymbol) / (4.0 * alpha * index) + FastMath.sin(x3) * (double)samplesPerSymbol *
                     (double)samplesPerSymbol / (4.0 * alpha * index * index));
 
-                denominator = (float)(-32.0 * Math.PI * alpha * alpha * index / (double)samplesPerSymbol);
+                denominator = (float)(-32.0 * FastMath.PI * alpha * alpha * index / (double)samplesPerSymbol);
             }
 
             coefficients[x] = 4.0f * alpha * numerator / denominator;
@@ -697,8 +698,8 @@ public class FilterFactory
 
         for(int x = 0; x < filter.length; x++)
         {
-            real += filter[x] * Math.cos(Math.PI * frequency * (double)x);
-            imag += filter[x] * Math.sin(Math.PI * frequency * (double)x);
+            real += filter[x] * FastMath.cos(FastMath.PI * frequency * (double)x);
+            imag += filter[x] * FastMath.sin(FastMath.PI * frequency * (double)x);
         }
 
         return decibel(real, imag);
@@ -713,7 +714,7 @@ public class FilterFactory
      */
     public static double decibel(double real, double imag)
     {
-        return (float)(10.0 * Math.log10(Math.pow(real, 2.0) + Math.pow(imag, 2.0)));
+        return (float)(10.0 * FastMath.log10(FastMath.pow(real, 2.0) + FastMath.pow(imag, 2.0)));
     }
 
 
@@ -736,9 +737,9 @@ public class FilterFactory
 
         double bandEdgeFrequency = (double)channelBandwidth / (double)(channels * channelBandwidth * 2);
 
-        double response = decibel(designer.getFrequencyResponse(Math.cos(bandEdgeFrequency * Math.PI)), 0.0);
+        double response = decibel(designer.getFrequencyResponse(FastMath.cos(bandEdgeFrequency * FastMath.PI)), 0.0);
         mLog.debug("Frequency Response at 1.0: " + response);
-        response = decibel(designer.getFrequencyResponse(Math.cos(bandEdgeFrequency * Math.PI * 2.0)), 0.0);
+        response = decibel(designer.getFrequencyResponse(FastMath.cos(bandEdgeFrequency * FastMath.PI * 2.0)), 0.0);
         mLog.debug("Frequency Response at 2.0: " + response);
 
         return taps;
@@ -944,14 +945,14 @@ public class FilterFactory
         double[] window = Window.getWindow(windowType, length);
 
         double scalor = 2.0 * cutoff;
-        double piScalor = Math.PI * scalor;
+        double piScalor = FastMath.PI * scalor;
 
         coefficients[half] = (float)(1.0 * scalor * window[half]);
 
         for(int x = 1; x <= half; x++)
         {
             double a = piScalor * x;
-            double coefficient = scalor * Math.sin(a) / a;
+            double coefficient = scalor * FastMath.sin(a) / a;
 
             coefficient *= window[half + x];
             coefficients[half + x] = (float)coefficient;
@@ -983,14 +984,14 @@ public class FilterFactory
         double[] window = Window.getKaiser(length, attenuation);
 
         double scalor = 2.0 * cutoff;
-        double piScalor = Math.PI * scalor;
+        double piScalor = FastMath.PI * scalor;
 
         coefficients[half] = (float)(1.0 * scalor * window[half]);
 
         for(int x = 1; x <= half; x++)
         {
             double a = piScalor * x;
-            double coefficient = scalor * Math.sin(a) / a;
+            double coefficient = scalor * FastMath.sin(a) / a;
 
             coefficient *= window[half + x];
             coefficients[half + x] = (float)coefficient;
@@ -1009,7 +1010,7 @@ public class FilterFactory
      */
     private static boolean matchesObjective(double a, double objective, double marginOfError)
     {
-        return Math.abs(a - objective) <= marginOfError;
+        return FastMath.abs(a - objective) <= marginOfError;
     }
 
     public static void main(String[] args)

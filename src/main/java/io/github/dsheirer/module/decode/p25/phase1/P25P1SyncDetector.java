@@ -29,6 +29,7 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.FrameSync;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.sample.Listener;
+import org.apache.commons.math3.util.FastMath;
 
 public class P25P1SyncDetector implements Listener<Dibit>
 {
@@ -163,7 +164,7 @@ public class P25P1SyncDetector implements Listener<Dibit>
         public void setSampleRate(double sampleRate)
         {
             mSampleRate = sampleRate;
-            mPllCorrection = 2.0 * Math.PI * mFrequencyCorrection / mSampleRate;
+            mPllCorrection = 2.0 * FastMath.PI * mFrequencyCorrection / mSampleRate;
         }
     }
 }

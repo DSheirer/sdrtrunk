@@ -28,6 +28,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +98,7 @@ public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisio
         {
             corrected[x] = samples[x].angle();
 
-            if(x > 0 && (Math.abs(corrected[x] - corrected[x - 1]) > Math.PI))
+            if(x > 0 && (FastMath.abs(corrected[x] - corrected[x - 1]) > FastMath.PI))
             {
                 phaseRolloverIndex = x;
             }
@@ -109,11 +110,11 @@ public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisio
             {
                 if(corrected[x] > 0)
                 {
-                    corrected[x] -= 2 * Math.PI;
+                    corrected[x] -= 2 * FastMath.PI;
                 }
                 else
                 {
-                    corrected[x] += 2 * Math.PI;
+                    corrected[x] += 2 * FastMath.PI;
                 }
             }
         }

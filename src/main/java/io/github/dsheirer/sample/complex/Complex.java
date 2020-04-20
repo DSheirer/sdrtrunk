@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.sample.complex;
 
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -213,12 +214,12 @@ public class Complex implements Serializable
      */
     public float magnitude()
     {
-        return (float)Math.sqrt(magnitudeSquared());
+        return (float)FastMath.sqrt(magnitudeSquared());
     }
 
     public static float magnitude(float inphase, float quadrature)
     {
-        return (float)Math.sqrt((inphase * inphase) + (quadrature * quadrature));
+        return (float) FastMath.sqrt((inphase * inphase) + (quadrature * quadrature));
     }
 
     /**
@@ -266,8 +267,8 @@ public class Complex implements Serializable
      */
     public void normalizeFast()
     {
-        float inphaseAbsolute = Math.abs(inphase());
-        float quadratureAbsolute = Math.abs(quadrature());
+        float inphaseAbsolute = FastMath.abs(inphase());
+        float quadratureAbsolute = FastMath.abs(quadrature());
 
         float gain;
 
@@ -303,7 +304,7 @@ public class Complex implements Serializable
      */
     public float inPhaseAbsolute()
     {
-        return Math.abs(mLeft);
+        return FastMath.abs(mLeft);
     }
 
     public float quadrature()
@@ -316,7 +317,7 @@ public class Complex implements Serializable
      */
     public float quadratureAbsolute()
     {
-        return Math.abs(mRight);
+        return FastMath.abs(mRight);
     }
 
     public float x()
@@ -339,7 +340,7 @@ public class Complex implements Serializable
      */
     public float realAbsolute()
     {
-        return Math.abs(mLeft);
+        return FastMath.abs(mLeft);
     }
 
     public float imaginary()
@@ -352,7 +353,7 @@ public class Complex implements Serializable
      */
     public float imaginaryAbsolute()
     {
-        return Math.abs(mRight);
+        return FastMath.abs(mRight);
     }
 
     /**
@@ -360,7 +361,7 @@ public class Complex implements Serializable
      */
     public float maximumAbsolute()
     {
-        return Math.max(Math.abs(mLeft), Math.abs(mRight));
+        return FastMath.max(FastMath.abs(mLeft), FastMath.abs(mRight));
     }
 
     /**
@@ -372,7 +373,7 @@ public class Complex implements Serializable
      */
     public static Complex fromAngle(double angle)
     {
-        return new Complex((float)Math.cos(angle), (float)Math.sin(angle));
+        return new Complex((float)FastMath.cos(angle), (float)FastMath.sin(angle));
     }
 
     /**
@@ -381,8 +382,8 @@ public class Complex implements Serializable
      */
     public void setAngle(double angle)
     {
-        setInphase((float)Math.cos(angle));
-        setQuadrature((float)Math.sin(angle));
+        setInphase((float)FastMath.cos(angle));
+        setQuadrature((float)FastMath.sin(angle));
     }
 
     /**
@@ -390,7 +391,7 @@ public class Complex implements Serializable
      */
     public float angle()
     {
-        return (float)Math.atan2(y(), x());
+        return (float)FastMath.atan2(y(), x());
     }
 
     /**
@@ -399,7 +400,7 @@ public class Complex implements Serializable
      */
     public double angleDegrees()
     {
-        return Math.toDegrees(Math.atan2(y(), x()));
+        return FastMath.toDegrees(FastMath.atan2(y(), x()));
     }
 
     /**
@@ -407,7 +408,7 @@ public class Complex implements Serializable
      */
     public double polarAngleDegrees()
     {
-        double angle = Math.toDegrees(Math.atan2(y(), x()));
+        double angle = FastMath.toDegrees(FastMath.atan2(y(), x()));
         return (450.0 - angle) % 360.0;
     }
 
@@ -442,7 +443,7 @@ public class Complex implements Serializable
      */
     public float polarAngle()
     {
-        return (float)Math.toDegrees(angle());
+        return (float)FastMath.toDegrees(angle());
     }
 
     /**
@@ -455,8 +456,8 @@ public class Complex implements Serializable
 
     public static float envelope(float inphase, float quadrature)
     {
-        float inphaseAbsolute = Math.abs(inphase);
-        float quadratureAbsolute = Math.abs(quadrature);
+        float inphaseAbsolute = FastMath.abs(inphase);
+        float quadratureAbsolute = FastMath.abs(quadrature);
 
         if(inphaseAbsolute > quadratureAbsolute)
         {

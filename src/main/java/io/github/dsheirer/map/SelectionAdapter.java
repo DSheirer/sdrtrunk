@@ -17,6 +17,7 @@
  ******************************************************************************/
 package io.github.dsheirer.map;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.JXMapViewer;
 
 import java.awt.*;
@@ -89,10 +90,10 @@ public class SelectionAdapter extends MouseAdapter
 	{
 		if (dragging)
 		{
-			int x1 = (int) Math.min(startPos.getX(), endPos.getX());
-			int y1 = (int) Math.min(startPos.getY(), endPos.getY());
-			int x2 = (int) Math.max(startPos.getX(), endPos.getX());
-			int y2 = (int) Math.max(startPos.getY(), endPos.getY());
+			int x1 = (int) FastMath.min(startPos.getX(), endPos.getX());
+			int y1 = (int) FastMath.min(startPos.getY(), endPos.getY());
+			int x2 = (int) FastMath.max(startPos.getX(), endPos.getX());
+			int y2 = (int) FastMath.max(startPos.getY(), endPos.getY());
 			
 			return new Rectangle(x1, y1, x2-x1, y2-y1);
 		}

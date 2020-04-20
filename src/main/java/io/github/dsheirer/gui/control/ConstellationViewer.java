@@ -3,6 +3,7 @@ package io.github.dsheirer.gui.control;
 import io.github.dsheirer.buffer.CircularBuffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -135,7 +136,7 @@ public class ConstellationViewer extends JPanel implements Listener<Complex>
         			 * serves as the instantaneous amplitude of the demodulated signal
         			 */
         			double denominator = 1.0d / i;
-        			angle = Math.atan( (double)q * denominator );
+        			angle = FastMath.atan( (double)q * denominator );
         		}
         		
         		Ellipse2D.Double ellipse = 

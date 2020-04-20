@@ -24,6 +24,7 @@ import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +101,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             throw new IllegalArgumentException("Channel count must be an even multiple of the over-sample rate (2x)");
         }
 
-        mTapsPerChannel = (int)Math.ceil((double)taps.length / (double)channelCount);
+        mTapsPerChannel = (int) FastMath.ceil((double)taps.length / (double)channelCount);
 
         init(taps);
     }

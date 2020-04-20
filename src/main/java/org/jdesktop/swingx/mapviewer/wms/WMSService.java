@@ -9,6 +9,7 @@
 
 package org.jdesktop.swingx.mapviewer.wms;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.mapviewer.util.MercatorUtils;
 
 /**
@@ -57,7 +58,7 @@ public class WMSService
 		String srs = "EPSG:4326";
 		int ts = tileSize;
 		int circumference = widthOfWorldInPixels(zoom, tileSize);
-		double radius = circumference / (2 * Math.PI);
+		double radius = circumference / (2 * FastMath.PI);
 		double ulx = MercatorUtils.xToLong(x * ts, radius);
 		double uly = MercatorUtils.yToLat(y * ts, radius);
 		double lrx = MercatorUtils.xToLong((x + 1) * ts, radius);
@@ -73,7 +74,7 @@ public class WMSService
 	private int widthOfWorldInPixels(int zoom, int TILE_SIZE)
 	{
 		// int TILE_SIZE = 256;
-		int tiles = (int) Math.pow(2, zoom);
+		int tiles = (int) FastMath.pow(2, zoom);
 		int circumference = TILE_SIZE * tiles;
 		return circumference;
 	}

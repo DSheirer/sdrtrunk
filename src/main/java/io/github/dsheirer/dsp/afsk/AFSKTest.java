@@ -19,6 +19,7 @@ import io.github.dsheirer.buffer.FloatAveragingBuffer;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,8 +111,8 @@ public class AFSKTest
                 correlation1800 += reference1800[x] * samples[x + offset];
             }
 
-            correlation1200 = avg1200.get(Math.abs(correlation1200));
-            correlation1800 = avg1800.get(Math.abs(correlation1800));
+            correlation1200 = avg1200.get(FastMath.abs(correlation1200));
+            correlation1800 = avg1800.get(FastMath.abs(correlation1800));
 
             mLog.debug(offset + " 1200:" + format(correlation1200) + " 1800:" + format(correlation1800) +
             " Decision: " + (correlation1200 > correlation1800 ? "0" : "1"));

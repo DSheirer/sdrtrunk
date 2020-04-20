@@ -23,11 +23,12 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class SymbolDecisionData
 {
     //45 degrees rotation to orient the symbol to a polar axis to make error calculation easy/efficient
-    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
+    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(FastMath.PI / 4.0d);
 
     private ComplexCircularBuffer mBuffer;
     private float mSamplingPoint;

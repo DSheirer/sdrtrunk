@@ -17,6 +17,7 @@
  ******************************************************************************/
 package org.jdesktop.swingx.mapviewer.bmng;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 
 /**
@@ -85,7 +86,7 @@ public class SLMapServerInfo extends TileFactoryInfo
 	{
 		if (zoom < midpoint)
 		{
-			return (int) Math.pow(2, midpoint - zoom);
+			return (int) FastMath.pow(2, midpoint - zoom);
 		}
 		else
 		{
