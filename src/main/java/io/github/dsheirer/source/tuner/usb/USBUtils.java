@@ -75,25 +75,25 @@ public class USBUtils
 	{
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( device.getUsbDeviceDescriptor().toString() + "\n\n" );
+		sb.append(device.getUsbDeviceDescriptor().toString()).append("\n\n");
 		
 		for( Object configObject: device.getUsbConfigurations() )
 		{
 			UsbConfiguration config = (UsbConfiguration)configObject;
 			
-			sb.append( config.getUsbConfigurationDescriptor().toString() + "\n\n" );
+			sb.append(config.getUsbConfigurationDescriptor().toString()).append("\n\n");
 			
 			for( Object interfaceObject: config.getUsbInterfaces() )
 			{
 				UsbInterface iface = (UsbInterface)interfaceObject;
 				
-				sb.append( iface.getUsbInterfaceDescriptor().toString() + "\n\n" );
+				sb.append(iface.getUsbInterfaceDescriptor().toString()).append("\n\n");
 				
 				for( Object endpointObject: iface.getUsbEndpoints() )
 				{
 					UsbEndpoint endpoint = (UsbEndpoint)endpointObject;
 					
-					sb.append( endpoint.getUsbEndpointDescriptor().toString() + "\n\n" );
+					sb.append(endpoint.getUsbEndpointDescriptor().toString()).append("\n\n");
 				}
 			}
 		}

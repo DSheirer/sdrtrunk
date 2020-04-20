@@ -70,9 +70,9 @@ public class QPSKPhaseInversionCalculator
             }
 
             System.out.println("NORMAL: " + sync);
-            System.out.println("   +90: " + sbP90.toString());
-            System.out.println("   -90: " + sbM90.toString());
-            System.out.println("   180: " + sb180.toString());
+            System.out.println("   +90: " + sbP90);
+            System.out.println("   -90: " + sbM90);
+            System.out.println("   180: " + sb180);
         }
     }
 

@@ -314,7 +314,7 @@ public class FilterFactory
         StringBuilder sb = new StringBuilder();
         for(int x = 0; x < array.length; x++)
         {
-            sb.append(x + ": " + array[x]);
+            sb.append(x).append(": ").append(array[x]);
 
             if(breaks)
             {

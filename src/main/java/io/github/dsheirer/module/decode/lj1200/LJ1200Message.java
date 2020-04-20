@@ -184,9 +184,9 @@ public class LJ1200Message extends Message
 
         sb.append("] ADDRESS [");
         sb.append(getAddress());
-        sb.append("] VRC [" + getVRC());
-        sb.append("] LRC [" + getLRC());
-        sb.append("] CRC [" + getCRC());
+        sb.append("] VRC [").append(getVRC());
+        sb.append("] LRC [").append(getLRC());
+        sb.append("] CRC [").append(getCRC());
         sb.append("]");
 
         return sb.toString();

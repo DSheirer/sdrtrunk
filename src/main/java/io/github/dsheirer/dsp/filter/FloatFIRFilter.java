@@ -126,7 +126,7 @@ public class FloatFIRFilter implements RealSampleListener
 		{
 			for( int y = 0; y < mCoefficients.length; y++ )
 			{
-				sb.append( mIndexMap[ x ][ y ] + "  " );
+				sb.append(mIndexMap[x][y]).append("  ");
 			}
 			sb.append( "\n" );
 		}

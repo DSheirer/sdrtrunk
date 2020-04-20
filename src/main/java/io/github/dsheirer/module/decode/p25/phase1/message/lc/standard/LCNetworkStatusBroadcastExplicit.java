@@ -65,7 +65,7 @@ public class LCNetworkStatusBroadcastExplicit extends LinkControlWord implements
         sb.append(getMessageStub());
         sb.append(" WACN:").append(getWACN());
         sb.append(" SYSTEM:").append(getSystem());
-        sb.append(" CHAN:" + getChannel());
+        sb.append(" CHAN:").append(getChannel());
         return sb.toString();
     }
 

@@ -200,7 +200,7 @@ public class MDCMessage extends Message
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("MDC1200 UNIT:" + getFromIdentifier());
+        sb.append("MDC1200 UNIT:").append(getFromIdentifier());
         if(isEmergency())
         {
             sb.append(" **EMERGENCY**");
@@ -216,11 +216,11 @@ public class MDCMessage extends Message
             sb.append(" EOT");
         }
 
-        sb.append(" OPCODE:" + format(getOpcode(), 2));
-        sb.append(" ARG:" + format(getArgument(), 3));
-        sb.append(" TYPE:" + getPacketType().toString());
-        sb.append(" ACK:" + getResponse().toString());
-        sb.append(" DIR:" + pad(getDirection().toString(), 3, " "));
+        sb.append(" OPCODE:").append(format(getOpcode(), 2));
+        sb.append(" ARG:").append(format(getArgument(), 3));
+        sb.append(" TYPE:").append(getPacketType().toString());
+        sb.append(" ACK:").append(getResponse().toString());
+        sb.append(" DIR:").append(pad(getDirection().toString(), 3, " "));
 
         return sb.toString();
     }

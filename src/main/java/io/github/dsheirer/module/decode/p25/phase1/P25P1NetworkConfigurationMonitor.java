@@ -449,7 +449,7 @@ public class P25P1NetworkConfigurationMonitor
 
         if(mMotorolaBaseStationId != null)
         {
-            sb.append("  STATION ID/LICENSE: " + mMotorolaBaseStationId.getCWID()).append("\n");
+            sb.append("  STATION ID/LICENSE: ").append(mMotorolaBaseStationId.getCWID()).append("\n");
         }
 
         if(mTSBKSystemServiceBroadcast != null)

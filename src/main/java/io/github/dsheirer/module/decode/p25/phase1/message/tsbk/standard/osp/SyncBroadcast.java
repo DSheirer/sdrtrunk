@@ -76,8 +76,8 @@ public class SyncBroadcast extends OSPMessage
         }
         sb.append(":");
         TIME_FORMATTER.setTimeZone(getTimeZone());
-        sb.append(" " + TIME_FORMATTER.format(new Date(getSystemTime())));
-        sb.append(" LEAP-SECOND CORRECTION:" + getLeapSecondCorrection() + "mS");
+        sb.append(" ").append(TIME_FORMATTER.format(new Date(getSystemTime())));
+        sb.append(" LEAP-SECOND CORRECTION:").append(getLeapSecondCorrection()).append("mS");
         if(isMicroslotsLockedToMinuteRollover())
         {
             sb.append(" MICROSLOT-MINUTE ROLLOVER:SLOW");
