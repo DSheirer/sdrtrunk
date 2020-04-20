@@ -49,6 +49,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 
 public class PassportDecoderState extends DecoderState
 {
@@ -260,15 +261,14 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            List<Integer> channels = new ArrayList<>(mSiteLCNs.keySet());
-            Collections.sort(channels);
-
-            for(Integer channel : channels)
-            {
-                sb.append("  " + channel);
-                sb.append("\t" + mSiteLCNs.get(channel));
-                sb.append("\n");
-            }
+            mSiteLCNs.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> {
+                        sb.append("  " + entry.getKey());
+                        sb.append("\t" + entry.getValue());
+                        sb.append("\n");
+                    });
         }
 
         sb.append("\nNeighbor Channels\n");
@@ -279,15 +279,14 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            List<Integer> channels = new ArrayList<>(mNeighborLCNs.keySet());
-            Collections.sort(channels);
-
-            for(Integer channel : channels)
-            {
-                sb.append("  " + channel);
-                sb.append("\t" + mNeighborLCNs.get(channel));
-                sb.append("\n");
-            }
+            mNeighborLCNs.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> {
+                        sb.append("  " + entry.getKey());
+                        sb.append("\t" + entry.getValue());
+                        sb.append("\n");
+                    });
         }
 
         sb.append("\nTalkgroups\n");
