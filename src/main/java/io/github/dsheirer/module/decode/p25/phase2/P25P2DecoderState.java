@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -236,90 +237,10 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         switch((mac.getOpcode()))
         {
             case PUSH_TO_TALK:
-                for(Identifier identifier : mac.getIdentifiers())
-                {
-                    //Add to the identifier collection after filtering through the patch group manager
-                    getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                }
-
-                PushToTalk ptt = (PushToTalk)mac;
-
-                if(ptt.isEncrypted())
-                {
-                    updateCurrentCall(DecodeEventType.CALL_ENCRYPTED, ptt.getEncryptionKey().toString(), message.getTimestamp());
-                }
-                else
-                {
-                    updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
-                }
+                processPushToTalk(message, mac);
                 break;
             case END_PUSH_TO_TALK:
-                if(mac instanceof EndPushToTalk)
-                {
-                    //Add the set of identifiers before we close out the call event to ensure they're captured in
-                    //the closing event.
-                    if(mCurrentCallEvent != null)
-                    {
-                        for(Identifier identifier : mac.getIdentifiers())
-                        {
-                            if(identifier.getRole() == Role.FROM)
-                            {
-                                if(identifier instanceof APCO25RadioIdentifier)
-                                {
-                                    int value = ((APCO25RadioIdentifier)identifier).getValue();
-
-                                    //Group call End PTT uses a FROM value of 0xFFFFFF - don't overwrite the correct id
-                                    if(value != SYSTEM_CONTROLLER)
-                                    {
-                                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                                    }
-                                }
-                            }
-                            else if(identifier.getRole() == Role.TO)
-                            {
-                                if(identifier instanceof APCO25Talkgroup)
-                                {
-                                    int value = ((APCO25Talkgroup)identifier).getValue();
-
-                                    //Individual call End PTT uses a TO value of 0 - don't overwrite the correct id
-                                    if(value != 0)
-                                    {
-                                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                            }
-                        }
-                    }
-
-                    if(message.getDataUnitID().isFACCH())
-                    {
-                        mEndPttOnFacchCounter++;
-
-                        //FNE sending 2 or more End PTT in FACCH timeslots indicates a channel teardown event.
-                        if(mEndPttOnFacchCounter > 1)
-                        {
-                            if(mChannelType == ChannelType.TRAFFIC)
-                            {
-                                closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_2_END_PTT);
-                                //Don't send a continue state here ... the close() method will send the TEARDOWN state
-                            }
-                            //Otherwise the channel state is set to ACTIVE in anticipation of further call activity
-                            else
-                            {
-                                closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_4_ACTIVE);
-                                continueState(State.RESET);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_4_ACTIVE);
-                    }
-                }
+                processEndPushToTalk(message, mac);
                 break;
             case TDMA_0_NULL_INFORMATION_MESSAGE:
                 MacPduType type = message.getMacPduType();
@@ -330,743 +251,176 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
                 }
                 break;
             case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
-                if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-                {
-                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-                }
-                else
-                {
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-
-                    if(mac instanceof GroupVoiceChannelUserAbbreviated)
-                    {
-                        GroupVoiceChannelUserAbbreviated gvcua = (GroupVoiceChannelUserAbbreviated)mac;
-
-                        if(gvcua.getServiceOptions().isEncrypted())
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
-                        }
-                        else
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
-                        }
-                    }
-                }
+                processGVCUAbbreviated(message, mac);
                 break;
             case TDMA_33_GROUP_VOICE_CHANNEL_USER_EXTENDED:
-                if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-                {
-                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-                }
-                else
-                {
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-
-                    if(mac instanceof GroupVoiceChannelUserExtended)
-                    {
-                        GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
-
-                        if(gvcue.getServiceOptions().isEncrypted())
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
-                        }
-                        else
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
-                        }
-                    }
-                }
+                processGVCUExtended(message, mac);
                 break;
             case TDMA_2_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-                if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-                {
-                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-                }
-                else
-                {
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-
-                    if(mac instanceof UnitToUnitVoiceChannelUserAbbreviated)
-                    {
-                        UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
-
-                        if(uuvcua.getServiceOptions().isEncrypted())
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
-                        }
-                        else
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
-                        }
-                    }
-                }
+                processUTUVCU(message, mac);
                 break;
             case TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
-                if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-                {
-                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-                }
-                else
-                {
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-
-                    if(mac instanceof UnitToUnitVoiceChannelUserExtended)
-                    {
-                        UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
-
-                        if(uuvcue.getServiceOptions().isEncrypted())
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
-                        }
-                        else
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
-                        }
-                    }
-                }
+                processUTUVCUExtended(message, mac);
                 break;
             case TDMA_3_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-                if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
-                {
-                    closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
-
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-                }
-                else
-                {
-                    for(Identifier identifier : mac.getIdentifiers())
-                    {
-                        //Add to the identifier collection after filtering through the patch group manager
-                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                    }
-
-                    if(mac instanceof TelephoneInterconnectVoiceChannelUser)
-                    {
-                        TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
-
-                        if(tivcu.getServiceOptions().isEncrypted())
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_INTERCONNECT_ENCRYPTED, null, message.getTimestamp());
-                        }
-                        else
-                        {
-                            updateCurrentCall(DecodeEventType.CALL_INTERCONNECT, null, message.getTimestamp());
-                        }
-                    }
-                }
+                processTIVCU(message, mac);
                 break;
             case TDMA_5_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE:
-                if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateMultiple)
-                {
-                    GroupVoiceChannelGrantUpdateMultiple gvcgum = (GroupVoiceChannelGrantUpdateMultiple)mac;
-
-                    if(isCurrentGroup(gvcgum.getGroupAddressA()))
-                    {
-                        broadcastCurrentChannel(gvcgum.getChannelA());
-                    }
-
-                    if(getCurrentChannel() == null && gvcgum.hasGroupB() && isCurrentGroup(gvcgum.getGroupAddressB()))
-                    {
-                        broadcastCurrentChannel(gvcgum.getChannelB());
-                    }
-
-                    if(getCurrentChannel() == null && gvcgum.hasGroupC() && isCurrentGroup(gvcgum.getGroupAddressC()))
-                    {
-                        broadcastCurrentChannel(gvcgum.getChannelC());
-                    }
-                }
+                processGVCGUM(mac);
                 break;
             case TDMA_37_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE_EXPLICIT:
-                if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateMultipleExplicit)
-                {
-                    GroupVoiceChannelGrantUpdateMultipleExplicit gvcgume = (GroupVoiceChannelGrantUpdateMultipleExplicit)mac;
-
-                    if(isCurrentGroup(gvcgume.getGroupAddressA()))
-                    {
-                        broadcastCurrentChannel(gvcgume.getChannelA());
-                    }
-
-                    if(getCurrentChannel() == null && isCurrentGroup(gvcgume.getGroupAddressB()))
-                    {
-                        broadcastCurrentChannel(gvcgume.getChannelB());
-                    }
-                }
+                processGVCGUMExplicit(mac);
                 break;
             case PHASE1_64_GROUP_VOICE_CHANNEL_GRANT_ABBREVIATED:
-                if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantAbbreviated)
-                {
-                    GroupVoiceChannelGrantAbbreviated gvcga = (GroupVoiceChannelGrantAbbreviated)mac;
-
-                    if(isCurrentGroup(gvcga.getGroupAddress()))
-                    {
-                        broadcastCurrentChannel(gvcga.getChannel());
-                    }
-                }
+                processGVCGAbbreviated(mac);
                 break;
             case PHASE1_66_GROUP_VOICE_CHANNEL_GRANT_UPDATE:
-                if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdate)
-                {
-                    GroupVoiceChannelGrantUpdate gvcgu = (GroupVoiceChannelGrantUpdate)mac;
-
-                    if(isCurrentGroup(gvcgu.getGroupAddressA()))
-                    {
-                        broadcastCurrentChannel(gvcgu.getChannelA());
-                    }
-
-                    if(getCurrentChannel() == null && isCurrentGroup(gvcgu.getGroupAddressB()))
-                    {
-                        broadcastCurrentChannel(gvcgu.getChannelB());
-                    }
-                }
+                processGVCGUpdate(mac);
                 break;
             case PHASE1_70_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_ABBREVIATED:
-                if(getCurrentChannel() == null && mac instanceof UnitToUnitVoiceChannelGrantAbbreviated)
-                {
-                    UnitToUnitVoiceChannelGrantAbbreviated uuvcga = (UnitToUnitVoiceChannelGrantAbbreviated)mac;
-
-                    if(isCurrentGroup(uuvcga.getSourceAddress()) || isCurrentGroup(uuvcga.getTargetAddress()))
-                    {
-                        broadcastCurrentChannel(uuvcga.getChannel());
-                    }
-                }
+                processUTUVCGUAbbreviated(mac);
                 break;
             case PHASE1_195_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
-                if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateExplicit)
-                {
-                    GroupVoiceChannelGrantUpdateExplicit gvcgue = (GroupVoiceChannelGrantUpdateExplicit)mac;
-
-                    if(isCurrentGroup(gvcgue.getGroupAddress()))
-                    {
-                        broadcastCurrentChannel(gvcgue.getChannel());
-                    }
-                }
+                processGVCGUExplicit(mac);
                 break;
             case PHASE1_198_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_EXTENDED:
-                if(getCurrentChannel() == null && mac instanceof UnitToUnitVoiceChannelGrantUpdateExtended)
-                {
-                    UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = (UnitToUnitVoiceChannelGrantUpdateExtended)mac;
-
-                    if(isCurrentGroup(uuvcgue.getTargetAddress()))
-                    {
-                        broadcastCurrentChannel(uuvcgue.getChannel());
-                    }
-                }
+                processUTUVCGUExtended(mac);
                 break;
             case TDMA_17_INDIRECT_GROUP_PAGING:
-                MutableIdentifierCollection icGroupPaging = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icGroupPaging.remove(IdentifierClass.USER);
-                icGroupPaging.update(mac.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.PAGE.toString())
-                    .details("GROUP PAGE")
-                    .identifiers(icGroupPaging)
-                    .build());
+                broadcast(message, mac, getCurrentChannel(), DecodeEventType.PAGE, "GROUP PAGE");
                 break;
             case TDMA_18_INDIVIDUAL_PAGING_MESSAGE_WITH_PRIORITY:
-                if(mac instanceof IndividualPagingMessage)
-                {
-                    IndividualPagingMessage ipm = (IndividualPagingMessage)mac;
-                    MutableIdentifierCollection icIndividualPaging = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icIndividualPaging.remove(IdentifierClass.USER);
-                    icIndividualPaging.update(mac.getIdentifiers());
-                    boolean priority = ipm.isTalkgroupPriority1() || ipm.isTalkgroupPriority2() ||
-                        ipm.isTalkgroupPriority3() || ipm.isTalkgroupPriority4();
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.PAGE.toString())
-                        .details((priority ? "PRIORITY " : "") + "USER PAGE")
-                        .identifiers(icIndividualPaging)
-                        .build());
-                }
+                processIPMWP(message, mac);
                 break;
             case TDMA_48_POWER_CONTROL_SIGNAL_QUALITY:
-                if(mac instanceof PowerControlSignalQuality)
-                {
-                    PowerControlSignalQuality pcsq = (PowerControlSignalQuality)mac;
-
-                    MutableIdentifierCollection icPowerControl = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icPowerControl.remove(IdentifierClass.USER);
-                    icPowerControl.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("ADJUST TRANSMIT POWER - RF:" + pcsq.getRFLevel() + " BER:" + pcsq.getBitErrorRate())
-                        .identifiers(icPowerControl)
-                        .build());
-                }
+                processPCSQ(message, mac);
                 break;
             case TDMA_49_MAC_RELEASE:
-                if(mac instanceof MacRelease)
-                {
-                    MacRelease mr = (MacRelease)mac;
-
-                    MutableIdentifierCollection icMacRelease = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icMacRelease.remove(IdentifierClass.USER);
-                    icMacRelease.update(mac.getIdentifiers());
-
-                    closeCurrentCallEvent(message.getTimestamp(), true, message.getMacPduType());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details((mr.isForcedPreemption() ? "FORCED " : "") + "CALL PREEMPTION" + (mr.isTalkerPreemption() ? " BY USER" : ""))
-                        .identifiers(icMacRelease)
-                        .build());
-                }
+                processMacRelease(message, mac);
                 break;
             case PHASE1_65_GROUP_VOICE_SERVICE_REQUEST:
                 if(mac instanceof GroupVoiceServiceRequest)
                 {
                     GroupVoiceServiceRequest gvsr = (GroupVoiceServiceRequest)mac;
 
-                    MutableIdentifierCollection icMacRelease = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icMacRelease.remove(IdentifierClass.USER);
-                    icMacRelease.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("GROUP VOICE SERVICE " + gvsr.getServiceOptions())
-                        .identifiers(icMacRelease)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.REQUEST, "GROUP VOICE SERVICE " + gvsr.getServiceOptions());
                 }
                 break;
             case PHASE1_68_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_ABBREVIATED:
                 if(mac instanceof UnitToUnitVoiceChannelGrantAbbreviated)
                 {
                     UnitToUnitVoiceChannelGrantAbbreviated uuvcga = (UnitToUnitVoiceChannelGrantAbbreviated)mac;
-                    MutableIdentifierCollection icGrant = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icGrant.remove(IdentifierClass.USER);
-                    icGrant.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(uuvcga.getChannel())
-                        .eventDescription(DecodeEventType.CALL_UNIT_TO_UNIT.toString())
-                        .details("VOICE CHANNEL GRANT")
-                        .identifiers(icGrant)
-                        .build());
+                    broadcast(message, mac, uuvcga.getChannel(), DecodeEventType.CALL_UNIT_TO_UNIT, "VOICE CHANNEL GRANT");
                 }
                 break;
             case PHASE1_69_UNIT_TO_UNIT_ANSWER_REQUEST_ABBREVIATED:
                 if(mac instanceof UnitToUnitAnswerRequestAbbreviated)
                 {
                     UnitToUnitAnswerRequestAbbreviated uuara = (UnitToUnitAnswerRequestAbbreviated)mac;
-                    MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icRequest.remove(IdentifierClass.USER);
-                    icRequest.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("UNIT-TO-UNIT ANSWER REQUEST - " + uuara.getServiceOptions())
-                        .identifiers(icRequest)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.REQUEST, "UNIT-TO-UNIT ANSWER REQUEST - " + uuara.getServiceOptions());
                 }
                 break;
             case PHASE1_74_TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 if(mac instanceof TelephoneInterconnectAnswerRequest)
                 {
                     TelephoneInterconnectAnswerRequest tiar = (TelephoneInterconnectAnswerRequest)mac;
-                    MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icRequest.remove(IdentifierClass.USER);
-                    icRequest.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("TELEPHONE INTERCONNECT ANSWER REQUEST")
-                        .identifiers(icRequest)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.REQUEST, "TELEPHONE INTERCONNECT ANSWER REQUEST");
                 }
                 break;
             case PHASE1_76_RADIO_UNIT_MONITOR_COMMAND_ABBREVIATED:
-                if(mac instanceof RadioUnitMonitorCommand)
-                {
-                    RadioUnitMonitorCommand rumc = (RadioUnitMonitorCommand)mac;
-                    MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icRequest.remove(IdentifierClass.USER);
-                    icRequest.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("RADIO UNIT MONITOR" + (rumc.isSilentMonitor() ? " (STEALTH)" : "") +
-                            " TIME:" + rumc.getTransmitTime() + " MULTIPLIER:" + rumc.getTransmitMultiplier())
-                        .identifiers(icRequest)
-                        .build());
-                }
+                processRUMCA(message, mac);
                 break;
             case PHASE1_84_SNDCP_DATA_CHANNEL_GRANT:
-                if(mac instanceof SNDCPDataChannelGrant)
-                {
-                    SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)mac;
-                    MutableIdentifierCollection icGrant = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icGrant.remove(IdentifierClass.USER);
-                    icGrant.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(sdcg.getChannel())
-                        .eventDescription(sdcg.getServiceOptions().isEncrypted() ? DecodeEventType.DATA_CALL_ENCRYPTED.toString() : DecodeEventType.DATA_CALL.toString())
-                        .details("SNDCP CHANNEL GRANT " + sdcg.getServiceOptions())
-                        .identifiers(icGrant)
-                        .build());
-                }
+                processSDCG(message, mac);
                 break;
             case PHASE1_85_SNDCP_DATA_PAGE_REQUEST:
                 if(mac instanceof SNDCPDataPageRequest)
                 {
                     SNDCPDataPageRequest sdpr = (SNDCPDataPageRequest)mac;
-                    MutableIdentifierCollection icPage = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icPage.remove(IdentifierClass.USER);
-                    icPage.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.PAGE.toString())
-                        .details("SNDCP DATA PAGE " + sdpr.getServiceOptions())
-                        .identifiers(icPage)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.PAGE, "SNDCP DATA PAGE " + sdpr.getServiceOptions());
                 }
                 break;
             case PHASE1_88_STATUS_UPDATE_ABBREVIATED:
-                if(mac instanceof StatusUpdateAbbreviated)
-                {
-                    StatusUpdateAbbreviated sua = (StatusUpdateAbbreviated)mac;
-                    MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icStatusUpdate.remove(IdentifierClass.USER);
-                    icStatusUpdate.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.STATUS.toString())
-                        .details("STATUS UPDATE - UNIT:" + sua.getUnitStatus() + " USER:" + sua.getUserStatus())
-                        .identifiers(icStatusUpdate)
-                        .build());
-                }
+                processSUA(message, mac);
                 break;
             case PHASE1_90_STATUS_QUERY_ABBREVIATED:
                 if(mac instanceof StatusQueryAbbreviated)
                 {
-                    MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icStatusUpdate.remove(IdentifierClass.USER);
-                    icStatusUpdate.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.STATUS.toString())
-                        .details("STATUS QUERY")
-                        .identifiers(icStatusUpdate)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.STATUS, "STATUS QUERY");
                 }
                 break;
             case PHASE1_92_MESSAGE_UPDATE_ABBREVIATED:
                 if(mac instanceof MessageUpdateAbbreviated)
                 {
                     MessageUpdateAbbreviated mua = (MessageUpdateAbbreviated)mac;
-                    MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icStatusUpdate.remove(IdentifierClass.USER);
-                    icStatusUpdate.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.SDM.toString())
-                        .details("MESSAGE UPDATE - " + mua.getShortDataMessage())
-                        .identifiers(icStatusUpdate)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.SDM, "MESSAGE UPDATE - " + mua.getShortDataMessage());
                 }
                 break;
             case PHASE1_94_RADIO_UNIT_MONITOR_COMMAND_ENHANCED:
-                if(mac instanceof RadioUnitMonitorCommandEnhanced)
-                {
-                    RadioUnitMonitorCommandEnhanced rumc = (RadioUnitMonitorCommandEnhanced)mac;
-                    MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icRequest.remove(IdentifierClass.USER);
-                    icRequest.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("RADIO UNIT MONITOR" + (rumc.isStealthMode() ? " (STEALTH)" : "") +
-                            " ENCRYPTION:" + rumc.getEncryption() +
-                            " TIME:" + rumc.getTransmitTime())
-                        .identifiers(icRequest)
-                        .build());
-                }
+                processRUMCE(message, mac);
                 break;
             case PHASE1_95_CALL_ALERT_ABBREVIATED:
-                MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icCallAlert.remove(IdentifierClass.USER);
-                icCallAlert.update(mac.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.CALL_ALERT.toString())
-                    .identifiers(icCallAlert)
-                    .build());
+                processCallAlert(message, mac);
                 break;
             case PHASE1_96_ACK_RESPONSE:
                 if(mac instanceof AcknowledgeResponse)
                 {
                     AcknowledgeResponse ar = (AcknowledgeResponse)mac;
-                    MutableIdentifierCollection icAckResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icAckResponse.remove(IdentifierClass.USER);
-                    icAckResponse.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("ACKNOWLEDGE: " + ar.getServiceType())
-                        .identifiers(icAckResponse)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.RESPONSE, "ACKNOWLEDGE: " + ar.getServiceType());
                 }
                 break;
             case PHASE1_97_QUEUED_RESPONSE:
-                if(mac instanceof QueuedResponse)
-                {
-                    QueuedResponse qr = (QueuedResponse)mac;
-
-                    MutableIdentifierCollection icQueuedResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icQueuedResponse.remove(IdentifierClass.USER);
-                    icQueuedResponse.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("QUEUED - " + qr.getQueuedResponseServiceType() +
-                            " REASON:" + qr.getQueuedResponseReason() + " ADDL:" + qr.getAdditionalInfo())
-                        .identifiers(icQueuedResponse)
-                        .build());
-                }
+                processQueuedResponse(message, mac);
                 break;
             case PHASE1_100_EXTENDED_FUNCTION_COMMAND_ABBREVIATED:
-                if(mac instanceof ExtendedFunctionCommand)
-                {
-                    ExtendedFunctionCommand efc = (ExtendedFunctionCommand)mac;
-
-                    MutableIdentifierCollection icExtendedFunction = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icExtendedFunction.remove(IdentifierClass.USER);
-                    icExtendedFunction.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("EXTENDED FUNCTION: " + efc.getExtendedFunction() + " ARGUMENTS:" + efc.getArguments())
-                        .identifiers(icExtendedFunction)
-                        .build());
-                }
+                processEFCA(message, mac);
                 break;
             case PHASE1_103_DENY_RESPONSE:
-                if(mac instanceof DenyResponse)
-                {
-                    DenyResponse dr = (DenyResponse)mac;
-                    MutableIdentifierCollection icDenyResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icDenyResponse.remove(IdentifierClass.USER);
-                    icDenyResponse.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("DENY: " + dr.getDeniedServiceType() + " REASON:" + dr.getDenyReason() + " ADDL:" + dr.getAdditionalInfo())
-                        .identifiers(icDenyResponse)
-                        .build());
-                }
+                processDenyResponse(message, mac);
                 break;
             case PHASE1_106_GROUP_AFFILIATION_QUERY_ABBREVIATED:
-                MutableIdentifierCollection icGroupAffiliationQuery = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icGroupAffiliationQuery.remove(IdentifierClass.USER);
-                icGroupAffiliationQuery.update(mac.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.QUERY.toString())
-                    .details("GROUP AFFILIATION")
-                    .identifiers(icGroupAffiliationQuery)
-                    .build());
+                broadcast(message, mac, getCurrentChannel(), DecodeEventType.QUERY, "GROUP AFFILIATION");
                 break;
             case PHASE1_109_UNIT_REGISTRATION_COMMAND_ABBREVIATED:
-                MutableIdentifierCollection icUnitRegisterCommand = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icUnitRegisterCommand.remove(IdentifierClass.USER);
-                icUnitRegisterCommand.update(mac.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.COMMAND.toString())
-                    .details("UNIT REGISTRATION")
-                    .identifiers(icUnitRegisterCommand)
-                    .build());
+                broadcast(message, mac, getCurrentChannel(), DecodeEventType.COMMAND, "UNIT REGISTRATION");
                 break;
             case PHASE1_197_UNIT_TO_UNIT_ANSWER_REQUEST_EXTENDED:
                 if(mac instanceof UnitToUnitAnswerRequestExtended)
                 {
                     UnitToUnitAnswerRequestExtended uuare = (UnitToUnitAnswerRequestExtended)mac;
 
-                    MutableIdentifierCollection icUnitAnswerRequestExtended =
-                        new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icUnitAnswerRequestExtended.remove(IdentifierClass.USER);
-                    icUnitAnswerRequestExtended.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("UNIT-TO-UNIT ANSWER REQUEST " + uuare.getServiceOptions())
-                        .identifiers(icUnitAnswerRequestExtended)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.REQUEST, "UNIT-TO-UNIT ANSWER REQUEST " + uuare.getServiceOptions());
                 }
                 break;
             case PHASE1_204_RADIO_UNIT_MONITOR_COMMAND_EXTENDED:
-                if(mac instanceof RadioUnitMonitorCommandExtended)
-                {
-                    RadioUnitMonitorCommandExtended rumce = (RadioUnitMonitorCommandExtended)mac;
-                    MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icRequest.remove(IdentifierClass.USER);
-                    icRequest.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("RADIO UNIT MONITOR" + (rumce.isSilentMonitor() ? " (STEALTH)" : "") +
-                            " TIME:" + rumce.getTransmitTime() + "MULTIPLIER:" + rumce.getTransmitMultiplier())
-                        .identifiers(icRequest)
-                        .build());
-                }
+                processRUMCExtended(message, mac);
                 break;
             case PHASE1_216_STATUS_UPDATE_EXTENDED:
-                if(mac instanceof StatusUpdateExtended)
-                {
-                    StatusUpdateExtended sue = (StatusUpdateExtended)mac;
-                    MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icStatusUpdate.remove(IdentifierClass.USER);
-                    icStatusUpdate.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.STATUS.toString())
-                        .details("STATUS UPDATE - UNIT:" + sue.getUnitStatus() + " USER:" + sue.getUserStatus())
-                        .identifiers(icStatusUpdate)
-                        .build());
-                }
+                processSUE(message, mac);
                 break;
             case PHASE1_218_STATUS_QUERY_EXTENDED:
-                MutableIdentifierCollection icStatusQueryExtended = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icStatusQueryExtended.remove(IdentifierClass.USER);
-                icStatusQueryExtended.update(mac.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.STATUS.toString())
-                    .details("STATUS QUERY")
-                    .identifiers(icStatusQueryExtended)
-                    .build());
+                broadcast(message, mac, getCurrentChannel(), DecodeEventType.STATUS, "STATUS QUERY");
                 break;
             case PHASE1_220_MESSAGE_UPDATE_EXTENDED:
                 if(mac instanceof MessageUpdateExtended)
                 {
                     MessageUpdateExtended mue = (MessageUpdateExtended)mac;
-                    MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icStatusUpdate.remove(IdentifierClass.USER);
-                    icStatusUpdate.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.SDM.toString())
-                        .details("MESSAGE UPDATE - " + mue.getShortDataMessage())
-                        .identifiers(icStatusUpdate)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.SDM, "MESSAGE UPDATE - " + mue.getShortDataMessage());
                 }
                 break;
             case PHASE1_223_CALL_ALERT_EXTENDED:
                 if(mac instanceof CallAlertExtended)
                 {
-                    MutableIdentifierCollection icCallAlertExtended = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icCallAlertExtended.remove(IdentifierClass.USER);
-                    icCallAlertExtended.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.CALL_ALERT.toString())
-                        .identifiers(icCallAlertExtended)
-                        .build());
+                    processCallAlert(message, mac);
                 }
                 break;
             case PHASE1_228_EXTENDED_FUNCTION_COMMAND_EXTENDED:
-                if(mac instanceof ExtendedFunctionCommandExtended)
-                {
-                    ExtendedFunctionCommandExtended efce = (ExtendedFunctionCommandExtended)mac;
-
-                    MutableIdentifierCollection icExtendedFunction = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icExtendedFunction.remove(IdentifierClass.USER);
-                    icExtendedFunction.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("EXTENDED FUNCTION: " + efce.getExtendedFunction() + " ARGUMENTS:" + efce.getArguments())
-                        .identifiers(icExtendedFunction)
-                        .build());
-                }
+                processEFCE(message, mac);
                 break;
             case PHASE1_234_GROUP_AFFILIATION_QUERY_EXTENDED:
                 if(mac instanceof GroupAffiliationQueryExtended)
                 {
-                    MutableIdentifierCollection icGroupAffiliationQueryExtended =
-                        new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    icGroupAffiliationQueryExtended.remove(IdentifierClass.USER);
-                    icGroupAffiliationQueryExtended.update(mac.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.QUERY.toString())
-                        .details("GROUP AFFILIATION")
-                        .identifiers(icGroupAffiliationQueryExtended)
-                        .build());
+                    broadcast(message, mac, getCurrentChannel(), DecodeEventType.QUERY, "GROUP AFFILIATION");
                 }
                 break;
 
@@ -1094,6 +448,633 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
             case UNKNOWN:
             default:
                 break;
+        }
+    }
+
+    private void processQueuedResponse(MacMessage message, MacStructure mac) {
+        if(mac instanceof QueuedResponse)
+        {
+            QueuedResponse qr = (QueuedResponse)mac;
+
+            MutableIdentifierCollection icQueuedResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icQueuedResponse.remove(IdentifierClass.USER);
+            icQueuedResponse.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.RESPONSE.toString())
+                .details("QUEUED - " + qr.getQueuedResponseServiceType() +
+                    " REASON:" + qr.getQueuedResponseReason() + " ADDL:" + qr.getAdditionalInfo())
+                .identifiers(icQueuedResponse)
+                .build());
+        }
+    }
+
+    private void processEFCA(MacMessage message, MacStructure mac) {
+        if(mac instanceof ExtendedFunctionCommand)
+        {
+            ExtendedFunctionCommand efc = (ExtendedFunctionCommand)mac;
+
+            MutableIdentifierCollection icExtendedFunction = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icExtendedFunction.remove(IdentifierClass.USER);
+            icExtendedFunction.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details("EXTENDED FUNCTION: " + efc.getExtendedFunction() + " ARGUMENTS:" + efc.getArguments())
+                .identifiers(icExtendedFunction)
+                .build());
+        }
+    }
+
+    private void processDenyResponse(MacMessage message, MacStructure mac) {
+        if(mac instanceof DenyResponse)
+        {
+            DenyResponse dr = (DenyResponse)mac;
+            MutableIdentifierCollection icDenyResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icDenyResponse.remove(IdentifierClass.USER);
+            icDenyResponse.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.RESPONSE.toString())
+                .details("DENY: " + dr.getDeniedServiceType() + " REASON:" + dr.getDenyReason() + " ADDL:" + dr.getAdditionalInfo())
+                .identifiers(icDenyResponse)
+                .build());
+        }
+    }
+
+    private void processRUMCExtended(MacMessage message, MacStructure mac) {
+        if(mac instanceof RadioUnitMonitorCommandExtended)
+        {
+            RadioUnitMonitorCommandExtended rumce = (RadioUnitMonitorCommandExtended)mac;
+            MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icRequest.remove(IdentifierClass.USER);
+            icRequest.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details("RADIO UNIT MONITOR" + (rumce.isSilentMonitor() ? " (STEALTH)" : "") +
+                    " TIME:" + rumce.getTransmitTime() + "MULTIPLIER:" + rumce.getTransmitMultiplier())
+                .identifiers(icRequest)
+                .build());
+        }
+    }
+
+    private void processSUE(MacMessage message, MacStructure mac) {
+        if(mac instanceof StatusUpdateExtended)
+        {
+            StatusUpdateExtended sue = (StatusUpdateExtended)mac;
+            MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icStatusUpdate.remove(IdentifierClass.USER);
+            icStatusUpdate.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.STATUS.toString())
+                .details("STATUS UPDATE - UNIT:" + sue.getUnitStatus() + " USER:" + sue.getUserStatus())
+                .identifiers(icStatusUpdate)
+                .build());
+        }
+    }
+
+    private void processEFCE(MacMessage message, MacStructure mac) {
+        if(mac instanceof ExtendedFunctionCommandExtended)
+        {
+            ExtendedFunctionCommandExtended efce = (ExtendedFunctionCommandExtended)mac;
+
+            MutableIdentifierCollection icExtendedFunction = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icExtendedFunction.remove(IdentifierClass.USER);
+            icExtendedFunction.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details("EXTENDED FUNCTION: " + efce.getExtendedFunction() + " ARGUMENTS:" + efce.getArguments())
+                .identifiers(icExtendedFunction)
+                .build());
+        }
+    }
+
+    private void processCallAlert(MacMessage message, MacStructure mac) {
+        MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        icCallAlert.remove(IdentifierClass.USER);
+        icCallAlert.update(mac.getIdentifiers());
+
+        broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.CALL_ALERT.toString())
+                .identifiers(icCallAlert)
+                .build());
+    }
+
+    private void processRUMCE(MacMessage message, MacStructure mac) {
+        if(mac instanceof RadioUnitMonitorCommandEnhanced)
+        {
+            RadioUnitMonitorCommandEnhanced rumc = (RadioUnitMonitorCommandEnhanced)mac;
+            MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icRequest.remove(IdentifierClass.USER);
+            icRequest.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details("RADIO UNIT MONITOR" + (rumc.isStealthMode() ? " (STEALTH)" : "") +
+                    " ENCRYPTION:" + rumc.getEncryption() +
+                    " TIME:" + rumc.getTransmitTime())
+                .identifiers(icRequest)
+                .build());
+        }
+    }
+
+    private void processSUA(MacMessage message, MacStructure mac) {
+        if(mac instanceof StatusUpdateAbbreviated)
+        {
+            StatusUpdateAbbreviated sua = (StatusUpdateAbbreviated)mac;
+            MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icStatusUpdate.remove(IdentifierClass.USER);
+            icStatusUpdate.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.STATUS.toString())
+                .details("STATUS UPDATE - UNIT:" + sua.getUnitStatus() + " USER:" + sua.getUserStatus())
+                .identifiers(icStatusUpdate)
+                .build());
+        }
+    }
+
+    private void processSDCG(MacMessage message, MacStructure mac) {
+        if(mac instanceof SNDCPDataChannelGrant)
+        {
+            SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)mac;
+            MutableIdentifierCollection icGrant = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icGrant.remove(IdentifierClass.USER);
+            icGrant.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(sdcg.getChannel())
+                .eventDescription(sdcg.getServiceOptions().isEncrypted() ? DecodeEventType.DATA_CALL_ENCRYPTED.toString() : DecodeEventType.DATA_CALL.toString())
+                .details("SNDCP CHANNEL GRANT " + sdcg.getServiceOptions())
+                .identifiers(icGrant)
+                .build());
+        }
+    }
+
+    private void processRUMCA(MacMessage message, MacStructure mac) {
+        if(mac instanceof RadioUnitMonitorCommand)
+        {
+            RadioUnitMonitorCommand rumc = (RadioUnitMonitorCommand)mac;
+            MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icRequest.remove(IdentifierClass.USER);
+            icRequest.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details("RADIO UNIT MONITOR" + (rumc.isSilentMonitor() ? " (STEALTH)" : "") +
+                    " TIME:" + rumc.getTransmitTime() + " MULTIPLIER:" + rumc.getTransmitMultiplier())
+                .identifiers(icRequest)
+                .build());
+        }
+    }
+
+    private void processMacRelease(MacMessage message, MacStructure mac) {
+        if(mac instanceof MacRelease)
+        {
+            MacRelease mr = (MacRelease)mac;
+
+            MutableIdentifierCollection icMacRelease = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icMacRelease.remove(IdentifierClass.USER);
+            icMacRelease.update(mac.getIdentifiers());
+
+            closeCurrentCallEvent(message.getTimestamp(), true, message.getMacPduType());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details((mr.isForcedPreemption() ? "FORCED " : "") + "CALL PREEMPTION" + (mr.isTalkerPreemption() ? " BY USER" : ""))
+                .identifiers(icMacRelease)
+                .build());
+        }
+    }
+
+    private void processPCSQ(MacMessage message, MacStructure mac) {
+        if(mac instanceof PowerControlSignalQuality)
+        {
+            PowerControlSignalQuality pcsq = (PowerControlSignalQuality)mac;
+
+            MutableIdentifierCollection icPowerControl = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icPowerControl.remove(IdentifierClass.USER);
+            icPowerControl.update(mac.getIdentifiers());
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.COMMAND.toString())
+                .details("ADJUST TRANSMIT POWER - RF:" + pcsq.getRFLevel() + " BER:" + pcsq.getBitErrorRate())
+                .identifiers(icPowerControl)
+                .build());
+        }
+    }
+
+    private void processIPMWP(MacMessage message, MacStructure mac) {
+        if(mac instanceof IndividualPagingMessage)
+        {
+            IndividualPagingMessage ipm = (IndividualPagingMessage)mac;
+            MutableIdentifierCollection icIndividualPaging = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+            icIndividualPaging.remove(IdentifierClass.USER);
+            icIndividualPaging.update(mac.getIdentifiers());
+            boolean priority = ipm.isTalkgroupPriority1() || ipm.isTalkgroupPriority2() ||
+                ipm.isTalkgroupPriority3() || ipm.isTalkgroupPriority4();
+
+            broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventDescription(DecodeEventType.PAGE.toString())
+                .details((priority ? "PRIORITY " : "") + "USER PAGE")
+                .identifiers(icIndividualPaging)
+                .build());
+        }
+    }
+
+    private void broadcast(MacMessage message, MacStructure mac, IChannelDescriptor currentChannel, DecodeEventType page, String s) {
+        MutableIdentifierCollection collection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        collection.remove(IdentifierClass.USER);
+        collection.update(mac.getIdentifiers());
+
+        broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(currentChannel)
+                .eventDescription(page.toString())
+                .details(s)
+                .identifiers(collection)
+                .build());
+    }
+
+    private void processUTUVCGUExtended(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof UnitToUnitVoiceChannelGrantUpdateExtended)
+        {
+            UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = (UnitToUnitVoiceChannelGrantUpdateExtended)mac;
+
+            if(isCurrentGroup(uuvcgue.getTargetAddress()))
+            {
+                broadcastCurrentChannel(uuvcgue.getChannel());
+            }
+        }
+    }
+
+    private void processGVCGUExplicit(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateExplicit)
+        {
+            GroupVoiceChannelGrantUpdateExplicit gvcgue = (GroupVoiceChannelGrantUpdateExplicit)mac;
+
+            if(isCurrentGroup(gvcgue.getGroupAddress()))
+            {
+                broadcastCurrentChannel(gvcgue.getChannel());
+            }
+        }
+    }
+
+    private void processUTUVCGUAbbreviated(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof UnitToUnitVoiceChannelGrantAbbreviated)
+        {
+            UnitToUnitVoiceChannelGrantAbbreviated uuvcga = (UnitToUnitVoiceChannelGrantAbbreviated)mac;
+
+            if(isCurrentGroup(uuvcga.getSourceAddress()) || isCurrentGroup(uuvcga.getTargetAddress()))
+            {
+                broadcastCurrentChannel(uuvcga.getChannel());
+            }
+        }
+    }
+
+    private void processGVCGUpdate(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdate)
+        {
+            GroupVoiceChannelGrantUpdate gvcgu = (GroupVoiceChannelGrantUpdate)mac;
+
+            if(isCurrentGroup(gvcgu.getGroupAddressA()))
+            {
+                broadcastCurrentChannel(gvcgu.getChannelA());
+            }
+
+            if(getCurrentChannel() == null && isCurrentGroup(gvcgu.getGroupAddressB()))
+            {
+                broadcastCurrentChannel(gvcgu.getChannelB());
+            }
+        }
+    }
+
+    private void processGVCGAbbreviated(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantAbbreviated)
+        {
+            GroupVoiceChannelGrantAbbreviated gvcga = (GroupVoiceChannelGrantAbbreviated)mac;
+
+            if(isCurrentGroup(gvcga.getGroupAddress()))
+            {
+                broadcastCurrentChannel(gvcga.getChannel());
+            }
+        }
+    }
+
+    private void processGVCGUMExplicit(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateMultipleExplicit)
+        {
+            GroupVoiceChannelGrantUpdateMultipleExplicit gvcgume = (GroupVoiceChannelGrantUpdateMultipleExplicit)mac;
+
+            if(isCurrentGroup(gvcgume.getGroupAddressA()))
+            {
+                broadcastCurrentChannel(gvcgume.getChannelA());
+            }
+
+            if(getCurrentChannel() == null && isCurrentGroup(gvcgume.getGroupAddressB()))
+            {
+                broadcastCurrentChannel(gvcgume.getChannelB());
+            }
+        }
+    }
+
+    private void processGVCGUM(MacStructure mac) {
+        if(getCurrentChannel() == null && mac instanceof GroupVoiceChannelGrantUpdateMultiple)
+        {
+            GroupVoiceChannelGrantUpdateMultiple gvcgum = (GroupVoiceChannelGrantUpdateMultiple)mac;
+
+            if(isCurrentGroup(gvcgum.getGroupAddressA()))
+            {
+                broadcastCurrentChannel(gvcgum.getChannelA());
+            }
+
+            if(getCurrentChannel() == null && gvcgum.hasGroupB() && isCurrentGroup(gvcgum.getGroupAddressB()))
+            {
+                broadcastCurrentChannel(gvcgum.getChannelB());
+            }
+
+            if(getCurrentChannel() == null && gvcgum.hasGroupC() && isCurrentGroup(gvcgum.getGroupAddressC()))
+            {
+                broadcastCurrentChannel(gvcgum.getChannelC());
+            }
+        }
+    }
+
+    private void processTIVCU(MacMessage message, MacStructure mac) {
+        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
+        {
+            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
+
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+        }
+        else
+        {
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+
+            if(mac instanceof TelephoneInterconnectVoiceChannelUser)
+            {
+                TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
+
+                if(tivcu.getServiceOptions().isEncrypted())
+                {
+                    updateCurrentCall(DecodeEventType.CALL_INTERCONNECT_ENCRYPTED, null, message.getTimestamp());
+                }
+                else
+                {
+                    updateCurrentCall(DecodeEventType.CALL_INTERCONNECT, null, message.getTimestamp());
+                }
+            }
+        }
+    }
+
+    private void processUTUVCUExtended(MacMessage message, MacStructure mac) {
+        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
+        {
+            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
+
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+        }
+        else
+        {
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+
+            if(mac instanceof UnitToUnitVoiceChannelUserExtended)
+            {
+                UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
+
+                if(uuvcue.getServiceOptions().isEncrypted())
+                {
+                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
+                }
+                else
+                {
+                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
+                }
+            }
+        }
+    }
+
+    private void processUTUVCU(MacMessage message, MacStructure mac) {
+        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
+        {
+            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
+
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+        }
+        else
+        {
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+
+            if(mac instanceof UnitToUnitVoiceChannelUserAbbreviated)
+            {
+                UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
+
+                if(uuvcua.getServiceOptions().isEncrypted())
+                {
+                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED, null, message.getTimestamp());
+                }
+                else
+                {
+                    updateCurrentCall(DecodeEventType.CALL_UNIT_TO_UNIT, null, message.getTimestamp());
+                }
+            }
+        }
+    }
+
+    private void processGVCUExtended(MacMessage message, MacStructure mac) {
+        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
+        {
+            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
+
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+        }
+        else
+        {
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+
+            if(mac instanceof GroupVoiceChannelUserExtended)
+            {
+                GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
+
+                if(gvcue.getServiceOptions().isEncrypted())
+                {
+                    updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
+                }
+                else
+                {
+                    updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
+                }
+            }
+        }
+    }
+
+    private void processGVCUAbbreviated(MacMessage message, MacStructure mac) {
+        if(message.getMacPduType() == MacPduType.MAC_6_HANGTIME)
+        {
+            closeCurrentCallEvent(message.getTimestamp(), false, MacPduType.MAC_6_HANGTIME);
+
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+        }
+        else
+        {
+            for(Identifier identifier : mac.getIdentifiers())
+            {
+                //Add to the identifier collection after filtering through the patch group manager
+                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+            }
+
+            if(mac instanceof GroupVoiceChannelUserAbbreviated)
+            {
+                GroupVoiceChannelUserAbbreviated gvcua = (GroupVoiceChannelUserAbbreviated)mac;
+
+                if(gvcua.getServiceOptions().isEncrypted())
+                {
+                    updateCurrentCall(DecodeEventType.CALL_GROUP_ENCRYPTED, null, message.getTimestamp());
+                }
+                else
+                {
+                    updateCurrentCall(DecodeEventType.CALL_GROUP, null, message.getTimestamp());
+                }
+            }
+        }
+    }
+
+    private void processEndPushToTalk(MacMessage message, MacStructure mac) {
+        if(mac instanceof EndPushToTalk)
+        {
+            //Add the set of identifiers before we close out the call event to ensure they're captured in
+            //the closing event.
+            if(mCurrentCallEvent != null)
+            {
+                for(Identifier identifier : mac.getIdentifiers())
+                {
+                    if(identifier.getRole() == Role.FROM)
+                    {
+                        if(identifier instanceof APCO25RadioIdentifier)
+                        {
+                            int value = ((APCO25RadioIdentifier)identifier).getValue();
+
+                            //Group call End PTT uses a FROM value of 0xFFFFFF - don't overwrite the correct id
+                            if(value != SYSTEM_CONTROLLER)
+                            {
+                                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                            }
+                        }
+                    }
+                    else if(identifier.getRole() == Role.TO)
+                    {
+                        if(identifier instanceof APCO25Talkgroup)
+                        {
+                            int value = ((APCO25Talkgroup)identifier).getValue();
+
+                            //Individual call End PTT uses a TO value of 0 - don't overwrite the correct id
+                            if(value != 0)
+                            {
+                                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+                    }
+                }
+            }
+
+            if(message.getDataUnitID().isFACCH())
+            {
+                mEndPttOnFacchCounter++;
+
+                //FNE sending 2 or more End PTT in FACCH timeslots indicates a channel teardown event.
+                if(mEndPttOnFacchCounter > 1)
+                {
+                    if(mChannelType == ChannelType.TRAFFIC)
+                    {
+                        closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_2_END_PTT);
+                        //Don't send a continue state here ... the close() method will send the TEARDOWN state
+                    }
+                    //Otherwise the channel state is set to ACTIVE in anticipation of further call activity
+                    else
+                    {
+                        closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_4_ACTIVE);
+                        continueState(State.RESET);
+                    }
+                }
+            }
+            else
+            {
+                closeCurrentCallEvent(message.getTimestamp(), true, MacPduType.MAC_4_ACTIVE);
+            }
+        }
+    }
+
+    private void processPushToTalk(MacMessage message, MacStructure mac) {
+        for(Identifier identifier : mac.getIdentifiers())
+        {
+            //Add to the identifier collection after filtering through the patch group manager
+            getIdentifierCollection().update(mPatchGroupManager.update(identifier));
+        }
+
+        PushToTalk ptt = (PushToTalk)mac;
+
+        if(ptt.isEncrypted())
+        {
+            updateCurrentCall(DecodeEventType.CALL_ENCRYPTED, ptt.getEncryptionKey().toString(), message.getTimestamp());
+        }
+        else
+        {
+            updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
         }
     }
 
