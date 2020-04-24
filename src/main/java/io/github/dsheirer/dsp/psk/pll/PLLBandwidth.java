@@ -86,9 +86,9 @@ public enum PLLBandwidth
      */
     public static PLLBandwidth fromSyncCount(int syncCount)
     {
-        if(LOOKUP_MAP.containsKey(syncCount))
-        {
-            return LOOKUP_MAP.get(syncCount);
+        PLLBandwidth mapValue = LOOKUP_MAP.get(syncCount);
+        if (mapValue != null) {
+            return mapValue;
         }
 
         return BW_200;

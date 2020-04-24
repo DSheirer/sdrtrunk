@@ -501,9 +501,10 @@ public class AliasList implements Listener<AliasEvent>
         {
             int value = identifier.getValue();
 
-            if(mTalkgroupAliasMap.containsKey(value))
+            Alias mapValue = mTalkgroupAliasMap.get(value);
+            if (mapValue != null)
             {
-                return mTalkgroupAliasMap.get(value);
+                return mapValue;
             }
 
             for(Map.Entry<TalkgroupRange, Alias> entry : mTalkgroupRangeAliasMap.entrySet())
@@ -587,9 +588,10 @@ public class AliasList implements Listener<AliasEvent>
         {
             int value = identifier.getValue();
 
-            if(mRadioAliasMap.containsKey(value))
+            Alias mapValue = mRadioAliasMap.get(value);
+            if(mapValue != null)
             {
-                return mRadioAliasMap.get(value);
+                return mapValue;
             }
 
             for(Map.Entry<RadioRange, Alias> entry : mRadioRangeAliasMap.entrySet())

@@ -159,9 +159,10 @@ public enum MacOpcode
      */
     public static MacOpcode fromValue(int value)
     {
-        if(LOOKUP_MAP.containsKey(value))
+        MacOpcode mapValue = LOOKUP_MAP.get(value);
+        if (mapValue != null)
         {
-            return LOOKUP_MAP.get(value);
+            return mapValue;
         }
 
         if(0 <= value && value <= 63)

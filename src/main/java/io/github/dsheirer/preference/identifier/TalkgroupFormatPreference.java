@@ -215,9 +215,9 @@ public class TalkgroupFormatPreference extends Preference
      */
     public IntegerFormat getTalkgroupFormat(Protocol protocol)
     {
-        if(mTalkgroupFormatProtocolMap.containsKey(protocol))
-        {
-            return mTalkgroupFormatProtocolMap.get(protocol);
+        IntegerFormat mapValue = mTalkgroupFormatProtocolMap.get(protocol);
+        if (mapValue != null) {
+            return mapValue;
         }
 
         return IntegerFormat.DECIMAL;
