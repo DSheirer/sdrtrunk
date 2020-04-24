@@ -50,7 +50,6 @@ public class TwoChannelSynthesizerM2
     private float[] mSerpentineDataBuffer;
     private float[] mIQInterleavedFilter;
     private float[] mFilterVectorProduct;
-    private float[] mIFFTBuffer = new float[4];
     private float mIAccumulator;
     private float mQAccumulator;
     private FloatFFT_1D mFFT = new FloatFFT_1D(2);
@@ -101,17 +100,18 @@ public class TwoChannelSynthesizerM2
         ReusableComplexBuffer synthesizedComplexBuffer = mReusableComplexBufferQueue.getBuffer(channel1.length);
 
         float[] output = synthesizedComplexBuffer.getSamples();
+        float[] IFFTBuffer = new float[4];
 
         for(int x = 0; x < channel1.length; x += 2)
         {
             //Load samples from each channel into buffer for IFFT
-            mIFFTBuffer[0] = channel1[x];     //i
-            mIFFTBuffer[1] = channel1[x + 1]; //q
-            mIFFTBuffer[2] = channel2[x];     //i
-            mIFFTBuffer[3] = channel2[x + 1]; //q
+            IFFTBuffer[0] = channel1[x];     //i
+            IFFTBuffer[1] = channel1[x + 1]; //q
+            IFFTBuffer[2] = channel2[x];     //i
+            IFFTBuffer[3] = channel2[x + 1]; //q
 
             //Perform Inverse FFT (IFFT)
-            mFFT.complexInverse(mIFFTBuffer, true);
+            mFFT.complexInverse(IFFTBuffer, true);
 
             //Perform serpentine shift of data blocks in the data buffer - make room for 4 new samples
             System.arraycopy(mSerpentineDataBuffer, 0, mSerpentineDataBuffer, 4, mSerpentineDataBuffer.length - 4);
@@ -119,13 +119,13 @@ public class TwoChannelSynthesizerM2
             //Top Block - load samples into data buffer in normal order
             if(mTopBlockFlag)
             {
-                System.arraycopy(mIFFTBuffer, 0, mSerpentineDataBuffer, 0, mIFFTBuffer.length);
+                System.arraycopy(IFFTBuffer, 0, mSerpentineDataBuffer, 0, IFFTBuffer.length);
             }
             //Bottom Block - swap samples via data loading to account for phase shift
             else
             {
-                System.arraycopy(mIFFTBuffer, 0, mSerpentineDataBuffer, 2, 2);
-                System.arraycopy(mIFFTBuffer, 2, mSerpentineDataBuffer, 0, 2);
+                System.arraycopy(IFFTBuffer, 0, mSerpentineDataBuffer, 2, 2);
+                System.arraycopy(IFFTBuffer, 2, mSerpentineDataBuffer, 0, 2);
             }
 
             //Note: in order to use Java's ability to leverage SIMD intrinsics, we perform filtering in two steps
