@@ -18,6 +18,7 @@ package io.github.dsheirer.dsp.am;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import org.apache.commons.math3.util.FastMath;
 
 /**
  * Performs AM demodulation on baseband I/Q samples to produce demodulated float output.
@@ -55,7 +56,7 @@ public class AMDemodulator
      */
     public float demodulate(float inphase, float quadrature)
     {
-        return (float)Math.sqrt((inphase * inphase) + (quadrature * quadrature)) * mGain;
+        return (float) FastMath.sqrt((inphase * inphase) + (quadrature * quadrature)) * mGain;
     }
 
     /**

@@ -150,7 +150,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 
         mSampleRateCombo = new JComboBox<AirspySampleRate>(
             new DefaultComboBoxModel<AirspySampleRate>(rates.toArray(
-                new AirspySampleRate[rates.size()])));
+                    new AirspySampleRate[0])));
         mSampleRateCombo.setEnabled(false);
         mSampleRateCombo.addActionListener(new ActionListener()
         {

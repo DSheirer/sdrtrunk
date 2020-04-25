@@ -18,6 +18,8 @@
 package io.github.dsheirer.bits;
 
 
+import org.apache.commons.math3.util.FastMath;
+
 /**
  * Sync pattern matcher.
  *
@@ -37,7 +39,7 @@ public class SyncPatternMatcher
     public SyncPatternMatcher(boolean[] syncPattern)
     {
         //Setup a bit mask of all ones the length of the sync pattern
-        mMask = (long)((Math.pow(2, syncPattern.length)) - 1);
+        mMask = (long)((FastMath.pow(2, syncPattern.length)) - 1);
 
         //Convert the sync bits into a long value for comparison
         for(int x = 0; x < syncPattern.length; x++)

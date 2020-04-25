@@ -33,6 +33,7 @@ package org.jdesktop.swingx;
 
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.Tile;
 import org.jdesktop.swingx.mapviewer.TileFactory;
@@ -233,8 +234,8 @@ public class JXMapViewer extends JPanel implements DesignMode
 		// TilePoint topLeftTile = getTileFactory().getTileCoordinate(
 		// new Point2D.Double(viewportBounds.x, viewportBounds.y));
 		TileFactoryInfo info = getTileFactory().getInfo();
-		int tpx = (int) Math.floor(viewportBounds.getX() / info.getTileSize(0));
-		int tpy = (int) Math.floor(viewportBounds.getY() / info.getTileSize(0));
+		int tpx = (int) FastMath.floor(viewportBounds.getX() / info.getTileSize(0));
+		int tpy = (int) FastMath.floor(viewportBounds.getY() / info.getTileSize(0));
 		// TilePoint topLeftTile = new TilePoint(tpx, tpy);
 
 		// p("top tile = " + topLeftTile);

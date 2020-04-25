@@ -22,6 +22,7 @@ import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -287,17 +288,17 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         public void setFrequency(long frequency, boolean fireChangeEvent)
         {
             //Strip the digits higher than this one
-            long lower = frequency % (long)(Math.pow(10, mPower + 1));
+            long lower = frequency % (long)(FastMath.pow(10, mPower + 1));
 
             //Set the value to int value of dividing by 10 to this power
-            long value = (long)(lower / (long)(Math.pow(10, mPower)));
+            long value = (long)(lower / (long)(FastMath.pow(10, mPower)));
 
             set(value, fireChangeEvent);
         }
 
         public long getFrequency()
         {
-            return mValue * (long)Math.pow(10, mPower);
+            return mValue * (long)FastMath.pow(10, mPower);
         }
 
         public void increment()

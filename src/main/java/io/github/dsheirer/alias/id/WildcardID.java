@@ -19,6 +19,7 @@
 package io.github.dsheirer.alias.id;
 
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
 
 import java.util.regex.Pattern;
 
@@ -95,12 +96,12 @@ public class WildcardID implements Comparable<WildcardID>
         {
             if(mValue.substring(x, x + 1).equals(WILDCARD))
             {
-                weight += (int)(Math.pow(2, mValue.length() - x - 1));         //Position weight
+                weight += (int)(FastMath.pow(2, mValue.length() - x - 1));         //Position weight
                 characterCount++;
             }
         }
 
-        weight += (int)(Math.pow(2, characterCount)) * 1000; //Character count weight
+        weight += (int)(FastMath.pow(2, characterCount)) * 1000; //Character count weight
 
         return weight;
     }

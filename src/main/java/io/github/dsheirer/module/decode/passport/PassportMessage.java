@@ -28,6 +28,7 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.protocol.Protocol;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -257,32 +258,12 @@ public class PassportMessage extends Message
      */
     public String format(int number, int decimalPlaces)
     {
-        StringBuilder sb = new StringBuilder();
-
-        int paddingRequired = decimalPlaces - (String.valueOf(number).length());
-
-        for(int x = 0; x < paddingRequired; x++)
-        {
-            sb.append("0");
-        }
-
-        sb.append(number);
-
-        return sb.toString();
+        return StringUtils.leftPad(Integer.valueOf(number).toString(), decimalPlaces, '0');
     }
 
     public String format(String val, int places)
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(val);
-
-        while(sb.length() < places)
-        {
-            sb.append(" ");
-        }
-
-        return sb.toString();
+        return StringUtils.leftPad(val, places);
     }
 
     @Override

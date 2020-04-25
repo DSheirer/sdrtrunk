@@ -17,6 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter;
 
+import org.apache.commons.math3.util.FastMath;
+
 /***************************************************************************
  *   Copyright (C) 2011 by Paul Lutus                                      *
  *   lutusp@arachnoid.com                                                  *
@@ -93,12 +95,12 @@ final public class IIRBiQuadraticFilter {
     public void reconfigure(double cf) {
         center_freq = cf;
         // only used for peaking and shelving filters
-        gain_abs = Math.pow(10, gainDB / 40);
-        double omega = 2 * Math.PI * cf / sample_rate;
-        double sn = Math.sin(omega);
-        double cs = Math.cos(omega);
+        gain_abs = FastMath.pow(10, gainDB / 40);
+        double omega = 2 * FastMath.PI * cf / sample_rate;
+        double sn = FastMath.sin(omega);
+        double cs = FastMath.cos(omega);
         double alpha = sn / (2 * Q);
-        double beta = Math.sqrt(gain_abs + gain_abs);
+        double beta = FastMath.sqrt(gain_abs + gain_abs);
         switch (type) {
             case BANDPASS:
                 b0 = alpha;
@@ -167,8 +169,8 @@ final public class IIRBiQuadraticFilter {
 
     // provide a static amplitude result for testing
     public double result(double f) {
-        double phi = Math.pow((Math.sin(2.0 * Math.PI * f / (2.0 * sample_rate))), 2.0);
-        return (Math.pow(b0 + b1 + b2, 2.0) - 4.0 * (b0 * b1 + 4.0 * b0 * b2 + b1 * b2) * phi + 16.0 * b0 * b2 * phi * phi) / (Math.pow(1.0 + a1 + a2, 2.0) - 4.0 * (a1 + 4.0 * a2 + a1 * a2) * phi + 16.0 * a2 * phi * phi);
+        double phi = FastMath.pow((FastMath.sin(2.0 * FastMath.PI * f / (2.0 * sample_rate))), 2.0);
+        return (FastMath.pow(b0 + b1 + b2, 2.0) - 4.0 * (b0 * b1 + 4.0 * b0 * b2 + b1 * b2) * phi + 16.0 * b0 * b2 * phi * phi) / (FastMath.pow(1.0 + a1 + a2, 2.0) - 4.0 * (a1 + 4.0 * a2 + a1 * a2) * phi + 16.0 * a2 * phi * phi);
     }
 
     // provide a static decibel result for testing
@@ -176,7 +178,7 @@ final public class IIRBiQuadraticFilter {
     {
         double r;
         try {
-            r = 10 * Math.log10(result(f));
+            r = 10 * FastMath.log10(result(f));
         } catch (Exception e) {
             r = -100;
         }

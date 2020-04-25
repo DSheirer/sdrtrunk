@@ -23,6 +23,7 @@ package io.github.dsheirer.bits;
 
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +58,7 @@ public class MultiSyncPatternMatcher
         Validate.isTrue(syncSize < 64);
 
         //Setup a bit mask of all ones the length of the sync pattern
-        mMask = (long)((Math.pow(2, syncSize)) - 1);
+        mMask = (long)((FastMath.pow(2, syncSize)) - 1);
     }
 
     public void dispose()

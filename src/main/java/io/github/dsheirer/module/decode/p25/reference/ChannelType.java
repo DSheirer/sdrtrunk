@@ -59,15 +59,15 @@ public enum ChannelType
             {
                 sb.append(" H-D8PSK");
             }
-            sb.append(" BW:" + mBandwidth);
-            sb.append(" TIMESLOTS:" + mSlotsPerCarrier);
-            sb.append(" VOCODER:" + mVocoder.name());
+            sb.append(" BW:").append(mBandwidth);
+            sb.append(" TIMESLOTS:").append(mSlotsPerCarrier);
+            sb.append(" VOCODER:").append(mVocoder.name());
         }
         else
         {
             sb.append("FDMA");
-            sb.append(" BW:" + mBandwidth);
-            sb.append(" VOCODER:" + mVocoder.name());
+            sb.append(" BW:").append(mBandwidth);
+            sb.append(" VOCODER:").append(mVocoder.name());
         }
 
         return sb.toString();

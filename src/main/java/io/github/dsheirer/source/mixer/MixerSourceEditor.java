@@ -64,7 +64,7 @@ public class MixerSourceEditor extends Editor<Channel>
                 EnumSet<MixerChannel> channels = selected.getChannels();
 
                 mComboChannels.setModel(new DefaultComboBoxModel<MixerChannel>(
-                    channels.toArray(new MixerChannel[channels.size()])));
+                    channels.toArray(new MixerChannel[0])));
 
                 repaint();
 
@@ -84,7 +84,7 @@ public class MixerSourceEditor extends Editor<Channel>
             EnumSet<MixerChannel> channels = selected.getChannels();
 
             mComboChannels.setModel(new DefaultComboBoxModel<MixerChannel>(
-                channels.toArray(new MixerChannel[channels.size()])));
+                channels.toArray(new MixerChannel[0])));
         }
 
         mComboChannels.setEnabled(false);

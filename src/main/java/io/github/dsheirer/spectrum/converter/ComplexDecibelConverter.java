@@ -18,6 +18,8 @@
 package io.github.dsheirer.spectrum.converter;
 
 
+import org.apache.commons.math3.util.FastMath;
+
 /**
  * Converts complex DFT output to scaled dB values with a maximum amplitude of
  * 0 dB and all values scaled to the minimum dB value which is:
@@ -85,7 +87,7 @@ public class ComplexDecibelConverter extends DFTResultsConverter
 			//Calculate the magnitude squared (power) value from each bin's real 
 			//and imaginary value and scale it to the DFT bin size squared.
 			//Convert the scaled value to decibels.
-			float decibels = 10.0f * (float)Math.log10( 
+			float decibels = 10.0f * (float) FastMath.log10(
 				( ( results[ x ] * results[ x ] ) + 
 				  ( results[ x + 1 ] * results[ x + 1 ] ) ) * dftBinSizeScalor ); 
 

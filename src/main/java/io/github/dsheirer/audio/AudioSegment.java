@@ -384,10 +384,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
             }
 
             //Add all broadcast channels for the alias ... let the set handle duplication.
-            for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
-            {
-                mBroadcastChannels.add(broadcastChannel);
-            }
+            mBroadcastChannels.addAll(alias.getBroadcastChannels());
 
             //Only assign a playback priority if it is lower priority than the current setting.
             int playbackPriority = alias.getPlaybackPriority();

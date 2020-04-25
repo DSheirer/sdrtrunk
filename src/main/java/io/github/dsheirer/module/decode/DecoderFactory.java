@@ -143,152 +143,184 @@ public class DecoderFactory
         switch(decodeConfig.getDecoderType())
         {
             case AM:
-                modules.add(new AMDecoder(decodeConfig));
-                modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-
-                AudioModule audioModuleAM = new AudioModule(aliasList);
-                modules.add(audioModuleAM);
-
-                //Check if the user wants all audio recorded ..
-                if(((DecodeConfigAM)decodeConfig).getRecordAudio())
-                {
-                    audioModuleAM.setRecordAudio(true);
-                }
-
-                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-                {
-                    modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                }
+                processAM(channel, modules, aliasList, decodeConfig);
                 break;
             case NBFM:
-                modules.add(new NBFMDecoder(decodeConfig));
-                modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                AudioModule audioModuleFM = new AudioModule(aliasList);
-
-                //Check if the user wants all audio recorded ..
-                if(((DecodeConfigNBFM)decodeConfig).getRecordAudio())
-                {
-                    audioModuleFM.setRecordAudio(true);
-                }
-                modules.add(audioModuleFM);
-                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-                {
-                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                }
+                processNBFM(channel, modules, aliasList, decodeConfig);
                 break;
             case LTR_STANDARD:
-                MessageDirection direction = ((DecodeConfigLTRStandard)decodeConfig).getMessageDirection();
-                modules.add(new LTRStandardDecoder(null, direction));
-                modules.add(new LTRStandardDecoderState());
-                modules.add(new AudioModule(aliasList));
-                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-                {
-                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                }
+                processLTRStandard(channel, modules, aliasList, (DecodeConfigLTRStandard) decodeConfig);
                 break;
             case LTR_NET:
-                modules.add(new LTRNetDecoder((DecodeConfigLTRNet)decodeConfig));
-                modules.add(new LTRNetDecoderState());
-                modules.add(new AudioModule(aliasList));
-                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-                {
-                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                }
+                processLTRNet(channel, modules, aliasList, (DecodeConfigLTRNet) decodeConfig);
                 break;
             case MPT1327:
-                DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)decodeConfig;
-                ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
-                Sync sync = mptConfig.getSync();
-                modules.add(new MPT1327Decoder(sync));
-                modules.add(new AudioModule(aliasList));
-                SourceType sourceType = channel.getSourceConfiguration().getSourceType();
-                if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
-                {
-                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                }
-
-                long timeout = mptConfig.getCallTimeout() * 1000;
-
-                if(channelType == ChannelType.STANDARD)
-                {
-                    MPT1327TrafficChannelManager trafficChannelManager = new MPT1327TrafficChannelManager(channel, channelMap);
-                    modules.add(trafficChannelManager);
-                    modules.add(new MPT1327DecoderState(trafficChannelManager, channelType, timeout));
-                }
-                else
-                {
-                    modules.add(new MPT1327DecoderState(channelType, timeout));
-                }
-
-                //Add a channel rotation monitor when we have multiple control channel frequencies specified
-                if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
-                    ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
-                {
-                    List<State> activeStates = new ArrayList<>();
-                    activeStates.add(State.CONTROL);
-                    modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
-                }
+                processMPT1327(channelMapModel, channel, userPreferences, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
                 break;
             case PASSPORT:
-                modules.add(new PassportDecoder(decodeConfig));
-                modules.add(new PassportDecoderState());
-                modules.add(new AudioModule(aliasList));
-                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-                {
-                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                }
+                processPassport(channel, modules, aliasList, decodeConfig);
                 break;
             case P25_PHASE1:
-                DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)decodeConfig;
-
-                switch(p25Config.getModulation())
-                {
-                    case C4FM:
-                        modules.add(new P25P1DecoderC4FM());
-                        break;
-                    case CQPSK:
-                        modules.add(new P25P1DecoderLSM());
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
-                            p25Config.getModulation() + "]");
-                }
-
-                if(channelType == ChannelType.STANDARD)
-                {
-                    P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
-                    modules.add(trafficChannelManager);
-                    modules.add(new P25P1DecoderState(channel, trafficChannelManager));
-                }
-                else
-                {
-                    modules.add(new P25P1DecoderState(channel));
-                }
-
-                modules.add(new P25P1AudioModule(userPreferences, aliasList));
-
-                //Add a channel rotation monitor when we have multiple control channel frequencies specified
-                if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
-                    ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
-                {
-                    List<State> activeStates = new ArrayList<>();
-                    activeStates.add(State.CONTROL);
-                    modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
-                }
+                processP25Phase1(channel, userPreferences, modules, aliasList, channelType, (DecodeConfigP25Phase1) decodeConfig);
                 break;
             case P25_PHASE2:
-                modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
-
-                modules.add(new P25P2DecoderState(channel, 0));
-                modules.add(new P25P2DecoderState(channel, 1));
-                modules.add(new P25P2AudioModule(userPreferences, 0, aliasList));
-                modules.add(new P25P2AudioModule(userPreferences, 1, aliasList));
+                processP25Phase2(channel, userPreferences, modules, aliasList);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown decoder type [" + decodeConfig.getDecoderType().toString() + "]");
         }
 
         return modules;
+    }
+
+    private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList) {
+        modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
+
+        modules.add(new P25P2DecoderState(channel, 0));
+        modules.add(new P25P2DecoderState(channel, 1));
+        modules.add(new P25P2AudioModule(userPreferences, 0, aliasList));
+        modules.add(new P25P2AudioModule(userPreferences, 1, aliasList));
+    }
+
+    private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig) {
+        DecodeConfigP25Phase1 p25Config = decodeConfig;
+
+        switch(p25Config.getModulation())
+        {
+            case C4FM:
+                modules.add(new P25P1DecoderC4FM());
+                break;
+            case CQPSK:
+                modules.add(new P25P1DecoderLSM());
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
+                    p25Config.getModulation() + "]");
+        }
+
+        if(channelType == ChannelType.STANDARD)
+        {
+            P25TrafficChannelManager trafficChannelManager = new P25TrafficChannelManager(channel);
+            modules.add(trafficChannelManager);
+            modules.add(new P25P1DecoderState(channel, trafficChannelManager));
+        }
+        else
+        {
+            modules.add(new P25P1DecoderState(channel));
+        }
+
+        modules.add(new P25P1AudioModule(userPreferences, aliasList));
+
+        //Add a channel rotation monitor when we have multiple control channel frequencies specified
+        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
+            ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+        {
+            List<State> activeStates = new ArrayList<>();
+            activeStates.add(State.CONTROL);
+            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+        }
+    }
+
+    private static void processPassport(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
+        modules.add(new PassportDecoder(decodeConfig));
+        modules.add(new PassportDecoderState());
+        modules.add(new AudioModule(aliasList));
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
+    }
+
+    private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
+        DecodeConfigMPT1327 mptConfig = decodeConfig;
+        ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
+        Sync sync = mptConfig.getSync();
+        modules.add(new MPT1327Decoder(sync));
+        modules.add(new AudioModule(aliasList));
+        SourceType sourceType = channel.getSourceConfiguration().getSourceType();
+        if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
+        {
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
+
+        long timeout = mptConfig.getCallTimeout() * 1000;
+
+        if(channelType == ChannelType.STANDARD)
+        {
+            MPT1327TrafficChannelManager trafficChannelManager = new MPT1327TrafficChannelManager(channel, channelMap);
+            modules.add(trafficChannelManager);
+            modules.add(new MPT1327DecoderState(trafficChannelManager, channelType, timeout));
+        }
+        else
+        {
+            modules.add(new MPT1327DecoderState(channelType, timeout));
+        }
+
+        //Add a channel rotation monitor when we have multiple control channel frequencies specified
+        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
+            ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+        {
+            List<State> activeStates = new ArrayList<>();
+            activeStates.add(State.CONTROL);
+            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+        }
+    }
+
+    private static void processLTRNet(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigLTRNet decodeConfig) {
+        modules.add(new LTRNetDecoder(decodeConfig));
+        modules.add(new LTRNetDecoderState());
+        modules.add(new AudioModule(aliasList));
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
+    }
+
+    private static void processLTRStandard(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigLTRStandard decodeConfig) {
+        MessageDirection direction = decodeConfig.getMessageDirection();
+        modules.add(new LTRStandardDecoder(null, direction));
+        modules.add(new LTRStandardDecoderState());
+        modules.add(new AudioModule(aliasList));
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
+    }
+
+    private static void processNBFM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
+        modules.add(new NBFMDecoder(decodeConfig));
+        modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
+        AudioModule audioModuleFM = new AudioModule(aliasList);
+
+        //Check if the user wants all audio recorded ..
+        if(((DecodeConfigNBFM)decodeConfig).getRecordAudio())
+        {
+            audioModuleFM.setRecordAudio(true);
+        }
+        modules.add(audioModuleFM);
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
+    }
+
+    private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
+        modules.add(new AMDecoder(decodeConfig));
+        modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
+
+        AudioModule audioModuleAM = new AudioModule(aliasList);
+        modules.add(audioModuleAM);
+
+        //Check if the user wants all audio recorded ..
+        if(((DecodeConfigAM)decodeConfig).getRecordAudio())
+        {
+            audioModuleAM.setRecordAudio(true);
+        }
+
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
     }
 
     /**

@@ -16,6 +16,7 @@
 package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 /**
  * Calculates the phase error for a QPSK polar-orientation constellation
@@ -29,7 +30,7 @@ public class QPSKSymbolPhaseErrorCalculator implements ISymbolPhaseErrorCalculat
     {
         mPhaseError = 0.0f;
 
-        if(Math.abs(symbol.inphase()) > Math.abs(symbol.quadrature()))
+        if(FastMath.abs(symbol.inphase()) > FastMath.abs(symbol.quadrature()))
         {
             if(symbol.inphase() > 0)
             {

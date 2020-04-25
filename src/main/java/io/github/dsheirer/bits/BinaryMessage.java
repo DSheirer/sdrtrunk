@@ -23,6 +23,7 @@ package io.github.dsheirer.bits;
 
 import io.github.dsheirer.edac.CRC;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
 
 import java.util.BitSet;
 
@@ -593,7 +594,7 @@ public class BinaryMessage extends BitSet
      */
     public byte[] getBytes()
     {
-        byte[] bytes = new byte[(int)Math.ceil((double)size() / 8.0)];
+        byte[] bytes = new byte[(int)FastMath.ceil((double)size() / 8.0)];
 
         for(int x = 0; x < bytes.length; x++)
         {
@@ -795,7 +796,7 @@ public class BinaryMessage extends BitSet
      */
     public int getInt(int start, int end)
     {
-        if(Math.abs(end - start) > 32)
+        if(FastMath.abs(end - start) > 32)
         {
             throw new IllegalArgumentException("Overflow - must be 32 bits "
                 + "or less to fit into a primitive integer value");
@@ -847,7 +848,7 @@ public class BinaryMessage extends BitSet
      */
     public long getLong(int start, int end)
     {
-        if(Math.abs(end - start) > 64)
+        if(FastMath.abs(end - start) > 64)
         {
             throw new IllegalArgumentException("Overflow - must be 64 bits "
                 + "or less to fit into a primitive long value");

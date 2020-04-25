@@ -24,6 +24,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.mdc1200.identifier.MDC1200Identifier;
 import io.github.dsheirer.protocol.Protocol;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -177,16 +178,7 @@ public class MDCMessage extends Message
      */
     public String pad(String value, int places, String padCharacter)
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(value);
-
-        while(sb.length() < places)
-        {
-            sb.append(padCharacter);
-        }
-
-        return sb.toString();
+        return StringUtils.rightPad(value, places, padCharacter);
     }
 
     /**
@@ -194,18 +186,7 @@ public class MDCMessage extends Message
      */
     public String format(int number, int decimalPlaces)
     {
-        StringBuilder sb = new StringBuilder();
-
-        int paddingRequired = decimalPlaces - (String.valueOf(number).length());
-
-        for(int x = 0; x < paddingRequired; x++)
-        {
-            sb.append("0");
-        }
-
-        sb.append(number);
-
-        return sb.toString();
+        return StringUtils.leftPad(Integer.valueOf(number).toString(), decimalPlaces, '0');
     }
 
     @Override
@@ -219,7 +200,7 @@ public class MDCMessage extends Message
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("MDC1200 UNIT:" + getFromIdentifier());
+        sb.append("MDC1200 UNIT:").append(getFromIdentifier());
         if(isEmergency())
         {
             sb.append(" **EMERGENCY**");
@@ -235,11 +216,11 @@ public class MDCMessage extends Message
             sb.append(" EOT");
         }
 
-        sb.append(" OPCODE:" + format(getOpcode(), 2));
-        sb.append(" ARG:" + format(getArgument(), 3));
-        sb.append(" TYPE:" + getPacketType().toString());
-        sb.append(" ACK:" + getResponse().toString());
-        sb.append(" DIR:" + pad(getDirection().toString(), 3, " "));
+        sb.append(" OPCODE:").append(format(getOpcode(), 2));
+        sb.append(" ARG:").append(format(getArgument(), 3));
+        sb.append(" TYPE:").append(getPacketType().toString());
+        sb.append(" ACK:").append(getResponse().toString());
+        sb.append(" DIR:").append(pad(getDirection().toString(), 3, " "));
 
         return sb.toString();
     }

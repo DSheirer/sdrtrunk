@@ -219,131 +219,25 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                 switch(mac.getOpcode())
                 {
                     case PUSH_TO_TALK:
-                        if(mac instanceof PushToTalk)
-                        {
-                            PushToTalk ptt = (PushToTalk)mac;
-
-                            if(mCallSequence == null)
-                            {
-                                mCallSequence = new MBECallSequence(PROTOCOL);
-                            }
-                            mCallSequence.setFromIdentifier(ptt.getSourceAddress().toString());
-                            mCallSequence.setToIdentifier(ptt.getGroupAddress().toString());
-
-                            if(ptt.isEncrypted())
-                            {
-                                mCallSequence.setEncrypted(true);
-                                mCallSequence.setEncryptionSyncParameters(ptt.getEncryptionSyncParameters());
-                            }
-                        }
-                        else
-                        {
-                            mLog.warn("Expected push-to-talk structure but found: " + mac.getClass());
-                        }
+                        processPTT(mac);
                         break;
                     case END_PUSH_TO_TALK:
-                        if(mac instanceof EndPushToTalk)
-                        {
-                            EndPushToTalk eptt = (EndPushToTalk)mac;
-
-                            String source = eptt.getSourceAddress().toString();
-
-                            if(source != null && !source.contentEquals("16777215"))
-                            {
-                                mCallSequence.setFromIdentifier(source);
-                            }
-                            mCallSequence.setToIdentifier(eptt.getGroupAddress().toString());
-                            writeCallSequence(mCallSequence, "TS" + getTimeslot());
-                            mCallSequence = null;
-                        }
-                        else
-                        {
-                            mLog.warn("Expected End push-to-talk structure but found: " + mac.getClass());
-                        }
+                        processEndPTT(mac);
                         break;
                     case TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED:
-                        if(mac instanceof GroupVoiceChannelUserAbbreviated)
-                        {
-                            GroupVoiceChannelUserAbbreviated gvcua = (GroupVoiceChannelUserAbbreviated)mac;
-                            mCallSequence.setFromIdentifier(gvcua.getSourceAddress().toString());
-                            mCallSequence.setToIdentifier(gvcua.getGroupAddress().toString());
-                            mCallSequence.setCallType(CALL_TYPE_GROUP);
-                            if(gvcua.getServiceOptions().isEncrypted())
-                            {
-                                mCallSequence.setEncrypted(true);
-                            }
-                        }
-                        else
-                        {
-                            mLog.warn("Expected group voice channel user abbreviated but found: " + mac.getClass());
-                        }
+                        processGVCUA(mac);
                         break;
                     case TDMA_2_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-                        if(mac instanceof UnitToUnitVoiceChannelUserAbbreviated)
-                        {
-                            UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
-                            mCallSequence.setFromIdentifier(uuvcua.getSourceAddress().toString());
-                            mCallSequence.setToIdentifier(uuvcua.getTargetAddress().toString());
-                            mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
-                            if(uuvcua.getServiceOptions().isEncrypted())
-                            {
-                                mCallSequence.setEncrypted(true);
-                            }
-                        }
-                        else
-                        {
-                            mLog.warn("Expected unit-2-unit voice channel user abbreviated but found: " + mac.getClass());
-                        }
+                        processUTUVCU(mac);
                         break;
                     case TDMA_3_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-                        if(mac instanceof TelephoneInterconnectVoiceChannelUser)
-                        {
-                            TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
-                            mCallSequence.setToIdentifier(tivcu.getToOrFromAddress().toString());
-                            mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
-                            if(tivcu.getServiceOptions().isEncrypted())
-                            {
-                                mCallSequence.setEncrypted(true);
-                            }
-                        }
-                        else
-                        {
-                            mLog.warn("Expected telephone interconnect voice channel user abbreviated but found: " + mac.getClass());
-                        }
+                        processTIVCU(mac);
                         break;
                     case TDMA_33_GROUP_VOICE_CHANNEL_USER_EXTENDED:
-                        if(mac instanceof GroupVoiceChannelUserExtended)
-                        {
-                            GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
-                            mCallSequence.setFromIdentifier(gvcue.getSourceAddress().toString());
-                            mCallSequence.setToIdentifier(gvcue.getGroupAddress().toString());
-                            mCallSequence.setCallType(CALL_TYPE_GROUP);
-                            if(gvcue.getServiceOptions().isEncrypted())
-                            {
-                                mCallSequence.setEncrypted(true);
-                            }
-                        }
-                        else
-                        {
-                            mLog.warn("Expected group voice channel user extended but found: " + mac.getClass());
-                        }
+                        processGVCUE(mac);
                         break;
                     case TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED:
-                        if(mac instanceof UnitToUnitVoiceChannelUserExtended)
-                        {
-                            UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
-                            mCallSequence.setFromIdentifier(uuvcue.getSourceAddress().toString());
-                            mCallSequence.setToIdentifier(uuvcue.getTargetAddress().toString());
-                            mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
-                            if(uuvcue.getServiceOptions().isEncrypted())
-                            {
-                                mCallSequence.setEncrypted(true);
-                            }
-                        }
-                        else
-                        {
-                            mLog.warn("Expected unit-2-unit voice channel user extended but found: " + mac.getClass());
-                        }
+                        processUTUVCUE(mac);
                         break;
                 }
 
@@ -352,6 +246,140 @@ public class P25P2CallSequenceRecorder extends MBECallSequenceRecorder
                     writeCallSequence(mCallSequence, "TS" + getTimeslot());
                     mCallSequence = null;
                 }
+            }
+        }
+
+        private void processUTUVCUE(MacStructure mac) {
+            if(mac instanceof UnitToUnitVoiceChannelUserExtended)
+            {
+                UnitToUnitVoiceChannelUserExtended uuvcue = (UnitToUnitVoiceChannelUserExtended)mac;
+                mCallSequence.setFromIdentifier(uuvcue.getSourceAddress().toString());
+                mCallSequence.setToIdentifier(uuvcue.getTargetAddress().toString());
+                mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
+                if(uuvcue.getServiceOptions().isEncrypted())
+                {
+                    mCallSequence.setEncrypted(true);
+                }
+            }
+            else
+            {
+                mLog.warn("Expected unit-2-unit voice channel user extended but found: " + mac.getClass());
+            }
+        }
+
+        private void processGVCUE(MacStructure mac) {
+            if(mac instanceof GroupVoiceChannelUserExtended)
+            {
+                GroupVoiceChannelUserExtended gvcue = (GroupVoiceChannelUserExtended)mac;
+                mCallSequence.setFromIdentifier(gvcue.getSourceAddress().toString());
+                mCallSequence.setToIdentifier(gvcue.getGroupAddress().toString());
+                mCallSequence.setCallType(CALL_TYPE_GROUP);
+                if(gvcue.getServiceOptions().isEncrypted())
+                {
+                    mCallSequence.setEncrypted(true);
+                }
+            }
+            else
+            {
+                mLog.warn("Expected group voice channel user extended but found: " + mac.getClass());
+            }
+        }
+
+        private void processTIVCU(MacStructure mac) {
+            if(mac instanceof TelephoneInterconnectVoiceChannelUser)
+            {
+                TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)mac;
+                mCallSequence.setToIdentifier(tivcu.getToOrFromAddress().toString());
+                mCallSequence.setCallType(CALL_TYPE_TELEPHONE_INTERCONNECT);
+                if(tivcu.getServiceOptions().isEncrypted())
+                {
+                    mCallSequence.setEncrypted(true);
+                }
+            }
+            else
+            {
+                mLog.warn("Expected telephone interconnect voice channel user abbreviated but found: " + mac.getClass());
+            }
+        }
+
+        private void processUTUVCU(MacStructure mac) {
+            if(mac instanceof UnitToUnitVoiceChannelUserAbbreviated)
+            {
+                UnitToUnitVoiceChannelUserAbbreviated uuvcua = (UnitToUnitVoiceChannelUserAbbreviated)mac;
+                mCallSequence.setFromIdentifier(uuvcua.getSourceAddress().toString());
+                mCallSequence.setToIdentifier(uuvcua.getTargetAddress().toString());
+                mCallSequence.setCallType(CALL_TYPE_INDIVIDUAL);
+                if(uuvcua.getServiceOptions().isEncrypted())
+                {
+                    mCallSequence.setEncrypted(true);
+                }
+            }
+            else
+            {
+                mLog.warn("Expected unit-2-unit voice channel user abbreviated but found: " + mac.getClass());
+            }
+        }
+
+        private void processGVCUA(MacStructure mac) {
+            if(mac instanceof GroupVoiceChannelUserAbbreviated)
+            {
+                GroupVoiceChannelUserAbbreviated gvcua = (GroupVoiceChannelUserAbbreviated)mac;
+                mCallSequence.setFromIdentifier(gvcua.getSourceAddress().toString());
+                mCallSequence.setToIdentifier(gvcua.getGroupAddress().toString());
+                mCallSequence.setCallType(CALL_TYPE_GROUP);
+                if(gvcua.getServiceOptions().isEncrypted())
+                {
+                    mCallSequence.setEncrypted(true);
+                }
+            }
+            else
+            {
+                mLog.warn("Expected group voice channel user abbreviated but found: " + mac.getClass());
+            }
+        }
+
+        private void processEndPTT(MacStructure mac) {
+            if(mac instanceof EndPushToTalk)
+            {
+                EndPushToTalk eptt = (EndPushToTalk)mac;
+
+                String source = eptt.getSourceAddress().toString();
+
+                if(source != null && !source.contentEquals("16777215"))
+                {
+                    mCallSequence.setFromIdentifier(source);
+                }
+                mCallSequence.setToIdentifier(eptt.getGroupAddress().toString());
+                writeCallSequence(mCallSequence, "TS" + getTimeslot());
+                mCallSequence = null;
+            }
+            else
+            {
+                mLog.warn("Expected End push-to-talk structure but found: " + mac.getClass());
+            }
+        }
+
+        private void processPTT(MacStructure mac) {
+            if(mac instanceof PushToTalk)
+            {
+                PushToTalk ptt = (PushToTalk)mac;
+
+                if(mCallSequence == null)
+                {
+                    mCallSequence = new MBECallSequence(PROTOCOL);
+                }
+                mCallSequence.setFromIdentifier(ptt.getSourceAddress().toString());
+                mCallSequence.setToIdentifier(ptt.getGroupAddress().toString());
+
+                if(ptt.isEncrypted())
+                {
+                    mCallSequence.setEncrypted(true);
+                    mCallSequence.setEncryptionSyncParameters(ptt.getEncryptionSyncParameters());
+                }
+            }
+            else
+            {
+                mLog.warn("Expected push-to-talk structure but found: " + mac.getClass());
             }
         }
     }

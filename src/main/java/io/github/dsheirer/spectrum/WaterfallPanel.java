@@ -22,6 +22,7 @@ import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +184,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
      */
     private int getZoomMultiplier()
     {
-        return (int)Math.pow(2.0, mZoom);
+        return (int) FastMath.pow(2.0, mZoom);
     }
 
     /**

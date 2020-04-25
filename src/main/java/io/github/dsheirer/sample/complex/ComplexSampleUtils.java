@@ -18,6 +18,8 @@
 package io.github.dsheirer.sample.complex;
 
 
+import org.apache.commons.math3.util.FastMath;
+
 public class ComplexSampleUtils
 {
 
@@ -37,7 +39,7 @@ public class ComplexSampleUtils
 
 	public static double magnitude( Complex sample )
 	{
-		return Math.sqrt( magnitudeSquared( sample ) );
+		return FastMath.sqrt( magnitudeSquared( sample ) );
 	}
 	
 	public static int magnitudeSquared( Complex sample )

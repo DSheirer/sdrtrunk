@@ -18,6 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.edac.trellis;
 
+import org.apache.commons.math3.util.FastMath;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,8 +43,8 @@ public abstract class ViterbiDecoder
         mInputBitLength = inputBitLength;
         mOutputBitLength = outputBitLength;
 
-        mInputValueCount = (int)Math.pow(2.0, mInputBitLength);
-        mOutputValueCount = (int)Math.pow(2.0, mOutputBitLength);
+        mInputValueCount = (int) FastMath.pow(2.0, mInputBitLength);
+        mOutputValueCount = (int)FastMath.pow(2.0, mOutputBitLength);
     }
 
     /**

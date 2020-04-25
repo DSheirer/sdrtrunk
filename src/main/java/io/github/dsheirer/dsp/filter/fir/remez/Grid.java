@@ -1,10 +1,11 @@
 package io.github.dsheirer.dsp.filter.fir.remez;
 
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import org.apache.commons.math3.util.FastMath;
 
 public class Grid
 {
-    public static final double TWO_PI = 2.0 * Math.PI;
+    public static final double TWO_PI = 2.0 * FastMath.PI;
     
     private double[] mFrequencyGrid;
     private double[] mCosineOfFrequencyGrid;
@@ -59,7 +60,7 @@ public class Grid
                 //gridFrequencyInterval increments
                 mFrequencyGrid[ j ] = lowFrequency;
                 
-                mCosineOfFrequencyGrid[ j ] = Math.cos( TWO_PI * mFrequencyGrid[ j ] );
+                mCosineOfFrequencyGrid[ j ] = FastMath.cos( TWO_PI * mFrequencyGrid[ j ] );
 
                 lowFrequency += gridFrequencyInterval;
                 

@@ -157,13 +157,9 @@ public class PatchGroupManager
                         PatchGroupIdentifier patchGroupIdentifier = (PatchGroupIdentifier)identifier;
                         int patchGroupId = patchGroupIdentifier.getValue().getPatchGroup().getValue();
 
-                        if(mPatchGroupMap.containsKey(patchGroupId))
-                        {
-                            return mPatchGroupMap.get(patchGroupId);
-                        }
-                        else
-                        {
-                            addPatchGroup(patchGroupIdentifier);
+                        Identifier mapValue = mPatchGroupMap.get(patchGroupId);
+                        if (mapValue != null) {
+                            return mapValue;
                         }
                     }
                     break;

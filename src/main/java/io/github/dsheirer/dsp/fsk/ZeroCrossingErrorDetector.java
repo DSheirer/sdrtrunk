@@ -15,6 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.fsk;
 
+import org.apache.commons.math3.util.FastMath;
+
 /**
  * Zero crossing error detector.  Provides symbol timing error correction values by detecting zero-crossings within
  * each symbol period.  Ideally there should be only 0 or 1 zero crossings within each symbol period.  However, when
@@ -45,7 +47,7 @@ public class ZeroCrossingErrorDetector
      */
     public ZeroCrossingErrorDetector(float samplesPerSymbol)
     {
-        mBuffer = new boolean[(int)Math.ceil(samplesPerSymbol)];
+        mBuffer = new boolean[(int)FastMath.ceil(samplesPerSymbol)];
 //        mZeroCrossingIdeal = mBuffer.length - 1.5f - (samplesPerSymbol / 2.0f);  //Preserve this for LTR
         mZeroCrossingIdeal = (samplesPerSymbol / 2.0f);
     }
@@ -108,7 +110,7 @@ public class ZeroCrossingErrorDetector
             float errorDistanceOne = mZeroCrossingIdeal - mZeroCrossingOne;
             float errorDistanceTwo = mZeroCrossingCount - mZeroCrossingTwo;
 
-            if(Math.abs(errorDistanceOne) < Math.abs(errorDistanceTwo))
+            if(FastMath.abs(errorDistanceOne) < FastMath.abs(errorDistanceTwo))
             {
                 mDetectedZeroCrossing = mZeroCrossingOne;
             }

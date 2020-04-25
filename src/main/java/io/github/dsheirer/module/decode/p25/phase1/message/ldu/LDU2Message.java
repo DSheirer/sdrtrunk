@@ -63,6 +63,9 @@ public class LDU2Message extends LDUMessage
     private static final int[] RS_HEX_6 = {1228, 1229, 1230, 1231, 1232, 1233};
     private static final int[] RS_HEX_7 = {1238, 1239, 1240, 1241, 1242, 1243};
 
+    //Reed-Solomon(24,16,9) code protects the encryption sync word.  Maximum correctable errors are: 4
+    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(4);
+
     private EncryptionSyncParameters mEncryptionSyncParameters;
     private List<Identifier> mIdentifiers;
 
@@ -137,8 +140,6 @@ public class LDU2Message extends LDUMessage
         input[23] = getMessage().getInt(CW_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        //Reed-Solomon(24,16,9) code protects the encryption sync word.  Maximum correctable errors are: 4
-        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(4);
         boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
 
         BinaryMessage binaryMessage = new BinaryMessage(96);

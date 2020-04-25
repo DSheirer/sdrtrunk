@@ -337,8 +337,7 @@ public class MultipleFrequencyEditor extends JPanel
          */
         public List<Long> getFrequencies()
         {
-            List<Long> frequencies = new ArrayList<>();
-            frequencies.addAll(mFrequencies);
+            List<Long> frequencies = new ArrayList<>(mFrequencies);
             return frequencies;
         }
     }

@@ -21,6 +21,7 @@
  */
 package org.jdesktop.swingx.mapviewer;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.mapviewer.util.GeoUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +102,7 @@ public abstract class AbstractTileFactory extends TileFactory
 		int numTilesWide = (int) getMapSize(zoom).getWidth();
 		if (tileX < 0)
 		{
-			tileX = numTilesWide - (Math.abs(tileX) % numTilesWide);
+			tileX = numTilesWide - (FastMath.abs(tileX) % numTilesWide);
 		}
 
 		tileX = tileX % numTilesWide;

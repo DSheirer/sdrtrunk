@@ -22,6 +22,7 @@ import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.util.ThreadPool;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ public class SampleGenerator
      */
     public SampleGenerator(int sampleRate, long frequency, long interval, int sweepUpdateRate)
     {
-        if(Math.abs(sweepUpdateRate) >= sampleRate)
+        if(FastMath.abs(sweepUpdateRate) >= sampleRate)
         {
             throw new IllegalArgumentException("Sweep update rate cannot be greater than sample rate");
         }

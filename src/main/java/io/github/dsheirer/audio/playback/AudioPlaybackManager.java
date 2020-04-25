@@ -195,7 +195,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             //Sort audio segments by playback priority and assign to empty audio outputs
             if(!mAudioSegments.isEmpty())
             {
-                Collections.sort(mAudioSegments, Comparator.comparingInt(o -> o.monitorPriorityProperty().get()));
+                mAudioSegments.sort(Comparator.comparingInt(o -> o.monitorPriorityProperty().get()));
 
                 //Assign empty audio outputs first
                 for(AudioOutput audioOutput: mAudioOutputs)
@@ -347,14 +347,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     {
         List<AudioOutput> outputs = new ArrayList<>(mAudioOutputs);
 
-        Collections.sort(outputs, new Comparator<AudioOutput>()
-        {
-            @Override
-            public int compare(AudioOutput first, AudioOutput second)
-            {
-                return first.getChannelName().compareTo(second.getChannelName());
-            }
-        });
+        outputs.sort(Comparator.comparing(AudioOutput::getChannelName));
 
         return outputs;
     }

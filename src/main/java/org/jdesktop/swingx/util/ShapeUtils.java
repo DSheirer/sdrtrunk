@@ -20,6 +20,8 @@
  */
 package org.jdesktop.swingx.util;
 
+import org.apache.commons.math3.util.FastMath;
+
 import java.awt.*;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
@@ -86,10 +88,10 @@ public final class ShapeUtils {
         AffineTransform trans = new AffineTransform();
         Polygon poly = new Polygon();
         for (int i = 0; i < sides; i++) {
-            trans.rotate(Math.PI * 2 / sides / 2);
+            trans.rotate(FastMath.PI * 2 / sides / 2);
             Point2D out = trans.transform(new Point2D.Float(0, outsideRadius), null);
             poly.addPoint((int) out.getX(), (int) out.getY());
-            trans.rotate(Math.PI * 2 / sides / 2);
+            trans.rotate(FastMath.PI * 2 / sides / 2);
             if (insideRadius > 0) {
                 Point2D in = trans.transform(new Point2D.Float(0, insideRadius), null);
                 poly.addPoint((int) in.getX(), (int) in.getY());
