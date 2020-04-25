@@ -111,4 +111,10 @@ public class WildcardID implements Comparable<WildcardID>
     {
         return Integer.compare(this.weight(), otherWildcardID.weight());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof WildcardID)) return false;
+        return compareTo((WildcardID) o) == 0;
+    }
 }

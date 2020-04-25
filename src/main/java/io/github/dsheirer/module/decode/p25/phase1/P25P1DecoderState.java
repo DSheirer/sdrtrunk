@@ -426,6 +426,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     break;
                 case OSP_UNIT_TO_UNIT_ANSWER_REQUEST:
                     processBroadcast(ambtc.getIdentifiers(), ambtc.getTimestamp(), DecodeEventType.PAGE, "ANSWER REQUEST");
+                    break;
                 case OSP_CALL_ALERT:
                     processBroadcast(ambtc.getIdentifiers(), ambtc.getTimestamp(), DecodeEventType.PAGE, "CALL ALERT");
                     break;
@@ -1311,6 +1312,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     break;
                 case MOTOROLA_OSP_DENY_RESPONSE:
                     processTSBKMotorolaOspDenyResponse(tsbk);
+                    break;
                 default:
 //                    mLog.debug("Unrecognized TSBK Opcode: " + tsbk.getOpcode().name() + " VENDOR:" + tsbk.getVendor() +
 //                        " OPCODE:" + tsbk.getOpcodeNumber());

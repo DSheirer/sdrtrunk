@@ -63,4 +63,10 @@ public class ESNIdentifier extends StringIdentifier implements Comparable<ESNIde
             return getValue().compareTo(o.getValue());
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof ESNIdentifier)) return false;
+        return compareTo((ESNIdentifier) o) == 0;
+    }
 }

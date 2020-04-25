@@ -101,6 +101,8 @@ public class BinaryMessage extends BitSet
         this(toCopyFrom.size());
         this.or(toCopyFrom);
         this.mPointer = toCopyFrom.pointer();
+        this.mCRC = toCopyFrom.mCRC;
+        this.mSize = toCopyFrom.mSize;
     }
 
     public BinaryMessage(BitSet bitset, int size)

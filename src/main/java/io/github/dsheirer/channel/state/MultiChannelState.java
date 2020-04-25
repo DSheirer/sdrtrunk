@@ -531,6 +531,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
                             mStateMachineMap.get(event.getTimeslot()).setFadeTimeoutBuffer(timeout.getCallTimeout());
                         }
+                        break;
                     case CONTINUATION:
                     case DECODE:
                     case START:

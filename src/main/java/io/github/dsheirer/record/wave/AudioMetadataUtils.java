@@ -20,6 +20,7 @@
 
 package io.github.dsheirer.record.wave;
 
+import com.google.common.base.Joiner;
 import com.mpatric.mp3agic.ID3v24Tag;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
@@ -92,9 +93,9 @@ public class AudioMetadataUtils
 
                 List<Alias> aliases = aliasList.getAliases(to);
 
-                for(Alias alias: aliases)
+                if(!aliases.isEmpty())
                 {
-                    sb.append(" ").append(alias.toString());
+                    sb.append("\"").append(Joiner.on("\",\"").join(aliases)).append("\"");
                 }
 
                 audioMetadata.put(AudioMetadata.TRACK_TITLE, sb.toString());
