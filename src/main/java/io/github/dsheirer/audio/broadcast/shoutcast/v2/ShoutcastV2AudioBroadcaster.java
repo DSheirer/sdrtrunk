@@ -50,6 +50,7 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import org.apache.commons.math3.util.FastMath;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -363,7 +364,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
         int pointer = 0;
         int messageCounter = 1;
-        int messageCount = (int) Math.ceil((double) xml.length / (double) (mMaxPayloadSize - 6));
+        int messageCount = (int) FastMath.ceil((double) xml.length / (double) (mMaxPayloadSize - 6));
 
         if(messageCount > 32)
         {
@@ -375,7 +376,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
         while(pointer < xml.length && messageCounter <= messageCount)
         {
-            int payloadSize = Math.min(mMaxPayloadSize - 6, xml.length - pointer);
+            int payloadSize = FastMath.min(mMaxPayloadSize - 6, xml.length - pointer);
 
             byte[] payload = new byte[payloadSize + 6];
 

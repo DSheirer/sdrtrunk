@@ -23,15 +23,13 @@ package io.github.dsheirer.module.decode.mpt1327;
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.MessageType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MPT1327MessageFilter extends Filter<IMessage>
 {
-    private Map<MPT1327Message.MPTMessageType, FilterElement<MPT1327Message.MPTMessageType>> mFilterElements = new HashMap<>();
+    private Map<MPT1327Message.MPTMessageType, FilterElement<MPT1327Message.MPTMessageType>> mFilterElements = new EnumMap<>(MPT1327Message.MPTMessageType.class);
 
     public MPT1327MessageFilter()
     {

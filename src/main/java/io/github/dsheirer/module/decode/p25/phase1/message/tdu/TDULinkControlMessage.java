@@ -61,6 +61,9 @@ public class TDULinkControlMessage extends P25Message implements IFrequencyBandR
     public static final int[] RS_HEX_10 = {264, 265, 266, 267, 268, 269};
     public static final int[] RS_HEX_11 = {270, 271, 272, 273, 274, 275};
 
+    //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are:  6
+    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
+
     private LinkControlWord mLinkControlWord;
 
     public TDULinkControlMessage(CorrectedBinaryMessage message, int nac, long timestamp)
@@ -142,9 +145,6 @@ public class TDULinkControlMessage extends P25Message implements IFrequencyBandR
         input[22] = getMessage().getInt(LC_HEX_1);
         input[23] = getMessage().getInt(LC_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
-
-        //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are:  6
-        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
 
         boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
 

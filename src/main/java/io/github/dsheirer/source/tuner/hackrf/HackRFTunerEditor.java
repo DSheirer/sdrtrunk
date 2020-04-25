@@ -125,7 +125,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
 
         HackRFSampleRate[] validRates = HackRFSampleRate.VALID_SAMPLE_RATES
-            .toArray(new HackRFSampleRate[HackRFSampleRate.VALID_SAMPLE_RATES.size()]);
+            .toArray(new HackRFSampleRate[0]);
         mComboSampleRate = new JComboBox<>(validRates);
         mComboSampleRate.setEnabled(false);
         mComboSampleRate.addActionListener(new ActionListener()

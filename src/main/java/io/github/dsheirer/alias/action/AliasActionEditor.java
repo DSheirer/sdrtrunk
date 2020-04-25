@@ -188,14 +188,7 @@ public class AliasActionEditor extends Editor<Alias>
 
 			List<AliasAction> actions = alias.getAction();
 			
-			Collections.sort( actions, new Comparator<AliasAction>()
-			{
-				@Override
-				public int compare( AliasAction o1, AliasAction o2 )
-				{
-					return o1.toString().compareTo( o2.toString() );
-				}
-			} );
+			actions.sort(Comparator.comparing(Object::toString));
 			
 			for( AliasAction action: actions )
 			{

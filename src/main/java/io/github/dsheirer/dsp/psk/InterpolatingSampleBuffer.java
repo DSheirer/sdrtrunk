@@ -23,6 +23,7 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.filter.interpolator.RealInterpolator;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +61,7 @@ public class InterpolatingSampleBuffer
         mDetectedSamplesPerSymbol = samplesPerSymbol;
         mMaximumSamplesPerSymbol = samplesPerSymbol * (1.0f + MAXIMUM_DEVIATION_SAMPLES_PER_SYMBOL);
         mMinimumSamplesPerSymbol = samplesPerSymbol * (1.0f - MAXIMUM_DEVIATION_SAMPLES_PER_SYMBOL);
-        mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
+        mTwiceSamplesPerSymbol = (int) FastMath.floor(2.0 * samplesPerSymbol);
         mDelayLineInphase = new float[2 * mTwiceSamplesPerSymbol];
         mDelayLineQuadrature = new float[2 * mTwiceSamplesPerSymbol];
 
@@ -190,7 +191,7 @@ public class InterpolatingSampleBuffer
         }
         else
         {
-            int offset = (int)Math.floor(interpolation);
+            int offset = (int)FastMath.floor(interpolation);
             return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer + offset, interpolation - offset);
         }
     }
@@ -208,7 +209,7 @@ public class InterpolatingSampleBuffer
         }
         else
         {
-            int offset = (int)Math.floor(interpolation);
+            int offset = (int)FastMath.floor(interpolation);
             return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer + offset, interpolation - offset);
         }
     }

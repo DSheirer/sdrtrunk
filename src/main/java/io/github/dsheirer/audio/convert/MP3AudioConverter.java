@@ -23,6 +23,7 @@ import io.github.dsheirer.audio.AudioUtils;
 import net.sourceforge.lame.lowlevel.LameEncoder;
 import net.sourceforge.lame.mp3.Lame;
 import net.sourceforge.lame.mp3.MPEGMode;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,7 @@ public class MP3AudioConverter implements IAudioConverter
 
         byte[] pcmBytes = AudioUtils.convertTo16BitSamples(audioPackets);
 
-        int pcmBufferSize = Math.min(mMP3Buffer.length, pcmBytes.length);
+        int pcmBufferSize = FastMath.min(mMP3Buffer.length, pcmBytes.length);
 
         int mp3BufferSize = 0;
 
@@ -70,7 +71,7 @@ public class MP3AudioConverter implements IAudioConverter
             while (0 < (mp3BufferSize = mEncoder.encodeBuffer(pcmBytes, pcmBytesPosition, pcmBufferSize, mMP3Buffer)))
             {
                 pcmBytesPosition += pcmBufferSize;
-                pcmBufferSize = Math.min(mMP3Buffer.length, pcmBytes.length - pcmBytesPosition);
+                pcmBufferSize = FastMath.min(mMP3Buffer.length, pcmBytes.length - pcmBytesPosition);
                 mMP3Stream.write(mMP3Buffer, 0, mp3BufferSize);
             }
 
@@ -89,7 +90,7 @@ public class MP3AudioConverter implements IAudioConverter
 
         byte[] pcmBytes = AudioUtils.convert(audioBuffers);
 
-        int pcmBufferSize = Math.min(mMP3Buffer.length, pcmBytes.length);
+        int pcmBufferSize = FastMath.min(mMP3Buffer.length, pcmBytes.length);
 
         int mp3BufferSize = 0;
 
@@ -100,7 +101,7 @@ public class MP3AudioConverter implements IAudioConverter
             while (0 < (mp3BufferSize = mEncoder.encodeBuffer(pcmBytes, pcmBytesPosition, pcmBufferSize, mMP3Buffer)))
             {
                 pcmBytesPosition += pcmBufferSize;
-                pcmBufferSize = Math.min(mMP3Buffer.length, pcmBytes.length - pcmBytesPosition);
+                pcmBufferSize = FastMath.min(mMP3Buffer.length, pcmBytes.length - pcmBytesPosition);
                 mMP3Stream.write(mMP3Buffer, 0, mp3BufferSize);
             }
 

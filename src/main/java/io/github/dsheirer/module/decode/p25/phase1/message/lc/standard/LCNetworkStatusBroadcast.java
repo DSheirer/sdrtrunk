@@ -69,8 +69,8 @@ public class LCNetworkStatusBroadcast extends LinkControlWord implements IFreque
         sb.append(getMessageStub());
         sb.append(" WACN:").append(getWACN());
         sb.append(" SYSTEM:").append(getSystem());
-        sb.append(" CHAN:" + getChannel());
-        sb.append(" SERVICE OPTIONS:" + getSystemServiceClass());
+        sb.append(" CHAN:").append(getChannel());
+        sb.append(" SERVICE OPTIONS:").append(getSystemServiceClass());
         return sb.toString();
     }
 

@@ -22,6 +22,7 @@ import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.protocol.Protocol;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,16 +101,7 @@ public class LJ1200TransponderMessage extends Message
      */
     public String pad(String value, int places, String padCharacter)
     {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(value);
-
-        while(sb.length() < places)
-        {
-            sb.append(padCharacter);
-        }
-
-        return sb.toString();
+        return StringUtils.rightPad(value, places, padCharacter);
     }
 
     /**
@@ -117,18 +109,7 @@ public class LJ1200TransponderMessage extends Message
      */
     public String format(int number, int decimalPlaces)
     {
-        StringBuilder sb = new StringBuilder();
-
-        int paddingRequired = decimalPlaces - (String.valueOf(number).length());
-
-        for(int x = 0; x < paddingRequired; x++)
-        {
-            sb.append("0");
-        }
-
-        sb.append(number);
-
-        return sb.toString();
+        return StringUtils.leftPad(Integer.valueOf(number).toString(), decimalPlaces, '0');
     }
 
     @Override

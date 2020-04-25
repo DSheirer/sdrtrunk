@@ -198,7 +198,7 @@ public class IdentifierCollection
                         sb.append("Identifier: ").append(i).append(" Class:").append(i.getClass()).append("\n");
                     }
                 }
-                mLog.warn("An identifier in a collection is somehow null ...\n" + sb.toString());
+                mLog.warn("An identifier in a collection is somehow null ...\n" + sb);
             }
         }
 

@@ -19,6 +19,7 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.controller.NamingThreadFactory;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,7 @@ public class ThreadPool
     static
     {
         //Create a scheduled thread pool sized according to the available processors/cores, minimum 2
-        CORES = (CORES < 2 ? 2 : CORES);
+        CORES = (FastMath.max(CORES, 2));
 
         SCHEDULED = Executors.newScheduledThreadPool(CORES, new NamingThreadFactory("sdrtrunk"));
     }

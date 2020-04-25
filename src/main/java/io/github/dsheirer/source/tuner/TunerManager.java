@@ -173,7 +173,7 @@ public class TunerManager
                     {
                         sb.append(" NOT LOADED: ");
                         sb.append(status.getInfo());
-                        sb.append(" Error:" + e.getMessage());
+                        sb.append(" Error:").append(e.getMessage());
                     }
                 }
                 else

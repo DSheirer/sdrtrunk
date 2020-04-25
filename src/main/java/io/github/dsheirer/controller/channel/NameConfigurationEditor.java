@@ -110,7 +110,7 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
                     else
                     {
                         mSiteNameCombo.setModel(new DefaultComboBoxModel<String>(
-                            sites.toArray(new String[sites.size()])));
+                            sites.toArray(new String[0])));
                         ;
                     }
 
@@ -267,7 +267,7 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
             else
             {
                 mSystemNameCombo.setModel(new DefaultComboBoxModel<String>(
-                    systems.toArray(new String[systems.size()])));
+                    systems.toArray(new String[0])));
                 ;
             }
 
@@ -282,7 +282,7 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
             else
             {
                 mSiteNameCombo.setModel(new DefaultComboBoxModel<String>(
-                    sites.toArray(new String[sites.size()])));
+                    sites.toArray(new String[0])));
                 ;
             }
 
@@ -294,7 +294,7 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
             List<String> lists = mAliasModel.getListNames();
             Collections.sort(lists);
             mAliasListCombo.setModel(new DefaultComboBoxModel<String>(
-                lists.toArray(new String[lists.size()])));
+                lists.toArray(new String[0])));
 
             if(channel.getAliasListName() != null)
             {

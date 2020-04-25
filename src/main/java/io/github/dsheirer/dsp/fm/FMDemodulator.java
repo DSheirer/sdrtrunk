@@ -21,6 +21,7 @@ import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 /**
  * FM Demodulator for demodulating complex samples and producing demodulated floating point samples.
@@ -81,7 +82,7 @@ public class FMDemodulator
              * serves as the instantaneous amplitude of the demodulated signal
              */
             double denominator = 1.0d / inphase;
-            angle = Math.atan((double)quadrature * denominator);
+            angle = FastMath.atan((double)quadrature * denominator);
         }
 
         /**
@@ -116,7 +117,7 @@ public class FMDemodulator
              * serves as the instantaneous amplitude of the demodulated signal
              */
             double denominator = 1.0d / inphase;
-            angle = Math.atan((double)quadrature * denominator);
+            angle = FastMath.atan((double)quadrature * denominator);
         }
 
         return angle;

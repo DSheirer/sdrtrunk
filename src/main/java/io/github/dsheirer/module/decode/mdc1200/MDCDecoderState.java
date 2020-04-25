@@ -152,11 +152,9 @@ public class MDCDecoderState extends DecoderState
         }
         else
         {
-            Iterator<MDC1200Identifier> it = mIdents.iterator();
 
-            while(it.hasNext())
-            {
-                sb.append("  ").append(it.next()).append("\n");
+            for (MDC1200Identifier mIdent : mIdents) {
+                sb.append("  ").append(mIdent).append("\n");
             }
         }
 
@@ -172,11 +170,9 @@ public class MDCDecoderState extends DecoderState
 
             while(it.hasNext())
             {
-                Iterator<MDC1200Identifier> it2 = mIdents.iterator();
 
-                while(it2.hasNext())
-                {
-                    sb.append("  ").append(it2.next()).append("\n");
+                for (MDC1200Identifier mIdent : mIdents) {
+                    sb.append("  ").append(mIdent).append("\n");
                 }
             }
         }

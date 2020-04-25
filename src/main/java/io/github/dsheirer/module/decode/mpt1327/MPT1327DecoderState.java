@@ -411,12 +411,7 @@ public class MPT1327DecoderState extends DecoderState
         {
             sb.append("\n");
 
-            Iterator<String> it = mIdents.iterator();
-
-            while(it.hasNext())
-            {
-                String ident = it.next();
-
+            for (String ident : mIdents) {
                 sb.append(ident);
                 sb.append("\n");
             }

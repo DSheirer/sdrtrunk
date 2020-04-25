@@ -2,6 +2,7 @@ package io.github.dsheirer.dsp.filter.fir.remez;
 
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +17,7 @@ public class RemezFIRFilterDesigner
 	
 	private static final double CONVERGENCE_THRESHOLD = 0.0001;
     public static final int MAXIMUM_ITERATION_COUNT = 40;
-    public static final double TWO_PI = 2.0 * Math.PI;
+    public static final double TWO_PI = 2.0 * FastMath.PI;
 
     private static final DecimalFormat DECIMAL_FORMATTER = new DecimalFormat( "0.00000000" );
 
@@ -164,7 +165,7 @@ public class RemezFIRFilterDesigner
     				
     				for( int k = 1; k <= M; k++ )
     				{
-    					accumulator += 2.0 * frequencyResponse[ k ] * Math.cos( frequency * (double)k );
+    					accumulator += 2.0 * frequencyResponse[ k ] * FastMath.cos( frequency * (double)k );
     				}
     				
     				impulseResponse[ n ] = accumulator / (double)length;
@@ -181,7 +182,7 @@ public class RemezFIRFilterDesigner
 
                     for( int k = 1; k < frequencyResponse.length; k++ )
                     {
-                    	accumulator += 2.0 * frequencyResponse[ k ] * Math.cos( frequency * (double)k );
+                    	accumulator += 2.0 * frequencyResponse[ k ] * FastMath.cos( frequency * (double)k );
                     }
 
                     impulseResponse[ n ] = accumulator / (double)length;
@@ -214,7 +215,7 @@ public class RemezFIRFilterDesigner
     		double cosineDelta = cosineOfFrequency - mGrid.getCosineFrequencyGrid()[ mExtremalIndices.get( k ) ];
     		
     		//If this frequency is close to one of the polynomial points, use the polynomial point for the response
-    		if( Math.abs( cosineDelta ) < 1.0e-7 )
+    		if( FastMath.abs( cosineDelta ) < 1.0e-7 )
     		{
     			return mIdealFrequencyResponse[ k ];
     		}
@@ -319,7 +320,7 @@ public class RemezFIRFilterDesigner
         			
         			double denominator = xk - xi;
         			
-                    if( Math.abs( denominator ) < 0.00001 )
+                    if( FastMath.abs( denominator ) < 0.00001 )
                     {
                         denominator = 0.00001;
                     }
@@ -496,7 +497,7 @@ public class RemezFIRFilterDesigner
         	//Check for consecutive (redundant) indices on same side of zero axis - retain largest
         	if( !( positiveAxis ^ ( mGridErrors[ next ] > 0.0 ) ) )
         	{
-        		if( Math.abs( mGridErrors[ next ] ) <= Math.abs( mGridErrors[ current ] ))
+        		if( FastMath.abs( mGridErrors[ next ] ) <= FastMath.abs( mGridErrors[ current ] ))
         		{
         			//Remove next error index that is less than current index and on 
         			it.remove();
@@ -530,8 +531,8 @@ public class RemezFIRFilterDesigner
         {
         	int lastIndex = mExtremalIndices.size() - 1;
         	
-        	if( Math.abs( mGridErrors[ mExtremalIndices.get( 0 )] ) > 
-        		Math.abs( mGridErrors[ mExtremalIndices.get( lastIndex )] ) )
+        	if( FastMath.abs( mGridErrors[ mExtremalIndices.get( 0 )] ) >
+        		FastMath.abs( mGridErrors[ mExtremalIndices.get( lastIndex )] ) )
 			{
         		mExtremalIndices.remove( lastIndex );
 			}
@@ -560,7 +561,7 @@ public class RemezFIRFilterDesigner
      */
     private boolean isGTEDelta( double value )
     {
-    	return Math.abs( value ) - Math.abs( mDelta ) > -1.0e-5;
+    	return FastMath.abs( value ) - FastMath.abs( mDelta ) > -1.0e-5;
     }
     
     /**
@@ -570,11 +571,11 @@ public class RemezFIRFilterDesigner
      */
     public void checkConvergence()
     {
-        double maximum = Math.abs( mGridErrors[ mExtremalIndices.get( 0 ) ] );
+        double maximum = FastMath.abs( mGridErrors[ mExtremalIndices.get( 0 ) ] );
 
         for( int i = 1; i < mExtremalIndices.size(); i++ )
         {
-            double current = Math.abs( mGridErrors[ mExtremalIndices.get( i ) ] );
+            double current = FastMath.abs( mGridErrors[ mExtremalIndices.get( i ) ] );
 
             if( current > maximum )
             {
@@ -582,7 +583,7 @@ public class RemezFIRFilterDesigner
             }
         }
         
-        double convergence = maximum - Math.abs( mDelta );
+        double convergence = maximum - FastMath.abs( mDelta );
         
         mConverged = convergence < CONVERGENCE_THRESHOLD;
     }
@@ -619,11 +620,11 @@ public class RemezFIRFilterDesigner
 
     	double half = (double)length / 2.0;
 
-    	double[] resampled = new double[ (int)Math.ceil( half ) ] ;
+    	double[] resampled = new double[ (int)FastMath.ceil( half ) ] ;
     	
     	for( int x = 0; x < resampled.length; x++ )
     	{
-    		resampled[ x ] = getFrequencyResponse( Math.cos( Math.PI * (double)x / half ) );
+    		resampled[ x ] = getFrequencyResponse( FastMath.cos( FastMath.PI * (double)x / half ) );
     	}
 
     	return resampled;
@@ -651,15 +652,15 @@ public class RemezFIRFilterDesigner
 			case TYPE_3_ODD_LENGTH_EVEN_ORDER_ANTI_SYMMETRICAL:
 				for( int x = 0; x < frequencyResponse.length; x++ )
 				{
-		    		double frequencyRadians = Math.PI * ( ( (double)x ) / filterLength );
-					frequencyResponse[ x ] *= Math.sin( TWO_PI * frequencyRadians );
+		    		double frequencyRadians = FastMath.PI * ( ( (double)x ) / filterLength );
+					frequencyResponse[ x ] *= FastMath.sin( TWO_PI * frequencyRadians );
 				}
 				break;
 			case TYPE_4_EVEN_LENGTH_ODD_ORDER_ANTI_SYMMETRICAL:
 				for( int x = 0; x < frequencyResponse.length; x++ )
 				{
-		    		double frequencyRadians = Math.PI * ( ( (double)x ) / filterLength );
-					frequencyResponse[ x ] *= Math.sin( Math.PI * frequencyRadians );
+		    		double frequencyRadians = FastMath.PI * ( ( (double)x ) / filterLength );
+					frequencyResponse[ x ] *= FastMath.sin( FastMath.PI * frequencyRadians );
 				}
 				break;
 			default:

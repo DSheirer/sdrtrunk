@@ -1,5 +1,7 @@
 package io.github.dsheirer.module.decode.p25;
 
+import org.apache.commons.lang3.StringUtils;
+
 public class P25Utils
 {
     /**
@@ -20,20 +22,7 @@ public class P25Utils
      */
     public static String formatHex(int value, int places)
     {
-        StringBuilder sb = new StringBuilder();
-        String formatted = Integer.toHexString(value).toUpperCase();
-
-        if(formatted.length() < places)
-        {
-            for(int x = 0; x < (places - formatted.length()); x++)
-            {
-                sb.append("0");
-            }
-        }
-
-        sb.append(formatted);
-
-        return sb.toString();
+        return StringUtils.leftPad(Integer.toHexString(value).toUpperCase(), places, '0');
     }
 
     /**

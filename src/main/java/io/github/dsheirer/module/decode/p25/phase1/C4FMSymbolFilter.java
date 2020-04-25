@@ -27,6 +27,7 @@ import io.github.dsheirer.sample.real.RealSampleListener;
 import io.github.dsheirer.sample.real.RealSampleProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
+import org.apache.commons.math3.util.FastMath;
 
 public class C4FMSymbolFilter implements Listener<ReusableFloatBuffer>, ISourceEventListener, RealSampleProvider
 {
@@ -289,7 +290,7 @@ public class C4FMSymbolFilter implements Listener<ReusableFloatBuffer>, ISourceE
         {
             mSymbolClock -= 1.0f;
 
-            int imu = (int)Math.floor(0.5 +
+            int imu = (int) FastMath.floor(0.5 +
                 ((float)NUMBER_FILTER_STEPS * (mSymbolClock / mSymbolTime)));
 
             if(imu >= NUMBER_FILTER_STEPS)
@@ -380,7 +381,7 @@ public class C4FMSymbolFilter implements Listener<ReusableFloatBuffer>, ISourceE
             mFineFrequencyCorrection += (symbolError * K_FINE_FREQUENCY);
 			
 			/* Queue a frequency adjustment (once per buffer) as needed */
-            if(Math.abs(mCoarseFrequencyCorrection) > COARSE_FREQUENCY_THRESHOLD)
+            if(FastMath.abs(mCoarseFrequencyCorrection) > COARSE_FREQUENCY_THRESHOLD)
             {
                 mFrequencyAdjustmentRequested =
                     500 * (mCoarseFrequencyCorrection > 0 ? 1 : -1);

@@ -39,6 +39,7 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.prefs.Preferences;
@@ -54,8 +55,8 @@ public class TalkgroupFormatPreference extends Preference
     public static final String TALKGROUP_FORMAT_PROPERTY = "talkgroup.format.";
     public static final String TALKGROUP_FIXED_WIDTH_PROPERTY = "talkgroup.fixed.width.";
 
-    private Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new HashMap<>();
-    private Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new HashMap<>();
+    private Map<Protocol,IntegerFormat> mTalkgroupFormatProtocolMap = new EnumMap<>(Protocol.class);
+    private Map<Protocol,Boolean> mTalkgroupFixedWidthProtocolMap = new EnumMap<>(Protocol.class);
 
     /**
      * Constructs an instance of identifier formatting preference.
@@ -214,9 +215,9 @@ public class TalkgroupFormatPreference extends Preference
      */
     public IntegerFormat getTalkgroupFormat(Protocol protocol)
     {
-        if(mTalkgroupFormatProtocolMap.containsKey(protocol))
-        {
-            return mTalkgroupFormatProtocolMap.get(protocol);
+        IntegerFormat mapValue = mTalkgroupFormatProtocolMap.get(protocol);
+        if (mapValue != null) {
+            return mapValue;
         }
 
         return IntegerFormat.DECIMAL;

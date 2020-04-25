@@ -39,13 +39,11 @@ public class USBUtils
 	public static List<UsbDevice> getDevices() 
 			throws SecurityException, UsbException, UnsupportedEncodingException
 	{
-		ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
-		
 		UsbServices services = UsbHostManager.getUsbServices();
 
 		UsbHub root = services.getRootUsbHub();
-		
-		devices.addAll( getHubDevices( root ) );
+
+		ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>(getHubDevices(root));
 
 		return devices;
 	}
@@ -60,20 +58,12 @@ public class USBUtils
 		
 		@SuppressWarnings( "unchecked" )
 		List<UsbDevice> children = hub.getAttachedUsbDevices();
-		
-		Iterator<UsbDevice> it = children.iterator();
-		
-		while( it.hasNext() )
-		{
-			UsbDevice child = it.next();
-			
-			if( child.isUsbHub() )
-			{
-				devices.addAll( getHubDevices( (UsbHub)child ) );
-			}
-			else
-			{
-				devices.add( child );
+
+		for (UsbDevice child : children) {
+			if (child.isUsbHub()) {
+				devices.addAll(getHubDevices((UsbHub) child));
+			} else {
+				devices.add(child);
 			}
 		}
 				
@@ -85,25 +75,25 @@ public class USBUtils
 	{
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( device.getUsbDeviceDescriptor().toString() + "\n\n" );
+		sb.append(device.getUsbDeviceDescriptor().toString()).append("\n\n");
 		
 		for( Object configObject: device.getUsbConfigurations() )
 		{
 			UsbConfiguration config = (UsbConfiguration)configObject;
 			
-			sb.append( config.getUsbConfigurationDescriptor().toString() + "\n\n" );
+			sb.append(config.getUsbConfigurationDescriptor().toString()).append("\n\n");
 			
 			for( Object interfaceObject: config.getUsbInterfaces() )
 			{
 				UsbInterface iface = (UsbInterface)interfaceObject;
 				
-				sb.append( iface.getUsbInterfaceDescriptor().toString() + "\n\n" );
+				sb.append(iface.getUsbInterfaceDescriptor().toString()).append("\n\n");
 				
 				for( Object endpointObject: iface.getUsbEndpoints() )
 				{
 					UsbEndpoint endpoint = (UsbEndpoint)endpointObject;
 					
-					sb.append( endpoint.getUsbEndpointDescriptor().toString() + "\n\n" );
+					sb.append(endpoint.getUsbEndpointDescriptor().toString()).append("\n\n");
 				}
 			}
 		}

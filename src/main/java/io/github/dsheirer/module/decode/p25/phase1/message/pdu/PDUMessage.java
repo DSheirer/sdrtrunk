@@ -117,8 +117,8 @@ public class PDUMessage extends P25Message
             case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
                 break;
             case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
-                sb.append(" PAD OCTETS:" + getPadOctetCount());
-                sb.append(" DATA HDR OFFSET:" + getDataHeaderOffset());
+                sb.append(" PAD OCTETS:").append(getPadOctetCount());
+                sb.append(" DATA HDR OFFSET:").append(getDataHeaderOffset());
                 break;
             default:
         }

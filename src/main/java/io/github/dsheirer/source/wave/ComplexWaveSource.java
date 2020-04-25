@@ -30,6 +30,7 @@ import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -367,7 +368,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         public void run()
         {
             mIntervals++;
-            int framesToRead = (int)Math.floor((mIntervals * mFramesPerInterval) - mFramesRead);
+            int framesToRead = (int) FastMath.floor((mIntervals * mFramesPerInterval) - mFramesRead);
 
             try
             {

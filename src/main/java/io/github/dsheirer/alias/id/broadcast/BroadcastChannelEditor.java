@@ -61,7 +61,7 @@ public class BroadcastChannelEditor extends DocumentListenerEditor<AliasID>
 
 		List<String> channelNames = mBroadcastModel.getBroadcastConfigurationNames();
 
-		mBroadcastConfigurations = new JComboBox<String>(channelNames.toArray(new String[channelNames.size()]));
+		mBroadcastConfigurations = new JComboBox<String>(channelNames.toArray(new String[0]));
 		mBroadcastConfigurations.addActionListener(new ActionListener()
 		{
 			@Override

@@ -4,15 +4,13 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.decode.mpt1327.MPT1327Message;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class MDCMessageFilter extends Filter<IMessage>
 {
-    private Map<MDCMessageType, FilterElement<MDCMessageType>> mElements = new HashMap<MDCMessageType, FilterElement<MDCMessageType>>();
+    private Map<MDCMessageType, FilterElement<MDCMessageType>> mElements = new EnumMap<>(MDCMessageType.class);
 
     public MDCMessageFilter()
     {

@@ -151,9 +151,9 @@ public class IconManager
 
         String scaledIconName = name + height;
 
-        if(mResizedIcons.containsKey(scaledIconName))
-        {
-            return mResizedIcons.get(scaledIconName);
+        ImageIcon mapValue = mResizedIcons.get(scaledIconName);
+        if (mapValue != null) {
+            return mapValue;
         }
 
         Icon icon = getModel().getIcon(name);

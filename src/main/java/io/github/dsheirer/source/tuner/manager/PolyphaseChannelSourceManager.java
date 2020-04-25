@@ -28,6 +28,7 @@ import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -215,7 +216,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
 
         //Align the test frequency to the next greater integral frequency placing the first channel at the
         // minimum extreme of the available bandwidth as a starting location
-        double delta = Math.abs(startFrequency - bestIntegralFrequency);
+        double delta = FastMath.abs(startFrequency - bestIntegralFrequency);
         double adjustment = delta % mPolyphaseChannelManager.getChannelBandwidth();
 
         startFrequency += adjustment;
@@ -329,7 +330,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      */
     private boolean isIntegralSpacing(long frequencyA, long frequencyB)
     {
-        double delta = Math.abs(frequencyA - frequencyB);
+        double delta = FastMath.abs(frequencyA - frequencyB);
         return delta % mPolyphaseChannelManager.getChannelBandwidth() <= 1.0;
     }
 
@@ -364,7 +365,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
                 {
                     if(firstChannel != secondChannel)
                     {
-                        double delta = Math.abs(firstChannel.getFrequency() - secondChannel.getFrequency()) %
+                        double delta = FastMath.abs(firstChannel.getFrequency() - secondChannel.getFrequency()) %
                             mPolyphaseChannelManager.getChannelBandwidth();
 
                         score += delta;

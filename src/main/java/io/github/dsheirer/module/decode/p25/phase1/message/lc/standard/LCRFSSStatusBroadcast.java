@@ -74,9 +74,9 @@ public class LCRFSSStatusBroadcast extends LinkControlWord implements IFrequency
         sb.append(getMessageStub());
         sb.append(" LRA:").append(getLocationRegistrationArea());
         sb.append(" SYSTEM:").append(getSystem());
-        sb.append(" SITE:" + getRfss() + "-" + getSite());
-        sb.append(" CHAN:" + getChannel());
-        sb.append(" SERVICE OPTIONS:" + getSystemServiceClass());
+        sb.append(" SITE:").append(getRfss()).append("-").append(getSite());
+        sb.append(" CHAN:").append(getChannel());
+        sb.append(" SERVICE OPTIONS:").append(getSystemServiceClass());
         return sb.toString();
     }
 

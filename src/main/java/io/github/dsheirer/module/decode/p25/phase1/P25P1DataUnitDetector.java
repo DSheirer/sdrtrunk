@@ -436,11 +436,11 @@ public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
 
             if(this instanceof NIDDelayBuffer)
             {
-                mLog.debug("NIDBUF: " + sb.toString() + " Length:" + mBuffer.length);
+                mLog.debug("NIDBUF: " + sb + " Length:" + mBuffer.length);
             }
             else
             {
-                mLog.debug("SYNBUF: " + sb.toString() + " Length:" + mBuffer.length);
+                mLog.debug("SYNBUF: " + sb + " Length:" + mBuffer.length);
             }
         }
 
@@ -535,11 +535,11 @@ public class P25P1DataUnitDetector implements Listener<Dibit>, ISyncDetectListen
 
         if(corrected)
         {
-            mLog.debug("C* NID: " + sb.toString());
+            mLog.debug("C* NID: " + sb);
         }
         else
         {
-            mLog.debug("   NID: " + sb.toString());
+            mLog.debug("   NID: " + sb);
         }
     }
 

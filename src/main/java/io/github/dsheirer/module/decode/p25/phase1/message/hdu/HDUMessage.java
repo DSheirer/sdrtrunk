@@ -77,6 +77,9 @@ public class HDUMessage extends P25Message
     private static final int[] RS_HEX_14 = {612, 613, 614, 615, 616, 617};
     private static final int[] RS_HEX_15 = {630, 631, 632, 633, 634, 635};
 
+    //Reed-Solomon(36,20,17) code protects the header word.  Maximum correctable errors are: 8
+    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(8);
+
     private HeaderData mHeaderData;
 
     public HDUMessage(CorrectedBinaryMessage message, int nac, long timestamp)
@@ -156,9 +159,6 @@ public class HDUMessage extends P25Message
         input[34] = getMessage().getInt(CW_HEX_1);
         input[35] = getMessage().getInt(CW_HEX_0);
         /* indexes 36 - 62 are defaulted to zero */
-
-        //Reed-Solomon(36,20,17) code protects the header word.  Maximum correctable errors are: 8
-        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(8);
 
         boolean irrecoverableErrors;
 

@@ -197,7 +197,7 @@ public class DibitDelayBuffer
 
             counter++;
         }
-        mLog.debug("BUFFER: " + sb.toString() + " Length:" + mBuffer.length);
+        mLog.debug("BUFFER: " + sb + " Length:" + mBuffer.length);
     }
 
     public static void main(String[] args)

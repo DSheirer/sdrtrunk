@@ -174,7 +174,7 @@ public class UserFeedSelectionDialog extends JDialog implements DocumentListener
                             mLog.info("RR User:" + userInfo.getUserName() + " Expiration Date:" + userInfo.getExpirationDate());
                             List<UserFeedBroadcast> feeds = service.getUserFeeds();
 
-                            mUserFeedBroadcastList.setListData(feeds.toArray(new UserFeedBroadcast[feeds.size()]));
+                            mUserFeedBroadcastList.setListData(feeds.toArray(new UserFeedBroadcast[0]));
                         }
                         catch(RadioReferenceException rre)
                         {

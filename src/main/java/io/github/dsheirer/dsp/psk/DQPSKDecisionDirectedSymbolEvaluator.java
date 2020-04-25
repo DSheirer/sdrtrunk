@@ -17,13 +17,14 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class DQPSKDecisionDirectedSymbolEvaluator implements IPSKSymbolEvaluator<Dibit>
 {
-    private static final Complex ROTATE_FROM_PLUS_135 = Complex.fromAngle(-3.0 * Math.PI / 4.0);
-    private static final Complex ROTATE_FROM_PLUS_45 = Complex.fromAngle(-1.0 * Math.PI / 4.0);
-    private static final Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * Math.PI / 4.0);
-    private static final Complex ROTATE_FROM_MINUS_135 = Complex.fromAngle(3.0 * Math.PI / 4.0);
+    private static final Complex ROTATE_FROM_PLUS_135 = Complex.fromAngle(-3.0 * FastMath.PI / 4.0);
+    private static final Complex ROTATE_FROM_PLUS_45 = Complex.fromAngle(-1.0 * FastMath.PI / 4.0);
+    private static final Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * FastMath.PI / 4.0);
+    private static final Complex ROTATE_FROM_MINUS_135 = Complex.fromAngle(3.0 * FastMath.PI / 4.0);
 
     private Complex mEvaluationSymbol = new Complex(0, 0);
     private float mPhaseError = 0.0f;

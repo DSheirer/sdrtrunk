@@ -15,11 +15,13 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk;
 
+import org.apache.commons.math3.util.FastMath;
+
 public enum SymbolInversion
 {
-    DEGREES_90_PLUS(Math.PI / 2.0),
-    DEGREES_90_MINUS(Math.PI / -2.0),
-    DEGREES_180(Math.PI);
+    DEGREES_90_PLUS(FastMath.PI / 2.0),
+    DEGREES_90_MINUS(FastMath.PI / -2.0),
+    DEGREES_180(FastMath.PI);
 
     private double mAngleRadians;
 

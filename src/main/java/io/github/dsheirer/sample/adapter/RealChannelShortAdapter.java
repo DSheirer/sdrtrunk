@@ -30,7 +30,6 @@ import java.nio.ByteOrder;
 public class RealChannelShortAdapter extends RealSampleAdapter
 {
     private final static Logger mLog = LoggerFactory.getLogger(RealChannelShortAdapter.class);
-    private ShortToFloatMap mMap = new ShortToFloatMap();
     private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
     private MixerChannel mMixerChannel;
     private ByteBuffer mByteBuffer;
@@ -62,7 +61,7 @@ public class RealChannelShortAdapter extends RealSampleAdapter
         {
             if(mMixerChannel == MixerChannel.LEFT)
             {
-                convertedSamples[pointer++] = mMap.get(mByteBuffer.getShort());
+                convertedSamples[pointer++] = (float) mByteBuffer.getShort() / 32768.0f;
 
                 //Throw away the right channel
                 mByteBuffer.getShort();
@@ -72,7 +71,7 @@ public class RealChannelShortAdapter extends RealSampleAdapter
                 //Throw away the left channel
                 mByteBuffer.getShort();
 
-                convertedSamples[pointer++] = mMap.get(mByteBuffer.getShort());
+                convertedSamples[pointer++] = (float) mByteBuffer.getShort() / 32768.0f;
             }
         }
 

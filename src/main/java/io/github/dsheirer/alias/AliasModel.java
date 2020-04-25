@@ -117,9 +117,9 @@ public class AliasModel extends AbstractTableModel
             return new AliasList(name);
         }
 
-        if(mAliasListMap.containsKey(name))
-        {
-            return mAliasListMap.get(name);
+        AliasList mapValue = mAliasListMap.get(name);
+        if (mapValue != null) {
+            return mapValue;
         }
 
         AliasList aliasList = new AliasList(name);

@@ -26,6 +26,7 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class DQPSKDecisionDirectedDemodulatorInstrumented extends DQPSKDecisionDirectedDemodulator
 {
@@ -102,7 +103,7 @@ public class DQPSKDecisionDirectedDemodulatorInstrumented extends DQPSKDecisionD
         {
             double loopFrequency = ((CostasLoop)getPLL()).getLoopFrequency();
 
-            loopFrequency *= mSampleRate / (2.0 * Math.PI);
+            loopFrequency *= mSampleRate / (2.0 * FastMath.PI);
 
             mPLLFrequencyListener.receive(loopFrequency);
         }

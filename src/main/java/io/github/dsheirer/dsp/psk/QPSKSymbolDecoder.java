@@ -19,6 +19,7 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class QPSKSymbolDecoder implements Listener<Complex>, IQPSKSymbolDecoder
 {
@@ -63,7 +64,7 @@ public class QPSKSymbolDecoder implements Listener<Complex>, IQPSKSymbolDecoder
 	
 	public Dibit decode(Complex complex )
 	{
-		if( Math.abs( complex.inphase() ) > Math.abs( complex.quadrature() ) )
+		if( FastMath.abs( complex.inphase() ) > FastMath.abs( complex.quadrature() ) )
 		{
 			if( complex.inphase() > 0 )
 			{
