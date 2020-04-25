@@ -706,6 +706,7 @@ public class MPT1327Message extends Message
                         sb.append(getPresselOnRequired());
                         sb.append(" IDENT1 VALUE:");
                         sb.append(getMaintMessageIDENT1Value());
+                        break;
                     default:
                         break;
                 }

@@ -88,4 +88,10 @@ public class TunerChannel implements Comparable<TunerChannel>
     {
         return Long.compare(getFrequency(), otherLock.getFrequency());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof TunerChannel)) return false;
+        return compareTo((TunerChannel) o) == 0;
+    }
 }

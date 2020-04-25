@@ -108,4 +108,10 @@ public class LtrNetChannel implements IChannelDescriptor, Comparable<LtrNetChann
     {
         return Integer.compare(getChannel(), o.getChannel());
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof LtrNetChannel)) return false;
+        return compareTo((LtrNetChannel) o) == 0;
+    }
 }

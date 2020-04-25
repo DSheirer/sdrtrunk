@@ -138,4 +138,10 @@ public class AudioRecording implements Comparable<AudioRecording>
     {
         return mPendingReplayCount.get() > 0;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof AudioRecording)) return false;
+        return compareTo((AudioRecording) o) == 0;
+    }
 }

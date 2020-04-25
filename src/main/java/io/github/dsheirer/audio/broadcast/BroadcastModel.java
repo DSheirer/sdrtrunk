@@ -538,6 +538,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                             {
                                 return BroadcastState.INVALID_SETTINGS;
                             }
+                            break;
                         case COLUMN_BROADCASTER_QUEUE_SIZE:
                             AudioBroadcaster audioBroadcasterB = mBroadcasterMap.get(configuration.getName());
 
