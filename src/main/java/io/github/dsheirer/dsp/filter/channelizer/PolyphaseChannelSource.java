@@ -286,9 +286,10 @@ public class PolyphaseChannelSource extends TunerChannelSource
     private float[] getLowPassFilter(double sampleRate, double passFrequency, double stopFrequency) throws FilterDesignException
     {
         //Use existing filter if we've already designed one
-        if(sLowPassFilters.containsKey((int)sampleRate))
+        float[] filter = sLowPassFilters.get((int) sampleRate);
+        if(filter != null)
         {
-            return sLowPassFilters.get((int)sampleRate);
+            return filter;
         }
 
         FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()

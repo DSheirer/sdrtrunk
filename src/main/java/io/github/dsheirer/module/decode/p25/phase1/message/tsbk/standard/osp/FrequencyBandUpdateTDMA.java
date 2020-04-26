@@ -28,6 +28,7 @@ import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.OSPMessage;
 import io.github.dsheirer.module.decode.p25.reference.ChannelType;
+import org.apache.commons.math3.util.FastMath;
 
 import java.util.Collections;
 import java.util.List;
@@ -125,7 +126,7 @@ public class FrequencyBandUpdateTDMA extends OSPMessage implements IFrequencyBan
     @Override
     public long getDownlinkFrequency(int channelNumber)
     {
-        return getBaseFrequency() + (getChannelSpacing() * (int)(Math.floor(channelNumber / getTimeslotCount())));
+        return getBaseFrequency() + (getChannelSpacing() * (int)(FastMath.floor(channelNumber / getTimeslotCount())));
     }
 
     @Override

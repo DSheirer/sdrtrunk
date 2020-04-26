@@ -264,11 +264,9 @@ public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEve
      */
     private void dispatch(float[] results)
     {
-        Iterator<DFTResultsConverter> it = mListeners.iterator();
 
-        while(it.hasNext())
-        {
-            it.next().receive(results);
+        for (DFTResultsConverter mListener : mListeners) {
+            mListener.receive(results);
         }
     }
 

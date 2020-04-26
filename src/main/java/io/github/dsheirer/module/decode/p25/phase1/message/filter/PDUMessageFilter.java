@@ -25,15 +25,13 @@ import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
+import io.github.dsheirer.protocol.Protocol;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PDUMessageFilter extends Filter<IMessage>
 {
-    private Map<Opcode, FilterElement<Opcode>> mOpcodeFilterElements = new HashMap<Opcode, FilterElement<Opcode>>();
+    private Map<Opcode, FilterElement<Opcode>> mOpcodeFilterElements = new EnumMap<>(Opcode.class);
 
     public PDUMessageFilter()
     {

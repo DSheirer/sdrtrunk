@@ -16,6 +16,7 @@
 package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class GardnerDetector
 {
@@ -41,8 +42,8 @@ public class GardnerDetector
      */
     public float getError(Complex previous, Complex middle, Complex current)
     {
-        mErrorInphase = (Math.abs(previous.inphase()) - Math.abs(current.inphase())) * Math.abs(middle.inphase());
-        mErrorQuadrature = (Math.abs(previous.quadrature()) - Math.abs(current.quadrature())) * Math.abs(middle.quadrature());
+        mErrorInphase = (FastMath.abs(previous.inphase()) - FastMath.abs(current.inphase())) * FastMath.abs(middle.inphase());
+        mErrorQuadrature = (FastMath.abs(previous.quadrature()) - FastMath.abs(current.quadrature())) * FastMath.abs(middle.quadrature());
         mError = normalize(mErrorInphase + mErrorQuadrature, 1.0f);
 
         return mError;

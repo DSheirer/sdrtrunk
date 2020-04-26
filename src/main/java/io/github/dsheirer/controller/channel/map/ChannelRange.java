@@ -107,13 +107,13 @@ public class ChannelRange
         if(isValid())
         {
             sb.append("First: ");
-            sb.append(mFirstChannel.get() + "=");
+            sb.append(mFirstChannel.get()).append("=");
 
             long frequency = getFrequency(mFirstChannel.get());
 
             sb.append(FREQUENCY_FORMATTER.format((double)frequency / 1E6D));
             sb.append("  Last: ");
-            sb.append(mLastChannel.get() + "=");
+            sb.append(mLastChannel.get()).append("=");
 
             frequency = getFrequency(mLastChannel.get());
             sb.append(FREQUENCY_FORMATTER.format((double)frequency / 1E6D));

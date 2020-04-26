@@ -51,12 +51,7 @@ import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * List of aliases that share the same alias list name and provides convenient methods for looking up alias
@@ -65,8 +60,8 @@ import java.util.TreeMap;
 public class AliasList implements Listener<AliasEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
-    private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new HashMap<>();
-    private Map<Protocol,RadioAliasList> mRadioProtocolMap = new HashMap<>();
+    private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new EnumMap<>(Protocol.class);
+    private Map<Protocol,RadioAliasList> mRadioProtocolMap = new EnumMap<>(Protocol.class);
     private Map<String,Alias> mESNMap = new HashMap<>();
     private Map<Integer,Alias> mUnitStatusMap = new HashMap<>();
     private Map<Integer,Alias> mUserStatusMap = new HashMap<>();
@@ -708,16 +703,17 @@ public class AliasList implements Listener<AliasEvent>
         {
             int value = identifier.getValue();
 
-            if(mTalkgroupAliasMap.containsKey(value))
+            Alias mapValue = mTalkgroupAliasMap.get(value);
+            if (mapValue != null)
             {
-                return mTalkgroupAliasMap.get(value);
+                return mapValue;
             }
 
-            for(TalkgroupRange talkgroupRange: mTalkgroupRangeAliasMap.keySet())
+            for(Map.Entry<TalkgroupRange, Alias> entry : mTalkgroupRangeAliasMap.entrySet())
             {
-                if(talkgroupRange.contains(value))
+                if(entry.getKey().contains(value))
                 {
-                    return mTalkgroupRangeAliasMap.get(talkgroupRange);
+                    return entry.getValue();
                 }
             }
 
@@ -797,16 +793,17 @@ public class AliasList implements Listener<AliasEvent>
         {
             int value = identifier.getValue();
 
-            if(mRadioAliasMap.containsKey(value))
+            Alias mapValue = mRadioAliasMap.get(value);
+            if(mapValue != null)
             {
-                return mRadioAliasMap.get(value);
+                return mapValue;
             }
 
-            for(RadioRange radioRange: mRadioRangeAliasMap.keySet())
+            for(Map.Entry<RadioRange, Alias> entry : mRadioRangeAliasMap.entrySet())
             {
-                if(radioRange.contains(value))
+                if(entry.getKey().contains(value))
                 {
-                    return mRadioRangeAliasMap.get(radioRange);
+                    return entry.getValue();
                 }
             }
 

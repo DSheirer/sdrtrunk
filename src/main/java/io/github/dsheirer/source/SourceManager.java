@@ -109,6 +109,7 @@ public class SourceManager
                 break;
             case RECORDING:
                 retVal = mRecordingSourceManager.getSource(config, channelSpecification);
+                break;
             case NONE:
             default:
                 break;

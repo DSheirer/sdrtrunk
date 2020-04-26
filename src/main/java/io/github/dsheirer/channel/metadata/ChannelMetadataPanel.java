@@ -56,6 +56,7 @@ import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +70,8 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     private UserPreferences mUserPreferences;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
-    private Map<State,Color> mBackgroundColors = new HashMap<>();
-    private Map<State,Color> mForegroundColors = new HashMap<>();
+    private Map<State,Color> mBackgroundColors = new EnumMap<>(State.class);
+    private Map<State,Color> mForegroundColors = new EnumMap<>(State.class);
     private JTableColumnWidthMonitor mTableColumnMonitor;
 
     /**

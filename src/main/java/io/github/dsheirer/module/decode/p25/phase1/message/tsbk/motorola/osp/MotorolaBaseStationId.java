@@ -62,8 +62,8 @@ public class MotorolaBaseStationId extends OSPMessage implements IFrequencyBandR
 
         if(hasChannel())
         {
-            sb.append(" CHAN:" + getChannel());
-            sb.append(" CWID:" + getCWID());
+            sb.append(" CHAN:").append(getChannel());
+            sb.append(" CWID:").append(getCWID());
         }
         else
         {

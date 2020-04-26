@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ public class LowPhaseNoiseOscillator extends AbstractOscillator
 {
     private final static Logger mLog = LoggerFactory.getLogger(LowPhaseNoiseOscillator.class);
 
-    private static final double TWO_PI = 2.0 * Math.PI;
+    private static final double TWO_PI = 2.0 * FastMath.PI;
     private static final double THREE_HALVES = 3.0 / 2.0;
     private double mInphase = 1.0;
     private double mQuadrature = 0.0;
@@ -68,8 +69,8 @@ public class LowPhaseNoiseOscillator extends AbstractOscillator
     {
         double anglePerSample = TWO_PI * getFrequency() / getSampleRate();
 
-        mCosineAngle = Math.cos(anglePerSample);
-        mSineAngle = Math.sin(anglePerSample);
+        mCosineAngle = FastMath.cos(anglePerSample);
+        mSineAngle = FastMath.sin(anglePerSample);
     }
 
     /**

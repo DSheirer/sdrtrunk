@@ -33,6 +33,7 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import org.apache.commons.math3.util.FastMath;
 
 import javax.swing.JPanel;
 import java.awt.BasicStroke;
@@ -326,7 +327,7 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
 
             if(mZoom != 0)
             {
-                graphics.drawString("Zoom: " + (int)Math.pow(2.0, mZoom) + "x", mCursorLocation.x + 17,
+                graphics.drawString("Zoom: " + (int)FastMath.pow(2.0, mZoom) + "x", mCursorLocation.x + 17,
                     mCursorLocation.y + 11);
             }
         }
@@ -504,7 +505,7 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
 
         double offset = xAxis / width;
 
-        long frequency = getMinDisplayFrequency() + Math.round((double)getDisplayBandwidth() * offset);
+        long frequency = getMinDisplayFrequency() + FastMath.round((double)getDisplayBandwidth() * offset);
 
         if(frequency > (getMaxFrequency()))
         {
@@ -766,7 +767,7 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
 
     public boolean containsFrequency(long frequency)
     {
-        return Math.abs(mFrequency - frequency) <= (mBandwidth / 2);
+        return FastMath.abs(mFrequency - frequency) <= (mBandwidth / 2);
     }
 
     private long getMinDisplayFrequency()
@@ -785,7 +786,7 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
     {
         if(mZoom != 0)
         {
-            return mBandwidth / (int)Math.pow(2.0, mZoom);
+            return mBandwidth / (int)FastMath.pow(2.0, mZoom);
         }
 
         return mBandwidth;
@@ -867,14 +868,14 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
                 double maxLabels = ((double)OverlayPanel.this.getWidth() * LABEL_FILL_THRESHOLD) / (double)maxLabelWidth;
 
                 //Calculate the next smallest base 10 value for the major increment
-                int power = (int)Math.log10((double)getDisplayBandwidth() / maxLabels);
+                int power = (int)FastMath.log10((double)getDisplayBandwidth() / maxLabels);
 
                 //Set the number of decimal places to display in frequency labels
                 int precision = 5 - power;
 
-                int start = (int)Math.pow(10.0, power + 1);
+                int start = (int)FastMath.pow(10.0, power + 1);
 
-                int minimum = (int)Math.pow(10.0, power);
+                int minimum = (int)FastMath.pow(10.0, power);
 
                 int labelIncrement = start;
 

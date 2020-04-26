@@ -23,6 +23,7 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class InterpolatingSampleBufferInstrumented extends InterpolatingSampleBu
     public InterpolatingSampleBufferInstrumented(float samplesPerSymbol, float symbolTimingGain)
     {
         super(samplesPerSymbol, symbolTimingGain);
-        mBufferLength = (int)Math.ceil(samplesPerSymbol);
+        mBufferLength = (int) FastMath.ceil(samplesPerSymbol);
         mSymbolDecisionData = new SymbolDecisionData(mBufferLength);
     }
 

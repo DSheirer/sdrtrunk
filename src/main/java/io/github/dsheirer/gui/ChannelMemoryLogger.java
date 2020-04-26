@@ -25,18 +25,18 @@ public class ChannelMemoryLogger implements Runnable, ChannelEventListener
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( "CHAN TOT:" + mChannelCount );
-		sb.append( " TRFC:" + mTrafficChannelCount );
-		sb.append( " PROC:" + mChannelProcessingCount );
+		sb.append("CHAN TOT:").append(mChannelCount);
+		sb.append(" TRFC:").append(mTrafficChannelCount);
+		sb.append(" PROC:").append(mChannelProcessingCount);
 
 		long maxMemory = runtime.maxMemory();
 		long allocatedMemory = runtime.totalMemory();
 		long freeMemory = runtime.freeMemory();
 
-		sb.append(" MEM FREE: " + format.format(freeMemory / 1024) );
-		sb.append(" ALLOC: " + format.format(allocatedMemory / 1024) );
-		sb.append(" MAX: " + format.format(maxMemory / 1024) );
-		sb.append(" TOTAL: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024) );
+		sb.append(" MEM FREE: ").append(format.format(freeMemory / 1024));
+		sb.append(" ALLOC: ").append(format.format(allocatedMemory / 1024));
+		sb.append(" MAX: ").append(format.format(maxMemory / 1024));
+		sb.append(" TOTAL: ").append(format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024));
 		
 		mLog.debug( sb.toString() );
 	}

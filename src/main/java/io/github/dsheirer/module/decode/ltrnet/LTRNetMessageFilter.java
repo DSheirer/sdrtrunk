@@ -4,15 +4,13 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
+import io.github.dsheirer.module.decode.ltrstandard.LtrStandardMessageType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class LTRNetMessageFilter extends Filter<IMessage>
 {
-    private Map<LtrNetMessageType, FilterElement<LtrNetMessageType>> mElements = new HashMap<>();
+    private Map<LtrNetMessageType, FilterElement<LtrNetMessageType>> mElements = new EnumMap<>(LtrNetMessageType.class);
 
     public LTRNetMessageFilter()
     {

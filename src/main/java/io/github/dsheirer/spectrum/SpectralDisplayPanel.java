@@ -50,6 +50,7 @@ import io.github.dsheirer.spectrum.menu.FrameRateItem;
 import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -310,7 +311,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
     public int getZoomMultiplier()
     {
-        return (int)Math.pow(2.0, mZoom);
+        return (int) FastMath.pow(2.0, mZoom);
     }
 
     /**

@@ -25,14 +25,11 @@ import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class LTRStandardMessageFilter extends Filter<IMessage>
 {
-    private Map<LtrStandardMessageType,FilterElement<LtrStandardMessageType>> mElements = new HashMap<>();
+    private Map<LtrStandardMessageType,FilterElement<LtrStandardMessageType>> mElements = new EnumMap<>(LtrStandardMessageType.class);
 
     public LTRStandardMessageFilter()
     {

@@ -16,6 +16,7 @@
 package io.github.dsheirer.dsp.filter.hilbert;
 
 import io.github.dsheirer.dsp.filter.Filters;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,11 +231,11 @@ public class HilbertTransform
         {
             if(x < middle)
             {
-                mHilbertFilter[x] = 2.0f * -Math.abs(coefficients[x]);
+                mHilbertFilter[x] = 2.0f * -FastMath.abs(coefficients[x]);
             }
             else if(x > middle)
             {
-                mHilbertFilter[x] = 2.0f * Math.abs(coefficients[x]);
+                mHilbertFilter[x] = 2.0f * FastMath.abs(coefficients[x]);
             }
             else
             {

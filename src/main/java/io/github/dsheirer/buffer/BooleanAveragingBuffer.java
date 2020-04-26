@@ -76,10 +76,8 @@ public class BooleanAveragingBuffer
 
         mTrueCount = 0;
 
-        for(int x = 0; x < mBuffer.length; x++)
-        {
-            if(mBuffer[x])
-            {
+        for (boolean b : mBuffer) {
+            if (b) {
                 mTrueCount++;
             }
         }

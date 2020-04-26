@@ -44,6 +44,7 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.ListIterator;
 import java.util.Map;
@@ -55,7 +56,7 @@ public class UserPreferencesEditor extends BorderPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(UserPreferencesEditor.class);
 
-    private Map<PreferenceEditorType,Node> mEditors = new HashMap<>();
+    private Map<PreferenceEditorType,Node> mEditors = new EnumMap<>(PreferenceEditorType.class);
     private UserPreferences mUserPreferences;
     private MenuBar mMenuBar;
     private TreeView mEditorSelectionTreeView;
@@ -111,22 +112,14 @@ public class UserPreferencesEditor extends BorderPane
      */
     private TreeItem recursivelyFindEditorType(TreeItem parent, PreferenceEditorType type)
     {
-        ListIterator<TreeItem> li = parent.getChildren().listIterator();
 
-        while(li.hasNext())
-        {
-            TreeItem treeItem = li.next();
-
-            if(treeItem.getValue() instanceof PreferenceEditorType && (treeItem.getValue()).equals(type))
-            {
+        for (TreeItem treeItem : (Iterable<TreeItem>) parent.getChildren()) {
+            if (treeItem.getValue() instanceof PreferenceEditorType && (treeItem.getValue()).equals(type)) {
                 return treeItem;
-            }
-            else
-            {
+            } else {
                 TreeItem item = recursivelyFindEditorType(treeItem, type);
 
-                if(item != null)
-                {
+                if (item != null) {
                     return item;
                 }
             }

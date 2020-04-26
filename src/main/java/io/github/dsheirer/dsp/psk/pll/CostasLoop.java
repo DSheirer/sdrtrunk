@@ -22,6 +22,7 @@
 package io.github.dsheirer.dsp.psk.pll;
 
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +39,13 @@ public class CostasLoop implements IPhaseLockedLoop
 {
     private final static Logger mLog = LoggerFactory.getLogger(CostasLoop.class);
 
-    public static final double TWO_PI = 2.0 * Math.PI;
+    public static final double TWO_PI = 2.0 * FastMath.PI;
 
     private Complex mCurrentVector = new Complex(0, 0);
     private double mLoopPhase = 0.0;
     private double mLoopFrequency = 0.0;
     private double mMaximumLoopFrequency;
-    private double mDamping = Math.sqrt(2.0) / 2.0;
+    private double mDamping = FastMath.sqrt(2.0) / 2.0;
     private double mAlphaGain;
     private double mBetaGain;
     private PLLBandwidth mPLLBandwidth = PLLBandwidth.BW_400;

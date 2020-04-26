@@ -67,6 +67,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 /**
  * Monitors channel grant and channel grant update messages to allocate traffic channels to capture
@@ -780,37 +781,12 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
 
                 if(channel.getDecodeConfiguration().getDecoderType() == DecoderType.P25_PHASE1)
                 {
-                    List<APCO25Channel> channels = new ArrayList<>(mPhase1ChannelGrantEventMap.keySet());
-
-                    for(APCO25Channel p25Channel: channels)
-                    {
-                        if(p25Channel.getDownlinkFrequency() == frequency)
-                        {
-                            mPhase1ChannelGrantEventMap.remove(p25Channel);
-                        }
-                    }
+                    mPhase1ChannelGrantEventMap.entrySet().removeIf(entry -> entry.getKey().getDownlinkFrequency() == frequency);
                 }
                 else
                 {
-                    List<APCO25Channel> channels = new ArrayList<>(mPhase2TS0ChannelGrantEventMap.keySet());
-
-                    for(APCO25Channel p25Channel: channels)
-                    {
-                        if(p25Channel.getDownlinkFrequency() == frequency)
-                        {
-                            mPhase2TS0ChannelGrantEventMap.remove(p25Channel);
-                        }
-                    }
-
-                    channels = new ArrayList<>(mPhase2TS1ChannelGrantEventMap.keySet());
-
-                    for(APCO25Channel p25Channel: channels)
-                    {
-                        if(p25Channel.getDownlinkFrequency() == frequency)
-                        {
-                            mPhase2TS1ChannelGrantEventMap.remove(p25Channel);
-                        }
-                    }
+                    mPhase2TS0ChannelGrantEventMap.entrySet().removeIf(entry -> entry.getKey().getDownlinkFrequency() == frequency);
+                    mPhase2TS1ChannelGrantEventMap.entrySet().removeIf(entry -> entry.getKey().getDownlinkFrequency() == frequency);
                 }
             }
         }
@@ -824,82 +800,56 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             {
                 boolean isPhase1 = channel.getDecodeConfiguration().getDecoderType() == DecoderType.P25_PHASE1;
 
-                if((isPhase1 && mManagedPhase1TrafficChannels.contains(channel)) ||
-                   (!isPhase1 && mManagedPhase2TrafficChannels.contains(channel)))
+                if(isPhase1 ? mManagedPhase1TrafficChannels.contains(channel) : mManagedPhase2TrafficChannels.contains(channel))
                 {
                     switch(channelEvent.getEvent())
                     {
                         case NOTIFICATION_PROCESSING_STOP:
-                            APCO25Channel toRemove = null;
+                            mAllocatedTrafficChannelMap.entrySet()
+                                    .stream()
+                                    .filter(entry -> entry.getValue() == channel)
+                                    .map(Map.Entry::getKey)
+                                    .findFirst()
+                                    .ifPresent(toRemove -> {
+                                        mAllocatedTrafficChannelMap.remove(toRemove);
 
-                            for(Map.Entry<APCO25Channel,Channel> entry: mAllocatedTrafficChannelMap.entrySet())
-                            {
-                                if(entry.getValue() == channel)
-                                {
-                                    toRemove = entry.getKey();
-                                    continue;
-                                }
-                            }
-
-                            if(toRemove != null)
-                            {
-                                mAllocatedTrafficChannelMap.remove(toRemove);
-
-                                if(isPhase1)
-                                {
-                                    mAvailablePhase1TrafficChannelQueue.add(channel);
-                                }
-                                else
-                                {
-                                    mAvailablePhase2TrafficChannelQueue.add(channel);
-                                }
-                            }
+                                        if (isPhase1) {
+                                            mAvailablePhase1TrafficChannelQueue.add(channel);
+                                        } else {
+                                            mAvailablePhase2TrafficChannelQueue.add(channel);
+                                        }
+                                    });
 
                             cleanupCallEvents(channel);
                             break;
                         case NOTIFICATION_PROCESSING_START_REJECTED:
-                            APCO25Channel rejected = null;
+                            mAllocatedTrafficChannelMap.entrySet().stream()
+                                    .filter(entry -> entry.getValue() == channel)
+                                    .map(Map.Entry::getKey)
+                                    .findFirst()
+                                    .ifPresent(rejected -> {
+                                        mAllocatedTrafficChannelMap.remove(rejected);
 
-                            for(Map.Entry<APCO25Channel,Channel> entry: mAllocatedTrafficChannelMap.entrySet())
-                            {
-                                if(entry.getValue() == channel)
-                                {
-                                    rejected = entry.getKey();
-                                    continue;
-                                }
-                            }
+                                        if (isPhase1) {
+                                            mAvailablePhase1TrafficChannelQueue.add(channel);
+                                        } else {
+                                            mAvailablePhase2TrafficChannelQueue.add(channel);
+                                        }
 
-                            if(rejected != null)
-                            {
-                                mAllocatedTrafficChannelMap.remove(rejected);
+                                        P25ChannelGrantEvent event = mPhase1ChannelGrantEventMap.get(rejected);
 
-                                if(isPhase1)
-                                {
-                                    mAvailablePhase1TrafficChannelQueue.add(channel);
-                                }
-                                else
-                                {
-                                    mAvailablePhase2TrafficChannelQueue.add(channel);
-                                }
+                                        if (event != null) {
+                                            event.setEventDescription(event.getEventDescription() + " - Rejected");
 
-                                P25ChannelGrantEvent event = mPhase1ChannelGrantEventMap.get(rejected);
+                                            if (channelEvent.getDescription() != null) {
+                                                event.setDetails(channelEvent.getDescription() + " - " + event.getDetails());
+                                            } else {
+                                                event.setDetails(CHANNEL_START_REJECTED + " - " + event.getDetails());
+                                            }
 
-                                if(event != null)
-                                {
-                                    event.setEventDescription(event.getEventDescription() + " - Rejected");
-
-                                    if(channelEvent.getDescription() != null)
-                                    {
-                                        event.setDetails(channelEvent.getDescription() + " - " + event.getDetails());
-                                    }
-                                    else
-                                    {
-                                        event.setDetails(CHANNEL_START_REJECTED + " - " + event.getDetails());
-                                    }
-
-                                    broadcast(event);
-                                }
-                            }
+                                            broadcast(event);
+                                        }
+                                    });
 
                             cleanupCallEvents(channel);
                             break;

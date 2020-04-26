@@ -17,6 +17,8 @@
  ******************************************************************************/
 package org.jdesktop.swingx.mapviewer;
 
+import org.apache.commons.math3.util.FastMath;
+
 import java.awt.geom.Rectangle2D;
 import java.util.Set;
 
@@ -60,10 +62,10 @@ public class GeoBounds
 		double maxLng = Integer.MIN_VALUE;
 		for (GeoPosition position : geoPositions)
 		{
-			minLat = Math.min(minLat, position.getLatitude());
-			minLng = Math.min(minLng, position.getLongitude());
-			maxLat = Math.max(maxLat, position.getLatitude());
-			maxLng = Math.max(maxLng, position.getLongitude());
+			minLat = FastMath.min(minLat, position.getLatitude());
+			minLng = FastMath.min(minLng, position.getLongitude());
+			maxLat = FastMath.max(maxLat, position.getLatitude());
+			maxLng = FastMath.max(maxLng, position.getLongitude());
 		}
 		setRect(minLat, minLng, maxLat, maxLng);
 	}

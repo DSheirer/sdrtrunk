@@ -24,15 +24,13 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.fleetsync2.message.Fleetsync2Message;
+import io.github.dsheirer.module.decode.ltrnet.LtrNetMessageType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class FleetsyncMessageFilter extends Filter<IMessage>
 {
-    private HashMap<FleetsyncMessageType,FilterElement<FleetsyncMessageType>> mElements =
-        new HashMap<FleetsyncMessageType,FilterElement<FleetsyncMessageType>>();
+    private Map<FleetsyncMessageType,FilterElement<FleetsyncMessageType>> mElements = new EnumMap<>(FleetsyncMessageType.class);
 
     public FleetsyncMessageFilter()
     {

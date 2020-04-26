@@ -19,6 +19,7 @@
 package io.github.dsheirer.dsp.filter.fir.remez;
 
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +27,7 @@ public class PolyphaseChannelizerFilterFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelizerFilterFactory.class);
 
-    private static final double OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE = Math.sqrt(2.0) / 2.0; //.707xxx
+    private static final double OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE = FastMath.sqrt(2.0) / 2.0; //.707xxx
 
     public static float[] getFilter(int sampleRate, int channelBandwidth, double alpha)
     {
@@ -77,7 +78,7 @@ public class PolyphaseChannelizerFilterFactory
         specification.addFrequencyBand(transitionBand);
         specification.addFrequencyBand(stopBand);
 
-        double bandEdgeFrequency = Math.cos(Math.PI * (double)channelBandwidth / (double)(sampleRate / 2));
+        double bandEdgeFrequency = FastMath.cos(FastMath.PI * (double)channelBandwidth / (double)(sampleRate / 2));
         float[] filter = null;
 
         try

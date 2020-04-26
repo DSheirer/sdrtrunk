@@ -4,6 +4,7 @@ import io.github.dsheirer.buffer.DoubleCircularBuffer;
 import io.github.dsheirer.buffer.RealCircularBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import org.apache.commons.math3.util.FastMath;
 
 /*******************************************************************************
  *     SDR Trunk 
@@ -74,10 +75,10 @@ public class AutomaticGainControl
     private static final double ATTACK_FALL_TIME_CONSTANT = 0.005;
 
     private static final double ATTACK_RISE_ALPHA = 1.0 -
-        Math.exp(-1.0 / SAMPLE_RATE * ATTACK_RISE_TIME_CONSTANT);
+        FastMath.exp(-1.0 / SAMPLE_RATE * ATTACK_RISE_TIME_CONSTANT);
 
     private static final double ATTACK_FALL_ALPHA = 1.0 -
-        Math.exp(-1.0 / SAMPLE_RATE * ATTACK_FALL_TIME_CONSTANT);
+        FastMath.exp(-1.0 / SAMPLE_RATE * ATTACK_FALL_TIME_CONSTANT);
 
     /* AGC decay value in milliseconds (20 to 5000) */
     private static final double DECAY = 200;
@@ -87,10 +88,10 @@ public class AutomaticGainControl
     private static final double DECAY_RISEFALL_RATIO = 0.3;
 
     private static final double DECAY_RISE_ALPHA = 1.0 -
-        Math.exp(-1.0 / (SAMPLE_RATE * DECAY * .001 * DECAY_RISEFALL_RATIO));
+        FastMath.exp(-1.0 / (SAMPLE_RATE * DECAY * .001 * DECAY_RISEFALL_RATIO));
 
     private static final double DECAY_FALL_ALPHA = 1.0 -
-        Math.exp(-1.0 / (SAMPLE_RATE * DECAY * .001));
+        FastMath.exp(-1.0 / (SAMPLE_RATE * DECAY * .001));
 
     /* Hang timer release decay time constant in seconds */
     @SuppressWarnings("unused")
@@ -110,7 +111,7 @@ public class AutomaticGainControl
     private static final double MANUAL_GAIN = 0.0;
 
     private static final double MANUAL_AGC_GAIN = MAX_MANUAL_AMPLITUDE *
-        Math.pow(10.0, MANUAL_GAIN / 20.0);
+        FastMath.pow(10.0, MANUAL_GAIN / 20.0);
 
     /* Specifies dB reduction in output at knee from max output level (0 - 10dB) */
     private static final double SLOPE_FACTOR = 2.0;
@@ -120,7 +121,7 @@ public class AutomaticGainControl
     private static final double GAIN_SLOPE = SLOPE_FACTOR / 100.0;
 
     private static final double FIXED_GAIN = AGC_OUT_SCALE *
-        Math.pow(10.0, KNEE * (GAIN_SLOPE - 1.0));
+        FastMath.pow(10.0, KNEE * (GAIN_SLOPE - 1.0));
 
     /* Constant for calc log() so that a value of 0 magnitude = -8 */
     private static final double MIN_CONSTANT = 3.2767E-4;
@@ -178,7 +179,7 @@ public class AutomaticGainControl
 
         if(mAGCEnabled)
         {
-            double currentMagnitude = Math.log10(Math.abs(currentSample) + MIN_CONSTANT) - Math.log10(MAX_AMPLITUDE);
+            double currentMagnitude = FastMath.log10(FastMath.abs(currentSample) + MIN_CONSTANT) - FastMath.log10(MAX_AMPLITUDE);
 
             double delayedMagnitude = mMagnitudeBuffer.get(currentMagnitude);
 
@@ -212,7 +213,7 @@ public class AutomaticGainControl
                 mDecayAverage = ((1.0 - DECAY_FALL_ALPHA) * mDecayAverage) + (DECAY_RISE_ALPHA * mPeakMagnitude);
             }
 
-            double magnitude = (mAttackAverage > mDecayAverage) ? mAttackAverage : mDecayAverage;
+            double magnitude = FastMath.max(mAttackAverage, mDecayAverage);
 
             if(magnitude < KNEE)
             {
@@ -220,7 +221,7 @@ public class AutomaticGainControl
             }
             else
             {
-                gain = AGC_OUT_SCALE * Math.pow(10.0, magnitude * (GAIN_SLOPE - 1.0));
+                gain = AGC_OUT_SCALE * FastMath.pow(10.0, magnitude * (GAIN_SLOPE - 1.0));
             }
         }
 

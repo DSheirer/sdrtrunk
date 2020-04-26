@@ -125,7 +125,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
 
         HackRFSampleRate[] validRates = HackRFSampleRate.VALID_SAMPLE_RATES
-            .toArray(new HackRFSampleRate[HackRFSampleRate.VALID_SAMPLE_RATES.size()]);
+            .toArray(new HackRFSampleRate[0]);
         mComboSampleRate = new JComboBox<>(validRates);
         mComboSampleRate.setEnabled(false);
         mComboSampleRate.addActionListener(new ActionListener()
@@ -236,7 +236,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
                     if(lnaGain == null)
                     {
-                        lnaGain = HackRFLNAGain.GAIN_0;
+                        lnaGain = HackRFLNAGain.GAIN_16;
                     }
 
                     mController.setLNAGain(lnaGain);
@@ -267,7 +267,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
                     if(vgaGain == null)
                     {
-                        vgaGain = HackRFVGAGain.GAIN_4;
+                        vgaGain = HackRFVGAGain.GAIN_16;
                     }
 
                     mController.setVGAGain(vgaGain);

@@ -9,6 +9,7 @@
 
 package org.jdesktop.swingx.mapviewer.util;
 
+import org.apache.commons.math3.util.FastMath;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.mapviewer.GeoBounds;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
@@ -99,7 +100,7 @@ public final class GeoUtil
 	{
 		double x = info.getMapCenterInPixelsAtZoom(zoomLevel).getX() + longitude
 				* info.getLongitudeDegreeWidthInPixels(zoomLevel);
-		double e = Math.sin(latitude * (Math.PI / 180.0));
+		double e = FastMath.sin(latitude * (FastMath.PI / 180.0));
 		if (e > 0.9999)
 		{
 			e = 0.9999;
@@ -108,7 +109,7 @@ public final class GeoUtil
 		{
 			e = -0.9999;
 		}
-		double y = info.getMapCenterInPixelsAtZoom(zoomLevel).getY() + 0.5 * Math.log((1 + e) / (1 - e)) * -1
+		double y = info.getMapCenterInPixelsAtZoom(zoomLevel).getY() + 0.5 * FastMath.log((1 + e) / (1 - e)) * -1
 				* (info.getLongitudeRadianWidthInPixels(zoomLevel));
 		return new Point2D.Double(x, y);
 	}
@@ -129,7 +130,7 @@ public final class GeoUtil
 		double flon = (wx - info.getMapCenterInPixelsAtZoom(zoom).getX()) / info.getLongitudeDegreeWidthInPixels(zoom);
 		double e1 = (wy - info.getMapCenterInPixelsAtZoom(zoom).getY())
 				/ (-1 * info.getLongitudeRadianWidthInPixels(zoom));
-		double e2 = (2 * Math.atan(Math.exp(e1)) - Math.PI / 2) / (Math.PI / 180.0);
+		double e2 = (2 * FastMath.atan(FastMath.exp(e1)) - FastMath.PI / 2) / (FastMath.PI / 180.0);
 		double flat = e2;
 		GeoPosition wc = new GeoPosition(flat, flon);
 		return wc;

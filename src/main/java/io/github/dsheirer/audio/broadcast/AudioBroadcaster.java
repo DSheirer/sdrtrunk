@@ -27,6 +27,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -374,7 +375,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                         //Trim length to whole-frame intervals (144 byte frame)
                         bytesToStream -= (bytesToStream % 144);
 
-                        int length = Math.min(bytesToStream, mInputStream.available());
+                        int length = FastMath.min(bytesToStream, mInputStream.available());
 
                         byte[] audio = new byte[length];
 

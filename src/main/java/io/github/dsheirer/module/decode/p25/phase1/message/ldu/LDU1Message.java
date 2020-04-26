@@ -89,6 +89,9 @@ public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
     private static final int[] RS_HEX_10 = {1228, 1229, 1230, 1231, 1232, 1233};
     private static final int[] RS_HEX_11 = {1238, 1239, 1240, 1241, 1242, 1243};
 
+    //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are: 6
+    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
+
     private LinkControlWord mLinkControlWord;
     private List<Identifier> mIdentifiers;
 
@@ -174,8 +177,6 @@ public class LDU1Message extends LDUMessage implements IFrequencyBandReceiver
         input[23] = getMessage().getInt(CW_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are: 6
-        ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
         boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
 
         //Transfer error corrected output to a new binary message

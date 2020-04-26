@@ -69,8 +69,8 @@ public class LCSecondaryControlChannelBroadcastExplicit extends LinkControlWord 
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" SITE:" + getRFSS() + "-" + getSite());
-        sb.append(" CHAN:" + getChannel());
+        sb.append(" SITE:").append(getRFSS()).append("-").append(getSite());
+        sb.append(" CHAN:").append(getChannel());
         sb.append(" SERVICE CLASS:").append(getSystemServiceClass());
         return sb.toString();
     }
