@@ -70,7 +70,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
-        if(preferenceType == PreferenceType.IDENTIFIER)
+        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
             for(int row = 0; row < mChannelMetadata.size(); row++)
             {

@@ -39,7 +39,7 @@ import io.github.dsheirer.module.decode.ltrstandard.channel.LtrChannel;
 import io.github.dsheirer.module.decode.ltrstandard.message.Call;
 import io.github.dsheirer.module.decode.ltrstandard.message.CallEnd;
 import io.github.dsheirer.module.decode.ltrstandard.message.Idle;
-import io.github.dsheirer.module.decode.ltrstandard.message.LTRStandardMessage;
+import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
 import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,15 +70,15 @@ public class LTRStandardDecoderState extends DecoderState
     @Override
     public DecoderType getDecoderType()
     {
-        return DecoderType.LTR_STANDARD;
+        return DecoderType.LTR;
     }
 
     @Override
     public void receive(IMessage message)
     {
-        if(message.isValid() && message instanceof LTRStandardMessage)
+        if(message.isValid() && message instanceof LTRMessage)
         {
-            switch(((LTRStandardMessage)message).getMessageType())
+            switch(((LTRMessage)message).getMessageType())
             {
                 case CALL:
                     if(message instanceof Call)
@@ -98,7 +98,7 @@ public class LTRStandardDecoderState extends DecoderState
                                 getIdentifierCollection().remove(IdentifierClass.USER);
                                 getIdentifierCollection().update(start.getTalkgroup());
                                 mCurrentCallEvent = DecodeEvent.builder(start.getTimestamp())
-                                    .protocol(Protocol.LTR_STANDARD)
+                                    .protocol(Protocol.LTR)
                                     .identifiers(getIdentifierCollection().copyOf())
                                     .channel(getCurrentChannel())
                                     .eventDescription("Call")
@@ -201,7 +201,7 @@ public class LTRStandardDecoderState extends DecoderState
         if(mLCNTracker.getCurrentChannel() != original)
         {
             getIdentifierCollection().update(DecoderLogicalChannelNameIdentifier
-                .create(String.valueOf(mLCNTracker.getCurrentChannel()), Protocol.LTR_STANDARD));
+                .create(String.valueOf(mLCNTracker.getCurrentChannel()), Protocol.LTR));
 
             LtrChannel ltrChannel = new LtrChannel(mLCNTracker.getCurrentChannel());
 

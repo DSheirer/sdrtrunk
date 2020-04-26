@@ -1,25 +1,29 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 
 package io.github.dsheirer.preference.playlist;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
@@ -30,6 +34,8 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.prefs.Preferences;
 
 /**
@@ -43,13 +49,9 @@ public class PlaylistPreference extends Preference
     private static final String FILE_PLAYLIST = "default.xml";
     private static final String FILE_LEGACY_PLAYLIST = "playlist_v2.xml";
 
-    private static final String PREFERENCE_KEY_PLAYLIST_LAST_ACCESSED = "playlist.last.accessed";
-    private static final String PREFERENCE_KEY_PLAYLIST_STARTUP = "playlist.default";
-    private static final String PREFERENCE_KEY_PLAYLIST_USE_LAST_ACCESSED = "playlist.use.last.accessed";
-    private Path mPlaylistFolder;
-    private Path mPlaylistStartupPath;
-    private Path mPlaylistLastAccessedPath;
-    private Boolean mUsePlaylistLastAccessedByDefault = true;
+    private static final String PREFERENCE_KEY_PLAYLIST = "playlist.path";
+    private static final String PREFERENCE_KEY_PLAYLIST_LIST = "playlist.list";
+    private Path mPlaylistPath;
     private DirectoryPreference mDirectoryPreference;
 
     /**
@@ -65,23 +67,20 @@ public class PlaylistPreference extends Preference
     @Override
     public PreferenceType getPreferenceType()
     {
-        return PreferenceType.DIRECTORY;
+        return PreferenceType.PLAYLIST;
     }
-
 
     /**
      * Path to the current playlist
      */
     public Path getPlaylist()
     {
-        if(mUsePlaylistLastAccessedByDefault)
+        if(mPlaylistPath == null)
         {
-            return getPlaylistLastAccessedPath();
+            mPlaylistPath = getPath(PREFERENCE_KEY_PLAYLIST, getDefaultPlaylistPath());
         }
-        else
-        {
-            return getPlaylistStartupPath();
-        }
+
+        return mPlaylistPath;
     }
 
     /**
@@ -111,74 +110,14 @@ public class PlaylistPreference extends Preference
     }
 
     /**
-     * Path to the playlist to use at startup when 'use last accessed' is set to false.
+     * Sets the path to the playlist
      */
-    public Path getPlaylistStartupPath()
+    public void setPlaylist(Path path)
     {
-        if(mPlaylistStartupPath == null)
-        {
-            mPlaylistStartupPath = getPath(PREFERENCE_KEY_PLAYLIST_STARTUP, getDefaultPlaylistPath());
-        }
-
-        return mPlaylistStartupPath;
-    }
-
-    /**
-     * Sets the path to the default playlist
-     */
-    public void setPlaylistStartupPath(Path path)
-    {
-        mPlaylistStartupPath = path;
-        mPreferences.put(PREFERENCE_KEY_PLAYLIST_STARTUP, path.toString());
+        mPlaylistPath = path;
+        mPreferences.put(PREFERENCE_KEY_PLAYLIST, path.toString());
         notifyPreferenceUpdated();
     }
-
-    /**
-     * Path for the last accesssed playlist
-     */
-    public Path getPlaylistLastAccessedPath()
-    {
-        if(mPlaylistLastAccessedPath == null)
-        {
-            mPlaylistLastAccessedPath = getPath(PREFERENCE_KEY_PLAYLIST_LAST_ACCESSED, getDefaultPlaylistPath());
-        }
-
-        return mPlaylistLastAccessedPath;
-    }
-
-    /**
-     * Sets the path to the last accessed playlist
-     */
-    public void setPlaylistLastAccessedPath(Path path)
-    {
-        mPlaylistLastAccessedPath = path;
-        mPreferences.put(PREFERENCE_KEY_PLAYLIST_LAST_ACCESSED, path.toString());
-        notifyPreferenceUpdated();
-    }
-
-    /**
-     * Indicates the playlist to load on startup, either the last accessed playlist (true) or the default playlist (false).
-     */
-    public boolean usePlaylistLastAccessedByDefault()
-    {
-        if(mUsePlaylistLastAccessedByDefault == null)
-        {
-            mUsePlaylistLastAccessedByDefault = mPreferences.getBoolean(PREFERENCE_KEY_PLAYLIST_USE_LAST_ACCESSED, true);
-        }
-
-        return mUsePlaylistLastAccessedByDefault;
-    }
-
-    /**
-     * Sets using the last accessed playlist by default (true) or the default playlist (false).
-     */
-    public void setUsePlaylistLastAccessedByDefault(boolean useLastAccessed)
-    {
-        mUsePlaylistLastAccessedByDefault = useLastAccessed;
-        mPreferences.putBoolean(PREFERENCE_KEY_PLAYLIST_USE_LAST_ACCESSED, useLastAccessed);
-        notifyPreferenceUpdated();
-    }
-
 
     /**
      * Default playlist
@@ -186,6 +125,60 @@ public class PlaylistPreference extends Preference
     private Path getDefaultPlaylistPath()
     {
         return mDirectoryPreference.getDefaultPlaylistDirectory().resolve(FILE_PLAYLIST);
+    }
+
+    /**
+     * List of known playlists
+     */
+    public List<Path> getPlaylistList()
+    {
+        List<Path> playlists = new ArrayList<>();
+
+        String raw = mPreferences.get(PREFERENCE_KEY_PLAYLIST_LIST, null);
+
+        if(raw != null && !raw.isEmpty())
+        {
+            for(String rawPath: Splitter.on(",").split(raw))
+            {
+                Path path = Paths.get(rawPath);
+
+                if(!playlists.contains(path))
+                {
+                    playlists.add(path);
+                }
+            }
+        }
+
+        //Check that the list contains the current playlist
+        boolean hasCurrent = false;
+
+        for(Path path: playlists)
+        {
+            if(path.toString().contentEquals(getPlaylist().toString()))
+            {
+                hasCurrent = true;
+                continue;
+            }
+        }
+
+        if(!hasCurrent)
+        {
+            playlists.add(0, getPlaylist());
+        }
+
+        return playlists;
+    }
+
+    /**
+     * Sets the list of known playlists
+     */
+    public void setPlaylistList(List<Path> playlistPaths)
+    {
+        if(playlistPaths != null && !playlistPaths.isEmpty())
+        {
+            String rawList = Joiner.on(",").join(playlistPaths);
+            mPreferences.put(PREFERENCE_KEY_PLAYLIST_LIST, rawList);
+        }
     }
 
     /**

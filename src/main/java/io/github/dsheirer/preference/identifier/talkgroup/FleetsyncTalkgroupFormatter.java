@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Formats Fleetsync 20-bit identifiers into either an integer value or an 8-bit fleet and 12-bit ident
  */
-public class FleetsyncTalkgroupFormatter extends IntegerFormatter
+public class FleetsyncTalkgroupFormatter extends AbstractIntegerFormatter
 {
     private final static Logger mLog = LoggerFactory.getLogger(FleetsyncTalkgroupFormatter.class);
     private static final int IDENTIFIER_DECIMAL_WIDTH = 7;
@@ -131,6 +131,13 @@ public class FleetsyncTalkgroupFormatter extends IntegerFormatter
         }
 
         throw new ParseException("Error parsing value from fleetsync talkgroup [" + formattedTalkgroup + "]", 0);
+    }
+
+
+    @Override
+    public String format(int value, IntegerFormat format)
+    {
+        return format(value);
     }
 
     /**

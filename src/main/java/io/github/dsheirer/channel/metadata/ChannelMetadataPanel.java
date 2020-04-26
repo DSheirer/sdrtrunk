@@ -33,6 +33,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
@@ -76,11 +77,10 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     /**
      * Table view for currently decoding channel metadata
      */
-    public ChannelMetadataPanel(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
-                                IconManager iconManager, UserPreferences userPreferences)
+    public ChannelMetadataPanel(PlaylistManager playlistManager, IconManager iconManager, UserPreferences userPreferences)
     {
-        mChannelModel = channelModel;
-        mChannelProcessingManager = channelProcessingManager;
+        mChannelModel = playlistManager.getChannelModel();
+        mChannelProcessingManager = playlistManager.getChannelProcessingManager();
         mIconManager = iconManager;
         mUserPreferences = userPreferences;
         init();

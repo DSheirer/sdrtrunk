@@ -15,8 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.spectrum;
 
-import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerModel;
@@ -33,11 +32,7 @@ public class SpectrumFrame extends JFrame implements WindowListener
 
     private SpectralDisplayPanel mSpectralDisplayPanel;
 
-    public SpectrumFrame(ChannelModel channelModel,
-                         ChannelProcessingManager channelProcessingManager,
-                         SettingsManager settingsManager,
-                         TunerModel tunerModel,
-                         Tuner tuner)
+    public SpectrumFrame(PlaylistManager playlistManager, SettingsManager settingsManager, TunerModel tunerModel, Tuner tuner)
     {
         setTitle("SDRTRunk [" + tuner.getName() + "]");
         setBounds(100, 100, 1280, 600);
@@ -45,8 +40,7 @@ public class SpectrumFrame extends JFrame implements WindowListener
 
         setLayout(new MigLayout("insets 0 0 0 0", "[grow]", "[grow]"));
 
-        mSpectralDisplayPanel = new SpectralDisplayPanel(channelModel,
-            channelProcessingManager, settingsManager, tunerModel);
+        mSpectralDisplayPanel = new SpectralDisplayPanel(playlistManager, settingsManager, tunerModel);
 
         mSpectralDisplayPanel.showTuner(tuner);
         add(mSpectralDisplayPanel, "grow");

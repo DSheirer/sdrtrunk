@@ -24,12 +24,15 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.protocol.Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Integer talkgroup identifier with protocol.
  */
-public class Talkgroup extends AliasID
+public class Talkgroup extends AliasID implements Comparable<Talkgroup>
 {
+    private static final Logger mLog = LoggerFactory.getLogger(Talkgroup.class);
     private Protocol mProtocol = Protocol.UNKNOWN;
     private int mValue;
 
@@ -44,6 +47,12 @@ public class Talkgroup extends AliasID
         mValue = value;
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "value")
     public int getValue()
     {
@@ -53,6 +62,7 @@ public class Talkgroup extends AliasID
     public void setValue(int value)
     {
         mValue = value;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -64,6 +74,7 @@ public class Talkgroup extends AliasID
     public void setProtocol(Protocol protocol)
     {
         mProtocol = protocol;
+        updateValueProperty();
     }
 
     @Override
@@ -82,7 +93,18 @@ public class Talkgroup extends AliasID
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Talkgroup:").append(TalkgroupFormatter.format(mProtocol, mValue));
+        String talkgroup = null;
+
+        try
+        {
+            talkgroup = TalkgroupFormatter.format(mProtocol, mValue);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error formatting Talkgroup Protocol [" + mProtocol + "] value [" + mValue + "]", e);
+        }
+
+        sb.append("Talkgroup:").append(talkgroup != null ? talkgroup : "error");
         sb.append(" Protocol:").append((mProtocol));
 
         if(!isValid())
@@ -110,5 +132,23 @@ public class Talkgroup extends AliasID
     public AliasIDType getType()
     {
         return AliasIDType.TALKGROUP;
+    }
+
+    @Override
+    public int compareTo(Talkgroup other)
+    {
+        if(other == null)
+        {
+            return -1;
+        }
+
+        if(getProtocol().equals(other.getProtocol()))
+        {
+            return Integer.compare(getValue(), other.getValue());
+        }
+        else
+        {
+            return getProtocol().compareTo(other.getProtocol());
+        }
     }
 }

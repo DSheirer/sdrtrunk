@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import javax.swing.table.AbstractTableModel;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -87,6 +88,23 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
     public List<Tuner> getTuners()
     {
         return mTuners;
+    }
+
+    /**
+     * Sorted list of tuner names
+     */
+    public List<String> getTunerNames()
+    {
+        List<String> names = new ArrayList<>();
+
+        for(Tuner tuner: mTuners)
+        {
+            names.add(tuner.getName());
+        }
+
+        Collections.sort(names);
+
+        return names;
     }
 
     public Tuner getTuner(int index)

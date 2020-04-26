@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.prefs.Preferences;
 
 /**
@@ -110,7 +111,7 @@ public class TalkgroupFormatPreference extends Preference
     @Override
     public PreferenceType getPreferenceType()
     {
-        return PreferenceType.IDENTIFIER;
+        return PreferenceType.TALKGROUP_FORMAT;
     }
 
     /**
@@ -139,29 +140,39 @@ public class TalkgroupFormatPreference extends Preference
     /**
      * Default format for each protocol
      */
-    private IntegerFormat getDefaultFormat(Protocol protocol)
+    public static IntegerFormat getDefaultFormat(Protocol protocol)
     {
         switch(protocol)
         {
-            case APCO25:
-                return IntegerFormat.DECIMAL;
             case FLEETSYNC:
-                return IntegerFormat.FORMATTED;
             case LTR:
-                return IntegerFormat.FORMATTED;
             case LTR_NET:
-                return IntegerFormat.FORMATTED;
-            case LTR_STANDARD:
-                return IntegerFormat.FORMATTED;
-            case MDC1200:
-                return IntegerFormat.DECIMAL;
             case MPT1327:
                 return IntegerFormat.FORMATTED;
+            case APCO25:
+            case MDC1200:
             case PASSPORT:
-                return IntegerFormat.DECIMAL;
             case UNKNOWN:
             default:
                 return IntegerFormat.DECIMAL;
+        }
+    }
+
+    public static Set<IntegerFormat> getFormats(Protocol protocol)
+    {
+        switch(protocol)
+        {
+            case FLEETSYNC:
+            case LTR:
+            case LTR_NET:
+            case MPT1327:
+                return IntegerFormat.DECIMAL_FORMATTED;
+            case APCO25:
+            case MDC1200:
+            case PASSPORT:
+            case UNKNOWN:
+            default:
+                return IntegerFormat.DECIMAL_HEXADECIMAL;
         }
     }
 
@@ -169,22 +180,14 @@ public class TalkgroupFormatPreference extends Preference
     {
         switch(protocol)
         {
-            case APCO25:
-                return true;
-            case FLEETSYNC:
-                return true;
-            case LTR:
-                return true;
-            case LTR_NET:
-                return true;
-            case LTR_STANDARD:
-                return true;
             case MDC1200:
-                return false;
-            case MPT1327:
-                return true;
             case PASSPORT:
                 return false;
+            case APCO25:
+            case FLEETSYNC:
+            case LTR:
+            case LTR_NET:
+            case MPT1327:
             case UNKNOWN:
             default:
                 return true;
@@ -215,12 +218,19 @@ public class TalkgroupFormatPreference extends Preference
      */
     public IntegerFormat getTalkgroupFormat(Protocol protocol)
     {
-        IntegerFormat mapValue = mTalkgroupFormatProtocolMap.get(protocol);
-        if (mapValue != null) {
-            return mapValue;
+        IntegerFormat format = null;
+
+        if(mTalkgroupFormatProtocolMap.containsKey(protocol))
+        {
+            format = mTalkgroupFormatProtocolMap.get(protocol);
         }
 
-        return IntegerFormat.DECIMAL;
+        if(format == null || !getFormats(protocol).contains(format))
+        {
+            format = getDefaultFormat(protocol);
+        }
+
+        return format;
     }
 
     /**
@@ -304,12 +314,9 @@ public class TalkgroupFormatPreference extends Preference
             case FLEETSYNC:
                 return FleetsyncTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.FLEETSYNC),
                     isTalkgroupFixedWidth(Protocol.FLEETSYNC));
-            case LTR_STANDARD:
-                return LTRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_STANDARD),
-                    isTalkgroupFixedWidth(Protocol.LTR_STANDARD));
-            case LTR_NET:
-                return LTRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR_NET),
-                    isTalkgroupFixedWidth(Protocol.LTR_NET));
+            case LTR:
+                return LTRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.LTR),
+                    isTalkgroupFixedWidth(Protocol.LTR));
             case MDC1200:
                 return MDC1200TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MDC1200),
                     isTalkgroupFixedWidth(Protocol.MDC1200));
@@ -355,6 +362,9 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
                 return APCO25TalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.APCO25),
                     isTalkgroupFixedWidth(Protocol.APCO25));
+            case PASSPORT:
+                return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
+                    isTalkgroupFixedWidth(Protocol.PASSPORT));
             default:
                 return radioIdentifier.toString();
         }

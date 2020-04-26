@@ -27,6 +27,9 @@ import io.github.dsheirer.alias.action.beep.BeepAction;
 import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.message.IMessage;
+import javafx.beans.Observable;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.util.Callback;
 
 /**
  * Alias action defines an action to execute when an alias is detected active.
@@ -41,8 +44,31 @@ import io.github.dsheirer.message.IMessage;
 @JacksonXmlRootElement(localName = "action")
 public abstract class AliasAction
 {
+    private SimpleStringProperty mValueProperty = new SimpleStringProperty();
+
     public AliasAction()
     {
+    }
+
+    /**
+     * String property representation of this alias ID
+     */
+    @JsonIgnore
+    public SimpleStringProperty valueProperty()
+    {
+        return mValueProperty;
+    }
+
+    /**
+     * Updates the value property for this alias ID.  Note: this method is intended to be invoked by all subclasses
+     * each time that any of the subclass member variable values change.
+     */
+    public void updateValueProperty()
+    {
+        valueProperty().set(toString());
+
+        //Hack: harmless, but the list extractor does not consistently update unless we do this.
+        valueProperty().get();
     }
 
     @JsonIgnore
@@ -60,4 +86,12 @@ public abstract class AliasAction
      * Dismiss a persistent alias action
      */
     public abstract void dismiss(boolean reset);
+
+    /**
+     * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
+     */
+    public static Callback<AliasAction,Observable[]> extractor()
+    {
+        return (AliasAction aliasAction) -> new Observable[] {aliasAction.valueProperty()};
+    }
 }

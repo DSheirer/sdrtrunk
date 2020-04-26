@@ -29,6 +29,12 @@ public class SiteID extends AliasID
     {
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "site")
     public String getSite()
     {

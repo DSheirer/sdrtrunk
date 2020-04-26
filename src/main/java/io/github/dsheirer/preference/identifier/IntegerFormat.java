@@ -20,6 +20,8 @@
 
 package io.github.dsheirer.preference.identifier;
 
+import java.util.EnumSet;
+
 /**
  * Options for formatting of integer values.
  */
@@ -40,4 +42,7 @@ public enum IntegerFormat
     {
         return mLabel;
     }
+
+    public static EnumSet<IntegerFormat> DECIMAL_HEXADECIMAL = EnumSet.of(DECIMAL, HEXADECIMAL);
+    public static EnumSet<IntegerFormat> DECIMAL_FORMATTED = EnumSet.of(DECIMAL, FORMATTED);
 }

@@ -73,7 +73,8 @@ public abstract class LtrNetMessage extends Message
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = LTRTalkgroup.create((getHomeRepeater(getMessage()) << 8) + getGroup(getMessage()));
+            mTalkgroup = LTRTalkgroup.create((getArea(getMessage()) << 13) + (getHomeRepeater(getMessage()) << 8) +
+                getGroup(getMessage()));
         }
 
         return mTalkgroup;

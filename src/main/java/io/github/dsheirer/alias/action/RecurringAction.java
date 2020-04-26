@@ -61,7 +61,7 @@ public abstract class RecurringAction extends AliasAction
                     break;
                 case UNTIL_DISMISSED:
                     mPerpetualAction = ThreadPool.SCHEDULED.scheduleAtFixedRate(
-                        new PerformActionTask(alias, message), mPeriod, mPeriod, TimeUnit.SECONDS);
+                        new PerformActionTask(alias, message), 0, mPeriod, TimeUnit.SECONDS);
 
                     StringBuilder sb = new StringBuilder();
                     sb.append("<html><div width='250'>Alias [");
@@ -120,6 +120,7 @@ public abstract class RecurringAction extends AliasAction
     public void setPeriod(int period)
     {
         mPeriod = period;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "interval")
@@ -131,14 +132,14 @@ public abstract class RecurringAction extends AliasAction
     public void setInterval(Interval interval)
     {
         mInterval = interval;
-
         mRunning.set(false);
+        updateValueProperty();
     }
 
     public enum Interval
     {
         ONCE("Once"),
-        DELAYED_RESET("Once, Reset After Delay"),
+        DELAYED_RESET("Once - Reset After Delay"),
         UNTIL_DISMISSED("Until Dismissed");
 
         private String mLabel;

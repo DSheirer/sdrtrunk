@@ -102,7 +102,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
-        if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.IDENTIFIER)
+        if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
             EventQueue.invokeLater(() -> mTimestampCellRenderer.updatePreferences());
         }
