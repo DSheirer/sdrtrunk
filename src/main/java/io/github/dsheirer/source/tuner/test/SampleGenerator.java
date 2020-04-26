@@ -18,9 +18,8 @@ package io.github.dsheirer.source.tuner.test;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.BufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
@@ -33,7 +32,7 @@ public class SampleGenerator
 {
     private final static Logger mLog = LoggerFactory.getLogger(SampleGenerator.class);
 
-    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
+    private BufferBroadcaster mComplexBufferBroadcaster = new BufferBroadcaster();
     private IOscillator mOscillator;
     private int mSweepUpdateInterval;
     private long mInterval;
@@ -125,7 +124,7 @@ public class SampleGenerator
      *
      * @param listener to receive complex sample buffers
      */
-    public void addListener(Listener<ReusableComplexBuffer> listener)
+    public void addListener(Listener<ComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.addListener(listener);
 
@@ -138,7 +137,7 @@ public class SampleGenerator
     /**
      * Removes the listener and stops the sample generator if there are no more listeners.
      */
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.removeListener(listener);
 
@@ -186,14 +185,15 @@ public class SampleGenerator
     public class Generator implements Runnable
     {
         private int mTriggerInterval = 0;
-        private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SampleGenerator");
+        private Object mReusableComplexBufferQueue = new Object();
 
         @Override
         public void run()
         {
             if(mComplexBufferBroadcaster.hasListeners())
             {
-                ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerInterval);
+                ComplexBuffer buffer = new ComplexBuffer(new float[mSamplesPerInterval]);
+                ComplexBuffer reusableComplexBuffer = buffer;
 
                 mOscillator.generateComplex(reusableComplexBuffer);
 

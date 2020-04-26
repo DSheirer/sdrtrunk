@@ -21,9 +21,9 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.IOverflowListener;
-import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.buffer.OverflowableBufferTransferQueue;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBufferAssembler;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +35,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
-    private OverflowableReusableBufferTransferQueue<ReusableChannelResultsBuffer> mChannelResultsQueue;
-    private List<ReusableChannelResultsBuffer> mChannelResultsToProcess = new ArrayList<>();
+    private OverflowableBufferTransferQueue<ChannelResultsBuffer> mChannelResultsQueue;
+    private List<ChannelResultsBuffer> mChannelResultsToProcess = new ArrayList<>();
     private int mMaxResultsToProcess;
 
     private int mInputChannelCount;
@@ -61,7 +61,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
         mMaxResultsToProcess = (int)(sampleRate / 10) * 2;  //process at 100 millis interval, twice the expected inflow rate
 
-        mChannelResultsQueue = new OverflowableReusableBufferTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
+        mChannelResultsQueue = new OverflowableBufferTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
     }
 
     protected double getGain()
@@ -103,7 +103,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     }
 
     @Override
-    public void receiveChannelResults(ReusableChannelResultsBuffer channelResults)
+    public void receiveChannelResults(ChannelResultsBuffer channelResults)
     {
         mChannelResultsQueue.offer(channelResults);
     }
@@ -113,7 +113,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * @param reusableComplexBufferAssembler to receive the processed channel results
      */
     @Override
-    public void processChannelResults(ReusableComplexBufferAssembler reusableComplexBufferAssembler)
+    public void processChannelResults(ComplexBufferAssembler reusableComplexBufferAssembler)
     {
         try
         {
@@ -137,8 +137,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * @param channelResults to process
      * @param reusableComplexBufferAssembler to receive the processed channelizer results
      */
-    public abstract void process(List<ReusableChannelResultsBuffer> channelResults,
-                                 ReusableComplexBufferAssembler reusableComplexBufferAssembler);
+    public abstract void process(List<ChannelResultsBuffer> channelResults,
+                                 ComplexBufferAssembler reusableComplexBufferAssembler);
 
 
     /**

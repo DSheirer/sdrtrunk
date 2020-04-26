@@ -23,15 +23,14 @@ import io.github.dsheirer.dsp.filter.channelizer.ContinuousReusableBufferProcess
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
+import io.github.dsheirer.sample.buffer.IByteBufferListener;
+import io.github.dsheirer.sample.buffer.ByteBuffer;
 import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,12 +47,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The contents of the file are the raw bytes as demodulated by the decoder with
  * no header or timestamps, other than the timestamp included in the filename.
  */
-public class BinaryRecorder extends Module implements IReusableByteBufferListener
+public class BinaryRecorder extends Module implements IByteBufferListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(BinaryRecorder.class);
     private static final int MAX_RECORDING_BYTE_SIZE = 524288;  //500 kB
 
-    private ContinuousReusableBufferProcessor<ReusableByteBuffer> mBufferProcessor =
+    private ContinuousReusableBufferProcessor<ByteBuffer> mBufferProcessor =
         new ContinuousReusableBufferProcessor<>(500, 50);
 
     private AtomicBoolean mRunning = new AtomicBoolean();
@@ -135,7 +134,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     }
 
     @Override
-    public Listener<ReusableByteBuffer> getReusableByteBufferListener()
+    public Listener<ByteBuffer> getReusableByteBufferListener()
     {
         return mBufferProcessor;
     }
@@ -154,7 +153,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     /**
      * Binary writer implementation for reusable byte buffers delivered from buffer processor
      */
-    public class BinaryWriter implements Listener<List<ReusableByteBuffer>>
+    public class BinaryWriter implements Listener<List<ByteBuffer>>
     {
         private Path mCurrentPath;
         private WritableByteChannel mWritableByteChannel;
@@ -218,15 +217,15 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
          * @param reusableComplexBuffers to record
          */
         @Override
-        public void receive(List<ReusableByteBuffer> reusableComplexBuffers)
+        public void receive(List<ByteBuffer> reusableComplexBuffers)
         {
-            for(ReusableByteBuffer buffer: reusableComplexBuffers)
+            for(ByteBuffer buffer: reusableComplexBuffers)
             {
                 if(mWritableByteChannel != null)
                 {
                     try
                     {
-                        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer.getSamplesCopy());
+                        java.nio.ByteBuffer byteBuffer = java.nio.ByteBuffer.wrap(buffer.getSamplesCopy());
                         mBytesRecordedCounter += mWritableByteChannel.write(byteBuffer);
 
                         if(mBytesRecordedCounter > MAX_RECORDING_BYTE_SIZE)
@@ -250,8 +249,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
                     }
                 }
 
-                buffer.decrementUserCount();
-            }
+                }
         }
     }
 }

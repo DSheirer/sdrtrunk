@@ -23,10 +23,10 @@ import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.IBufferListener;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
-public class LTRStandardDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableFloatBuffer>
+public class LTRStandardDecoder extends Decoder implements IBufferListener, Listener<FloatBuffer>
 {
     public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
 
@@ -65,13 +65,13 @@ public class LTRStandardDecoder extends Decoder implements IReusableBufferListen
     }
 
     @Override
-    public Listener<ReusableFloatBuffer> getReusableBufferListener()
+    public Listener<FloatBuffer> getReusableBufferListener()
     {
         return mLTRDecoder;
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(FloatBuffer reusableFloatBuffer)
     {
         mLTRDecoder.receive(reusableFloatBuffer);
     }

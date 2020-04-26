@@ -15,9 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.am;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.apache.commons.math3.util.FastMath;
 
 /**
@@ -25,7 +24,7 @@ import org.apache.commons.math3.util.FastMath;
  */
 public class AMDemodulator
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("AMDemodulator");
+    private Object mReusableBufferQueue = new Object();
     private int mOutputBufferPointer;
     private float mGain;
 
@@ -64,9 +63,10 @@ public class AMDemodulator
      * @param complexBuffer to demodulate
      * @return demodulated audio buffer.
      */
-    public ReusableFloatBuffer demodulate(ReusableComplexBuffer complexBuffer)
+    public FloatBuffer demodulate(ComplexBuffer complexBuffer)
     {
-        ReusableFloatBuffer reusableFloatBuffer = mReusableBufferQueue.getBuffer(complexBuffer.getSampleCount());
+        FloatBuffer buffer = new FloatBuffer(new float[complexBuffer.getSampleCount()]);
+        FloatBuffer reusableFloatBuffer = buffer;
         float[] input = complexBuffer.getSamples();
         float[] output = reusableFloatBuffer.getSamples();
         mOutputBufferPointer = 0;
@@ -75,8 +75,6 @@ public class AMDemodulator
         {
             output[mOutputBufferPointer++] = demodulate(input[x], input[x + 1]);
         }
-
-        complexBuffer.decrementUserCount();
 
         return reusableFloatBuffer;
     }

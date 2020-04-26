@@ -17,15 +17,7 @@ package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.sample.Listener;
 
-public interface IReusableBufferProvider
+public interface IComplexBufferListener<ReusableComplexBuffer>
 {
-    /**
-     * Adds the listener to receive complex buffer samples
-     */
-    void setBufferListener(Listener<ReusableFloatBuffer> listener);
-
-    /**
-     * Removes the listener from receiving complex buffer samples
-     */
-    void removeBufferListener();
+	Listener<ReusableComplexBuffer> getReusableComplexBufferListener();
 }

@@ -17,9 +17,9 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBufferAssembler;
 
 import java.util.List;
 
@@ -95,16 +95,16 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * @param reusableComplexBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(List<ReusableChannelResultsBuffer> channelResultsBuffers,
-                        ReusableComplexBufferAssembler reusableComplexBufferAssembler)
+    public void process(List<ChannelResultsBuffer> channelResultsBuffers,
+                        ComplexBufferAssembler reusableComplexBufferAssembler)
     {
-        for(ReusableChannelResultsBuffer buffer : channelResultsBuffers)
+        for(ChannelResultsBuffer buffer : channelResultsBuffers)
         {
-            ReusableComplexBuffer channel1 = buffer.getChannel(mChannelOffset1);
-            ReusableComplexBuffer channel2 = buffer.getChannel(mChannelOffset2);
+            ComplexBuffer channel1 = buffer.getChannel(mChannelOffset1);
+            ComplexBuffer channel2 = buffer.getChannel(mChannelOffset2);
 
             //Join the two channels using the synthesizer
-            ReusableComplexBuffer synthesized = mSynthesizer.process(channel1, channel2);
+            ComplexBuffer synthesized = mSynthesizer.process(channel1, channel2);
 
             //The synthesized channels are centered at +FS/4 ... downconvert to center the spectrum
             mFS4DownConverter.mixComplex(synthesized.getSamples());
@@ -116,7 +116,6 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 
             reusableComplexBufferAssembler.receive(synthesized);
 
-            buffer.decrementUserCount();
-        }
+            }
     }
 }

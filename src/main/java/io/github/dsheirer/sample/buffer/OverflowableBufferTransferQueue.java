@@ -17,7 +17,7 @@ package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 
-public class OverflowableReusableBufferTransferQueue<T extends AbstractReusableBuffer> extends OverflowableTransferQueue<T>
+public class OverflowableBufferTransferQueue<T extends AbstractBuffer> extends OverflowableTransferQueue<T>
 {
     /**
      * Concurrent transfer queue that couples a higher-throughput linked transfer queue with an atomic integer for
@@ -29,7 +29,7 @@ public class OverflowableReusableBufferTransferQueue<T extends AbstractReusableB
      * @param maximumSize of the queue.  Overflow state will occur once queue size exceeds this value.
      * @param resetThreshold for resetting overflow state to normal, once queue size is at or below this value.
      */
-    public OverflowableReusableBufferTransferQueue(int maximumSize, int resetThreshold)
+    public OverflowableBufferTransferQueue(int maximumSize, int resetThreshold)
     {
         super(maximumSize, resetThreshold);
     }
@@ -43,8 +43,8 @@ public class OverflowableReusableBufferTransferQueue<T extends AbstractReusableB
     @Override
     protected void overflow(T t)
     {
-        t.decrementUserCount();
-    }
+
+        }
 
     /**
      * Overrides the buffer clear method to decrement the user count on each buffer that is being cleared from the queue.
@@ -58,7 +58,7 @@ public class OverflowableReusableBufferTransferQueue<T extends AbstractReusableB
 
             while(buffer != null)
             {
-                buffer.decrementUserCount();
+
                 buffer = mQueue.poll();
             }
 

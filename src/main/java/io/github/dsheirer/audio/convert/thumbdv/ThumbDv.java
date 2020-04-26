@@ -36,8 +36,7 @@ import io.github.dsheirer.audio.convert.thumbdv.message.response.DecodeSpeechRes
 import io.github.dsheirer.audio.convert.thumbdv.message.response.ReadyResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.SetVocoderParameterResponse;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,11 +81,11 @@ public class ThumbDv implements AutoCloseable
     private ScheduledFuture mAudioDecodeProcessorHandle;
     private LinkedTransferQueue<DecodeSpeechRequest> mDecodeSpeechRequests = new LinkedTransferQueue<>();
     private AudioProtocol mAudioProtocol;
-    private Listener<ReusableFloatBuffer> mAudioBufferListener;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("ThumbDv");
+    private Listener<FloatBuffer> mAudioBufferListener;
+    private Object mReusableBufferQueue = new Object();
     private boolean mStarted;
 
-    public ThumbDv(AudioProtocol audioProtocol, Listener<ReusableFloatBuffer> listener)
+    public ThumbDv(AudioProtocol audioProtocol, Listener<FloatBuffer> listener)
     {
         mAudioProtocol = audioProtocol;
         mAudioBufferListener = listener;
@@ -209,7 +208,10 @@ public class ThumbDv implements AutoCloseable
         if(message instanceof DecodeSpeechResponse && mAudioBufferListener != null)
         {
             float[] samples = ((DecodeSpeechResponse)message).getSamples();
-            ReusableFloatBuffer audioBuffer = mReusableBufferQueue.getBuffer(samples, System.currentTimeMillis());
+            FloatBuffer buffer = new FloatBuffer(new float[samples.length]);
+            buffer.reloadFrom(samples, System.currentTimeMillis());
+
+            FloatBuffer audioBuffer = buffer;
             mAudioBufferListener.receive(audioBuffer);
         }
         else if(message instanceof ReadyResponse && mAudioDecodeProcessorHandle == null)
@@ -456,10 +458,10 @@ public class ThumbDv implements AutoCloseable
 
         mLog.debug("Starting thumb dv thread(s)");
 
-        final Listener<ReusableFloatBuffer> listener = reusableAudioPacket -> {
+        final Listener<FloatBuffer> listener = reusableAudioPacket -> {
             mLog.info("Got an audio packet!");
-            reusableAudioPacket.decrementUserCount();
-        };
+
+            };
 
         try(ThumbDv thumbDv = new ThumbDv(AudioProtocol.P25_PHASE2, listener))
         {

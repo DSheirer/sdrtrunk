@@ -19,8 +19,8 @@ import io.github.dsheirer.dsp.filter.channelizer.ContinuousReusableBufferProcess
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.IComplexBufferListener;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
@@ -39,12 +39,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * WAVE audio recorder module for recording complex (I&Q) samples to a wave file
  */
-public class ComplexBufferWaveRecorder extends Module implements IReusableComplexBufferListener,
-    Listener<ReusableComplexBuffer>, ISourceEventListener
+public class ComplexBufferWaveRecorder extends Module implements IComplexBufferListener,
+    Listener<ComplexBuffer>, ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexBufferWaveRecorder.class);
 
-    private ContinuousReusableBufferProcessor<ReusableComplexBuffer> mBufferProcessor =
+    private ContinuousReusableBufferProcessor<ComplexBuffer> mBufferProcessor =
         new ContinuousReusableBufferProcessor<>(500, 50);
 
     private AtomicBoolean mRunning = new AtomicBoolean();
@@ -137,14 +137,14 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     }
 
     @Override
-    public void receive(ReusableComplexBuffer buffer)
+    public void receive(ComplexBuffer buffer)
     {
         //Queue the buffer with the buffer processor so that recording occurs on the buffer processor thread
         mBufferProcessor.receive(buffer);
     }
 
     @Override
-    public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
+    public Listener<ComplexBuffer> getReusableComplexBufferListener()
     {
         return this;
     }
@@ -181,7 +181,7 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     /**
      * Wave writer implementation for reusable complex buffers delivered from buffer processor
      */
-    public class ReusableBufferWaveWriter extends WaveWriter implements Listener<List<ReusableComplexBuffer>>
+    public class ReusableBufferWaveWriter extends WaveWriter implements Listener<List<ComplexBuffer>>
     {
         public ReusableBufferWaveWriter(AudioFormat format, Path file) throws IOException
         {
@@ -189,11 +189,11 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
         }
 
         @Override
-        public void receive(List<ReusableComplexBuffer> reusableComplexBuffers)
+        public void receive(List<ComplexBuffer> reusableComplexBuffers)
         {
             boolean error = false;
 
-            for(ReusableComplexBuffer reusableComplexBuffer: reusableComplexBuffers)
+            for(ComplexBuffer reusableComplexBuffer: reusableComplexBuffers)
             {
                 if(!error)
                 {
@@ -209,8 +209,7 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
                     }
                 }
 
-                reusableComplexBuffer.decrementUserCount();
-            }
+                }
         }
     }
 }

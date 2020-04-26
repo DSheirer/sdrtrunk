@@ -24,7 +24,7 @@ package io.github.dsheirer.dsp.psk;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
 
@@ -35,7 +35,7 @@ public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
     private Listener<Complex> mComplexSymbolListener;
     private Listener<Double> mPLLErrorListener;
     private Listener<Double> mPLLFrequencyListener;
-    private Listener<ReusableComplexBuffer> mFilteredGainAppliedComplexBufferListener;
+    private Listener<ComplexBuffer> mFilteredGainAppliedComplexBufferListener;
     private double mSampleRate;
 
     /**
@@ -55,11 +55,11 @@ public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         if(mFilteredGainAppliedComplexBufferListener != null)
         {
-            reusableComplexBuffer.incrementUserCount();
+
             mFilteredGainAppliedComplexBufferListener.receive(reusableComplexBuffer);
         }
 
@@ -149,7 +149,7 @@ public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
     /**
      * Registers the listener to receive complex sample buffers that have been filtered with automatic gain control applied
      */
-    public void setFilteredGainAppliedComplexBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void setFilteredGainAppliedComplexBufferListener(Listener<ComplexBuffer> listener)
     {
         mFilteredGainAppliedComplexBufferListener = listener;
     }

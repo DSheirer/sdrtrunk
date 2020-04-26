@@ -29,7 +29,7 @@ import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * adjustment may not fully compensate for mis-tuned signals and may result in missed decodes of idle bursts.  However,
  * the DC filter will track a mis-tuned signal to baseband quickly upon a continuous transmission.
  */
-public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectListener, ISyncStateListener
+public class LTRDecoder implements Listener<FloatBuffer>, ISyncDetectListener, ISyncStateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(LTRDecoder.class);
 
@@ -154,10 +154,10 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
      * @param buffer containing 8.0 kHz unfiltered FM demodulated audio samples with sub-audible LTR signalling.
      */
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(FloatBuffer buffer)
     {
-        ReusableFloatBuffer dcFiltered = mDCFilter.filter(buffer);
-        ReusableFloatBuffer lowPassFiltered = mLowPassFilter.filter(dcFiltered);
+        FloatBuffer dcFiltered = mDCFilter.filter(buffer);
+        FloatBuffer lowPassFiltered = mLowPassFilter.filter(dcFiltered);
 
         for(float sample : lowPassFiltered.getSamples())
         {
@@ -179,8 +179,7 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
             }
         }
 
-        lowPassFiltered.decrementUserCount();
-    }
+        }
 
     /**
      * Registers a listener to receive decoded LTR symbols.

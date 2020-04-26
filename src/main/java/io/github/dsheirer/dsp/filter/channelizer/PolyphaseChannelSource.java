@@ -25,9 +25,9 @@ import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBufferAssembler;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
@@ -40,7 +40,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
 {
 //    private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
-    private ReusableComplexBufferAssembler mReusableComplexBufferAssembler;
+    private ComplexBufferAssembler mReusableComplexBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private IPolyphaseChannelOutputProcessor mReplacementPolyphaseChannelOutputProcessor;
     private long mReplacementFrequency;
@@ -71,7 +71,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
-        mReusableComplexBufferAssembler = new ReusableComplexBufferAssembler(2500, mChannelSampleRate);
+        mReusableComplexBufferAssembler = new ComplexBufferAssembler(2500, mChannelSampleRate);
 
         float[] filterCoefficients = getLowPassFilter(channelSampleRate, channelSpecification.getPassFrequency(),
             channelSpecification.getStopFrequency());
@@ -84,7 +84,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      * Registers the listener to receive complex sample buffers from this channel source
      */
     @Override
-    public void setListener(final Listener<ReusableComplexBuffer> listener)
+    public void setListener(final Listener<ComplexBuffer> listener)
     {
         mReusableComplexBufferAssembler.setListener(listener);
    }
@@ -93,7 +93,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      * Removes the listener from receiving complex sample buffers from this channel source
      */
     @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mReusableComplexBufferAssembler.setListener(null);
     }
@@ -163,7 +163,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      *
      * @param channelResultsBuffer containing an array of polyphase channelizer outputs.
      */
-    public void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer)
+    public void receiveChannelResults(ChannelResultsBuffer channelResultsBuffer)
     {
         if(mReplacementPolyphaseChannelOutputProcessor != null)
         {

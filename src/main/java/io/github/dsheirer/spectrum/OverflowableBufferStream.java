@@ -17,7 +17,7 @@ package io.github.dsheirer.spectrum;
 
 
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +25,15 @@ import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.LinkedList;
 
-public class OverflowableBufferStream extends OverflowableTransferQueue<ReusableComplexBuffer>
+public class OverflowableBufferStream extends OverflowableTransferQueue<ComplexBuffer>
 {
     private static final Logger mLog = LoggerFactory.getLogger(OverflowableBufferStream.class);
 
     private int mFlushCount = 0;
-    private ReusableComplexBuffer mCurrentBuffer;
+    private ComplexBuffer mCurrentBuffer;
     private int mCurrentBufferPointer = 0;
     private FloatBuffer mFloatBuffer;
-    private LinkedList<ReusableComplexBuffer> mBufferList = new LinkedList<>();
+    private LinkedList<ComplexBuffer> mBufferList = new LinkedList<>();
     private int mBufferFetchLimit;
 
     /**
@@ -184,7 +184,7 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
         if(mCurrentBuffer != null)
         {
             //Decrement the user count to let the originator know we're done with their buffer
-            mCurrentBuffer.decrementUserCount();
+
             mCurrentBuffer = null;
         }
 
@@ -207,10 +207,10 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
     }
 
     @Override
-    protected void overflow(ReusableComplexBuffer reusableComplexBuffer)
+    protected void overflow(ComplexBuffer reusableComplexBuffer)
     {
-        reusableComplexBuffer.decrementUserCount();
-    }
+
+        }
 
     /**
      * Clears all elements from the queue and resets the internal counter to 0
@@ -220,11 +220,11 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
     {
         synchronized(mQueue)
         {
-            ReusableComplexBuffer buffer = mQueue.poll();
+            ComplexBuffer buffer = mQueue.poll();
 
             while(buffer != null)
             {
-                buffer.decrementUserCount();
+
                 buffer = mQueue.poll();
             }
 

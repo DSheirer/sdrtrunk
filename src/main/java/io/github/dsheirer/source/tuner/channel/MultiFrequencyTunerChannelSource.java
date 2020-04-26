@@ -21,7 +21,7 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
@@ -49,7 +49,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     private List<Long> mFrequencies;
     private int mFrequencyListPointer = 0;
     private ChannelSpecification mChannelSpecification;
-    private Listener<ReusableComplexBuffer> mReusableComplexBufferListener;
+    private Listener<ComplexBuffer> mReusableComplexBufferListener;
     private Listener<Heartbeat> mHeartbeatListener;
     private String mPreferredTuner;
     private AtomicBoolean mChangingChannels = new AtomicBoolean();
@@ -247,7 +247,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     }
 
     @Override
-    public void setListener(Listener<ReusableComplexBuffer> complexBufferListener)
+    public void setListener(Listener<ComplexBuffer> complexBufferListener)
     {
         mReusableComplexBufferListener = complexBufferListener;
 
@@ -258,7 +258,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     }
 
     @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         if(mTunerChannelSource != null)
         {

@@ -25,7 +25,7 @@ import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  *
  * Provides normal or inverted decoded output.
  */
-public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
+public class AFSK1200Decoder implements Listener<FloatBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AFSK1200Decoder.class);
 
@@ -115,7 +115,7 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
      * @param buffer containing 8.0 kHz unfiltered FM demodulated audio samples with sub-audible LTR signalling.
      */
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(FloatBuffer buffer)
     {
         mResampler.resample(buffer);
     }
@@ -147,16 +147,14 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
     }
 
 
-    public class Decoder implements Listener<ReusableFloatBuffer>
+    public class Decoder implements Listener<FloatBuffer>
     {
         @Override
-        public void receive(ReusableFloatBuffer buffer)
+        public void receive(FloatBuffer buffer)
         {
             //Calculate correlation values against each 1200/1800 reference signal
             mCorrelationValuesMark = mCorrelatorMark.process(buffer);
             mCorrelationValuesSpace = mCorrelatorSpace.process(buffer);
-
-            buffer.decrementUserCount();
 
             for(int x = 0; x < mCorrelationValuesMark.length; x++)
             {
@@ -220,7 +218,7 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
          * @param reusableFloatBuffer containing FM demodulated samples
          * @return a reusable array of correlation values for each sample
          */
-        public float[] process(ReusableFloatBuffer reusableFloatBuffer)
+        public float[] process(FloatBuffer reusableFloatBuffer)
         {
             if(mCorrelationValues == null || mCorrelationValues.length != reusableFloatBuffer.getSampleCount())
             {

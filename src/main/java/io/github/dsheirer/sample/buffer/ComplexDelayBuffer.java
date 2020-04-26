@@ -39,15 +39,15 @@ import java.util.concurrent.LinkedTransferQueue;
  * so as not to delay the stream of sample buffers.  Channel listeners are expected to implement buffer queue processing
  * on another thread.
  */
-public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffer>
+public class ComplexDelayBuffer implements Listener<ComplexBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ReusableComplexDelayBuffer.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ComplexDelayBuffer.class);
 
-    private ReusableBufferBroadcaster<ReusableComplexBuffer> mBroadcaster = new ReusableBufferBroadcaster<>();
+    private BufferBroadcaster<ComplexBuffer> mBroadcaster = new BufferBroadcaster<>();
     private LinkedTransferQueue<ActionRequest> mActionRequestQueue = new LinkedTransferQueue<>();
     private ActionRequest mActionRequest;
 
-    private ReusableComplexBuffer[] mDelayBuffer;
+    private ComplexBuffer[] mDelayBuffer;
     private int mDelayBufferPointer = 0;
     private long mBufferDuration;
 
@@ -57,9 +57,9 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
      * @param size of the delay queue
      * @param bufferDuration in milliseconds for each complex buffer processed by this instance
      */
-    public ReusableComplexDelayBuffer(int size, long bufferDuration)
+    public ComplexDelayBuffer(int size, long bufferDuration)
     {
-        mDelayBuffer = new ReusableComplexBuffer[size];
+        mDelayBuffer = new ComplexBuffer[size];
         mBufferDuration = bufferDuration;
     }
 
@@ -86,7 +86,6 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
         {
             if(mDelayBuffer[x] != null)
             {
-                mDelayBuffer[x].decrementUserCount();
                 mDelayBuffer[x] = null;
             }
         }
@@ -95,7 +94,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
     }
 
     @Override
-    public synchronized void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public synchronized void receive(ComplexBuffer reusableComplexBuffer)
     {
         mActionRequest = mActionRequestQueue.poll();
 
@@ -119,15 +118,8 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
 
         //Increment user count before we hand it to the broadcaster so that we can keep it as a copy for the
         //delay buffer
-        reusableComplexBuffer.incrementUserCount();
 
         mBroadcaster.receive(reusableComplexBuffer);
-
-        //Decrement the user count on the oldest buffer before we replace it in the delay queue
-        if(mDelayBuffer[mDelayBufferPointer] != null)
-        {
-            mDelayBuffer[mDelayBufferPointer].decrementUserCount();
-        }
 
         //Store the new buffer in the delay queue and increment the pointer
         mDelayBuffer[mDelayBufferPointer++] = reusableComplexBuffer;
@@ -153,7 +145,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
      */
     private void processNewListener(ActionRequest listenerToAdd)
     {
-        ReusableComplexBuffer bufferToEvaluate;
+        ComplexBuffer bufferToEvaluate;
 
         int pointer = mDelayBufferPointer;
 
@@ -167,7 +159,6 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
                 (bufferToEvaluate.getTimestamp() >= listenerToAdd.getTimestamp() ||
                     bufferToEvaluate.getTimestamp() + mBufferDuration >= listenerToAdd.getTimestamp()))
             {
-                bufferToEvaluate.incrementUserCount();
                 listenerToAdd.getListener().receive(bufferToEvaluate);
                 preloadedBufferCount++;
             }
@@ -190,7 +181,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
      * @param listener to add
      * @param timestamp of the oldest sample buffers to preload to the listener
      */
-    public void addListener(Listener<ReusableComplexBuffer> listener, long timestamp)
+    public void addListener(Listener<ComplexBuffer> listener, long timestamp)
     {
         mActionRequestQueue.add(new ActionRequest(listener, timestamp));
     }
@@ -198,7 +189,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
     /**
      * Removes the listener from receiving sample buffers
      */
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mActionRequestQueue.add(new ActionRequest(listener));
     }
@@ -211,7 +202,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
     public class ActionRequest
     {
         private Action mAction;
-        private Listener<ReusableComplexBuffer> mListener;
+        private Listener<ComplexBuffer> mListener;
         private long mTimestamp;
 
         /**
@@ -219,7 +210,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
          * @param listener to add
          * @param timestamp for the preloading buffers to the listener from the delay queue
          */
-        public ActionRequest(Listener<ReusableComplexBuffer> listener, long timestamp)
+        public ActionRequest(Listener<ComplexBuffer> listener, long timestamp)
         {
             mAction = Action.ADD_USER;
             mListener = listener;
@@ -230,7 +221,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
          * Creates a remove listener request
          * @param listener
          */
-        public ActionRequest(Listener<ReusableComplexBuffer> listener)
+        public ActionRequest(Listener<ComplexBuffer> listener)
         {
             mAction = Action.REMOVE_USER;
             mListener = listener;
@@ -252,7 +243,7 @@ public class ReusableComplexDelayBuffer implements Listener<ReusableComplexBuffe
         /**
          * Listener to be added/removed
          */
-        public Listener<ReusableComplexBuffer> getListener()
+        public Listener<ComplexBuffer> getListener()
         {
             return mListener;
         }

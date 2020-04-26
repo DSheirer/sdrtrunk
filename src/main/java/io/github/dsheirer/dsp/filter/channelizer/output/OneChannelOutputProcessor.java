@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,14 +78,14 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * @param reusableComplexBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(List<ReusableChannelResultsBuffer> channelResults,
-                        ReusableComplexBufferAssembler reusableComplexBufferAssembler)
+    public void process(List<ChannelResultsBuffer> channelResults,
+                        ComplexBufferAssembler reusableComplexBufferAssembler)
     {
-        for(ReusableChannelResultsBuffer channelResultsBuffer: channelResults)
+        for(ChannelResultsBuffer channelResultsBuffer: channelResults)
         {
             try
             {
-                ReusableComplexBuffer channelBuffer = channelResultsBuffer.getChannel(mChannelOffset);
+                ComplexBuffer channelBuffer = channelResultsBuffer.getChannel(mChannelOffset);
 
                 if(hasFrequencyCorrection())
                 {
@@ -101,7 +101,6 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
                 mLog.error("Error extracting channel samples from polyphase channel results buffer");
             }
 
-            channelResultsBuffer.decrementUserCount();
-        }
+            }
     }
 }

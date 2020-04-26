@@ -41,7 +41,7 @@ import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameter
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
@@ -114,13 +114,13 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
      * @param reusableComplexBuffer containing channelized complex samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         //User accounting of the incoming buffer is handled by the filter
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        ComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
 
         //User accounting of the incoming buffer is handled by the gain filter
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
+        ComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
         mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
 
@@ -133,7 +133,7 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
      * @param reusableComplexBuffer to filter
      * @return filtered complex buffer
      */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
+    protected ComplexBuffer filter(ComplexBuffer reusableComplexBuffer)
     {
         //User accounting of the incoming buffer is handled by the filter
         return mBasebandFilter.filter(reusableComplexBuffer);

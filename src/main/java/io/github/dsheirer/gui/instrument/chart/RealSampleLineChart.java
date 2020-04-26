@@ -17,7 +17,7 @@ package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.buffer.RealCircularBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.LineChart;
@@ -27,7 +27,7 @@ import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RealSampleLineChart extends LineChart implements Listener<ReusableFloatBuffer>
+public class RealSampleLineChart extends LineChart implements Listener<FloatBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(RealSampleLineChart.class);
     private ObservableList<Data<Integer,Float>> mSamples = FXCollections.observableArrayList();
@@ -65,7 +65,7 @@ public class RealSampleLineChart extends LineChart implements Listener<ReusableF
     }
 
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(FloatBuffer buffer)
     {
         for(float sample: buffer.getSamples())
         {
@@ -80,6 +80,5 @@ public class RealSampleLineChart extends LineChart implements Listener<ReusableF
             sample.setYValue(bufferSamples[x]);
         }
 
-        buffer.decrementUserCount();
-    }
+        }
 }

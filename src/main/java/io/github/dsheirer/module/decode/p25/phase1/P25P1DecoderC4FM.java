@@ -32,7 +32,7 @@ import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,13 +98,13 @@ public class P25P1DecoderC4FM extends P25P1Decoder
      * @param reusableComplexBuffer containing channelized complex samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         //User accounting of the incoming buffer is handled by the filter
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        ComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
 
         //User accounting of the incoming buffer is handled by the gain filter
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
+        ComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
         mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
 
@@ -117,7 +117,7 @@ public class P25P1DecoderC4FM extends P25P1Decoder
      * @param reusableComplexBuffer to filter
      * @return filtered complex buffer
      */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
+    protected ComplexBuffer filter(ComplexBuffer reusableComplexBuffer)
     {
         //User accounting of the incoming buffer is handled by the filter
         return mBasebandFilter.filter(reusableComplexBuffer);

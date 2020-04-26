@@ -17,9 +17,9 @@ package io.github.dsheirer.source;
 
 import io.github.dsheirer.sample.Provider;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 
-public abstract class ComplexSource extends Source implements Provider<ReusableComplexBuffer>
+public abstract class ComplexSource extends Source implements Provider<ComplexBuffer>
 {
     @Override
     public SampleType getSampleType()

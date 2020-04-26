@@ -15,11 +15,17 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
-public interface IReusableBufferDisposedListener<T extends AbstractReusableBuffer>
+import io.github.dsheirer.sample.Listener;
+
+public interface IBufferProvider
 {
     /**
-     * Notifies the listener that the timestamped buffer has been disposed and can now be reused.
-     * @param t reusableBuffer that has been disposed
+     * Adds the listener to receive complex buffer samples
      */
-    void disposed(T t);
+    void setBufferListener(Listener<FloatBuffer> listener);
+
+    /**
+     * Removes the listener from receiving complex buffer samples
+     */
+    void removeBufferListener();
 }

@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -39,9 +39,9 @@ public class RealShortAdapter extends RealSampleAdapter
     }
 
     @Override
-    public ReusableFloatBuffer convert(byte[] samples)
+    public FloatBuffer convert(byte[] samples)
     {
-        ReusableFloatBuffer reusableFloatBuffer = getBuffer(samples.length / 2);
+        FloatBuffer reusableFloatBuffer = getBuffer(samples.length / 2);
         float[] convertedSamples = reusableFloatBuffer.getSamples();
 
         int pointer = 0;

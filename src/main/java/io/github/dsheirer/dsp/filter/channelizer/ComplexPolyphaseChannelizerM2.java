@@ -20,19 +20,15 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.sample.IOverflowListener;
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input baseband complex sample
@@ -187,9 +183,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Receives the complex sample buffer and processes the results through the channelizer.
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
-        ReusableChannelResultsBuffer channelResultsBuffer = getChannelResultsBuffer();
+        ChannelResultsBuffer channelResultsBuffer = getChannelResultsBuffer();
         channelResultsBuffer.setTimestamp(reusableComplexBuffer.getTimestamp());
 
         float[] samples = reusableComplexBuffer.getSamples();
@@ -231,8 +227,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         mIFFTProcessor.receive(channelResultsBuffer);
 
         //Decrement the user count to let the originator know we're done with their buffer
-        reusableComplexBuffer.decrementUserCount();
-    }
+
+        }
 
     /**
      * Creates a top-block processing accumulator map that maps each interim filter and sample index product
@@ -334,7 +330,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Processes the sample buffer for each new block of sample data that is loaded and distributes the results to any
      * registered channel listeners.
      */
-    private void process(ReusableChannelResultsBuffer channelResultsBuffer)
+    private void process(ChannelResultsBuffer channelResultsBuffer)
     {
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
         float[] inlineInterimOutput = new float[bufferLength];
@@ -404,7 +400,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * as required to align the phase of each polyphase channel, and then dispatch the results to any registered
      * sample consumer channels.
      */
-    public class IFFTProcessor extends ContinuousBufferProcessor<ReusableChannelResultsBuffer>
+    public class IFFTProcessor extends ContinuousBufferProcessor<ChannelResultsBuffer>
     {
         public IFFTProcessor(int maximumSize, int resetThreshold)
         {
@@ -415,7 +411,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             //channel results array contained in each results buffer and then dispatch the buffer
             //so that it can be distributed to each channel listener.
             setListener(buffers -> {
-                for(ReusableChannelResultsBuffer buffer: buffers)
+                for(ChannelResultsBuffer buffer: buffers)
                 {
                     for(float[] channelResults: buffer.getChannelResults())
                     {
@@ -434,11 +430,11 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
          * Clears any buffers from the dispatch/processing queue.  Overrides the parent method so that we can set
          * the user count to 0 to allow the buffer to be reclaimed.
          */
-        protected Collection<ReusableChannelResultsBuffer> clearQueue()
+        protected Collection<ChannelResultsBuffer> clearQueue()
         {
-            Collection<ReusableChannelResultsBuffer> buffersToDispose = super.clearQueue();
+            Collection<ChannelResultsBuffer> buffersToDispose = super.clearQueue();
 
-            for(ReusableChannelResultsBuffer buffer: buffersToDispose)
+            for(ChannelResultsBuffer buffer: buffersToDispose)
             {
                 buffer.clearUserCount();
             }

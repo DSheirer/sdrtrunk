@@ -15,15 +15,14 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.dc;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BufferDCFilter
 {
     private final static Logger mLog = LoggerFactory.getLogger(BufferDCFilter.class);
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Buffer DC Filter");
+    private Object mReusableBufferQueue = new Object();
     private double mAccumulator;
 
     /**
@@ -76,11 +75,12 @@ public class BufferDCFilter
         }
     }
 
-    public ReusableFloatBuffer filter(ReusableFloatBuffer unfilteredBuffer)
+    public FloatBuffer filter(FloatBuffer unfilteredBuffer)
     {
         float[] unfilteredSamples = unfilteredBuffer.getSamples();
 
-        ReusableFloatBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredSamples.length);
+        FloatBuffer buffer = new FloatBuffer(new float[unfilteredSamples.length]);
+        FloatBuffer filteredBuffer = buffer;
         float[] filteredSamples = filteredBuffer.getSamples();
 
         float offset = getOffset(unfilteredSamples);
@@ -89,8 +89,6 @@ public class BufferDCFilter
         {
             filteredSamples[x] = unfilteredSamples[x] - offset;
         }
-
-        unfilteredBuffer.decrementUserCount();
 
         return filteredBuffer;
     }

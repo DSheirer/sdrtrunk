@@ -23,8 +23,7 @@ package io.github.dsheirer.source.wave;
 
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
@@ -52,10 +51,10 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     private int mBytesPerFrame;
     private int mFrameCounter = 0;
     private long mFrequency = 0;
-    private Listener<ReusableComplexBuffer> mListener;
+    private Listener<ComplexBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexWaveSource");
+    private Object mReusableComplexBufferQueue = new Object();
     private boolean mAutoReplay;
     private ScheduledFuture<?> mReplayController;
 
@@ -271,7 +270,8 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
 
                 float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
-                ReusableComplexBuffer reusableBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
+                ComplexBuffer buffer1 = new ComplexBuffer(new float[samples.length]);
+                ComplexBuffer reusableBuffer = buffer1;
                 System.arraycopy(samples, 0, reusableBuffer.getSamples(), 0, samples.length);
                 reusableBuffer.setTimestamp(System.currentTimeMillis());
                 mListener.receive(reusableBuffer);
@@ -284,7 +284,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
      * the wave file
      */
     @Override
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<ComplexBuffer> listener)
     {
         mListener = listener;
     }
@@ -292,7 +292,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     /**
      * Unregisters the listener from receiving sample buffers
      */
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mListener = null;
     }

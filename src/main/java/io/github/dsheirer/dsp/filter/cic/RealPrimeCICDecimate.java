@@ -23,8 +23,8 @@ import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
 import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.BufferAssembler;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.sample.decimator.RealDecimator;
 import io.github.dsheirer.sample.real.RealSampleListener;
 import org.apache.commons.lang3.Validate;
@@ -117,7 +117,7 @@ public class RealPrimeCICDecimate
     /**
      * Adds a listener to receive the output of this CIC decimation filter
      */
-    public void setListener(Listener<ReusableFloatBuffer> listener)
+    public void setListener(Listener<FloatBuffer> listener)
     {
         mOutput.setListener(listener);
     }
@@ -133,7 +133,7 @@ public class RealPrimeCICDecimate
     /**
      * Primary input method for receiving real buffers.
      */
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(FloatBuffer buffer)
     {
         if(mFirstDecimatingStage != null)
         {
@@ -143,8 +143,7 @@ public class RealPrimeCICDecimate
             }
         }
 
-        buffer.decrementUserCount();
-    }
+        }
 
     /**
      * Decimating stage combines multiple CIC stages with a decimator.  The
@@ -312,8 +311,8 @@ public class RealPrimeCICDecimate
     public class Output implements RealSampleListener
     {
         /* Decimated output buffers will contain 1024 samples */
-        private ReusableBufferAssembler mAssembler;
-        private Listener<ReusableFloatBuffer> mReusableBufferListener;
+        private BufferAssembler mAssembler;
+        private Listener<FloatBuffer> mReusableBufferListener;
 
         private RealFIRFilter2 mCleanupFilter;
         private HalfBandFilter mHalfBandFilter = new HalfBandFilter(
@@ -324,23 +323,23 @@ public class RealPrimeCICDecimate
             mCleanupFilter = new RealFIRFilter2(FilterFactory.getCICCleanupFilter(outputSampleRate, passFrequency,
                 attenuation, windowType), 0.4f);
 
-            mAssembler = new ReusableBufferAssembler(outputBufferSize);
-            mAssembler.setListener(new Listener<ReusableFloatBuffer>()
+            mAssembler = new BufferAssembler(outputBufferSize);
+            mAssembler.setListener(new Listener<FloatBuffer>()
             {
                 @Override
-                public void receive(ReusableFloatBuffer reusableFloatBuffer)
+                public void receive(FloatBuffer reusableFloatBuffer)
                 {
 
                     if(mReusableBufferListener != null)
                     {
-                        ReusableFloatBuffer cleanupFiltered = mCleanupFilter.filter(reusableFloatBuffer);
-                        ReusableFloatBuffer halfBandFiltered = mHalfBandFilter.filter(cleanupFiltered);
+                        FloatBuffer cleanupFiltered = mCleanupFilter.filter(reusableFloatBuffer);
+                        FloatBuffer halfBandFiltered = mHalfBandFilter.filter(cleanupFiltered);
                         mReusableBufferListener.receive(halfBandFiltered);
                     }
                     else
                     {
-                        reusableFloatBuffer.decrementUserCount();
-                    }
+
+                        }
                 }
             });
         }
@@ -366,7 +365,7 @@ public class RealPrimeCICDecimate
         /**
          * Adds a listener to receive output samples
          */
-        public void setListener(Listener<ReusableFloatBuffer> listener)
+        public void setListener(Listener<FloatBuffer> listener)
         {
             mReusableBufferListener = listener;
         }
