@@ -22,7 +22,7 @@
 package io.github.dsheirer.source.tuner.recording;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -73,10 +73,10 @@ public class RecordingTunerController extends TunerController
         }
 
         mComplexWaveSource = new ComplexWaveSource(new File(recordingPath), true);
-        mComplexWaveSource.setListener(new Listener<ReusableComplexBuffer>()
+        mComplexWaveSource.setListener(new Listener<ComplexBuffer>()
         {
             @Override
-            public void receive(ReusableComplexBuffer reusableComplexBuffer)
+            public void receive(ComplexBuffer reusableComplexBuffer)
             {
                 //Send to parent class to broadcast to listeners
                 broadcast(reusableComplexBuffer);
@@ -135,7 +135,7 @@ public class RecordingTunerController extends TunerController
     }
 
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<ComplexBuffer> listener)
     {
         super.addBufferListener(listener);
 
@@ -150,13 +150,13 @@ public class RecordingTunerController extends TunerController
     }
 
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<ComplexBuffer> listener)
     {
         super.removeBufferListener(listener);
 
         if(!mReusableBufferBroadcaster.hasListeners() && mComplexWaveSource != null)
         {
-            mComplexWaveSource.setListener((Listener<ReusableComplexBuffer>)null);
+            mComplexWaveSource.setListener((Listener<ComplexBuffer>)null);
             mComplexWaveSource.stop();
             mRunning = false;
         }

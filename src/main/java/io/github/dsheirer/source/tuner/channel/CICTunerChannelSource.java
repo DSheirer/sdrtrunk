@@ -21,9 +21,8 @@ import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.OverflowableBufferTransferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.source.SourceEvent;
 
@@ -35,7 +34,7 @@ import java.util.List;
  * CIC decimation filter that requires the decimation rate to be an integer multiple.  Sample buffer processing
  * occurs on a scheduled runnable thread.
  */
-public class CICTunerChannelSource extends TunerChannelSource implements Listener<ReusableComplexBuffer>
+public class CICTunerChannelSource extends TunerChannelSource implements Listener<ComplexBuffer>
 {
 //    private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource.class);
 
@@ -45,11 +44,11 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
     //Threshold for resetting buffer overflow condition
     private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
-    private OverflowableReusableBufferTransferQueue<ReusableComplexBuffer> mBuffer;
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("CICTunerChannelSource");
+    private OverflowableBufferTransferQueue<ComplexBuffer> mBuffer;
+    private Object mReusableComplexBufferQueue = new Object();
     private IOscillator mFrequencyCorrectionMixer;
     private ComplexPrimeCICDecimate mDecimationFilter;
-    private List<ReusableComplexBuffer> mSampleBuffers = new ArrayList<>();
+    private List<ComplexBuffer> mSampleBuffers = new ArrayList<>();
     private double mChannelSampleRate;
     private long mChannelFrequencyCorrection = 0;
     private long mTunerFrequency;
@@ -74,7 +73,7 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
         mDecimationFilter = new ComplexPrimeCICDecimate(sampleRate, decimation, channelSpecification.getPassFrequency(),
             channelSpecification.getStopFrequency());
 
-        mBuffer = new OverflowableReusableBufferTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
+        mBuffer = new OverflowableBufferTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
 
         //Setup the frequency mixer to the current source frequency
         mChannelSampleRate = sampleRate / (double)decimation;
@@ -106,7 +105,7 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
      * Primary interface for receiving incoming complex sample buffers to be frequency translated and decimated.
      */
     @Override
-    public void receive(ReusableComplexBuffer buffer)
+    public void receive(ComplexBuffer buffer)
     {
         mBuffer.offer(buffer);
     }
@@ -194,13 +193,13 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
      * @param complexBufferListener to receive complex buffers
      */
     @Override
-    public void setListener(Listener<ReusableComplexBuffer> complexBufferListener)
+    public void setListener(Listener<ComplexBuffer> complexBufferListener)
     {
         mDecimationFilter.setListener(complexBufferListener);
     }
 
     @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mDecimationFilter.removeListener();
     }
@@ -221,11 +220,12 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
     {
         mBuffer.drainTo(mSampleBuffers);
 
-        for(ReusableComplexBuffer complexBuffer : mSampleBuffers)
+        for(ComplexBuffer complexBuffer : mSampleBuffers)
         {
             float[] samples = complexBuffer.getSamples();
 
-            ReusableComplexBuffer translatedComplexBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
+            ComplexBuffer buffer = new ComplexBuffer(new float[samples.length]);
+            ComplexBuffer translatedComplexBuffer = buffer;
             float[] translatedSamples = translatedComplexBuffer.getSamples();
 
             /* Perform frequency translation */
@@ -241,8 +241,8 @@ public class CICTunerChannelSource extends TunerChannelSource implements Listene
             }
 
             mDecimationFilter.receive(translatedComplexBuffer);
-            complexBuffer.decrementUserCount();
-        }
+
+            }
 
         mSampleBuffers.clear();
     }

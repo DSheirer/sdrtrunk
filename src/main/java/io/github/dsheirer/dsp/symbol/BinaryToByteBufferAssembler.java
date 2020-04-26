@@ -21,26 +21,32 @@ package io.github.dsheirer.dsp.symbol;
 
 import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
-import io.github.dsheirer.sample.buffer.ReusableByteBufferQueue;
+import io.github.dsheirer.sample.buffer.IByteBufferProvider;
+import io.github.dsheirer.sample.buffer.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Assembles reusable byte buffers from an incoming stream of boolean values.
  */
-public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IReusableByteBufferProvider
+public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IByteBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(BinaryToByteBufferAssembler.class);
 
-    private ReusableByteBufferQueue mBufferQueue = new ReusableByteBufferQueue("BinaryToByteBufferAssembler");
-    private ReusableByteBuffer mCurrentBuffer;
+    private Object mBufferQueue = new Object() {
+        /**
+         * Disposes of any reclaimed buffers to prepare this queue for disposal.
+         */
+        public void dispose()
+        {
+        }
+    };
+    private ByteBuffer mCurrentBuffer;
     private int mBufferPointer;
     private int mBufferSize;
     private byte mCurrentByte;
     private int mBitCount;
-    private Listener<ReusableByteBuffer> mBufferListener;
+    private Listener<ByteBuffer> mBufferListener;
 
     /**
      * Constructs an assembler to produce reusable byte buffers of the specified size
@@ -64,7 +70,8 @@ public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IReu
             mBufferListener.receive(mCurrentBuffer);
         }
 
-        mCurrentBuffer = mBufferQueue.getBuffer(mBufferSize);
+        ByteBuffer buffer = new ByteBuffer(new byte[mBufferSize]);
+        mCurrentBuffer = buffer;
         mBufferPointer = 0;
     }
 
@@ -98,7 +105,7 @@ public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IReu
      * Registers the listener to receive fully assembled byte buffers from this assembler.
      */
     @Override
-    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    public void setBufferListener(Listener<ByteBuffer> listener)
     {
         mBufferListener = listener;
     }
@@ -107,7 +114,7 @@ public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IReu
      * Removes the listener from receiving buffers from this assembler
      */
     @Override
-    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    public void removeBufferListener(Listener<ByteBuffer> listener)
     {
         mBufferListener = null;
     }

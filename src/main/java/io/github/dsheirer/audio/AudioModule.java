@@ -30,8 +30,8 @@ import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.IBufferListener;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +41,8 @@ import org.slf4j.LoggerFactory;
  *
  * Incorporates audio squelch state listener to control if audio packets are broadcast or ignored.
  */
-public class AudioModule extends AbstractAudioModule implements ISquelchStateListener, IReusableBufferListener,
-    Listener<ReusableFloatBuffer>
+public class AudioModule extends AbstractAudioModule implements ISquelchStateListener, IBufferListener,
+    Listener<FloatBuffer>
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
     private static float[] sHighPassFilterCoefficients;
@@ -116,22 +116,22 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(FloatBuffer reusableFloatBuffer)
     {
         if(mSquelchState == SquelchState.UNSQUELCH)
         {
-            ReusableFloatBuffer buffer = mHighPassFilter.filter(reusableFloatBuffer);
+            FloatBuffer buffer = mHighPassFilter.filter(reusableFloatBuffer);
             addAudio(buffer.getSamples());
-            buffer.decrementUserCount();
-        }
+
+            }
         else
         {
-            reusableFloatBuffer.decrementUserCount();
-        }
+
+            }
     }
 
     @Override
-    public Listener<ReusableFloatBuffer> getReusableBufferListener()
+    public Listener<FloatBuffer> getReusableBufferListener()
     {
         //Redirect received reusable buffers to the receive(buffer) method
         return this;

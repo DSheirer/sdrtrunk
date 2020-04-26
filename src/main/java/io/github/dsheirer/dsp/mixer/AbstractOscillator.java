@@ -15,19 +15,17 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.FloatBuffer;
 
 public abstract class AbstractOscillator implements IOscillator
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractOscillator.class);
 
-    private FloatBuffer mSampleBuffer;
+    private java.nio.FloatBuffer mSampleBuffer;
     private boolean mEnabled;
     private double mFrequency;
     private double mSampleRate;
@@ -159,13 +157,13 @@ public abstract class AbstractOscillator implements IOscillator
      * @param reusableComplexBuffer to fill with complex samples
      */
     @Override
-    public void generateComplex(ReusableComplexBuffer reusableComplexBuffer)
+    public void generateComplex(ComplexBuffer reusableComplexBuffer)
     {
         int sampleCount = reusableComplexBuffer.getSampleCount();
 
         if(mSampleBuffer == null || mSampleBuffer.capacity() != sampleCount * 2)
         {
-            mSampleBuffer = FloatBuffer.allocate(sampleCount * 2);
+            mSampleBuffer = java.nio.FloatBuffer.allocate(sampleCount * 2);
         }
 
         mSampleBuffer.rewind();
@@ -185,7 +183,7 @@ public abstract class AbstractOscillator implements IOscillator
      * @param reusableFloatBuffer to fill with real samples
      */
     @Override
-    public void generateReal(ReusableFloatBuffer reusableFloatBuffer)
+    public void generateReal(FloatBuffer reusableFloatBuffer)
     {
         reusableFloatBuffer.reloadFrom(generateReal(reusableFloatBuffer.getSampleCount()), System.currentTimeMillis());
     }

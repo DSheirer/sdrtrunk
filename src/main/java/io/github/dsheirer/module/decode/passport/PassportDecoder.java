@@ -26,10 +26,10 @@ import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.IBufferListener;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
-public class PassportDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableFloatBuffer>
+public class PassportDecoder extends Decoder implements IBufferListener, Listener<FloatBuffer>
 {
     public static final int PASSPORT_MESSAGE_LENGTH = 68;
 
@@ -55,13 +55,13 @@ public class PassportDecoder extends Decoder implements IReusableBufferListener,
     }
 
     @Override
-    public Listener<ReusableFloatBuffer> getReusableBufferListener()
+    public Listener<FloatBuffer> getReusableBufferListener()
     {
         return mLTRDecoder;
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(FloatBuffer reusableFloatBuffer)
     {
         mLTRDecoder.receive(reusableFloatBuffer);
     }

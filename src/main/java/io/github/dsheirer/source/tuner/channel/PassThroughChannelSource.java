@@ -17,8 +17,8 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.OverflowableBufferTransferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -33,14 +33,14 @@ import java.util.List;
  * directly to the registered listener
  */
 public class PassThroughChannelSource extends TunerChannelSource implements ISourceEventListener,
-        Listener<ReusableComplexBuffer>
+        Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PassThroughChannelSource.class);
     private TunerController mTunerController;
-    private OverflowableReusableBufferTransferQueue<ReusableComplexBuffer> mBufferQueue =
-            new OverflowableReusableBufferTransferQueue<>(500, 100);
-    private List<ReusableComplexBuffer> mBuffersToProcess = new ArrayList<>();
-    private Listener<ReusableComplexBuffer> mComplexBufferListener;
+    private OverflowableBufferTransferQueue<ComplexBuffer> mBufferQueue =
+            new OverflowableBufferTransferQueue<>(500, 100);
+    private List<ComplexBuffer> mBuffersToProcess = new ArrayList<>();
+    private Listener<ComplexBuffer> mComplexBufferListener;
 
     /**
      * Constructs an instance
@@ -81,13 +81,13 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     }
 
     @Override
-    public void setListener(Listener<ReusableComplexBuffer> complexBufferListener)
+    public void setListener(Listener<ComplexBuffer> complexBufferListener)
     {
         mComplexBufferListener = complexBufferListener;
     }
 
     @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mComplexBufferListener = null;
     }
@@ -97,7 +97,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     {
         mBufferQueue.drainTo(mBuffersToProcess);
 
-        for(ReusableComplexBuffer buffer: mBuffersToProcess)
+        for(ComplexBuffer buffer: mBuffersToProcess)
         {
             if(mComplexBufferListener != null)
             {
@@ -105,8 +105,8 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
             }
             else
             {
-                buffer.decrementUserCount();
-            }
+
+                }
         }
 
         mBuffersToProcess.clear();
@@ -119,7 +119,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         mBufferQueue.offer(reusableComplexBuffer);
     }

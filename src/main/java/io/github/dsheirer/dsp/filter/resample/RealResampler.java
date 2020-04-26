@@ -18,21 +18,19 @@ package io.github.dsheirer.dsp.filter.resample;
 import com.laszlosystems.libresample4j.Resampler;
 import com.laszlosystems.libresample4j.SampleBuffers;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
 
 public class RealResampler
 {
     protected static final Logger mLog = LoggerFactory.getLogger(RealResampler.class);
 
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealResampler");
+    private Object mReusableBufferQueue = new Object();
     private Resampler mResampler;
-    private Listener<ReusableFloatBuffer> mResampledListener;
+    private Listener<FloatBuffer> mResampledListener;
     private BufferManager mBufferManager;
     private double mResampleFactor;
 
@@ -52,7 +50,7 @@ public class RealResampler
      * Primary input method to the resampler
      * @param reusableFloatBuffer to resample
      */
-    public void resample(ReusableFloatBuffer reusableFloatBuffer)
+    public void resample(FloatBuffer reusableFloatBuffer)
     {
         mBufferManager.load(reusableFloatBuffer);
         mResampler.process(mResampleFactor, mBufferManager, false);
@@ -62,7 +60,7 @@ public class RealResampler
      * Registers the listener to receive the resampled buffer output
      * @param resampledBufferListener to receive buffers
      */
-    public void setListener(Listener<ReusableFloatBuffer> resampledBufferListener)
+    public void setListener(Listener<FloatBuffer> resampledBufferListener)
     {
         mResampledListener = resampledBufferListener;
     }
@@ -74,8 +72,8 @@ public class RealResampler
     public class BufferManager implements SampleBuffers
     {
         private int mOutputBufferSize;
-        private FloatBuffer mInputBuffer;
-        private FloatBuffer mOutputBuffer;
+        private java.nio.FloatBuffer mInputBuffer;
+        private java.nio.FloatBuffer mOutputBuffer;
 
         public BufferManager(int inputBufferSize, int outputBufferSize)
         {
@@ -89,11 +87,11 @@ public class RealResampler
         /**
          * Queues the buffer sample for resampling
          */
-        public void load(ReusableFloatBuffer reusableFloatBuffer)
+        public void load(FloatBuffer reusableFloatBuffer)
         {
             mInputBuffer.put(reusableFloatBuffer.getSamples());
-            reusableFloatBuffer.decrementUserCount();
-        }
+
+            }
 
         @Override
         public int getInputBufferLength()
@@ -128,7 +126,8 @@ public class RealResampler
 
             while(mOutputBuffer.position() > mOutputBufferSize)
             {
-                ReusableFloatBuffer outputBuffer = mReusableBufferQueue.getBuffer(mOutputBufferSize);
+                FloatBuffer buffer = new FloatBuffer(new float[mOutputBufferSize]);
+                FloatBuffer outputBuffer = buffer;
 
                 mOutputBuffer.flip();
                 mOutputBuffer.get(outputBuffer.getSamples());
@@ -140,8 +139,8 @@ public class RealResampler
                 }
                 else
                 {
-                    outputBuffer.decrementUserCount();
-                }
+
+                    }
             }
         }
     }

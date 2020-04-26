@@ -18,15 +18,14 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.correction;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 
 public class IQCorrectionFilter
 {
     private float mRatio = 0.00001f;
     private float mAverageInphase = 0.0f;
     private float mAverageQuadrature = 0.0f;
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("IQCorrectionFilter");
+    private Object mReusableComplexBufferQueue = new Object();
 
     public IQCorrectionFilter(float ratio)
     {
@@ -37,11 +36,12 @@ public class IQCorrectionFilter
     {
     }
 
-    public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
+    public ComplexBuffer filter(ComplexBuffer buffer)
     {
         float[] samples = buffer.getSamples();
 
-        ReusableComplexBuffer filtered = mReusableComplexBufferQueue.getBuffer(samples.length);
+        ComplexBuffer buffer1 = new ComplexBuffer(new float[samples.length]);
+        ComplexBuffer filtered = buffer1;
         float[] filteredSamples = filtered.getSamples();
 
         for(int x = 0; x < samples.length; x += 2)

@@ -17,9 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.fm;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
 
@@ -28,7 +27,7 @@ import org.apache.commons.math3.util.FastMath;
  */
 public class FMDemodulator
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("FMDemodulator");
+    private Object mReusableBufferQueue = new Object();
     private float mPreviousI = 0.0f;
     private float mPreviousQ = 0.0f;
     protected float mGain;
@@ -130,9 +129,10 @@ public class FMDemodulator
      * @param basebandSampleBuffer containing samples to demodulate
      * @return demodulated sample buffer.
      */
-    public ReusableFloatBuffer demodulate(ReusableComplexBuffer basebandSampleBuffer)
+    public FloatBuffer demodulate(ComplexBuffer basebandSampleBuffer)
     {
-        ReusableFloatBuffer demodulatedBuffer = mReusableBufferQueue.getBuffer(basebandSampleBuffer.getSampleCount());
+        FloatBuffer buffer = new FloatBuffer(new float[basebandSampleBuffer.getSampleCount()]);
+        FloatBuffer demodulatedBuffer = buffer;
 
         float[] basebandSamples = basebandSampleBuffer.getSamples();
         float[] demodulatedSamples = demodulatedBuffer.getSamples();
@@ -141,8 +141,6 @@ public class FMDemodulator
         {
             demodulatedSamples[x / 2] = demodulate(basebandSamples[x], basebandSamples[x + 1]);
         }
-
-        basebandSampleBuffer.decrementUserCount();
 
         return demodulatedBuffer;
     }

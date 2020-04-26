@@ -17,7 +17,7 @@ package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.sample.Listener;
 
-public interface IReusableBufferListener
+public interface IByteBufferListener<ReusableByteBuffer>
 {
-	Listener<ReusableFloatBuffer> getReusableBufferListener();
+	Listener<ReusableByteBuffer> getReusableByteBufferListener();
 }

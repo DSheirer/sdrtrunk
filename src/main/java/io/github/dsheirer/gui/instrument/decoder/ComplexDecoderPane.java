@@ -18,13 +18,13 @@ package io.github.dsheirer.gui.instrument.decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.BufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import javafx.scene.text.Text;
 
-public class ComplexDecoderPane extends AbstractDecoderPane<ReusableComplexBuffer>
+public class ComplexDecoderPane extends AbstractDecoderPane<ComplexBuffer>
 {
-    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
+    private BufferBroadcaster mComplexBufferBroadcaster = new BufferBroadcaster();
     private DecoderType mDecoderType;
 
     public ComplexDecoderPane(DecoderType decoderType)
@@ -47,17 +47,17 @@ public class ComplexDecoderPane extends AbstractDecoderPane<ReusableComplexBuffe
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         mComplexBufferBroadcaster.broadcast(reusableComplexBuffer);
     }
 
-    public void addListener(Listener<ReusableComplexBuffer> listener)
+    public void addListener(Listener<ComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.addListener(listener);
     }
 
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.removeListener(listener);
     }

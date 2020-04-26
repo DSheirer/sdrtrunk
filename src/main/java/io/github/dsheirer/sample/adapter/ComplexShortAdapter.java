@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +42,9 @@ public class ComplexShortAdapter extends ComplexSampleAdapter
     }
 
     @Override
-    public ReusableComplexBuffer convert(byte[] samples)
+    public ComplexBuffer convert(byte[] samples)
     {
-        ReusableComplexBuffer reusableBuffer = getBuffer(samples.length / 2);
+        ComplexBuffer reusableBuffer = getBuffer(samples.length / 2);
         float[] convertedSamples = reusableBuffer.getSamples();
 
         int pointer = 0;

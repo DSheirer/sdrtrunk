@@ -19,8 +19,7 @@
  */
 package io.github.dsheirer.record.binary;
 
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
-import io.github.dsheirer.sample.buffer.ReusableByteBufferQueue;
+import io.github.dsheirer.sample.buffer.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,14 +33,21 @@ import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class BinaryReader implements Iterator<ReusableByteBuffer>, AutoCloseable
+public class BinaryReader implements Iterator<ByteBuffer>, AutoCloseable
 {
     private final static Logger mLog = LoggerFactory.getLogger(BinaryReader.class);
-    private ReusableByteBufferQueue mBufferQueue = new ReusableByteBufferQueue("Binary Reader");
+    private Object mBufferQueue = new Object() {
+        /**
+         * Disposes of any reclaimed buffers to prepare this queue for disposal.
+         */
+        public void dispose()
+        {
+        }
+    };
     private int mBufferSize;
     private InputStream mInputStream;
     private Path mPath;
-    private ReusableByteBuffer mNextBuffer;
+    private ByteBuffer mNextBuffer;
     private TimestampTracker mTimestampTracker = new TimestampTracker();
 
     /**
@@ -84,9 +90,9 @@ public class BinaryReader implements Iterator<ReusableByteBuffer>, AutoCloseable
      * @return
      */
     @Override
-    public ReusableByteBuffer next()
+    public ByteBuffer next()
     {
-        ReusableByteBuffer current = mNextBuffer;
+        ByteBuffer current = mNextBuffer;
         getNext();
         return current;
     }
@@ -98,7 +104,8 @@ public class BinaryReader implements Iterator<ReusableByteBuffer>, AutoCloseable
     {
         try
         {
-            mNextBuffer = mBufferQueue.getBuffer(mBufferSize);
+            ByteBuffer buffer1 = new ByteBuffer(new byte[mBufferSize]);
+            mNextBuffer = buffer1;
 
             int bytesRead = mInputStream.read(mNextBuffer.getBytes(), 0, mBufferSize);
 
@@ -109,23 +116,24 @@ public class BinaryReader implements Iterator<ReusableByteBuffer>, AutoCloseable
             {
                 if(bytesRead < mBufferSize)
                 {
-                    ReusableByteBuffer partialBuffer = mBufferQueue.getBuffer(bytesRead);
+                    ByteBuffer buffer = new ByteBuffer(new byte[bytesRead]);
+                    ByteBuffer partialBuffer = buffer;
                     System.arraycopy(mNextBuffer.getBytes(), 0, partialBuffer.getBytes(), 0, bytesRead);
                     partialBuffer.setTimestamp(mNextBuffer.getTimestamp());
-                    mNextBuffer.decrementUserCount();
+
                     mNextBuffer = partialBuffer;
                 }
             }
             else
             {
-                mNextBuffer.decrementUserCount();
+
                 mNextBuffer = null;
             }
         }
         catch(IOException e)
         {
             mLog.error("Error reading binary file [" + mPath.toString() + "]", e);
-            mNextBuffer.decrementUserCount();
+
             mNextBuffer = null;
         }
     }

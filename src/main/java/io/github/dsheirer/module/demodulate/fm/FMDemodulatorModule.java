@@ -24,10 +24,7 @@ import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.dsp.fm.FMDemodulator;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
-import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.*;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -38,8 +35,8 @@ import org.slf4j.LoggerFactory;
  *
  * Note: no filtering is applied to the demodulated audio.
  */
-public class FMDemodulatorModule extends Module implements ISourceEventListener, IReusableComplexBufferListener,
-    Listener<ReusableComplexBuffer>, IReusableBufferProvider
+public class FMDemodulatorModule extends Module implements ISourceEventListener, IComplexBufferListener,
+    Listener<ComplexBuffer>, IBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatorModule.class);
 
@@ -47,7 +44,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     private FMDemodulator mDemodulator = new FMDemodulator();
     private RealResampler mResampler;
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
-    private Listener<ReusableFloatBuffer> mResampledReusableBufferListener;
+    private Listener<FloatBuffer> mResampledReusableBufferListener;
     private double mChannelBandwidth;
     private double mOutputSampleRate;
 
@@ -65,7 +62,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
+    public Listener<ComplexBuffer> getReusableComplexBufferListener()
     {
         return this;
     }
@@ -106,7 +103,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public void setBufferListener(Listener<ReusableFloatBuffer> listener)
+    public void setBufferListener(Listener<FloatBuffer> listener)
     {
         mResampledReusableBufferListener = listener;
     }
@@ -118,17 +115,17 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         if(mIQFilter == null)
         {
-            reusableComplexBuffer.decrementUserCount();
+
             throw new IllegalStateException("FM demodulator module must receive a sample rate change source " +
                 "event before it can process complex sample buffers");
         }
 
-        ReusableComplexBuffer basebandFilteredBuffer = mIQFilter.filter(reusableComplexBuffer);
-        ReusableFloatBuffer demodulatedBuffer = mDemodulator.demodulate(basebandFilteredBuffer);
+        ComplexBuffer basebandFilteredBuffer = mIQFilter.filter(reusableComplexBuffer);
+        FloatBuffer demodulatedBuffer = mDemodulator.demodulate(basebandFilteredBuffer);
 
         if(mResampler != null)
         {
@@ -136,8 +133,8 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
         }
         else
         {
-            demodulatedBuffer.decrementUserCount();
-        }
+
+            }
     }
 
     /**
@@ -204,10 +201,10 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
 
                 mResampler = new RealResampler(sampleRate, mOutputSampleRate, 2000, 1000);
 
-                mResampler.setListener(new Listener<ReusableFloatBuffer>()
+                mResampler.setListener(new Listener<FloatBuffer>()
                 {
                     @Override
-                    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+                    public void receive(FloatBuffer reusableFloatBuffer)
                     {
                         if(mResampledReusableBufferListener != null)
                         {
@@ -215,8 +212,8 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                         }
                         else
                         {
-                            reusableFloatBuffer.decrementUserCount();
-                        }
+
+                            }
                     }
                 });
             }

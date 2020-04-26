@@ -24,11 +24,10 @@ import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBufferAssembler;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 import io.github.dsheirer.sample.decimator.ComplexDecimator;
-import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.primes.Primes;
 
 import java.util.ArrayList;
@@ -46,7 +45,7 @@ import java.util.Map;
  * This filter currently supports a maximum decimation rate of 2801.  Higher decimation rates can be added by
  * adding additional prime factors to the PRIMES array.
  */
-public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
+public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 {
 //    private final static Logger mLog = LoggerFactory.getLogger(ComplexPrimeCICDecimate.class);
 
@@ -125,7 +124,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
     /**
      * Adds a listener to receive the output of this CIC decimation filter
      */
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<ComplexBuffer> listener)
     {
         mOutput.setListener(listener);
     }
@@ -164,7 +163,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
      * Primary input method for receiving sample arrays composed as I,Q,I,Q, etc.
      */
     @Override
-    public void receive(ReusableComplexBuffer buffer)
+    public void receive(ComplexBuffer buffer)
     {
         if(mFirstDecimatingStage != null)
         {
@@ -176,8 +175,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
             }
         }
 
-        buffer.decrementUserCount();
-    }
+        }
 
     /**
      * Decimating stage combines multiple CIC stages with a decimator.  The
@@ -345,33 +343,33 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
     public class Output implements ComplexSampleListener
     {
         /* Decimated output buffers will contain 1024 complex samples */
-        private ReusableComplexBufferAssembler mBufferAssembler;
+        private ComplexBufferAssembler mBufferAssembler;
         private ComplexFIRFilter2 mLowPassFilter;
-        private Listener<ReusableComplexBuffer> mReusableComplexBufferListener;
+        private Listener<ComplexBuffer> mReusableComplexBufferListener;
 
         public Output(double outputSampleRate, double passFrequency, double stopFrequency) throws FilterDesignException
         {
-            mBufferAssembler = new ReusableComplexBufferAssembler(2400, outputSampleRate);
+            mBufferAssembler = new ComplexBufferAssembler(2400, outputSampleRate);
 
             //This may throw an exception if we can't design a filter for the sample rate and pass/stop frequencies
             float[] filterCoefficients = getLowPassFilter(outputSampleRate, passFrequency, stopFrequency);
             mLowPassFilter = new ComplexFIRFilter2(filterCoefficients, 1.0f);
 
-            mBufferAssembler.setListener(new Listener<ReusableComplexBuffer>()
+            mBufferAssembler.setListener(new Listener<ComplexBuffer>()
             {
                 @Override
-                public void receive(ReusableComplexBuffer reusableComplexBuffer)
+                public void receive(ComplexBuffer reusableComplexBuffer)
                 {
                     if(mReusableComplexBufferListener != null)
                     {
-                        ReusableComplexBuffer filteredBuffer = mLowPassFilter.filter(reusableComplexBuffer);
+                        ComplexBuffer filteredBuffer = mLowPassFilter.filter(reusableComplexBuffer);
                         mReusableComplexBufferListener.receive(filteredBuffer);
 //                        mReusableComplexBufferListener.receive(reusableComplexBuffer);
                     }
                     else
                     {
-                        reusableComplexBuffer.decrementUserCount();
-                    }
+
+                        }
                 }
             });
         }
@@ -391,7 +389,7 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
             mBufferAssembler.receive(inphase, quadrature);
         }
 
-        public void setListener(Listener<ReusableComplexBuffer> listener)
+        public void setListener(Listener<ComplexBuffer> listener)
         {
             mReusableComplexBufferListener = listener;
 
@@ -403,14 +401,14 @@ public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
 
         public void removeListener()
         {
-            mReusableComplexBufferListener = new Listener<ReusableComplexBuffer>()
+            mReusableComplexBufferListener = new Listener<ComplexBuffer>()
             {
                 @Override
-                public void receive(ReusableComplexBuffer reusableComplexBuffer)
+                public void receive(ComplexBuffer reusableComplexBuffer)
                 {
                     //empty receiver
-                    reusableComplexBuffer.decrementUserCount();
-                }
+
+                    }
             };
         }
 

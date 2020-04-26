@@ -22,7 +22,7 @@
 package io.github.dsheirer.source.tuner.usb;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerManager;
 import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
@@ -65,7 +65,7 @@ public class USBTransferProcessor implements TransferCallback
     //Byte array transfer buffers size in bytes
     private int mBufferSize;
 
-    private Listener<ReusableComplexBuffer> mComplexBufferListener;
+    private Listener<ComplexBuffer> mComplexBufferListener;
 
     //Handle to the USB bulk transfer device
     private DeviceHandle mUsbBulkTransferDeviceHandle;
@@ -358,7 +358,7 @@ public class USBTransferProcessor implements TransferCallback
     /**
      * Sets the listener and auto-starts the buffer processor
      */
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<ComplexBuffer> listener)
     {
         if(mComplexBufferListener == null || !mComplexBufferListener.equals(listener))
         {
@@ -557,7 +557,7 @@ public class USBTransferProcessor implements TransferCallback
                     {
                         ByteBuffer nativeBuffer = transfer.buffer();
 
-                        ReusableComplexBuffer reusableComplexBuffer =
+                        ComplexBuffer reusableComplexBuffer =
                             mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
 
                         if(mComplexBufferListener != null)

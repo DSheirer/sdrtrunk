@@ -20,7 +20,7 @@ package io.github.dsheirer.source.tuner.fcd;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ComplexShortAdapter;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.ComplexMixer;
 import io.github.dsheirer.source.tuner.MixerTunerDataLine;
@@ -105,7 +105,7 @@ public abstract class FCDTunerController extends TunerController
      * Overrides the super class functionality to auto-start the complex mixer and provide samples to listeners
      */
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<ComplexBuffer> listener)
     {
         boolean hasExistingListeners = hasBufferListeners();
 
@@ -122,7 +122,7 @@ public abstract class FCDTunerController extends TunerController
      * more registered listeners
      */
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<ComplexBuffer> listener)
     {
         super.removeBufferListener(listener);
 

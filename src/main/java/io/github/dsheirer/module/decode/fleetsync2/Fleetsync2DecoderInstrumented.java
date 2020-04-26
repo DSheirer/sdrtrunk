@@ -17,7 +17,7 @@ package io.github.dsheirer.module.decode.fleetsync2;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
 import io.github.dsheirer.gui.instrument.chart.IInstrumentedAFSK1200Decoder;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
 
 /**
@@ -44,7 +44,7 @@ public class Fleetsync2DecoderInstrumented extends Fleetsync2Decoder implements 
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(FloatBuffer reusableFloatBuffer)
     {
         super.receive(reusableFloatBuffer);
 

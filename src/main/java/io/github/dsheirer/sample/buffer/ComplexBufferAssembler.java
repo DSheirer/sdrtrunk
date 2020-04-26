@@ -29,17 +29,17 @@ import java.nio.FloatBuffer;
  * Assembles complex float samples into a ComplexBuffer containing an array of floats.  Monitors incoming sample count
  * to accurately assign a relative timestamp to each assembled buffer.
  */
-public class ReusableComplexBufferAssembler
+public class ComplexBufferAssembler
 {
 //    private final static Logger mLog = LoggerFactory.getLogger(ReusableComplexBufferAssembler.class);
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ReusableComplexBufferAssembler");
+    private Object mReusableComplexBufferQueue = new Object();
     private SampleTimestampManager mTimestampManager;
     private FloatBuffer mBuffer;
     private int mBufferSize;
     private long mCurrentBufferTimestamp;
-    private Listener<ReusableComplexBuffer> mListener;
+    private Listener<ComplexBuffer> mListener;
 
-    public ReusableComplexBufferAssembler(int bufferSize, double sampleRate)
+    public ComplexBufferAssembler(int bufferSize, double sampleRate)
     {
         Validate.isTrue(bufferSize % 2 == 0);
         mBufferSize = bufferSize;
@@ -64,7 +64,6 @@ public class ReusableComplexBufferAssembler
 
     public void dispose()
     {
-        mReusableComplexBufferQueue.dispose();
         mListener = null;
     }
 
@@ -139,11 +138,11 @@ public class ReusableComplexBufferAssembler
      * Adds the samples to this assembler.  As each buffer is assembled, it will be dispatched to the registered
      * listener.
      */
-    public void receive(ReusableComplexBuffer samplesBuffer)
+    public void receive(ComplexBuffer samplesBuffer)
     {
         receive(samplesBuffer.getSamples());
-        samplesBuffer.decrementUserCount();
-    }
+
+        }
 
     /**
      * Flushes the current buffer contents to the registered listener
@@ -153,7 +152,8 @@ public class ReusableComplexBufferAssembler
         if(mListener != null && mBuffer.position() > 0)
         {
             mBuffer.rewind();
-            ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mBufferSize);
+            ComplexBuffer buffer = new ComplexBuffer(new float[mBufferSize]);
+            ComplexBuffer reusableComplexBuffer = buffer;
             reusableComplexBuffer.reloadFrom(mBuffer, mCurrentBufferTimestamp);
             mListener.receive(reusableComplexBuffer);
         }
@@ -166,7 +166,7 @@ public class ReusableComplexBufferAssembler
      * Sets the listener to receive the output from this buffer assembler.  Note: the listener is responsible for
      * managing the user count for any buffers received from this buffer assembler.
      */
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<ComplexBuffer> listener)
     {
         mListener = listener;
     }

@@ -18,7 +18,7 @@ package io.github.dsheirer.gui.instrument.chart;
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.dsp.gain.ComplexGain;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -32,7 +32,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ComplexPhaseLineChart extends LineChart implements Listener<ReusableComplexBuffer>
+public class ComplexPhaseLineChart extends LineChart implements Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPhaseLineChart.class);
 
@@ -82,7 +82,7 @@ public class ComplexPhaseLineChart extends LineChart implements Listener<Reusabl
     }
 
     @Override
-    public void receive(ReusableComplexBuffer complexBuffer)
+    public void receive(ComplexBuffer complexBuffer)
     {
         float[] samples = complexBuffer.getSamples();
 
@@ -95,8 +95,6 @@ public class ComplexPhaseLineChart extends LineChart implements Listener<Reusabl
             mComplexGain.apply(copy);
             mComplexCircularBuffer.put(copy);
         }
-
-        complexBuffer.decrementUserCount();
 
         updateChart();
     }

@@ -22,7 +22,7 @@ package io.github.dsheirer.gui.channelizer;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -325,7 +325,7 @@ public class ChannelizerViewer2 extends JFrame
         return tunerChannels;
     }
 
-    public class PrimarySpectrumPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
+    public class PrimarySpectrumPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -349,7 +349,7 @@ public class ChannelizerViewer2 extends JFrame
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(ComplexBuffer reusableComplexBuffer)
         {
             mDFTProcessor.receive(reusableComplexBuffer);
         }
@@ -361,7 +361,7 @@ public class ChannelizerViewer2 extends JFrame
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
+    public class ChannelPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
     {
         private TunerChannelSource mSource;
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
@@ -387,20 +387,19 @@ public class ChannelizerViewer2 extends JFrame
             if(mSource != null)
             {
                 mLog.debug("Channel: " + mSource.getTunerChannel() + " Rate:" + mSource.getSampleRate());
-                mSource.setListener(new Listener<ReusableComplexBuffer>()
+                mSource.setListener(new Listener<ComplexBuffer>()
                 {
                     @Override
-                    public void receive(ReusableComplexBuffer complexBuffer)
+                    public void receive(ComplexBuffer complexBuffer)
                     {
                         if(mLoggingEnabled)
                         {
                             mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
                         }
 
-                        complexBuffer.incrementUserCount();
                         mDFTProcessor.receive(complexBuffer);
-                        complexBuffer.decrementUserCount();
-                    }
+
+                        }
                 });
 
                 mSource.start();
@@ -444,12 +443,12 @@ public class ChannelizerViewer2 extends JFrame
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(ComplexBuffer reusableComplexBuffer)
         {
-            reusableComplexBuffer.incrementUserCount();
+
             mDFTProcessor.receive(reusableComplexBuffer);
-            reusableComplexBuffer.decrementUserCount();
-        }
+
+            }
 
         @Override
         public void process(SourceEvent event) throws SourceException

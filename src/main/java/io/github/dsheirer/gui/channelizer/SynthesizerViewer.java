@@ -24,8 +24,7 @@ import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
@@ -141,7 +140,7 @@ public class SynthesizerViewer extends JFrame
         return mChannel2Panel;
     }
 
-    public class PrimarySpectrumPanel extends JPanel implements Listener<ReusableComplexBuffer>
+    public class PrimarySpectrumPanel extends JPanel implements Listener<ComplexBuffer>
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -175,13 +174,13 @@ public class SynthesizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(ComplexBuffer reusableComplexBuffer)
         {
             mDFTProcessor.receive(reusableComplexBuffer);
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>
+    public class ChannelPanel extends JPanel implements Listener<ComplexBuffer>
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -209,7 +208,7 @@ public class SynthesizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(ComplexBuffer reusableComplexBuffer)
         {
             mDFTProcessor.receive(reusableComplexBuffer);
         }
@@ -275,7 +274,7 @@ public class SynthesizerViewer extends JFrame
         private TwoChannelSynthesizerM2 mSynthesizer;
         private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
         private int mSamplesPerCycle = CHANNEL_SAMPLE_RATE / DATA_GENERATOR_FRAME_RATE;
-        private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SynthesizerViewer");
+        private Object mReusableComplexBufferQueue = new Object();
 
         public DataGenerationManager()
         {
@@ -293,16 +292,15 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void run()
         {
-            ReusableComplexBuffer channel1Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
+            ComplexBuffer buffer1 = new ComplexBuffer(new float[mSamplesPerCycle]);
+            ComplexBuffer channel1Buffer = buffer1;
             getChannel1ControlPanel().getOscillator().generateComplex(channel1Buffer);
 
-            ReusableComplexBuffer channel2Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
+            ComplexBuffer buffer = new ComplexBuffer(new float[mSamplesPerCycle]);
+            ComplexBuffer channel2Buffer = buffer;
             getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
 
-            channel1Buffer.incrementUserCount();
-            channel2Buffer.incrementUserCount();
-
-            ReusableComplexBuffer synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
+            ComplexBuffer synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
 
             getChannel1Panel().receive(channel1Buffer);
 

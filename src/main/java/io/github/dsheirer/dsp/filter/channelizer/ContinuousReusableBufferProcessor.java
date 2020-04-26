@@ -15,15 +15,15 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
-import io.github.dsheirer.sample.buffer.AbstractReusableBuffer;
-import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
+import io.github.dsheirer.sample.buffer.AbstractBuffer;
+import io.github.dsheirer.sample.buffer.OverflowableBufferTransferQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ContinuousReusableBufferProcessor<T extends AbstractReusableBuffer> extends ContinuousBufferProcessor<T>
+public class ContinuousReusableBufferProcessor<T extends AbstractBuffer> extends ContinuousBufferProcessor<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ContinuousReusableBufferProcessor.class);
 
@@ -43,7 +43,7 @@ public class ContinuousReusableBufferProcessor<T extends AbstractReusableBuffer>
      */
     public ContinuousReusableBufferProcessor(int maximumSize, int resetThreshold)
     {
-        super(new OverflowableReusableBufferTransferQueue<T>(maximumSize, resetThreshold));
+        super(new OverflowableBufferTransferQueue<T>(maximumSize, resetThreshold));
     }
 
     /**
@@ -75,8 +75,8 @@ public class ContinuousReusableBufferProcessor<T extends AbstractReusableBuffer>
                 {
                     try
                     {
-                        buffer.decrementUserCount();
-                    }
+
+                        }
                     catch(IllegalStateException ise)
                     {
                         mLog.error("Error while performing user count cleanup on reusable buffers.");

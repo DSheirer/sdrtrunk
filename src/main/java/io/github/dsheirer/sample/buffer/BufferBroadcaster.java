@@ -15,41 +15,30 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
+import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReusableChannelResultsBufferQueue extends AbstractReusableBufferQueue<ReusableChannelResultsBuffer>
+public class BufferBroadcaster<T extends AbstractBuffer> extends Broadcaster<T>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ReusableChannelResultsBufferQueue.class);
-
-    public ReusableChannelResultsBufferQueue(String debugName)
-    {
-        super(debugName);
-    }
-
-    public ReusableChannelResultsBufferQueue()
-    {
-    }
+    private final static Logger mLog = LoggerFactory.getLogger(BufferBroadcaster.class);
 
     /**
-     * Returns a reusable buffer from an internal recycling queue, or creates a new buffer if there are currently no
-     * buffers available for reuse.
+     * Increments the user count for the reusable complex buffer and then broadcasts the buffer to all registered
+     * listeners.
      *
-     * @return a reusable buffer
+     * The total user count is established and applied to the buffer prior to dispatching.  If we were to simply
+     * increment the user count prior to sending to each consumer, there is a possibility that the consumer could
+     * immediately decrement the user count and prematurely signal that the buffer is ready for disposal before we
+     * send the buffer to all consumers.
      */
-    public ReusableChannelResultsBuffer getBuffer()
+    @Override
+    public void broadcast(T reusableBuffer)
     {
-        ReusableChannelResultsBuffer buffer = getRecycledBuffer();
-
-        if(buffer == null)
+        for(Listener<T> listener : mListeners)
         {
-            buffer = new ReusableChannelResultsBuffer(this);
-            buffer.setDebugName("Owner:" + getDebugName());
-            incrementBufferCount();
+            listener.receive(reusableBuffer);
         }
-
-        buffer.incrementUserCount();
-
-        return buffer;
     }
 }

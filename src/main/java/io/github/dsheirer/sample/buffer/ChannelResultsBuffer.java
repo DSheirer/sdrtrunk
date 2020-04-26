@@ -21,11 +21,11 @@ import org.slf4j.LoggerFactory;
 import java.util.LinkedList;
 import java.util.List;
 
-public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
+public class ChannelResultsBuffer extends AbstractBuffer
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ReusableChannelResultsBuffer.class);
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue =
-        new ReusableComplexBufferQueue("ReusableChannelResultsBuffer");
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelResultsBuffer.class);
+    private Object mReusableComplexBufferQueue =
+            new Object();
     private LinkedList<float[]> mEmptyBuffers = new LinkedList<>();
     private LinkedList<float[]> mFilledBuffers = new LinkedList<>();
     private Integer mLength;
@@ -35,11 +35,10 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
      * designed to be used by only one consumer.  The consumer must invoke the prepareForRecycle() method to indicate that this
      * buffer can be reused.
      *
-     * @param disposedListener to receive notification when this buffer is ready for prepareForRecycle
      */
-    ReusableChannelResultsBuffer(IReusableBufferDisposedListener disposedListener)
+    public ChannelResultsBuffer()
     {
-        super(disposedListener);
+        super();
     }
 
     /**
@@ -109,7 +108,7 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
      * @throws IllegalArgumentException if this buffer doesn't contain any samples or if the requested channel is
      * not within the channel range of the contained channel results.
      */
-    public ReusableComplexBuffer getChannel(int iChannelIndex)
+    public ComplexBuffer getChannel(int iChannelIndex)
     {
         if(mFilledBuffers.isEmpty())
         {
@@ -122,7 +121,8 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
                 "results -- max channel is " + mLength);
         }
 
-        ReusableComplexBuffer channelBuffer = mReusableComplexBufferQueue.getBuffer(mFilledBuffers.size() * 2);
+        ComplexBuffer buffer = new ComplexBuffer(new float[mFilledBuffers.size() * 2]);
+        ComplexBuffer channelBuffer = buffer;
 
         float[] samples = channelBuffer.getSamples();
 

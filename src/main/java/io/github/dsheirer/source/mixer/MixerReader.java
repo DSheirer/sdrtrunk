@@ -17,7 +17,7 @@ package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.AbstractSampleAdapter;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.ThreadPool;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * the samples to an array of floats using the specified adapter.  Dispatches float arrays to the registered
  * buffer listener.
  */
-public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
+public class MixerReader<T extends FloatBuffer> implements Runnable
 {
     private final static Logger mLog = LoggerFactory.getLogger(MixerReader.class);
 
