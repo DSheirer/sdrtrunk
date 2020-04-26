@@ -42,6 +42,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -488,6 +489,10 @@ public class ChannelEditor extends SplitPane
             mNewButton.setAlignment(Pos.CENTER);
             mNewButton.setMaxWidth(Double.MAX_VALUE);
 
+            MenuItem decodersItem = new MenuItem("Decoder");
+            decodersItem.setDisable(true);
+            mNewButton.getItems().addAll(decodersItem, new SeparatorMenuItem());
+
             for(DecoderType decoderType: DecoderType.PRIMARY_DECODERS)
             {
                 if(decoderType == DecoderType.P25_PHASE2)
@@ -595,7 +600,7 @@ public class ChannelEditor extends SplitPane
             MenuItem trunked = new MenuItem("Trunked System");
             trunked.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE1));
             MenuItem channel = new MenuItem("Individual Channel");
-            channel.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE1));
+            channel.setOnAction(event -> createNewChannel(DecoderType.P25_PHASE2));
             getItems().addAll(trunked, channel);
         }
     }

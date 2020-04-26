@@ -47,6 +47,7 @@ import io.github.dsheirer.alias.id.status.UnitStatusID;
 import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
+import io.github.dsheirer.alias.id.tone.TonesID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +120,11 @@ public class AliasFactory
                     originalRange.getMaxTalkgroup());
                 copyRange.setOverlap(originalRange.overlapProperty().get());
                 return copyRange;
+            case TONES:
+                TonesID originalTones = (TonesID)id;
+                TonesID copyTones = new TonesID();
+                copyTones.setToneSequence(originalTones.getToneSequence().copyOf());
+                return copyTones;
             case UNIT_STATUS:
                 UnitStatusID originalUnitStatus = (UnitStatusID)id;
                 UnitStatusID copyUnitStatusID = new UnitStatusID();

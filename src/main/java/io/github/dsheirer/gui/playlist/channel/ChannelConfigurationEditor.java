@@ -22,8 +22,6 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
-import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
-import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelException;
@@ -93,8 +91,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private VBox mTitledPanesBox;
     private ToggleSwitch mAutoStartSwitch;
     private Spinner<Integer> mAutoStartOrderSpinner;
-    private SuggestionProvider<String> mSystemSuggestionProvider;
-    private SuggestionProvider<String> mSiteSuggestionProvider;
     private IconNode mPlayGraphicNode;
     private IconNode mStopGraphicNode;
     private ChannelProcessingMonitor mChannelProcessingMonitor = new ChannelProcessingMonitor();
@@ -147,8 +143,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             setPlayButtonState(getItem().processingProperty().get());
             getItem().processingProperty().addListener(mChannelProcessingMonitor);
         }
-
-        refreshAutoCompleteBindings();
 
         boolean disable = (channel == null);
 
@@ -509,17 +503,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         return mTextFieldPane;
     }
 
-    /**
-     * Refreshes the system and site text field auto-completion lists.
-     */
-    private void refreshAutoCompleteBindings()
-    {
-        getSystemSuggestionProvider().clearSuggestions();
-        getSystemSuggestionProvider().addPossibleSuggestions(mPlaylistManager.getChannelModel().getSystemNames());
-        getSiteSuggestionProvider().clearSuggestions();
-        getSiteSuggestionProvider().addPossibleSuggestions(mPlaylistManager.getChannelModel().getSiteNames());
-    }
-
     protected TextField getSystemField()
     {
         if(mSystemField == null)
@@ -528,30 +511,9 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mSystemField.setDisable(true);
             mSystemField.setMaxWidth(Double.MAX_VALUE);
             mSystemField.textProperty().addListener(mEditorModificationListener);
-            new AutoCompletionTextFieldBinding<>(mSystemField, getSystemSuggestionProvider());
         }
 
         return mSystemField;
-    }
-
-    private SuggestionProvider<String> getSystemSuggestionProvider()
-    {
-        if(mSystemSuggestionProvider == null)
-        {
-            mSystemSuggestionProvider = SuggestionProvider.create(mPlaylistManager.getChannelModel().getSystemNames());
-        }
-
-        return mSystemSuggestionProvider;
-    }
-
-    private SuggestionProvider<String> getSiteSuggestionProvider()
-    {
-        if(mSiteSuggestionProvider == null)
-        {
-            mSiteSuggestionProvider = SuggestionProvider.create(mPlaylistManager.getChannelModel().getSiteNames());
-        }
-
-        return mSiteSuggestionProvider;
     }
 
     protected TextField getSiteField()
@@ -562,7 +524,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mSiteField.setDisable(true);
             mSiteField.setMaxWidth(Double.MAX_VALUE);
             mSiteField.textProperty().addListener(mEditorModificationListener);
-            new AutoCompletionTextFieldBinding<>(mSiteField, getSiteSuggestionProvider());
         }
 
         return mSiteField;

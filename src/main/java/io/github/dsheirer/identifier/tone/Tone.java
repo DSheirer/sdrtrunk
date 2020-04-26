@@ -44,6 +44,11 @@ public class Tone
         mDuration = duration;
     }
 
+    public Tone copyOf()
+    {
+        return new Tone(mAmbeTone, mDuration);
+    }
+
     /**
      * Constructs an instance for the specified tone.
      */

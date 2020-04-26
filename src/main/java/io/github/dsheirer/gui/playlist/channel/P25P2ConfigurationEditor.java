@@ -216,6 +216,9 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         if(mAutoDetectScrambleParameters == null)
         {
             mAutoDetectScrambleParameters = new ToggleSwitch();
+
+            //This messes up too many users.  Hiding it.
+            mAutoDetectScrambleParameters.setVisible(false);
             mAutoDetectScrambleParameters.setDisable(true);
             mAutoDetectScrambleParameters.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> {

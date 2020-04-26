@@ -47,6 +47,7 @@ import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupFormatter;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
+import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.gui.playlist.alias.action.ActionEditor;
@@ -164,6 +165,11 @@ public class AliasItemEditor extends Editor<Alias>
     {
         mPlaylistManager = playlistManager;
         mUserPreferences = userPreferences;
+
+        //Listen for changes to the stream configurations and refresh the stream lists
+        mPlaylistManager.getBroadcastModel().getBroadcastConfigurations()
+            .addListener((ListChangeListener<BroadcastConfiguration>)c -> updateStreamViews());
+
         MyEventBus.getEventBus().register(this);
 
         setMaxWidth(Double.MAX_VALUE);
