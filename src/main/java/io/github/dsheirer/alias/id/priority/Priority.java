@@ -39,6 +39,17 @@ public class Priority extends AliasID
     {
     }
 
+    public Priority(int priority)
+    {
+        mPriority = priority;
+    }
+
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return true;
+    }
+
     @Override
     public boolean isValid()
     {
@@ -63,6 +74,7 @@ public class Priority extends AliasID
     public void setPriority(int priority)
     {
         mPriority = priority;
+        updateValueProperty();
     }
 
     public String toString()

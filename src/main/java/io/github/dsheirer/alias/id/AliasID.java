@@ -40,36 +40,95 @@ import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioRange;
 import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.status.StatusID;
+import io.github.dsheirer.alias.id.status.UnitStatusID;
+import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
+import io.github.dsheirer.alias.id.tone.TonesID;
+import javafx.beans.Observable;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.util.Callback;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @JsonSubTypes.Type(value = BroadcastChannel.class, name = "broadcastChannel"),
     @JsonSubTypes.Type(value = Esn.class, name = "esn"),
     @JsonSubTypes.Type(value = FleetsyncID.class, name = "fleetsyncID"),
+    @JsonSubTypes.Type(value = LegacyTalkgroupID.class, name = "talkgroupID"),
     @JsonSubTypes.Type(value = LoJackFunctionAndID.class, name = "loJackFunctionAndID"),
     @JsonSubTypes.Type(value = MDC1200ID.class, name = "mdc1200ID"),
     @JsonSubTypes.Type(value = Min.class, name = "min"),
     @JsonSubTypes.Type(value = MPT1327ID.class, name = "mpt1327ID"),
     @JsonSubTypes.Type(value = NonRecordable.class, name = "nonRecordable"),
+    @JsonSubTypes.Type(value = Priority.class, name = "priority"),
     @JsonSubTypes.Type(value = Radio.class, name = "radio"),
     @JsonSubTypes.Type(value = RadioRange.class, name = "radioRange"),
-    @JsonSubTypes.Type(value = Talkgroup.class, name = "talkgroup"),
-    @JsonSubTypes.Type(value = TalkgroupRange.class, name = "talkgroupRange"),
-    @JsonSubTypes.Type(value = Priority.class, name = "priority"),
     @JsonSubTypes.Type(value = Record.class, name = "record"),
     @JsonSubTypes.Type(value = SiteID.class, name = "siteID"),
-    @JsonSubTypes.Type(value = StatusID.class, name = "statusID"),
-    @JsonSubTypes.Type(value = LegacyTalkgroupID.class, name = "talkgroupID"),
+    @JsonSubTypes.Type(value = Talkgroup.class, name = "talkgroup"),
+    @JsonSubTypes.Type(value = TalkgroupRange.class, name = "talkgroupRange"),
+    @JsonSubTypes.Type(value = TonesID.class, name = "tones"),
+    @JsonSubTypes.Type(value = UserStatusID.class, name = "statusID"),
+    @JsonSubTypes.Type(value = UnitStatusID.class, name = "unitStatusID"),
     @JsonSubTypes.Type(value = UniqueID.class, name = "uniqueID")
 })
 @JacksonXmlRootElement(localName = "id")
 public abstract class AliasID
 {
+    private SimpleStringProperty mValueProperty = new SimpleStringProperty();
+    private BooleanProperty mOverlapProperty = new SimpleBooleanProperty();
+
     public AliasID()
     {
+    }
+
+    /**
+     * String property representation of this alias ID
+     */
+    @JsonIgnore
+    public SimpleStringProperty valueProperty()
+    {
+        return mValueProperty;
+    }
+
+    /**
+     * Indicates if this alias identifier overlaps with any other alias identifier in the same alias list
+     */
+    @JsonIgnore
+    public BooleanProperty overlapProperty()
+    {
+        return mOverlapProperty;
+    }
+
+    /**
+     * Sets the overlap flag for this alias id.  Overlap indicates that this identifier collides with another
+     * identifier within the same alias list.
+     */
+    public void setOverlap(boolean overlap)
+    {
+        mOverlapProperty.set(overlap);
+        updateValueProperty();
+    }
+
+    /**
+     * Updates the value property for this alias ID.  Note: this method is intended to be invoked by all subclasses
+     * each time that any of the subclass member variable values change.
+     */
+    public void updateValueProperty()
+    {
+        if(overlapProperty().get())
+        {
+            valueProperty().set(toString() + " - Error: Overlap");
+        }
+        else
+        {
+            valueProperty().set(toString());
+        }
+
+        //Hack: harmless, but the list extractor does not consistently update unless we do this.
+        valueProperty().get();
     }
 
     @JsonIgnore
@@ -77,6 +136,30 @@ public abstract class AliasID
 
     public abstract boolean matches(AliasID id);
 
+    /**
+     * Indicates if this alias ID overlaps with another alias ID.
+     * Note: this method is intended to be overridden by certain subclass implementations.
+     */
+    @JsonIgnore
+    public boolean overlaps(AliasID id)
+    {
+        return false;
+    }
+
     @JsonIgnore
     public abstract boolean isValid();
+
+    /**
+     * Indicates if the identifier is an audio identifier (monitor, record, stream)
+     */
+    @JsonIgnore
+    public abstract boolean isAudioIdentifier();
+
+    /**
+     * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
+     */
+    public static Callback<AliasID,Observable[]> extractor()
+    {
+        return (AliasID aid) -> new Observable[] {aid.valueProperty(), aid.overlapProperty()};
+    }
 }

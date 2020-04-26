@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -116,7 +116,7 @@ public class PlaylistUpdater
 
         for(Alias alias: playlist.getAliases())
         {
-            Iterator<AliasID> it = alias.getId().iterator();
+            Iterator<AliasID> it = alias.getAliasIdentifiers().iterator();
 
             List<AliasID> convertedAliasIds = new ArrayList<>();
 
@@ -258,7 +258,7 @@ public class PlaylistUpdater
 
         for(Alias alias : playlist.getAliases())
         {
-            Iterator<AliasID> it = alias.getId().iterator();
+            Iterator<AliasID> it = alias.getAliasIdentifiers().iterator();
 
             while(it.hasNext())
             {
@@ -285,7 +285,7 @@ public class PlaylistUpdater
 
         for(Alias alias : playlist.getAliases())
         {
-            Iterator<AliasID> it = alias.getId().iterator();
+            Iterator<AliasID> it = alias.getAliasIdentifiers().iterator();
 
             while(it.hasNext())
             {
@@ -319,7 +319,7 @@ public class PlaylistUpdater
 
         for(Alias alias : playlist.getAliases())
         {
-            Iterator<AliasID> it = alias.getId().iterator();
+            Iterator<AliasID> it = alias.getAliasIdentifiers().iterator();
 
             while(it.hasNext())
             {

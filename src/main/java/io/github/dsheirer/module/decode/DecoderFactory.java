@@ -31,13 +31,10 @@ import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.AllPassFilter;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.filter.IFilter;
-import io.github.dsheirer.gui.editor.EmptyValidatingEditor;
-import io.github.dsheirer.gui.editor.ValidatingEditor;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.am.AMDecoder;
-import io.github.dsheirer.module.decode.am.AMDecoderEditor;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
@@ -49,12 +46,10 @@ import io.github.dsheirer.module.decode.lj1200.LJ1200DecoderState;
 import io.github.dsheirer.module.decode.lj1200.LJ1200MessageFilter;
 import io.github.dsheirer.module.decode.ltrnet.DecodeConfigLTRNet;
 import io.github.dsheirer.module.decode.ltrnet.LTRNetDecoder;
-import io.github.dsheirer.module.decode.ltrnet.LTRNetDecoderEditor;
 import io.github.dsheirer.module.decode.ltrnet.LTRNetDecoderState;
 import io.github.dsheirer.module.decode.ltrnet.LTRNetMessageFilter;
 import io.github.dsheirer.module.decode.ltrstandard.DecodeConfigLTRStandard;
 import io.github.dsheirer.module.decode.ltrstandard.LTRStandardDecoder;
-import io.github.dsheirer.module.decode.ltrstandard.LTRStandardDecoderEditor;
 import io.github.dsheirer.module.decode.ltrstandard.LTRStandardDecoderState;
 import io.github.dsheirer.module.decode.ltrstandard.LTRStandardMessageFilter;
 import io.github.dsheirer.module.decode.mdc1200.MDCDecoder;
@@ -62,30 +57,25 @@ import io.github.dsheirer.module.decode.mdc1200.MDCDecoderState;
 import io.github.dsheirer.module.decode.mdc1200.MDCMessageFilter;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder;
-import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderEditor;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderState;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327MessageFilter;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327TrafficChannelManager;
 import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
-import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
 import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
-import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderEditor;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
-import io.github.dsheirer.module.decode.passport.PassportDecoderEditor;
 import io.github.dsheirer.module.decode.passport.PassportDecoderState;
 import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
 import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
@@ -148,7 +138,7 @@ public class DecoderFactory
             case NBFM:
                 processNBFM(channel, modules, aliasList, decodeConfig);
                 break;
-            case LTR_STANDARD:
+            case LTR:
                 processLTRStandard(channel, modules, aliasList, (DecodeConfigLTRStandard) decodeConfig);
                 break;
             case LTR_NET:
@@ -408,7 +398,7 @@ public class DecoderFactory
             case LTR_NET:
                 filters.add(new LTRNetMessageFilter());
                 break;
-            case LTR_STANDARD:
+            case LTR:
                 filters.add(new LTRStandardMessageFilter());
                 break;
             case MDC1200:
@@ -445,7 +435,7 @@ public class DecoderFactory
                 return new DecodeConfigAM();
             case LTR_NET:
                 return new DecodeConfigLTRNet();
-            case LTR_STANDARD:
+            case LTR:
                 return new DecodeConfigLTRStandard();
             case MPT1327:
                 return new DecodeConfigMPT1327();
@@ -462,33 +452,6 @@ public class DecoderFactory
         }
     }
 
-    public static ValidatingEditor<Channel> getEditor(DecoderType type, ChannelMapModel model)
-    {
-        switch(type)
-        {
-            case AM:
-                return new AMDecoderEditor();
-            case LTR_NET:
-                return new LTRNetDecoderEditor();
-            case LTR_STANDARD:
-                return new LTRStandardDecoderEditor();
-            case MPT1327:
-                return new MPT1327DecoderEditor(model);
-            case NBFM:
-                return new NBFMDecoderEditor();
-            case P25_PHASE1:
-                return new P25P1DecoderEditor();
-            case P25_PHASE2:
-                return new P25P2DecoderEditor();
-            case PASSPORT:
-                return new PassportDecoderEditor();
-            default:
-                break;
-        }
-
-        return new EmptyValidatingEditor<Channel>("a decoder");
-    }
-
     /**
      * Creates a copy of the configuration
      */
@@ -499,13 +462,16 @@ public class DecoderFactory
             switch(config.getDecoderType())
             {
                 case AM:
-                    return new DecodeConfigAM();
+                    DecodeConfigAM copyAM = new DecodeConfigAM();
+                    DecodeConfigAM origAM = (DecodeConfigAM)config;
+                    copyAM.setRecordAudio(origAM.getRecordAudio());
+                    return copyAM;
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
                     copyLTRNet.setMessageDirection(originalLTRNet.getMessageDirection());
                     return copyLTRNet;
-                case LTR_STANDARD:
+                case LTR:
                     DecodeConfigLTRStandard originalLTRStandard = (DecodeConfigLTRStandard)config;
                     DecodeConfigLTRStandard copyLTRStandard = new DecodeConfigLTRStandard();
                     copyLTRStandard.setMessageDirection(originalLTRStandard.getMessageDirection());
@@ -519,7 +485,11 @@ public class DecoderFactory
                     copyMPT.setTrafficChannelPoolSize(originalMPT.getTrafficChannelPoolSize());
                     return copyMPT;
                 case NBFM:
-                    return new DecodeConfigNBFM();
+                    DecodeConfigNBFM origNBFM = (DecodeConfigNBFM)config;
+                    DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
+                    copyNBFM.setRecordAudio(origNBFM.getRecordAudio());
+                    copyNBFM.setBandwidth(origNBFM.getBandwidth());
+                    return copyNBFM;
                 case P25_PHASE1:
                     DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;
                     DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();

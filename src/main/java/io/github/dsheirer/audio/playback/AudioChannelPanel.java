@@ -120,7 +120,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
-        if(preferenceType == PreferenceType.IDENTIFIER)
+        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
             updateLabels();
         }

@@ -61,7 +61,7 @@ public class LTRStandardDecoder extends Decoder implements IReusableBufferListen
     @Override
     public DecoderType getDecoderType()
     {
-        return DecoderType.LTR_STANDARD;
+        return DecoderType.LTR;
     }
 
     @Override

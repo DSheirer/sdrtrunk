@@ -28,7 +28,7 @@ import io.github.dsheirer.module.decode.ltrstandard.LtrStandardMessageType;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CallEnd extends LTRStandardMessage
+public class CallEnd extends LTRMessage
 {
     private List<Identifier> mIdentifiers;
 

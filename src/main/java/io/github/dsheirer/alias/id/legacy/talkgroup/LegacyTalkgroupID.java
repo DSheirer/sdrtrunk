@@ -38,6 +38,12 @@ public class LegacyTalkgroupID extends AliasID
         mTalkgroup = talkgroup;
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "talkgroup")
     public String getTalkgroup()
     {

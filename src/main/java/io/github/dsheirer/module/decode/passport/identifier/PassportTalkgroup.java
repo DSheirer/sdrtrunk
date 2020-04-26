@@ -34,9 +34,9 @@ public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable
     /**
      * Constructs a Passport talkgroup with a TO role.
      */
-    public PassportTalkgroup(Integer value, Role role)
+    public PassportTalkgroup(Integer value)
     {
-        super(value, role);
+        super(value, Role.TO);
     }
 
     @Override
@@ -48,17 +48,9 @@ public class PassportTalkgroup extends TalkgroupIdentifier implements Comparable
     /**
      * Creates a Passport talkgroup with the value as the TO role
      */
-    public static PassportTalkgroup createTo(int value)
+    public static PassportTalkgroup create(int value)
     {
-        return new PassportTalkgroup(value, Role.TO);
-    }
-
-    /**
-     * Creates a Passport talkgroup (ie mobile id) with the value as the TO role
-     */
-    public static PassportTalkgroup createFrom(int value)
-    {
-        return new PassportTalkgroup(value, Role.FROM);
+        return new PassportTalkgroup(value);
     }
 
     @Override

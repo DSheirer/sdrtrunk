@@ -30,9 +30,10 @@ public class ChannelSelectionManager implements Listener<ChannelEvent>
      * Manages channel selection state to ensure that only one channel is ever
      * in a selected state.
      */
-    public ChannelSelectionManager(Listener<ChannelEvent> listener)
+    public ChannelSelectionManager(ChannelModel channelModel)
     {
-        mChannelEventListener = listener;
+        mChannelEventListener = channelModel;
+        channelModel.addListener(this::receive);
     }
 
     @Override

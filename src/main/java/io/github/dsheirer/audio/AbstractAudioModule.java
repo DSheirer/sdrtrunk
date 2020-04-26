@@ -125,8 +125,15 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             audioSegment.linkTo(previous);
         }
 
-        audioSegment.addAudio(audioBuffer);
-        mAudioSampleCount += audioBuffer.length;
+        try
+        {
+            audioSegment.addAudio(audioBuffer);
+            mAudioSampleCount += audioBuffer.length;
+        }
+        catch(Exception e)
+        {
+            closeAudioSegment();
+        }
     }
 
     /**

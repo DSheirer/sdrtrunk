@@ -39,6 +39,7 @@ public class ScriptAction extends RecurringAction
 
     public ScriptAction()
     {
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
@@ -56,6 +57,7 @@ public class ScriptAction extends RecurringAction
     public void setScript(String script)
     {
         mScript = script;
+        updateValueProperty();
     }
 
     @Override
@@ -104,13 +106,30 @@ public class ScriptAction extends RecurringAction
     @Override
     public String toString()
     {
-        if(mScript == null)
+        StringBuilder sb = new StringBuilder();
+        sb.append("Run Script");
+
+        if(getInterval() != null)
         {
-            return "Run Script";
+            switch(getInterval())
+            {
+                case ONCE:
+                    sb.append(" Once");
+                    break;
+                case DELAYED_RESET:
+                    sb.append(" Once, Reset After ").append(getPeriod()).append(" Seconds");
+                    break;
+                case UNTIL_DISMISSED:
+                    sb.append(" Every ").append(getPeriod()).append(" Seconds Until Dismissed");
+                    break;
+            }
         }
-        else
+
+        if(getScript() == null)
         {
-            return "Run Script: " + mScript;
+            sb.append(" - (script file empty)");
         }
+
+        return sb.toString();
     }
 }

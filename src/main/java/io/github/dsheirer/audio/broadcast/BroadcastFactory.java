@@ -23,27 +23,18 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
-import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPConfiguration;
-import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPConfigurationEditor;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPConfiguration;
-import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPConfigurationEditor;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
-import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1ConfigurationEditor;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
-import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2ConfigurationEditor;
 import io.github.dsheirer.audio.convert.IAudioConverter;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3SilenceGenerator;
-import io.github.dsheirer.gui.editor.Editor;
-import io.github.dsheirer.gui.editor.EmptyEditor;
-import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,48 +129,6 @@ public class BroadcastFactory
         }
 
         return null;
-    }
-
-    /**
-     * Constructs an editor for the specified broadcastAudio configuration
-     *
-     * @param configuration to modify or view
-     * @param broadcastModel model for broadcastAudio configurations
-     * @return an editor for the specified broadcastAudio configuration
-     */
-    public static Editor<BroadcastConfiguration> getEditor(UserPreferences userPreferences,
-                                                           BroadcastConfiguration configuration,
-                                                           BroadcastModel broadcastModel,
-                                                           AliasModel aliasModel,
-                                                           IconManager iconManager)
-    {
-        Editor<BroadcastConfiguration> editor;
-
-        switch(configuration.getBroadcastServerType())
-        {
-            case BROADCASTIFY:
-                editor = new BroadcastifyConfigurationEditor(userPreferences, broadcastModel, aliasModel, iconManager);
-                break;
-            case ICECAST_TCP:
-                editor = new IcecastTCPConfigurationEditor(broadcastModel, aliasModel, iconManager);
-                break;
-            case ICECAST_HTTP:
-                editor = new IcecastHTTPConfigurationEditor(broadcastModel, aliasModel, iconManager);
-                break;
-            case SHOUTCAST_V1:
-                editor = new ShoutcastV1ConfigurationEditor(broadcastModel, aliasModel, iconManager);
-                break;
-            case SHOUTCAST_V2:
-                editor = new ShoutcastV2ConfigurationEditor(broadcastModel, aliasModel, iconManager);
-                break;
-            default:
-                editor = new EmptyEditor<BroadcastConfiguration>();
-                break;
-        }
-
-        editor.setItem(configuration);
-
-        return editor;
     }
 
     public static ISilenceGenerator getSilenceGenerator(BroadcastFormat format)
