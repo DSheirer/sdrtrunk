@@ -35,9 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -69,6 +67,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProces
     private OverflowableBufferStream mOverflowableBufferStream = new OverflowableBufferStream(BUFFER_QUEUE_MAX_SIZE,
         BUFFER_QUEUE_OVERFLOW_RESET_THRESHOLD, mDFTSize.getSize());
     private float[] mPreviousSamples;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public DFTProcessor(SampleType sampleType)
     {
@@ -174,7 +173,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProces
             int initialDelay = 0;
             int period = (int) (1000 / mFrameRate);
 
-            mProcessorTaskHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
+            mProcessorTaskHandle = mExecutor.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
                 TimeUnit.MILLISECONDS);
         }
     }

@@ -127,7 +127,7 @@ public class JTableColumnWidthMonitor
         {
             if(mSaveInProgress.compareAndSet(false, true))
             {
-                ThreadPool.SCHEDULED.schedule(new ColumnWidthSaveTask(), 2, TimeUnit.SECONDS);
+                ThreadPool.SINGLE_EXECUTOR.schedule(new ColumnWidthSaveTask(), 2, TimeUnit.SECONDS);
             }
         }
 

@@ -44,9 +44,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Manages scheduling and playback of audio segments to the local users audio system.
@@ -69,6 +67,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     private List<AudioSegment> mAudioSegments = new ArrayList<>();
     private List<AudioSegment> mPendingAudioSegments = new ArrayList<>();
     private LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs an instance.
@@ -323,7 +322,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     throw new AudioException("Unsupported mixer channel configuration: " + entry.getMixerChannel());
             }
 
-            mProcessingTask = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
+            mProcessingTask = mExecutor.scheduleAtFixedRate(new AudioSegmentProcessor(),
                 0, 100, TimeUnit.MILLISECONDS);
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
             mMixerChannelConfiguration = entry;

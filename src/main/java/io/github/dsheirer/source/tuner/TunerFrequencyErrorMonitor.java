@@ -23,9 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Monitors frequency error measurements received from certain decoders (e.g. P25) and averages those
@@ -40,6 +38,7 @@ public class TunerFrequencyErrorMonitor implements Listener<SourceEvent>
     private List<Integer> mProcessingMeasurements = new ArrayList();
     private ScheduledFuture<?> mTimerHandle;
     private Tuner mTuner;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs a monitor for the tuner argument.
@@ -105,7 +104,7 @@ public class TunerFrequencyErrorMonitor implements Listener<SourceEvent>
     {
         if(mTimerHandle == null)
         {
-            mTimerHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0,
+            mTimerHandle = mExecutor.scheduleAtFixedRate(new Processor(), 0,
                 PROCESSING_INTERVAL_SECONDS, TimeUnit.SECONDS);
         }
     }

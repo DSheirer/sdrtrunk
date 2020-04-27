@@ -126,7 +126,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
             if(mTunerChannelSource == null)
             {
                 getSourceEventListener().receive(SourceEvent.frequencyRotationFailureNotification(this, nextChannel.getFrequency()));
-                ThreadPool.SCHEDULED.schedule(() -> getNextSource(), 1, TimeUnit.SECONDS);
+                ThreadPool.SINGLE_EXECUTOR.schedule(() -> getNextSource(), 1, TimeUnit.SECONDS);
             }
         }
     }

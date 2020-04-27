@@ -38,9 +38,7 @@ import org.usb4java.TransferCallback;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class USBTransferProcessor implements TransferCallback
@@ -58,6 +56,8 @@ public class USBTransferProcessor implements TransferCallback
     private LinkedTransferQueue<Transfer> mCompletedTransfers = new LinkedTransferQueue<>();
     private List<Transfer> mTransfersToDispose = new ArrayList<>();
     private List<Transfer> mTransfersToSubmit = new ArrayList<>();
+
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     //Tuner format-specific byte buffer to IQ float sample converter
     private NativeBufferConverter mNativeBufferConverter;
@@ -142,7 +142,7 @@ public class USBTransferProcessor implements TransferCallback
             {
                 success = true;
                 //Start transferred buffer dispatcher
-                mBufferDispatcherFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mCompletedTransferProcessor,
+                mBufferDispatcherFuture = mExecutor.scheduleAtFixedRate(mCompletedTransferProcessor,
                     0, 6, TimeUnit.MILLISECONDS);
 
                 //Register with LibUSB processor so that it auto-starts LibUSB processing
@@ -249,7 +249,7 @@ public class USBTransferProcessor implements TransferCallback
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 20, TimeUnit.MILLISECONDS);
+            ThreadPool.SINGLE_EXECUTOR.schedule(runnable, 20, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -577,7 +577,7 @@ public class USBTransferProcessor implements TransferCallback
                     }
                     else
                     {
-                        ThreadPool.SCHEDULED.submit(() -> restart());
+                        ThreadPool.SINGLE_EXECUTOR.submit(() -> restart());
                         transfer = null;
                     }
                 }

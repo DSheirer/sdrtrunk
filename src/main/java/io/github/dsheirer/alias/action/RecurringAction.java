@@ -28,6 +28,8 @@ import io.github.dsheirer.util.ThreadPool;
 
 import javax.swing.JOptionPane;
 import java.awt.EventQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,6 +43,7 @@ public abstract class RecurringAction extends AliasAction
 
     protected Interval mInterval = Interval.ONCE;
     protected int mPeriod = 5;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public abstract void performAction(Alias alias, IMessage message);
 
@@ -57,10 +60,10 @@ public abstract class RecurringAction extends AliasAction
                     break;
                 case DELAYED_RESET:
                     performThreadedAction(alias, message);
-                    ThreadPool.SCHEDULED.schedule(new ResetTask(), mPeriod, TimeUnit.SECONDS);
+                    ThreadPool.SINGLE_EXECUTOR.schedule(new ResetTask(), mPeriod, TimeUnit.SECONDS);
                     break;
                 case UNTIL_DISMISSED:
-                    mPerpetualAction = ThreadPool.SCHEDULED.scheduleAtFixedRate(
+                    mPerpetualAction = mExecutor.scheduleAtFixedRate(
                         new PerformActionTask(alias, message), 0, mPeriod, TimeUnit.SECONDS);
 
                     StringBuilder sb = new StringBuilder();
@@ -78,7 +81,7 @@ public abstract class RecurringAction extends AliasAction
 
                         dismiss(false);
 
-                        ThreadPool.SCHEDULED.schedule(new ResetTask(), 15, TimeUnit.SECONDS);
+                        ThreadPool.SINGLE_EXECUTOR.schedule(new ResetTask(), 15, TimeUnit.SECONDS);
                     });
                     break;
                 default:
@@ -92,7 +95,7 @@ public abstract class RecurringAction extends AliasAction
      */
     private void performThreadedAction(final Alias alias, final IMessage message)
     {
-        ThreadPool.SCHEDULED.schedule(() -> performAction(alias, message), 0, TimeUnit.SECONDS);
+        ThreadPool.SINGLE_EXECUTOR.schedule(() -> performAction(alias, message), 0, TimeUnit.SECONDS);
     }
 
     @Override

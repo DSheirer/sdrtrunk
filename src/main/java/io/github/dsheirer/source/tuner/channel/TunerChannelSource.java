@@ -32,6 +32,8 @@ import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +46,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
     private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -289,7 +292,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         {
             if(mScheduledFuture == null)
             {
-                mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this, 0,
+                mScheduledFuture = mExecutor.scheduleAtFixedRate(this, 0,
                     BUFFER_PROCESSOR_RUN_INTERVAL_MILLISECONDS, TimeUnit.MILLISECONDS);
             }
         }

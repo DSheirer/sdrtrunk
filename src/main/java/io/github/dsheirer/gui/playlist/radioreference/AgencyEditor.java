@@ -155,7 +155,7 @@ public class AgencyEditor extends VBox
 
             mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agency.getAgencyId(), mLevel);
 
-            ThreadPool.SCHEDULED.submit(() -> {
+            ThreadPool.SINGLE_EXECUTOR.submit(() -> {
                 try
                 {
                     final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);

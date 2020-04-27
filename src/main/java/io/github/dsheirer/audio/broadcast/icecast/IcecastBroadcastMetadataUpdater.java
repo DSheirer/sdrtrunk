@@ -100,7 +100,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             final String metadataUpdateURL = sb.toString();
             URI uri = URI.create(metadataUpdateURL);
 
-            ThreadPool.SCHEDULED.submit(new Runnable()
+            ThreadPool.SINGLE_EXECUTOR.submit(new Runnable()
             {
                 @Override
                 public void run()

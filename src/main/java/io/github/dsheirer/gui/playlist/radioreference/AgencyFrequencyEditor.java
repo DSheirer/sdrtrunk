@@ -400,7 +400,7 @@ public class AgencyFrequencyEditor extends GridPane
 
                 if(subCategory != null)
                 {
-                    ThreadPool.SCHEDULED.submit(() -> {
+                    ThreadPool.SINGLE_EXECUTOR.submit(() -> {
                         try
                         {
                             List<Frequency> frequencies = new ArrayList<>();

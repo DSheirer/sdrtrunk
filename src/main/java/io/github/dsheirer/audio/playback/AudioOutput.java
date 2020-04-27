@@ -52,6 +52,8 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
 import java.nio.ByteBuffer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
@@ -87,6 +89,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private ByteBuffer mAudioSegmentPreemptTone;
     private ByteBuffer mAudioSegmentDropTone;
     private boolean mRunning = false;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Single audio channel playback with automatic starting and stopping of the
@@ -150,7 +153,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
 
 					//Run the queue processor task every 100 milliseconds or 10 times a second
-                    mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
+                    mProcessorFuture = mExecutor.scheduleAtFixedRate(new AudioSegmentProcessor(),
                         0, 100, TimeUnit.MILLISECONDS);
                 }
 

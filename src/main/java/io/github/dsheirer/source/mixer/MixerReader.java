@@ -28,6 +28,8 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,6 +55,7 @@ public class MixerReader<T extends FloatBuffer> implements Runnable
     private Listener<SourceEvent> mSourceEventListener;
     private AudioFormat mAudioFormat;
     private HeartbeatManager mHeartbeatManager;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine,
                        AbstractSampleAdapter<T> abstractSampleAdapter, HeartbeatManager heartbeatManager)
@@ -144,7 +147,7 @@ public class MixerReader<T extends FloatBuffer> implements Runnable
                 mScheduledFuture = null;
             }
 
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this,
+            mScheduledFuture = mExecutor.scheduleAtFixedRate(this,
                 0, BUFFER_PROCESSING_INTERVAL_MS, TimeUnit.MILLISECONDS);
         }
         else

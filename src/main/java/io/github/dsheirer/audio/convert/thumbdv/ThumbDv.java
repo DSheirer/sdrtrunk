@@ -46,9 +46,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Northwest Digital Radio (NWDR) ThumbDv dongle.
@@ -67,6 +65,8 @@ public class ThumbDv implements AutoCloseable
     private static final String PORT_DESCRIPTION_FRAGMENT = "USB Serial Port";
     private static final int BAUD_RATE = 460800;
     private static final byte PACKET_START = (byte) 0x61;
+    private final ScheduledExecutorService serialPortReaderExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService audioDecodeExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public enum AudioProtocol
     {
@@ -145,7 +145,7 @@ public class ThumbDv implements AutoCloseable
                         mLog.info("Creating Serial Port Reader");
                         final Runnable r = new SerialPortReader(mSerialPort.getInputStream());
                         mLog.info("Starting Serial Port Reader");
-                        mSerialPortReaderHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(r, 0,
+                        mSerialPortReaderHandle = serialPortReaderExecutor.scheduleAtFixedRate(r, 0,
                                 5, TimeUnit.MILLISECONDS);
 
                         mStarted = true;
@@ -254,7 +254,7 @@ public class ThumbDv implements AutoCloseable
             {
                 mLog.info("Audio vocoder parameters configured for " + mAudioProtocol);
                 //Start the audio frame decode processor
-                mAudioDecodeProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioDecodeProcessor(), 0,
+                mAudioDecodeProcessorHandle = audioDecodeExecutor.scheduleAtFixedRate(new AudioDecodeProcessor(), 0,
                         10, TimeUnit.MILLISECONDS);
             }
         }

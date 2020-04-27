@@ -117,7 +117,7 @@ public class ComplexBufferWaveRecorder extends Module implements IComplexBufferL
             {
                 //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
                 //close method will also rename the file and this can sometimes take a few seconds.
-                ThreadPool.SCHEDULED.schedule(new Runnable()
+                ThreadPool.SINGLE_EXECUTOR.schedule(new Runnable()
                 {
                     @Override
                     public void run()

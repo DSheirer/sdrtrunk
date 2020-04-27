@@ -46,6 +46,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class SynthesizerViewer extends JFrame
@@ -66,6 +68,7 @@ public class SynthesizerViewer extends JFrame
     private ChannelControlPanel mChannel2ControlPanel;
     private DFTSize mMainPanelDFTSize = DFTSize.FFT08192;
     private DFTSize mChannelPanelDFTSize = DFTSize.FFT08192;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * GUI Test utility for researching polyphase synthesizers.
@@ -77,7 +80,7 @@ public class SynthesizerViewer extends JFrame
 
     public void start()
     {
-        ThreadPool.SCHEDULED.scheduleAtFixedRate(new DataGenerationManager(), 0, 1000 / DATA_GENERATOR_FRAME_RATE, TimeUnit.MILLISECONDS);
+        mExecutor.scheduleAtFixedRate(new DataGenerationManager(), 0, 1000 / DATA_GENERATOR_FRAME_RATE, TimeUnit.MILLISECONDS);
     }
 
     private void init()

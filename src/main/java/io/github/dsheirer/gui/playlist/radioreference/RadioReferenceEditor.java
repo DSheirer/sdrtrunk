@@ -121,7 +121,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
             if(credentials != null)
             {
-                ThreadPool.SCHEDULED.execute(() -> accept(credentials));
+                ThreadPool.SINGLE_EXECUTOR.execute(() -> accept(credentials));
             }
         }
     }
@@ -136,7 +136,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         final int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
 
-        ThreadPool.SCHEDULED.execute(() -> {
+        ThreadPool.SINGLE_EXECUTOR.execute(() -> {
             try
             {
                 List<Country> countries = mRadioReference.getService().getCountries();
@@ -517,7 +517,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
         {
             int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
 
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.SINGLE_EXECUTOR.execute(() -> {
                 try
                 {
                     final CountryInfo countryInfo = mRadioReference.getService().getCountryInfo(country.getCountryId());
@@ -575,7 +575,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         if(state != null)
         {
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.SINGLE_EXECUTOR.execute(() -> {
                 try
                 {
                     final StateInfo stateInfo = mRadioReference.getService().getStateInfo(state.getStateId());
@@ -631,7 +631,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         if(county != null)
         {
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.SINGLE_EXECUTOR.execute(() -> {
                 try
                 {
                     final CountyInfo countyInfo = mRadioReference.getService().getCountyInfo(county.getCountyId());
