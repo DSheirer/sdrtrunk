@@ -25,6 +25,8 @@ import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +41,7 @@ public class SampleGenerator
     private int mSamplesPerInterval;
     private boolean mReuseBuffers;
     private ScheduledFuture<?> mScheduledFuture;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Generates complex sample buffers at the specified sample rate with a unity gain tone at the specified
@@ -94,7 +97,7 @@ public class SampleGenerator
     {
         if(mScheduledFuture == null)
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Generator(), 0, mInterval,
+            mScheduledFuture = mExecutor.scheduleAtFixedRate(new Generator(), 0, mInterval,
                 TimeUnit.MILLISECONDS);
         }
         else

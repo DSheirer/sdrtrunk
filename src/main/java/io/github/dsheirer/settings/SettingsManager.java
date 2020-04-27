@@ -402,7 +402,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         {
             if(mSettingsSavePending.compareAndSet(false, true))
             {
-                ThreadPool.SCHEDULED.schedule(new SettingsSaveTask(), 2, TimeUnit.SECONDS);
+                ThreadPool.SINGLE_EXECUTOR.schedule(new SettingsSaveTask(), 2, TimeUnit.SECONDS);
             }
         }
     }

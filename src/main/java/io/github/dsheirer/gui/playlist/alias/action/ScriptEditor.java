@@ -200,7 +200,7 @@ public class ScriptEditor extends ActionEditor<ScriptAction>
             final TestMessage testMessage = new TestMessage();
             final Alias testAlias = new Alias("Test Alias");
 
-            ThreadPool.SCHEDULED.submit(new Runnable()
+            ThreadPool.SINGLE_EXECUTOR.submit(new Runnable()
             {
                 @Override
                 public void run()

@@ -35,9 +35,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AudioBroadcaster implements Listener<AudioRecording>
@@ -62,6 +60,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     private long mDelay;
     private long mMaximumRecordingAge;
     private AtomicBoolean mStreaming = new AtomicBoolean();
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * AudioBroadcaster for streaming audio recordings to a remote streaming audio server.  Audio recordings are
@@ -143,7 +142,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
         {
             if(mRecordingQueueProcessorFuture == null)
             {
-                mRecordingQueueProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mRecordingQueueProcessor,
+                mRecordingQueueProcessorFuture = mExecutor.scheduleAtFixedRate(mRecordingQueueProcessor,
                     0, PROCESSOR_RUN_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
         }

@@ -40,6 +40,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -57,6 +59,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     private Object mReusableComplexBufferQueue = new Object();
     private boolean mAutoReplay;
     private ScheduledFuture<?> mReplayController;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs an instance with optional auto-replay at near real time.
@@ -133,10 +136,8 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         {
             long intervalMilliseconds = 50; //20 intervals per second
             double framesPerInterval = getSampleRate() / 20.0d;
-            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(framesPerInterval),
+            mReplayController = mExecutor.scheduleAtFixedRate(new ReplayController(framesPerInterval),
                     0, intervalMilliseconds, TimeUnit.MILLISECONDS);
-
-
         }
     }
 

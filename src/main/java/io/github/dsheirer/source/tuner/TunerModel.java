@@ -251,7 +251,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
             //Hack: the airspy tuner would lockup aperiodically and refuse to produce
             //transfer buffers ... delaying registering for buffers for 500 ms seems
             //to allow the airspy to stabilize before we start asking for samples.
-            ThreadPool.SCHEDULED.schedule(new Runnable()
+            ThreadPool.SINGLE_EXECUTOR.schedule(new Runnable()
             {
                 @Override
                 public void run()

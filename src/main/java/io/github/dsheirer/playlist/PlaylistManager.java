@@ -549,7 +549,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         {
             if(mPlaylistSavePending.compareAndSet(false, true))
             {
-                mPlaylistSaveFuture = ThreadPool.SCHEDULED.schedule(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
+                mPlaylistSaveFuture = ThreadPool.SINGLE_EXECUTOR.schedule(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
             }
         }
     }

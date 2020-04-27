@@ -179,7 +179,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.SINGLE_EXECUTOR.schedule(runnable, 0l, TimeUnit.SECONDS);
         }
 
         return connected();

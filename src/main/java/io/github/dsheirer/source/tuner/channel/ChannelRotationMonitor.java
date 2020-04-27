@@ -38,6 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -58,6 +60,7 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     private long mRotationDelay;
     private boolean mActive;
     private long mInactiveTimestamp = System.currentTimeMillis();
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs a channel rotation monitor.
@@ -156,7 +159,7 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     {
         if(mScheduledFuture == null)
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> checkState(), 1, 1, TimeUnit.SECONDS);
+            mScheduledFuture = mExecutor.scheduleAtFixedRate(() -> checkState(), 1, 1, TimeUnit.SECONDS);
         }
     }
 

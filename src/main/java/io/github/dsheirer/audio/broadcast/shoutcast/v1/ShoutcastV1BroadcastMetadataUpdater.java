@@ -138,7 +138,7 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
 
                 if(updateRequest != null)
                 {
-                    ThreadPool.SCHEDULED.schedule(new Runnable()
+                    ThreadPool.SINGLE_EXECUTOR.schedule(new Runnable()
                     {
                         @Override
                         public void run()
