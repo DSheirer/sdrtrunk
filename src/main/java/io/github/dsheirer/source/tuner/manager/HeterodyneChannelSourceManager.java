@@ -23,7 +23,7 @@ package io.github.dsheirer.source.tuner.manager;
 
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexDelayBuffer;
+import io.github.dsheirer.sample.buffer.ComplexDelayBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -52,7 +52,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     private SortedSet<TunerChannel> mTunerChannels = new TreeSet<>();
     private TunerController mTunerController;
     private ChannelSourceEventProcessor mChannelSourceEventProcessor = new ChannelSourceEventProcessor();
-    private ReusableComplexDelayBuffer mSampleDelayBuffer;
+    private ComplexDelayBuffer mSampleDelayBuffer;
 
     public HeterodyneChannelSourceManager(TunerController tunerController)
     {
@@ -216,7 +216,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
         if(mSampleDelayBuffer == null)
         {
             int delayBufferSize = (int)(DELAY_BUFFER_DURATION_MILLISECONDS / mTunerController.getBufferDuration());
-            mSampleDelayBuffer = new ReusableComplexDelayBuffer(delayBufferSize, mTunerController.getBufferDuration());
+            mSampleDelayBuffer = new ComplexDelayBuffer(delayBufferSize, mTunerController.getBufferDuration());
 
             mLog.debug("Created/registered complex sample delay buffer of size [" + delayBufferSize +
                 "] buffers and delay duration [" + DELAY_BUFFER_DURATION_MILLISECONDS +

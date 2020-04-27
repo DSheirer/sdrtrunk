@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
-public class ReusableComplexBuffer extends ReusableFloatBuffer
+public class ComplexBuffer extends FloatBuffer
 {
     /**
      * Creates a reusable, timestamped complex buffer using the specified time in milliseconds.
@@ -23,14 +23,12 @@ public class ReusableComplexBuffer extends ReusableFloatBuffer
      * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
-     *
-     * @param disposalListener to be notified when all consumers/users are finished using the buffer
-     * @param samples of data
+     *  @param samples of data
      * @param timestamp in millis for the buffer
      */
-    ReusableComplexBuffer(IReusableBufferDisposedListener disposalListener, float[] samples, long timestamp)
+    ComplexBuffer(float[] samples, long timestamp)
     {
-        super(disposalListener, samples, timestamp);
+        super(samples, timestamp);
     }
 
     /**
@@ -40,12 +38,11 @@ public class ReusableComplexBuffer extends ReusableFloatBuffer
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
-     * @param disposalListener to be notified when all consumers are finished using the buffer
      * @param samples of data
      */
-    protected ReusableComplexBuffer(IReusableBufferDisposedListener disposalListener, float[] samples)
+    public ComplexBuffer(float[] samples)
     {
-        this(disposalListener, samples, System.currentTimeMillis());
+        this(samples, System.currentTimeMillis());
     }
 
     /**

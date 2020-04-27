@@ -40,9 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Monitors audio segments and upon completion records any audio segments that have been flagged as recordable
@@ -56,6 +54,7 @@ public class AudioRecordingManager implements Listener<AudioSegment>
     private int mUnknownAudioRecordingIndex = 1;
     private int mDuplicateAudioRecordingSuffix = 1;
     private String mPreviousRecordingPath = null;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs an instance
@@ -73,7 +72,7 @@ public class AudioRecordingManager implements Listener<AudioSegment>
     {
         if(mQueueProcessorHandle == null)
         {
-            mQueueProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new QueueProcessor(),
+            mQueueProcessorHandle = mExecutor.scheduleAtFixedRate(new QueueProcessor(),
                 0, 1, TimeUnit.SECONDS);
         }
     }

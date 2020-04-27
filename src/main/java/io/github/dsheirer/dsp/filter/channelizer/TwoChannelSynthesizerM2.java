@@ -15,8 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -46,7 +45,7 @@ public class TwoChannelSynthesizerM2
 {
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelSynthesizerM2.class);
 
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("Two Channel Synthesizer M2");
+    private Object mReusableComplexBufferQueue = new Object();
     private float[] mSerpentineDataBuffer;
     private float[] mIQInterleavedFilter;
     private float[] mFilterVectorProduct;
@@ -87,7 +86,7 @@ public class TwoChannelSynthesizerM2
      * @param channelBuffer2 input channel
      * @return synthesized channel results of the same length as both channel 1/2 input arrays.
      */
-    public ReusableComplexBuffer process(ReusableComplexBuffer channelBuffer1, ReusableComplexBuffer channelBuffer2)
+    public ComplexBuffer process(ComplexBuffer channelBuffer1, ComplexBuffer channelBuffer2)
     {
         if(channelBuffer1.getSamples().length != channelBuffer1.getSamples().length)
         {
@@ -97,7 +96,8 @@ public class TwoChannelSynthesizerM2
         float[] channel1 = channelBuffer1.getSamples();
         float[] channel2 = channelBuffer2.getSamples();
 
-        ReusableComplexBuffer synthesizedComplexBuffer = mReusableComplexBufferQueue.getBuffer(channel1.length);
+        ComplexBuffer buffer = new ComplexBuffer(new float[channel1.length]);
+        ComplexBuffer synthesizedComplexBuffer = buffer;
 
         float[] output = synthesizedComplexBuffer.getSamples();
         float[] IFFTBuffer = new float[4];
@@ -153,9 +153,6 @@ public class TwoChannelSynthesizerM2
 
             mTopBlockFlag = !mTopBlockFlag;
         }
-
-        channelBuffer1.decrementUserCount();
-        channelBuffer2.decrementUserCount();
 
         return synthesizedComplexBuffer;
     }

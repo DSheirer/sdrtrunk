@@ -25,7 +25,7 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
@@ -35,17 +35,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Processes both complex samples or float samples and dispatches a float array of DFT results, using configurable fft
  * size and output dispatch timelines.
  */
-public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
+public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
     private static final int BUFFER_QUEUE_MAX_SIZE = 20;
@@ -70,6 +67,7 @@ public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEve
     private OverflowableBufferStream mOverflowableBufferStream = new OverflowableBufferStream(BUFFER_QUEUE_MAX_SIZE,
         BUFFER_QUEUE_OVERFLOW_RESET_THRESHOLD, mDFTSize.getSize());
     private float[] mPreviousSamples;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public DFTProcessor(SampleType sampleType)
     {
@@ -175,7 +173,7 @@ public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEve
             int initialDelay = 0;
             int period = (int) (1000 / mFrameRate);
 
-            mProcessorTaskHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
+            mProcessorTaskHandle = mExecutor.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
                 TimeUnit.MILLISECONDS);
         }
     }
@@ -205,7 +203,7 @@ public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEve
      * Places the sample into a transfer queue for future processing.
      */
     @Override
-    public void receive(ReusableComplexBuffer sampleBuffer)
+    public void receive(ComplexBuffer sampleBuffer)
     {
         mOverflowableBufferStream.offer(sampleBuffer);
     }

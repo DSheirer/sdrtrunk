@@ -22,7 +22,7 @@
 package io.github.dsheirer.source.tuner.rtl;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerManager;
@@ -1524,7 +1524,7 @@ public abstract class RTL2832TunerController extends USBTunerController
      * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
      */
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<ComplexBuffer> listener)
     {
         boolean hasExistingListeners = hasBufferListeners();
 
@@ -1540,7 +1540,7 @@ public abstract class RTL2832TunerController extends USBTunerController
      * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
      */
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<ComplexBuffer> listener)
     {
         super.removeBufferListener(listener);
 

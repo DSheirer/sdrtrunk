@@ -22,7 +22,7 @@
 package io.github.dsheirer.source.tuner.usb;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerManager;
 import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
@@ -38,9 +38,7 @@ import org.usb4java.TransferCallback;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class USBTransferProcessor implements TransferCallback
@@ -59,13 +57,15 @@ public class USBTransferProcessor implements TransferCallback
     private List<Transfer> mTransfersToDispose = new ArrayList<>();
     private List<Transfer> mTransfersToSubmit = new ArrayList<>();
 
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
+
     //Tuner format-specific byte buffer to IQ float sample converter
     private NativeBufferConverter mNativeBufferConverter;
 
     //Byte array transfer buffers size in bytes
     private int mBufferSize;
 
-    private Listener<ReusableComplexBuffer> mComplexBufferListener;
+    private Listener<ComplexBuffer> mComplexBufferListener;
 
     //Handle to the USB bulk transfer device
     private DeviceHandle mUsbBulkTransferDeviceHandle;
@@ -142,7 +142,7 @@ public class USBTransferProcessor implements TransferCallback
             {
                 success = true;
                 //Start transferred buffer dispatcher
-                mBufferDispatcherFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mCompletedTransferProcessor,
+                mBufferDispatcherFuture = mExecutor.scheduleAtFixedRate(mCompletedTransferProcessor,
                     0, 6, TimeUnit.MILLISECONDS);
 
                 //Register with LibUSB processor so that it auto-starts LibUSB processing
@@ -249,7 +249,7 @@ public class USBTransferProcessor implements TransferCallback
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 20, TimeUnit.MILLISECONDS);
+            ThreadPool.SINGLE_EXECUTOR.schedule(runnable, 20, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -358,7 +358,7 @@ public class USBTransferProcessor implements TransferCallback
     /**
      * Sets the listener and auto-starts the buffer processor
      */
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<ComplexBuffer> listener)
     {
         if(mComplexBufferListener == null || !mComplexBufferListener.equals(listener))
         {
@@ -557,7 +557,7 @@ public class USBTransferProcessor implements TransferCallback
                     {
                         ByteBuffer nativeBuffer = transfer.buffer();
 
-                        ReusableComplexBuffer reusableComplexBuffer =
+                        ComplexBuffer reusableComplexBuffer =
                             mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
 
                         if(mComplexBufferListener != null)
@@ -577,7 +577,7 @@ public class USBTransferProcessor implements TransferCallback
                     }
                     else
                     {
-                        ThreadPool.SCHEDULED.submit(() -> restart());
+                        ThreadPool.SINGLE_EXECUTOR.submit(() -> restart());
                         transfer = null;
                     }
                 }

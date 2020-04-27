@@ -21,16 +21,16 @@ import io.github.dsheirer.sample.real.RealSampleListener;
 /**
  * Assembles single float samples into a ReusableFloatBuffer containing an array of floats
  */
-public class ReusableBufferAssembler implements RealSampleListener
+public class BufferAssembler implements RealSampleListener
 {
     private int mBufferSize;
     private int mBufferPointer;
-    private ReusableFloatBuffer mCurrentBuffer;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Real");
+    private FloatBuffer mCurrentBuffer;
+    private Object mReusableBufferQueue = new Object();
 
-    private Listener<ReusableFloatBuffer> mListener;
+    private Listener<FloatBuffer> mListener;
 
-    public ReusableBufferAssembler(int bufferSize)
+    public BufferAssembler(int bufferSize)
     {
         mBufferSize = bufferSize;
     }
@@ -42,7 +42,7 @@ public class ReusableBufferAssembler implements RealSampleListener
 
     public void reset()
     {
-        mCurrentBuffer.decrementUserCount();
+
         mCurrentBuffer = null;
         mBufferPointer = 0;
     }
@@ -52,7 +52,8 @@ public class ReusableBufferAssembler implements RealSampleListener
     {
         if(mCurrentBuffer == null)
         {
-            mCurrentBuffer = mReusableBufferQueue.getBuffer(mBufferSize);
+            FloatBuffer buffer = new FloatBuffer(new float[mBufferSize]);
+            mCurrentBuffer = buffer;
             mBufferPointer = 0;
         }
 
@@ -66,14 +67,14 @@ public class ReusableBufferAssembler implements RealSampleListener
             }
             else
             {
-                mCurrentBuffer.decrementUserCount();
-            }
+
+                }
 
             mCurrentBuffer = null;
         }
     }
 
-    public void setListener(Listener<ReusableFloatBuffer> listener)
+    public void setListener(Listener<FloatBuffer> listener)
     {
         mListener = listener;
     }

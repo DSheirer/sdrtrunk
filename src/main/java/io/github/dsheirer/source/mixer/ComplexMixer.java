@@ -17,7 +17,7 @@ package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ComplexSampleAdapter;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +28,7 @@ import javax.sound.sampled.TargetDataLine;
 public class ComplexMixer
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexMixer.class);
-    private MixerReader<ReusableComplexBuffer> mMixerReader;
+    private MixerReader<ComplexBuffer> mMixerReader;
     private String mName;
 
     /**
@@ -74,7 +74,7 @@ public class ComplexMixer
         mMixerReader.stop();
     }
 
-    public void setBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void setBufferListener(Listener<ComplexBuffer> listener)
     {
         mMixerReader.setBufferListener(listener);
     }

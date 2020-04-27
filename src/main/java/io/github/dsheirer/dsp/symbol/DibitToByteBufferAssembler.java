@@ -16,26 +16,32 @@
 package io.github.dsheirer.dsp.symbol;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
-import io.github.dsheirer.sample.buffer.ReusableByteBufferQueue;
+import io.github.dsheirer.sample.buffer.IByteBufferProvider;
+import io.github.dsheirer.sample.buffer.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Assembles reusable byte buffers from an incoming stream of Dibits.
  */
-public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByteBufferProvider
+public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DibitToByteBufferAssembler.class);
 
-    private ReusableByteBufferQueue mBufferQueue = new ReusableByteBufferQueue("DibitToByteBufferAssembler");
-    private ReusableByteBuffer mCurrentBuffer;
+    private Object mBufferQueue = new Object() {
+        /**
+         * Disposes of any reclaimed buffers to prepare this queue for disposal.
+         */
+        public void dispose()
+        {
+        }
+    };
+    private ByteBuffer mCurrentBuffer;
     private int mBufferPointer;
     private int mBufferSize;
     private byte mCurrentByte;
     private int mDibitCount;
-    private Listener<ReusableByteBuffer> mBufferListener;
+    private Listener<ByteBuffer> mBufferListener;
 
     /**
      * Constructs an assembler to produce reusable byte buffers of the specified size
@@ -59,7 +65,8 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
             mBufferListener.receive(mCurrentBuffer);
         }
 
-        mCurrentBuffer = mBufferQueue.getBuffer(mBufferSize);
+        ByteBuffer buffer = new ByteBuffer(new byte[mBufferSize]);
+        mCurrentBuffer = buffer;
         mBufferPointer = 0;
     }
 
@@ -103,7 +110,7 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
      * Registers the listener to receive fully assembled byte buffers from this assembler.
      */
     @Override
-    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    public void setBufferListener(Listener<ByteBuffer> listener)
     {
         mBufferListener = listener;
     }
@@ -112,7 +119,7 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
      * Removes the listener from receiving buffers from this assembler
      */
     @Override
-    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    public void removeBufferListener(Listener<ByteBuffer> listener)
     {
         mBufferListener = null;
     }

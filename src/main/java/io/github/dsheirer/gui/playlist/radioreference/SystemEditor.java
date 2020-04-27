@@ -262,7 +262,7 @@ public class SystemEditor extends VBox
             mUserPreferences.getRadioReferencePreference().setPreferredSystemId(system.getSystemId(), mLevel);
 
             //Retrieve the radio reference data on a separate thread and then load the editors on the FX thread
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.SINGLE_EXECUTOR.execute(() -> {
                 try
                 {
                     if(mRadioReferenceDecoder == null)

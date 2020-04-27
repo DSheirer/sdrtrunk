@@ -2,8 +2,7 @@ package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.DoubleCircularBuffer;
 import io.github.dsheirer.buffer.RealCircularBuffer;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.apache.commons.math3.util.FastMath;
 
 /*******************************************************************************
@@ -135,7 +134,7 @@ public class AutomaticGainControl
     private RealCircularBuffer mDelayBuffer = new RealCircularBuffer((int)(SAMPLE_RATE * DELAY_TIME_CONSTANT));
     private DoubleCircularBuffer mMagnitudeBuffer = new DoubleCircularBuffer((int)(SAMPLE_RATE * WINDOW_TIME_CONSTANT));
 
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("AutomaticGainControl");
+    private Object mReusableBufferQueue = new Object();
 
     public AutomaticGainControl()
     {
@@ -148,9 +147,10 @@ public class AutomaticGainControl
      * @param input samples to process
      * @return output samples with gain applied
      */
-    public ReusableFloatBuffer process(ReusableFloatBuffer input)
+    public FloatBuffer process(FloatBuffer input)
     {
-        ReusableFloatBuffer output = mReusableBufferQueue.getBuffer(input.getSampleCount());
+        FloatBuffer buffer = new FloatBuffer(new float[input.getSampleCount()]);
+        FloatBuffer output = buffer;
 
         float[] inputSamples = input.getSamples();
         float[] outputSamples = output.getSamples();
@@ -159,8 +159,6 @@ public class AutomaticGainControl
         {
             outputSamples[x] = process(inputSamples[x]);
         }
-
-        input.decrementUserCount();
 
         return output;
     }

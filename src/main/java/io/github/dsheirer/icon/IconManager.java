@@ -420,7 +420,7 @@ public class IconManager
     {
         if(mSavingIcons.compareAndSet(false, true))
         {
-            ThreadPool.SCHEDULED.schedule(new IconSaveTask(), 2, TimeUnit.SECONDS);
+            ThreadPool.SINGLE_EXECUTOR.schedule(new IconSaveTask(), 2, TimeUnit.SECONDS);
         }
     }
 

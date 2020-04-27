@@ -22,9 +22,9 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderFactory;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableComplexBufferProvider;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.IComplexBufferProvider;
+import io.github.dsheirer.sample.buffer.BufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -40,10 +40,10 @@ import org.slf4j.LoggerFactory;
 import java.util.SortedSet;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>, ITunerErrorListener
+        IComplexBufferProvider, Listener<ComplexBuffer>, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
-    protected ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
+    protected BufferBroadcaster mReusableBufferBroadcaster = new BufferBroadcaster();
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
     private double mUsableBandwidthPercentage;
@@ -137,13 +137,13 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
             case REQUEST_START_SAMPLE_STREAM:
                 if(sourceEvent.getSource() instanceof Listener)
                 {
-                    addBufferListener((Listener<ReusableComplexBuffer>)sourceEvent.getSource());
+                    addBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
                 }
                 break;
             case REQUEST_STOP_SAMPLE_STREAM:
                 if(sourceEvent.getSource() instanceof Listener)
                 {
-                    removeBufferListener((Listener<ReusableComplexBuffer>)sourceEvent.getSource());
+                    removeBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
                 }
                 break;
             default:
@@ -349,7 +349,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Adds the listener to receive complex buffer samples
      */
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<ComplexBuffer> listener)
     {
         mReusableBufferBroadcaster.addListener(listener);
     }
@@ -358,7 +358,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Removes the listener from receiving complex buffer samples
      */
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<ComplexBuffer> listener)
     {
         mReusableBufferBroadcaster.removeListener(listener);
     }
@@ -375,7 +375,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     /**
      * Broadcasts the buffer to any registered listeners
      */
-    protected void broadcast(ReusableComplexBuffer reusableComplexBuffer)
+    protected void broadcast(ComplexBuffer reusableComplexBuffer)
     {
         mReusableBufferBroadcaster.broadcast(reusableComplexBuffer);
     }
@@ -384,7 +384,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Implements the Listener<T> interface to receive and distribute complex buffers from subclass implementations
      */
     @Override
-    public void receive(ReusableComplexBuffer complexBuffer)
+    public void receive(ComplexBuffer complexBuffer)
     {
         broadcast(complexBuffer);
     }

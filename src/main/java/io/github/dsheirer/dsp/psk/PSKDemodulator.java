@@ -17,7 +17,7 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 
@@ -80,7 +80,7 @@ public abstract class PSKDemodulator<T> implements ComplexSampleListener
      * Processes a (filtered) buffer containing complex samples for decoding
      * @param reusableComplexBuffer with complex samples
      */
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         float[] samples = reusableComplexBuffer.getSamples();
 
@@ -89,8 +89,7 @@ public abstract class PSKDemodulator<T> implements ComplexSampleListener
             receive(samples[x], samples[x + 1]);
         }
 
-        reusableComplexBuffer.decrementUserCount();
-    }
+        }
 
     /**
      * Processes a complex sample for decoding.  Once sufficient samples are buffered, a symbol decision is made.

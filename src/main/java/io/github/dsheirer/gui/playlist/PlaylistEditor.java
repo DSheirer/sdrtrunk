@@ -168,7 +168,7 @@ public class PlaylistEditor extends BorderPane
                 String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
                 final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
-                ThreadPool.SCHEDULED.execute(() -> {
+                ThreadPool.SINGLE_EXECUTOR.execute(() -> {
                     try
                     {
                         ImageIO.write(bufferedImage, "png", captureFile.toFile());

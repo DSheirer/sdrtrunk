@@ -15,9 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
-public abstract class AbstractSampleAdapter<T extends ReusableFloatBuffer>
+public abstract class AbstractSampleAdapter<T extends FloatBuffer>
 {
     public abstract T convert(byte[] sampleBytes);
 }

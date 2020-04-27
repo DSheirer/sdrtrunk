@@ -30,9 +30,8 @@ import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.Setting;
@@ -64,7 +63,7 @@ import java.awt.event.MouseMotionListener;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener,
-    Listener<ReusableFloatBuffer>, SettingChangeListener, SpectralDisplayAdjuster
+    Listener<FloatBuffer>, SettingChangeListener, SpectralDisplayAdjuster
 {
     private static final long serialVersionUID = 1L;
 
@@ -73,7 +72,7 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     private JLayeredPane mLayeredPane;
     private SpectrumPanel mSpectrumPanel;
     private ChannelOverlayPanel mOverlayPanel;
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ChannelSpectrumPanel");
+    private Object mReusableComplexBufferQueue = new Object();
 
     private Channel mCurrentChannel;
 
@@ -271,13 +270,14 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     }
 
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(FloatBuffer buffer)
     {
-        ReusableFloatBuffer decimated = mDecimatingFilter.filter(buffer);
+        FloatBuffer decimated = mDecimatingFilter.filter(buffer);
 
         //Hack: we're placing real samples in a complex buffer that the DFT
         //processor is expecting.
-        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
+        ComplexBuffer buffer1 = new ComplexBuffer(new float[decimated.getSamples().length]);
+        ComplexBuffer reusableComplexBuffer = buffer1;
         reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
         mDFTProcessor.receive(reusableComplexBuffer);
     }

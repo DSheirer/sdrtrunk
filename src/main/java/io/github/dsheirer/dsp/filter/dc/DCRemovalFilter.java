@@ -15,8 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.dc;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
 /**
  * DC removal filter for removing any DC offset that may be present when a signal is not aligned within the
@@ -24,7 +23,7 @@ import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
  */
 public class DCRemovalFilter
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("DC Removal Filter");
+    private Object mReusableBufferQueue = new Object();
     protected float mAverage;
     protected float mRatio;
 
@@ -77,9 +76,10 @@ public class DCRemovalFilter
      * @param unfilteredBuffer containing samples to filter
      * @return a new reusable buffer containing the filtered samples with the user count set to 1.
      */
-    public ReusableFloatBuffer filter(ReusableFloatBuffer unfilteredBuffer)
+    public FloatBuffer filter(FloatBuffer unfilteredBuffer)
     {
-        ReusableFloatBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredBuffer.getSampleCount());
+        FloatBuffer buffer = new FloatBuffer(new float[unfilteredBuffer.getSampleCount()]);
+        FloatBuffer filteredBuffer = buffer;
 
         float[] unfilteredSamples = unfilteredBuffer.getSamples();
         float[] filteredSamples = filteredBuffer.getSamples();
@@ -88,8 +88,6 @@ public class DCRemovalFilter
         {
             filteredSamples[x] = filter(unfilteredSamples[x]);
         }
-
-        unfilteredBuffer.decrementUserCount();
 
         return filteredBuffer;
     }

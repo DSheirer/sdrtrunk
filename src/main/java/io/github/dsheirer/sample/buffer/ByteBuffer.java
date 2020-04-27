@@ -17,7 +17,7 @@ package io.github.dsheirer.sample.buffer;
 
 import org.apache.commons.lang3.Validate;
 
-public class ReusableByteBuffer extends AbstractReusableBuffer
+public class ByteBuffer extends AbstractBuffer
 {
     private byte[] mSamples;
 
@@ -27,17 +27,13 @@ public class ReusableByteBuffer extends AbstractReusableBuffer
      * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
-     *
-     * @param bufferDisposedListener to be notified when all consumers/users are finished using the buffer
-     * @param bytes of data
+     *  @param bytes of data
      * @param timestamp in millis for the buffer
      */
-    ReusableByteBuffer(IReusableBufferDisposedListener bufferDisposedListener, byte[] bytes, long timestamp)
+    ByteBuffer(byte[] bytes, long timestamp)
     {
-        super(bufferDisposedListener, timestamp);
+        super(timestamp);
         mSamples = bytes;
-
-        Validate.notNull(bufferDisposedListener, "Reusable Byte Buffer Listener cannot be null");
     }
 
     /**
@@ -47,12 +43,11 @@ public class ReusableByteBuffer extends AbstractReusableBuffer
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
-     * @param bufferDisposedListener to be notified when all consumers are finished using the buffer
      * @param bytes of data
      */
-    public ReusableByteBuffer(IReusableBufferDisposedListener bufferDisposedListener, byte[] bytes)
+    public ByteBuffer(byte[] bytes)
     {
-        this(bufferDisposedListener, bytes, System.currentTimeMillis());
+        this(bytes, System.currentTimeMillis());
     }
 
     /**

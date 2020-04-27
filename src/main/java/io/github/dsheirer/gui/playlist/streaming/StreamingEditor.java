@@ -239,7 +239,7 @@ public class StreamingEditor extends SplitPane
     {
         if(mPlaylistManager.getRadioReference().availableProperty().get())
         {
-            ThreadPool.SCHEDULED.submit(new Runnable()
+            ThreadPool.SINGLE_EXECUTOR.submit(new Runnable()
             {
                 @Override
                 public void run()

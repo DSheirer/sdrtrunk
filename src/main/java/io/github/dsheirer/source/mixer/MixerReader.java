@@ -17,7 +17,7 @@ package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.AbstractSampleAdapter;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.ThreadPool;
@@ -28,6 +28,8 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * the samples to an array of floats using the specified adapter.  Dispatches float arrays to the registered
  * buffer listener.
  */
-public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
+public class MixerReader<T extends FloatBuffer> implements Runnable
 {
     private final static Logger mLog = LoggerFactory.getLogger(MixerReader.class);
 
@@ -53,6 +55,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     private Listener<SourceEvent> mSourceEventListener;
     private AudioFormat mAudioFormat;
     private HeartbeatManager mHeartbeatManager;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine,
                        AbstractSampleAdapter<T> abstractSampleAdapter, HeartbeatManager heartbeatManager)
@@ -144,7 +147,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
                 mScheduledFuture = null;
             }
 
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this,
+            mScheduledFuture = mExecutor.scheduleAtFixedRate(this,
                 0, BUFFER_PROCESSING_INTERVAL_MS, TimeUnit.MILLISECONDS);
         }
         else

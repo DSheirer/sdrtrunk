@@ -15,12 +15,11 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
-public abstract class RealSampleAdapter extends AbstractSampleAdapter<ReusableFloatBuffer>
+public abstract class RealSampleAdapter extends AbstractSampleAdapter<FloatBuffer>
 {
-    private ReusableBufferQueue mReusableBufferQueue;
+    private Object mReusableBufferQueue;
 
     /**
      * Constructs a real sample adapter
@@ -29,11 +28,14 @@ public abstract class RealSampleAdapter extends AbstractSampleAdapter<ReusableFl
      */
     public RealSampleAdapter(String debugName)
     {
-        mReusableBufferQueue = new ReusableBufferQueue(debugName);
+        String debugName1 = debugName;
+        String debugName2 = debugName1;
+        mReusableBufferQueue = new Object();
     }
 
-    protected ReusableFloatBuffer getBuffer(int size)
+    protected FloatBuffer getBuffer(int size)
     {
-        return mReusableBufferQueue.getBuffer(size);
+        FloatBuffer buffer = new FloatBuffer(new float[size]);
+        return buffer;
     }
 }

@@ -25,7 +25,6 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
@@ -34,7 +33,6 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.message.MessageProviderModule;
 import io.github.dsheirer.message.StuffBitsMessage;
@@ -42,25 +40,18 @@ import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
-import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
-import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
-import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
-import io.github.dsheirer.module.decode.p25.phase2.P25P2MessageFramer;
-import io.github.dsheirer.module.decode.p25.phase2.P25P2MessageProcessor;
-import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
+import io.github.dsheirer.sample.buffer.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -382,7 +373,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
      *
      * @param buffer to process into a stream of dibits for processing.
      */
-    public void receive(ReusableByteBuffer buffer)
+    public void receive(ByteBuffer buffer)
     {
         //Updates current timestamp to the timestamp from the incoming buffer
         setCurrentTime(buffer.getTimestamp());
@@ -395,8 +386,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
             }
         }
 
-        buffer.decrementUserCount();
-    }
+        }
 
     @Override
     public void dataUnitDetected(P25P1DataUnitID dataUnitID, int nac, int bitErrors, int discardedDibits, int[] correctedNid)
@@ -529,7 +519,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                                        {
                                            while(reader.hasNext())
                                            {
-                                               ReusableByteBuffer buffer = reader.next();
+                                               ByteBuffer buffer = reader.next();
                                                messageFramer.receive(buffer);
                                            }
                                        }

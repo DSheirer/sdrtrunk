@@ -30,7 +30,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FMInstrumented;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.BufferBroadcaster;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
@@ -48,7 +48,7 @@ public class P25Phase1C4FMPane extends ComplexDecoderPane
     private PhaseLineChart mPLLPhaseErrorLineChart;
     private DoubleLineChart mPLLFrequencyLineChart;
     private DoubleLineChart mSamplesPerSymbolLineChart;
-    private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
+    private BufferBroadcaster mFilteredBufferBroadcaster = new BufferBroadcaster();
     private P25P1DecoderC4FMInstrumented mDecoder = new P25P1DecoderC4FMInstrumented();
 
     public P25Phase1C4FMPane()

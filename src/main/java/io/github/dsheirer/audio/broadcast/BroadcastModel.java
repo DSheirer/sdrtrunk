@@ -47,6 +47,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
@@ -80,6 +82,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     private IconManager mIconManager;
     private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
@@ -90,7 +93,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         mIconManager = iconManager;
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
-        ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
+        mExecutor.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
 
         removeOrphanedTemporaryRecordings();
         mBroadcastConfigurations.addListener(new ConfigurationChangeListener());
@@ -485,8 +488,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     if(broadcastConfiguration.isEnabled())
                     {
                         //Delay restarting the broadcaster to allow remote server time to cleanup
-                        ThreadPool.SCHEDULED.schedule(new DelayedBroadcasterStartup(broadcastConfiguration),
-                            1, TimeUnit.SECONDS);
+                        ThreadPool.SINGLE_EXECUTOR.schedule(new DelayedBroadcasterStartup(broadcastConfiguration), 1, TimeUnit.SECONDS);
                     }
 
                     int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
@@ -695,7 +697,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
      */
     private void removeOrphanedTemporaryRecordings()
     {
-        ThreadPool.SCHEDULED.submit(new Runnable()
+        ThreadPool.SINGLE_EXECUTOR.submit(new Runnable()
         {
             @Override
             public void run()

@@ -137,7 +137,7 @@ public class BeepEditor extends ActionEditor<BeepAction>
             final TestMessage testMessage = new TestMessage();
             final Alias testAlias = new Alias("Test Alias");
 
-            ThreadPool.SCHEDULED.submit(() -> {
+            ThreadPool.SINGLE_EXECUTOR.submit(() -> {
                 try
                 {
                     action.execute(testAlias, testMessage);

@@ -18,8 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBufferAssembler;
 import io.github.dsheirer.source.Source;
 
 import java.util.List;
@@ -30,14 +30,14 @@ public interface IPolyphaseChannelOutputProcessor
      * Receive and enqueue output results from the polyphase analysis channelizer
      * @param channelResultsBuffer to enqueue
      */
-    void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer);
+    void receiveChannelResults(ChannelResultsBuffer channelResultsBuffer);
 
     /**
      * Process the channel output channel results queue and deliver the output to the listener
      *
      * @param reusableComplexBufferAssembler to receive the processed channel results
      */
-    void processChannelResults(ReusableComplexBufferAssembler reusableComplexBufferAssembler);
+    void processChannelResults(ComplexBufferAssembler reusableComplexBufferAssembler);
 
     /**
      * Sets the desired frequency offset from center.  The samples will be mixed with an oscillator set to this offset

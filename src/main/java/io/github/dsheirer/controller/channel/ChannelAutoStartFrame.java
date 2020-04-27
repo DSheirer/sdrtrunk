@@ -38,6 +38,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,6 +59,7 @@ public class ChannelAutoStartFrame extends JFrame
     private AtomicBoolean mChannelsStarted = new AtomicBoolean();
 
     private ScheduledFuture<?> mTimerFuture;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Creates and displays a channel auto-start gui for presenting the user with a list of channels that
@@ -197,7 +200,7 @@ public class ChannelAutoStartFrame extends JFrame
     {
         if(mTimerFuture == null)
         {
-            mTimerFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new CountdownTimer(), 0, 1, TimeUnit.SECONDS);
+            mTimerFuture = mExecutor.scheduleAtFixedRate(new CountdownTimer(), 0, 1, TimeUnit.SECONDS);
         }
     }
 

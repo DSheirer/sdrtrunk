@@ -167,7 +167,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.SINGLE_EXECUTOR.schedule(runnable, 0l, TimeUnit.SECONDS);
         }
 
         return connected();

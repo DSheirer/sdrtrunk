@@ -32,7 +32,7 @@ import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.SettingsManager;
@@ -82,7 +82,7 @@ import java.awt.event.MouseWheelEvent;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
-public class SpectralDisplayPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor,
+public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor,
     IDFTWidthChangeProcessor
 {
     private static final long serialVersionUID = 1L;
@@ -419,7 +419,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
      * Complex sample buffer receive method
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         mDFTProcessor.receive(reusableComplexBuffer);
     }

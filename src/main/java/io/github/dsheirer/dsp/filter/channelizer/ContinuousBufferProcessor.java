@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,6 +40,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     private ScheduledFuture<?> mScheduledFuture;
     private AtomicBoolean mRunning = new AtomicBoolean();
     private long mProcessingPeriod = 5; //milliseconds
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Scheduled Buffer Processor combines an internal overflowable buffer with a scheduled runnable processing task
@@ -134,7 +137,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(false, true))
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0, mProcessingPeriod, TimeUnit.MILLISECONDS);
+            mScheduledFuture = mExecutor.scheduleAtFixedRate(new Processor(), 0, mProcessingPeriod, TimeUnit.MILLISECONDS);
         }
     }
 

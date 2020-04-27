@@ -35,9 +35,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Audio streaming manager monitors audio segments through completion and creates temporary streaming recordings on
@@ -53,6 +51,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     private UserPreferences mUserPreferences;
     private ScheduledFuture<?> mAudioSegmentProcessorFuture;
     private int mNextRecordingNumber = 1;
+    private final ScheduledExecutorService mExecutor = Executors.newSingleThreadScheduledExecutor();
 
     /**
      * Constructs an instance
@@ -83,7 +82,7 @@ public class AudioStreamingManager implements Listener<AudioSegment>
     {
         if(mAudioSegmentProcessorFuture == null)
         {
-            mAudioSegmentProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
+            mAudioSegmentProcessorFuture = mExecutor.scheduleAtFixedRate(new AudioSegmentProcessor(),
                 0, 250, TimeUnit.MILLISECONDS);
         }
     }

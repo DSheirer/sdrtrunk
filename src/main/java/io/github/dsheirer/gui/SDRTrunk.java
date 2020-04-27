@@ -141,9 +141,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         //Setup the application home directory
         Path home = getHomePath();
-
-        ThreadPool.logSettings();
-
+        
         mLog.info("Home path: " + home.toString());
 
         //Load properties file

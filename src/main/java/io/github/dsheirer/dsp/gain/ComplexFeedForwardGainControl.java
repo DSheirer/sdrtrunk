@@ -16,8 +16,7 @@
 package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.FloatCircularBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 
@@ -28,7 +27,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 
     private ComplexSampleListener mListener;
     private FloatCircularBuffer mEnvelopeHistory;
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexFeedForwardGainControl");
+    private Object mReusableComplexBufferQueue = new Object();
 
     private float mMaxEnvelope = 0.0f;
     private float mGain = 1.0f;
@@ -141,11 +140,12 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
      * @param buffer to apply gain
      * @return reusable buffer with the user count incremented to 1
      */
-    public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
+    public ComplexBuffer filter(ComplexBuffer buffer)
     {
         float[] samples = buffer.getSamples();
 
-        ReusableComplexBuffer filteredBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
+        ComplexBuffer buffer1 = new ComplexBuffer(new float[samples.length]);
+        ComplexBuffer filteredBuffer = buffer1;
         filteredBuffer.setTimestamp(buffer.getTimestamp());
 
         float[] filtered = filteredBuffer.getSamples();
@@ -171,8 +171,6 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
             filtered[x] = samples[x] * mGain;
             filtered[x + 1] = samples[x + 1] * mGain;
         }
-
-        buffer.decrementUserCount();
 
         return filteredBuffer;
     }

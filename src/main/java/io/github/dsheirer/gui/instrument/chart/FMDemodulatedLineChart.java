@@ -18,7 +18,7 @@ package io.github.dsheirer.gui.instrument.chart;
 import io.github.dsheirer.buffer.DoubleCircularBuffer;
 import io.github.dsheirer.dsp.fm.FMDemodulator;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,7 +27,7 @@ import javafx.scene.chart.NumberAxis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FMDemodulatedLineChart extends LineChart implements Listener<ReusableComplexBuffer>
+public class FMDemodulatedLineChart extends LineChart implements Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatedLineChart.class);
 
@@ -73,7 +73,7 @@ public class FMDemodulatedLineChart extends LineChart implements Listener<Reusab
     }
 
     @Override
-    public void receive(ReusableComplexBuffer complexBuffer)
+    public void receive(ComplexBuffer complexBuffer)
     {
         float[] samples = complexBuffer.getSamples();
 
@@ -98,8 +98,7 @@ public class FMDemodulatedLineChart extends LineChart implements Listener<Reusab
             updateChart(demodulated);
         }
 
-        complexBuffer.decrementUserCount();
-    }
+        }
 
     private void updateChart(double value)
     {

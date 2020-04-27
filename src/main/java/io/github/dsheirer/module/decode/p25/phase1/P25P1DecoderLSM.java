@@ -33,7 +33,7 @@ import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryRecorder;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
@@ -108,13 +108,13 @@ public class P25P1DecoderLSM extends P25P1Decoder
      * Primary method for receiving incoming channel samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexBuffer reusableComplexBuffer)
     {
         //The filter will decrement the user count when finished
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        ComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
 
         //AGC will decrement the user count when finished
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
+        ComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
         mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
 
@@ -128,7 +128,7 @@ public class P25P1DecoderLSM extends P25P1Decoder
      * @param reusableComplexBuffer to filter
      * @return filtered complex buffer
      */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
+    protected ComplexBuffer filter(ComplexBuffer reusableComplexBuffer)
     {
         //No additional filtering of the channel is currently needed, since the polyphase channelizer
         //provides the filtering.

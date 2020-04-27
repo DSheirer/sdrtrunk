@@ -17,9 +17,7 @@ package io.github.dsheirer.sample.buffer;
 
 import org.apache.commons.lang3.Validate;
 
-import java.nio.FloatBuffer;
-
-public class ReusableFloatBuffer extends AbstractReusableBuffer
+public class FloatBuffer extends AbstractBuffer
 {
     private float[] mSamples;
 
@@ -29,17 +27,13 @@ public class ReusableFloatBuffer extends AbstractReusableBuffer
      * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
-     *
-     * @param bufferDisposedListener to be notified when all consumers/users are finished using the buffer
-     * @param samples of data
+     *  @param samples of data
      * @param timestamp in millis for the buffer
      */
-    ReusableFloatBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples, long timestamp)
+    FloatBuffer(float[] samples, long timestamp)
     {
-        super(bufferDisposedListener, timestamp);
+        super(timestamp);
         mSamples = samples;
-
-        Validate.notNull(bufferDisposedListener, "Reusable Buffer Listener cannot be null");
     }
 
     /**
@@ -48,17 +42,6 @@ public class ReusableFloatBuffer extends AbstractReusableBuffer
     public float[] getSamples()
     {
         return mSamples;
-    }
-
-    /**
-     * Creates a copy of the samples from this buffer
-     */
-    public float[] getSamplesCopy()
-    {
-        float[] samples = getSamples();
-        float[] copy = new float[samples.length];
-        System.arraycopy(samples, 0, copy, 0, samples.length);
-        return copy;
     }
 
     /**
@@ -76,12 +59,11 @@ public class ReusableFloatBuffer extends AbstractReusableBuffer
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
-     * @param bufferDisposedListener to be notified when all consumers are finished using the buffer
      * @param samples of data
      */
-    public ReusableFloatBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples)
+    public FloatBuffer(float[] samples)
     {
-        this(bufferDisposedListener, samples, System.currentTimeMillis());
+        this(samples, System.currentTimeMillis());
     }
 
     /**
@@ -116,7 +98,7 @@ public class ReusableFloatBuffer extends AbstractReusableBuffer
      * @param floatBuffer to copy into this buffer
      * @param timestamp for the samples in millis
      */
-    public void reloadFrom(FloatBuffer floatBuffer, long timestamp)
+    public void reloadFrom(java.nio.FloatBuffer floatBuffer, long timestamp)
     {
         resize(floatBuffer.capacity());
         floatBuffer.rewind();
@@ -136,5 +118,4 @@ public class ReusableFloatBuffer extends AbstractReusableBuffer
             mSamples = new float[size];
         }
     }
-
 }

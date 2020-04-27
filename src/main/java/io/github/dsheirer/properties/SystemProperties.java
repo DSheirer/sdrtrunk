@@ -82,7 +82,7 @@ public class SystemProperties
     {
         if(mSavePending.compareAndSet(false, true))
         {
-            ThreadPool.SCHEDULED.schedule(new SavePropertiesTask(), 2, TimeUnit.SECONDS);
+            ThreadPool.SINGLE_EXECUTOR.schedule(new SavePropertiesTask(), 2, TimeUnit.SECONDS);
         }
     }
 

@@ -19,8 +19,7 @@
  */
 package io.github.dsheirer.dsp.filter.halfband.real;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import org.apache.commons.lang3.Validate;
 
 public class HalfBandFilter
@@ -36,7 +35,7 @@ public class HalfBandFilter
     private int mCenterCoefficient;
     private int mCenterCoefficientMapIndex;
 
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("HalfBandFilter");
+    private Object mReusableBufferQueue = new Object();
 
     /**
      * Half-Band filter for processing real float samples.
@@ -86,10 +85,11 @@ public class HalfBandFilter
         mBufferPointer = mBufferPointer % mBufferSize;
     }
 
-    public ReusableFloatBuffer filter(ReusableFloatBuffer input)
+    public FloatBuffer filter(FloatBuffer input)
     {
         float[] inputSamples = input.getSamples();
-		ReusableFloatBuffer output = mReusableBufferQueue.getBuffer(inputSamples.length);
+        FloatBuffer buffer = new FloatBuffer(new float[inputSamples.length]);
+        FloatBuffer output = buffer;
 		float[] outputSamples = output.getSamples();
 
 		for(int x = 0; x < inputSamples.length; x++)
@@ -97,9 +97,7 @@ public class HalfBandFilter
             outputSamples[x] = filter(inputSamples[x]);
         }
 
-		input.decrementUserCount();
-
-		return output;
+        return output;
     }
 
     /**

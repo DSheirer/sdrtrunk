@@ -15,8 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 
 /**
  * Oscillator interface.
@@ -96,7 +96,7 @@ public interface IOscillator
      *
      * @param reusableComplexBuffer to fill with complex samples
      */
-    void generateComplex(ReusableComplexBuffer reusableComplexBuffer);
+    void generateComplex(ComplexBuffer reusableComplexBuffer);
 
     /**
      * Generates real samples and fills the reusable buffer using the current system time in millis for
@@ -104,7 +104,7 @@ public interface IOscillator
      *
      * @param reusableFloatBuffer to fill with complex samples
      */
-    void generateReal(ReusableFloatBuffer reusableFloatBuffer);
+    void generateReal(FloatBuffer reusableFloatBuffer);
 
     /**
      * Mixes (heterodynes) the complex sample array using the current settings of this oscillator.

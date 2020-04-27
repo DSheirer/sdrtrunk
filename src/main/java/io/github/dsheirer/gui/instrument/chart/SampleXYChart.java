@@ -28,7 +28,7 @@ import eu.hansolo.fx.charts.data.XYChartItem;
 import eu.hansolo.fx.charts.series.XYSeries;
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -36,7 +36,7 @@ import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SampleXYChart extends PolarChart<XYChartItem> implements Listener<ReusableComplexBuffer>
+public class SampleXYChart extends PolarChart<XYChartItem> implements Listener<ComplexBuffer>
 {
     private static ObservableList<XYChartItem> sChartItemList = FXCollections.observableArrayList();
 
@@ -67,7 +67,7 @@ public class SampleXYChart extends PolarChart<XYChartItem> implements Listener<R
     }
 
     @Override
-    public void receive(ReusableComplexBuffer buffer)
+    public void receive(ComplexBuffer buffer)
     {
         float[] samples = buffer.getSamples();
 
@@ -75,8 +75,6 @@ public class SampleXYChart extends PolarChart<XYChartItem> implements Listener<R
         {
             mCircularBuffer.put(new Complex(samples[x], samples[x + 1]));
         }
-
-        buffer.decrementUserCount();
 
         Complex[] complexSamples = mCircularBuffer.getAll();
 

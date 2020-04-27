@@ -20,9 +20,8 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -31,10 +30,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public abstract class AbstractComplexPolyphaseChannelizer implements Listener<ReusableComplexBuffer>, ISourceEventListener
+public abstract class AbstractComplexPolyphaseChannelizer implements Listener<ComplexBuffer>, ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractComplexPolyphaseChannelizer.class);
-    private ReusableChannelResultsBufferQueue mBufferQueue = new ReusableChannelResultsBufferQueue("AbstractComplexPolyphaseChannelizer");
+    private Object mBufferQueue = new Object();
     private Broadcaster<SourceEvent> mSourceChangeBroadcaster = new Broadcaster();
     private List<PolyphaseChannelSource> mChannels = new CopyOnWriteArrayList<>();
     private double mSampleRate;
@@ -105,16 +104,15 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
      *
      * @param channelResultsBuffer containing an array of an array of I/Q samples per channel
      */
-    protected void dispatch(ReusableChannelResultsBuffer channelResultsBuffer)
+    protected void dispatch(ChannelResultsBuffer channelResultsBuffer)
     {
         for(PolyphaseChannelSource channel : mChannels)
         {
-            channelResultsBuffer.incrementUserCount();
+
             channel.receiveChannelResults(channelResultsBuffer);
         }
 
-        channelResultsBuffer.decrementUserCount();
-    }
+        }
 
     /**
      * Adds the polyphase channel source to receive processed output channel samples
@@ -157,9 +155,10 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
      * storage of channel results through distribution and consumption of channel results by
      * channel output processors.
      */
-    protected ReusableChannelResultsBuffer getChannelResultsBuffer()
+    protected ChannelResultsBuffer getChannelResultsBuffer()
     {
-        return mBufferQueue.getBuffer();
+        ChannelResultsBuffer buffer = new ChannelResultsBuffer();
+        return buffer;
     }
 
     @Override

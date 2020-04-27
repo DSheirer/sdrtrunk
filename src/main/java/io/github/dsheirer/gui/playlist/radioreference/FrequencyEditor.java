@@ -230,7 +230,7 @@ public class FrequencyEditor extends VBox
     {
         if(modeId != null)
         {
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.SINGLE_EXECUTOR.execute(() -> {
                 Integer parsed = null;
 
                 try

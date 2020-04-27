@@ -19,8 +19,7 @@ package io.github.dsheirer.source.wave;
 
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.RealSource;
@@ -40,12 +39,12 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
 {
     private final static Logger mLog = LoggerFactory.getLogger(RealWaveSource.class);
 
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealWaveSource");
+    private Object mReusableBufferQueue = new Object();
     private IFrameLocationListener mFrameLocationListener;
     private int mBytesPerFrame;
     private int mFrameCounter = 0;
     private long mFrequency = 0;
-    private Listener<ReusableFloatBuffer> mListener;
+    private Listener<FloatBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
 
@@ -230,7 +229,8 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
 
                 float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
-                ReusableFloatBuffer reusableFloatBuffer = mReusableBufferQueue.getBuffer(samples.length);
+                FloatBuffer buffer1 = new FloatBuffer(new float[samples.length]);
+                FloatBuffer reusableFloatBuffer = buffer1;
                 reusableFloatBuffer.reloadFrom(samples, System.currentTimeMillis());
 
                 mListener.receive(reusableFloatBuffer);
@@ -242,7 +242,7 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
      * Registers the listener to receive sample buffers as they are read from the wave file
      */
     @Override
-    public void setListener(Listener<ReusableFloatBuffer> listener)
+    public void setListener(Listener<FloatBuffer> listener)
     {
         mListener = listener;
     }
@@ -251,7 +251,7 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
      * Unregisters the listener from receiving sample buffers
      */
     @Override
-    public void removeListener(Listener<ReusableFloatBuffer> listener)
+    public void removeListener(Listener<FloatBuffer> listener)
     {
         mListener = null;
     }

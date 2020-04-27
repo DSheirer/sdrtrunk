@@ -22,14 +22,14 @@ package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.gain.DirectGainControl;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.buffer.FloatBuffer;
 import io.github.dsheirer.sample.real.RealSampleListener;
 import io.github.dsheirer.sample.real.RealSampleProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.apache.commons.math3.util.FastMath;
 
-public class C4FMSymbolFilter implements Listener<ReusableFloatBuffer>, ISourceEventListener, RealSampleProvider
+public class C4FMSymbolFilter implements Listener<FloatBuffer>, ISourceEventListener, RealSampleProvider
 {
     private static final float TAPS[][] =
         {
@@ -236,7 +236,7 @@ public class C4FMSymbolFilter implements Listener<ReusableFloatBuffer>, ISourceE
     }
 
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(FloatBuffer buffer)
     {
         for(float sample : buffer.getSamples())
         {

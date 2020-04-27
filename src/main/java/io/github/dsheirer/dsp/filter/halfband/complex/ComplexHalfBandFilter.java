@@ -18,12 +18,11 @@ package io.github.dsheirer.dsp.filter.halfband.complex;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter2;
 import io.github.dsheirer.dsp.mixer.Oscillator;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 
 public class ComplexHalfBandFilter
 {
-    private ReusableComplexBufferQueue mBufferQueue = new ReusableComplexBufferQueue("ComplexHalfBandFilter");
+    private Object mBufferQueue = new Object();
 
     private HalfBandFilter2 mIFilter;
     private HalfBandFilter2 mQFilter;
@@ -42,14 +41,15 @@ public class ComplexHalfBandFilter
         mQFilter = new HalfBandFilter2(coefficients, gain);
     }
 
-    public ReusableComplexBuffer filter(ReusableComplexBuffer originalBuffer)
+    public ComplexBuffer filter(ComplexBuffer originalBuffer)
     {
         mSamples = originalBuffer.getSamples();
         mSamplesPointer = 0;
 
         mOutputBufferLength = (mHasResidual ? (mSamples.length + 2) : mSamples.length) / 4 * 2;
 
-        ReusableComplexBuffer filteredBuffer = mBufferQueue.getBuffer(mOutputBufferLength);
+        ComplexBuffer buffer = new ComplexBuffer(new float[mOutputBufferLength]);
+        ComplexBuffer filteredBuffer = buffer;
         mFilteredSamples = filteredBuffer.getSamples();
         mFilteredSamplesPointer = 0;
 
@@ -74,7 +74,6 @@ public class ComplexHalfBandFilter
             mResidualQSample = mSamples[mSamplesPointer];
         }
 
-        originalBuffer.decrementUserCount();
         return filteredBuffer;
     }
 
@@ -83,26 +82,22 @@ public class ComplexHalfBandFilter
         Oscillator oscillator = new Oscillator(1, 16);
         ComplexHalfBandFilter filter = new ComplexHalfBandFilter(Filters.HALF_BAND_FILTER_27T.getCoefficients(), 1.0f);
 
-        ReusableComplexBufferQueue bufferQueue = new ReusableComplexBufferQueue("Test");
+        Object bufferQueue = new Object();
 
-        ReusableComplexBuffer complexBuffer = bufferQueue.getBuffer(8);
+        ComplexBuffer buffer2 = new ComplexBuffer(new float[8]);
+        ComplexBuffer complexBuffer = buffer2;
         oscillator.generateComplex(complexBuffer);
-        ReusableComplexBuffer filteredBuffer = filter.filter(complexBuffer);
-        filteredBuffer.decrementUserCount();
+        ComplexBuffer filteredBuffer = filter.filter(complexBuffer);
 
-        ReusableComplexBuffer complexBuffer2 = bufferQueue.getBuffer(10);
+        ComplexBuffer buffer1 = new ComplexBuffer(new float[10]);
+        ComplexBuffer complexBuffer2 = buffer1;
         oscillator.generateComplex(complexBuffer2);
-        ReusableComplexBuffer filteredBuffer2 = filter.filter(complexBuffer2);
-        filteredBuffer2.decrementUserCount();
+        ComplexBuffer filteredBuffer2 = filter.filter(complexBuffer2);
 
-        ReusableComplexBuffer complexBuffer3 = bufferQueue.getBuffer(8);
+        ComplexBuffer buffer = new ComplexBuffer(new float[8]);
+        ComplexBuffer complexBuffer3 = buffer;
         oscillator.generateComplex(complexBuffer3);
-        ReusableComplexBuffer filteredBuffer3 = filter.filter(complexBuffer3);
-        filteredBuffer3.decrementUserCount();
+        ComplexBuffer filteredBuffer3 = filter.filter(complexBuffer3);
 
-
-
-
-
-    }
+        }
 }

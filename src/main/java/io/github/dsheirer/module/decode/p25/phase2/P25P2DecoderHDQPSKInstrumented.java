@@ -25,7 +25,7 @@ import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 
 public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
@@ -34,7 +34,7 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
     private Listener<Double> mPLLFrequencyListener;
     private Listener<Double> mSamplesPerSymbolListener;
     private Listener<Complex> mComplexSymbolListener;
-    private Listener<ReusableComplexBuffer> mFilteredSymbolListener;
+    private Listener<ComplexBuffer> mFilteredSymbolListener;
     private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
 
     /**
@@ -57,13 +57,13 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
     /**
      * Overrides the filter method so that we can capture the filtered samples for instrumentation
      */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
+    protected ComplexBuffer filter(ComplexBuffer reusableComplexBuffer)
     {
-        ReusableComplexBuffer filtered = super.filter(reusableComplexBuffer);
+        ComplexBuffer filtered = super.filter(reusableComplexBuffer);
 
         if(mFilteredSymbolListener != null)
         {
-            filtered.incrementUserCount();
+
             mFilteredSymbolListener.receive(filtered);
         }
 
@@ -119,7 +119,7 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
         getDemodulator().setPLLFrequencyListener(listener);
     }
 
-    public void setFilteredBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void setFilteredBufferListener(Listener<ComplexBuffer> listener)
     {
         mFilteredSymbolListener = listener;
     }
