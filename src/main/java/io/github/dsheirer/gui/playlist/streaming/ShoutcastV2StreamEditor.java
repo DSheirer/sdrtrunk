@@ -91,8 +91,6 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
     @Override
     public void save()
     {
-        super.save();
-
         if(getItem() != null)
         {
             getItem().setURL(getUrlTextField().getText());
@@ -102,7 +100,7 @@ public class ShoutcastV2StreamEditor extends AbstractStreamEditor<ShoutcastV2Con
             getItem().setStreamID(getStreamIdTextField().get());
         }
 
-        modifiedProperty().set(false);
+        super.save();
     }
 
     protected GridPane getEditorPane()

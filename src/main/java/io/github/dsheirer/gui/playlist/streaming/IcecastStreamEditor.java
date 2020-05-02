@@ -82,8 +82,6 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
     @Override
     public void save()
     {
-        super.save();
-
         if(getItem() != null)
         {
             getItem().setMountPoint(getMountPointTextField().getText());
@@ -93,7 +91,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             getItem().setURL(getURLTextField().getText());
         }
 
-        modifiedProperty().set(false);
+        super.save();
     }
 
     protected GridPane getEditorPane()

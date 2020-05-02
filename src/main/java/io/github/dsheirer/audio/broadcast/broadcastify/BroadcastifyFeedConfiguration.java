@@ -30,13 +30,13 @@ import io.github.dsheirer.rrapi.type.UserFeedBroadcast;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BroadcastifyConfiguration extends IcecastTCPConfiguration
+public class BroadcastifyFeedConfiguration extends IcecastTCPConfiguration
 {
-    private final static Logger mLog = LoggerFactory.getLogger(BroadcastifyConfiguration.class);
+    private final static Logger mLog = LoggerFactory.getLogger(BroadcastifyFeedConfiguration.class);
 
     private int mFeedID;
 
-    public BroadcastifyConfiguration()
+    public BroadcastifyFeedConfiguration()
     {
         //No-arg constructor for JAXB
         this(BroadcastFormat.MP3);
@@ -47,7 +47,7 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
      *
      * @param format of output audio (MP3)
      */
-    public BroadcastifyConfiguration(BroadcastFormat format)
+    public BroadcastifyFeedConfiguration(BroadcastFormat format)
     {
         super(format);
 
@@ -56,9 +56,9 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
         setSampleRate(8000);
     }
 
-    public static BroadcastifyConfiguration from(UserFeedBroadcast userFeedBroadcast)
+    public static BroadcastifyFeedConfiguration from(UserFeedBroadcast userFeedBroadcast)
     {
-        BroadcastifyConfiguration config = new BroadcastifyConfiguration(BroadcastFormat.MP3);
+        BroadcastifyFeedConfiguration config = new BroadcastifyFeedConfiguration(BroadcastFormat.MP3);
         config.setName(userFeedBroadcast.getDescription());
         config.setHost(userFeedBroadcast.getHostname());
         config.setMountPoint(userFeedBroadcast.getMount());
@@ -80,7 +80,7 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
     @Override
     public BroadcastConfiguration copyOf()
     {
-        BroadcastifyConfiguration copy = new BroadcastifyConfiguration(getBroadcastFormat());
+        BroadcastifyFeedConfiguration copy = new BroadcastifyFeedConfiguration(getBroadcastFormat());
 
         //Broadcast Configuration Parameters
         copy.setName(getName());

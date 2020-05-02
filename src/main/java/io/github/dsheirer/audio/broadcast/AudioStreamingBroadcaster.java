@@ -23,10 +23,7 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.identifier.IdentifierCollection;
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,25 +37,17 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class AudioBroadcaster implements Listener<AudioRecording>
+public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration> extends AbstractAudioBroadcaster<T>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(AudioBroadcaster.class);
+    private final static Logger mLog = LoggerFactory.getLogger(AudioStreamingBroadcaster.class);
 
     public static final int PROCESSOR_RUN_INTERVAL_MS = 1000;
-
     private ScheduledFuture mRecordingQueueProcessorFuture;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
-
     private ISilenceGenerator mSilenceGenerator;
 
-    private Listener<BroadcastEvent> mBroadcastEventListener;
-    private ObjectProperty<BroadcastState> mBroadcastState = new SimpleObjectProperty<>(BroadcastState.READY);
-
-    private int mStreamedAudioCount = 0;
-    private int mAgedOffAudioCount = 0;
-    private BroadcastConfiguration mBroadcastConfiguration;
     private long mDelay;
     private long mMaximumRecordingAge;
     private AtomicBoolean mStreaming = new AtomicBoolean();
@@ -84,20 +73,12 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
      * The last audio packet's metadata is automatically attached to the closed audio recording when it is enqueued for
      * broadcast.  That metadata will be updated on the remote server once the audio recording is opened for streaming.
      */
-    public AudioBroadcaster(BroadcastConfiguration broadcastConfiguration)
+    public AudioStreamingBroadcaster(T broadcastConfiguration)
     {
-        mBroadcastConfiguration = broadcastConfiguration;
-        mDelay = mBroadcastConfiguration.getDelay();
-        mMaximumRecordingAge = mBroadcastConfiguration.getMaximumRecordingAge();
+        super(broadcastConfiguration);
+        mDelay = getBroadcastConfiguration().getDelay();
+        mMaximumRecordingAge = getBroadcastConfiguration().getMaximumRecordingAge();
         mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
-    }
-
-    /**
-     * Observable broadcast state property
-     */
-    public ObjectProperty<BroadcastState> broadcastStateProperty()
-    {
-        return mBroadcastState;
     }
 
     public void dispose()
@@ -186,25 +167,9 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     /**
      * Size of recording queue for recordings awaiting streaming
      */
-    public int getQueueSize()
+    public int getAudioQueueSize()
     {
         return mAudioRecordingQueue.size();
-    }
-
-    /**
-     * Number of audio recordings streamed to remote server
-     */
-    public int getStreamedAudioCount()
-    {
-        return mStreamedAudioCount;
-    }
-
-    /**
-     * Number of audio recordings that were removed for exceeding age limit
-     */
-    public int getAgedOffAudioCount()
-    {
-        return mAgedOffAudioCount;
     }
 
     /**
@@ -226,44 +191,9 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     }
 
     /**
-     * Broadcast configuration used by this broadcaster
-     */
-    public BroadcastConfiguration getBroadcastConfiguration()
-    {
-        return mBroadcastConfiguration;
-    }
-
-    /**
-     * Registers the listener to receive broadcast events/state changes
-     */
-    public void setListener(Listener<BroadcastEvent> listener)
-    {
-        mBroadcastEventListener = listener;
-    }
-
-    /**
-     * Removes the listener from receiving broadcast events/state changes
-     */
-    public void removeListener()
-    {
-        mBroadcastEventListener = null;
-    }
-
-    /**
-     * Broadcasts the event to any registered listener
-     */
-    public void broadcast(BroadcastEvent event)
-    {
-        if(mBroadcastEventListener != null)
-        {
-            mBroadcastEventListener.receive(event);
-        }
-    }
-
-    /**
      * Sets the state of the broadcastAudio connection
      */
-    protected void setBroadcastState(BroadcastState state)
+    public void setBroadcastState(BroadcastState state)
     {
         if(mBroadcastState.get() != state)
         {
@@ -272,11 +202,9 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                 mLog.info("[" + getStreamName() + "] status: " + state);
             }
 
-            mBroadcastState.setValue(state);
+            super.setBroadcastState(state);
 
-            broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));
-
-            if(mBroadcastState.get().isErrorState())
+            if(mBroadcastState.get() instanceof BroadcastState && ((BroadcastState)mBroadcastState.get()).isErrorState())
             {
                 stop();
             }
@@ -298,14 +226,6 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                 }
             }
         }
-    }
-
-    /**
-     * Current state of the broadcastAudio connection
-     */
-    public BroadcastState getBroadcastState()
-    {
-        return mBroadcastState.get();
     }
 
     /**
@@ -417,7 +337,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
             if(mInputStream != null)
             {
                 mStreamedAudioCount++;
-                broadcast(new BroadcastEvent(AudioBroadcaster.this,
+                broadcast(new BroadcastEvent(AudioStreamingBroadcaster.this,
                     BroadcastEvent.Event.BROADCASTER_STREAMED_COUNT_CHANGE));
                 metadataUpdateRequired = true;
             }
@@ -435,7 +355,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                 nextRecording = mAudioRecordingQueue.remove();
                 nextRecording.removePendingReplay();
                 mAgedOffAudioCount++;
-                broadcast(new BroadcastEvent(AudioBroadcaster.this,
+                broadcast(new BroadcastEvent(AudioStreamingBroadcaster.this,
                     BroadcastEvent.Event.BROADCASTER_AGED_OFF_COUNT_CHANGE));
                 nextRecording = mAudioRecordingQueue.peek();
             }
@@ -482,7 +402,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
                 nextRecording.removePendingReplay();
 
-                broadcast(new BroadcastEvent(AudioBroadcaster.this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
+                broadcast(new BroadcastEvent(AudioStreamingBroadcaster.this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
             }
 
             //If we closed out a recording and don't have a new/next recording, send an empty metadata update

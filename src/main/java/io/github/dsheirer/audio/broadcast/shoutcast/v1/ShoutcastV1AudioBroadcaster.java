@@ -19,7 +19,7 @@
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.AudioBroadcaster;
+import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
 import io.github.dsheirer.util.ThreadPool;
@@ -40,7 +40,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
+public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
 {
     private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV1AudioBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
