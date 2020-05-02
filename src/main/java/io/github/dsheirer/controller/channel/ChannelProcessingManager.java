@@ -49,6 +49,7 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,7 +235,6 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     public void start(Channel channel) throws ChannelException
     {
         startProcessing(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_ENABLE));
-
     }
 
     /**
@@ -278,7 +278,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         if(source == null)
         {
-            channel.setProcessing(false);
+            //This has to be done on the FX event thread when the playlist editor is constructed
+            Platform.runLater(() -> channel.setProcessing(false));
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
@@ -417,7 +418,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         }
 
         processingChain.start();
-        channel.setProcessing(true);
+        //This has to be done on the FX event thread when the playlist editor is constructed
+        Platform.runLater(() -> channel.setProcessing(true));
 
         getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
 
@@ -434,7 +436,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     private void stopProcessing(Channel channel, boolean remove) throws ChannelException
     {
-        channel.setProcessing(false);
+        //This has to be done on the FX event thread when the playlist editor is constructed
+        Platform.runLater(() -> channel.setProcessing(false));
 
         if(mProcessingChains.containsKey(channel))
         {
