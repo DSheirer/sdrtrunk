@@ -22,10 +22,13 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import com.google.common.base.Joiner;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
@@ -62,7 +65,9 @@ import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -439,12 +444,16 @@ public class ChannelEditor extends SplitPane
             nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
             nameColumn.setPrefWidth(200);
 
+            TableColumn frequencyColumn = new TableColumn("Frequency");
+            frequencyColumn.setCellValueFactory(new FrequencyCellValueFactory());
+            frequencyColumn.setPrefWidth(100);
+
             TableColumn protocolColumn = new TableColumn("Protocol");
             protocolColumn.setCellValueFactory(new ProtocolCellValueFactory());
             protocolColumn.setPrefWidth(100);
 
-            mChannelTableView.getColumns().addAll(systemColumn, siteColumn, nameColumn, protocolColumn, playingColumn,
-                autoStartColumn);
+            mChannelTableView.getColumns().addAll(systemColumn, siteColumn, nameColumn, frequencyColumn, protocolColumn,
+                playingColumn, autoStartColumn);
             mChannelTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
@@ -629,7 +638,48 @@ public class ChannelEditor extends SplitPane
     }
 
     /**
-     * Filter predicate for a filterec channel list
+     * Channel tuner channel source frequencies value factory
+     */
+    public class FrequencyCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
+        ObservableValue<String>>
+    {
+        private SimpleStringProperty mFrequency = new SimpleStringProperty();
+
+        @Override
+        public ObservableValue<String> call(TableColumn.CellDataFeatures<Channel, String> param)
+        {
+            Channel channel = param.getValue();
+
+            if(channel != null)
+            {
+                if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+                {
+                    long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+                    mFrequency.set(String.valueOf(frequency / 1E6));
+                }
+                else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
+                {
+                    List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies();
+
+                    List<String> formatted = new ArrayList<>();
+                    for(Long frequency: frequencies)
+                    {
+                        formatted.add(String.valueOf(frequency / 1E6));
+                    }
+                    mFrequency.set(Joiner.on(",").join(formatted));
+                }
+            }
+            else
+            {
+                mFrequency.set(null);
+            }
+
+            return mFrequency;
+        }
+    }
+
+    /**
+     * Filter predicate for a filtered channel list
      */
     public static class ChannelListFilter implements Predicate<Channel>
     {
