@@ -242,6 +242,9 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         {
             getItem().setSystem(getSystemField().getText());
             getItem().setSite(getSiteField().getText());
+
+            //Hack - change the name to something else and then set it to the real value to trigger change events
+            getItem().setName(" ");
             getItem().setName(getNameField().getText());
             getItem().setAliasListName(getAliasListComboBox().getSelectionModel().getSelectedItem());
             getItem().setAutoStart(getAutoStartSwitch().isSelected());

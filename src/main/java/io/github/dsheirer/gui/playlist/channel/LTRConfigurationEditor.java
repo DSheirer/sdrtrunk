@@ -254,6 +254,7 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
         if(mDirectionButton == null)
         {
             mDirectionButton = new SegmentedButton();
+            mDirectionButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             mDirectionButton.setDisable(true);
 
             for(MessageDirection messageDirection: MessageDirection.ORDERED_VALUES)

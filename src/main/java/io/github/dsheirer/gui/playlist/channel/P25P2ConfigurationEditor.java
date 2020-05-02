@@ -44,7 +44,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TitledPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
-import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +63,6 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
-    private ToggleSwitch mAutoDetectScrambleParameters;
     private IntegerTextField mWacnTextField;
     private IntegerTextField mSystemTextField;
     private IntegerTextField mNacTextField;
@@ -112,36 +110,30 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
-            GridPane.setConstraints(getAutoDetectScrambleParameters(), 0, 0);
-            gridPane.getChildren().add(getAutoDetectScrambleParameters());
-
-            Label directionLabel = new Label("Auto-Detect (WACN/System/NAC)");
-            GridPane.setHalignment(directionLabel, HPos.LEFT);
-            GridPane.setConstraints(directionLabel, 1, 0);
-            gridPane.getChildren().add(directionLabel);
+            int row = 0;
 
             Label wacnLabel = new Label("WACN");
             GridPane.setHalignment(wacnLabel, HPos.RIGHT);
-            GridPane.setConstraints(wacnLabel, 0, 1);
+            GridPane.setConstraints(wacnLabel, 0, ++row);
             gridPane.getChildren().add(wacnLabel);
 
-            GridPane.setConstraints(getWacnTextField(), 1, 1);
+            GridPane.setConstraints(getWacnTextField(), 1, row);
             gridPane.getChildren().add(getWacnTextField());
 
             Label systemLabel = new Label("System");
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
-            GridPane.setConstraints(systemLabel, 0, 2);
+            GridPane.setConstraints(systemLabel, 0, ++row);
             gridPane.getChildren().add(systemLabel);
 
-            GridPane.setConstraints(getSystemTextField(), 1, 2);
+            GridPane.setConstraints(getSystemTextField(), 1, row);
             gridPane.getChildren().add(getSystemTextField());
 
             Label nacLabel = new Label("NAC");
             GridPane.setHalignment(nacLabel, HPos.RIGHT);
-            GridPane.setConstraints(nacLabel, 0, 3);
+            GridPane.setConstraints(nacLabel, 0, ++row);
             gridPane.getChildren().add(nacLabel);
 
-            GridPane.setConstraints(getNacTextField(), 1, 3);
+            GridPane.setConstraints(getNacTextField(), 1, row);
             gridPane.getChildren().add(getNacTextField());
 
             mDecoderPane.setContent(gridPane);
@@ -211,27 +203,6 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         return mEventLogConfigurationEditor;
     }
 
-    private ToggleSwitch getAutoDetectScrambleParameters()
-    {
-        if(mAutoDetectScrambleParameters == null)
-        {
-            mAutoDetectScrambleParameters = new ToggleSwitch();
-
-            //This messes up too many users.  Hiding it.
-            mAutoDetectScrambleParameters.setVisible(false);
-            mAutoDetectScrambleParameters.setDisable(true);
-            mAutoDetectScrambleParameters.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> {
-                    modifiedProperty().set(true);
-                    getWacnTextField().setDisable(mAutoDetectScrambleParameters.isSelected());
-                    getSystemTextField().setDisable(mAutoDetectScrambleParameters.isSelected());
-                    getNacTextField().setDisable(mAutoDetectScrambleParameters.isSelected());
-                });
-        }
-
-        return mAutoDetectScrambleParameters;
-    }
-
     private IntegerTextField getWacnTextField()
     {
         if(mWacnTextField == null)
@@ -288,15 +259,12 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
-        getAutoDetectScrambleParameters().setDisable(config == null);
-
         if(config instanceof DecodeConfigP25Phase2)
         {
             DecodeConfigP25Phase2 decodeConfig = (DecodeConfigP25Phase2)config;
-            getAutoDetectScrambleParameters().setSelected(decodeConfig.isAutoDetectScrambleParameters());
-            getWacnTextField().setDisable(decodeConfig.isAutoDetectScrambleParameters());
-            getSystemTextField().setDisable(decodeConfig.isAutoDetectScrambleParameters());
-            getNacTextField().setDisable(decodeConfig.isAutoDetectScrambleParameters());
+            getWacnTextField().setDisable(false);
+            getSystemTextField().setDisable(false);
+            getNacTextField().setDisable(false);
 
             ScrambleParameters scrambleParameters = decodeConfig.getScrambleParameters();
 
@@ -318,7 +286,6 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             getWacnTextField().set(0);
             getSystemTextField().set(0);
             getNacTextField().set(0);
-            getAutoDetectScrambleParameters().setSelected(false);
             getWacnTextField().setDisable(true);
             getSystemTextField().setDisable(true);
             getNacTextField().setDisable(true);
@@ -333,7 +300,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
         if(getItem().getDecodeConfiguration() instanceof DecodeConfigP25Phase2)
         {
             config = (DecodeConfigP25Phase2)getItem().getDecodeConfiguration();
-            config.setAutoDetectScrambleParameters(getAutoDetectScrambleParameters().isSelected());
+            config.setAutoDetectScrambleParameters(false);
             int wacn = getWacnTextField().get();
             int system = getSystemTextField().get();
             int nac = getSystemTextField().get();

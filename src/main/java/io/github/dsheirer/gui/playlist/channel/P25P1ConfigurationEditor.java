@@ -222,6 +222,7 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         if(mModulationSegmentedButton == null)
         {
             mModulationSegmentedButton = new SegmentedButton();
+            mModulationSegmentedButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             mModulationSegmentedButton.getButtons().addAll(getC4FMToggleButton(), getLSMToggleButton());
             mModulationSegmentedButton.getToggleGroup().selectedToggleProperty().addListener(new ChangeListener<Toggle>()
             {
