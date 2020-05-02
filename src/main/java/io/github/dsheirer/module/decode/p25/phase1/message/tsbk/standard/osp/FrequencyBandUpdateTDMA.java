@@ -105,7 +105,7 @@ public class FrequencyBandUpdateTDMA extends OSPMessage implements IFrequencyBan
     @Override
     public long getTransmitOffset()
     {
-        long offset = getMessage().getLong(TRANSMIT_OFFSET) * getChannelType().getBandwidth();
+        long offset = getMessage().getLong(TRANSMIT_OFFSET) * getChannelSpacing();
 
         if(!getMessage().get(TRANSMIT_OFFSET_SIGN))
         {
