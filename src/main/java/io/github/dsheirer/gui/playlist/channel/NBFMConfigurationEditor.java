@@ -241,6 +241,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         if(mBandwidthButton == null)
         {
             mBandwidthButton = new SegmentedButton();
+            mBandwidthButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             mBandwidthButton.setDisable(true);
 
             for(DecodeConfigNBFM.Bandwidth bandwidth : DecodeConfigNBFM.Bandwidth.values())

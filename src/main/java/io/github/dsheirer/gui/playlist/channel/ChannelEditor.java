@@ -236,6 +236,7 @@ public class ChannelEditor extends SplitPane
         {
             mViewSegmentedButton = new SegmentedButton(getAllToggleButton(), getPlayingToggleButton(),
                 getAutoStartToggleButton());
+            mViewSegmentedButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             getAllToggleButton().setSelected(true);
             mViewSegmentedButton.getToggleGroup().selectedToggleProperty()
                 .addListener((observable, oldValue, newValue) -> {

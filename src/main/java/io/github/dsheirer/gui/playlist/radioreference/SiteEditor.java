@@ -804,6 +804,7 @@ public class SiteEditor extends GridPane
         if(mConfigurationsSegmentedButton == null)
         {
             mConfigurationsSegmentedButton = new SegmentedButton(getSingleToggleButton(), getForEachToggleButton());
+            mConfigurationsSegmentedButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             mConfigurationsSegmentedButton.setDisable(true);
             mConfigurationsSegmentedButton.getToggleGroup().selectedToggleProperty()
                 .addListener((observable, oldValue, newValue) -> {
@@ -848,6 +849,7 @@ public class SiteEditor extends GridPane
         {
             mFrequenciesSegmentedButton = new SegmentedButton(getControlToggleButton(), getControlAndAltToggleButton(),
                 getSelectedToggleButton(), getAllToggleButton());
+            mFrequenciesSegmentedButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             mFrequenciesSegmentedButton.setDisable(true);
             mFrequenciesSegmentedButton.getToggleGroup().selectedToggleProperty()
                 .addListener((observable, oldValue, newValue) -> {
