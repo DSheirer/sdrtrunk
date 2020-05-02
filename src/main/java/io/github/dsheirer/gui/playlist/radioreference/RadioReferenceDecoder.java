@@ -28,6 +28,8 @@ import io.github.dsheirer.module.decode.mpt1327.identifier.MPT1327Talkgroup;
 import io.github.dsheirer.module.decode.p25.identifier.talkgroup.APCO25Talkgroup;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.Site;
@@ -99,6 +101,30 @@ public class RadioReferenceDecoder
                 return MPT1327Talkgroup.encode(prefix, ident);
             default:
                 return talkgroup.getDecimalValue();
+        }
+    }
+
+    /**
+     * Converts the talkgroup value to the format used by radio reference
+     * @param value of the talkgroup
+     * @param protocol for the talkgroup
+     * @return radio reference formatted talkgroup
+     */
+    public static int convertToRadioReferenceTalkgroup(int value, Protocol protocol)
+    {
+        switch(protocol)
+        {
+            case LTR:
+                int area = LTRTalkgroupFormatter.getArea(value);
+                int home = LTRTalkgroupFormatter.getLcn(value);
+                int group = LTRTalkgroupFormatter.getTalkgroup(value);
+                return (area * 100000) + (home * 1000) + group;
+            case MPT1327:
+                int prefix = MPT1327TalkgroupFormatter.getPrefix(value);
+                int ident = MPT1327TalkgroupFormatter.getIdent(value);
+                return (prefix * 10000) + ident;
+            default:
+                return value;
         }
     }
 

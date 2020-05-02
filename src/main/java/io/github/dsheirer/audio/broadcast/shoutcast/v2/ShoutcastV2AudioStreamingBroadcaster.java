@@ -25,7 +25,7 @@ import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.AudioBroadcaster;
+import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.AuthenticateBroadcast;
@@ -70,9 +70,9 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBroadcastMetadataUpdater
+public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcaster implements IBroadcastMetadataUpdater
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV2AudioBroadcaster.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV2AudioStreamingBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
     private int mMaxPayloadSize = 16377;
 
@@ -95,7 +95,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
      *
      * @param configuration for the Shoutcast V2 stream
      */
-    public ShoutcastV2AudioBroadcaster(ShoutcastV2Configuration configuration, AliasModel aliasModel)
+    public ShoutcastV2AudioStreamingBroadcaster(ShoutcastV2Configuration configuration, AliasModel aliasModel)
     {
         super(configuration);
         mAliasModel = aliasModel;

@@ -27,15 +27,13 @@ import io.github.dsheirer.audio.broadcast.BroadcastFactory;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
-import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.rrapi.type.UserFeedBroadcast;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -64,7 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +74,7 @@ public class StreamingEditor extends SplitPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(StreamingEditor.class);
 
-    private PlaylistManager mPlaylistManager;
+    private final PlaylistManager mPlaylistManager;
     private TableView<ConfiguredBroadcast> mConfiguredBroadcastTableView;
     private MenuButton mNewButton;
     private Button mDeleteButton;
@@ -84,13 +82,13 @@ public class StreamingEditor extends SplitPane
     private Tab mConfigurationTab;
     private Tab mAliasTab;
     private Label mRadioReferenceLoginLabel;
-    private AbstractStreamEditor mCurrentEditor;
-    private UnknownStreamEditor mUnknownEditor;
-    private Map<BroadcastServerType, AbstractStreamEditor> mEditorMap = new HashMap();
-    private List<UserFeedBroadcast> mBroadcastifyFeeds = new ArrayList<>();
+    private AbstractBroadcastEditor<?> mCurrentEditor;
+    private final UnknownStreamEditor mUnknownEditor;
+    private Map<BroadcastServerType, AbstractBroadcastEditor<?>> mEditorMap = new EnumMap<>(BroadcastServerType.class);
+    private final List<UserFeedBroadcast> mBroadcastifyFeeds = new ArrayList<>();
     private ScrollPane mEditorScrollPane;
     private StreamAliasSelectionEditor mStreamAliasSelectionEditor;
-    private StreamConfigurationEditorModificationListener mStreamConfigurationEditorModificationListener =
+    private final StreamConfigurationEditorModificationListener mStreamConfigurationEditorModificationListener =
         new StreamConfigurationEditorModificationListener();
 
     /**
@@ -124,7 +122,7 @@ public class StreamingEditor extends SplitPane
         getItems().addAll(editorBox, getTabPane());
     }
 
-    private void setEditor(AbstractStreamEditor<?> editor)
+    private void setEditor(AbstractBroadcastEditor<?> editor)
     {
         if(editor != getCurrentEditor())
         {
@@ -167,20 +165,17 @@ public class StreamingEditor extends SplitPane
             alert.setTitle("Save Changes");
             alert.setHeaderText("Streaming configuration has been modified");
             alert.setContentText("Do you want to save these changes?");
-            alert.initOwner(((Node)getNewButton()).getScene().getWindow());
+            alert.initOwner((getNewButton()).getScene().getWindow());
 
             //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
             alert.setResizable(true);
-            alert.onShownProperty().addListener(e -> {
-                Platform.runLater(() -> alert.setResizable(false));
+            alert.onShownProperty().addListener(e -> Platform.runLater(() -> alert.setResizable(false)));
+            alert.showAndWait().ifPresent(buttonType -> {
+                if(buttonType == ButtonType.YES)
+                {
+                    getCurrentEditor().save();
+                }
             });
-
-            Optional<ButtonType> result = alert.showAndWait();
-
-            if(result.get() == ButtonType.YES)
-            {
-                getCurrentEditor().save();
-            }
         }
 
         getDeleteButton().setDisable(configuredBroadcast == null);
@@ -203,7 +198,7 @@ public class StreamingEditor extends SplitPane
 
                 if(editorType == null || editorType != configType)
                 {
-                    AbstractStreamEditor editor = mEditorMap.get(configType);
+                    AbstractBroadcastEditor editor = mEditorMap.get(configType);
 
                     if(editor == null)
                     {
@@ -280,7 +275,7 @@ public class StreamingEditor extends SplitPane
         return mRadioReferenceLoginLabel;
     }
 
-    private AbstractStreamEditor getCurrentEditor()
+    private AbstractBroadcastEditor getCurrentEditor()
     {
         if(mCurrentEditor == null)
         {
@@ -455,20 +450,15 @@ public class StreamingEditor extends SplitPane
         public CreateBroadcastifyMenuItem(UserFeedBroadcast userFeedBroadcast)
         {
             mUserFeedBroadcast = userFeedBroadcast;
-            setText("Broadcastify: " + mUserFeedBroadcast.getDescription());
-            setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    BroadcastConfiguration configuration = BroadcastifyConfiguration.from(mUserFeedBroadcast);
+            setText("Broadcastify Feed: " + mUserFeedBroadcast.getDescription());
+            setOnAction(event -> {
+                BroadcastConfiguration configuration = BroadcastifyFeedConfiguration.from(mUserFeedBroadcast);
 
-                    if(configuration != null)
-                    {
-                        ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
-                            .addBroadcastConfiguration(configuration);
-                        getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
-                    }
+                if(configuration != null)
+                {
+                    ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
+                        .addBroadcastConfiguration(configuration);
+                    getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
                 }
             });
         }
@@ -485,16 +475,15 @@ public class StreamingEditor extends SplitPane
         {
             setText(type.toString());
             mBroadcastServerType = type;
-            setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    BroadcastConfiguration config = BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
-                    ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
-                        .addBroadcastConfiguration(config);
-                    getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
-                }
+
+            //Temporary disable until we receive a production API key for broadcastify calls api
+            setDisable(mBroadcastServerType == BroadcastServerType.BROADCASTIFY_CALL);
+
+            setOnAction(event -> {
+                BroadcastConfiguration config = BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
+                ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
+                    .addBroadcastConfiguration(config);
+                getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
             });
         }
     }

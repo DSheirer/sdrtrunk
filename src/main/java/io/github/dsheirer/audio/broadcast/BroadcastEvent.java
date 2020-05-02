@@ -21,7 +21,7 @@ package io.github.dsheirer.audio.broadcast;
 public class BroadcastEvent
 {
     private BroadcastConfiguration mBroadcastConfiguration;
-    private AudioBroadcaster mAudioBroadcaster;
+    private AbstractAudioBroadcaster mAudioBroadcaster;
     private Event mEvent;
 
     /**
@@ -36,7 +36,7 @@ public class BroadcastEvent
         mEvent = event;
     }
 
-    public BroadcastEvent(AudioBroadcaster audioBroadcaster, Event event)
+    public BroadcastEvent(AbstractAudioBroadcaster audioBroadcaster, Event event)
     {
         mAudioBroadcaster = audioBroadcaster;
         mEvent = event;
@@ -47,7 +47,7 @@ public class BroadcastEvent
         return mBroadcastConfiguration;
     }
 
-    public AudioBroadcaster getAudioBroadcaster()
+    public AbstractAudioBroadcaster getAudioBroadcaster()
     {
         return mAudioBroadcaster;
     }
@@ -83,6 +83,7 @@ public class BroadcastEvent
         BROADCASTER_STATE_CHANGE,
         BROADCASTER_STREAMED_COUNT_CHANGE,
         BROADCASTER_AGED_OFF_COUNT_CHANGE,
+        BROADCASTER_ERROR_COUNT_CHANGE,
         BROADCASTER_DELETE,
 
         CONFIGURATION_ADD,

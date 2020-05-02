@@ -35,12 +35,14 @@ public class StreamEditorFactory
      * @param broadcastServerType to edit
      * @return editor or the default unknown editor
      */
-    public static AbstractStreamEditor getEditor(BroadcastServerType broadcastServerType, PlaylistManager playlistManager)
+    public static AbstractBroadcastEditor getEditor(BroadcastServerType broadcastServerType, PlaylistManager playlistManager)
     {
         switch(broadcastServerType)
         {
             case BROADCASTIFY:
                 return new BroadcastifyStreamEditor(playlistManager);
+            case BROADCASTIFY_CALL:
+                return new BroadcastifyCallEditor(playlistManager);
             case ICECAST_HTTP:
                 return new IcecastHTTPStreamEditor(playlistManager);
             case ICECAST_TCP:

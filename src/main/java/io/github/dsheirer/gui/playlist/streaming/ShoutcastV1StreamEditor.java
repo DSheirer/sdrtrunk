@@ -82,8 +82,6 @@ public class ShoutcastV1StreamEditor extends AbstractStreamEditor<ShoutcastV1Con
     @Override
     public void save()
     {
-        super.save();
-
         if(getItem() != null)
         {
             getItem().setDescription(getDescriptionTextField().getText());
@@ -91,7 +89,7 @@ public class ShoutcastV1StreamEditor extends AbstractStreamEditor<ShoutcastV1Con
             getItem().setPublic(getPublicToggleSwitch().isSelected());
         }
 
-        modifiedProperty().set(false);
+        super.save();
     }
 
     protected GridPane getEditorPane()

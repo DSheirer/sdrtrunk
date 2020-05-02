@@ -35,7 +35,7 @@ import javafx.util.Callback;
 public class ConfiguredBroadcast
 {
     private BroadcastConfiguration mBroadcastConfiguration;
-    private AudioBroadcaster mAudioBroadcaster;
+    private AbstractAudioBroadcaster mAudioBroadcaster;
     private ObjectProperty<BroadcastState> mBroadcastState = new SimpleObjectProperty<>();
 
     /**
@@ -93,7 +93,7 @@ public class ConfiguredBroadcast
      * Sets the audio broadcaster
      * @param audioBroadcaster to use for this configuration
      */
-    public void setAudioBroadcaster(AudioBroadcaster audioBroadcaster)
+    public void setAudioBroadcaster(AbstractAudioBroadcaster audioBroadcaster)
     {
         mBroadcastState.unbind();
         mAudioBroadcaster = audioBroadcaster;
@@ -126,9 +126,17 @@ public class ConfiguredBroadcast
     /**
      * Optional audio broadcaster created from the configuration
      */
-    public AudioBroadcaster getAudioBroadcaster()
+    public AbstractAudioBroadcaster getAudioBroadcaster()
     {
         return mAudioBroadcaster;
+    }
+
+    /**
+     * Indicates if this configured broadcast has a non-null audio broadcaster assigned
+     */
+    public boolean hasAudioBroadcaster()
+    {
+        return mAudioBroadcaster != null;
     }
 
     /**

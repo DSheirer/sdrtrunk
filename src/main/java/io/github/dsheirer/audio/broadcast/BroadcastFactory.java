@@ -22,14 +22,16 @@
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallBroadcaster;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
-import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
+import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 import io.github.dsheirer.audio.convert.IAudioConverter;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
@@ -51,7 +53,7 @@ public class BroadcastFactory
      * @param configuration describing the server and audio types
      * @return configured broadcaster or null
      */
-    public static AudioBroadcaster getBroadcaster(BroadcastConfiguration configuration, AliasModel aliasModel)
+    public static AbstractAudioBroadcaster getBroadcaster(BroadcastConfiguration configuration, AliasModel aliasModel)
     {
         if(configuration != null)
         {
@@ -61,8 +63,10 @@ public class BroadcastFactory
             {
                 switch(configuration.getBroadcastServerType())
                 {
+                    case BROADCASTIFY_CALL:
+                        return new BroadcastifyCallBroadcaster((BroadcastifyCallConfiguration)configuration, aliasModel);
                     case BROADCASTIFY:
-                        return new IcecastTCPAudioBroadcaster((BroadcastifyConfiguration) configuration, aliasModel);
+                        return new IcecastTCPAudioBroadcaster((BroadcastifyFeedConfiguration) configuration, aliasModel);
                     case ICECAST_TCP:
                         return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration, aliasModel);
                     case ICECAST_HTTP:
@@ -70,7 +74,7 @@ public class BroadcastFactory
                     case SHOUTCAST_V1:
                         return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration, aliasModel);
                     case SHOUTCAST_V2:
-                        return new ShoutcastV2AudioBroadcaster((ShoutcastV2Configuration) configuration, aliasModel);
+                        return new ShoutcastV2AudioStreamingBroadcaster((ShoutcastV2Configuration) configuration, aliasModel);
                     case UNKNOWN:
                     default:
                         mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
@@ -112,8 +116,10 @@ public class BroadcastFactory
     {
         switch(serverType)
         {
+            case BROADCASTIFY_CALL:
+                return new BroadcastifyCallConfiguration(format);
             case BROADCASTIFY:
-                return new BroadcastifyConfiguration(format);
+                return new BroadcastifyFeedConfiguration(format);
             case ICECAST_HTTP:
                 return new IcecastHTTPConfiguration(format);
             case ICECAST_TCP:

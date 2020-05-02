@@ -24,7 +24,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
-import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
@@ -36,7 +36,7 @@ import javafx.scene.layout.GridPane;
 /**
  * Broadcastify streaming configuration editor
  */
-public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyConfiguration>
+public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyFeedConfiguration>
 {
     private GridPane mEditorPane;
     private TextField mMountPointTextField;
@@ -48,7 +48,7 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
     }
 
     @Override
-    public void setItem(BroadcastifyConfiguration item)
+    public void setItem(BroadcastifyFeedConfiguration item)
     {
         super.setItem(item);
 
@@ -72,13 +72,13 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
     @Override
     public void save()
     {
-        super.save();
-
         if(getItem() != null)
         {
             getItem().setFeedID(getFeedIdTextField().get());
             getItem().setMountPoint(getMountPointTextField().getText());
         }
+
+        super.save();
     }
 
     public BroadcastServerType getBroadcastServerType()
@@ -100,7 +100,6 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
             GridPane.setConstraints(formatLabel, 0, 0);
             mEditorPane.getChildren().add(formatLabel);
 
-            getFormatField().setText(getBroadcastServerType().toString());
             GridPane.setConstraints(getFormatField(), 1, 0);
             mEditorPane.getChildren().add(getFormatField());
 

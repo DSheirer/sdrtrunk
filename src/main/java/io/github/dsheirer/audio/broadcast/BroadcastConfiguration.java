@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyCallConfiguration;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
@@ -46,6 +47,7 @@ import java.net.SocketAddress;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
+    @JsonSubTypes.Type(value = BroadcastifyCallConfiguration.class, name="broadcastifyCallConfiguration"),
     @JsonSubTypes.Type(value = IcecastConfiguration.class, name="icecastConfiguration"),
     @JsonSubTypes.Type(value = ShoutcastV1Configuration.class, name="shoutcastV1Configuration"),
     @JsonSubTypes.Type(value = ShoutcastV2Configuration.class, name="shoutcastV2Configuration"),
@@ -64,11 +66,12 @@ public abstract class BroadcastConfiguration
     private LongProperty mDelay = new SimpleLongProperty();
     private LongProperty mMaximumRecordingAge = new SimpleLongProperty(10 * 60 * 1000); //10 minutes default
     private BooleanProperty mEnabled = new SimpleBooleanProperty(false);
-    private BooleanProperty mValid;
+    protected BooleanProperty mValid = new SimpleBooleanProperty();
     private int mId = ++UNIQUE_ID;
 
     public BroadcastConfiguration()
     {
+        mValid.bind(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)));
     }
 
     /**
@@ -155,12 +158,6 @@ public abstract class BroadcastConfiguration
      */
     public BooleanProperty validProperty()
     {
-        if(mValid == null)
-        {
-            mValid = new SimpleBooleanProperty();
-            mValid.bind(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)));
-        }
-
         return mValid;
     }
 
