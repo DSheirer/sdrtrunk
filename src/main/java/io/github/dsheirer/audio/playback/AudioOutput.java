@@ -488,7 +488,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             //Process any new buffers that have been added to the audio segment.  If a next audio segment gets assigned
             //while processing, exit the loop so that we can evaluate the next for higher priority preempt.  If the next
             //segment is a linked segment, ignore it so that we can close out the current segment.
-            while((mNextAudioSegment == null || mNextAudioSegment.isLinked()) &&
+            while(mCurrentAudioSegment != null && (mNextAudioSegment == null || mNextAudioSegment.isLinked()) &&
                    mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount() &&
                    !mCurrentAudioSegment.isDoNotMonitor())
             {
