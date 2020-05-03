@@ -51,8 +51,6 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
     @Override
     public void setItem(IcecastConfiguration item)
     {
-        super.setItem(item);
-
         getMountPointTextField().setDisable(item == null);
         getUserNameTextField().setDisable(item == null);
         getDescriptionTextField().setDisable(item == null);
@@ -76,7 +74,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             getURLTextField().setText(null);
         }
 
-        modifiedProperty().set(false);
+        super.setItem(item);
     }
 
     @Override

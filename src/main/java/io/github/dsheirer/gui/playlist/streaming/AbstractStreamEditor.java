@@ -91,8 +91,6 @@ public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> ext
     @Override
     public void save()
     {
-        super.save();
-
         BroadcastConfiguration configuration = getItem();
 
         if(configuration != null)
@@ -104,7 +102,7 @@ public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> ext
             configuration.setMaximumRecordingAge(getMaxAgeTextField().get() * 1000); //Convert seconds to millis
         }
 
-        modifiedProperty().set(false);
+        super.save();
     }
 
     protected abstract GridPane getEditorPane();

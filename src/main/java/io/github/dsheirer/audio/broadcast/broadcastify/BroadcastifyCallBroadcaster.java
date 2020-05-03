@@ -45,7 +45,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Queue;
@@ -66,8 +65,6 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     private static final String MULTIPART_TYPE = "multipart";
     private static final String DEFAULT_SUBTYPE = "form-data";
     private static final String MULTIPART_FORM_DATA = MULTIPART_TYPE + "/" + DEFAULT_SUBTYPE;
-    private static final String API_ENDPOINT = BroadcastifyCallConfiguration.DEV_ENDPOINT;
-//    private static final String API_ENDPOINT = BroadcastifyCallConfiguration.PRODUCTION_ENDPOINT;
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
     private ScheduledFuture<?> mAudioRecordingProcessorFuture;
     private HttpClient mHttpClient = HttpClient.newBuilder()
@@ -98,14 +95,14 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         String response = testConnection(getBroadcastConfiguration());
         mLastConnectionAttempt = System.currentTimeMillis();
 
-        if(response != null)
+        if(response != null && response.toLowerCase().startsWith("ok"))
         {
-            mLog.error("Error connecting to Broadcastify calls server on startup [" + response + "]");
-            setBroadcastState(BroadcastState.ERROR);
+            setBroadcastState(BroadcastState.CONNECTED);
         }
         else
         {
-            setBroadcastState(BroadcastState.CONNECTED);
+            mLog.error("Error connecting to Broadcastify calls server on startup [" + response + "]");
+            setBroadcastState(BroadcastState.ERROR);
         }
 
         if(mAudioRecordingProcessorFuture == null)
@@ -160,7 +157,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
             String response = testConnection(getBroadcastConfiguration());
             mLastConnectionAttempt = System.currentTimeMillis();
 
-            if(response == null)
+            if(response != null && response.toLowerCase().startsWith("ok"))
             {
                 setBroadcastState(BroadcastState.CONNECTED);
             }
@@ -462,15 +459,10 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         BroadcastifyCallBuilder bodyBuilder = new BroadcastifyCallBuilder();
         bodyBuilder.addPart(FormField.API_KEY, configuration.getApiKey())
             .addPart(FormField.SYSTEM_ID, configuration.getSystemID())
-            .addPart(FormField.CALL_DURATION, 0)
-            .addPart(FormField.TIMESTAMP, (int)(System.currentTimeMillis() / 1E3))
-            .addPart(FormField.TALKGROUP_ID, 999)
-            .addPart(FormField.RADIO_ID, 999999)
-            .addPart(FormField.FREQUENCY, 450.00000)
-            .addPart(FormField.ENCODING, ENCODING_TYPE_MP3);
+            .addPart(FormField.TEST, 1);
 
         HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create(API_ENDPOINT))
+            .uri(URI.create(configuration.getHost()))
             .header(HttpHeaders.CONTENT_TYPE, MULTIPART_FORM_DATA + "; boundary=" + bodyBuilder.getBoundary())
             .header(HttpHeaders.USER_AGENT, "sdrtrunk")
             .header(HttpHeaders.ACCEPT, "*/*")
@@ -482,17 +474,8 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         try
         {
             HttpResponse<String> response = httpClient.send(request, responseHandler);
-
             String responseBody = response.body();
-            if(response.statusCode() == 200 && responseBody != null && responseBody.startsWith("0 "))
-            {
-                //success!
-                return null;
-            }
-            else
-            {
-                return responseBody;
-            }
+            return (responseBody != null ? responseBody : "(no response)") + " Status Code:" + response.statusCode();
         }
         catch(Exception e)
         {
@@ -513,100 +496,33 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     {
         mLog.debug("Starting ...");
 
-        HttpClient httpClient = HttpClient.newBuilder()
-            .version(HttpClient.Version.HTTP_1_1)
-            .followRedirects(HttpClient.Redirect.NORMAL)
-            .connectTimeout(Duration.ofSeconds(20))
-            .build();
+        BroadcastifyCallConfiguration config = new BroadcastifyCallConfiguration();
+        config.setHost("https://api.broadcastify.com/call-upload-dev");
+        config.setApiKey("c33aae37-8572-11ea-bd8b-0ecc8ab9ccec");
+        config.setSystemID(11);
 
-        int ts = (int)(System.currentTimeMillis() / 1E3);
+        String response = testConnection(config);
 
-        BroadcastifyCallBuilder builder = new BroadcastifyCallBuilder();
-        builder.addPart(FormField.API_KEY, BroadcastifyCallConfiguration.SDRTRUNK_DEV_API_KEY)
-                .addPart(FormField.SYSTEM_ID, 11)
-                .addPart(FormField.CALL_DURATION, 3.0)
-                .addPart(FormField.TIMESTAMP, 1234568)
-                .addPart(FormField.TALKGROUP_ID, 1234)
-                .addPart(FormField.RADIO_ID, 123456)
-                .addPart(FormField.FREQUENCY, 450.12345)
-                .addPart(FormField.ENCODING, "mp3");
-
-        HttpRequest.BodyPublisher body = builder.build();
-
-        if(body != null)
+        if(response == null)
         {
-            try
+            mLog.debug("Test Successful!");
+        }
+        else
+        {
+            if(response.contains("1 Invalid-API-Key"))
             {
-                HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(BroadcastifyCallConfiguration.DEV_ENDPOINT))
-                    .header(HttpHeaders.CONTENT_TYPE, MULTIPART_FORM_DATA + "; boundary=" + builder.getBoundary())
-                    .header(HttpHeaders.USER_AGENT, "sdrtrunk")
-                    .header(HttpHeaders.ACCEPT, "*/*")
-                    .POST(body).build();
-
-                HttpResponse<String> response = null;
-
-                mLog.info("Submitting request for URL");
-                try
-                {
-                    response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                }
-                catch(Exception ioe)
-                {
-                    mLog.error("Error", ioe);
-                }
-
-                if(response != null)
-                {
-                    String url = response.body().toString();
-
-                    mLog.info("URL Requested - Response: " + url);
-                    if(response.statusCode() == 200)
-                    {
-                        if(url != null && url.startsWith("0 "))
-                        {
-                            String file = "/home/denny/SDRTrunk/recordings/20200426_160130CNYICC_Onondaga_TRAFFIC__TO_1_FROM_911005.mp3";
-                            Path path = Path.of(file);
-
-                            HttpRequest fileRequest = HttpRequest.newBuilder()
-                                .uri(URI.create(url.substring(2)))
-                                .header(HttpHeaders.CONTENT_TYPE, "audio/mpeg")
-                                .POST(HttpRequest.BodyPublishers.ofFile(path))
-                                .build();
-
-                            mLog.info("Submitting file upload");
-                            httpClient.sendAsync(fileRequest, HttpResponse.BodyHandlers.ofString())
-                                .whenComplete((stringHttpResponse, throwable) -> {
-                                    mLog.debug("Upload complete");
-                                    if(throwable != null)
-                                    {
-                                        mLog.info("Upload Complete:" + stringHttpResponse.body());
-                                    }
-                                    else
-                                    {
-                                        throwable.printStackTrace();
-                                    }
-                                });
-                        }
-                        else
-                        {
-                            mLog.error("Got HTTP 200 OK, but invalid response: " + url);
-                        }
-                    }
-                    else
-                    {
-                        mLog.info("Error response:" + url);
-                    }
-                }
+                mLog.error("Invalid API Key");
             }
-            catch(Exception e)
+            else if(response.contains("1 API-Key-Access-Denied"))
             {
-                mLog.debug("Error", e);
+                mLog.error("System ID not valid for API Key");
+            }
+            else
+            {
+                mLog.debug("Response: " + response);
             }
         }
 
-        while(true);
-
-//        mLog.debug("Finished!");
+        mLog.debug("Finished!");
     }
 }

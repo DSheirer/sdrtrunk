@@ -31,7 +31,6 @@ import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 import javafx.beans.Observable;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
@@ -59,19 +58,18 @@ public abstract class BroadcastConfiguration
     private static int UNIQUE_ID = 0;
 
     private BroadcastFormat mBroadcastFormat = BroadcastFormat.MP3;
-    private StringProperty mName = new SimpleStringProperty();
-    private StringProperty mHost = new SimpleStringProperty();
-    private IntegerProperty mPort = new SimpleIntegerProperty(80);
-    private StringProperty mPassword = new SimpleStringProperty();
-    private LongProperty mDelay = new SimpleLongProperty();
-    private LongProperty mMaximumRecordingAge = new SimpleLongProperty(10 * 60 * 1000); //10 minutes default
-    private BooleanProperty mEnabled = new SimpleBooleanProperty(false);
+    protected StringProperty mName = new SimpleStringProperty();
+    protected StringProperty mHost = new SimpleStringProperty();
+    protected IntegerProperty mPort = new SimpleIntegerProperty(80);
+    protected StringProperty mPassword = new SimpleStringProperty();
+    protected LongProperty mDelay = new SimpleLongProperty();
+    protected LongProperty mMaximumRecordingAge = new SimpleLongProperty(10 * 60 * 1000); //10 minutes default
+    protected BooleanProperty mEnabled = new SimpleBooleanProperty(false);
     protected BooleanProperty mValid = new SimpleBooleanProperty();
     private int mId = ++UNIQUE_ID;
 
     public BroadcastConfiguration()
     {
-        mValid.bind(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)));
     }
 
     /**

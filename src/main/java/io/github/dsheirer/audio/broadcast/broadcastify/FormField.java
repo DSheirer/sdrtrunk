@@ -31,7 +31,8 @@ public enum FormField
     TALKGROUP_ID("tg"),
     RADIO_ID("src"),
     FREQUENCY("freq"),
-    ENCODING("enc");
+    ENCODING("enc"),
+    TEST("test");
 
     private String mHeader;
 
