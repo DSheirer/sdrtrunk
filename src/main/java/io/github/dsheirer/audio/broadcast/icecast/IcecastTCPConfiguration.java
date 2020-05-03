@@ -25,6 +25,7 @@ import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyFeedConfiguration;
+import javafx.beans.binding.Bindings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,9 @@ public class IcecastTCPConfiguration extends IcecastConfiguration
     public IcecastTCPConfiguration(BroadcastFormat format)
     {
         super(format);
+
+        mValid.bind(Bindings.and(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)),
+            Bindings.isNotNull(mMountPoint)));
     }
 
     @Override

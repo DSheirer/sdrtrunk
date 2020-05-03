@@ -22,6 +22,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import javafx.beans.binding.Bindings;
 
 public class ShoutcastV1Configuration extends BroadcastConfiguration
 {
@@ -31,14 +32,16 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     private int mChannels = 1;
     private int mBitRate = 16;
 
+    //No-arg JAXB constructor
     public ShoutcastV1Configuration()
     {
-        //No-arg JAXB constructor
+        this(BroadcastFormat.MP3);
     }
 
     public ShoutcastV1Configuration(BroadcastFormat format)
     {
         super(format);
+        mValid.bind(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)));
     }
 
     @Override

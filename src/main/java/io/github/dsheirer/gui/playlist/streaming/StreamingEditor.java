@@ -476,9 +476,6 @@ public class StreamingEditor extends SplitPane
             setText(type.toString());
             mBroadcastServerType = type;
 
-            //Temporary disable until we receive a production API key for broadcastify calls api
-            setDisable(mBroadcastServerType == BroadcastServerType.BROADCASTIFY_CALL);
-
             setOnAction(event -> {
                 BroadcastConfiguration config = BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
                 ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()

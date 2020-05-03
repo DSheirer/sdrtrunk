@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.audio.broadcast.broadcastify;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
@@ -27,6 +26,8 @@ import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 /**
  * Streaming configuration for Broadcastify Calls API.
@@ -36,13 +37,11 @@ import javafx.beans.property.SimpleIntegerProperty;
  */
 public class BroadcastifyCallConfiguration extends BroadcastConfiguration
 {
-    public static final String SDRTRUNK_DEV_API_KEY = "c33aae37-8572-11ea-bd8b-0ecc8ab9ccec";
-    public static final String SDRTRUNK_PRODUCTION_API_KEY = "";  //TODO: get production api key
-    public static final String DEV_ENDPOINT = "https://api.broadcastify.com/call-upload-dev";
+    public static final String DEVELOPMENT_ENDPOINT = "https://api.broadcastify.com/call-upload-dev";
     public static final String PRODUCTION_ENDPOINT = "https://api.broadcastify.com/call-upload";
-    public static final String CURRENT_ENDPOINT = DEV_ENDPOINT;
 
     private IntegerProperty mSystemID = new SimpleIntegerProperty();
+    private StringProperty mApiKey = new SimpleStringProperty();
 
     /**
      * Constructor for faster jackson
@@ -59,11 +58,16 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
     public BroadcastifyCallConfiguration(BroadcastFormat format)
     {
         super(format);
-        setHost(CURRENT_ENDPOINT);
+
+        if(getHost() == null)
+        {
+            setHost(PRODUCTION_ENDPOINT);
+        }
 
         //The parent class binds this property, so we unbind it and rebind it here
         mValid.unbind();
-        mValid.bind(Bindings.greaterThan(mSystemID, 0));
+        mValid.bind(Bindings.and(Bindings.and(Bindings.greaterThan(mSystemID, 0), Bindings.isNotNull(mApiKey)),
+            Bindings.isNotNull(mHost)));
     }
 
     /**
@@ -75,12 +79,29 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
     }
 
     /**
+     * API key as a property
+     */
+    public StringProperty apiKeyProperty()
+    {
+        return mApiKey;
+    }
+
+    /**
      * API Key
      */
-    @JsonIgnore
+    @JacksonXmlProperty(isAttribute = true, localName = "api_key")
     public String getApiKey()
     {
-        return SDRTRUNK_DEV_API_KEY;
+        return mApiKey.get();
+    }
+
+    /**
+     * Sets the api key
+     * @param apiKey
+     */
+    public void setApiKey(String apiKey)
+    {
+        mApiKey.setValue(apiKey);
     }
 
     /**

@@ -25,10 +25,13 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 
 public class ShoutcastV2Configuration extends BroadcastConfiguration
 {
-    private int mStreamID;
+    private IntegerProperty mStreamID = new SimpleIntegerProperty();
     private String mUserID;
     private int mBitRate = 16;
     private String mGenre;
@@ -43,6 +46,8 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     public ShoutcastV2Configuration(BroadcastFormat format)
     {
         super(format);
+        mValid.bind(Bindings.and(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)),
+            Bindings.greaterThan(mStreamID, -1)));
     }
 
     @Override
@@ -82,7 +87,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "stream_id")
     public int getStreamID()
     {
-        return mStreamID;
+        return mStreamID.get();
     }
 
     /**
@@ -92,7 +97,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
      */
     public void setStreamID(int streamID)
     {
-        mStreamID = streamID;
+        mStreamID.set(streamID);
     }
 
     /**
