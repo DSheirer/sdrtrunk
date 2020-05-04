@@ -43,6 +43,7 @@ public class JavaFxPreferences
     private static final String PREFERENCE_STAGE_WIDTH_PREFIX = "stage.width.";
     private static final String PREFERENCE_STAGE_X_PREFIX = "stage.x.";
     private static final String PREFERENCE_STAGE_Y_PREFIX = "stage.y.";
+    private static final String PREFERENCE_STAGE_MAXIMIZED = "state.maximized";
 
     private Preferences mPreferences = Preferences.userNodeForPackage(JavaFxPreferences.class);
     private List<StageMonitor> mStageMonitors = new ArrayList<>();
@@ -87,10 +88,11 @@ public class JavaFxPreferences
     {
         private Stage mStage;
         private String mKey;
-        private CoordinateMonitor mX;
-        private CoordinateMonitor mY;
-        private CoordinateMonitor mHeight;
-        private CoordinateMonitor mWidth;
+        private NumberMonitor mX;
+        private NumberMonitor mY;
+        private NumberMonitor mHeight;
+        private NumberMonitor mWidth;
+        private BooleanMonitor mMaximized;
 
         public StageMonitor(Stage stage, String key)
         {
@@ -100,15 +102,17 @@ public class JavaFxPreferences
             //Position the stage before we add the coordinate monitoring
             reposition(stage);
 
-            mX = new CoordinateMonitor(PREFERENCE_STAGE_X_PREFIX + key);
-            mY = new CoordinateMonitor(PREFERENCE_STAGE_Y_PREFIX + key);
-            mHeight = new CoordinateMonitor(PREFERENCE_STAGE_HEIGHT_PREFIX + key);
-            mWidth = new CoordinateMonitor(PREFERENCE_STAGE_WIDTH_PREFIX + key);
+            mX = new NumberMonitor(PREFERENCE_STAGE_X_PREFIX + key);
+            mY = new NumberMonitor(PREFERENCE_STAGE_Y_PREFIX + key);
+            mHeight = new NumberMonitor(PREFERENCE_STAGE_HEIGHT_PREFIX + key);
+            mWidth = new NumberMonitor(PREFERENCE_STAGE_WIDTH_PREFIX + key);
+            mMaximized = new BooleanMonitor(PREFERENCE_STAGE_MAXIMIZED + key);
 
             mStage.xProperty().addListener(mX);
             mStage.yProperty().addListener(mY);
             mStage.heightProperty().addListener(mHeight);
             mStage.widthProperty().addListener(mWidth);
+            mStage.maximizedProperty().addListener(mMaximized);
         }
 
         public void dispose()
@@ -117,6 +121,7 @@ public class JavaFxPreferences
             mStage.yProperty().removeListener(mY);
             mStage.heightProperty().removeListener(mHeight);
             mStage.widthProperty().removeListener(mWidth);
+            mStage.maximizedProperty().removeListener(mMaximized);
             mStage = null;
         }
 
@@ -132,6 +137,7 @@ public class JavaFxPreferences
             double y = mPreferences.getDouble(PREFERENCE_STAGE_Y_PREFIX + mKey, stage.getY());
             double height = mPreferences.getDouble(PREFERENCE_STAGE_HEIGHT_PREFIX + mKey, stage.getHeight());
             double width = mPreferences.getDouble(PREFERENCE_STAGE_WIDTH_PREFIX + mKey, stage.getWidth());
+            boolean maximized = mPreferences.getBoolean(PREFERENCE_STAGE_MAXIMIZED, stage.isMaximized());
 
             //If there is a screen (ie monitor) available to display the stage at these coordinates, then move the
             // stage, otherwise let the stage display in the default coordinates
@@ -143,6 +149,7 @@ public class JavaFxPreferences
                 stage.setY(y);
                 stage.setHeight(height);
                 stage.setWidth(width);
+                stage.setMaximized(maximized);
             }
         }
     }
@@ -150,11 +157,11 @@ public class JavaFxPreferences
     /**
      * Monitors a stage coordinate and stores the value to user preferences as it changes.
      */
-    public class CoordinateMonitor implements ChangeListener<Number>
+    public class NumberMonitor implements ChangeListener<Number>
     {
         private String mKey;
 
-        public CoordinateMonitor(String key)
+        public NumberMonitor(String key)
         {
             mKey = key;
         }
@@ -166,6 +173,22 @@ public class JavaFxPreferences
             {
                 mPreferences.putDouble(mKey, newValue.doubleValue());
             }
+        }
+    }
+
+    public class BooleanMonitor implements ChangeListener<Boolean>
+    {
+        private String mKey;
+
+        public BooleanMonitor(String key)
+        {
+            mKey = key;
+        }
+
+        @Override
+        public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
+        {
+            mPreferences.putBoolean(mKey, newValue);
         }
     }
 }
