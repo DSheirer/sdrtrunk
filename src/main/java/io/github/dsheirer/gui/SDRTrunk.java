@@ -371,41 +371,34 @@ public class SDRTrunk implements Listener<TunerEvent>
         menuBar.add(viewMenu);
 
         JMenuItem screenCaptureItem = new JMenuItem("Screen Capture");
-
         screenCaptureItem.setMnemonic(KeyEvent.VK_C);
-        screenCaptureItem.setAccelerator(
-            KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));
-
-        screenCaptureItem.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent arg0)
+        screenCaptureItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));
+        screenCaptureItem.setMaximumSize(screenCaptureItem.getPreferredSize());
+        screenCaptureItem.addActionListener(arg0 -> {
+            try
             {
-                try
-                {
-                    Robot robot = new Robot();
+                Robot robot = new Robot();
 
-                    final BufferedImage image = robot.createScreenCapture(mMainGui.getBounds());
+                final BufferedImage image = robot.createScreenCapture(mMainGui.getBounds());
 
-                    String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
+                String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
 
-                    final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
+                final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
-                    EventQueue.invokeLater(() -> {
-                        try
-                        {
-                            ImageIO.write(image, "png", captureFile.toFile());
-                        }
-                        catch(IOException e)
-                        {
-                            mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
-                        }
-                    });
-                }
-                catch(AWTException e)
-                {
-                    mLog.error("Exception while taking screen capture", e);
-                }
+                EventQueue.invokeLater(() -> {
+                    try
+                    {
+                        ImageIO.write(image, "png", captureFile.toFile());
+                    }
+                    catch(IOException e)
+                    {
+                        mLog.error("Couldn't write screen capture to file [" + captureFile.toString() + "]", e);
+                    }
+                });
+            }
+            catch(AWTException e)
+            {
+                mLog.error("Exception while taking screen capture", e);
             }
         });
 
