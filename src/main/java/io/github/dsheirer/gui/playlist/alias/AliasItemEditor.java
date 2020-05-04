@@ -104,7 +104,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -360,48 +359,14 @@ public class AliasItemEditor extends Editor<Alias>
                     alias.addAliasID(selected);
                 }
 
-                AliasList aliasList = mPlaylistManager.getAliasModel().getAliasList(alias.getAliasListName());
-                aliasList.removeAlias(alias);
-
-                //Cleanup any alias identifiers that are marked as overlapping.  To do this, we remove all of the
-                //affected aliases, reset all of the overlap flags, and then add the aliases back to the alias list.
-                Set<Alias> aliasesToReset = new HashSet<>();
-                for(AliasID aliasID: alias.getAliasIdentifiers())
-                {
-                    if(aliasID.overlapProperty().get())
-                    {
-                        aliasID.overlapProperty().set(false);
-                        List<Alias> overlapAliases = aliasList.getOverlappingAliases(alias, aliasID);
-                        aliasesToReset.addAll(overlapAliases);
-                    }
-                }
-
-                //Remove overlap aliases, reset them, and readd back to the alias list
-                for(Alias resetAlias: aliasesToReset)
-                {
-                    aliasList.removeAlias(resetAlias);
-                    for(AliasID aliasID: resetAlias.getAliasIdentifiers())
-                    {
-                        aliasID.setOverlap(false);
-                    }
-                }
-
                 //Remove and replace the remaining non-audio identifiers
                 alias.removeNonAudioIdentifiers();
 
                 for(AliasID aliasID: getIdentifiersList().getItems())
                 {
-                    aliasID.setOverlap(false);
                     //Create a copy of the identifier so that the alias and the editor don't have the same instance
                     alias.addAliasID(AliasFactory.copyOf(aliasID));
                 }
-
-                //Add the aliases back to the alias list
-                for(Alias resetAlias: aliasesToReset)
-                {
-                    aliasList.addAlias(resetAlias);
-                }
-                aliasList.addAlias(alias);
 
                 //Remove and replace alias actions
                 alias.removeAllActions();
@@ -410,6 +375,9 @@ public class AliasItemEditor extends Editor<Alias>
                     alias.addAliasAction(aliasAction);
                 }
             }
+
+            AliasList aliasList = mPlaylistManager.getAliasModel().getAliasList(alias.getAliasListName());
+            aliasList.updateAlias(alias);
 
             //Reset the alias to refresh the editor.
             setItem(alias);

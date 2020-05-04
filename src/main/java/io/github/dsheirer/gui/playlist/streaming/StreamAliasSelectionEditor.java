@@ -23,7 +23,6 @@
 package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasEvent;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -312,7 +311,6 @@ public class StreamAliasSelectionEditor extends VBox
                 if(selectedAlias != null && stream != null)
                 {
                     selectedAlias.addAliasID(new BroadcastChannel(stream));
-                    mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     updateListFilters();
                 }
             });
@@ -344,7 +342,6 @@ public class StreamAliasSelectionEditor extends VBox
                         for(Alias selectedAlias: selectedAliases)
                         {
                             selectedAlias.addAliasID(new BroadcastChannel(stream));
-                            mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                         }
 
                         updateListFilters();
@@ -372,7 +369,6 @@ public class StreamAliasSelectionEditor extends VBox
                 if(selectedAlias != null && stream != null)
                 {
                     selectedAlias.removeBroadcastChannel(stream);
-                    mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     updateListFilters();
                 }
             });
@@ -400,7 +396,6 @@ public class StreamAliasSelectionEditor extends VBox
                     for(Alias selectedAlias: selectedAliases)
                     {
                         selectedAlias.removeBroadcastChannel(stream);
-                        mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     }
 
                     updateListFilters();

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
@@ -41,6 +42,7 @@ import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.util.ThreadPool;
+import javafx.collections.ListChangeListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,10 +110,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         //save the playlist when there are any changes
         mChannelModel.addListener(this);
 
-        mAliasModel.addListener(t -> {
-            //Save the playlist for all alias events
-            schedulePlaylistSave();
-        });
+        mAliasModel.aliasList().addListener((ListChangeListener<Alias>)c -> schedulePlaylistSave());
 
         mChannelMapModel.addListener(t -> {
             //Save the playlist for all channel map events
