@@ -74,6 +74,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Editor for aliases
@@ -97,7 +98,8 @@ public class AliasConfigurationEditor extends SplitPane
     private ComboBox<String> mAliasListNameComboBox;
     private Button mNewAliasListButton;
     private FilteredList<Alias> mAliasFilteredList;
-    private AliasFilterMonitor mAliasFilterMonitor;
+    private SortedList<Alias> mAliasSortedList;
+    private AliasPredicate mAliasPredicate;
 
     public AliasConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
@@ -124,7 +126,6 @@ public class AliasConfigurationEditor extends SplitPane
      */
     public void show(Alias alias)
     {
-        mLog.debug("Showing: " + alias.getName());
         if(alias != null)
         {
             String aliasList = alias.getAliasListName();
@@ -224,10 +225,29 @@ public class AliasConfigurationEditor extends SplitPane
         if(mSearchField == null)
         {
             mSearchField = TextFields.createClearableTextField();
-
+            mSearchField.textProperty().addListener((observable, oldValue, newValue) -> update());
         }
 
         return mSearchField;
+    }
+
+    private void update()
+    {
+        getAliasFilteredList().setPredicate(null);
+        getAliasPredicate().setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
+        getAliasPredicate().setSearchText(getSearchField().getText());
+        getAliasFilteredList().setPredicate(getAliasPredicate());
+    }
+
+    private AliasPredicate getAliasPredicate()
+    {
+        if(mAliasPredicate == null)
+        {
+            mAliasPredicate = new AliasPredicate();
+            mAliasPredicate.setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
+        }
+
+        return mAliasPredicate;
     }
 
     private ComboBox<String> getAliasListNameComboBox()
@@ -236,8 +256,9 @@ public class AliasConfigurationEditor extends SplitPane
         {
             mAliasListNameComboBox = new ComboBox<>(mPlaylistManager.getAliasModel().aliasListNames());
             mAliasListNameComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> {
+                .addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) -> {
                     getNewAliasButton().setDisable(newValue == null || newValue.contentEquals(AliasModel.NO_ALIAS_LIST));
+                    update();
                 });
 
             if(mAliasListNameComboBox.getItems().size() > 1)
@@ -362,15 +383,7 @@ public class AliasConfigurationEditor extends SplitPane
                 recordColumn, streamColumn, idsColumn, errorsColumn);
 
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
-
-            //Sorting and filtering for the table
-            mAliasFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(),
-                alias -> alias.matchesAliasList(getAliasListNameComboBox().getSelectionModel().getSelectedItem()));
-            mAliasFilterMonitor = new AliasFilterMonitor();
-
-            SortedList<Alias> sortedList = new SortedList<>(mAliasFilteredList);
-            sortedList.comparatorProperty().bind(mAliasTableView.comparatorProperty());
-            mAliasTableView.setItems(sortedList);
+            mAliasTableView.setItems(getAliasSortedList());
             mAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             mAliasTableView.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> {
@@ -379,6 +392,27 @@ public class AliasConfigurationEditor extends SplitPane
         }
 
         return mAliasTableView;
+    }
+
+    private FilteredList<Alias> getAliasFilteredList()
+    {
+        if(mAliasFilteredList == null)
+        {
+            mAliasFilteredList = new FilteredList<>(mPlaylistManager.getAliasModel().aliasList(), getAliasPredicate());
+        }
+
+        return mAliasFilteredList;
+    }
+
+    private SortedList<Alias> getAliasSortedList()
+    {
+        if(mAliasSortedList == null)
+        {
+            mAliasSortedList = new SortedList<>(getAliasFilteredList());
+            mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
+        }
+
+        return mAliasSortedList;
     }
 
     private Label getPlaceholderLabel()
@@ -417,7 +451,7 @@ public class AliasConfigurationEditor extends SplitPane
             mNewAliasButton.setAlignment(Pos.CENTER);
             mNewAliasButton.setMaxWidth(Double.MAX_VALUE);
             mNewAliasButton.setOnAction(event -> {
-                Alias alias = new Alias();
+                Alias alias = new Alias("New Alias");
                 alias.setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
                 mPlaylistManager.getAliasModel().addAlias(alias);
 
@@ -477,7 +511,7 @@ public class AliasConfigurationEditor extends SplitPane
             mCloneAliasButton.setMaxWidth(Double.MAX_VALUE);
             mCloneAliasButton.setOnAction(event -> {
                 Alias original = getAliasTableView().getSelectionModel().getSelectedItem();
-                Alias copy = AliasFactory.copyOf(original);
+                Alias copy = AliasFactory.shallowCopyOf(original);
                 mPlaylistManager.getAliasModel().addAlias(copy);
                 getAliasTableView().getSelectionModel().clearSelection();
                 getAliasTableView().getSelectionModel().select(copy);
@@ -765,47 +799,57 @@ public class AliasConfigurationEditor extends SplitPane
     }
 
     /**
-     * Updates the filtered set of aliases any time there is a change in the selected alias list name box, or when the
-     * user types text in the search box.
+     * Alias filter predicate
      */
-    public class AliasFilterMonitor
+    public class AliasPredicate implements Predicate<Alias>
     {
-        public AliasFilterMonitor()
-        {
-            getAliasListNameComboBox().getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> {
-                    refresh();
-                });
+        private String mAliasListName;
+        private String mSearchText;
 
-            getSearchField().textProperty().addListener((observable, oldValue, newValue) -> {
-                refresh();
-            });
+        @Override
+        public boolean test(Alias alias)
+        {
+            if(mAliasListName == null)
+            {
+                return false;
+            }
+            else if(mAliasListName.equals(alias.getAliasListName()))
+            {
+                if(alias.getName() == null)
+                {
+                    return true;
+                }
+                else if(alias.getName().toLowerCase().contains(mSearchText))
+                {
+                    return true;
+                }
+                else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(mSearchText))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
-        public void refresh()
+        public void setAliasListName(String aliasListName)
         {
-            final String aliasListName = getAliasListNameComboBox().getSelectionModel().getSelectedItem();
-            final String filter = getSearchField().getText();
+            if(aliasListName != null)
+            {
+                mAliasListName = aliasListName;
+            }
+        }
 
-            mAliasFilteredList.setPredicate(alias -> {
-                if(filter == null || filter.isEmpty())
-                {
-                    return alias.matchesAliasList(aliasListName);
-                }
-
-                String lowerFilter = filter.toLowerCase();
-
-                if(alias.getName() != null && alias.getName().toLowerCase().contains(lowerFilter))
-                {
-                    return alias.matchesAliasList(aliasListName);
-                }
-                else if(alias.getGroup() != null && alias.getGroup().toLowerCase().contains(lowerFilter))
-                {
-                    return alias.matchesAliasList(aliasListName);
-                }
-
-                return false;
-            });
+        public void setSearchText(String searchText)
+        {
+            if(searchText != null)
+            {
+                mSearchText = searchText.toLowerCase();
+            }
+            else
+            {
+                mSearchText = null;
+            }
         }
     }
 }

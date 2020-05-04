@@ -20,7 +20,6 @@
 package io.github.dsheirer.gui.playlist.alias;
 
 import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasEvent;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.collections.ListChangeListener;
@@ -315,7 +314,6 @@ public class AliasViewByRecordingEditor extends VBox
                 if(selectedAlias != null)
                 {
                     selectedAlias.setRecordable(true);
-                    mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     updateListFilters();
                 }
             });
@@ -342,7 +340,6 @@ public class AliasViewByRecordingEditor extends VBox
                     for(Alias selectedAlias: selectedAliases)
                     {
                         selectedAlias.setRecordable(true);
-                        mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     }
 
                     updateListFilters();
@@ -368,7 +365,6 @@ public class AliasViewByRecordingEditor extends VBox
                 if(selectedAlias != null)
                 {
                     selectedAlias.setRecordable(false);
-                    mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     updateListFilters();
                 }
             });
@@ -395,7 +391,6 @@ public class AliasViewByRecordingEditor extends VBox
                     for(Alias selectedAlias: selectedAliases)
                     {
                         selectedAlias.setRecordable(false);
-                        mPlaylistManager.getAliasModel().broadcast(new AliasEvent(selectedAlias, AliasEvent.Event.CHANGE));
                     }
 
                     updateListFilters();

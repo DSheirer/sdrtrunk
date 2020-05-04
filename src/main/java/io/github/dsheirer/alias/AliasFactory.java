@@ -51,6 +51,9 @@ import io.github.dsheirer.alias.id.tone.TonesID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AliasFactory
 {
     private static final Logger mLog = LoggerFactory.getLogger(AliasFactory.class);
@@ -180,32 +183,56 @@ public class AliasFactory
         return null;
     }
 
-    public static Alias copyOf(Alias original)
+    public static Alias shallowCopyOf(Alias original)
     {
         Alias copy = new Alias(original.getName());
         copy.setAliasListName(original.getAliasListName());
         copy.setGroup(original.getGroup());
         copy.setColor(original.getColor());
         copy.setIconName(original.getIconName());
+        return copy;
+    }
+
+    public static List<AliasID> copyAliasIDs(Alias original)
+    {
+        List<AliasID> aliasIDS = new ArrayList<>();
 
         for(AliasID id : original.getAliasIdentifiers())
         {
-            AliasID copyID = copyOf(id);
-
-            if(copyID != null)
-            {
-                copy.addAliasID(copyID);
-            }
+            aliasIDS.add(copyOf(id));
         }
 
-        for(AliasAction action : original.getAliasActions())
-        {
-            AliasAction copyAction = copyOf(action);
+        return aliasIDS;
+    }
 
-            if(copyAction != null)
-            {
-                copy.addAliasAction(copyAction);
-            }
+    public static List<AliasAction> copyAliasActions(Alias original)
+    {
+        List<AliasAction> actions = new ArrayList<>();
+
+        for(AliasAction aliasAction: original.getAliasActions())
+        {
+            actions.add(copyOf(aliasAction));
+        }
+
+        return actions;
+    }
+
+    public static Alias copyOf(Alias original)
+    {
+        Alias copy = shallowCopyOf(original);
+
+        List<AliasID> aliasIDS = copyAliasIDs(original);
+
+        for(AliasID aliasID: aliasIDS)
+        {
+            copy.addAliasID(aliasID);
+        }
+
+        List<AliasAction> actions = copyAliasActions(original);
+
+        for(AliasAction action: actions)
+        {
+            copy.addAliasAction(action);
         }
 
         return copy;

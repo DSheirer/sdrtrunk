@@ -26,8 +26,6 @@ import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
-import io.github.dsheirer.sample.Broadcaster;
-import io.github.dsheirer.sample.Listener;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -51,7 +49,6 @@ public class AliasModel
     public static final String NO_ALIAS_LIST = "(No Alias List)";
     private ObservableList<Alias> mAliases = FXCollections.observableArrayList(Alias.extractor());
     private ObservableList<String> mAliasListNames = FXCollections.observableArrayList();
-    private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
     private Map<String,AliasList> mAliasListMap = new HashMap<>();
 
     public AliasModel()
@@ -135,7 +132,8 @@ public class AliasModel
         }
 
         AliasList mapValue = mAliasListMap.get(name);
-        if (mapValue != null) {
+        if (mapValue != null)
+        {
             return mapValue;
         }
 
@@ -150,9 +148,6 @@ public class AliasModel
         }
 
         mAliasListMap.put(name, aliasList);
-
-        //Register the new alias list to receive updates from this model
-        addListener(aliasList);
 
         return aliasList;
     }
@@ -199,18 +194,19 @@ public class AliasModel
     /**
      * Adds the alias to the model
      */
-    public int addAlias(Alias alias)
+    public void addAlias(Alias alias)
     {
-        if(alias != null)
+        if(mAliases.contains(alias))
         {
-            mAliases.add(alias);
-            addAliasList(alias.getAliasListName());
-            int index = mAliases.size() - 1;
-            broadcast(new AliasEvent(alias, AliasEvent.Event.ADD));
-            return index;
+            removeAlias(alias);
         }
 
-        return -1;
+        mAliases.add(alias);
+    }
+
+    private boolean hasAliasList(String aliasListName)
+    {
+        return aliasListName != null && mAliasListMap.containsKey(aliasListName);
     }
 
     public void addAliasList(String aliasListName)
@@ -220,7 +216,6 @@ public class AliasModel
             if(!mAliasListNames.contains(aliasListName))
             {
                 mAliasListNames.add(aliasListName);
-                FXCollections.sort(mAliasListNames);
             }
         }
         else if(!mAliasListNames.contains(NO_ALIAS_LIST))
@@ -232,14 +227,18 @@ public class AliasModel
     }
 
     /**
-     * Removes the channel from the model and broadcasts a channel remove event
+     * Removes the alias from this model and an alias list (if one exists)
      */
     public void removeAlias(Alias alias)
     {
         if(alias != null)
         {
             mAliases.remove(alias);
-            broadcast(new AliasEvent(alias, AliasEvent.Event.DELETE));
+
+            if(hasAliasList(alias.getAliasListName()))
+            {
+                getAliasList(alias.getAliasListName()).removeAlias(alias);
+            }
         }
     }
 
@@ -328,32 +327,8 @@ public class AliasModel
         }
     }
 
-    public void broadcast(AliasEvent event)
-    {
-        Alias alias = event.getAlias();
-
-        //Validate the alias following a user action that changed the alias or any alias IDs
-        if(alias != null)
-        {
-            alias.validate();
-        }
-
-        mAliasEventBroadcaster.broadcast(event);
-    }
-
-    public void addListener(Listener<AliasEvent> listener)
-    {
-        mAliasEventBroadcaster.addListener(listener);
-    }
-
-    public void removeListener(Listener<AliasEvent> listener)
-    {
-        mAliasEventBroadcaster.removeListener(listener);
-    }
-
-
     /**
-     * Observable list change listener for both channels and traffic channels lists
+     * Monitors alias additions and removals and updates alias lists
      */
     public class AliasListChangeListener implements ListChangeListener<Alias>
     {
@@ -366,21 +341,27 @@ public class AliasModel
                 {
                     for(Alias alias: change.getAddedSubList())
                     {
-                        mAliasEventBroadcaster.broadcast(new AliasEvent(alias, AliasEvent.Event.ADD));
+                        addAliasList(alias.getAliasListName());
+
+                        if(hasAliasList(alias.getAliasListName()))
+                        {
+                            getAliasList(alias.getAliasListName()).addAlias(alias);
+                        }
                     }
                 }
                 else if(change.wasRemoved())
                 {
                     for(Alias alias: change.getRemoved())
                     {
-                        mAliasEventBroadcaster.broadcast(new AliasEvent(alias, AliasEvent.Event.DELETE));
-                    }
-                }
-                else if(change.wasUpdated())
-                {
-                    for(int x = change.getFrom(); x < change.getTo(); x++)
-                    {
-                        mAliasEventBroadcaster.broadcast(new AliasEvent(change.getList().get(x), AliasEvent.Event.CHANGE));
+                        if(hasAliasList(alias.getAliasListName()))
+                        {
+                            AliasList aliasList = getAliasList(alias.getName());
+
+                            if(alias != null)
+                            {
+                                aliasList.removeAlias(alias);
+                            }
+                        }
                     }
                 }
             }
