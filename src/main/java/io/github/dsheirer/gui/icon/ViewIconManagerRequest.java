@@ -17,16 +17,16 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.playlist;
+package io.github.dsheirer.gui.icon;
 
 import io.github.dsheirer.gui.JavaFxWindowRequest;
 
 /**
- * Request to view a facet of the playlist editor
+ * Request to view/show the Icon Manager
  */
-public abstract class PlaylistEditorRequest extends JavaFxWindowRequest
+public class ViewIconManagerRequest extends JavaFxWindowRequest
 {
-    public enum TabName {ALIAS, CHANNEL, PLAYLIST, RADIOREFERENCE, STREAM}
-
-    public abstract TabName getTabName();
+    public ViewIconManagerRequest()
+    {
+    }
 }

@@ -27,15 +27,17 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelRange;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.icon.IconManager;
+import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.PlaylistEditor;
 import io.github.dsheirer.gui.playlist.PlaylistEditorRequest;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditor;
-import io.github.dsheirer.gui.playlist.channelMap.ChannelMapEditorViewRequest;
+import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.UserPreferenceEditorViewRequest;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
@@ -61,20 +63,24 @@ public class JavaFxWindowManager extends Application
     private final static Logger mLog = LoggerFactory.getLogger(JavaFxWindowManager.class);
 
     public static final String CHANNEL_MAP_EDITOR = "channelmap";
+    public static final String ICON_MANAGER = "iconmanager";
     public static final String PLAYLIST_EDITOR = "playlist";
     public static final String USER_PREFERENCES_EDITOR = "preferences";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
+    public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
     public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
     public static final String STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR = "user.preferences";
 
     private JFXPanel mJFXPanel;
-    private PlaylistManager mPlaylistManager;
     private ChannelMapEditor mChannelMapEditor;
+    private IconManager mIconManager;
     private PlaylistEditor mPlaylistEditor;
+    private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
     private UserPreferencesEditor mUserPreferencesEditor;
 
     private Stage mChannelMapStage;
+    private Stage mIconManagerStage;
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
 
@@ -101,7 +107,7 @@ public class JavaFxWindowManager extends Application
         SourceManager sourceManager = new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel),
             mUserPreferences);
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconManager());
+        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconModel());
         mPlaylistManager.init();
         setup();
     }
@@ -151,6 +157,16 @@ public class JavaFxWindowManager extends Application
      */
     public void shutdown()
     {
+        if(mChannelMapStage != null)
+        {
+            mUserPreferences.getJavaFxPreferences().unmonitor(mChannelMapStage);
+        }
+
+        if(mIconManagerStage != null)
+        {
+            mUserPreferences.getJavaFxPreferences().unmonitor(mIconManagerStage);
+        }
+
         if(mPlaylistStage != null)
         {
             mUserPreferences.getJavaFxPreferences().unmonitor(mPlaylistStage);
@@ -161,12 +177,32 @@ public class JavaFxWindowManager extends Application
             mUserPreferences.getJavaFxPreferences().unmonitor(mUserPreferencesStage);
         }
 
-        if(mChannelMapStage != null)
+        Platform.exit();
+    }
+
+    public Stage getIconManagerStage()
+    {
+        if(mIconManagerStage == null)
         {
-            mUserPreferences.getJavaFxPreferences().unmonitor(mChannelMapStage);
+            createJFXPanel();
+            Scene scene = new Scene(getIconManager(), 500, 500);
+            mIconManagerStage = new Stage();
+            mIconManagerStage.setTitle("sdrtrunk - Icon Manager");
+            mIconManagerStage.setScene(scene);
+            mUserPreferences.getJavaFxPreferences().monitor(mIconManagerStage, STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR);
         }
 
-        Platform.exit();
+        return mIconManagerStage;
+    }
+
+    public IconManager getIconManager()
+    {
+        if(mIconManager == null)
+        {
+            mIconManager = new IconManager(mPlaylistManager.getIconModel());
+        }
+
+        return mIconManager;
     }
 
     /**
@@ -256,7 +292,7 @@ public class JavaFxWindowManager extends Application
      * Processes a user preferences editor request
      */
     @Subscribe
-    public void process(final UserPreferenceEditorViewRequest request)
+    public void process(final ViewUserPreferenceEditorRequest request)
     {
         execute(() -> {
             getUserPreferencesStage().show();
@@ -297,11 +333,22 @@ public class JavaFxWindowManager extends Application
         return mChannelMapStage;
     }
 
+    @Subscribe
+    public void process(final ViewIconManagerRequest request)
+    {
+        mLog.debug("Processing view request");
+        execute(() -> {
+            getIconManagerStage().show();
+            getIconManagerStage().requestFocus();
+            getIconManagerStage().toFront();
+        });
+    }
+
     /**
      * Process a channel map editor request
      */
     @Subscribe
-    public void process(final ChannelMapEditorViewRequest request)
+    public void process(final ViewChannelMapEditorRequest request)
     {
         execute(() -> {
             getChannelMapStage().show();
@@ -344,7 +391,11 @@ public class JavaFxWindowManager extends Application
                         channelMap2.addRange(new ChannelRange(400,499,480000000, 25000));
                         mPlaylistManager.getChannelMapModel().addChannelMap(channelMap2);
                         valid = true;
-                        process(new ChannelMapEditorViewRequest());
+                        process(new ViewChannelMapEditorRequest());
+                        break;
+                    case ICON_MANAGER:
+                        valid = true;
+                        process(new ViewIconManagerRequest());
                         break;
                     case PLAYLIST_EDITOR:
                         valid = true;
@@ -352,7 +403,7 @@ public class JavaFxWindowManager extends Application
                         break;
                     case USER_PREFERENCES_EDITOR:
                         valid = true;
-                        process(new UserPreferenceEditorViewRequest(PreferenceEditorType.DEFAULT));
+                        process(new ViewUserPreferenceEditorRequest(PreferenceEditorType.DEFAULT));
                         break;
                     default:
                         break;
@@ -364,8 +415,8 @@ public class JavaFxWindowManager extends Application
         {
             StringBuilder sb = new StringBuilder();
             sb.append("An argument is required to launch JavaFX windows from this window manager.  " +
-                "Valid options are:\n\tplaylist\tPlaylist Editor\n\tpreferences\tUser Preferences Editor\n\tchannelmap\t" +
-                "Channel Map Editor\n");
+                "Valid options are:\n\tchannelmap\tChannel Map Editor\n\ticonmanager\tIcon Manager\n\tplaylist\tPlaylist Editor\n" +
+                "\tpreferences\tUser Preferences Editor\n");
             sb.append("Supplied Argument(s): ").append(parameters.getRaw());
 
             mLog.error(sb.toString());

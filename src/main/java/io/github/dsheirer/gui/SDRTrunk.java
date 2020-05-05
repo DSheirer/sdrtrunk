@@ -30,9 +30,10 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
-import io.github.dsheirer.gui.preference.UserPreferenceEditorViewRequest;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
 import io.github.dsheirer.module.log.EventLogManager;
@@ -106,7 +107,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private AudioStreamingManager mAudioStreamingManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private ControllerPanel mControllerPanel;
-    private IconManager mIconManager = new IconManager();
+    private IconModel mIconModel = new IconModel();
     private PlaylistManager mPlaylistManager;
     private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
@@ -166,7 +167,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconManager);
+        mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
         new ChannelSelectionManager(mPlaylistManager.getChannelModel());
 
@@ -183,10 +184,10 @@ public class SDRTrunk implements Listener<TunerEvent>
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioRecordingManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);
 
-        MapService mapService = new MapService(mIconManager);
+        MapService mapService = new MapService(mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
-        mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconManager, mapService,
+        mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
             mSettingsManager, mSourceManager, mUserPreferences);
 
         mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, tunerModel);
@@ -331,11 +332,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewMenu.add(viewPlaylistItem);
 
         JMenuItem preferencesItem = new JMenuItem("User Preferences");
-        preferencesItem.addActionListener(e -> MyEventBus.getEventBus().post(new UserPreferenceEditorViewRequest()));
+        preferencesItem.addActionListener(e -> MyEventBus.getEventBus().post(new ViewUserPreferenceEditorRequest()));
         viewMenu.add(preferencesItem);
 
         JMenuItem settingsMenu = new JMenuItem("Icon Manager");
-        settingsMenu.addActionListener(arg0 -> mIconManager.showEditor(mMainGui));
+        settingsMenu.addActionListener(arg0 -> MyEventBus.getEventBus().post(new ViewIconManagerRequest()));
         viewMenu.add(settingsMenu);
 
         JMenuItem logFilesMenu = new JMenuItem("Logs & Recordings");

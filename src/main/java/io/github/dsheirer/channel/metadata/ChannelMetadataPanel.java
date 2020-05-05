@@ -28,7 +28,7 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
@@ -57,7 +57,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -66,7 +65,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     private static final String TABLE_PREFERENCE_KEY = "channel.metadata.panel";
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private IconManager mIconManager;
+    private IconModel mIconModel;
     private UserPreferences mUserPreferences;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
@@ -77,11 +76,11 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     /**
      * Table view for currently decoding channel metadata
      */
-    public ChannelMetadataPanel(PlaylistManager playlistManager, IconManager iconManager, UserPreferences userPreferences)
+    public ChannelMetadataPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences)
     {
         mChannelModel = playlistManager.getChannelModel();
         mChannelProcessingManager = playlistManager.getChannelProcessingManager();
-        mIconManager = iconManager;
+        mIconModel = iconModel;
         mUserPreferences = userPreferences;
         init();
     }
@@ -243,7 +242,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 if(!aliases.isEmpty())
                 {
                     label.setText(Joiner.on(", ").skipNulls().join(aliases));
-                    label.setIcon(mIconManager.getIcon(aliases.get(0).getIconName(), IconManager.DEFAULT_ICON_SIZE));
+                    label.setIcon(mIconModel.getIcon(aliases.get(0).getIconName(), IconModel.DEFAULT_ICON_SIZE));
                     label.setForeground(aliases.get(0).getDisplayColor());
                 }
                 else

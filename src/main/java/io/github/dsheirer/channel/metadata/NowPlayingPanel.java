@@ -22,7 +22,7 @@ package io.github.dsheirer.channel.metadata;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -43,12 +43,12 @@ public class NowPlayingPanel extends JPanel
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
      * messages, events, and spectral view.
      */
-    public NowPlayingPanel(PlaylistManager playlistManager, IconManager iconManager, UserPreferences userPreferences)
+    public NowPlayingPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences)
     {
         mChannelDetailPanel = new ChannelDetailPanel(playlistManager.getChannelProcessingManager());
-        mDecodeEventPanel = new DecodeEventPanel(iconManager, userPreferences, playlistManager.getAliasModel());
+        mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
-        mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconManager, userPreferences);
+        mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
 
         init();
     }

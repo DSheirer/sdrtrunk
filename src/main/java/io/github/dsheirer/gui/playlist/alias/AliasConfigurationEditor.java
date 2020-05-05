@@ -777,7 +777,7 @@ public class AliasConfigurationEditor extends SplitPane
 
                             if(alias != null)
                             {
-                                Icon icon = mPlaylistManager.getIconManager().getModel().getIcon(alias.getIconName());
+                                Icon icon = mPlaylistManager.getIconModel().getIcon(alias.getIconName());
 
                                 try
                                 {

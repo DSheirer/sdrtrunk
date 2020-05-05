@@ -33,7 +33,7 @@ import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
@@ -67,7 +67,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
     private AliasModel mAliasModel;
     private ChannelMapModel mChannelMapModel = new ChannelMapModel();
-    private IconManager mIconManager;
+    private IconModel mIconModel;
 
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
@@ -90,14 +90,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * @param eventLogManager for event logging
      */
     public PlaylistManager(UserPreferences userPreferences, SourceManager sourceManager, AliasModel aliasModel,
-                           EventLogManager eventLogManager, IconManager iconManager)
+                           EventLogManager eventLogManager, IconModel iconModel)
     {
         mUserPreferences = userPreferences;
         mSourceManager = sourceManager;
         mAliasModel = aliasModel;
-        mIconManager = iconManager;
+        mIconModel = iconModel;
 
-        mBroadcastModel = new BroadcastModel(mAliasModel, mIconManager, userPreferences);
+        mBroadcastModel = new BroadcastModel(mAliasModel, mIconModel, userPreferences);
         mRadioReference = new RadioReference(mUserPreferences);
 
         mChannelModel = new ChannelModel(mAliasModel);
@@ -159,9 +159,9 @@ public class PlaylistManager implements Listener<ChannelEvent>
     /**
      * Icon manager
      */
-    public IconManager getIconManager()
+    public IconModel getIconModel()
     {
-        return mIconManager;
+        return mIconModel;
     }
 
     /**

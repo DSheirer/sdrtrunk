@@ -21,7 +21,7 @@ package io.github.dsheirer.audio.playback;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.IAudioController;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import net.miginfocom.swing.MigLayout;
@@ -36,7 +36,7 @@ public class AudioChannelsPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
 
-    public AudioChannelsPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
+    public AudioChannelsPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
                               IAudioController controller, AliasModel aliasModel)
     {
         setLayout(new MigLayout("insets 0 0 0 0",
@@ -50,7 +50,7 @@ public class AudioChannelsPanel extends JPanel
 
         for(int x = 0; x < outputs.size(); x++)
         {
-            add(new AudioChannelPanel(iconManager, userPreferences, settingsManager, outputs.get(x), aliasModel));
+            add(new AudioChannelPanel(iconModel, userPreferences, settingsManager, outputs.get(x), aliasModel));
 
             if(x < outputs.size() - 1)
             {
@@ -63,7 +63,7 @@ public class AudioChannelsPanel extends JPanel
         if(outputs.size() == 1)
         {
             addSeparator();
-            add(new AudioChannelPanel(iconManager, userPreferences, settingsManager, null, aliasModel), "growx");
+            add(new AudioChannelPanel(iconModel, userPreferences, settingsManager, null, aliasModel), "growx");
         }
     }
 

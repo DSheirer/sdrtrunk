@@ -23,7 +23,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.gui.JavaFxWindowManager;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
@@ -50,14 +50,14 @@ public class PlaylistEditorApplication extends Application
     public PlaylistEditorApplication()
     {
         AliasModel aliasModel = new AliasModel();
-        BroadcastModel broadcastModel = new BroadcastModel(aliasModel, new IconManager(), mUserPreferences);
+        BroadcastModel broadcastModel = new BroadcastModel(aliasModel, new IconModel(), mUserPreferences);
         ChannelMapModel channelMapModel = new ChannelMapModel();
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
         SourceManager sourceManager = new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel),
             mUserPreferences);
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconManager());
+        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconModel());
 
         mPlaylistManager.init();
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
