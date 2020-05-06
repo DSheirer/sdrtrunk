@@ -103,6 +103,7 @@ import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -249,7 +250,7 @@ public class AliasItemEditor extends Editor<Alias>
             String iconName = alias.getIconName();
             if(iconName != null)
             {
-                icon = mPlaylistManager.getIconManager().getModel().getIcon(iconName);
+                icon = mPlaylistManager.getIconModel().getIcon(iconName);
             }
             getIconNodeComboBox().getSelectionModel().select(icon);
 
@@ -1040,7 +1041,7 @@ public class AliasItemEditor extends Editor<Alias>
             mIconNodeComboBox = new ComboBox<>();
             mIconNodeComboBox.setMaxWidth(Double.MAX_VALUE);
             mIconNodeComboBox.setDisable(true);
-            mIconNodeComboBox.getItems().addAll(mPlaylistManager.getIconManager().getIcons());
+            mIconNodeComboBox.setItems(mPlaylistManager.getIconModel().iconsProperty());
             mIconNodeComboBox.setCellFactory(new IconCellFactory());
             mIconNodeComboBox.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1573,17 +1574,24 @@ public class AliasItemEditor extends Editor<Alias>
 
                         String path = item.getPath();
 
-                        if(path.startsWith("images"))
+                        try
                         {
-                            try
+                            if(path.startsWith("images"))
                             {
                                 Image image = new Image(path, 0, 20, true, true);
                                 setGraphic(new ImageView(image));
                             }
-                            catch(Exception e)
+                            else
                             {
-
+                                Path filePath = Path.of(path);
+                                Image image = new Image(filePath.toUri().toString(), 0, 16, true, true);
+                                setGraphic(new ImageView(image));
                             }
+
+                        }
+                        catch(Exception e)
+                        {
+                            mLog.error("Error loading icon for [" + item.getName() + "] path [" + item.getPath() + "]");
                         }
                     }
                 }

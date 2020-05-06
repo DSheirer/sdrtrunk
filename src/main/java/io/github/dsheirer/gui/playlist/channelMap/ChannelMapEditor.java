@@ -802,7 +802,7 @@ public class ChannelMapEditor extends SplitPane
     /**
      * Processes a request to show/edit a channel map
      */
-    public void process(ChannelMapEditorViewRequest request)
+    public void process(ViewChannelMapEditorRequest request)
     {
         String channelMapName = request.getChannelMapName();
 

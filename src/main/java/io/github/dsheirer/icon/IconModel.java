@@ -22,14 +22,15 @@ import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.ImageIcon;
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import java.awt.Component;
-import java.awt.EventQueue;
 import java.awt.Image;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,101 +38,137 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IconManager
+public class IconModel
 {
-    private final static Logger mLog = LoggerFactory.getLogger(IconManager.class);
+    private final static Logger mLog = LoggerFactory.getLogger(IconModel.class);
     public static final int DEFAULT_ICON_SIZE = 12;
+    public static final String DEFAULT_ICON = "No Icon";
 
     private Path mIconFolderPath;
     private Path mIconFilePath;
     private Path mIconBackupFilePath;
     private Path mIconLockFilePath;
 
-    private IconEditor mIconEditor;
-    private IconTableModel mIconTableModel;
     private AtomicBoolean mSavingIcons = new AtomicBoolean();
-
+    private ObservableList<Icon> mIcons = FXCollections.observableArrayList(Icon.extractor());
+    private StringProperty mDefaultIconName = new SimpleStringProperty();
     private Map<String,ImageIcon> mResizedIcons = new HashMap<>();
+    private Icon mDefaultIcon;
+    private IconSet mStandardIcons;
 
-    public IconManager()
+    public IconModel()
     {
-    }
+        IconSet iconSet = load();
 
-    /**
-     * Display the icon editor centered over the specified component.
-     *
-     * @param centerOnComponent to center the editor
-     */
-    public void showEditor(Component centerOnComponent)
-    {
-        if(mIconEditor == null)
+        if(iconSet == null)
         {
-            mIconEditor = new IconEditor(this);
+            iconSet = getStandardIconSet();
         }
 
-        mIconEditor.setLocationRelativeTo(centerOnComponent);
+        IconSet standardIcons = getStandardIconSet();
 
-        if(mIconEditor.isVisible())
+        mIcons.addAll(iconSet.getIcons());
+
+        for(Icon icon: mIcons)
         {
-            mIconEditor.requestFocus();
-        }
-        else
-        {
-            EventQueue.invokeLater(new Runnable()
+            if(iconSet.getDefaultIcon() != null && iconSet.getDefaultIcon().matches(icon.getName()))
             {
-                @Override
-                public void run()
-                {
-                    mIconEditor.setVisible(true);
-                }
-            });
-        }
-    }
-
-    public IconTableModel getModel()
-    {
-        if(mIconTableModel == null)
-        {
-            IconSet loadedIcons = load();
-
-            boolean saveRequired = false;
-
-            if(loadedIcons == null)
-            {
-                loadedIcons = getDefaultIconSet();
-                saveRequired = true;
+                icon.setDefaultIcon(true);
+                mDefaultIcon = icon;
             }
 
-            mIconTableModel = new IconTableModel(loadedIcons);
-            mIconTableModel.addTableModelListener(new TableModelListener()
+            if(standardIcons.getIcons().contains(icon))
             {
-                @Override
-                public void tableChanged(TableModelEvent e)
-                {
-                    scheduleSave();
-                }
-            });
-
-            if(saveRequired)
-            {
-                scheduleSave();
+                icon.setStandardIcon(true);
             }
         }
 
-        return mIconTableModel;
+        if(mDefaultIcon == null && !mIcons.isEmpty())
+        {
+            setDefaultIcon(mIcons.get(0));
+        }
+
+        //Add a change detection listener to schedule saves when the list changes.
+        mIcons.addListener((ListChangeListener<Icon>)c -> scheduleSave());
     }
 
     /**
-     * All icons in a sorted array
+     * Adds the icon to this model
      */
-    public Icon[] getIcons()
+    public void addIcon(Icon icon)
     {
-        return getModel().getIconsAsArray();
+        if(icon != null && !mIcons.contains(icon))
+        {
+            mIcons.add(icon);
+        }
+    }
+
+    /**
+     * Removes the icon from this model
+     */
+    public void removeIcon(Icon icon)
+    {
+        if(icon != null && !icon.getStandardIcon() && !icon.getDefaultIcon())
+        {
+            mIcons.remove(icon);
+        }
+    }
+
+    /**
+     * Sets the default icon
+     */
+    public void setDefaultIcon(Icon icon)
+    {
+        if(icon != null)
+        {
+            if(mDefaultIcon != null)
+            {
+                mDefaultIcon.setDefaultIcon(false);
+            }
+
+            mDefaultIcon = icon;
+            mDefaultIcon.setDefaultIcon(true);
+        }
+    }
+
+    /**
+     * Lookup an icon by name.
+     * @param iconName to lookup
+     * @return icon if found, or the default icon
+     */
+    public Icon getIcon(String iconName)
+    {
+        if(iconName != null)
+        {
+            for(Icon icon: iconsProperty())
+            {
+                if(icon.getName() != null && icon.getName().contentEquals(iconName))
+                {
+                    return icon;
+                }
+            }
+        }
+
+        return getDefaultIcon();
+    }
+
+    /**
+     * Current set of icons managed by this model
+     */
+    public ObservableList<Icon> iconsProperty()
+    {
+        return mIcons;
+    }
+
+    public Icon getDefaultIcon()
+    {
+        return mDefaultIcon;
     }
 
     /**
@@ -146,17 +183,18 @@ public class IconManager
     {
         if(name == null)
         {
-            name = getModel().getDefaultIcon().getName();
+            name = getDefaultIcon().getName();
         }
 
         String scaledIconName = name + height;
 
         ImageIcon mapValue = mResizedIcons.get(scaledIconName);
-        if (mapValue != null) {
+        if (mapValue != null)
+        {
             return mapValue;
         }
 
-        Icon icon = getModel().getIcon(name);
+        Icon icon = getIcon(name);
 
         ImageIcon scaledIcon = getScaledIcon(icon.getIcon(), height);
 
@@ -270,7 +308,9 @@ public class IconManager
      */
     private void save()
     {
-        IconSet iconSet = getModel().getIconSet();
+        IconSet iconSet = new IconSet();
+        iconSet.setDefaultIcon(getDefaultIcon().getName());
+        iconSet.setIcons(new ArrayList<>(mIcons));
 
         //Create a backup copy of the current playlist
         if(Files.exists(getIconFilePath()))
@@ -384,32 +424,35 @@ public class IconManager
     /**
      * Creates a default icon set
      */
-    private IconSet getDefaultIconSet()
+    private IconSet getStandardIconSet()
     {
-        IconSet iconSet = new IconSet();
+        if(mStandardIcons == null)
+        {
+            mStandardIcons = new IconSet();
 
-        Icon defaultIcon = new Icon(IconTableModel.DEFAULT_ICON, "images/no_icon.png");
-        iconSet.add(defaultIcon);
-        iconSet.setDefaultIcon(defaultIcon.getName());
+            Icon defaultIcon = new Icon(DEFAULT_ICON, "images/no_icon.png");
+            mStandardIcons.add(defaultIcon);
+            mStandardIcons.setDefaultIcon(defaultIcon.getName());
 
-        iconSet.add(new Icon("Ambulance", "images/ambulance.png"));
-        iconSet.add(new Icon("Block Truck", "images/concrete_block_truck.png"));
-        iconSet.add(new Icon("CWID", "images/cwid.png"));
-        iconSet.add(new Icon("Dispatcher", "images/dispatcher.png"));
-        iconSet.add(new Icon("Dump Truck", "images/dump_truck_red.png"));
-        iconSet.add(new Icon("Fire Truck", "images/fire_truck.png"));
-        iconSet.add(new Icon("Garbage Truck", "images/garbage_truck.png"));
-        iconSet.add(new Icon("Loader", "images/loader.png"));
-        iconSet.add(new Icon("Police", "images/police.png"));
-        iconSet.add(new Icon("Propane Truck", "images/propane_truck.png"));
-        iconSet.add(new Icon("Rescue Truck", "images/rescue_truck.png"));
-        iconSet.add(new Icon("School Bus", "images/school_bus.png"));
-        iconSet.add(new Icon("Taxi", "images/taxi.png"));
-        iconSet.add(new Icon("Train", "images/train.png"));
-        iconSet.add(new Icon("Transport Bus", "images/opt_bus.png"));
-        iconSet.add(new Icon("Van", "images/van.png"));
+            mStandardIcons.add(new Icon("Ambulance", "images/ambulance.png"));
+            mStandardIcons.add(new Icon("Block Truck", "images/concrete_block_truck.png"));
+            mStandardIcons.add(new Icon("CWID", "images/cwid.png"));
+            mStandardIcons.add(new Icon("Dispatcher", "images/dispatcher.png"));
+            mStandardIcons.add(new Icon("Dump Truck", "images/dump_truck_red.png"));
+            mStandardIcons.add(new Icon("Fire Truck", "images/fire_truck.png"));
+            mStandardIcons.add(new Icon("Garbage Truck", "images/garbage_truck.png"));
+            mStandardIcons.add(new Icon("Loader", "images/loader.png"));
+            mStandardIcons.add(new Icon("Police", "images/police.png"));
+            mStandardIcons.add(new Icon("Propane Truck", "images/propane_truck.png"));
+            mStandardIcons.add(new Icon("Rescue Truck", "images/rescue_truck.png"));
+            mStandardIcons.add(new Icon("School Bus", "images/school_bus.png"));
+            mStandardIcons.add(new Icon("Taxi", "images/taxi.png"));
+            mStandardIcons.add(new Icon("Train", "images/train.png"));
+            mStandardIcons.add(new Icon("Transport Bus", "images/opt_bus.png"));
+            mStandardIcons.add(new Icon("Van", "images/van.png"));
+        }
 
-        return iconSet;
+        return mStandardIcons;
     }
 
     /**

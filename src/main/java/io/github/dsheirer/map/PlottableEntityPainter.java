@@ -21,7 +21,7 @@
 package io.github.dsheirer.map;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.painter.AbstractPainter;
 
@@ -36,9 +36,9 @@ public class PlottableEntityPainter extends AbstractPainter<JXMapViewer>
     private PlottableEntityRenderer mRenderer;
     private Set<PlottableEntityHistory> mEntities = new HashSet<>();
 
-    public PlottableEntityPainter(AliasModel aliasModel, IconManager iconManager)
+    public PlottableEntityPainter(AliasModel aliasModel, IconModel iconModel)
     {
-        mRenderer = new PlottableEntityRenderer(aliasModel, iconManager);
+        mRenderer = new PlottableEntityRenderer(aliasModel, iconModel);
         setAntialiasing(true);
         setCacheable(false);
     }

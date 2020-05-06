@@ -17,16 +17,40 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.playlist;
+package io.github.dsheirer.gui.playlist.channelMap;
 
 import io.github.dsheirer.gui.JavaFxWindowRequest;
 
 /**
- * Request to view a facet of the playlist editor
+ * Request to show the channel map editor
  */
-public abstract class PlaylistEditorRequest extends JavaFxWindowRequest
+public class ViewChannelMapEditorRequest extends JavaFxWindowRequest
 {
-    public enum TabName {ALIAS, CHANNEL, PLAYLIST, RADIOREFERENCE, STREAM}
+    private String mChannelMapName;
 
-    public abstract TabName getTabName();
+    /**
+     * Constructs an instance
+     * @param channelMapName to select once the editor is showing.
+     */
+    public ViewChannelMapEditorRequest(String channelMapName)
+    {
+        mChannelMapName = channelMapName;
+    }
+
+    /**
+     * Constructs an instance.
+     */
+    public ViewChannelMapEditorRequest()
+    {
+    }
+
+    public String getChannelMapName()
+    {
+        return mChannelMapName;
+    }
+
+    public boolean hasChannelMapName()
+    {
+        return mChannelMapName != null;
+    }
 }

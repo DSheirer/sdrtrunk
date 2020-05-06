@@ -23,7 +23,7 @@ package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
@@ -76,7 +76,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         FXCollections.observableArrayList(ConfiguredBroadcast.extractor());
     private List<AudioRecording> mRecordingQueue = new CopyOnWriteArrayList<>();
     private Map<Integer,AbstractAudioBroadcaster> mBroadcasterMap = new HashMap<>();
-    private IconManager mIconManager;
+    private IconModel mIconModel;
     private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
     private BroadcastEventListener mBroadcastEventListener = new BroadcastEventListener();
@@ -84,10 +84,10 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(AliasModel aliasModel, IconManager iconManager, UserPreferences userPreferences)
+    public BroadcastModel(AliasModel aliasModel, IconModel iconModel, UserPreferences userPreferences)
     {
         mAliasModel = aliasModel;
-        mIconManager = iconManager;
+        mIconModel = iconModel;
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
@@ -579,9 +579,9 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                             String iconPath = configuredBroadcast.getBroadcastConfiguration()
                                 .getBroadcastServerType().getIconPath();
 
-                            if(iconPath != null && mIconManager != null)
+                            if(iconPath != null && mIconModel != null)
                             {
-                                return mIconManager.getScaledIcon(iconPath, 14);
+                                return mIconModel.getScaledIcon(iconPath, 14);
                             }
                             break;
                         case COLUMN_STREAM_NAME:

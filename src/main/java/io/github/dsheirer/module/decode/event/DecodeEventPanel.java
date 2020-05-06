@@ -28,7 +28,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -66,21 +66,21 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     private JTableColumnWidthMonitor mTableColumnWidthMonitor;
     private DecodeEventModel mEmptyDecodeEventModel;
     private JScrollPane mEmptyScroller;
-    private IconManager mIconManager;
+    private IconModel mIconModel;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
     private TimestampCellRenderer mTimestampCellRenderer;
 
     /**
      * View for call event table
-     * @param iconManager to display alias icons in table rows
+     * @param iconModel to display alias icons in table rows
      */
-    public DecodeEventPanel(IconManager iconManager, UserPreferences userPreferences, AliasModel aliasModel)
+    public DecodeEventPanel(IconModel iconModel, UserPreferences userPreferences, AliasModel aliasModel)
     {
         MyEventBus.getEventBus().register(this);
 
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
-        mIconManager = iconManager;
+        mIconModel = iconModel;
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
         mTimestampCellRenderer = new TimestampCellRenderer();
@@ -270,7 +270,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                                 }
                                 sb.append(Joiner.on(", ").skipNulls().join(aliases));
                                 color = aliases.get(0).getDisplayColor();
-                                icon = mIconManager.getIcon(aliases.get(0).getIconName(), IconManager.DEFAULT_ICON_SIZE);
+                                icon = mIconModel.getIcon(aliases.get(0).getIconName(), IconModel.DEFAULT_ICON_SIZE);
                             }
                         }
 

@@ -25,8 +25,8 @@ import io.github.dsheirer.audio.AudioException;
 import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.UserPreferenceEditorViewRequest;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
@@ -64,10 +64,10 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
     private static final Logger mLog = LoggerFactory.getLogger(AudioPanel.class);
 
-    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon("images/audio_muted.png", 20);
-    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon("images/audio_unmuted.png", 20);
+    private static ImageIcon MUTED_ICON = IconModel.getScaledIcon("images/audio_muted.png", 20);
+    private static ImageIcon UNMUTED_ICON = IconModel.getScaledIcon("images/audio_unmuted.png", 20);
 
-    private IconManager mIconManager;
+    private IconModel mIconModel;
     private SettingsManager mSettingsManager;
     private SourceManager mSourceManager;
     private IAudioController mController;
@@ -77,10 +77,10 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
     private JButton mMuteButton;
     private AudioChannelsPanel mAudioChannelsPanel;
 
-    public AudioPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
+    public AudioPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
                       SourceManager sourceManager, IAudioController controller, AliasModel aliasModel)
     {
-        mIconManager = iconManager;
+        mIconModel = iconModel;
         mSettingsManager = settingsManager;
         mSourceManager = sourceManager;
         mController = controller;
@@ -101,7 +101,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
         mMuteButton.setBackground(getBackground());
         add(mMuteButton);
 
-        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mUserPreferences, mSettingsManager, mController, mAliasModel);
+        mAudioChannelsPanel = new AudioChannelsPanel(mIconModel, mUserPreferences, mSettingsManager, mController, mAliasModel);
 
         add(mAudioChannelsPanel);
 
@@ -123,7 +123,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     {
                         remove(mAudioChannelsPanel);
                         mAudioChannelsPanel.dispose();
-                        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mUserPreferences, mSettingsManager, mController, mAliasModel);
+                        mAudioChannelsPanel = new AudioChannelsPanel(mIconModel, mUserPreferences, mSettingsManager, mController, mAliasModel);
                         add(mAudioChannelsPanel);
                         mAudioChannelsPanel.repaint();
                         revalidate();
@@ -183,7 +183,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     @Override
                     public void actionPerformed(ActionEvent e)
                     {
-                        MyEventBus.getEventBus().post(new UserPreferenceEditorViewRequest(PreferenceEditorType.AUDIO_OUTPUT));
+                        MyEventBus.getEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_OUTPUT));
                     }
                 });
                 popup.add(outputMenu);

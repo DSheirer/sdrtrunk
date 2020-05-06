@@ -17,38 +17,14 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.gui.playlist.channelMap;
+package io.github.dsheirer.gui;
 
 /**
- * Request to show the channel map editor
+ * Base class for all JavaFX window view and show requests
  */
-public class ChannelMapEditorViewRequest
+public abstract class JavaFxWindowRequest
 {
-    private String mChannelMapName;
-
-    /**
-     * Constructs an instance
-     * @param channelMapName to select once the editor is showing.
-     */
-    public ChannelMapEditorViewRequest(String channelMapName)
+    public JavaFxWindowRequest()
     {
-        mChannelMapName = channelMapName;
-    }
-
-    /**
-     * Constructs an instance.
-     */
-    public ChannelMapEditorViewRequest()
-    {
-    }
-
-    public String getChannelMapName()
-    {
-        return mChannelMapName;
-    }
-
-    public boolean hasChannelMapName()
-    {
-        return mChannelMapName != null;
     }
 }

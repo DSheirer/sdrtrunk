@@ -23,6 +23,7 @@
 package io.github.dsheirer.gui.playlist;
 
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.alias.AliasEditor;
 import io.github.dsheirer.gui.playlist.alias.AliasTabRequest;
 import io.github.dsheirer.gui.playlist.channel.ChannelEditor;
@@ -31,7 +32,7 @@ import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.UserPreferenceEditorViewRequest;
+import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.util.ThreadPool;
@@ -147,11 +148,18 @@ public class PlaylistEditor extends BorderPane
 
             Menu viewMenu = new Menu("_View");
             viewMenu.setAccelerator(new KeyCodeCombination(KeyCode.V, KeyCombination.ALT_ANY));
+
+            MenuItem iconManagerItem = new MenuItem("_Icon Manager");
+            iconManagerItem.setAccelerator(new KeyCodeCombination(KeyCode.I, KeyCombination.ALT_ANY));
+            iconManagerItem.setOnAction(event -> MyEventBus.getEventBus().post(new ViewIconManagerRequest()));
+            viewMenu.getItems().add(iconManagerItem);
+
             MenuItem userPreferenceItem = new MenuItem("_User Preferences");
             userPreferenceItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_ANY));
             userPreferenceItem.setOnAction(event -> MyEventBus.getEventBus()
-                .post(new UserPreferenceEditorViewRequest(PreferenceEditorType.TALKGROUP_FORMAT)));
+                .post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.TALKGROUP_FORMAT)));
             viewMenu.getItems().add(userPreferenceItem);
+
             mMenuBar.getMenus().add(viewMenu);
 
             Menu screenShot = new Menu("_Screenshot");
