@@ -52,6 +52,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -383,10 +384,10 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
         PlaylistV2 playlist = new PlaylistV2();
 
-        playlist.setAliases(mAliasModel.getAliases());
-        playlist.setBroadcastConfigurations(mBroadcastModel.getBroadcastConfigurations());
-        playlist.setChannels(mChannelModel.getChannels());
-        playlist.setChannelMaps(mChannelMapModel.getChannelMaps());
+        playlist.setAliases(new ArrayList(mAliasModel.getAliases()));
+        playlist.setBroadcastConfigurations(new ArrayList(mBroadcastModel.getBroadcastConfigurations()));
+        playlist.setChannels(new ArrayList(mChannelModel.getChannels()));
+        playlist.setChannelMaps(new ArrayList(mChannelMapModel.getChannelMaps()));
         playlist.setVersion(PLAYLIST_CURRENT_VERSION);
 
         //Create a backup copy of the current playlist

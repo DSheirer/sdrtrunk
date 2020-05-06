@@ -28,12 +28,15 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.StringProperty;
 import javafx.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Composite observable object that joins a broadcast configuration and (optional) constructed audio broadcaster
  */
 public class ConfiguredBroadcast
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ConfiguredBroadcast.class);
     private BroadcastConfiguration mBroadcastConfiguration;
     private AbstractAudioBroadcaster mAudioBroadcaster;
     private ObjectProperty<BroadcastState> mBroadcastState = new SimpleObjectProperty<>();

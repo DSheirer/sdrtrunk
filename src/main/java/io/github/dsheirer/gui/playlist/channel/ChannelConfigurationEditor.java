@@ -36,6 +36,8 @@ import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.TunerModel;
+import io.github.dsheirer.util.ThreadPool;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
@@ -300,51 +302,62 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mPlayButton.setOnAction((ActionEvent event) -> {
                 if(getItem() != null)
                 {
-                    if(getItem().processingProperty().get())
+                    if(modifiedProperty().get())
                     {
-                        try
-                        {
-                            mPlaylistManager.getChannelProcessingManager().stop(getItem());
-                        }
-                        catch(ChannelException ce)
-                        {
-                            mLog.error("Error stopping channel [" + getItem().getName() + "] - " + ce.getMessage());
+                        Alert alert = new Alert(Alert.AlertType.WARNING,
+                            "Do you want to save these changes?", ButtonType.YES, ButtonType.NO);
+                        alert.setTitle("Channel Configuration Modified");
+                        alert.setHeaderText("Channel configuration has unsaved changes");
+                        alert.initOwner((getPlayButton()).getScene().getWindow());
+                        alert.showAndWait().ifPresent(buttonType -> {
+                            if(buttonType == ButtonType.YES)
+                            {
+                                save();
+                            }
+                        });
+                    }
 
-                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + ce.getMessage(), ButtonType.OK);
-                            alert.setTitle("Channel Stop Error");
-                            alert.setHeaderText("Can't stop channel");
-                            alert.initOwner((getPlayButton()).getScene().getWindow());
-                            alert.showAndWait();
-                        }
+                    if(!getItem().processingProperty().get())
+                    {
+                        ThreadPool.SCHEDULED.execute(() -> {
+                            try
+                            {
+                                mPlaylistManager.getChannelProcessingManager().start(getItem());
+                            }
+                            catch(ChannelException ce)
+                            {
+                                mLog.error("Error starting channel [" + getItem().getName() + "] - " + ce.getMessage());
+
+                                Platform.runLater(() -> {
+                                    Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + ce.getMessage(), ButtonType.OK);
+                                    alert.setTitle("Channel Play Error");
+                                    alert.setHeaderText("Can't play channel");
+                                    alert.initOwner((getPlayButton()).getScene().getWindow());
+                                    alert.showAndWait();
+                                });
+                            }
+                        });
                     }
                     else
                     {
-                        try
-                        {
-                            if(modifiedProperty().get())
+                        ThreadPool.SCHEDULED.execute(() -> {
+                            try
                             {
-                                Alert alert = new Alert(Alert.AlertType.WARNING,
-                                    "Do you want to save these changes before play?", ButtonType.YES, ButtonType.NO);
-                                alert.setTitle("Channel Configuration Modified");
-                                alert.setHeaderText("Channel configuration has unsaved changes");
-                                alert.initOwner((getPlayButton()).getScene().getWindow());
-                                alert.showAndWait().ifPresent(buttonType -> {
-                                    if(buttonType == ButtonType.YES)
-                                    {
-                                        save();
-                                    }
+                                mPlaylistManager.getChannelProcessingManager().stop(getItem());
+                            }
+                            catch(ChannelException ce)
+                            {
+                                mLog.error("Error stopping channel [" + getItem().getName() + "] - " + ce.getMessage());
+
+                                Platform.runLater(() -> {
+                                    Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + ce.getMessage(), ButtonType.OK);
+                                    alert.setTitle("Channel Stop Error");
+                                    alert.setHeaderText("Can't stop channel");
+                                    alert.initOwner((getPlayButton()).getScene().getWindow());
+                                    alert.showAndWait();
                                 });
                             }
-                            mPlaylistManager.getChannelProcessingManager().start(getItem());
-                        }
-                        catch(ChannelException ce)
-                        {
-                            Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + ce.getMessage(), ButtonType.OK);
-                            alert.setTitle("Channel Play Error");
-                            alert.setHeaderText("Can't play channel");
-                            alert.initOwner((getPlayButton()).getScene().getWindow());
-                            alert.showAndWait();
-                        }
+                        });
                     }
                 }
             });

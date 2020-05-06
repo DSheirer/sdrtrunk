@@ -41,6 +41,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     public ShoutcastV2Configuration()
     {
         //No-arg JAXB constructor
+        this(BroadcastFormat.MP3);
     }
 
     public ShoutcastV2Configuration(BroadcastFormat format)
@@ -202,14 +203,5 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     public boolean hasURL()
     {
         return mURL != null && !mURL.isEmpty();
-    }
-
-    @Override
-    public boolean isValid()
-    {
-        return super.isValid() && hasName() &&
-            getUserID() != null && !getUserID().isEmpty() &&
-            1 <= getStreamID() &&
-            getPassword() != null && !getPassword().isEmpty();
     }
 }

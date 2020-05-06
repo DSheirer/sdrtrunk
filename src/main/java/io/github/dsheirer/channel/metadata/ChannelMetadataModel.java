@@ -72,31 +72,27 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     {
         if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
-            for(int row = 0; row < mChannelMetadata.size(); row++)
-            {
-                fireTableCellUpdated(row, COLUMN_USER_FROM);
-                fireTableCellUpdated(row, COLUMN_USER_TO);
-            }
+            EventQueue.invokeLater(() -> {
+                for(int row = 0; row < mChannelMetadata.size(); row++)
+                {
+                    fireTableCellUpdated(row, COLUMN_USER_FROM);
+                    fireTableCellUpdated(row, COLUMN_USER_TO);
+                }
+            });
         }
     }
-
 
     public void add(Collection<ChannelMetadata> channelMetadatas, Channel channel)
     {
         //Execute on the swing thread to avoid threading issues
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+        EventQueue.invokeLater(() -> {
+            for(ChannelMetadata channelMetadata: channelMetadatas)
             {
-                for(ChannelMetadata channelMetadata: channelMetadatas)
-                {
-                    mChannelMetadata.add(channelMetadata);
-                    mMetadataChannelMap.put(channelMetadata, channel);
-                    int index = mChannelMetadata.indexOf(channelMetadata);
-                    fireTableRowsInserted(index, index);
-                    channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
-                }
+                mChannelMetadata.add(channelMetadata);
+                mMetadataChannelMap.put(channelMetadata, channel);
+                int index = mChannelMetadata.indexOf(channelMetadata);
+                fireTableRowsInserted(index, index);
+                channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
             }
         });
     }
@@ -104,15 +100,14 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     public void remove(ChannelMetadata channelMetadata)
     {
         //Execute on the swing thread to avoid threading issues
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+        EventQueue.invokeLater(() -> {
+            channelMetadata.removeUpdateEventListener();
+            int index = mChannelMetadata.indexOf(channelMetadata);
+            mChannelMetadata.remove(channelMetadata);
+            mMetadataChannelMap.remove(channelMetadata);
+
+            if(index >= 0)
             {
-                channelMetadata.removeUpdateEventListener();
-                int index = mChannelMetadata.indexOf(channelMetadata);
-                mChannelMetadata.remove(channelMetadata);
-                mMetadataChannelMap.remove(channelMetadata);
                 fireTableRowsDeleted(index, index);
             }
         });
