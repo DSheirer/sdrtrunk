@@ -38,7 +38,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -358,7 +357,20 @@ public class IconManager extends Editor<Icon>
             Icon icon = new Icon();
             icon.setName(name);
             icon.setPath(path);
-            mIconModel.addIcon(icon);
+
+            if(icon.getFxImage() != null && icon.getFxImage().getException() != null)
+            {
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Unable to load icon image from selected " +
+                    "file. Please select a valid image file for the icon", ButtonType.OK);
+                alert.setHeaderText("Invalid image file");
+                alert.setTitle("Save Icon");
+                alert.showAndWait();
+                return;
+            }
+            else
+            {
+                mIconModel.addIcon(icon);
+            }
         }
 
         showEditor(false);
@@ -538,30 +550,15 @@ public class IconManager extends Editor<Icon>
                         {
                             Icon icon = getTableRow().getItem();
 
-                            if(icon != null)
+                            if(icon != null && icon.getFxImage() != null)
                             {
-                                try
-                                {
-                                    if(icon.getPath().startsWith("images"))
-                                    {
-                                        Image image = new Image(icon.getPath(), 0, 16, true, true);
-                                        setGraphic(new ImageView(image));
-                                    }
-                                    else
-                                    {
-                                        Path path = Path.of(icon.getPath());
-                                        Image image = new Image(path.toUri().toString(), 0, 16, true, true);
-                                        setGraphic(new ImageView(image));
-                                    }
-                                }
-                                catch(Exception e)
-                                {
-                                    mLog.error("Error loading image: " + (icon != null ? icon.getPath() : "null"), e);
-                                }
+                                setGraphic(new ImageView(icon.getFxImage()));
+                                setText(null);
                             }
                             else
                             {
                                 setGraphic(null);
+                                setText("Can't load image");
                             }
                         }
                     }
