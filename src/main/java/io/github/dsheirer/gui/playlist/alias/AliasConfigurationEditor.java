@@ -56,7 +56,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -779,14 +778,13 @@ public class AliasConfigurationEditor extends SplitPane
                             {
                                 Icon icon = mPlaylistManager.getIconModel().getIcon(alias.getIconName());
 
-                                try
+                                if(icon != null && icon.getFxImage() != null)
                                 {
-                                    Image image = new Image(icon.getPath(), 0, 16, true, true);
-                                    setGraphic(new ImageView(image));
+                                    setGraphic(new ImageView(icon.getFxImage()));
                                 }
-                                catch(Exception e)
+                                else
                                 {
-
+                                    setGraphic(null);
                                 }
                             }
                         }

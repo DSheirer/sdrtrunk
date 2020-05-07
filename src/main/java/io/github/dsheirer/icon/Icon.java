@@ -27,24 +27,28 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.scene.image.Image;
 import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.ImageIcon;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Objects;
 
 @JacksonXmlRootElement(localName = "icon")
 public class Icon implements Comparable<Icon>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Icon.class);
-
+    private static final int ICON_HEIGHT_JAVAFX = 16;
     private StringProperty mName = new SimpleStringProperty();
     private StringProperty mPath = new SimpleStringProperty();
     private BooleanProperty mDefaultIcon = new SimpleBooleanProperty();
     private BooleanProperty mStandardIcon = new SimpleBooleanProperty();
     private ImageIcon mImageIcon;
+    private Image mFxImage;
+    private boolean mFxImageLoaded = false;
 
     /**
      * JAXB constructor - do not use
@@ -197,6 +201,46 @@ public class Icon implements Comparable<Icon>
         }
 
         return mImageIcon;
+    }
+
+    /**
+     * Lazy loads an FX image for the icon and retains it in memory.
+     * @return loaded image or null if the image can't be loaded
+     */
+    @JsonIgnore
+    public Image getFxImage()
+    {
+        if(!mFxImageLoaded && getPath() != null && !getPath().isEmpty())
+        {
+            //Set the loaded flag to true regardless if the image loads so that if there is an error loading the
+            //image we log it once and don't attempt to reload it again
+            mFxImageLoaded = true;
+
+            if(getPath() == null || getPath().isEmpty())
+            {
+                mLog.error("Error loading icon [" + getName() + "] - null or empty file path to image");
+            }
+            else
+            {
+                if(getPath().startsWith("images"))
+                {
+                    mFxImage = new Image(getPath(), 0, ICON_HEIGHT_JAVAFX, true, true);
+                }
+                else
+                {
+                    Path filePath = Path.of(getPath());
+                    mFxImage = new Image(filePath.toUri().toString(), 0, ICON_HEIGHT_JAVAFX, true, true);
+                }
+
+                if(mFxImage.getException() != null)
+                {
+                    mLog.error("Error loading icon [" + getName() + " " + getPath() + "] - " +
+                        mFxImage.getException().getLocalizedMessage());
+                }
+            }
+        }
+
+        return mFxImage;
     }
 
     @Override

@@ -22,6 +22,7 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import com.google.common.collect.Ordering;
 import com.google.common.eventbus.Subscribe;
 import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
@@ -67,6 +68,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
@@ -88,8 +90,8 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -103,7 +105,6 @@ import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1041,7 +1042,7 @@ public class AliasItemEditor extends Editor<Alias>
             mIconNodeComboBox = new ComboBox<>();
             mIconNodeComboBox.setMaxWidth(Double.MAX_VALUE);
             mIconNodeComboBox.setDisable(true);
-            mIconNodeComboBox.setItems(mPlaylistManager.getIconModel().iconsProperty());
+            mIconNodeComboBox.setItems(new SortedList(mPlaylistManager.getIconModel().iconsProperty(), Ordering.natural()));
             mIconNodeComboBox.setCellFactory(new IconCellFactory());
             mIconNodeComboBox.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -1556,6 +1557,15 @@ public class AliasItemEditor extends Editor<Alias>
         @Override
         public ListCell<Icon> call(ListView<Icon> param)
         {
+            Label iconLabel = new Label();
+            Label textLabel = new Label();
+            GridPane gridPane = new GridPane();
+            gridPane.setHgap(5);
+            GridPane.setHalignment(iconLabel, HPos.RIGHT);
+            gridPane.getColumnConstraints().add(new ColumnConstraints(50));
+            gridPane.add(iconLabel, 0, 0);
+            gridPane.add(textLabel,1,0);
+
             ListCell<Icon> cell = new ListCell<>()
             {
                 @Override
@@ -1570,29 +1580,9 @@ public class AliasItemEditor extends Editor<Alias>
                     }
                     else
                     {
-                        setText(item.getName());
-
-                        String path = item.getPath();
-
-                        try
-                        {
-                            if(path.startsWith("images"))
-                            {
-                                Image image = new Image(path, 0, 20, true, true);
-                                setGraphic(new ImageView(image));
-                            }
-                            else
-                            {
-                                Path filePath = Path.of(path);
-                                Image image = new Image(filePath.toUri().toString(), 0, 16, true, true);
-                                setGraphic(new ImageView(image));
-                            }
-
-                        }
-                        catch(Exception e)
-                        {
-                            mLog.error("Error loading icon for [" + item.getName() + "] path [" + item.getPath() + "]");
-                        }
+                        textLabel.setText(item.getName());
+                        iconLabel.setGraphic(new ImageView(item.getFxImage()));
+                        setGraphic(gridPane);
                     }
                 }
             };
