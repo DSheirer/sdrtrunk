@@ -618,10 +618,14 @@ public class Alias
 
         for(AliasID id : getAliasIdentifiers())
         {
-            if(id.getType() == AliasIDType.BROADCAST_CHANNEL &&
-                ((BroadcastChannel)id).getChannelName().contentEquals(channel))
+            if(id instanceof BroadcastChannel)
             {
-                return true;
+                BroadcastChannel broadcastChannel = (BroadcastChannel)id;
+
+                if(broadcastChannel.getChannelName() != null && broadcastChannel.getChannelName().contentEquals(channel))
+                {
+                    return true;
+                }
             }
         }
 
