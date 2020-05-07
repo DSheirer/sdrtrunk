@@ -44,7 +44,6 @@ public class SyncDetector implements ISyncProcessor
     {
         if(value == mPattern)
         {
-            //System.out.println(String.format("%x",value));
             if(mListener != null)
             {
                 mListener.syncDetected(0);

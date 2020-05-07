@@ -27,7 +27,7 @@ public class IDLEMessage extends DataMessage {
 
     @Override
     public Protocol getProtocol() {
-        return null;
+        return Protocol.DMR;
     }
 
 }

@@ -14,18 +14,9 @@ import java.util.List;
 import static io.github.dsheirer.edac.BPTC_196_96.*;
 
 public class VoiceLCHeaderMessage extends FullLCMessage {
-    /*
-    Protect Flag (PF) 1
-Reserved 1
-Full Link Control Opcode
-(FLCO)
-6
-Feature set ID (FID) 8 The FID shall be either SFID or MFID, see clause 9.3.13
-Full LC Data 56 (see note 1)
-Full LC CRC (see note 2) Either a Reed-Solomon (12,9) FEC for header and terminator
-burst, as described in clause B.3.6, or a 5 bit checksum for
-embedded signalling, as described in clause B.3.11, shall be used
-     */
+
+    // ETSI 100 361-2:7.1.3.2; 361-1: 7.1.1
+    private static final int[] SLCO = new int[]{2, 3, 4, 5, 6, 7};
     public VoiceLCHeaderMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage _message)
     {
         super(syncPattern, _message);

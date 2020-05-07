@@ -5,8 +5,10 @@ import io.github.dsheirer.edac.CRCDMR;
 import io.github.dsheirer.edac.CRCP25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.ShortLCMessage;
 import io.github.dsheirer.protocol.Protocol;
 
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.List;
 public class CSBKMessage extends DataMessage {
 
     private static final int[] LB = new int[]{0};
+    private static final int[] PF = new int[]{1};
     private static final int[] CSBKO = new int[]{2,3,4,5,6,7};
     private static final int[] FEATURE_ID = new int[]{8,9,10,11,12,13,14,15};
     private boolean mIsValid = false;
@@ -61,6 +64,7 @@ public class CSBKMessage extends DataMessage {
     111000 BS Outbound Activation BS_Dwn_Act
     111101 Preamble CSBK Pre_CSBK
      */
+    private int featId;
     public CSBKMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message)
     {
         super(syncPattern, message);
@@ -72,10 +76,8 @@ public class CSBKMessage extends DataMessage {
             mIsValid = true;
         }
     }
-    private int lcn_temp_needtoberemoved = -1;
-    public int hasLCNChange()
-    {
-        return lcn_temp_needtoberemoved;
+    public int getFeatId() {
+        return featId;
     }
     @Override
     public String toString() {
@@ -84,7 +86,7 @@ public class CSBKMessage extends DataMessage {
         }
         StringBuilder sb = new StringBuilder();
 
-        int featId = dataMessage.getInt(FEATURE_ID);
+        featId = dataMessage.getInt(FEATURE_ID);
         int csbkoId = dataMessage.getInt(CSBKO);
         sb.append("[CSBK] FID: " + fids[fid_mapping[featId]] + " >>> ");
         if(featId == 6 && csbkoId == 1) {
@@ -101,7 +103,7 @@ public class CSBKMessage extends DataMessage {
             sb.append("Channel Grant TS = "+ (dataMessage.get(68) ? "1" : "2") +", LCN = " + lcn +
                     ", TG = " + dataMessage.getByte(40) +
                     ", ID = " + dataMessage.getByte(16) );
-            lcn_temp_needtoberemoved = lcn;
+            // lcn_temp_needtoberemoved = lcn;
         } else if(featId == 16 && csbkoId == 62) {
             int lcn = dataMessage.getInt(20, 24 - 1);
             byte [] groupArr = new byte[6];

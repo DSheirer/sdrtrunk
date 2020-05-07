@@ -109,10 +109,6 @@ public class DMRBurstDetector implements Listener<Dibit>, IDMRSyncDetectListener
             System.out.print("3");
         }
          */
-        /*
-        //If the sync detector doesn't fire and we've processed enough dibits for a sync,
-        then try to force decode
-        */
     }
     private void parseBurst(int bitErrorCount, DMRSyncPattern pattern) {
         if (bitErrorCount <= MAXIMUM_SYNC_MATCH_BIT_ERRORS) {

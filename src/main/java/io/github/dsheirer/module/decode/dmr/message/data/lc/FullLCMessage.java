@@ -54,6 +54,8 @@ public class FullLCMessage extends DataMessage {
                             ", channelId = " + dataMessage.getInt(16,24 - 1) + " >>> ");
                 } else if(flco == 48) {
                     sb.append("Data PDU: UnParsed >>> ");
+                } else {
+                    sb.append("FID = 0, Unknown FLCO: " + flco);
                 }
             } else if(fid == 16) { //Motorola Capc+
                 sb.append("Capacity+: ");
@@ -70,7 +72,8 @@ public class FullLCMessage extends DataMessage {
                         ", FID = " + fid +
                         ">>> ");
             }
-
+        } else {
+            sb.append("Message is not valid");
         }
         return sb.toString();
     }

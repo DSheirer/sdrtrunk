@@ -6,6 +6,7 @@ import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.TerminatorWithLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.VoiceLCHeaderMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,9 +15,9 @@ public class DMRMessageFactory
     private final static Logger mLog = LoggerFactory.getLogger(io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory.class);
 
     /**
-     * Creates a P25 message for known message types.
+     * Creates a DMR message for known message types.
      *
-     * NOTE: TSBK and PDU messages are not processed by this factory class.
+     * NOTE:
      *
      * @param dataUnitID that identifies the message type
      * @param timestamp of the message
@@ -36,7 +37,11 @@ public class DMRMessageFactory
                 return new VoiceLCHeaderMessage(pattern, message);
             case TLC:
                 return new TerminatorWithLCMessage(pattern, message);
+            case MBC_HEADER:
+            case MBC:
+                return new MBCMessage(pattern, message);
             default:
+                System.out.print("Unknown DataUnit: " + dataUnitID.toString());
                 return new IDLEMessage(pattern, message); //new UnknownP25Message(message, nac, timestamp, dataUnitID);
         }
     }

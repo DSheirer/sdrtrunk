@@ -33,6 +33,10 @@ public class SoftSyncDetector implements ISyncProcessor
         mThreshold = threshold;
     }
 
+    public SoftSyncDetector(long pattern, int threshold) {
+        mPattern = pattern;
+        mThreshold = threshold;
+    }
     public void dispose()
     {
         mListener = null;

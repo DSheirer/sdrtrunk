@@ -34,12 +34,14 @@ import io.github.dsheirer.sample.Listener;
 public class DMRSyncDetector implements Listener<Dibit>
 {
     /* Determines the threshold for sync pattern soft matching */
-    private static final int SYNC_MATCH_THRESHOLD = 4;
+    private static final int SYNC_MATCH_THRESHOLD = 5;
 
     public static final double DEFAULT_SAMPLE_RATE = 50000.0;
 
-    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = 1296.0;
-    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = 2592.0;
+    public static final double DEFAULT_SYMBOL_RATE = 4800;
+
+    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = DEFAULT_SYMBOL_RATE / 4.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = DEFAULT_SYMBOL_RATE / 2.0;
 
     private MultiSyncPatternMatcher mMatcher;
     private DMRSoftSyncDetector mBSDSyncDetector, mBSVSyncDetector, mMSDSyncDetector, mMSVSyncDetector;
@@ -48,6 +50,14 @@ public class DMRSyncDetector implements Listener<Dibit>
     private PLLPhaseInversionDetector mInversionDetector90CW;
     private PLLPhaseInversionDetector mInversionDetector90CCW;
     private PLLPhaseInversionDetector mInversionDetector180;
+
+    private PLLPhaseInversionDetector mInversionDetector90CW_1;
+    private PLLPhaseInversionDetector mInversionDetector90CCW_1;
+    private PLLPhaseInversionDetector mInversionDetector180_1;
+
+    private PLLPhaseInversionDetector mInversionDetector90CW_2;
+    private PLLPhaseInversionDetector mInversionDetector90CCW_2;
+    private PLLPhaseInversionDetector mInversionDetector180_2;
 
     public DMRSyncDetector(IDMRSyncDetectListener syncDetectListener, IPhaseLockedLoop phaseLockedLoop)
     {
@@ -62,19 +72,37 @@ public class DMRSyncDetector implements Listener<Dibit>
         mMSVSyncDetector = new DMRSoftSyncDetector(DMRSyncPattern.BASE_STATION_VOICE,SYNC_MATCH_THRESHOLD, syncDetectListener);
         mTDMATS1D = new DMRSoftSyncDetector(DMRSyncPattern.MOBILE_STATION_REVERSE_CHANNEL,SYNC_MATCH_THRESHOLD, syncDetectListener);
 
-/*
-        mInversionDetector90CW = new PLLPhaseInversionDetector(DMRSyncPattern.P25_PHASE1_ERROR_90_CW,
+
+        mInversionDetector90CW = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_DATA_P90,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_90_DEGREES);
-        mMatcher.add(mInversionDetector90CW);
-
-        mInversionDetector90CCW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CCW,
+        mInversionDetector90CCW = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_DATA_N90,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, -FREQUENCY_PHASE_CORRECTION_90_DEGREES);
-        mMatcher.add(mInversionDetector90CCW);
-
-        mInversionDetector180 = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_180,
+        mInversionDetector180 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_DATA_180,
                 phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_180_DEGREES);
+        mMatcher.add(mInversionDetector90CW);
+        mMatcher.add(mInversionDetector90CCW);
         mMatcher.add(mInversionDetector180);
-*/
+
+        mInversionDetector90CW_1 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_VOICE_P90,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_90_DEGREES);
+        mInversionDetector90CCW_1 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_VOICE_N90,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, -FREQUENCY_PHASE_CORRECTION_90_DEGREES);
+        mInversionDetector180_1 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_VOICE_180,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_180_DEGREES);
+        mMatcher.add(mInversionDetector90CW_1);
+        mMatcher.add(mInversionDetector90CCW_1);
+        mMatcher.add(mInversionDetector180_1);
+
+        mInversionDetector90CW_2 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_DATA_P90,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_90_DEGREES);
+        mInversionDetector90CCW_2 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_DATA_N90,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, -FREQUENCY_PHASE_CORRECTION_90_DEGREES);
+        mInversionDetector180_2 = new PLLPhaseInversionDetector(DMRSyncPattern.MOBILE_STATION_DATA_180,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_180_DEGREES);
+        mMatcher.add(mInversionDetector90CW_2);
+        mMatcher.add(mInversionDetector90CCW_2);
+        mMatcher.add(mInversionDetector180_2);
+
 
         mMatcher.add(mBSDSyncDetector);
         mMatcher.add(mBSVSyncDetector);
@@ -102,9 +130,9 @@ public class DMRSyncDetector implements Listener<Dibit>
     {
         mMatcher.receive(dibit.getBit1(), dibit.getBit2());
     }
-    public class PLLPhaseInversionDetector extends SyncDetector
+    public class PLLPhaseInversionDetector extends SoftSyncDetector
     {
-        private FrameSync mFrameSync;
+        private DMRSyncPattern mFrameSync;
         private IPhaseLockedLoop mPhaseLockedLoop;
         private double mSampleRate;
         private double mFrequencyCorrection;
@@ -120,10 +148,10 @@ public class DMRSyncDetector implements Listener<Dibit>
          *      QPSK +/-90 degree correction: +/-SYMBOL RATE / 4.0
          *      QPSK 180 degree correction: SYMBOL RATE / 2.0
          */
-        public PLLPhaseInversionDetector(FrameSync frameSync, IPhaseLockedLoop phaseLockedLoop, double sampleRate,
+        public PLLPhaseInversionDetector(DMRSyncPattern frameSync, IPhaseLockedLoop phaseLockedLoop, double sampleRate,
                                          double frequencyCorrection)
         {
-            super(frameSync.getSync());
+            super(frameSync.getPattern(), 5);
             mFrameSync = frameSync;
             mPhaseLockedLoop = phaseLockedLoop;
             mFrequencyCorrection = frequencyCorrection;
@@ -134,6 +162,7 @@ public class DMRSyncDetector implements Listener<Dibit>
                 @Override
                 public void syncDetected(int bitErrors)
                 {
+                    System.out.print("[!!!] PLL Locked Action: FS = "+frameSync.toString() + "\n");
                     mPhaseLockedLoop.correctInversion(mPllCorrection);
                 }
 

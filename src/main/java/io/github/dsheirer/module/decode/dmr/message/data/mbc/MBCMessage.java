@@ -4,11 +4,12 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MBCMessage extends DMRMessage {
+public class MBCMessage extends DataMessage {
 
     /**
      * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base

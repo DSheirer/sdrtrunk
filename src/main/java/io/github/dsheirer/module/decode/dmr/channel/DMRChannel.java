@@ -43,7 +43,7 @@ public class DMRChannel implements IChannelDescriptor
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.APCO25;
+        return Protocol.DMR;
     }
 
     /**

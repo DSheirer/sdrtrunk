@@ -13,7 +13,7 @@ public class CACH {
     private static final int[] CACH_CRC = new int[]{4, 5, 6};
     private static final int[] CHECKSUMS = new int[]{5, 7, 6, 3};
     private static final int PAYLOAD_START = 7;
-    private static final int PAYLOAD_END = 23;
+    private static final int PAYLOAD_END = 24;
 
     public enum AccessType {IDLE, BUSY}
 

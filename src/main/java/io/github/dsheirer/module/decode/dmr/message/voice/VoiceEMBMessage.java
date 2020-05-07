@@ -13,6 +13,7 @@ public class VoiceEMBMessage extends VoiceMessage{
     private static final int[] PI = new int[]{136};
     private static final int[] LCSS_BI = new int[]{137,138};
     private static final int[] EMB_PARITY = new int[] {139, 172, 173, 174, 175, 176, 177, 178, 179};
+    private static final int[] EMB_CODEWORD = new int[] {132, 133, 134, 135, 136, 137, 138};
     /**
      * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
      * station frames transmit a Common Announcement Channel (CACH) in the 24-bit prefix, whereas Mobile inbound frames
@@ -37,6 +38,12 @@ public class VoiceEMBMessage extends VoiceMessage{
     @Override
     public boolean isValid() {
 
-        return Quadratic_16_7_6.quadres_16_7_check(mMessage.getInt(132,139),mMessage.getInt(EMB_PARITY));
+        return true;
+        /*
+        boolean isValid = Quadratic_16_7_6.quadres_16_7_check(mMessage.getInt(EMB_CODEWORD),mMessage.getInt(EMB_PARITY));
+        System.out.print("EMB Valid = " + (isValid));
+        return isValid;
+
+         */
     }
 }

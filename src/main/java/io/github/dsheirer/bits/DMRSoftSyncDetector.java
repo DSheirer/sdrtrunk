@@ -54,9 +54,6 @@ public class DMRSoftSyncDetector implements ISyncProcessor
         else
         {
             mBitErrorCount = Long.bitCount(difference);
-            if(mPattern == DMRSyncPattern.BASE_STATION_DATA.getPattern()) {
-                //System.out.println(String.format("CHECKSYNC, notCorrect: %x ", value));
-            }
             if(mBitErrorCount <= mThreshold)
             {
                 mListener.syncDetected(mBitErrorCount, mDMRPattern);

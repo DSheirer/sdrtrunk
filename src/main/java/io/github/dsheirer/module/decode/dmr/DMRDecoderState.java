@@ -35,6 +35,7 @@ import io.github.dsheirer.identifier.patch.PatchGroupManager;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.ShortLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
@@ -64,13 +65,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDC
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPPacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaDenyResponse;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrant;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.PatchGroupVoiceChannelGrantUpdate;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.isp.*;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.*;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.sample.Listener;
@@ -93,9 +87,10 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
     private Listener<ChannelEvent> mChannelEventListener;
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
+    private int featId = 0; // Feature ID
 
     /**
-     * Constructs an APCO-25 decoder state with an optional traffic channel manager.
+     * Constructs an DMR decoder state with an optional traffic channel manager.
      * @param channel with configuration details
      * @param trafficChannelManager for handling traffic channel grants.
      */
@@ -108,7 +103,7 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
     }
 
     /**
-     * Constructs an APCO-25 decoder state for a traffic channel.
+     * Constructs an DMR decoder state for a traffic channel.
      * @param channel with configuration details
      */
     public DMRDecoderState(Channel channel)
@@ -179,17 +174,22 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
             DataMessage message = (DataMessage)iMessage;
             if(message instanceof CSBKMessage) {
                 CSBKMessage csbk = (CSBKMessage)message;
+                featId = csbk.getFeatId();
+                /*
                 if(csbk.hasLCNChange() > 0) {
                     if(mTrafficChannelManager != null)
                     {
                         mTrafficChannelManager.processChannelGrant(csbk.hasLCNChange());
                     }
                 }
+                 */
             }
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CONTROL));
         } else if(iMessage instanceof VoiceAMessage) {
             VoiceMessage vm = (VoiceMessage)iMessage;
             processVoiceA(vm);
+        } else if(iMessage instanceof ShortLCMessage) {
+            mNetworkConfigurationMonitor.processShortLC((ShortLCMessage)iMessage, featId);
         }
     }
 

@@ -329,7 +329,26 @@ public class CRCDMR
 
         return -1;
     }
-
+    public static int crc8(BinaryMessage bits, int len) {
+        int crc=0;
+        final int K = 8;
+        final boolean[] poly = new boolean[]{true,false,false,false,false,false,true,true,true}; // crc8 poly
+        boolean[] buf = new boolean[256];
+        if (len+K > 256) {
+            return 0;
+        }
+        for (int i=0; i<len; i++){
+            buf[i] = bits.get(i);
+        }
+        for (int i=0; i<len; i++)
+            if (buf[i])
+                for (int j=0; j<K+1; j++)
+                    buf[i+j] ^= poly[j];
+        for (int i=0; i<K; i++){
+            crc = (crc << 1) + (buf[len + i] ? 1:0);
+        }
+        return crc;
+    }
     public static void main(String[] args)
     {
         String raw = "100000010000011001010001010100100101001101011100000010110000000000000000000010110000001001111001";

@@ -7,6 +7,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.ShortLCMessage;
 import io.github.dsheirer.protocol.Protocol;
 
 import java.util.ArrayList;
