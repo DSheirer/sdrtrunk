@@ -75,7 +75,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
     {
         mUserPreferences = userPreferences;
 
-        setTitle("Radio Reference Login");
+        setTitle("sdrtrunk - Radio Reference");
         final DialogPane dialogPane = getDialogPane();
         dialogPane.setContent(getGridPane());
         dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);

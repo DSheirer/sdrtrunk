@@ -63,6 +63,7 @@ import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -768,28 +769,35 @@ public class AliasItemEditor extends Editor<Alias>
 
     private void updateStreamViews()
     {
-        getAvailableStreamsView().getItems().clear();
-        getSelectedStreamsView().getItems().clear();
-        getAvailableStreamsView().setDisable(getItem() == null);
-        getSelectedStreamsView().setDisable(getItem() == null);
-
-        if(getItem() != null)
+        Platform.runLater(new Runnable()
         {
-            List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
-
-            Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
-
-            for(BroadcastChannel channel: selectedChannels)
+            @Override
+            public void run()
             {
-                if(availableStreams.contains(channel.getChannelName()))
+                getAvailableStreamsView().getItems().clear();
+                getSelectedStreamsView().getItems().clear();
+                getAvailableStreamsView().setDisable(getItem() == null);
+                getSelectedStreamsView().setDisable(getItem() == null);
+
+                if(getItem() != null)
                 {
-                    availableStreams.remove(channel.getChannelName());
+                    List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
+
+                    Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
+
+                    for(BroadcastChannel channel: selectedChannels)
+                    {
+                        if(availableStreams.contains(channel.getChannelName()))
+                        {
+                            availableStreams.remove(channel.getChannelName());
+                        }
+                    }
+
+                    getSelectedStreamsView().getItems().addAll(selectedChannels);
+                    getAvailableStreamsView().getItems().addAll(availableStreams);
                 }
             }
-
-            getSelectedStreamsView().getItems().addAll(selectedChannels);
-            getAvailableStreamsView().getItems().addAll(availableStreams);
-        }
+        });
     }
 
     private ListView<String> getAvailableStreamsView()

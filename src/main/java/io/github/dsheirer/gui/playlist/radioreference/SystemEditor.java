@@ -323,14 +323,13 @@ public class SystemEditor extends VBox
         private HBox mHBox;
         private Label mName;
         private Label mProtocol;
-        private Label mIdLabel;
         private IconNode mIconNode;
 
         public SystemListCell()
         {
             mHBox = new HBox();
             mHBox.setSpacing(15);
-            mHBox.setPadding(new Insets(0,30,0,0));
+            mHBox.setPadding(new Insets(0,15,0,0));
             mHBox.setMaxWidth(Double.MAX_VALUE);
             mName = new Label();
             mName.setMaxWidth(Double.MAX_VALUE);
@@ -339,12 +338,9 @@ public class SystemEditor extends VBox
             mProtocol.setMaxWidth(Double.MAX_VALUE);
             mProtocol.setAlignment(Pos.CENTER_RIGHT);
             mProtocol.setContentDisplay(ContentDisplay.RIGHT);
-            mIdLabel = new Label();
-            mIdLabel.setAlignment(Pos.CENTER_RIGHT);
-            mIdLabel.setContentDisplay(ContentDisplay.RIGHT);
             HBox.setHgrow(mName, Priority.ALWAYS);
             HBox.setHgrow(mProtocol, Priority.ALWAYS);
-            mHBox.getChildren().addAll(mName, mProtocol, mIdLabel);
+            mHBox.getChildren().addAll(mName, mProtocol);
         }
 
         @Override
@@ -359,13 +355,11 @@ public class SystemEditor extends VBox
                 setGraphic(null);
                 mName.setText(null);
                 mProtocol.setText(null);
-                mIdLabel.setText(null);
             }
             else
             {
                 mName.setText(item.getName());
                 mProtocol.setText(getType(item));
-                mIdLabel.setText("ID:" + item.getSystemId());
 
                 if(isSupported(item))
                 {

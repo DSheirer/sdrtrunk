@@ -40,6 +40,8 @@ import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -54,6 +56,7 @@ import java.net.SocketAddress;
 @JacksonXmlRootElement(localName = "stream")
 public abstract class BroadcastConfiguration
 {
+    private final static Logger mLog = LoggerFactory.getLogger(BroadcastConfiguration.class);
     // Static unique channel identifier tracking
     private static int UNIQUE_ID = 0;
 
@@ -395,7 +398,7 @@ public abstract class BroadcastConfiguration
     @JsonIgnore
     public boolean isValid()
     {
-        return validProperty().get();
+        return mValid.get();
     }
 
     /**

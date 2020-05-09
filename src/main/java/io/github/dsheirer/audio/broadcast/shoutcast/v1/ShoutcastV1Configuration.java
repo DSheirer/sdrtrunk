@@ -164,13 +164,4 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     {
         mBitRate = bitRate;
     }
-
-    @Override
-    public boolean isValid()
-    {
-        return getName() != null && !getName().isEmpty() &&
-            getHost() != null && !getHost().isEmpty() &&
-            getPort() > 0 && getPort() < 65535 &&
-            getPassword() != null && !getPassword().isEmpty();
-    }
 }
