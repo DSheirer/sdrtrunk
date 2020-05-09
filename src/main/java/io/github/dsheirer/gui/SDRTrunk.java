@@ -281,6 +281,11 @@ public class SDRTrunk implements Listener<TunerEvent>
             }
 
             mMainGui.setSize(dimension);
+
+            if(mUserPreferences.getSwingPreference().getMaximized(WINDOW_FRAME_IDENTIFIER, false))
+            {
+                mMainGui.setExtendedState(JFrame.MAXIMIZED_BOTH);
+            }
         }
         else
         {
@@ -414,6 +419,8 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("Application shutdown started ...");
         mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
         mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
+        mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
+            (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
         mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
         mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
         mJavaFxWindowManager.shutdown();
