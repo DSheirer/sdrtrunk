@@ -48,6 +48,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -240,14 +241,14 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                         .whenComplete((stringHttpResponse, throwable) -> {
                             if(throwable != null || stringHttpResponse.statusCode() != 200)
                             {
-                                if(throwable instanceof IOException)
+                                if(throwable instanceof IOException || throwable instanceof CompletionException)
                                 {
                                     //We get socket reset exceptions occasionally when the remote server doesn't
                                     //fully read our request and immediately responds.
                                 }
                                 else
                                 {
-                                    mLog.error("Error while sending upload URL request", throwable);
+                                    mLog.error("Error while sending upload URL request" + throwable.getLocalizedMessage());
                                     setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
                                 }
                                 incrementErrorAudioCount();
@@ -284,7 +285,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                                             .whenComplete((fileResponse, throwable1) -> {
                                                 if(throwable1 != null || fileResponse.statusCode() != 200)
                                                 {
-                                                    if(throwable1 instanceof IOException)
+                                                    if(throwable1 instanceof IOException || throwable1 instanceof CompletionException)
                                                     {
                                                         //We get socket reset exceptions occasionally when the remote server doesn't
                                                         //fully read our request and immediately responds.
