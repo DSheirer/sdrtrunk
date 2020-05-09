@@ -336,7 +336,6 @@ public class JavaFxWindowManager extends Application
     @Subscribe
     public void process(final ViewIconManagerRequest request)
     {
-        mLog.debug("Processing view request");
         execute(() -> {
             getIconManagerStage().show();
             getIconManagerStage().requestFocus();
