@@ -3,6 +3,7 @@ A cross-platform java application for decoding, monitoring, recording and stream
 
 * [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/GettingStarted_V0.3.0)
 * [User's Manual Version 0.3.0 and 0.4.0](https://github.com/DSheirer/sdrtrunk/wiki/UserManual_V0.3.0)
+* [Playlist Editor User Manual Version 0.5.0](https://github.com/DSheirer/sdrtrunk/wiki/Playlist-Editor)
 * [Download](https://github.com/DSheirer/sdrtrunk/releases)
 * [Support Group](https://groups.google.com/forum/#!forum/sdrtrunk)
 * [Discord Support Channel](https://discord.gg/HJQaKYE)
@@ -62,5 +63,5 @@ The **/build/distributions** folder will contain the zip file of the compiled pr
 All dependencies/versions are controlled from build.gradle.
 To change the new release version tag of artifact - change property:
 ```
-version = '0.4.0'
+version = '0.5.0'
 ```
