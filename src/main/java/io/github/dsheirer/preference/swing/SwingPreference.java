@@ -40,6 +40,7 @@ public class SwingPreference
     private static final String LOCATION_Y = ".y";
     private static final String SIZE_HEIGHT = ".height";
     private static final String SIZE_WIDTH = ".width";
+    private static final String MAXIMIZED = ".maximized";
 
     private Preferences mPreferences = Preferences.userNodeForPackage(SwingPreference.class);
 
@@ -80,11 +81,7 @@ public class SwingPreference
         if(x != Integer.MAX_VALUE && y != Integer.MAX_VALUE)
         {
             Point location = new Point(x,y);
-
-            if(isValidWindowLocation(location))
-            {
-                return location;
-            }
+            return location;
         }
 
         return null;
@@ -99,6 +96,27 @@ public class SwingPreference
     {
         mPreferences.putInt(key + LOCATION_X, location.x);
         mPreferences.putInt(key + LOCATION_Y, location.y);
+    }
+
+    /**
+     * Stores the window maximized state for the window key
+     * @param key identifying the window
+     * @param maximized state
+     */
+    public void setMaximized(String key, boolean maximized)
+    {
+        mPreferences.putBoolean(key + MAXIMIZED, maximized);
+    }
+
+    /**
+     * Retrieves the window maximized preference for the specified window key
+     * @param key to identify the window
+     * @param defaultMaximized to be the default value when no preference exists
+     * @return maximized state
+     */
+    public boolean getMaximized(String key, boolean defaultMaximized)
+    {
+        return mPreferences.getBoolean(key + MAXIMIZED, defaultMaximized);
     }
 
     /**
