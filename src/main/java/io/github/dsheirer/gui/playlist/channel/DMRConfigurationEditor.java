@@ -172,7 +172,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()
-                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mSourceConfigurationEditor;
@@ -203,7 +203,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             mIgnoreDataCallsButton = new ToggleSwitch();
             mIgnoreDataCallsButton.setDisable(true);
             mIgnoreDataCallsButton.selectedProperty()
-                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mIgnoreDataCallsButton;
@@ -216,12 +216,12 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             mTrafficChannelPoolSizeSpinner = new Spinner();
             mTrafficChannelPoolSizeSpinner.setDisable(true);
             mTrafficChannelPoolSizeSpinner.setTooltip(
-                    new Tooltip("Maximum number of traffic channels that can be created by the decoder"));
+                new Tooltip("Maximum number of traffic channels that can be created by the decoder"));
             mTrafficChannelPoolSizeSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
             SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 50);
             mTrafficChannelPoolSizeSpinner.setValueFactory(svf);
             mTrafficChannelPoolSizeSpinner.getValueFactory().valueProperty()
-                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mTrafficChannelPoolSizeSpinner;
@@ -241,7 +241,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             mRecordConfigurationEditor = new RecordConfigurationEditor(types);
             mRecordConfigurationEditor.setDisable(true);
             mRecordConfigurationEditor.modifiedProperty()
-                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mRecordConfigurationEditor;

@@ -85,13 +85,13 @@ public enum DecoderType
      * Decoders that produce a (recordable) bitstream
      */
     public static final EnumSet<DecoderType> BITSTREAM_DECODERS = EnumSet.of(DecoderType.DMR,
-            DecoderType.MPT1327, DecoderType.P25_PHASE1, DecoderType.P25_PHASE2);
+        DecoderType.MPT1327, DecoderType.P25_PHASE1, DecoderType.P25_PHASE2);
 
     /**
      * Decoders that produce (recordable) MBE audio codec frames
      */
     public static final EnumSet<DecoderType> MBE_AUDIO_CODEC_DECODERS =
-            EnumSet.of(DecoderType.DMR, DecoderType.P25_PHASE1, DecoderType.P25_PHASE2);
+        EnumSet.of(DecoderType.DMR, DecoderType.P25_PHASE1, DecoderType.P25_PHASE2);
 
     public Protocol getProtocol()
     {

@@ -22,13 +22,15 @@ package io.github.dsheirer.module.decode.dmr.message.data.mbc;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MBCMessage extends DataMessage {
+public class MBCMessage extends DataMessage
+{
 
     /**
      * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
@@ -36,24 +38,29 @@ public class MBCMessage extends DataMessage {
      * do not use the 24-bit prefix.
      *
      * @param syncPattern
-     * @param message     containing 288-bit DMR message with preliminary bit corrections indicated.
+     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
      */
-    public MBCMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot) {
-        super(syncPattern, message, timestamp, timeslot);
+    public MBCMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
+                      long timestamp, int timeslot)
+    {
+        super(syncPattern, message, cach, slotType, timestamp, timeslot);
     }
 
     @Override
-    public String toString() {
+    public String toString()
+    {
         return null;
     }
 
     @Override
-    public boolean isValid() {
+    public boolean isValid()
+    {
         return false;
     }
 
     @Override
-    public List<Identifier> getIdentifiers() {
+    public List<Identifier> getIdentifiers()
+    {
         return new ArrayList<>();
     }
 }

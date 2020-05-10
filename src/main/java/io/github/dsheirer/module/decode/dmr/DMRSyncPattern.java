@@ -45,12 +45,16 @@ public enum DMRSyncPattern
 
 
     MOBILE_STATION_REVERSE_CHANNEL(0x77D55F7DFD77l, "MS REVERSE"),
+    DIRECT_MODE_DATA_TIMESLOT_1(0xF7FDD5DDFD55l, "DM DATA TS1"),
+    DIRECT_MODE_DATA_TIMESLOT_2(0xD7557F5FF7F5l, "DM DATA TS2"),
     DIRECT_MODE_VOICE_TIMESLOT_1(0x5D577F7757FFl, "DM VOICE TS1"),
-    DIRECT_MODE_DATA_TIMESLOT_1(0xF7FDD5DDFD55l, "DM VOICE TS1"),
     DIRECT_MODE_VOICE_TIMESLOT_2(0x7DFFD5F55D5Fl, "DM VOICE TS2"),
-    DIRECT_MODE_DATA_TIMESLOT_2(0xD7557F5FF7F5l, "DM VOICE TS2"),
 
     RESERVED(0xDD7FF5D757DDl, "RESERVED"),
+
+    P25_PHASE1_ERROR_90_CCW( 0x96b07fdfe318l, "" ),//96b07fdfe318, 5ac1ff7f8c61, bcd0958e2b48
+    P25_PHASE1_ERROR_90_CW(  0x001050551155l,"" ),
+    P25_PHASE1_ERROR_180(    0xAA8A0A008800l,"" ),
 
     //These are used to identify the sync-less sub frames of the voice super frame
     VOICE_FRAME_B(-2, "VOICE B"),
@@ -145,16 +149,12 @@ public enum DMRSyncPattern
         }
         for(DMRSyncPattern pattern: SYNC_PATTERNS)
         {
-            if(pattern.getPattern() == value || Long.bitCount((pattern.getPattern() ^ value)) < 5)
+            if(pattern.getPattern() == value)
             {
                 return pattern;
             }
         }
-        return UNKNOWN;
-        /*
 
         return UNKNOWN;
-
-         */
     }
 }

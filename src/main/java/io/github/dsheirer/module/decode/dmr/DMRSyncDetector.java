@@ -22,13 +22,10 @@ package io.github.dsheirer.module.decode.dmr;
 import io.github.dsheirer.bits.DMRSoftSyncDetector;
 import io.github.dsheirer.bits.MultiSyncPatternMatcher;
 import io.github.dsheirer.bits.SoftSyncDetector;
-import io.github.dsheirer.bits.SyncDetector;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.dsp.symbol.FrameSync;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1SyncDetector;
 import io.github.dsheirer.sample.Listener;
 
 public class DMRSyncDetector implements Listener<Dibit>
@@ -163,7 +160,10 @@ public class DMRSyncDetector implements Listener<Dibit>
                 public void syncDetected(int bitErrors)
                 {
                     System.out.print("[!!!] PLL Locked Action: FS = "+frameSync.toString() + "\n");
-                    mPhaseLockedLoop.correctInversion(mPllCorrection);
+                    if(mPhaseLockedLoop != null)
+                    {
+                        mPhaseLockedLoop.correctInversion(mPllCorrection);
+                    }
                 }
 
                 @Override

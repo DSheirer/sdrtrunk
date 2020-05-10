@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 
 /**

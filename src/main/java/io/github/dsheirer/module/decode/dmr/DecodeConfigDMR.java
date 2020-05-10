@@ -23,16 +23,27 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.dmr.DMRDecoder;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
-public class DecodeConfigDMR extends DecodeConfiguration {
-
+/**
+ * DMR Decoder Configuration
+ */
+public class DecodeConfigDMR extends DecodeConfiguration
+{
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
 
     public DecodeConfigDMR()
     {
+    }
+
+    /**
+     * Overrides the default value to indicate that DMR has two timeslots
+     */
+    @Override
+    public int getTimeslotCount()
+    {
+        return 2;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")

@@ -38,7 +38,10 @@ import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.dmr.*;
+import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
+import io.github.dsheirer.module.decode.dmr.DMRStandardDecoder;
+import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.message.voice.DMRAudioModule;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
@@ -318,7 +321,16 @@ public class DecoderFactory
         }
     }
 
-    private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
+    /**
+     * Creates modules for DMR decoder setup.
+     * @param channel for the DMR decoder
+     * @param userPreferences for access to JMBE audio library
+     * @param modules created
+     * @param aliasList for the audio module
+     * @param decodeConfig for the DMR configuration
+     */
+    private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules,
+                                   AliasList aliasList, DecodeConfiguration decodeConfig)
     {
         modules.add(new DMRStandardDecoder());
         DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(channel);
@@ -428,6 +440,9 @@ public class DecoderFactory
             case PASSPORT:
                 filters.add(new PassportMessageFilter());
                 break;
+            case DMR:
+                //filters.add(new DMR) //todo: not finished
+                break;
             default:
                 break;
         }
@@ -450,10 +465,10 @@ public class DecoderFactory
                 return new DecodeConfigAM();
             case DMR:
                 return new DecodeConfigDMR();
-            case LTR_NET:
-                return new DecodeConfigLTRNet();
             case LTR:
                 return new DecodeConfigLTRStandard();
+            case LTR_NET:
+                return new DecodeConfigLTRNet();
             case MPT1327:
                 return new DecodeConfigMPT1327();
             case NBFM:
@@ -483,6 +498,8 @@ public class DecoderFactory
                     DecodeConfigAM origAM = (DecodeConfigAM)config;
                     copyAM.setRecordAudio(origAM.getRecordAudio());
                     return copyAM;
+                case DMR:
+                    return new DecodeConfigDMR();
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
@@ -525,8 +542,6 @@ public class DecoderFactory
                     return copyP25P2;
                 case PASSPORT:
                     return new DecodeConfigPassport();
-                case DMR:
-                    return new DecodeConfigDMR();
                 default:
                     throw new IllegalArgumentException("Unrecognized decoder configuration type:" + config.getDecoderType());
             }

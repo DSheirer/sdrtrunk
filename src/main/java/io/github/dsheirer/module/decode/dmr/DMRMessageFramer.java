@@ -21,32 +21,31 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.bits.SyncPattern;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
-import io.github.dsheirer.edac.BPTC_17_12_3;
-import io.github.dsheirer.message.Message;
+import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
-import io.github.dsheirer.module.decode.dmr.message.CACH;
+import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
-import io.github.dsheirer.module.decode.dmr.message.LCSS;
-import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.ShortLCMessage;
-import io.github.dsheirer.module.decode.dmr.message.voice.VoiceAMessage;
-import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
-import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
-import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.function.Consumer;
 
 /**
  * DMR Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
@@ -57,7 +56,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageFramer.class);
 
     private DMRBurstDetector mBurstDetector;
-    private Listener<Message> mMessageListener;
+    private Listener<IMessage> mMessageListener;
 
     private int mCurrentSlot = 0; //Slot 0
 
@@ -68,8 +67,8 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
     private double mBitRate;
     private long mCurrentTime = System.currentTimeMillis();
     private ISyncDetectListener mSyncDetectListener;
-
     public boolean[] slotSyncMatrix = new boolean[2];
+
     public DMRMessageFramer(IPhaseLockedLoop phaseLockedLoop, int bitRate)
     {
         mBurstDetector = new DMRBurstDetector(this, phaseLockedLoop);
@@ -137,7 +136,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
      *
      * @param messageListener to receive framed and decoded messages
      */
-    public void setListener(Listener<Message> messageListener)
+    public void setListener(Listener<IMessage> messageListener)
     {
         mMessageListener = messageListener;
     }
@@ -166,7 +165,8 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             {
                 reset(0);
             }
-            catch(NullPointerException ex) {
+            catch(NullPointerException ex)
+            {
                 mBinaryMessage = new CorrectedBinaryMessage(288);
             }
             if(mBinaryMessage.isFull())
@@ -180,55 +180,70 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             mBurstDetector.receive(dibit);
         }
     }
+
     private void dispatchMessage()
     {
-        DMRSyncPattern currentPattern = DMRMessage.getSyncType(mBinaryMessage);
+        DMRSyncPattern currentPattern = DMRBurst.getSyncType(mBinaryMessage);
         if(mMessageListener != null)
         {
-            if(mCurrentSlot == 0 && mInVoiceReadingSlotA > 0 || mCurrentSlot == 1 && mInVoiceReadingSlotB > 0) {
-                System.out.print("[TS-x" + (mCurrentSlot)+"] __ VOICE >>> ");
+            if(mCurrentSlot == 0 && mInVoiceReadingSlotA > 0 || mCurrentSlot == 1 && mInVoiceReadingSlotB > 0)
+            {
                 int slotCount = 0;
-                if(mCurrentSlot == 0) {
-                    mInVoiceReadingSlotA ++;
+                if(mCurrentSlot == 0)
+                {
+                    mInVoiceReadingSlotA++;
                     slotCount = mInVoiceReadingSlotA;
-                    if(slotCount == 6) {
+                    if(slotCount == 6)
+                    {
                         mInVoiceReadingSlotA = 0; //end of voice superframe
                     }
-                } else {
-                    mInVoiceReadingSlotB ++;
+                }
+                else
+                {
+                    mInVoiceReadingSlotB++;
 
                     slotCount = mInVoiceReadingSlotB;
-                    if(slotCount == 6) {
+                    if(slotCount == 6)
+                    {
                         mInVoiceReadingSlotB = 0; //end of voice superframe
                     }
                 }
-                System.out.print("VOICE FRAME [" + (char)('A' + slotCount - 1) + "] ");
-                VoiceMessage embMsg = DMRMessageFactory.createVoiceMessage(DMRSyncPattern.fromValue( - slotCount),
-                        mBinaryMessage, mCurrentTime, mCurrentSlot);
-                if(!embMsg.isValid()) {
+
+                DMRBurst embMsg = DMRMessageFactory.create(DMRSyncPattern.fromValue(-slotCount), mBinaryMessage, mCurrentTime, mCurrentSlot);
+
+                if(!embMsg.isValid())
+                {
                     // stop expecting a voice frame in this timeslot
-                    if(mCurrentSlot == 0) {
+                    if(mCurrentSlot == 0)
+                    {
                         mInVoiceReadingSlotA = 0;
-                    } else {
+                    }
+                    else
+                    {
                         mInVoiceReadingSlotB = 0;
                     }
                     //lost sync
                     dispatchSyncLoss(0);
                 }
                 mMessageListener.receive(embMsg);
-            } else if(currentPattern.isData()) {
+            }
+            else if(currentPattern.isData())
+            {
                 // data frame
                 processDataBurst(mBinaryMessage, currentPattern, 0);
-            } else if(currentPattern.isVoice()) {
+            }
+            else if(currentPattern.isVoice())
+            {
                 // data frame
                 processVoiceBurst(mBinaryMessage, currentPattern, 0);
-            } else {
+            }
+            else
+            {
                 slotSyncMatrix[mCurrentSlot] = false; // lost sync
-                System.out.print("[TS-x" + (mCurrentSlot == 0 ? "A": "B") + "] No Activity ");
-                if(currentPattern != DMRSyncPattern.UNKNOWN) {
+                if(currentPattern != DMRSyncPattern.UNKNOWN)
+                {
                     System.out.print("SYNC: " + currentPattern.toString());
                 }
-                System.out.print("\n"); // at "+getTimestamp()+"
             }
             mCurrentSlot = (mCurrentSlot == 0 ? 1 : 0);
             mBinaryMessage = new CorrectedBinaryMessage(288); // ready for next message
@@ -269,82 +284,53 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         buffer.decrementUserCount();
     }
 
-
-    void processVoiceBurst(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors) {
+    private void processVoiceBurst(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors)
+    {
         if(mMessageListener != null)
         {
-            VoiceMessage voiceMessage = DMRMessageFactory.createVoiceMessage(pattern, binaryMessage, mCurrentTime, mCurrentSlot);
-            mMessageListener.receive(voiceMessage);
-            System.out.print("[TS-x" + (mCurrentSlot) +"] " + voiceMessage.getSyncPattern().toString() + " >>> VOICE FRAME [A] =========<<<<<<\n");
+            DMRBurst message = DMRMessageFactory.create(pattern, binaryMessage, mCurrentTime, mCurrentSlot);
+            mMessageListener.receive(message);
         }
-        if(mCurrentSlot == 0) { // A is now running
+
+        if(mCurrentSlot == 0)
+        { // A is now running
             mInVoiceReadingSlotA = 1;
-        } else {
+        }
+        else
+        {
             mInVoiceReadingSlotB = 1;
         }
     }
-    private ShortLCMessage shortlc;
 
-    void processDataBurst(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors) {
-        SlotType sl = new SlotType(binaryMessage);
-        DataMessage datamessage = DMRMessageFactory.createDataMessage(sl.getDataType(),pattern,
-                binaryMessage,mCurrentTime, mCurrentSlot);
-        if(!datamessage.isValid())
+    private void processDataBurst(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors)
+    {
+        DMRBurst message = DMRMessageFactory.create(pattern, binaryMessage, mCurrentTime, mCurrentSlot);
+
+        if(message != null)
         {
-            dispatchSyncLoss(288); // CACH(24) + PAYLOAD(108 * 2) + SYNC(48)
-            return;
-        }
-        if(datamessage.getSyncPattern() == DMRSyncPattern.MOBILE_STATION_DATA) {
-            System.out.print("[TS-x"  + (mCurrentSlot == 0 ? 'A' : 'B') + "] ");
-        } else {
-            CACH cach = datamessage.getCACH();
-            System.out.print("[TS-" + cach.getTimeslot() + (mCurrentSlot == 0 ? 'A' : 'B')+ "] ");
-            try {
-                if(cach.getLCSS() == LCSS.FIRST_FRAGMENT) {
-                    shortlc = new ShortLCMessage();
-                    shortlc.appendMsg(cach.getPayload());
-                } else if(cach.getLCSS() == LCSS.CONTINUATION_FRAGMENT && (shortlc!=null)) {
-                    shortlc.appendMsg(cach.getPayload());
-                } else if(cach.getLCSS() == LCSS.LAST_FRAGMENT && (shortlc!=null)) {
-                    shortlc.appendMsg(cach.getPayload());
-                    shortlc.finalizeMessage();
-                    mMessageListener.receive(shortlc);
-                    System.out.print(shortlc.toString());
-                    shortlc = null;
-                }
-            } catch (BitSetFullException e) {
-                shortlc = null;
-                e.printStackTrace();
+            if(!message.isValid())
+            {
+                dispatchSyncLoss(288); // CACH(24) + PAYLOAD(108 * 2) + SYNC(48)
+                return;
             }
-            //System.out.print("LCSS: " + cach.getLCSS().toString() + ": ");
-        }
-
-        System.out.print(datamessage.getSyncPattern().toString() + ", CC: " +
-                datamessage.getSlotType().getColorCode() + " >>> ");
-        String messageText = datamessage.toString();
-        if(messageText != null) {
-            System.out.print(datamessage.toString() + ">>> ");
-        } else {
-            System.out.print("[" + datamessage.getSlotType().getDataType().getLabel() + "] Not Parsed >>> ");
-        }
-        if(datamessage.getSyncPattern() == DMRSyncPattern.BASE_STATION_DATA) {
-            System.out.print(" InBoundChannel: " + datamessage.getCACH().getInboundChannelAccessType());
-        }
-        System.out.print("\n");
-        mMessageListener.receive(datamessage);
-        if(mSyncDetectListener != null)
-        {
-            //mSyncDetectListener.syncDetected(bitErrors);
+            mMessageListener.receive(message);
+            if(mSyncDetectListener != null)
+            {
+                //mSyncDetectListener.syncDetected(bitErrors);
+            }
         }
     }
 
     @Override
-    public void burstDetectedWithSync(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors) {
+    public void burstDetectedWithSync(CorrectedBinaryMessage binaryMessage, DMRSyncPattern pattern, int bitErrors)
+    {
         slotSyncMatrix[mCurrentSlot] = true; // current slot is synced
-        System.out.println("Sync Detected: " + mCurrentSlot + ", at: " + getTimestamp());
-        if(pattern == DMRSyncPattern.MOBILE_STATION_VOICE || pattern == DMRSyncPattern.BASE_STATION_VOICE) {
+        if(pattern == DMRSyncPattern.MOBILE_STATION_VOICE || pattern == DMRSyncPattern.BASE_STATION_VOICE)
+        {
             processVoiceBurst(binaryMessage, pattern, bitErrors);
-        } else if(pattern == DMRSyncPattern.MOBILE_STATION_DATA || pattern == DMRSyncPattern.BASE_STATION_DATA) {
+        }
+        else if(pattern == DMRSyncPattern.MOBILE_STATION_DATA || pattern == DMRSyncPattern.BASE_STATION_DATA)
+        {
             processDataBurst(binaryMessage, pattern, bitErrors);
         }
         mBinaryMessage = new CorrectedBinaryMessage(288);
@@ -382,4 +368,118 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         }
     }
 
+    public static class MessageListener implements Listener<IMessage>
+    {
+        private boolean mHasDMRData = false;
+
+        @Override
+        public void receive(IMessage message)
+        {
+            if(message instanceof DMRMessage)
+            {
+                mLog.info("TS:" + ((DMRMessage)message).getTimeslot() + " " + message.toString());
+                mHasDMRData = true;
+            }
+        }
+
+        public boolean hasData()
+        {
+            return mHasDMRData;
+        }
+
+        public void reset()
+        {
+            mHasDMRData = false;
+        }
+    }
+
+    public static void main(String[] args)
+    {
+//        String file = "/home/denny/SDRTrunk/recordings/20200513_143340_9600BPS_DMR_SaiaNet_Onondaga_Control.bits";
+        String path = "/home/denny/SDRTrunk/recordings/";
+        String file = path + "20200514_133947_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits";
+
+        boolean multi = false;
+
+        if(multi)
+        {
+            try
+            {
+                DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(path), "*.bits");
+
+                MessageListener listener = new MessageListener();
+                stream.forEach(new Consumer<Path>()
+                {
+                    @Override
+                    public void accept(Path path)
+                    {
+                        boolean hasData = false;
+                        DMRMessageFramer messageFramer = new DMRMessageFramer(null, DecoderType.DMR.getProtocol().getBitRate());
+                        DMRMessageProcessor messageProcessor = new DMRMessageProcessor();
+                        messageFramer.setListener(messageProcessor);
+                        messageProcessor.setMessageListener(listener);
+
+                        try(BinaryReader reader = new BinaryReader(path, 200))
+                        {
+                            while(reader.hasNext())
+                            {
+                                ReusableByteBuffer buffer = reader.next();
+                                messageFramer.receive(buffer);
+                            }
+                        }
+                        catch(Exception ioe)
+                        {
+                            ioe.printStackTrace();
+                        }
+
+                        if(!listener.hasData())
+                        {
+                            mLog.info("Has Data: " + listener.hasData() + " File:" + path.toString());
+//                            try
+//                            {
+//                                Files.delete(path);
+//                            }
+//                            catch(IOException ioe)
+//                            {
+//                                ioe.printStackTrace();
+//                            }
+                        }
+
+                        listener.reset();
+
+                    }
+                });
+            }
+            catch(IOException ioe)
+            {
+                ioe.printStackTrace();
+            }
+        }
+        else
+        {
+            DMRMessageFramer messageFramer = new DMRMessageFramer(null, DecoderType.DMR.getProtocol().getBitRate());
+            DMRMessageProcessor messageProcessor = new DMRMessageProcessor();
+            messageFramer.setListener(messageProcessor);
+            messageProcessor.setMessageListener(message ->
+            {
+//                if(message instanceof ShortLCMessage)
+//                {
+                    mLog.debug("TS" + message.getTimeslot() + " " + message.toString());
+//                }
+            });
+
+            try(BinaryReader reader = new BinaryReader(Path.of(file), 200))
+            {
+                while(reader.hasNext())
+                {
+                    ReusableByteBuffer buffer = reader.next();
+                    messageFramer.receive(buffer);
+                }
+            }
+            catch(Exception ioe)
+            {
+                ioe.printStackTrace();
+            }
+        }
+    }
 }

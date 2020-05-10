@@ -22,31 +22,41 @@ package io.github.dsheirer.module.decode.dmr.message.data;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
 
+import java.util.Collections;
 import java.util.List;
 
-public class IDLEMessage extends DataMessage {
-
-    public IDLEMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot)
+/**
+ * Timeslot IDLE message
+ */
+public class IDLEMessage extends DataMessage
+{
+    /**
+     * Constructs an instance
+     * @param syncPattern for the message
+     * @param message payload
+     * @param timestamp the message was received
+     * @param timeslot for the message
+     */
+    public IDLEMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
+                       long timestamp, int timeslot)
     {
-        super(syncPattern, message, timestamp, timeslot);
-    }
-    @Override
-    public String toString() {
-
-        return "[IDLE]";
+        super(syncPattern, message, cach, slotType, timestamp, timeslot);
     }
 
     @Override
-    public boolean isValid() {
-        return true;
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("CC:").append(getSlotType().getColorCode());
+        sb.append(" IDLE");
+        return sb.toString();
     }
 
     @Override
-    public Protocol getProtocol() {
-        return Protocol.DMR;
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.emptyList();
     }
-
 }

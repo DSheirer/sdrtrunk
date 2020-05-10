@@ -23,30 +23,45 @@ package io.github.dsheirer.module.decode.dmr.message.voice;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
-import io.github.dsheirer.audio.codec.mbe.ImbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.dsp.gain.NonClippingGain;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.IdentifierUpdateProvider;
+import io.github.dsheirer.identifier.tone.AmbeTone;
+import io.github.dsheirer.identifier.tone.Tone;
+import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRToneIdentifier;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.AbstractVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.rrapi.type.Voice;
 import io.github.dsheirer.sample.Listener;
+import jmbe.iface.IAudioWithMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * DMR Audio Module for converting transmitted AMBE audio frames to 8 kHz PCM audio
  */
-public class DMRAudioModule extends AmbeAudioModule
+public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateProvider
 {
-
+    private final static Logger mLog = LoggerFactory.getLogger(DMRAudioModule.class);
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-    private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-    private VoiceMessage[] cachedMessage = new VoiceMessage[6];
-    private List<byte[]> frames = new ArrayList<byte[]>();
+    private ToneMetadataProcessor mToneMetadataProcessor = new ToneMetadataProcessor();
+    private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
+    private List<byte[]> mQueuedAmbeFrames = new ArrayList<>();
     private int mTimeslot;
+    private boolean mEncryptedCallStateEstablished = false;
+    private boolean mEncryptedCall = false;
+
+    //TODO: is this needed?  It seemed to be causing the audio to be saturated and raspy
+    private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
 
     public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
@@ -71,51 +86,142 @@ public class DMRAudioModule extends AmbeAudioModule
     public void reset()
     {
         getIdentifierCollection().clear();
+        mEncryptedCall = false;
+        mEncryptedCallStateEstablished = false;
+        mQueuedAmbeFrames.clear();
     }
 
     @Override
     public void start()
     {
-
     }
-
 
     /**
      * Processes DMR AMBE audio frame
      */
     public void receive(IMessage message)
     {
-        if(hasAudioCodec() && message.getTimeslot() == getTimeslot()) //
+        if(hasAudioCodec() && message.getTimeslot() == getTimeslot())
         {
-            if(message instanceof VoiceAMessage) {
-                cachedMessage[0] = (VoiceMessage) message;
-            } else if(message instanceof VoiceEMBMessage) {
-                VoiceEMBMessage vm = (VoiceEMBMessage)message;
-                cachedMessage[(int)-vm.getSyncPattern().getPattern()-1] = vm;
-
-                if(vm.getSyncPattern() == DMRSyncPattern.VOICE_FRAME_F) {
-                    frames.clear();
-                    for(int i = 0; i < 6; i++) {
-                        cachedMessage[i].getAMBEFrames(frames);
-                    }
-                    processAudio();
-                    frames.clear();
+            if(message instanceof VoiceMessage)
+            {
+                VoiceMessage voiceMessage = (VoiceMessage)message;
+                List<byte[]> frames = voiceMessage.getAMBEFrames();
+                for(byte[] frame: frames)
+                {
+                    processAudio(frame);
                 }
+            }
+            else if(message instanceof AbstractVoiceChannelUser && message.isValid())
+            {
+                AbstractVoiceChannelUser avcu = (AbstractVoiceChannelUser)message;
+                ServiceOptions serviceOptions = avcu.getServiceOptions();
+                mEncryptedCallStateEstablished = true;
+                mEncryptedCall = serviceOptions.isEncrypted();
             }
         }
     }
 
     /**
-     * Processes an audio packet by decoding the AMBE audio frames and rebroadcasting them as PCM audio packets.
+     * Processes the audio frame.  Queues the frame until encryption state is determined.  Once determined, the audio
+     * frames are dequeued and audio is generated.
      */
-    private void processAudio()
+    private void processAudio(byte[] frame)
     {
-        for(byte[] frame : frames)
+        if(mEncryptedCallStateEstablished)
         {
-            float[] audio = getAudioCodec().getAudio(frame);
-            audio = mGain.apply(audio);
-            addAudio(audio);
+            //Process any ambe frames that were queued awaiting encryption state determination
+            if(!mQueuedAmbeFrames.isEmpty())
+            {
+                if(!mEncryptedCall)
+                {
+                    for(byte[] queuedFrame: mQueuedAmbeFrames)
+                    {
+                        produceAudio(queuedFrame);
+                    }
+
+                    mQueuedAmbeFrames.clear();
+                }
+
+                mQueuedAmbeFrames.clear();
+            }
+
+            produceAudio(frame);
         }
+        else
+        {
+            mQueuedAmbeFrames.add(frame);
+        }
+    }
+
+    private void produceAudio(byte[] frame)
+    {
+        try
+        {
+            IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(frame);
+            addAudio(audioWithMetadata.getAudio());
+            processMetadata(audioWithMetadata);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error synthesizing AMBE audio - continuing [" + e.getLocalizedMessage() + "]");
+        }
+    }
+
+    /**
+     * Processes optional metadata that can be included with decoded audio (ie dtmf, tones, knox, etc.) so that the
+     * tone metadata can be converted into a FROM identifier and included with any call segment.
+     */
+    private void processMetadata(IAudioWithMetadata audioWithMetadata)
+    {
+        if(audioWithMetadata.hasMetadata())
+        {
+            //JMBE only places 1 entry in the map, but for consistency we'll process the map entry set
+            for(Map.Entry<String,String> entry: audioWithMetadata.getMetadata().entrySet())
+            {
+                //Each metadata map entry contains a tone-type (key) and tone (value)
+                Identifier metadataIdentifier = mToneMetadataProcessor.process(entry.getKey(), entry.getValue());
+
+                if(metadataIdentifier != null)
+                {
+                    broadcast(metadataIdentifier);
+                }
+            }
+        }
+        else
+        {
+            mToneMetadataProcessor.closeMetadata();
+        }
+    }
+
+    /**
+     * Broadcasts the identifier to a registered listener
+     */
+    private void broadcast(Identifier identifier)
+    {
+        if(mIdentifierUpdateNotificationListener != null)
+        {
+            mIdentifierUpdateNotificationListener.receive(new IdentifierUpdateNotification(identifier,
+                IdentifierUpdateNotification.Operation.ADD, getTimeslot()));
+        }
+    }
+
+    /**
+     * Registers the listener to receive identifier updates
+     */
+    @Override
+    public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
+    {
+        mIdentifierUpdateNotificationListener = listener;
+    }
+
+    /**
+     * Unregisters a listener from receiving identifier updates
+     */
+    @Override
+    public void removeIdentifierUpdateListener()
+    {
+        mIdentifierUpdateNotificationListener = null;
     }
 
     /**
@@ -132,6 +238,64 @@ public class DMRAudioModule extends AmbeAudioModule
             {
                 closeAudioSegment();
             }
+        }
+    }
+
+    /**
+     * Process AMBE audio frame tone metadata.  Tracks the count of sequential frames containing tone metadata to
+     * provide a list of each unique tone and a time duration (milliseconds) for the tone.  Tones are concatenated into
+     * a comma separated list and included as call segment metadata.
+     */
+    public class ToneMetadataProcessor
+    {
+        private List<Tone> mTones = new ArrayList<>();
+        private Tone mCurrentTone;
+
+        /**
+         * Resets or clears any accumulated call tone sequences to prepare for the next call.
+         */
+        public void reset()
+        {
+            mTones.clear();
+        }
+
+        /**
+         * Process the tone metadata
+         * @param type of tone
+         * @param value of tone
+         * @return an identifier with the accumulated tone metadata set
+         */
+        public Identifier process(String type, String value)
+        {
+            if(type == null || value == null)
+            {
+                return null;
+            }
+
+            AmbeTone tone = AmbeTone.fromValues(type, value);
+
+            if(tone == AmbeTone.INVALID)
+            {
+                return null;
+            }
+
+            if(mCurrentTone == null || mCurrentTone.getAmbeTone() != tone)
+            {
+                mCurrentTone = new Tone(tone);
+                mTones.add(mCurrentTone);
+            }
+
+            mCurrentTone.incrementDuration();
+
+            return DMRToneIdentifier.create(new ToneSequence(new ArrayList<>(mTones)));
+        }
+
+        /**
+         * Closes current tone metadata when there is no metadata for the current audio frame.
+         */
+        public void closeMetadata()
+        {
+            mCurrentTone = null;
         }
     }
 }

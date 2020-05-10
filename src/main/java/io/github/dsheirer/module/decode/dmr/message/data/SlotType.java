@@ -22,23 +22,58 @@ package io.github.dsheirer.module.decode.dmr.message.data;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.Golay24;
+import io.github.dsheirer.module.decode.dmr.message.type.DataType;
 
 public class SlotType
 {
-    private static final int[] MESSAGE_INDEXES = new int[]{122,123,124,125,126,127,128,129,130,131,180,181,182,183,184,
-            185,186,187,188,189};
+    private static final int[] MESSAGE_INDEXES = new int[]{122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 180, 181,
+        182, 183, 184, 185, 186, 187, 188, 189};
 
     //Note: extracted message bit index values are offset by +4 from the ICD specified index values
-    private static final int[] COLOR_CODE = new int[]{4,5,6,7};
-    private static final int[] DATA_TYPE = new int[]{8,9,10,11};
+    private static final int[] COLOR_CODE = new int[]{4, 5, 6, 7};
+    private static final int[] DATA_TYPE = new int[]{8, 9, 10, 11};
 
     private CorrectedBinaryMessage mMessage;
-    private CorrectedBinaryMessage mDecodedMessage;
-    private boolean mCorrected;
+    private boolean mValid;
 
     public SlotType(CorrectedBinaryMessage message)
     {
         mMessage = message;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("CC:").append(getColorCode());
+        sb.append(" ").append(getDataType());
+        return sb.toString();
+    }
+
+    /**
+     * Binary message bits
+     */
+    private CorrectedBinaryMessage getMessage()
+    {
+        return mMessage;
+    }
+
+    /**
+     * Sets the valid flag for this slot type.
+     *
+     * @param valid
+     */
+    void setValid(boolean valid)
+    {
+        mValid = valid;
+    }
+
+    /**
+     * Indicates if this message was successfully error detected and corrected
+     */
+    public boolean isValid()
+    {
+        return mValid;
     }
 
     /**
@@ -48,42 +83,33 @@ public class SlotType
      * 24 bits to support use of the existing Golay24 error correction utility.  All bit index values are incremented
      * by an offset of 4 to account for this frame offset.
      */
-    private BinaryMessage getDecodedMessage()
+    public static SlotType getSlotType(BinaryMessage message)
     {
-        if(mDecodedMessage == null)
+        CorrectedBinaryMessage decodedMessage = new CorrectedBinaryMessage(24);
+
+        for(int x = 0; x < MESSAGE_INDEXES.length; x++)
         {
-            mDecodedMessage = new CorrectedBinaryMessage(24);
-
-            for(int x = 0; x < MESSAGE_INDEXES.length; x++)
+            if(message.get(MESSAGE_INDEXES[x]))
             {
-                if(mMessage.get(MESSAGE_INDEXES[x]))
-                {
-                    mDecodedMessage.set(x + 4);
-                }
+                decodedMessage.set(x + 4);
             }
-
-            mCorrected = Golay24.checkAndCorrect(mDecodedMessage, 0) !=2;
         }
 
-        return mDecodedMessage;
-    }
-
-    /**
-     * Indicates if this message was successfully error detected and corrected
-     */
-    public boolean isValid()
-    {
-        getDecodedMessage();
-        return mCorrected;
+        int errorCount = Golay24.checkAndCorrect(decodedMessage, 0);
+        decodedMessage.setCorrectedBitCount(errorCount);
+        SlotType slotType = new SlotType(decodedMessage);
+        slotType.setValid(errorCount < 3);
+        return slotType;
     }
 
     /**
      * Color code for this timeslot.
+     *
      * @return color code: 0 - 15
      */
     public int getColorCode()
     {
-        return getDecodedMessage().getInt(COLOR_CODE);
+        return getMessage().getInt(COLOR_CODE);
     }
 
     /**
@@ -91,11 +117,6 @@ public class SlotType
      */
     public DataType getDataType()
     {
-        if(isValid())
-        {
-            return DataType.fromValue(getDecodedMessage().getInt(DATA_TYPE));
-        }
-
-        return DataType.UNKNOWN;
+        return DataType.fromValue(getMessage().getInt(DATA_TYPE));
     }
 }

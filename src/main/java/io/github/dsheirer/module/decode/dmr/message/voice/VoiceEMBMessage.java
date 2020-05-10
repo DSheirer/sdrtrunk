@@ -1,18 +1,22 @@
 package io.github.dsheirer.module.decode.dmr.message.voice;
 
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.Quadratic_16_7_6;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.message.LCSS;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
 
+/**
+ * DMR Voice Frames B - F
+ */
+public class VoiceEMBMessage extends VoiceMessage
+{
+    private static final int[] EMB = new int[]{132, 133, 134, 135, 136, 137, 138, 139, 172, 173, 174,
+        175, 176, 177, 178, 179};
+    private static final int PAYLOAD_START = 140;
+    private static final int PAYLOAD_END = 172;
 
-public class VoiceEMBMessage extends VoiceMessage{
-    private static final int[] COLOR_CODE = new int[]{132,133,134,135}; //NO CACH
-    private static final int[] PI = new int[]{136};
-    private static final int[] LCSS_BI = new int[]{137,138};
-    private static final int[] EMB_PARITY = new int[] {139, 172, 173, 174, 175, 176, 177, 178, 179};
-    private static final int[] EMB_CODEWORD = new int[] {132, 133, 134, 135, 136, 137, 138};
+    private EMB mEMB;
+
     /**
      * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
      * station frames transmit a Common Announcement Channel (CACH) in the 24-bit prefix, whereas Mobile inbound frames
@@ -21,23 +25,50 @@ public class VoiceEMBMessage extends VoiceMessage{
      * @param syncPattern
      * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
      */
-    public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot) {
-        super(syncPattern, message, timestamp, timeslot);
-        System.out.print("EMB Frame, CC = " + message.getInt(COLOR_CODE) + ", PI = "+message.getInt(PI) +"\n");
-        LCSS lcss = LCSS.fromValue(message.getInt(LCSS_BI));
-        // TODO: validation will be implemented
-        //4 cc, 1 pi, 2 lcss, 9 embparity
+    public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, long timestamp, int timeslot)
+    {
+        super(syncPattern, message, cach, timestamp, timeslot);
     }
 
     @Override
-    public String toString() {
-        return null;
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("CC:").append(getEMB().getColorCode());
+        if(getEMB().isEncrypted())
+        {
+            sb.append(" ENCRYPTED");
+        }
+        sb.append(" ").append(getSyncPattern().toString());
+        return sb.toString();
     }
 
-    @Override
-    public boolean isValid() {
+    /**
+     * EMB field
+     */
+    public EMB getEMB()
+    {
+        if(mEMB == null)
+        {
+            //Transfer the embedded signalling bits into a new binary message
+            CorrectedBinaryMessage segment = new CorrectedBinaryMessage(16);
 
-        return true;
-        // return Quadratic_16_7_6.quadres_16_7_check(mMessage.getInt(132, 139), mMessage.getInt(EMB_PARITY));
+            for(int x = 0; x < EMB.length; x++)
+            {
+                segment.set(x, getMessage().get(EMB[x]));
+            }
+
+            mEMB = new EMB(segment);
+        }
+
+        return mEMB;
+    }
+
+    /**
+     * Embedded signalling full link control fragment
+     */
+    public BinaryMessage getFLCFragment()
+    {
+        return getMessage().getSubMessage(PAYLOAD_START, PAYLOAD_END);
     }
 }

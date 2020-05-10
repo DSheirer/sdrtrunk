@@ -18,29 +18,36 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.ltrnet.identifier;
+package io.github.dsheirer.module.decode.dmr.identifier;
 
-import io.github.dsheirer.identifier.Form;
-import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.site.SiteIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
-public class SiteIdentifier extends IntegerIdentifier
+/**
+ * DMR Radio Site Identifier
+ */
+public class DMRSite extends SiteIdentifier
 {
-    public SiteIdentifier(int site)
+    /**
+     * Constructs an instance
+     * @param site id
+     */
+    public DMRSite(int site)
     {
-        super(site, IdentifierClass.NETWORK, Form.SITE, Role.BROADCAST);
+        super(site);
     }
 
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.LTR_NET;
+        return Protocol.DMR;
     }
 
-    public static SiteIdentifier create(int site)
+    /**
+     * Utility method to create a site identifier
+     */
+    public static DMRSite create(int site)
     {
-        return new SiteIdentifier(site);
+        return new DMRSite(site);
     }
 }

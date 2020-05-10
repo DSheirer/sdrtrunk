@@ -22,126 +22,142 @@
 
 package io.github.dsheirer.module.decode.dmr;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
-import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.dmr.DMRDecoder;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.ShortLCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.LinkControlWord;
-import io.github.dsheirer.module.decode.p25.phase1.message.lc.standard.*;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.AMBTCMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCAdjacentStatusBroadcast;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCNetworkStatusBroadcast;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCRFSSStatusBroadcast;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.motorola.osp.MotorolaBaseStationId;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.*;
+import com.google.common.base.Joiner;
+import io.github.dsheirer.identifier.site.SiteIdentifier;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRNetwork;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusNeighborReport;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ConnectPlusControlChannel;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ConnectPlusTrafficChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
- * Tracks the network configuration details of a P25 Phase 1 network from the broadcast messages
+ * Tracks the network configuration details of a DMR network from the broadcast messages
  */
 public class DMRNetworkConfigurationMonitor
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRNetworkConfigurationMonitor.class);
+    private static final String BRAND_HYTERA = "Hytera";
+    private static final String BRAND_MOTOROLA_CAPACITY_PLUS = "Motorola Capacity+";
+    private static final String BRAND_MOTOROLA_CONNECT_PLUS = "Motorola Connect+";
+    private static final String BRAND_MOTOROLA_IP_SITE_CONNECT = "Motorola IP Site Connect";
+    private static final String BRAND_STANDARD = "Standard/Unknown";
+    private static final String BRAND_TIER_3_TRUNKING = "Tier III Trunking";
 
-    private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<>();
-
-
-    //Current Site Status Messages
-    private Map<String,IChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
-
-
-    //Current Site Services
-    private String currentSiteNetwork = "";
-
-    //Neighbor Sites
-    private Map<Integer,AMBTCAdjacentStatusBroadcast> mAMBTCNeighborSites = new HashMap<>();
-    private Map<Integer,LCAdjacentSiteStatusBroadcast> mLCNeighborSites = new HashMap<>();
-    private Map<Integer,LCAdjacentSiteStatusBroadcastExplicit> mLCNeighborSitesExplicit = new HashMap<>();
-    private Map<Integer,AdjacentStatusBroadcast> mTSBKNeighborSites = new HashMap<>();
-
-
+    private List<SiteIdentifier> mNeighborSites = new ArrayList<>();
+    private List<Integer> mLogicalSlotNumbers = new ArrayList<>();
+    private DMRNetwork mDMRNetwork;
+    private DMRSite mDMRSite;
+    private String mBrand;
+    private Integer mColorCode;
+    private Integer mCurrentLSN;
+    private int mTimeslot;
 
     /**
      * Constructs a network configuration monitor.
      *
      */
-    public DMRNetworkConfigurationMonitor()
+    public DMRNetworkConfigurationMonitor(int timeslot)
     {
-
-
+        mTimeslot = timeslot;
     }
 
     /**
-     * Processes ShortLC network config
+     * Sets the current logical slot number for a Motorola Connect+ channel
      */
-    public void processShortLC(ShortLCMessage slc, int featId)
+    public void setCurrentLogicalSlotNumber(int lsn)
     {
-        StringBuilder sb = new StringBuilder();
-        if(slc.isValid()) {
-            int pl = slc.getPayLoad();
-            if(featId == 6) {
-                sb.append("NetWork: " + ((pl & 0xfff000) >> 12) + "-" + ((pl & 0xf0) >> 4));
-            } else {
-                sb.append("Network undecoded");
-            }
+        mCurrentLSN = lsn;
+    }
+
+    /**
+     * Processes link control messages
+     */
+    public void process(LCMessage linkControl)
+    {
+        switch(linkControl.getOpcode())
+        {
+            case SHORT_CONNECT_PLUS_CONTROL_CHANNEL:
+                if((mDMRNetwork == null || mDMRSite == null) && linkControl instanceof ConnectPlusControlChannel)
+                {
+                    ConnectPlusControlChannel cpcc = (ConnectPlusControlChannel)linkControl;
+                    mDMRNetwork = cpcc.getNetwork();
+                    mDMRSite = cpcc.getSite();
+                }
+                if(mBrand == null)
+                {
+                    mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
+                }
+                break;
+            case SHORT_CONNECT_PLUS_TRAFFIC_CHANNEL:
+                if((mDMRNetwork == null || mDMRSite == null) && linkControl instanceof ConnectPlusTrafficChannel)
+                {
+                    ConnectPlusTrafficChannel cptc = (ConnectPlusTrafficChannel)linkControl;
+                    mDMRNetwork = cptc.getNetwork();
+                    mDMRSite = cptc.getSite();
+                }
+                if(mBrand == null)
+                {
+                    mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
+                }
+                break;
         }
-        currentSiteNetwork = sb.toString();
     }
 
     /**
-     * Processes Alternate Multi-Block Trunking Control (AMBTC) messages for network configuration details
+     * Processes Control Signalling Blocks (CSBK)
      */
-    public void process(AMBTCMessage ambtc)
+    public void process(CSBKMessage csbk)
     {
+        switch(csbk.getOpcode())
+        {
+            case MOTOROLA_CONPLUS_NEIGHBOR_REPORT:
+                if(mNeighborSites.isEmpty() && csbk instanceof ConnectPlusNeighborReport)
+                {
+                    ConnectPlusNeighborReport cpnr = (ConnectPlusNeighborReport)csbk;
+                    mNeighborSites.addAll(cpnr.getNeighbors());
+                }
+                if(mBrand == null)
+                {
+                    mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
+                }
+                break;
+            case MOTOROLA_CONPLUS_VOICE_CHANNEL_USER:
+                if(csbk instanceof ConnectPlusVoiceChannelUser)
+                {
+                    int lsn = ((ConnectPlusVoiceChannelUser)csbk).getLogicalSlotNumber();
 
-    }
+                    if(!mLogicalSlotNumbers.contains(lsn))
+                    {
+                        mLogicalSlotNumbers.add(lsn);
+                    }
+                }
+                if(mBrand == null)
+                {
+                    mBrand = BRAND_MOTOROLA_CONNECT_PLUS;
+                }
+                break;
+        }
 
-    /**
-     * Processes Link Control Word (LCW) messages with network configuration details
-     */
-    public void process(LinkControlWord lcw)
-    {
-
+        if(mColorCode == null)
+        {
+            mColorCode = csbk.getSlotType().getColorCode();
+        }
     }
 
     public void reset()
     {
-        mFrequencyBandMap.clear();
-        mSecondaryControlChannels.clear();
-        mAMBTCNeighborSites = new HashMap<>();
-        mLCNeighborSites.clear();
-        mLCNeighborSitesExplicit.clear();
-        mTSBKNeighborSites.clear();
-    }
-
-    /**
-     * Formats the identifier with an appended hexadecimal value when the identifier is an integer
-     * @param identifier to format
-     * @param width of the hex value with zero pre-padding
-     * @return formatted identifier
-     */
-    private String format(Identifier identifier, int width)
-    {
-        if(identifier.getValue() instanceof Integer)
-        {
-            String hex = Integer.toHexString((Integer)identifier.getValue());
-
-            while(hex.length() < width)
-            {
-                hex = "0" + hex;
-            }
-
-            return hex.toUpperCase() + "[" + identifier.getValue() + "]";
-        }
-        else
-        {
-            return identifier.toString();
-        }
+        mNeighborSites.clear();
+        mDMRNetwork = null;
+        mDMRSite = null;
     }
 
     public String getActivitySummary()
@@ -149,146 +165,46 @@ public class DMRNetworkConfigurationMonitor
         StringBuilder sb = new StringBuilder();
 
         sb.append("Activity Summary - Decoder:DMR ");
+        sb.append("Timeslot: " + mTimeslot);
 
-        sb.append("\n\nCurrent Site\n");
+        //DMR System Brand Name
+        sb.append("\n\nBrand:").append((mBrand == null ? BRAND_STANDARD : mBrand));
 
-        if(currentSiteNetwork != null)
+        ///Connect+ Network ID
+        if(mDMRNetwork != null)
         {
-            sb.append(" SITE:").append(currentSiteNetwork);
-            // UPLINK
-        }
-        else
-        {
-            sb.append("  UNKNOWN");
+            sb.append("\nNetwork:").append(mDMRNetwork);
         }
 
-        if(!mSecondaryControlChannels.isEmpty())
+        //Connect+ Site ID
+        if(mDMRSite != null)
         {
-            List<String> channels = new ArrayList<>(mSecondaryControlChannels.keySet());
-            Collections.sort(channels);
+            sb.append("\nSite:").append(mDMRSite);
+        }
 
-            for(String channel : channels)
+        //Connect+ Logical Slot Numbers
+        if(!mLogicalSlotNumbers.isEmpty())
+        {
+            Collections.sort(mLogicalSlotNumbers);
+            sb.append("\nObserved LSNs:").append(Joiner.on(",").join(mLogicalSlotNumbers));
+        }
+
+        //Connect+ current LSN
+        if(mCurrentLSN != null)
+        {
+            sb.append("\nCurrent LSN:").append(mCurrentLSN);
+        }
+
+        if(!mNeighborSites.isEmpty())
+        {
+            for(SiteIdentifier neighbor: mNeighborSites)
             {
-                IChannelDescriptor secondaryControlChannel = mSecondaryControlChannels.get(channel);
-
-                if(secondaryControlChannel != null)
-                {
-                    sb.append("  SEC CONTROL CHANNEL:").append(secondaryControlChannel);
-                    sb.append(" DOWNLINK:").append(secondaryControlChannel.getDownlinkFrequency());
-                    sb.append(" UPLINK:").append(secondaryControlChannel.getUplinkFrequency()).append("\n");
-                }
+                sb.append("\nNeighbor:").append(neighbor);
             }
         }
 
-
-        sb.append("\nNeighbor Sites\n");
-        Set<Integer> sites = new TreeSet<>();
-        sites.addAll(mAMBTCNeighborSites.keySet());
-        sites.addAll(mLCNeighborSites.keySet());
-        sites.addAll(mLCNeighborSitesExplicit.keySet());
-        sites.addAll(mTSBKNeighborSites.keySet());
-
-        if(sites.isEmpty())
-        {
-            sb.append("  UNKNOWN");
-        }
-        else
-        {
-            List<Integer> sitesSorted = new ArrayList<>(sites);
-            Collections.sort(sitesSorted);
-
-            for(Integer site : sitesSorted)
-            {
-                if(mAMBTCNeighborSites.containsKey(site))
-                {
-                    AMBTCAdjacentStatusBroadcast ambtc = mAMBTCNeighborSites.get(site);
-                    sb.append("  SYSTEM:").append(format(ambtc.getSystem(), 3));
-                    sb.append(" NAC:").append(format(ambtc.getNAC(), 3));
-                    sb.append(" RFSS:").append(format(ambtc.getRfss(), 2));
-                    sb.append(" SITE:").append(format(ambtc.getSite(), 2));
-                    sb.append(" LRA:").append(format(ambtc.getLocationRegistrationArea(), 2));
-                    sb.append(" CHANNEL:").append(ambtc.getChannel());
-                    sb.append(" DOWNLINK:").append(ambtc.getChannel().getDownlinkFrequency());
-                    sb.append(" UPLINK:").append(ambtc.getChannel().getUplinkFrequency()).append("\n");
-                }
-                if(mLCNeighborSites.containsKey(site))
-                {
-                    LCAdjacentSiteStatusBroadcast lc = mLCNeighborSites.get(site);
-                    sb.append("  SYSTEM:").append(format(lc.getSystem(), 3));
-                    sb.append(" RFSS:").append(format(lc.getRfss(), 2));
-                    sb.append(" SITE:").append(format(lc.getSite(), 2));
-                    sb.append(" LRA:").append(format(lc.getLocationRegistrationArea(), 2));
-                    sb.append(" CHANNEL:").append(lc.getChannel());
-                    sb.append(" DOWNLINK:").append(lc.getChannel().getDownlinkFrequency());
-                    sb.append(" UPLINK:").append(lc.getChannel().getUplinkFrequency()).append("\n");
-
-                }
-                if(mLCNeighborSitesExplicit.containsKey(site))
-                {
-                    LCAdjacentSiteStatusBroadcastExplicit lce = mLCNeighborSitesExplicit.get(site);
-                    sb.append("  SYSTEM:---");
-                    sb.append(" RFSS:").append(format(lce.getRfss(), 2));
-                    sb.append(" SITE:").append(format(lce.getSite(), 2));
-                    sb.append(" LRA:").append(format(lce.getLocationRegistrationArea(), 2));
-                    sb.append(" CHANNEL:").append(lce.getChannel());
-                    sb.append(" DOWNLINK:").append(lce.getChannel().getDownlinkFrequency());
-                    sb.append(" UPLINK:").append(lce.getChannel().getUplinkFrequency()).append("\n");
-                }
-                if(mTSBKNeighborSites.containsKey(site))
-                {
-                    AdjacentStatusBroadcast asb = mTSBKNeighborSites.get(site);
-                    sb.append("  SYSTEM:").append(format(asb.getSystem(), 3));
-                    sb.append(" NAC:").append(format(asb.getNAC(), 3));
-                    sb.append(" RFSS:").append(format(asb.getRfss(), 2));
-                    sb.append(" SITE:").append(format(asb.getSite(), 2));
-                    sb.append(" LRA:").append(format(asb.getLocationRegistrationArea(), 2));
-                    sb.append(" CHANNEL:").append(asb.getChannel());
-                    sb.append(" DOWNLINK:").append(asb.getChannel().getDownlinkFrequency());
-                    sb.append(" UPLINK:").append(asb.getChannel().getUplinkFrequency());
-                    sb.append(" STATUS:").append(asb.getSiteFlags()).append("\n");
-                }
-            }
-        }
-
-        sb.append("\nFrequency Bands\n");
-        if(mFrequencyBandMap.isEmpty())
-        {
-            sb.append("  UNKNOWN");
-        }
-        else
-        {
-            List<Integer> ids = new ArrayList<>(mFrequencyBandMap.keySet());
-            Collections.sort(ids);
-            {
-                for(Integer id : ids)
-                {
-                    sb.append("  ").append(formatFrequencyBand(mFrequencyBandMap.get(id))).append("\n");
-                }
-            }
-        }
+        sb.append("\n\n");
 
         return sb.toString();
     }
-
-    /**
-     * Formats a frequency band
-     */
-    private String formatFrequencyBand(IFrequencyBand band)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append("BAND:").append(band.getIdentifier());
-        sb.append(" ").append(band.isTDMA() ? "TDMA" : "FDMA");
-        sb.append(" BASE:").append(band.getBaseFrequency());
-        sb.append(" BANDWIDTH:").append(band.getBandwidth());
-        sb.append(" SPACING:").append(band.getChannelSpacing());
-        sb.append(" TRANSMIT OFFSET:").append(band.getTransmitOffset());
-
-        if(band.isTDMA())
-        {
-            sb.append(" TIMESLOTS:").append(band.getTimeslotCount());
-        }
-
-        return sb.toString();
-    }
-
 }

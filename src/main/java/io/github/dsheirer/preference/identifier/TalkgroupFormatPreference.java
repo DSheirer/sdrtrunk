@@ -41,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.prefs.Preferences;
@@ -317,7 +316,7 @@ public class TalkgroupFormatPreference extends Preference
                     isTalkgroupFixedWidth(Protocol.APCO25));
             case DMR:
                 return DMRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.DMR),
-                        isTalkgroupFixedWidth(Protocol.DMR));
+                    isTalkgroupFixedWidth(Protocol.DMR));
             case FLEETSYNC:
                 return FleetsyncTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.FLEETSYNC),
                     isTalkgroupFixedWidth(Protocol.FLEETSYNC));
@@ -371,7 +370,7 @@ public class TalkgroupFormatPreference extends Preference
                     isTalkgroupFixedWidth(Protocol.APCO25));
             case DMR:
                 return DMRTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.DMR),
-                        isTalkgroupFixedWidth(Protocol.DMR));
+                    isTalkgroupFixedWidth(Protocol.DMR));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));

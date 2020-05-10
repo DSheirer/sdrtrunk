@@ -21,92 +21,109 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
-import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBand;
-import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
+import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FLCAssembler;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.SLCAssembler;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
+import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
-public class DMRMessageProcessor implements Listener<Message>
+/**
+ * Processes DMR messages and performs re-assembly of link control fragments
+ */
+public class DMRMessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageProcessor.class);
 
+    private SLCAssembler mSLCAssembler = new SLCAssembler();
+    private FLCAssembler mFLCAssemblerTimeslot0 = new FLCAssembler(0);
+    private FLCAssembler mFLCAssemblerTimeslot1 = new FLCAssembler(1);
     private Listener<IMessage> mMessageListener;
 
-    /* Map of up to 16 band identifiers per RFSS.  These identifier update
-     * messages are inserted into any message that conveys channel information
-     * so that the uplink/downlink frequencies can be calculated */
-    private Map<Integer,IFrequencyBand> mFrequencyBandMap = new TreeMap<Integer,IFrequencyBand>();
-
+    /**
+     * Constructs an instance
+     */
     public DMRMessageProcessor()
     {
     }
 
+    /**
+     * Primary message processing
+     */
     @Override
-    public void receive(Message message)
+    public void receive(IMessage message)
     {
-        /**
-         * Capture frequency band identifier messages and inject them into any
-         * messages that require band information in order to calculate the
-         * up-link and down-link frequencies for any numeric channel references
-         * contained within the message.
-         */
-        if(message.isValid())
+        dispatch(message);
+
+        //Extract the Full Link Control message fragment from the Voice with embedded signalling message
+        if(message instanceof VoiceEMBMessage)
         {
-            /* Insert frequency band identifier update messages into channel-type messages */
-            if(message instanceof IFrequencyBandReceiver)
+            VoiceEMBMessage voice = (VoiceEMBMessage)message;
+
+            if(message.getTimeslot() == 0)
             {
-                IFrequencyBandReceiver receiver = (IFrequencyBandReceiver)message;
-
-                List<IChannelDescriptor> channels = receiver.getChannels();
-
-                for(IChannelDescriptor channel : channels)
-                {
-                    int[] frequencyBandIdentifiers = channel.getFrequencyBandIdentifiers();
-
-                    for(int id : frequencyBandIdentifiers)
-                    {
-                        if(mFrequencyBandMap.containsKey(id))
-                        {
-                            channel.setFrequencyBand(mFrequencyBandMap.get(id));
-                        }
-                    }
-                }
+                FullLCMessage flco = mFLCAssemblerTimeslot0.process(voice.getEMB().getLCSS(),
+                    voice.getFLCFragment(), message.getTimestamp());
+                dispatch(flco);
             }
-
-            /* Store band identifiers so that they can be injected into channel
-             * type messages */
-            if(message instanceof IFrequencyBand)
+            else
             {
-                IFrequencyBand bandIdentifier = (IFrequencyBand)message;
-                mFrequencyBandMap.put(bandIdentifier.getIdentifier(), bandIdentifier);
+                FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
+                    voice.getFLCFragment(), message.getTimestamp());
+                dispatch(flco);
+            }
+        }
+        //Extract the Short Link Control message fragment from the DMR burst message when it has one
+        else if(message instanceof DMRBurst)
+        {
+            DMRBurst dmrBurst = (DMRBurst)message;
+
+            if(dmrBurst.hasCACH())
+            {
+                CACH cach = dmrBurst.getCACH();
+                ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
+                dispatch(slco);
             }
         }
 
-        if(mMessageListener != null)
+        //TODO: perform packet sequence re-assembly here
+    }
+
+    /**
+     * Dispatches the non-null message to the registered listener
+     */
+    private void dispatch(IMessage message)
+    {
+        if(mMessageListener != null && message != null)
         {
             mMessageListener.receive(message);
         }
     }
 
+    /**
+     * Prepares for disposal
+     */
     public void dispose()
     {
-        mFrequencyBandMap.clear();
         mMessageListener = null;
     }
 
+    /**
+     * Registers the listener to receive messages from this processor
+     */
     public void setMessageListener(Listener<IMessage> listener)
     {
         mMessageListener = listener;
     }
 
+    /**
+     * Removes the listener from receiving messages from this processor
+     */
     public void removeMessageListener()
     {
         mMessageListener = null;

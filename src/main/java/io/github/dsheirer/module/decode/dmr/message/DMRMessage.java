@@ -1,46 +1,59 @@
+/*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.dmr.message;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.dmr.message.data.DataType;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.protocol.Protocol;
+
 /**
- * Base DMR Message class
+ * Base DMR Message
  */
 public abstract class DMRMessage extends Message
 {
-    public static final int PAYLOAD_1_START = 24;
-    public static final int SYNC_START = 132;
-    public static final int PAYLOAD_2_START = 180;
-
-    private DMRSyncPattern mSyncPattern;
-    protected CorrectedBinaryMessage mMessage;
-    private CACH mCACH;
-    private int mTimeslot;
+    private CorrectedBinaryMessage mCorrectedBinaryMessage;
     private boolean mValid = true;
+    private int mTimeslot;
+
     /**
-     * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
-     * station frames transmit a Common Announcement Channel (CACH) in the 24-bit prefix, whereas Mobile inbound frames
-     * do not use the 24-bit prefix.
-     *
-     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
+     * Constructs an instance
+     * @param timestamp for the message
      */
-    public DMRMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot)
+    public DMRMessage(CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
         super(timestamp);
-        mSyncPattern = syncPattern;
-        mMessage = message;
+        mCorrectedBinaryMessage = message;
         mTimeslot = timeslot;
     }
 
     /**
-     * Indicates if this is message is valid and passes all error correction and detection.
-     *
-     * Implements IMessage.isValid().
-     * @return true if this message is valid
+     * Message bits
      */
-    @Override
+    public CorrectedBinaryMessage getMessage()
+    {
+        return mCorrectedBinaryMessage;
+    }
+
+    /**
+     * Indicates if this message is valid
+     */
     public boolean isValid()
     {
         return mValid;
@@ -49,59 +62,23 @@ public abstract class DMRMessage extends Message
     /**
      * Sets the valid flag for this message
      */
-    protected void setValid(boolean valid)
+    public void setValid(boolean valid)
     {
         mValid = valid;
     }
 
-    @Override
+    /**
+     * Timeslot for this message
+     * @return 0 or 1
+     */
     public int getTimeslot()
     {
         return mTimeslot;
     }
-    /**
-     * Common Announcement Channel (CACH) message frame.  Note: check hasCACH() before accessing this method.
-     * @return CACH frame or null if this message does not contain a CACH.
-     */
-    public CACH getCACH()
-    {
-        if(hasCACH() && mCACH == null)
-        {
-            mCACH = new CACH(mMessage);
-        }
 
-        return mCACH;
-    }
     @Override
-    public Protocol getProtocol() {
+    public Protocol getProtocol()
+    {
         return Protocol.DMR;
-    }
-    /**
-     * Indicates if this frame contains Common Announcement Channel (CACH) frame data.
-     */
-    public boolean hasCACH()
-    {
-        return getSyncPattern().hasCACH();
-    }
-
-    /**
-     * DMR Sync pattern used by this message
-     */
-    public DMRSyncPattern getSyncPattern()
-    {
-        return mSyncPattern;
-    }
-
-    public static DMRSyncPattern getSyncType(CorrectedBinaryMessage message)
-    {
-        long syncExpected = message.getLong(SYNC_START, PAYLOAD_2_START - 1);
-        return DMRSyncPattern.fromValue(syncExpected);
-    }
-    /**
-     * The original message as captured over the wire with initial error detection and correction applied.
-     */
-    public CorrectedBinaryMessage getTransmittedMessage()
-    {
-        return mMessage;
     }
 }

@@ -21,7 +21,6 @@ package io.github.dsheirer.module.decode.dmr;
 
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 
 /**
  * Listener interface to be notified each time a P25 sync pattern and data unit has been detected

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2020 Zhenyu Mao
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,33 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
-package io.github.dsheirer.module.decode.dmr.message.data;
+package io.github.dsheirer.module.decode.dmr.message.type;
 
 /**
  * The Data Unit ID (DUID) is part of the Network ID (NID) field and indicates the type of message.
  */
 public enum DataType
 {
-    PI_HEADER(0, 288,  "PI  "), //TODO: not implemented
-    VOICE_HEADER(1, 288, "VOICE LC "),
-    TLC(2, 288,  "TLC "),
-    CSBK(3, 288, "CSBK "),
-    MBC_HEADER(4, 288, "MBC Header "), //TODO: not implemented
-    MBC(5, 276,  "MBC "), //TODO: not implemented
-    DATA_HEADER(6, 288,  "DATA "), //TODO: not implemented
-    RATE_1_OF_2_DATA(7, 276, "RATE 1/2 "), //TODO: not implemented
-    RATE_3_OF_4_DATA(8, 276,  "RATE 3/4 "), //TODO: not implemented
-    SLOT_IDLE(9, 276, "IDLE "),
-    RATE_1_DATA(10, 276,  "RATE 1  "), //TODO: not implemented
-    CSBK_ENC_HEADER(11, 276,  "CSBK ENCRYPTED "), //not implemented
-    MBC_ENC_HEADER(12, 276,  "MBC ENCRYPTED"), //not implemented
-    DATA_ENC_HEADER(13, 276, "DATA ENCRYPTED "), //not implemented
-    CHANNEL_CONTROL_ENC_HEADER(14, 276,  "MBC ENCRYPTED "), //not implemented
-    RESERVED_15(15, -1,  "BAD "),
-
-    UNKNOWN(-1, -1,  "UNKN ");
+    PI_HEADER(0, 288,  "ENCRYPTION HEADER"), //TODO: not implemented
+    VOICE_HEADER(1, 288, "VOICE HEADER"),
+    TLC(2, 288,  "TERMINATOR"),
+    CSBK(3, 288, "CSBK"),
+    MBC_HEADER(4, 288, "MBC HEADER"), //TODO: not implemented
+    MBC(5, 276,  "MBC"), //TODO: not implemented
+    DATA_HEADER(6, 288,  "DATA HEADER"), //TODO: not implemented
+    RATE_1_OF_2_DATA(7, 276, "RATE 1/2 PACKET"), //TODO: not implemented
+    RATE_3_OF_4_DATA(8, 276,  "RATE 3/4 PACKET"), //TODO: not implemented
+    SLOT_IDLE(9, 276, "IDLE"),
+    RATE_1_DATA(10, 276,  "RATE 1/1 PACKET"), //TODO: not implemented
+    CSBK_ENC_HEADER(11, 276,  "CSBK ENCRYPTED HEADER"), //not implemented
+    MBC_ENC_HEADER(12, 276,  "MBC ENCRYPTED HEADER"), //not implemented
+    DATA_ENC_HEADER(13, 276, "DATA ENCRYPTED HEADER"), //not implemented
+    CHANNEL_CONTROL_ENC_HEADER(14, 276,  "CONTROL CHANNEL ENCRYPTED HEADER"), //not implemented
+    RESERVED_15(15, -1,  "RESERVED"),
+    UNKNOWN(-1, -1,  "UNKNOWN");
 
     private int mValue;
     private int mMessageLength;
