@@ -50,27 +50,13 @@ public class DMRNetworkConfigurationMonitor
 
     private Map<Integer,IFrequencyBand> mFrequencyBandMap = new HashMap<>();
 
-    //Network Status Messages
-    private AMBTCNetworkStatusBroadcast mAMBTCNetworkStatusBroadcast;
-    private NetworkStatusBroadcast mTSBKNetworkStatusBroadcast;
-    private LCNetworkStatusBroadcast mLCNetworkStatusBroadcast;
-    private LCNetworkStatusBroadcastExplicit mLCNetworkStatusBroadcastExplicit;
 
     //Current Site Status Messages
-    private RFSSStatusBroadcast mTSBKRFSSStatusBroadcast;
-    private AMBTCRFSSStatusBroadcast mAMBTCRFSSStatusBroadcast;
-    private String mLCRFSSStatusBroadcast;
-    private LCRFSSStatusBroadcastExplicit mLCRFSSStatusBroadcastExplicit;
-
-    //Current Site Secondary Control Channels
     private Map<String,IChannelDescriptor> mSecondaryControlChannels = new TreeMap<>();
 
-    //Current Site Data Channel
-    private SNDCPDataChannelAnnouncementExplicit mSNDCPDataChannel;
 
     //Current Site Services
     private String currentSiteNetwork = "";
-    private LCSystemServiceBroadcast mLCSystemServiceBroadcast;
 
     //Neighbor Sites
     private Map<Integer,AMBTCAdjacentStatusBroadcast> mAMBTCNeighborSites = new HashMap<>();
@@ -78,18 +64,16 @@ public class DMRNetworkConfigurationMonitor
     private Map<Integer,LCAdjacentSiteStatusBroadcastExplicit> mLCNeighborSitesExplicit = new HashMap<>();
     private Map<Integer,AdjacentStatusBroadcast> mTSBKNeighborSites = new HashMap<>();
 
-    private MotorolaBaseStationId mMotorolaBaseStationId;
 
-    private DMRDecoder.Modulation mModulation;
 
     /**
      * Constructs a network configuration monitor.
      *
-     * @param modulation type used by the decoder
      */
-    public DMRNetworkConfigurationMonitor(DMRDecoder.Modulation modulation)
+    public DMRNetworkConfigurationMonitor()
     {
-        mModulation = modulation;
+
+
     }
 
     /**
@@ -114,29 +98,7 @@ public class DMRNetworkConfigurationMonitor
      */
     public void process(AMBTCMessage ambtc)
     {
-        switch(ambtc.getHeader().getOpcode())
-        {
-            case OSP_ADJACENT_STATUS_BROADCAST:
-                if(ambtc instanceof AMBTCAdjacentStatusBroadcast)
-                {
-                    AMBTCAdjacentStatusBroadcast aasb = (AMBTCAdjacentStatusBroadcast)ambtc;
-                    mAMBTCNeighborSites.put((int)aasb.getSite().getValue(), aasb);
-                }
-                break;
-            case OSP_NETWORK_STATUS_BROADCAST:
-                if(ambtc instanceof AMBTCNetworkStatusBroadcast)
-                {
-                    mAMBTCNetworkStatusBroadcast = (AMBTCNetworkStatusBroadcast)ambtc;
-                }
-                break;
-            case OSP_RFSS_STATUS_BROADCAST:
-                if(ambtc instanceof AMBTCRFSSStatusBroadcast)
-                {
-                    mAMBTCRFSSStatusBroadcast = (AMBTCRFSSStatusBroadcast)ambtc;
-                }
-                break;
-//TODO: process the rest of the messages here
-        }
+
     }
 
     /**
@@ -144,97 +106,13 @@ public class DMRNetworkConfigurationMonitor
      */
     public void process(LinkControlWord lcw)
     {
-        if(lcw.isValid())
-        {
-            switch(lcw.getOpcode())
-            {
-                case ADJACENT_SITE_STATUS_BROADCAST:
-                    if(lcw instanceof LCAdjacentSiteStatusBroadcast)
-                    {
-                        LCAdjacentSiteStatusBroadcast assb = (LCAdjacentSiteStatusBroadcast)lcw;
-                        mLCNeighborSites.put((int)assb.getSite().getValue(), assb);
-                    }
-                    break;
-                case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-                    if(lcw instanceof LCAdjacentSiteStatusBroadcastExplicit)
-                    {
-                        LCAdjacentSiteStatusBroadcastExplicit assbe = (LCAdjacentSiteStatusBroadcastExplicit)lcw;
-                        mLCNeighborSitesExplicit.put((int)assbe.getSite().getValue(), assbe);
-                    }
-                    break;
-                case CHANNEL_IDENTIFIER_UPDATE:
-                case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-                    if(lcw instanceof IFrequencyBand)
-                    {
-                        IFrequencyBand band = (IFrequencyBand)lcw;
-                        mFrequencyBandMap.put(band.getIdentifier(), band);
-                    }
-                    break;
-                case NETWORK_STATUS_BROADCAST:
-                    if(lcw instanceof LCNetworkStatusBroadcast)
-                    {
-                        mLCNetworkStatusBroadcast = (LCNetworkStatusBroadcast)lcw;
-                    }
-                    break;
-                case NETWORK_STATUS_BROADCAST_EXPLICIT:
-                    if(lcw instanceof LCNetworkStatusBroadcastExplicit)
-                    {
-                        mLCNetworkStatusBroadcastExplicit = (LCNetworkStatusBroadcastExplicit)lcw;
-                    }
-                    break;
-
-                case RFSS_STATUS_BROADCAST_EXPLICIT:
-                    if(lcw instanceof LCRFSSStatusBroadcastExplicit)
-                    {
-                        mLCRFSSStatusBroadcastExplicit = (LCRFSSStatusBroadcastExplicit)lcw;
-                    }
-                    break;
-                case SECONDARY_CONTROL_CHANNEL_BROADCAST:
-                    if(lcw instanceof LCSecondaryControlChannelBroadcast)
-                    {
-                        LCSecondaryControlChannelBroadcast sccb = (LCSecondaryControlChannelBroadcast)lcw;
-
-                        for(IChannelDescriptor channel : sccb.getChannels())
-                        {
-                            mSecondaryControlChannels.put(channel.toString(), channel);
-                        }
-                    }
-                    break;
-                case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
-                    if(lcw instanceof LCSecondaryControlChannelBroadcastExplicit)
-                    {
-                        LCSecondaryControlChannelBroadcastExplicit sccb = (LCSecondaryControlChannelBroadcastExplicit)lcw;
-                        for(IChannelDescriptor channel : sccb.getChannels())
-                        {
-                            mSecondaryControlChannels.put(channel.toString(), channel);
-                        }
-                    }
-                    break;
-                case SYSTEM_SERVICE_BROADCAST:
-                    if(lcw instanceof LCSystemServiceBroadcast)
-                    {
-                        mLCSystemServiceBroadcast = (LCSystemServiceBroadcast)lcw;
-                    }
-                    break;
-            }
-
-        }
 
     }
 
     public void reset()
     {
         mFrequencyBandMap.clear();
-        mAMBTCNetworkStatusBroadcast = null;
-        mTSBKNetworkStatusBroadcast = null;
-        mLCNetworkStatusBroadcast = null;
-        mLCNetworkStatusBroadcastExplicit = null;
-        mTSBKRFSSStatusBroadcast = null;
-        mLCRFSSStatusBroadcast = null;
-        mLCRFSSStatusBroadcastExplicit = null;
         mSecondaryControlChannels.clear();
-        mSNDCPDataChannel = null;
-        mLCSystemServiceBroadcast = null;
         mAMBTCNeighborSites = new HashMap<>();
         mLCNeighborSites.clear();
         mLCNeighborSitesExplicit.clear();
@@ -270,36 +148,7 @@ public class DMRNetworkConfigurationMonitor
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Activity Summary - Decoder:DMR ").append(mModulation.getLabel());
-
-        sb.append("\n\nNetwork\n");
-        if(mTSBKNetworkStatusBroadcast != null)
-        {
-            sb.append("  WACN:").append(format(mTSBKNetworkStatusBroadcast.getWacn(), 5));
-            sb.append(" SYSTEM:").append(format(mTSBKNetworkStatusBroadcast.getSystem(), 3));
-            sb.append(" NAC:").append(format(mTSBKNetworkStatusBroadcast.getNAC(), 3));
-            sb.append(" LRA:").append(format(mTSBKNetworkStatusBroadcast.getLocationRegistrationArea(), 2));
-        }
-        else if(mAMBTCNetworkStatusBroadcast != null)
-        {
-            sb.append("  WACN:").append(format(mAMBTCNetworkStatusBroadcast.getWacn(), 5));
-            sb.append(" SYSTEM:").append(format(mAMBTCNetworkStatusBroadcast.getSystem(), 3));
-            sb.append(" NAC:").append(format(mAMBTCNetworkStatusBroadcast.getNAC(), 3));
-        }
-        else if(mLCNetworkStatusBroadcast != null)
-        {
-            sb.append("  WACN:").append(format(mLCNetworkStatusBroadcast.getWACN(), 5));
-            sb.append(" SYSTEM:").append(format(mLCNetworkStatusBroadcast.getSystem(), 3));
-        }
-        else if(mLCNetworkStatusBroadcastExplicit != null)
-        {
-            sb.append("  WACN:").append(format(mLCNetworkStatusBroadcastExplicit.getWACN(), 5));
-            sb.append(" SYSTEM:").append(format(mLCNetworkStatusBroadcastExplicit.getSystem(), 3));
-        }
-        else
-        {
-            sb.append("  UNKNOWN");
-        }
+        sb.append("Activity Summary - Decoder:DMR ");
 
         sb.append("\n\nCurrent Site\n");
 
@@ -331,23 +180,6 @@ public class DMRNetworkConfigurationMonitor
             }
         }
 
-        if(mSNDCPDataChannel != null)
-        {
-            sb.append("  CURRENT DATA CHANNEL:").append(mSNDCPDataChannel.getChannel());
-            sb.append(" DOWNLINK:").append(mSNDCPDataChannel.getChannel().getDownlinkFrequency());
-            sb.append(" UPLINK:").append(mSNDCPDataChannel.getChannel().getUplinkFrequency()).append("\n");
-        }
-
-        if(mMotorolaBaseStationId != null)
-        {
-            sb.append("  STATION ID/LICENSE: " + mMotorolaBaseStationId.getCWID()).append("\n");
-        }
-
-        if(mLCSystemServiceBroadcast != null)
-        {
-            sb.append("  AVAILABLE SERVICES:").append(mLCSystemServiceBroadcast.getAvailableServices());
-            sb.append("  SUPPORTED SERVICES:").append(mLCSystemServiceBroadcast.getSupportedServices());
-        }
 
         sb.append("\nNeighbor Sites\n");
         Set<Integer> sites = new TreeSet<>();

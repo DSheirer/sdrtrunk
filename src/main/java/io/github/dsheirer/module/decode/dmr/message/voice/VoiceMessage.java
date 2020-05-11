@@ -19,8 +19,8 @@ public class VoiceMessage extends DMRMessage {
      * @param syncPattern
      * @param message     containing 288-bit DMR message with preliminary bit corrections indicated.
      */
-    public VoiceMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message) {
-        super(syncPattern, message);
+    public VoiceMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot) {
+        super(syncPattern, message, timestamp, timeslot);
     }
 
     public List<byte[]> getAMBEFrames(List<byte[]> frames)

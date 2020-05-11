@@ -137,6 +137,9 @@ public class DecoderFactory
             case AM:
                 processAM(channel, modules, aliasList, decodeConfig);
                 break;
+            case DMR:
+                processDMR(channel, userPreferences, modules, aliasList, decodeConfig);
+                break;
             case NBFM:
                 processNBFM(channel, modules, aliasList, decodeConfig);
                 break;
@@ -184,15 +187,6 @@ public class DecoderFactory
                 break;
             case CQPSK:
                 modules.add(new P25P1DecoderLSM());
-                break;
-            case DMR:
-                modules.add(new DMRStandardDecoder());
-                DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(channel);
-                modules.add(trafficChannelManager);
-                modules.add(new DMRDecoderState(channel, trafficChannelManager));
-                //modules.add(new DMRDecoderState(channel, 1));
-                modules.add(new DMRAudioModule(userPreferences, aliasList));
-                //todo: what is that, decoder state, decoder, audo module
                 break;
             default:
                 throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" +
@@ -324,6 +318,16 @@ public class DecoderFactory
         }
     }
 
+    private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
+    {
+        modules.add(new DMRStandardDecoder());
+        DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(channel);
+        modules.add(new DMRDecoderState(channel, 0, trafficChannelManager));
+        modules.add(new DMRDecoderState(channel, 1, trafficChannelManager));
+        modules.add(new DMRAudioModule(userPreferences, aliasList, 0));
+        modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
+    }
+
     /**
      * Constructs a list of auxiliary decoders, as specified in the configuration
      *
@@ -424,8 +428,6 @@ public class DecoderFactory
             case PASSPORT:
                 filters.add(new PassportMessageFilter());
                 break;
-            case DMR:
-                //filters.add(new DMR) //todo: not finished
             default:
                 break;
         }
@@ -446,6 +448,8 @@ public class DecoderFactory
         {
             case AM:
                 return new DecodeConfigAM();
+            case DMR:
+                return new DecodeConfigDMR();
             case LTR_NET:
                 return new DecodeConfigLTRNet();
             case LTR:
@@ -460,8 +464,6 @@ public class DecoderFactory
                 return new DecodeConfigP25Phase1();
             case P25_PHASE2:
                 return new DecodeConfigP25Phase2();
-            case DMR:
-                return new DecodeConfigDMR();
             default:
                 throw new IllegalArgumentException("DecodeConfigFactory - unknown decoder type [" + decoder.toString() + "]");
         }

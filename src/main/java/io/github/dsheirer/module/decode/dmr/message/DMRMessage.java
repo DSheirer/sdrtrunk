@@ -5,7 +5,9 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.dmr.message.data.DataType;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.protocol.Protocol;
-
+/**
+ * Base DMR Message class
+ */
 public abstract class DMRMessage extends Message
 {
     public static final int PAYLOAD_1_START = 24;
@@ -15,7 +17,8 @@ public abstract class DMRMessage extends Message
     private DMRSyncPattern mSyncPattern;
     protected CorrectedBinaryMessage mMessage;
     private CACH mCACH;
-
+    private int mTimeslot;
+    private boolean mValid = true;
     /**
      * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
      * station frames transmit a Common Announcement Channel (CACH) in the 24-bit prefix, whereas Mobile inbound frames
@@ -23,12 +26,39 @@ public abstract class DMRMessage extends Message
      *
      * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
      */
-    public DMRMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message)
+    public DMRMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
+        super(timestamp);
         mSyncPattern = syncPattern;
         mMessage = message;
+        mTimeslot = timeslot;
     }
 
+    /**
+     * Indicates if this is message is valid and passes all error correction and detection.
+     *
+     * Implements IMessage.isValid().
+     * @return true if this message is valid
+     */
+    @Override
+    public boolean isValid()
+    {
+        return mValid;
+    }
+
+    /**
+     * Sets the valid flag for this message
+     */
+    protected void setValid(boolean valid)
+    {
+        mValid = valid;
+    }
+
+    @Override
+    public int getTimeslot()
+    {
+        return mTimeslot;
+    }
     /**
      * Common Announcement Channel (CACH) message frame.  Note: check hasCACH() before accessing this method.
      * @return CACH frame or null if this message does not contain a CACH.

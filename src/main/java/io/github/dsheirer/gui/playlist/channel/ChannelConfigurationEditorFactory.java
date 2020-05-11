@@ -50,6 +50,8 @@ public class ChannelConfigurationEditorFactory
         {
             case AM:
                 return new AMConfigurationEditor(playlistManager);
+            case DMR:
+                return new DMRConfigurationEditor(playlistManager);
             case NBFM:
                 return new NBFMConfigurationEditor(playlistManager);
             case LTR_NET:

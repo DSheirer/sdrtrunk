@@ -1,7 +1,7 @@
 /*
  * ******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * Copyright (C) 2014-2020 Zhenyu Mao
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,10 +35,10 @@ public enum DataType
     RATE_3_OF_4_DATA(8, 276,  "RATE 3/4 "), //TODO: not implemented
     SLOT_IDLE(9, 276, "IDLE "),
     RATE_1_DATA(10, 276,  "RATE 1  "), //TODO: not implemented
-    PDT_CSBK_ENC_HEADER(11, 276,  "CSBK ENCRYPTED "), //not implemented
-    PDT_MBC_ENC_HEADER(12, 276,  "MBC ENCRYPTED"), //not implemented
-    PDT_DATA_ENC_HEADER(13, 276, "DATA ENCRYPTED "), //not implemented
-    PDT_CHANNEL_CONTROL_ENC_HEADER(14, 276,  "MBC ENCRYPTED "), //not implemented
+    CSBK_ENC_HEADER(11, 276,  "CSBK ENCRYPTED "), //not implemented
+    MBC_ENC_HEADER(12, 276,  "MBC ENCRYPTED"), //not implemented
+    DATA_ENC_HEADER(13, 276, "DATA ENCRYPTED "), //not implemented
+    CHANNEL_CONTROL_ENC_HEADER(14, 276,  "MBC ENCRYPTED "), //not implemented
     RESERVED_15(15, -1,  "BAD "),
 
     UNKNOWN(-1, -1,  "UNKN ");
@@ -108,13 +108,13 @@ public enum DataType
             case 10:
                 return RATE_1_DATA;
             case 11:
-                return PDT_CSBK_ENC_HEADER;
+                return CSBK_ENC_HEADER;
             case 12:
-                return PDT_MBC_ENC_HEADER;
+                return MBC_ENC_HEADER;
             case 13:
-                return PDT_DATA_ENC_HEADER;
+                return DATA_ENC_HEADER;
             case 14:
-                return PDT_CHANNEL_CONTROL_ENC_HEADER;
+                return CHANNEL_CONTROL_ENC_HEADER;
             case 15:
                 return RESERVED_15;
             default:

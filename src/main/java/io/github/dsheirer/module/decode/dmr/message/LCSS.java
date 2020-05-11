@@ -5,27 +5,34 @@ public enum LCSS
     /**
      * Link Control(LC) Single Fragment -or- CSBK Signalling First Fragment
      */
-    SINGLE_FRAGMENT,
+    SINGLE_FRAGMENT("[FL]"),
 
     /**
      * LC First Fragment
      */
-    FIRST_FRAGMENT,
+    FIRST_FRAGMENT("[F-]"),
 
     /**
      * LC or CSBK Last Fragment
      */
-    LAST_FRAGMENT,
+    LAST_FRAGMENT("[-L]"),
 
     /**
      * LC or CSBK Continuation Fragment
      */
-    CONTINUATION_FRAGMENT,
+    CONTINUATION_FRAGMENT("[--]"),
 
     /**
      * Unknown Fragment
      */
-    UNKNOWN;
+    UNKNOWN("[**]");
+
+    private String mLabel;
+
+    LCSS(String label)
+    {
+        mLabel = label;
+    }
 
     public static LCSS fromValue(int value)
     {
@@ -35,5 +42,11 @@ public enum LCSS
         }
 
         return UNKNOWN;
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
     }
 }

@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer, Zhenyu Mao
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Decoder state for an APCO25 channel.  Maintains the call/data/idle state of the channel and produces events by
+ * Decoder state for an DMR channel.  Maintains the call/data/idle state of the channel and produces events by
  * monitoring the decoded message stream.
  *
  */
@@ -81,7 +81,7 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
     private final static Logger mLog = LoggerFactory.getLogger(DMRDecoderState.class);
 
     private ChannelType mChannelType;
-    private DMRDecoder.Modulation mModulation;
+    private int mTimeslot;
     private PatchGroupManager mPatchGroupManager = new PatchGroupManager();
     private DMRNetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private Listener<ChannelEvent> mChannelEventListener;
@@ -94,29 +94,12 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
      * @param channel with configuration details
      * @param trafficChannelManager for handling traffic channel grants.
      */
-    public DMRDecoderState(Channel channel, DMRTrafficChannelManager trafficChannelManager)
+    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager)
     {
         mChannelType = channel.getChannelType();
-        mModulation = ((DecodeConfigDMR)channel.getDecodeConfiguration()).getModulation();
+        mTimeslot = timeslot;
         mTrafficChannelManager = trafficChannelManager;
-        mNetworkConfigurationMonitor = new DMRNetworkConfigurationMonitor(mModulation);
-    }
-
-    /**
-     * Constructs an DMR decoder state for a traffic channel.
-     * @param channel with configuration details
-     */
-    public DMRDecoderState(Channel channel)
-    {
-        this(channel, null);
-    }
-
-    /**
-     * Modulation type for the decoder
-     */
-    public DMRDecoder.Modulation getModulation()
-    {
-        return mModulation;
+        mNetworkConfigurationMonitor = new DMRNetworkConfigurationMonitor();
     }
 
     /**
@@ -172,7 +155,8 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
         if(iMessage instanceof DataMessage)
         {
             DataMessage message = (DataMessage)iMessage;
-            if(message instanceof CSBKMessage) {
+            if(message instanceof CSBKMessage)
+            {
                 CSBKMessage csbk = (CSBKMessage)message;
                 featId = csbk.getFeatId();
                 /*
@@ -185,10 +169,14 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
                  */
             }
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.CONTROL));
-        } else if(iMessage instanceof VoiceAMessage) {
+        }
+        else if(iMessage instanceof VoiceAMessage)
+        {
             VoiceMessage vm = (VoiceMessage)iMessage;
             processVoiceA(vm);
-        } else if(iMessage instanceof ShortLCMessage) {
+        }
+        else if(iMessage instanceof ShortLCMessage)
+        {
             mNetworkConfigurationMonitor.processShortLC((ShortLCMessage)iMessage, featId);
         }
     }
@@ -210,63 +198,6 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
         }
 
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
-    }
-
-
-    /**
-     * Processes an LDU voice message and forwards Link Control and/or Encryption Sync Parameters for
-     * additional processing.
-     *
-     * @param message that is an instance of an LDU1 or LDU2 message
-     */
-    private void processLDU(P25Message message)
-    {
-        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
-
-        if(message instanceof LDU1Message)
-        {
-            LinkControlWord lcw = ((LDU1Message)message).getLinkControlWord();
-
-            if(lcw != null && lcw.isValid())
-            {
-                processLinkControl(lcw, message.getTimestamp());
-            }
-
-            updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
-        }
-        else if(message instanceof LDU2Message)
-        {
-            EncryptionSyncParameters esp = ((LDU2Message)message).getEncryptionSyncParameters();
-
-            if(esp != null && esp.isValid())
-            {
-                processEncryptionSyncParameters(esp, message.getTimestamp());
-            }
-
-            updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
-        }
-    }
-
-    /**
-     * Processes a Terminator Data Unit with Link Control (TDULC) message and forwards valid
-     * Link Control Word messages for additional processing.
-     *
-     * @param message that is an instance of a TDULC
-     */
-    private void processTDULC(P25Message message)
-    {
-        closeCurrentCallEvent(message.getTimestamp());
-        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
-
-        if(message instanceof TDULinkControlMessage)
-        {
-            LinkControlWord lcw = ((TDULinkControlMessage)message).getLinkControlWord();
-
-            if(lcw != null && lcw.isValid())
-            {
-                processLinkControl(lcw, message.getTimestamp());
-            }
-        }
     }
 
     /**
@@ -319,449 +250,6 @@ public class DMRDecoderState extends DecoderState implements IChannelEventListen
 
             //Only clear the from identifier at this point ... the channel may still be allocated to the TO talkgroup
             getIdentifierCollection().remove(IdentifierClass.USER, Role.FROM);
-        }
-    }
-
-    /**
-     * Terminator Data Unit (TDU).
-     */
-    private void processTDU(P25Message message)
-    {
-        closeCurrentCallEvent(message.getTimestamp());
-        broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
-    }
-
-    /**
-     * Packet Data Unit
-     *
-     * @param message
-     */
-    private void processPDU(P25Message message)
-    {
-        if(message.isValid() && message instanceof PDUMessage)
-        {
-            PDUMessage pdu = (PDUMessage)message;
-
-            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            ic.remove(IdentifierClass.USER);
-            ic.update(pdu.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.DATA_PACKET.toString())
-                .details(pdu.toString())
-                .identifiers(ic)
-                .build());
-
-        }
-
-        broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
-    }
-
-    /**
-     * Unconfirmed Multi-Block Trunking Control (UMBTC)
-     *
-     * @param message
-     */
-    private void processUMBTC(P25Message message)
-    {
-        if(message.isValid() && message instanceof UMBTCTelephoneInterconnectRequestExplicitDialing)
-        {
-            UMBTCTelephoneInterconnectRequestExplicitDialing tired = (UMBTCTelephoneInterconnectRequestExplicitDialing)message;
-
-            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            ic.remove(IdentifierClass.USER);
-            ic.update(tired.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(tired.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.REQUEST.toString())
-                .details("TELEPHONE INTERCONNECT:" + tired.getTelephoneNumber())
-                .identifiers(ic)
-                .build());
-        }
-
-        broadcast(new DecoderStateEvent(this, Event.DECODE, State.CONTROL));
-    }
-
-    /**
-     * IP Packet Data
-     *
-     * @param message
-     */
-    private void processPacketData(P25Message message)
-    {
-        broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
-
-        if(message instanceof SNDCPPacketMessage)
-        {
-            SNDCPPacketMessage sndcp = (SNDCPPacketMessage)message;
-            getIdentifierCollection().update(sndcp.getIdentifiers());
-        }
-        else if(message instanceof PacketMessage)
-        {
-            PacketMessage packetMessage = (PacketMessage)message;
-            getIdentifierCollection().remove(IdentifierClass.USER);
-            getIdentifierCollection().update(packetMessage.getIdentifiers());
-
-            IPacket packet = packetMessage.getPacket();
-
-            if(packet instanceof IPV4Packet)
-            {
-                IPV4Packet ipv4 = (IPV4Packet)packet;
-
-                IPacket ipPayload = ipv4.getPayload();
-
-                if(ipPayload instanceof UDPPacket)
-                {
-                    UDPPacket udpPacket = (UDPPacket)ipPayload;
-
-                    IPacket udpPayload = udpPacket.getPayload();
-
-                    if(udpPayload instanceof ARSPacket)
-                    {
-                        ARSPacket arsPacket = (ARSPacket)udpPayload;
-
-                        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-
-                        DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
-                            .channel(getCurrentChannel())
-                            .eventDescription(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE.toString())
-                            .identifiers(ic)
-                            .details(arsPacket.toString() + " " + ipv4.toString())
-                            .build();
-
-                        broadcast(packetEvent);
-                    }
-                    else
-                    {
-                        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-
-                        DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
-                            .channel(getCurrentChannel())
-                            .eventDescription(DecodeEventType.UDP_PACKET.toString())
-                            .identifiers(ic)
-                            .details(ipv4.toString())
-                            .build();
-
-                        broadcast(packetEvent);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Sub-Network Dependent Convergence Protocol (SNDCP)
-     *
-     * @param message
-     */
-    private void processSNDCP(P25Message message)
-    {
-        broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
-
-        if(message.isValid() && message instanceof SNDCPPacketMessage)
-        {
-            SNDCPPacketMessage sndcpPacket = (SNDCPPacketMessage)message;
-
-            SNDCPMessage sndcpMessage = sndcpPacket.getSNDCPMessage();
-
-            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            ic.remove(IdentifierClass.USER);
-            ic.update(sndcpPacket.getIdentifiers());
-
-            switch(sndcpPacket.getSNDCPPacketHeader().getPDUType())
-            {
-                case OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("SNDCP ACTIVATE TDS CONTEXT ACCEPT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-                case OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("SNDCP DEACTIVATE TDS CONTEXT ACCEPT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-                case OUTBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("SNDCP DEACTIVATE TDS CONTEXT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-                case OUTBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("SNDCP ACTIVATE TDS CONTEXT REJECT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-                case INBOUND_SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("SNDCP ACTIVATE TDS CONTEXT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-                case INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.RESPONSE.toString())
-                        .details("SNDCP DEACTIVATE TDS CONTEXT ACCEPT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-                case INBOUND_SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
-                    broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.REQUEST.toString())
-                        .details("SNDCP DEACTIVATE TDS CONTEXT")
-                        .identifiers(ic)
-                        .build());
-                    break;
-            }
-        }
-    }
-
-    /**
-     * Processes encryption sync parameters carried by an LDU2 message
-     *
-     * @param esp that is non-null and valid
-     */
-    private void processEncryptionSyncParameters(EncryptionSyncParameters esp, long timestamp)
-    {
-        if(esp.isEncryptedAudio())
-        {
-            for(Identifier identifier : esp.getIdentifiers())
-            {
-                //Add to the identifier collection after filtering through the patch group manager
-                getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-            }
-            Encryption encryption = Encryption.fromValue(esp.getEncryptionKey().getValue().getAlgorithm());
-            updateCurrentCall(DecodeEventType.CALL_ENCRYPTED, "ALGORITHM:" + encryption.toString(), timestamp);
-        }
-        else
-        {
-            getIdentifierCollection().remove(Form.ENCRYPTION_KEY);
-            updateCurrentCall(DecodeEventType.CALL, null, timestamp);
-        }
-    }
-
-    /**
-     * Processes a Link Control Word (LCW) that is carried by either an LDU1 or a TDULC message.
-     *
-     * @param lcw that is non-null and valid
-     */
-    private void processLinkControl(LinkControlWord lcw, long timestamp)
-    {
-        switch(lcw.getOpcode())
-        {
-            //Calls in-progress on this channel
-            case GROUP_VOICE_CHANNEL_USER:
-            case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER:
-            case MOTOROLA_TALK_COMPLETE:
-            case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-            case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-                for(Identifier identifier : lcw.getIdentifiers())
-                {
-                    //Add to the identifier collection after filtering through the patch group manager
-                    getIdentifierCollection().update(mPatchGroupManager.update(identifier));
-                }
-                break;
-
-            //Call termination
-            case CALL_TERMINATION_OR_CANCELLATION:
-                //Note: we only broadcast an END state if this is a network-commanded channel teardown
-                if(lcw instanceof LCCallTermination && ((LCCallTermination)lcw).isNetworkCommandedTeardown())
-                {
-                    broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
-                }
-                break;
-
-            //Calls in-progress on another channel
-            case GROUP_VOICE_CHANNEL_UPDATE:
-            case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
-                break;
-
-            //Network configuration messages
-            case ADJACENT_SITE_STATUS_BROADCAST:
-            case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-            case NETWORK_STATUS_BROADCAST:
-            case NETWORK_STATUS_BROADCAST_EXPLICIT:
-            case PROTECTION_PARAMETER_BROADCAST:
-            case RFSS_STATUS_BROADCAST:
-            case RFSS_STATUS_BROADCAST_EXPLICIT:
-            case SECONDARY_CONTROL_CHANNEL_BROADCAST:
-            case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
-            case SYSTEM_SERVICE_BROADCAST:
-                mNetworkConfigurationMonitor.process(lcw);
-                break;
-
-            //Patch Group management
-            case MOTOROLA_PATCH_GROUP_ADD:
-                mPatchGroupManager.addPatchGroups(lcw.getIdentifiers());
-                break;
-            case MOTOROLA_PATCH_GROUP_DELETE:
-                mPatchGroupManager.removePatchGroups(lcw.getIdentifiers());
-                break;
-            case MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_UPDATE:
-                mPatchGroupManager.addPatchGroups(lcw.getIdentifiers());
-                break;
-
-            //Other events
-            case CALL_ALERT:
-                MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icCallAlert.remove(IdentifierClass.USER);
-                icCallAlert.update(lcw.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(timestamp)
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.PAGE.toString())
-                    .details("Call Alert")
-                    .identifiers(icCallAlert)
-                    .build());
-                break;
-            case EXTENDED_FUNCTION_COMMAND:
-                if(lcw instanceof LCExtendedFunctionCommand)
-                {
-                    LCExtendedFunctionCommand efc = (LCExtendedFunctionCommand)lcw;
-
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.remove(IdentifierClass.USER);
-                    ic.update(lcw.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(timestamp)
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.COMMAND.toString())
-                        .details("Extended Function: " + efc.getExtendedFunction() +
-                            " Arguments:" + efc.getExtendedFunctionArguments())
-                        .identifiers(ic)
-                        .build());
-                }
-                break;
-            case GROUP_AFFILIATION_QUERY:
-                MutableIdentifierCollection icGroupAffiliation = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icGroupAffiliation.remove(IdentifierClass.USER);
-                icGroupAffiliation.update(lcw.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(timestamp)
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.QUERY.toString())
-                    .details("Group Affiliation")
-                    .identifiers(icGroupAffiliation)
-                    .build());
-                break;
-            case MESSAGE_UPDATE:
-                if(lcw instanceof LCMessageUpdate)
-                {
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.remove(IdentifierClass.USER);
-                    ic.update(lcw.getIdentifiers());
-
-                    LCMessageUpdate mu = (LCMessageUpdate)lcw;
-                    broadcast(P25DecodeEvent.builder(timestamp)
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.SDM.toString())
-                        .details("MSG:" + mu.getShortDataMessage())
-                        .identifiers(ic)
-                        .build());
-                }
-                break;
-            case STATUS_QUERY:
-                MutableIdentifierCollection icStatusQuery = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icStatusQuery.remove(IdentifierClass.USER);
-                icStatusQuery.update(lcw.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(timestamp)
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.QUERY.toString())
-                    .details("Status")
-                    .identifiers(icStatusQuery)
-                    .build());
-                break;
-            case STATUS_UPDATE:
-                if(lcw instanceof LCStatusUpdate)
-                {
-                    LCStatusUpdate su = (LCStatusUpdate)lcw;
-
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.remove(IdentifierClass.USER);
-                    ic.update(lcw.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(timestamp)
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.STATUS.toString())
-                        .details("UNIT:" + su.getUnitStatus() + " USER:" + su.getUserStatus())
-                        .identifiers(ic)
-                        .build());
-                }
-                break;
-            case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-                if(lcw instanceof LCTelephoneInterconnectAnswerRequest)
-                {
-                    LCTelephoneInterconnectAnswerRequest tiar = (LCTelephoneInterconnectAnswerRequest)lcw;
-
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.remove(IdentifierClass.USER);
-                    ic.update(lcw.getIdentifiers());
-
-                    broadcast(P25DecodeEvent.builder(timestamp)
-                        .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.PAGE.toString())
-                        .details("Telephone Call:" + tiar.getTelephoneNumber())
-                        .identifiers(ic)
-                        .build());
-                }
-                break;
-            case UNIT_AUTHENTICATION_COMMAND:
-                MutableIdentifierCollection icAuthenticationCommand = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icAuthenticationCommand.remove(IdentifierClass.USER);
-                icAuthenticationCommand.update(lcw.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(timestamp)
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.COMMAND.toString())
-                    .details("Authenticate Unit")
-                    .identifiers(icAuthenticationCommand)
-                    .build());
-                break;
-            case UNIT_REGISTRATION_COMMAND:
-                MutableIdentifierCollection icUnitRegistrationCommand = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icUnitRegistrationCommand.remove(IdentifierClass.USER);
-                icUnitRegistrationCommand.update(lcw.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(timestamp)
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.COMMAND.toString())
-                    .details("Unit Registration")
-                    .identifiers(icUnitRegistrationCommand)
-                    .build());
-                break;
-            case UNIT_TO_UNIT_ANSWER_REQUEST:
-                MutableIdentifierCollection icUnitAnswerRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                icUnitAnswerRequest.remove(IdentifierClass.USER);
-                icUnitAnswerRequest.update(lcw.getIdentifiers());
-
-                broadcast(P25DecodeEvent.builder(timestamp)
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.PAGE.toString())
-                    .details("Unit-to-Unit Answer Request")
-                    .identifiers(icUnitAnswerRequest)
-                    .build());
-                break;
-            default:
-//                mLog.debug("Unrecognized LCW Opcode: " + lcw.getOpcode().name() + " VENDOR:" + lcw.getVendor() +
-//                    " OPCODE:" + lcw.getOpcodeNumber());
-                break;
         }
     }
 

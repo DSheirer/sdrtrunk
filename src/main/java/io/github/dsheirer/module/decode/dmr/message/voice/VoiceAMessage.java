@@ -14,10 +14,10 @@ public class VoiceAMessage extends VoiceMessage{
      * do not use the 24-bit prefix.
      *
      * @param syncPattern
-     * @param message     containing 288-bit DMR message with preliminary bit corrections indicated.
+     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
      */
-    public VoiceAMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message) {
-        super(syncPattern, message);
+    public VoiceAMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot) {
+        super(syncPattern, message, timestamp, timeslot);
     }
 
     @Override

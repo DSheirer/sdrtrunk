@@ -6,7 +6,6 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.LCSS;
 
-import java.util.List;
 
 public class VoiceEMBMessage extends VoiceMessage{
     private static final int[] COLOR_CODE = new int[]{132,133,134,135}; //NO CACH
@@ -20,10 +19,10 @@ public class VoiceEMBMessage extends VoiceMessage{
      * do not use the 24-bit prefix.
      *
      * @param syncPattern
-     * @param message     containing 288-bit DMR message with preliminary bit corrections indicated.
+     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
      */
-    public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message) {
-        super(syncPattern, message);
+    public VoiceEMBMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, long timestamp, int timeslot) {
+        super(syncPattern, message, timestamp, timeslot);
         System.out.print("EMB Frame, CC = " + message.getInt(COLOR_CODE) + ", PI = "+message.getInt(PI) +"\n");
         LCSS lcss = LCSS.fromValue(message.getInt(LCSS_BI));
         // TODO: validation will be implemented
@@ -39,11 +38,6 @@ public class VoiceEMBMessage extends VoiceMessage{
     public boolean isValid() {
 
         return true;
-        /*
-        boolean isValid = Quadratic_16_7_6.quadres_16_7_check(mMessage.getInt(EMB_CODEWORD),mMessage.getInt(EMB_PARITY));
-        System.out.print("EMB Valid = " + (isValid));
-        return isValid;
-
-         */
+        // return Quadratic_16_7_6.quadres_16_7_check(mMessage.getInt(132, 139), mMessage.getInt(EMB_PARITY));
     }
 }

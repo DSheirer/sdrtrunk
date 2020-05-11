@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer, Zhenyu Mao
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -36,18 +36,22 @@ import io.github.dsheirer.sample.Listener;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DMR Audio Module for converting transmitted AMBE audio frames to 8 kHz PCM audio
+ */
 public class DMRAudioModule extends AmbeAudioModule
 {
-    private boolean mEncryptedCall = false;
-    private boolean mEncryptedCallStateEstablished = false;
 
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private VoiceMessage[] cachedMessage = new VoiceMessage[6];
     private List<byte[]> frames = new ArrayList<byte[]>();
-    public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList)
+    private int mTimeslot;
+
+    public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
         super(userPreferences, aliasList);
+        mTimeslot = timeslot;
     }
 
     @Override
@@ -56,6 +60,13 @@ public class DMRAudioModule extends AmbeAudioModule
         return mSquelchStateListener;
     }
 
+    /**
+     * Timeslot for this audio module
+     */
+    @Override
+    protected int getTimeslot() {
+        return mTimeslot;
+    }
     @Override
     public void reset()
     {
@@ -68,72 +79,28 @@ public class DMRAudioModule extends AmbeAudioModule
 
     }
 
-    @Override
-    protected int getTimeslot() {
-        return 0;
-    }
-
 
     /**
-     * Processes call header (HDU) and voice frame (LDU1/LDU2) messages to decode audio and to determine the
-     * encrypted audio status of a call event. Only the HDU and LDU2 messages convey encrypted call status. If an
-     * LDU1 message is received without a preceding HDU message, then the LDU1 message is cached until the first
-     * LDU2 message is received and the encryption state can be determined. Both the LDU1 and the LDU2 message are
-     * then processed for audio if the call is unencrypted.
+     * Processes DMR AMBE audio frame
      */
     public void receive(IMessage message)
     {
-        if(hasAudioCodec())
+        if(hasAudioCodec() && message.getTimeslot() == getTimeslot()) //
         {
-            if(mEncryptedCallStateEstablished)
-            {
+            if(message instanceof VoiceAMessage) {
+                cachedMessage[0] = (VoiceMessage) message;
+            } else if(message instanceof VoiceEMBMessage) {
+                VoiceEMBMessage vm = (VoiceEMBMessage)message;
+                cachedMessage[(int)-vm.getSyncPattern().getPattern()-1] = vm;
 
-            }
-            else
-            {
-                if(message instanceof VoiceAMessage) {
-                    cachedMessage[0] = (VoiceMessage) message;
-                } else if(message instanceof VoiceEMBMessage) {
-                    VoiceEMBMessage vm = (VoiceEMBMessage)message;
-                    cachedMessage[(int)-vm.getSyncPattern().getPattern()-1] = vm;
-
-                    if(vm.getSyncPattern() == DMRSyncPattern.VOICE_FRAME_F) {
-                        frames.clear();
-                        for(int i = 0; i < 6; i++) {
-                            cachedMessage[i].getAMBEFrames(frames);
-                        }
-                        processAudio();
-                        frames.clear();
+                if(vm.getSyncPattern() == DMRSyncPattern.VOICE_FRAME_F) {
+                    frames.clear();
+                    for(int i = 0; i < 6; i++) {
+                        cachedMessage[i].getAMBEFrames(frames);
                     }
+                    processAudio();
+                    frames.clear();
                 }
-/*
-                if(message instanceof HDUMessage)
-                {
-                    mEncryptedCallStateEstablished = true;
-                    mEncryptedCall = ((HDUMessage)message).getHeaderData().isEncryptedAudio();
-                }
-                else if(message instanceof LDU1Message)
-                {
-                    //When we receive an LDU1 message without first receiving the HDU message, cache the LDU1 Message
-                    //until we can determine the encrypted call state from the next LDU2 message
-                    mCachedLDU1Message = (LDU1Message)message;
-                }
-                else if(message instanceof LDU2Message)
-                {
-                    mEncryptedCallStateEstablished = true;
-                    LDU2Message ldu2 = (LDU2Message)message;
-                    mEncryptedCall = ldu2.getEncryptionSyncParameters().isEncryptedAudio();
-
-                    if(mCachedLDU1Message != null)
-                    {
-                        processAudio(mCachedLDU1Message);
-                        mCachedLDU1Message = null;
-                    }
-
-                    processAudio(ldu2);
-                }
-
- */
             }
         }
     }
@@ -143,18 +110,11 @@ public class DMRAudioModule extends AmbeAudioModule
      */
     private void processAudio()
     {
-        if(!mEncryptedCall)
+        for(byte[] frame : frames)
         {
-            for(byte[] frame : frames)
-            {
-                float[] audio = getAudioCodec().getAudio(frame);
-                audio = mGain.apply(audio);
-                addAudio(audio);
-            }
-        }
-        else
-        {
-            //Encrypted audio processing not implemented
+            float[] audio = getAudioCodec().getAudio(frame);
+            audio = mGain.apply(audio);
+            addAudio(audio);
         }
     }
 
@@ -171,8 +131,6 @@ public class DMRAudioModule extends AmbeAudioModule
             if(event.getSquelchState() == SquelchState.SQUELCH)
             {
                 closeAudioSegment();
-                mEncryptedCallStateEstablished = false;
-                mEncryptedCall = false;
             }
         }
     }
