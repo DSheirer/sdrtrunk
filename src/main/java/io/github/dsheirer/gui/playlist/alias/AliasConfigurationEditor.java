@@ -27,12 +27,14 @@ import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.control.MaxLengthUnaryOperator;
+import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
@@ -85,6 +87,8 @@ public class AliasConfigurationEditor extends SplitPane
     private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
     private AliasItemEditor mAliasItemEditor;
+    private AliasBulkEditor mAliasBulkEditor;
+    private Editor mCurrentEditor;
     private TableView<Alias> mAliasTableView;
     private Label mPlaceholderLabel;
     private Button mNewAliasButton;
@@ -114,6 +118,7 @@ public class AliasConfigurationEditor extends SplitPane
         topBox.getChildren().addAll(leftBox, getButtonBox());
 
         setOrientation(Orientation.VERTICAL);
+        mCurrentEditor = getAliasItemEditor();
         getItems().addAll(topBox, getAliasItemEditor());
     }
 
@@ -141,7 +146,20 @@ public class AliasConfigurationEditor extends SplitPane
         }
     }
 
-    private void setAlias(Alias alias)
+    /**
+     * Sets the editor as the bottom alias editor, either single alias or bulk alias editor.
+     */
+    private void setEditor(Editor editor)
+    {
+        if(editor != mCurrentEditor)
+        {
+            getItems().remove(mCurrentEditor);
+            mCurrentEditor = editor;
+            getItems().add(mCurrentEditor);
+        }
+    }
+
+    private void setAliases(List<Alias> aliases)
     {
         //Prompt the user to save if the contents of the current channel editor have been modified
         if(getAliasItemEditor().modifiedProperty().get())
@@ -168,18 +186,27 @@ public class AliasConfigurationEditor extends SplitPane
             }
         }
 
-        getCloneAliasButton().setDisable(alias == null || getAliasTableView().getSelectionModel().getSelectedItems().size() > 1);
-        getDeleteAliasButton().setDisable(alias == null);
-        getMoveToAliasButton().setDisable(alias == null);
-
-        if(getAliasTableView().getSelectionModel().getSelectedItems().size() <= 1)
+        if(aliases.size() <= 1)
         {
-            getAliasItemEditor().setItem(alias);
+            setEditor(getAliasItemEditor());
+            if(aliases.size() == 1)
+            {
+                getAliasItemEditor().setItem(aliases.get(0));
+            }
+            else
+            {
+                getAliasItemEditor().setItem(null);
+            }
         }
         else
         {
-            getAliasItemEditor().setItem(null);
+            setEditor(getAliasBulkEditor());
+            getAliasBulkEditor().setItem(aliases);
         }
+
+        getCloneAliasButton().setDisable(aliases.isEmpty() || aliases.size() > 1);
+        getDeleteAliasButton().setDisable(aliases.isEmpty());
+        getMoveToAliasButton().setDisable(aliases.isEmpty());
     }
 
     private AliasItemEditor getAliasItemEditor()
@@ -190,6 +217,16 @@ public class AliasConfigurationEditor extends SplitPane
         }
 
         return mAliasItemEditor;
+    }
+
+    private AliasBulkEditor getAliasBulkEditor()
+    {
+        if(mAliasBulkEditor == null)
+        {
+            mAliasBulkEditor = new AliasBulkEditor(mPlaylistManager);
+        }
+
+        return mAliasBulkEditor;
     }
 
     private HBox getSearchAndListSelectionBox()
@@ -384,10 +421,9 @@ public class AliasConfigurationEditor extends SplitPane
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
             mAliasTableView.setItems(getAliasSortedList());
             mAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            mAliasTableView.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> {
-                    setAlias(newValue);
-                });
+            mAliasTableView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<Alias>)c -> {
+                setAliases(mAliasTableView.getSelectionModel().getSelectedItems());
+            });
         }
 
         return mAliasTableView;
