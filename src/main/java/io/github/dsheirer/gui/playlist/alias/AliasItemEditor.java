@@ -335,12 +335,12 @@ public class AliasItemEditor extends Editor<Alias>
                 alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
 
-                boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
-                Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
 
                 Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
                 alias.setIconName(icon != null ? icon.getName() : null);
 
+                boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
+                Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
                 if(canMonitor)
                 {
                     if(priority == null)
