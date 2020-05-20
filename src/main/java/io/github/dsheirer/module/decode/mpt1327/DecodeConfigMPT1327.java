@@ -25,9 +25,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.config.WithCallTimeout;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
-public class DecodeConfigMPT1327 extends DecodeConfiguration
+public class DecodeConfigMPT1327 extends DecodeConfiguration implements WithCallTimeout
 {
     private String mChannelMapName;
     private Sync mSync = Sync.NORMAL;
@@ -74,7 +75,7 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration
     }
 
     /**
-     * Sets the call timeout value in seconds ( 10 - 600 );
+     * Sets the call timeout value in seconds ( 1 - 180 );
      *
      * @param timeout
      */
