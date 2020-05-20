@@ -332,13 +332,14 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                             if(entry.getValue() == channel)
                             {
                                 toRemove = entry.getKey();
-                                continue;
+                                break;
                             }
                         }
 
                         if(toRemove != null)
                         {
                             mAllocatedTrafficChannelMap.remove(toRemove);
+                            mChannelGrantEventMap.remove(toRemove);
                             mAvailableTrafficChannelQueue.add(channel);
 
                             MPT1327ChannelGrantEvent event = mChannelGrantEventMap.get(toRemove);
@@ -358,13 +359,14 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                             if(entry.getValue() == channel)
                             {
                                 rejected = entry.getKey();
-                                continue;
+                                break;
                             }
                         }
 
                         if(rejected != null)
                         {
                             mAllocatedTrafficChannelMap.remove(rejected);
+                            mChannelGrantEventMap.remove(rejected);
                             mAvailableTrafficChannelQueue.add(channel);
 
                             MPT1327ChannelGrantEvent event = mChannelGrantEventMap.get(rejected);
