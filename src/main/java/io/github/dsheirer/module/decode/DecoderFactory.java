@@ -226,14 +226,18 @@ public class DecoderFactory
         ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
         Sync sync = mptConfig.getSync();
         modules.add(new MPT1327Decoder(sync));
-        modules.add(new AudioModule(aliasList));
+
+        final int timeout = mptConfig.getCallTimeout() * 1000;
+        // Set max segment audio sample length slightly above call timeout to
+        // not create a new segment if the processing chain finishes a bit after
+        // actual call timeout.
+        modules.add(new AudioModule(aliasList, timeout + 5000));
+
         SourceType sourceType = channel.getSourceConfiguration().getSourceType();
         if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
         {
             modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
         }
-
-        long timeout = mptConfig.getCallTimeout() * 1000;
 
         if(channelType == ChannelType.STANDARD)
         {

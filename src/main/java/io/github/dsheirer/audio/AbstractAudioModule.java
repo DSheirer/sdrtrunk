@@ -36,8 +36,9 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractAudioModule extends Module implements IAudioSegmentProvider, IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractAudioModule.class);
-    private static final int MAX_SEGMENT_AUDIO_SAMPLE_LENGTH = 8000 * 60 * 1; //8 kHz - 1 minute
+    private static final int DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH = 60 * 8000; // 1 minute @ 8kHz
 
+    private final int mMaxSegmentAudioSampleLength;
     private Listener<AudioSegment> mAudioSegmentListener;
     protected MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
@@ -49,10 +50,19 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
     /**
      * Constructs an abstract audio module
      */
-    public AbstractAudioModule(AliasList aliasList)
+    public AbstractAudioModule(AliasList aliasList, int maxSegmentAudioSampleLength)
     {
         mAliasList = aliasList;
+        mMaxSegmentAudioSampleLength = maxSegmentAudioSampleLength;
         mIdentifierUpdateNotificationBroadcaster.addListener(mIdentifierCollection);
+    }
+
+    /**
+     * Constructs an abstract audio module
+     */
+    public AbstractAudioModule(AliasList aliasList)
+    {
+        this(aliasList, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
     }
 
     protected abstract int getTimeslot();
@@ -117,7 +127,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
         //If the current segment exceeds the max samples length, close it so that a new segment gets generated
         //and then link the segments together
-        if(mAudioSampleCount >= MAX_SEGMENT_AUDIO_SAMPLE_LENGTH)
+        if(mAudioSampleCount >= mMaxSegmentAudioSampleLength)
         {
             AudioSegment previous = getAudioSegment();
             closeAudioSegment();

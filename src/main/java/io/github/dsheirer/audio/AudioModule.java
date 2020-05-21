@@ -80,6 +80,14 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     /**
      * Creates an Audio Module.
      */
+    public AudioModule(AliasList aliasList, int maxSegmentAudioSampleLength)
+    {
+        super(aliasList, maxSegmentAudioSampleLength);
+    }
+
+    /**
+     * Creates an Audio Module.
+     */
     public AudioModule(AliasList aliasList)
     {
         super(aliasList);

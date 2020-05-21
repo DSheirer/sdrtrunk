@@ -60,6 +60,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.github.dsheirer.module.decode.config.DecodeConfiguration.CALL_TIMEOUT_MAXIMUM;
+import static io.github.dsheirer.module.decode.config.DecodeConfiguration.CALL_TIMEOUT_MINIMUM;
+
 /**
  * MPT-1327 channel configuration editor
  */
@@ -301,11 +304,11 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mCallTimeoutSpinner == null)
         {
-            mCallTimeoutSpinner = new Spinner();
+            mCallTimeoutSpinner = new Spinner<>();
             mCallTimeoutSpinner.setDisable(true);
             mCallTimeoutSpinner.setTooltip(new Tooltip("Maximum call limit in seconds"));
             mCallTimeoutSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
-            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 120);
+            var svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(CALL_TIMEOUT_MINIMUM, CALL_TIMEOUT_MAXIMUM);
             mCallTimeoutSpinner.setValueFactory(svf);
             mCallTimeoutSpinner.getValueFactory().valueProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
