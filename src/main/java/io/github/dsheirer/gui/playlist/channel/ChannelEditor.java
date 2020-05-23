@@ -27,6 +27,7 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import javafx.application.Platform;
@@ -79,6 +80,7 @@ public class ChannelEditor extends SplitPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelEditor.class);
     private PlaylistManager mPlaylistManager;
+    private UserPreferences mUserPreferences;
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
     private MenuButton mNewButton;
@@ -101,10 +103,11 @@ public class ChannelEditor extends SplitPane
      * Constructs an instance
      * @param playlistManager containing playlists and channel configurations
      */
-    public ChannelEditor(PlaylistManager playlistManager)
+    public ChannelEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
-        mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager);
+        mUserPreferences = userPreferences;
+        mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager, userPreferences);
 
         HBox channelsBox = new HBox();
         channelsBox.setSpacing(10.0);
@@ -200,7 +203,8 @@ public class ChannelEditor extends SplitPane
 
                     if(editor == null)
                     {
-                        editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager);
+                        editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager,
+                            mUserPreferences);
 
                         if(editor != null)
                         {

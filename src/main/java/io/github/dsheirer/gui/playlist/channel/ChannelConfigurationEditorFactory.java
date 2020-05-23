@@ -24,6 +24,7 @@ package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.preference.UserPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,26 +45,27 @@ public class ChannelConfigurationEditorFactory
      * @param playlistManager for the editor
      * @return constructed editor
      */
-    public static ChannelConfigurationEditor getEditor(DecoderType decoderType, PlaylistManager playlistManager)
+    public static ChannelConfigurationEditor getEditor(DecoderType decoderType, PlaylistManager playlistManager,
+                                                       UserPreferences userPreferences)
     {
         switch(decoderType)
         {
             case AM:
-                return new AMConfigurationEditor(playlistManager);
+                return new AMConfigurationEditor(playlistManager, userPreferences);
             case NBFM:
-                return new NBFMConfigurationEditor(playlistManager);
+                return new NBFMConfigurationEditor(playlistManager, userPreferences);
             case LTR_NET:
-                return new LTRNetConfigurationEditor(playlistManager);
+                return new LTRNetConfigurationEditor(playlistManager, userPreferences);
             case LTR:
-                return new LTRConfigurationEditor(playlistManager);
+                return new LTRConfigurationEditor(playlistManager, userPreferences);
             case MPT1327:
-                return new MPT1327ConfigurationEditor(playlistManager);
+                return new MPT1327ConfigurationEditor(playlistManager, userPreferences);
             case PASSPORT:
-                return new PassportConfigurationEditor(playlistManager);
+                return new PassportConfigurationEditor(playlistManager, userPreferences);
             case P25_PHASE1:
-                return new P25P1ConfigurationEditor(playlistManager);
+                return new P25P1ConfigurationEditor(playlistManager, userPreferences);
             case P25_PHASE2:
-                return new P25P2ConfigurationEditor(playlistManager);
+                return new P25P2ConfigurationEditor(playlistManager, userPreferences);
             default:
                 if(decoderType != null && !mLoggedUnrecognizedTypes.contains(decoderType))
                 {

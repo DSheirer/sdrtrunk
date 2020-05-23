@@ -243,7 +243,7 @@ public class PlaylistEditor extends BorderPane
     {
         if(mChannelEditor == null)
         {
-            mChannelEditor = new ChannelEditor(mPlaylistManager);
+            mChannelEditor = new ChannelEditor(mPlaylistManager, mUserPreferences);
         }
 
         return mChannelEditor;

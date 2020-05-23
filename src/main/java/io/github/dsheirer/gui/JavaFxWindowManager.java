@@ -38,6 +38,8 @@ import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.icon.IconModel;
+import io.github.dsheirer.jmbe.JmbeEditor;
+import io.github.dsheirer.jmbe.JmbeEditorRequest;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
@@ -68,12 +70,14 @@ public class JavaFxWindowManager extends Application
     public static final String USER_PREFERENCES_EDITOR = "preferences";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
     public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
+    public static final String STAGE_MONITOR_KEY_JMBE_EDITOR = "jmbe.editor";
     public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
     public static final String STAGE_MONITOR_KEY_USER_PREFERENCES_EDITOR = "user.preferences";
 
     private JFXPanel mJFXPanel;
     private ChannelMapEditor mChannelMapEditor;
     private IconManager mIconManager;
+    private JmbeEditor mJmbeEditor;
     private PlaylistEditor mPlaylistEditor;
     private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
@@ -81,6 +85,7 @@ public class JavaFxWindowManager extends Application
 
     private Stage mChannelMapStage;
     private Stage mIconManagerStage;
+    private Stage mJmbeEditorStage;
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
 
@@ -203,6 +208,56 @@ public class JavaFxWindowManager extends Application
         }
 
         return mIconManager;
+    }
+
+    /**
+     * Processes a JMBE s editor request
+     */
+    @Subscribe
+    public void process(final JmbeEditorRequest request)
+    {
+        if(request.isCloseEditorRequest())
+        {
+            execute(() -> {
+                getJmbeEditorStage().hide();
+                mJmbeEditorStage = null;
+                mJmbeEditor = null;
+            });
+        }
+        else
+        {
+            execute(() -> {
+                getJmbeEditorStage().show();
+                getJmbeEditorStage().requestFocus();
+                getJmbeEditorStage().toFront();
+                getJmbeEditor().process(request);
+            });
+        }
+    }
+
+    public Stage getJmbeEditorStage()
+    {
+        if(mJmbeEditorStage == null)
+        {
+            createJFXPanel();
+            Scene scene = new Scene(getJmbeEditor(), 650, 650);
+            mJmbeEditorStage = new Stage();
+            mJmbeEditorStage.setTitle("sdrtrunk - JMBE Library Updater");
+            mJmbeEditorStage.setScene(scene);
+            mUserPreferences.getJavaFxPreferences().monitor(mJmbeEditorStage, STAGE_MONITOR_KEY_JMBE_EDITOR);
+        }
+
+        return mJmbeEditorStage;
+    }
+
+    public JmbeEditor getJmbeEditor()
+    {
+        if(mJmbeEditor == null)
+        {
+            mJmbeEditor = new JmbeEditor(mUserPreferences);
+        }
+
+        return mJmbeEditor;
     }
 
     /**
