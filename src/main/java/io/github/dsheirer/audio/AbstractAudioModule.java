@@ -49,11 +49,14 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
     /**
      * Constructs an abstract audio module
+     *
+     * @param aliasList for aliasing identifiers
+     * @param maxSegmentAudioSampleLength in milliseconds
      */
-    public AbstractAudioModule(AliasList aliasList, int maxSegmentAudioSampleLength)
+    public AbstractAudioModule(AliasList aliasList, long maxSegmentAudioSampleLength)
     {
         mAliasList = aliasList;
-        mMaxSegmentAudioSampleLength = maxSegmentAudioSampleLength;
+        mMaxSegmentAudioSampleLength = (int)(maxSegmentAudioSampleLength * 8); //Convert milliseconds to samples
         mIdentifierUpdateNotificationBroadcaster.addListener(mIdentifierCollection);
     }
 

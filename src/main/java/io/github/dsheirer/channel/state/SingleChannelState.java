@@ -109,19 +109,19 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         mStateMachine.addListener(mSquelchController);
         mStateMachine.setChannelType(mChannel.getChannelType());
         mStateMachine.setIdentifierUpdateListener(mIdentifierCollection);
-        mStateMachine.setEndTimeoutBuffer(RESET_TIMEOUT_DELAY);
+        mStateMachine.setEndTimeoutBufferMilliseconds(RESET_TIMEOUT_DELAY);
         if(channel.getChannelType() == ChannelType.STANDARD)
         {
-            mStateMachine.setFadeTimeoutBuffer(FADE_TIMEOUT_DELAY);
+            mStateMachine.setFadeTimeoutBufferMilliseconds(FADE_TIMEOUT_DELAY);
         }
         else
         {
             final DecodeConfiguration decodeConfig = channel.getDecodeConfiguration();
             final int fadeTimeoutSeconds = decodeConfig instanceof WithCallTimeout
-                ? ((WithCallTimeout) decodeConfig).getCallTimeout()
+                ? ((WithCallTimeout) decodeConfig).getCallTimeoutSeconds()
                 : DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
 
-            mStateMachine.setFadeTimeoutBuffer(fadeTimeoutSeconds * 1000);
+            mStateMachine.setFadeTimeoutBufferMilliseconds(fadeTimeoutSeconds * 1000);
         }
     }
 
@@ -412,7 +412,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
-                            mStateMachine.setFadeTimeoutBuffer(timeout.getCallTimeout());
+                            mStateMachine.setFadeTimeoutBufferMilliseconds(timeout.getCallTimeoutMilliseconds());
                         }
                     case CONTINUATION:
                     case DECODE:

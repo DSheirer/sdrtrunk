@@ -79,10 +79,13 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
 
     /**
      * Creates an Audio Module.
+     *
+     * @param aliasList for aliasing identifiers
+     * @param maxAudioSegmentLength in milliseconds
      */
-    public AudioModule(AliasList aliasList, int maxSegmentAudioSampleLength)
+    public AudioModule(AliasList aliasList, long maxAudioSegmentLength)
     {
-        super(aliasList, maxSegmentAudioSampleLength);
+        super(aliasList, maxAudioSegmentLength);
     }
 
     /**
@@ -124,17 +127,17 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(ReusableFloatBuffer audioBuffer)
     {
         if(mSquelchState == SquelchState.UNSQUELCH)
         {
-            ReusableFloatBuffer buffer = mHighPassFilter.filter(reusableFloatBuffer);
-            addAudio(buffer.getSamples());
-            buffer.decrementUserCount();
+            ReusableFloatBuffer highPassFilteredAudio = mHighPassFilter.filter(audioBuffer);
+            addAudio(highPassFilteredAudio.getSamplesCopy());
+            highPassFilteredAudio.decrementUserCount();
         }
         else
         {
-            reusableFloatBuffer.decrementUserCount();
+            audioBuffer.decrementUserCount();
         }
     }
 

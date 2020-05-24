@@ -30,5 +30,5 @@ public interface WithCallTimeout
     /**
      * @return call timeout in seconds
      */
-    int getCallTimeout();
+    int getCallTimeoutSeconds();
 }

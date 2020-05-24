@@ -115,14 +115,14 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
             stateMachine.setChannelType(mChannel.getChannelType());
             stateMachine.setIdentifierUpdateListener(mutableIdentifierCollection);
-            stateMachine.setEndTimeoutBuffer(RESET_TIMEOUT_DELAY);
+            stateMachine.setEndTimeoutBufferMilliseconds(RESET_TIMEOUT_DELAY);
             if(channel.getChannelType() == ChannelType.STANDARD)
             {
-                stateMachine.setFadeTimeoutBuffer(FADE_TIMEOUT_DELAY);
+                stateMachine.setFadeTimeoutBufferMilliseconds(FADE_TIMEOUT_DELAY);
             }
             else
             {
-                stateMachine.setFadeTimeoutBuffer(DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS * 1000);
+                stateMachine.setFadeTimeoutBufferMilliseconds(DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS * 1000);
             }
         }
 
@@ -529,7 +529,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
-                            mStateMachineMap.get(event.getTimeslot()).setFadeTimeoutBuffer(timeout.getCallTimeout());
+                            mStateMachineMap.get(event.getTimeslot()).setFadeTimeoutBufferMilliseconds(timeout.getCallTimeoutMilliseconds());
                         }
                         break;
                     case CONTINUATION:

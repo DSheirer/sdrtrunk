@@ -227,11 +227,13 @@ public class DecoderFactory
         Sync sync = mptConfig.getSync();
         modules.add(new MPT1327Decoder(sync));
 
-        final int timeout = mptConfig.getCallTimeout() * 1000;
+        final int callTimeoutMilliseconds = mptConfig.getCallTimeoutSeconds() * 1000;
+
         // Set max segment audio sample length slightly above call timeout to
         // not create a new segment if the processing chain finishes a bit after
         // actual call timeout.
-        modules.add(new AudioModule(aliasList, timeout + 5000));
+        int maxAudioSegmentLengthMillis = (callTimeoutMilliseconds + 5000);
+        modules.add(new AudioModule(aliasList, maxAudioSegmentLengthMillis));
 
         SourceType sourceType = channel.getSourceConfiguration().getSourceType();
         if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
@@ -243,11 +245,11 @@ public class DecoderFactory
         {
             MPT1327TrafficChannelManager trafficChannelManager = new MPT1327TrafficChannelManager(channel, channelMap);
             modules.add(trafficChannelManager);
-            modules.add(new MPT1327DecoderState(trafficChannelManager, channelType, timeout));
+            modules.add(new MPT1327DecoderState(trafficChannelManager, channelType, callTimeoutMilliseconds));
         }
         else
         {
-            modules.add(new MPT1327DecoderState(channelType, timeout));
+            modules.add(new MPT1327DecoderState(channelType, callTimeoutMilliseconds));
         }
 
         //Add a channel rotation monitor when we have multiple control channel frequencies specified
@@ -483,7 +485,7 @@ public class DecoderFactory
                 case MPT1327:
                     DecodeConfigMPT1327 originalMPT = (DecodeConfigMPT1327)config;
                     DecodeConfigMPT1327 copyMPT = new DecodeConfigMPT1327();
-                    copyMPT.setCallTimeout(originalMPT.getCallTimeout());
+                    copyMPT.setCallTimeoutSeconds(originalMPT.getCallTimeoutSeconds());
                     copyMPT.setChannelMapName(originalMPT.getChannelMapName());
                     copyMPT.setSync(originalMPT.getSync());
                     copyMPT.setTrafficChannelPoolSize(originalMPT.getTrafficChannelPoolSize());
