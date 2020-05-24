@@ -32,6 +32,7 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
@@ -113,10 +114,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
         mAliasModel.aliasList().addListener((ListChangeListener<Alias>)c -> schedulePlaylistSave());
 
-        mChannelMapModel.addListener(t -> {
-            //Save the playlist for all channel map events
-            schedulePlaylistSave();
-        });
+        mChannelMapModel.getChannelMaps().addListener((ListChangeListener<ChannelMap>)c -> schedulePlaylistSave());
 
         mBroadcastModel.addListener(broadcastEvent -> {
             switch(broadcastEvent.getEvent())

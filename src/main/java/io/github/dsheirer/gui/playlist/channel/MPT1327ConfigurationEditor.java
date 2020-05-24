@@ -247,7 +247,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             mChannelMapComboBox.setMaxWidth(Double.MAX_VALUE);
             mChannelMapComboBox.setDisable(true);
             mChannelMapComboBox.setTooltip(new Tooltip("Select a channel map to use for this system"));
-            mChannelMapComboBox.getItems().addAll(getPlaylistManager().getChannelMapModel().getChannelMaps());
+            mChannelMapComboBox.setItems(getPlaylistManager().getChannelMapModel().getChannelMaps());
             mChannelMapComboBox.setDisable(true);
             mChannelMapComboBox.getSelectionModel().selectedItemProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
