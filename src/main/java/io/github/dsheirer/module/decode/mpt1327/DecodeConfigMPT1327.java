@@ -33,7 +33,7 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration implements WithCall
     private String mChannelMapName;
     private Sync mSync = Sync.NORMAL;
 
-    private int mCallTimeout = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
+    private int mCallTimeoutSeconds = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
 
     public DecodeConfigMPT1327()
@@ -69,9 +69,9 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration implements WithCall
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "call_timeout")
-    public int getCallTimeout()
+    public int getCallTimeoutSeconds()
     {
-        return mCallTimeout;
+        return mCallTimeoutSeconds;
     }
 
     /**
@@ -79,15 +79,15 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration implements WithCall
      *
      * @param timeout
      */
-    public void setCallTimeout(int timeout)
+    public void setCallTimeoutSeconds(int timeout)
     {
         if(CALL_TIMEOUT_MINIMUM <= timeout && timeout <= CALL_TIMEOUT_MAXIMUM)
         {
-            mCallTimeout = timeout;
+            mCallTimeoutSeconds = timeout;
         }
         else
         {
-            mCallTimeout = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
+            mCallTimeoutSeconds = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
         }
     }
 

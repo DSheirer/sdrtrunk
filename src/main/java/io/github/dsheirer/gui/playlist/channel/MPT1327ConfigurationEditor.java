@@ -343,7 +343,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
                 }
             }
 
-            int callTimeout = decodeConfigMPT1327.getCallTimeout();
+            int callTimeout = decodeConfigMPT1327.getCallTimeoutSeconds();
             getCallTimeoutSpinner().getValueFactory().setValue(callTimeout);
 
             int channelPoolSize = decodeConfigMPT1327.getTrafficChannelPoolSize();
@@ -370,7 +370,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             config = new DecodeConfigMPT1327();
         }
 
-        config.setCallTimeout(getCallTimeoutSpinner().getValue());
+        config.setCallTimeoutSeconds(getCallTimeoutSpinner().getValue());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
 
         ChannelMap selected = getChannelMapComboBox().getSelectionModel().getSelectedItem();

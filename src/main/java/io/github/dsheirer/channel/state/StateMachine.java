@@ -42,9 +42,9 @@ public class StateMachine
 
     protected State mState = State.IDLE;
     protected long mFadeTimeout;
-    protected long mFadeTimeoutBuffer = 0;
+    protected long mFadeTimeoutBufferMilliseconds = 0;
     protected long mEndTimeout;
-    protected long mEndTimeoutBuffer = 0;
+    protected long mEndTimeoutBufferMilliseconds = 0;
     private int mTimeslot;
     private EnumSet<State> mActiveStates;
     private Channel.ChannelType mChannelType = Channel.ChannelType.STANDARD;
@@ -63,26 +63,42 @@ public class StateMachine
         mActiveStates = activeStates;
     }
 
+    /**
+     * Adds a state change listener
+     * @param listener to receive state change events
+     */
     public void addListener(IStateMachineListener listener)
     {
         mStateMachineListeners.add(listener);
     }
 
+    /**
+     * Removes the state change listener
+     */
     public void removeListener(IStateMachineListener listener)
     {
         mStateMachineListeners.remove(listener);
     }
 
+    /**
+     * Sets the listener to receive identifier update notifications (ie state identifier updates)
+     */
     public void setIdentifierUpdateListener(Listener<IdentifierUpdateNotification> listener)
     {
         mIdentifierUpdateListener = listener;
     }
 
+    /**
+     * Sets the channel type for this state machine
+     */
     public void setChannelType(Channel.ChannelType channelType)
     {
         mChannelType = channelType;
     }
 
+    /**
+     * Checks the state and transitions to FADE or TEARDOWN if timers have expired
+     */
     public void checkState()
     {
         if(mActiveStates.contains(mState) && mFadeTimeout <= System.currentTimeMillis())
@@ -95,11 +111,17 @@ public class StateMachine
         }
     }
 
+    /**
+     * Current state of the state machine
+     */
     public State getState()
     {
         return mState;
     }
 
+    /**
+     * Sets the state
+     */
     public void setState(State state)
     {
         if(state == mState)
@@ -173,6 +195,9 @@ public class StateMachine
         }
     }
 
+    /**
+     * Broadcasts a channel state identifier update
+     */
     private void broadcast(ChannelStateIdentifier channelStateIdentifier)
     {
         if(mIdentifierUpdateListener != null)
@@ -182,43 +207,70 @@ public class StateMachine
         }
     }
 
+    /**
+     * Updates the fade timeout to current time plus the fade timeout buffer value.
+     */
     private void updateFadeTimeout()
     {
-        mFadeTimeout = System.currentTimeMillis() + mFadeTimeoutBuffer;
+        mFadeTimeout = System.currentTimeMillis() + mFadeTimeoutBufferMilliseconds;
     }
 
+    /**
+     * Manually sets the fade timeout
+     */
     public void setFadeTimeout(long timeout)
     {
         mFadeTimeout = timeout;
     }
 
+    /**
+     * Fade timeout value
+     */
     public long getFadeTimeout()
     {
         return mFadeTimeout;
     }
 
-    public void setFadeTimeoutBuffer(long buffer)
+    /**
+     * Sets the fade timeout buffer value.  This value determines the maximum length of time the state machine
+     * can stay in any state (without an update) before automatically transitioning to FADE state.
+     * @param buffer in milliseconds
+     */
+    public void setFadeTimeoutBufferMilliseconds(long buffer)
     {
-        mFadeTimeoutBuffer = buffer;
+        mFadeTimeoutBufferMilliseconds = buffer;
         updateFadeTimeout();
     }
 
+    /**
+     * Updates the end timeout value to current system time plus the end timeout buffer value.
+     */
     private void updateEndTimeout()
     {
-        mEndTimeout = System.currentTimeMillis() + mEndTimeoutBuffer;
+        mEndTimeout = System.currentTimeMillis() + mEndTimeoutBufferMilliseconds;
     }
 
-    public void setEndTimeoutBuffer(long buffer)
+    /**
+     * Sets the end timeout buffer value.  This value is the maximum length of time that the channel can
+     * stay in the FADE state (without an update) before transitioning to a TEARDOWN state.
+     */
+    public void setEndTimeoutBufferMilliseconds(long buffer)
     {
-        mEndTimeoutBuffer = buffer;
+        mEndTimeoutBufferMilliseconds = buffer;
         updateEndTimeout();
     }
 
+    /**
+     * Sets the end timeout value
+     */
     public void setEndTimeout(long endTimeout)
     {
         mEndTimeout = endTimeout;
     }
 
+    /**
+     * Current end timeout value
+     */
     public long getEndTimeout()
     {
         return mEndTimeout;

@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -59,26 +58,30 @@ public class MPT1327DecoderState extends DecoderState
     private ChannelType mChannelType;
 
     private long mFrequency = 0;
-    private long mCallTimeout;
+    private long mCallTimeoutMilliseconds;
     private MPT1327TrafficChannelManager mMPT1327TrafficChannelManager;
 
     /**
      * Constructs an MPT-1327 decoder state with an optional traffic channel manager for allocating traffic channels
-     * when go to channel (GTC) messages are detected.
+     * when go to channel (GTC) messages are detected.  This constructor assumes that channel type is STANDARD.
+     *
+     * @param trafficChannelManager for managing MPT1327 Traffic Channels
+     * @param callTimeoutMilliseconds for when traffic channels should automatically be stopped.
      */
-    public MPT1327DecoderState(MPT1327TrafficChannelManager trafficChannelManager, ChannelType channelType, long callTimeout)
+    public MPT1327DecoderState(MPT1327TrafficChannelManager trafficChannelManager, ChannelType channelType,
+                               long callTimeoutMilliseconds)
     {
         mMPT1327TrafficChannelManager = trafficChannelManager;
         mChannelType = channelType;
-        mCallTimeout = callTimeout;
+        mCallTimeoutMilliseconds = callTimeoutMilliseconds;
     }
 
     /**
      * Constructs an MPT1327 decoder state that does not allocate traffic channels
      */
-    public MPT1327DecoderState(ChannelType channelType, long callTimeout)
+    public MPT1327DecoderState(ChannelType channelType, long callTimeoutMilliseconds)
     {
-        this(null, channelType, callTimeout);
+        this(null, channelType, callTimeoutMilliseconds);
     }
 
     @Override
@@ -250,7 +253,7 @@ public class MPT1327DecoderState extends DecoderState
                         {
                             //When we receive a MAINT message and we're configured as a standard channel, apply the call
                             // timeout specified by the user.  Otherwise we'll be using the shorter default call timeout
-                            broadcast(new ChangeChannelTimeoutEvent(this, mChannelType, mCallTimeout));
+                            broadcast(new ChangeChannelTimeoutEvent(this, mChannelType, mCallTimeoutMilliseconds));
 
                             MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                             ic.remove(IdentifierClass.USER);
