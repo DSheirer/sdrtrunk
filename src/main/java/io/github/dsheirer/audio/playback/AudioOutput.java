@@ -381,8 +381,9 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
             try
             {
-                //Remove an assigned audio segment that's subsequently flagged as do not monitor before playback
-                if(mNextAudioSegment.isDoNotMonitor())
+                //Remove an assigned segment that's subsequently flagged as duplicate or do not monitor before playback
+                if(mNextAudioSegment.isDoNotMonitor() || (mNextAudioSegment.isDuplicate() &&
+                    mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
                 {
                     mNextAudioSegment = null;
 
@@ -456,9 +457,11 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
         if(mCurrentAudioSegment != null)
         {
-            //Check for completed audio segment or a segment flagged as Do Not Monitor
-            if(mCurrentAudioSegment.isDoNotMonitor() || (mCurrentAudioSegment.completeProperty().get() &&
-               mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))
+            //Check for completed audio segment or a segment flagged as duplicate or Do Not Monitor
+            if(mCurrentAudioSegment.isDoNotMonitor() ||
+               (mCurrentAudioSegment.isDuplicate() &&
+                mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()) ||
+                (mCurrentAudioSegment.completeProperty().get() && mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))
             {
                 if(mCurrentAudioSegment.isDoNotMonitor())
                 {
@@ -490,7 +493,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             //segment is a linked segment, ignore it so that we can close out the current segment.
             while(mCurrentAudioSegment != null && (mNextAudioSegment == null || mNextAudioSegment.isLinked()) &&
                    mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount() &&
-                   !mCurrentAudioSegment.isDoNotMonitor())
+                   !mCurrentAudioSegment.isDoNotMonitor() && !(mCurrentAudioSegment.isDuplicate() &&
+                mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
             {
                 float[] audioBuffer = mCurrentAudioSegment.getAudioBuffers().get(mCurrentBufferIndex++);
 

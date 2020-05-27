@@ -21,6 +21,7 @@ package io.github.dsheirer.gui;
 import com.jidesoft.plaf.LookAndFeelFactory;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.audio.DuplicateCallDetector;
 import io.github.dsheirer.audio.broadcast.AudioStreamingManager;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
@@ -180,6 +181,9 @@ public class SDRTrunk implements Listener<TunerEvent>
             mUserPreferences);
         mAudioStreamingManager.start();
 
+        DuplicateCallDetector duplicateCallDetector = new DuplicateCallDetector(mUserPreferences);
+
+        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(duplicateCallDetector);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(audioPlaybackManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioRecordingManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);

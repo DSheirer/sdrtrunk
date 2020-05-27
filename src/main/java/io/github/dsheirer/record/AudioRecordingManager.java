@@ -139,21 +139,28 @@ public class AudioRecordingManager implements Listener<AudioSegment>
 
         while(audioSegment != null)
         {
-            Path path = getAudioRecordingPath(audioSegment.getIdentifierCollection(), recordFormat);
-
-            try
+            if(audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference().isDuplicateRecordingSuppressionEnabled())
             {
-                AudioSegmentRecorder.record(audioSegment, path, recordFormat);
+                audioSegment.decrementConsumerCount();
             }
-            catch(IOException ioe)
+            else
             {
-                mLog.error("Error recording audio segment to [" + path.toString() + "]");
+                Path path = getAudioRecordingPath(audioSegment.getIdentifierCollection(), recordFormat);
+
+                try
+                {
+                    AudioSegmentRecorder.record(audioSegment, path, recordFormat);
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error recording audio segment to [" + path.toString() + "]");
+                }
+
+                audioSegment.decrementConsumerCount();
+
+                //Grab the next one to record
+                audioSegment = mCompletedAudioSegmentQueue.poll();
             }
-
-            audioSegment.decrementConsumerCount();
-
-            //Grab the next one to record
-            audioSegment = mCompletedAudioSegmentQueue.poll();
         }
     }
 

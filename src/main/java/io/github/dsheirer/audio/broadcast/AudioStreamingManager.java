@@ -127,7 +127,12 @@ public class AudioStreamingManager implements Listener<AudioSegment>
         {
             audioSegment = it.next();
 
-            if(audioSegment.completeProperty().get())
+            if(audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference().isDuplicateStreamingSuppressionEnabled())
+            {
+                it.remove();
+                audioSegment.decrementConsumerCount();
+            }
+            else if(audioSegment.completeProperty().get())
             {
                 it.remove();
 

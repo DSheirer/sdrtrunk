@@ -49,6 +49,8 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
+import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -180,7 +182,23 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     }
                     catch(ChannelException ce)
                     {
-                        mLog.error("Error starting requested channel [" + channel.getName() + "] - " + ce.getMessage());
+                        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+                        {
+                            long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+                            mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequency +
+                                "] - " + ce.getMessage());
+                        }
+                        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
+                        {
+                            List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel
+                                .getSourceConfiguration()).getFrequencies();
+                            mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequencies +
+                                "] - " + ce.getMessage());
+                        }
+                        else
+                        {
+                            mLog.error("Error starting requested channel [" + channel.getName() + "] - " + ce.getMessage());
+                        }
                     }
                 }
                 break;
