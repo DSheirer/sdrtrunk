@@ -167,6 +167,7 @@ public class UserPreferencesEditor extends BorderPane
             TreeItem<String> treeRoot = new TreeItem<>("Root node");
 
             TreeItem<String> audioItem = new TreeItem<>("Audio");
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_DUPLICATE_CALL_DETECTION));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_OUTPUT));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_RECORD));
             treeRoot.getChildren().add(audioItem);

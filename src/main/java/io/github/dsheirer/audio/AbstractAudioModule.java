@@ -81,6 +81,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             {
                 mAudioSegment.completeProperty().set(true);
                 mIdentifierUpdateNotificationBroadcaster.removeListener(mAudioSegment);
+                mAudioSegment.decrementConsumerCount();
                 mAudioSegment = null;
             }
         }
@@ -103,6 +104,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             if(mAudioSegment == null)
             {
                 mAudioSegment = new AudioSegment(mAliasList, getTimeslot());
+                mAudioSegment.incrementConsumerCount();
                 mAudioSegment.addIdentifiers(mIdentifierCollection.getIdentifiers());
                 mIdentifierUpdateNotificationBroadcaster.addListener(mAudioSegment);
 

@@ -27,20 +27,15 @@ import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.mixer.MixerChannel;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
-import io.github.dsheirer.source.mixer.MixerManager;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Mixer;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -123,7 +118,12 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
         while(newSegment != null)
         {
-            if(newSegment.hasAudio())
+            if(newSegment.isDuplicate() &&
+               mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled())
+            {
+                newSegment.decrementConsumerCount();
+            }
+            else if(newSegment.hasAudio())
             {
                 mAudioSegments.add(newSegment);
             }
@@ -146,7 +146,13 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             {
                 audioSegment = it.next();
 
-                if(audioSegment.hasAudio())
+                if(audioSegment.isDuplicate() &&
+                   mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled())
+                {
+                    it.remove();
+                    audioSegment.decrementConsumerCount();
+                }
+                else if(audioSegment.hasAudio())
                 {
                     //Queue it up for replay
                     it.remove();
@@ -174,7 +180,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             {
                 audioSegment = it.next();
 
-                if(audioSegment.isDoNotMonitor())
+                if(audioSegment.isDoNotMonitor() || (audioSegment.isDuplicate() &&
+                   mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
                 {
                     it.remove();
                     audioSegment.decrementConsumerCount();
@@ -235,7 +242,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             {
                 audioSegment = it.next();
 
-                if(audioSegment.completeProperty().get())
+                if(audioSegment.completeProperty().get() || (audioSegment.isDuplicate() &&
+                   mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
                 {
                     it.remove();
                     audioSegment.decrementConsumerCount();

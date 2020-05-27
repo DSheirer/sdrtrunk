@@ -26,6 +26,7 @@ public enum PreferenceType
 {
     DECODE_EVENT,
     DIRECTORY,
+    DUPLICATE_CALL_DETECTION,
     JMBE_LIBRARY,
     MULTI_FREQUENCY,
     PLAYLIST,
