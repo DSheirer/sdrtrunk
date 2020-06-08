@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 
@@ -290,7 +291,14 @@ public class JmbeLibraryPreferenceEditor extends VBox
                 {
                     FileChooser fileChooser = new FileChooser();
                     fileChooser.setTitle("Select JMBE Audio Library Location");
-                    fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDefaultJmbeDirectory().toFile());
+
+                    Path path = mUserPreferences.getDirectoryPreference().getDefaultJmbeDirectory();
+
+                    if(Files.exists(path))
+                    {
+                        fileChooser.setInitialDirectory(path.toFile());
+                    }
+
                     Stage stage = (Stage)getSelectButton().getScene().getWindow();
                     File selected = fileChooser.showOpenDialog(stage);
 
