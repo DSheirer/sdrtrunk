@@ -162,7 +162,7 @@ public class USBTransferProcessor implements TransferCallback
         {
             if(mBufferDispatcherFuture != null)
             {
-                mBufferDispatcherFuture.cancel(true);
+                mBufferDispatcherFuture.cancel(false);
                 mBufferDispatcherFuture = null;
             }
 
@@ -174,7 +174,7 @@ public class USBTransferProcessor implements TransferCallback
 
             //Await completion of all in-progress transfers
             int waitCycleCount = 0;
-            while(!mInProgressTransfers.isEmpty() && waitCycleCount < 10)
+            while(!mInProgressTransfers.isEmpty() && waitCycleCount < 30)
             {
                 waitCycleCount++;
 
