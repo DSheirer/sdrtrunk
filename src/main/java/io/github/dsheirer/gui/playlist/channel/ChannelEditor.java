@@ -28,11 +28,10 @@ import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.config.SourceConfigTuner;
-import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
@@ -642,6 +641,7 @@ public class ChannelEditor extends SplitPane
         }
     }
 
+
     /**
      * Channel tuner channel source frequencies value factory
      */
@@ -653,26 +653,17 @@ public class ChannelEditor extends SplitPane
         @Override
         public ObservableValue<String> call(TableColumn.CellDataFeatures<Channel, String> param)
         {
-            Channel channel = param.getValue();
+            ObservableList<Long> frequencies = param.getValue().getFrequencyList();
 
-            if(channel != null)
+            if(frequencies != null)
             {
-                if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+                List<String> freqsMHz = new ArrayList<>();
+                for(Long frequency: frequencies)
                 {
-                    long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-                    mFrequency.set(String.valueOf(frequency / 1E6));
+                    freqsMHz.add(String.valueOf(frequency / 1E6));
                 }
-                else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
-                {
-                    List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies();
 
-                    List<String> formatted = new ArrayList<>();
-                    for(Long frequency: frequencies)
-                    {
-                        formatted.add(String.valueOf(frequency / 1E6));
-                    }
-                    mFrequency.set(Joiner.on(",").join(formatted));
-                }
+                mFrequency.set(Joiner.on(", ").join(freqsMHz));
             }
             else
             {
