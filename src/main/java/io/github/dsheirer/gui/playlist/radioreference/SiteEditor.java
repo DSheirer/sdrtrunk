@@ -946,7 +946,6 @@ public class SiteEditor extends GridPane
         {
             mSiteFrequencyTableView = new TableView<>();
             mSiteFrequencyTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            mSiteFrequencyTableView.setMaxHeight(Double.MAX_VALUE);
             mSiteFrequencyTableView.setPlaceholder(new Label("Please select a site to view frequencies"));
 
             mTypeColumn = new TableColumn("Type");

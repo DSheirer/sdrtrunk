@@ -211,7 +211,6 @@ public class SystemSiteSelectionEditor extends GridPane
         {
             mSiteTableView = new TableView<>();
             mSiteTableView.setPlaceholder(getPlaceholderLabel());
-            mSiteTableView.setPrefHeight(125);
 
             TableColumn numberColumn = new TableColumn();
             numberColumn.setText("Site");
