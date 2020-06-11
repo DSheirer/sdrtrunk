@@ -330,11 +330,8 @@ public class AliasItemEditor extends Editor<Alias>
 
             if(alias != null)
             {
-                alias.setName(getNameField().getText());
-                alias.setGroup(getGroupField().getText());
                 alias.setRecordable(getRecordAudioToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
-
 
                 Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
                 alias.setIconName(icon != null ? icon.getName() : null);
@@ -376,6 +373,27 @@ public class AliasItemEditor extends Editor<Alias>
                 for(AliasAction aliasAction: getActionsList().getItems())
                 {
                     alias.addAliasAction(aliasAction);
+                }
+
+                //Hack: because we're using a sorted list for the alias editor, sometimes setting
+                //name and or group can cause list errors.  So, we wrap each of these in a try/catch
+                //block to mitigate the error and effect the changes.
+                try
+                {
+                    alias.setName(getNameField().getText());
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error while updating alias name.", e);
+                }
+
+                try
+                {
+                    alias.setGroup(getGroupField().getText());
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error while updating alias group value", e);
                 }
             }
 
