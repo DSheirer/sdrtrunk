@@ -35,6 +35,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.Separator;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
@@ -53,6 +54,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     private Label mEditingLabel;
     private ColorPicker mColorPicker;
     private Button mApplyColorButton;
+    private Button mResetColorButton;
     private ComboBox<Icon> mIconNodeComboBox;
     private Button mApplyIconButton;
     private ToggleSwitch mMonitorAudioToggleSwitch;
@@ -74,8 +76,18 @@ public class AliasBulkEditor extends Editor<List<Alias>>
 
         int row = 0;
 
-        GridPane.setConstraints(getEditingLabel(), 1, row, 2, 1);
+        Label editorLabel = new Label("Multiple Alias Editor");
+        GridPane.setConstraints(editorLabel, 0, row, 3, 1);
+        gridPane.getChildren().add(editorLabel);
+
+        GridPane.setConstraints(getEditingLabel(), 3, row, 3, 1);
+        GridPane.setHalignment(getEditingLabel(), HPos.RIGHT);
         gridPane.getChildren().add(getEditingLabel());
+
+        Separator separator = new Separator();
+        separator.setMaxWidth(Double.MAX_VALUE);
+        GridPane.setConstraints(separator, 0, ++row, 6, 1);
+        gridPane.getChildren().add(separator);
 
         Label colorLabel = new Label("Color");
         GridPane.setHalignment(colorLabel, HPos.RIGHT);
@@ -87,6 +99,9 @@ public class AliasBulkEditor extends Editor<List<Alias>>
 
         GridPane.setConstraints(getApplyColorButton(), 4, row);
         gridPane.getChildren().add(getApplyColorButton());
+
+        GridPane.setConstraints(getResetColorButton(), 5, row);
+        gridPane.getChildren().add(getResetColorButton());
 
         Label iconLabel = new Label("Icon");
         GridPane.setHalignment(iconLabel, HPos.RIGHT);
@@ -184,6 +199,22 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         }
 
         return mApplyColorButton;
+    }
+
+    private Button getResetColorButton()
+    {
+        if(mResetColorButton == null)
+        {
+            mResetColorButton = new Button("Reset Color");
+            mResetColorButton.setOnAction(event -> {
+                for(Alias alias: getItem())
+                {
+                    alias.setColor(0);
+                }
+            });
+        }
+
+        return mResetColorButton;
     }
 
     private ComboBox<Icon> getIconNodeComboBox()
