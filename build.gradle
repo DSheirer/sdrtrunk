@@ -84,18 +84,18 @@ dependencies {
     implementation 'pl.edu.icm:JLargeArrays:1.6'
 
     //These must remain as compile options to ensure they are included in the build to produce multi-OS images
-    compile "org.openjfx:javafx-base:13:win"
-    compile "org.openjfx:javafx-base:13:linux"
-    compile "org.openjfx:javafx-base:13:mac"
-    compile "org.openjfx:javafx-controls:13.0.1:win"
-    compile "org.openjfx:javafx-controls:13.0.1:linux"
-    compile "org.openjfx:javafx-controls:13.0.1:mac"
-    compile "org.openjfx:javafx-graphics:13.0.1:win"
-    compile "org.openjfx:javafx-graphics:13.0.1:linux"
-    compile "org.openjfx:javafx-graphics:13.0.1:mac"
-    compile "org.openjfx:javafx-swing:13.0.1:win"
-    compile "org.openjfx:javafx-swing:13.0.1:linux"
-    compile "org.openjfx:javafx-swing:13.0.1:mac"
+    compile "org.openjfx:javafx-base:13.0.2:win"
+    compile "org.openjfx:javafx-base:13.0.2:linux"
+    compile "org.openjfx:javafx-base:13.0.2:mac"
+    compile "org.openjfx:javafx-controls:13.0.2:win"
+    compile "org.openjfx:javafx-controls:13.0.2:linux"
+    compile "org.openjfx:javafx-controls:13.0.2:mac"
+    compile "org.openjfx:javafx-graphics:13.0.2:win"
+    compile "org.openjfx:javafx-graphics:13.0.2:linux"
+    compile "org.openjfx:javafx-graphics:13.0.2:mac"
+    compile "org.openjfx:javafx-swing:13.0.2:win"
+    compile "org.openjfx:javafx-swing:13.0.2:linux"
+    compile "org.openjfx:javafx-swing:13.0.2:mac"
 }
 
 application {
