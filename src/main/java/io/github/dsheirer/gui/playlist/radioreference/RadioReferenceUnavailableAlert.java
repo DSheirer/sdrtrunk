@@ -30,10 +30,13 @@ public class RadioReferenceUnavailableAlert extends Alert
 {
     public RadioReferenceUnavailableAlert(Node ownerNode)
     {
-        super(AlertType.INFORMATION, "Check network connection or see details in sdrtrunk log.", ButtonType.OK);
+        super(AlertType.INFORMATION, "This may be caused by a network outage or there was an error " +
+            "accessing the service.  If this problem occurs each time you attempt to access a " +
+            "specific system or agency, please notify the developer.  Details for this issue " +
+            "are located in the sdrtrunk application log.", ButtonType.OK);
 
         setTitle("Service Unavailable");
-        setHeaderText("Radio Reference Is Currently Unavailable");
+        setHeaderText("Radio Reference Error or Service Is Currently Unavailable");
         initOwner(ownerNode.getScene().getWindow());
     }
 }
