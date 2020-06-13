@@ -65,7 +65,7 @@ dependencies {
     implementation 'com.miglayout:miglayout-swing:5.2'
     implementation 'com.mpatric:mp3agic:0.9.1'
     implementation 'eu.hansolo:charts:1.0.5'
-    implementation 'io.github.dsheirer:radio-reference-api:15.1.4'
+    implementation 'io.github.dsheirer:radio-reference-api:15.1.6'
     implementation 'javax.usb:usb-api:1.0.2'
     implementation 'net.coderazzi:tablefilter-swing:5.4.0'
     implementation 'org.apache.commons:commons-compress:1.20'

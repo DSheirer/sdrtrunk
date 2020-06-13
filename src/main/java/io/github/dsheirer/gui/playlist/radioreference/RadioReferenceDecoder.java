@@ -204,7 +204,7 @@ public class RadioReferenceDecoder
     {
         List<Tag> tags = new ArrayList<>();
 
-        if(talkgroup.getTags() != null)
+        if(talkgroup != null && talkgroup.getTags() != null)
         {
             for(Tag tag: talkgroup.getTags())
             {
@@ -220,7 +220,12 @@ public class RadioReferenceDecoder
      */
     public Type getType(System system)
     {
-        return mTypeMap.get(system.getTypeId());
+        if(system != null)
+        {
+            return mTypeMap.get(system.getTypeId());
+        }
+
+        return null;
     }
 
     /**
@@ -228,7 +233,12 @@ public class RadioReferenceDecoder
      */
     public Flavor getFlavor(System system)
     {
-        return mFlavorMap.get(system.getFlavorId());
+        if(system != null)
+        {
+            return mFlavorMap.get(system.getFlavorId());
+        }
+
+        return null;
     }
 
     /**
@@ -236,7 +246,12 @@ public class RadioReferenceDecoder
      */
     public Voice getVoice(System system)
     {
-        return mVoiceMap.get(system.getVoiceId());
+        if(system != null)
+        {
+            return mVoiceMap.get(system.getVoiceId());
+        }
+
+        return null;
     }
 
     /**
@@ -340,51 +355,54 @@ public class RadioReferenceDecoder
         Flavor flavor = getFlavor(system);
         Voice voice = getVoice(system);
 
-        switch(type.getName())
+        if(type != null && flavor != null && voice != null)
         {
-            case "LTR":
-                if(flavor.getName().contentEquals("Net"))
-                {
-                    return DecoderType.LTR_NET;
-                }
-                else if(flavor.getName().contentEquals("Passport"))
-                {
-                    return DecoderType.PASSPORT;
-                }
-                else
-                {
-                    return DecoderType.LTR;
-                }
-            case "MPT-1327":
-                return DecoderType.MPT1327;
-            case "Project 25":
-                if(flavor.getName().contentEquals("Phase II"))
-                {
-                    return DecoderType.P25_PHASE2;
-                }
-                else if(flavor.getName().contentEquals("Phase I"))
-                {
-                    return DecoderType.P25_PHASE1;
-                }
-                break;
-            case "Motorola":
-                if(voice.getName().contentEquals("Analog and APCO-25 Common Air Interface") ||
-                   voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
-                {
-                    return DecoderType.P25_PHASE1;
-                }
-                break;
-            case "DMR":
-            case "NXDN":
+            switch(type.getName())
+            {
+                case "LTR":
+                    if(flavor.getName().contentEquals("Net"))
+                    {
+                        return DecoderType.LTR_NET;
+                    }
+                    else if(flavor.getName().contentEquals("Passport"))
+                    {
+                        return DecoderType.PASSPORT;
+                    }
+                    else
+                    {
+                        return DecoderType.LTR;
+                    }
+                case "MPT-1327":
+                    return DecoderType.MPT1327;
+                case "Project 25":
+                    if(flavor.getName().contentEquals("Phase II"))
+                    {
+                        return DecoderType.P25_PHASE2;
+                    }
+                    else if(flavor.getName().contentEquals("Phase I"))
+                    {
+                        return DecoderType.P25_PHASE1;
+                    }
+                    break;
+                case "Motorola":
+                    if(voice.getName().contentEquals("Analog and APCO-25 Common Air Interface") ||
+                        voice.getName().contentEquals("APCO-25 Common Air Interface Exclusive"))
+                    {
+                        return DecoderType.P25_PHASE1;
+                    }
+                    break;
+                case "DMR":
+                case "NXDN":
 
-            case "EDACS":
-            case "TETRA":
-            case "Midland CMS":
-            case "OpenSky":
-            case "iDEN":
-            case "SmarTrunk":
-            case "Other":
-            default:
+                case "EDACS":
+                case "TETRA":
+                case "Midland CMS":
+                case "OpenSky":
+                case "iDEN":
+                case "SmarTrunk":
+                case "Other":
+                default:
+            }
         }
 
         return null;
