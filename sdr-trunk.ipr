@@ -405,6 +405,13 @@
       <JAVADOC />
       <SOURCES />
     </library>
+    <library name="Gradle: com.github.nwaldispuehl:java-lame:v3.98.4">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.nwaldispuehl/java-lame/v3.98.4/b4917736b83335704dc5af44671ea27a339cc496/java-lame-v3.98.4.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
     <library name="Gradle: com.github.wendykierp:JTransforms:3.1">
       <CLASSES>
         <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.github.wendykierp/JTransforms/3.1/f1f6d3c9c9bc04f848e38bdb77dea01e8764a01f/JTransforms-3.1.jar!/" />
