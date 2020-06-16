@@ -108,7 +108,7 @@ public class SiteEditor extends GridPane
     private CheckBox mGoToChannelEditorCheckBox;
     private Label mProtocolNotSupportedLabel;
     private RadioReferenceDecoder mRadioReferenceDecoder;
-    private Site mCurrentSite;
+    private EnrichedSite mCurrentSite;
     private System mCurrentSystem;
     private SystemInformation mCurrentSystemInformation;
     private ComboBox mAliasListNameComboBox;
@@ -290,7 +290,7 @@ public class SiteEditor extends GridPane
         }
     }
 
-    public void setSite(Site site, System system, SystemInformation systemInformation, RadioReferenceDecoder decoder)
+    public void setSite(EnrichedSite site, System system, SystemInformation systemInformation, RadioReferenceDecoder decoder)
     {
         mCurrentSite = site;
         mCurrentSystem = system;
@@ -299,7 +299,7 @@ public class SiteEditor extends GridPane
 
         getSiteFrequencyTableView().getItems().clear();
 
-        boolean disable = site == null || site.getSiteFrequencies().isEmpty();
+        boolean disable = site == null || site.getSite().getSiteFrequencies().isEmpty();
         boolean supported = decoder.hasSupportedProtocol(system);
 
         getFrequenciesSegmentedButton().setDisable(disable || !supported);
@@ -318,7 +318,7 @@ public class SiteEditor extends GridPane
 
         if(site != null)
         {
-            List<SiteFrequency> siteFrequencies = site.getSiteFrequencies();
+            List<SiteFrequency> siteFrequencies = site.getSite().getSiteFrequencies();
             for(SiteFrequency siteFrequency: siteFrequencies)
             {
                 if(siteFrequency.getFrequency() > 0.01)
@@ -340,7 +340,7 @@ public class SiteEditor extends GridPane
                 getCreateChannelConfigurationButton().setVisible(true);
                 getGoToChannelEditorCheckBox().setVisible(true);
                 getSystemTextField().setText(system.getName());
-                getSiteTextField().setText(site.getCountyName());
+                getSiteTextField().setText(mCurrentSite.getCountyName());
                 getNameTextField().setText("Control");
 
                 if(!siteFrequencies.isEmpty())
@@ -456,7 +456,8 @@ public class SiteEditor extends GridPane
                 Channel channel = getChannelTemplate();
                 channel.setName("LCN " + siteFrequency.getLogicalChannelNumber());
                 DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
-                channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite, mCurrentSystemInformation));
+                channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
+                    mCurrentSystemInformation));
                 SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
                 sourceConfigTuner.setFrequency(getFrequency(siteFrequency));
                 channel.setSourceConfiguration(sourceConfigTuner);
@@ -511,7 +512,7 @@ public class SiteEditor extends GridPane
                 decoderType = DecoderType.P25_PHASE1;
             }
 
-            channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite, mCurrentSystemInformation));
+            channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(), mCurrentSystemInformation));
 
             SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
             sourceConfigTuner.setFrequency((long)(control.getFrequency() * 1E6));
@@ -569,7 +570,8 @@ public class SiteEditor extends GridPane
                     decoderType = DecoderType.P25_PHASE1;
                 }
 
-                channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite, mCurrentSystemInformation));
+                channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
+                    mCurrentSystemInformation));
 
                 if(siteFrequencies.size() == 1)
                 {
@@ -605,7 +607,8 @@ public class SiteEditor extends GridPane
                     Channel channel = getChannelTemplate();
                     channel.setName("LCN " + siteFrequency.getLogicalChannelNumber());
                     DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
-                    channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite, mCurrentSystemInformation));
+                    channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
+                        mCurrentSystemInformation));
                     SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
                     sourceConfigTuner.setFrequency(getFrequency(siteFrequency));
                     channel.setSourceConfiguration(sourceConfigTuner);
@@ -659,7 +662,8 @@ public class SiteEditor extends GridPane
                 Channel channel = getChannelTemplate();
 
                 DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
-                channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite, mCurrentSystemInformation));
+                channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
+                    mCurrentSystemInformation));
 
                 if(siteFrequencies.size() == 1)
                 {
@@ -695,7 +699,8 @@ public class SiteEditor extends GridPane
                     Channel channel = getChannelTemplate();
                     channel.setName("LCN " + siteFrequency.getLogicalChannelNumber());
                     DecoderType decoderType = mRadioReferenceDecoder.getDecoderType(mCurrentSystem);
-                    channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite, mCurrentSystemInformation));
+                    channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(),
+                        mCurrentSystemInformation));
 
                     SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
                     sourceConfigTuner.setFrequency(getFrequency(siteFrequency));
@@ -946,7 +951,6 @@ public class SiteEditor extends GridPane
         {
             mSiteFrequencyTableView = new TableView<>();
             mSiteFrequencyTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            mSiteFrequencyTableView.setMaxHeight(Double.MAX_VALUE);
             mSiteFrequencyTableView.setPlaceholder(new Label("Please select a site to view frequencies"));
 
             mTypeColumn = new TableColumn("Type");

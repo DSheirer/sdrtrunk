@@ -25,7 +25,6 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.type.Flavor;
-import io.github.dsheirer.rrapi.type.Site;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.SystemInformation;
 import io.github.dsheirer.rrapi.type.Type;
@@ -60,7 +59,7 @@ public class SystemSiteSelectionEditor extends GridPane
     private Label mProtocolLabel;
     private Label mFlavorLabel;
     private Label mVoiceLabel;
-    private TableView<Site> mSiteTableView;
+    private TableView<EnrichedSite> mSiteTableView;
     private SiteEditor mSiteEditor;
     private RadioReferenceDecoder mRadioReferenceDecoder;
     private System mCurrentSystem;
@@ -113,7 +112,8 @@ public class SystemSiteSelectionEditor extends GridPane
      * Updates this view with the specified system
      * @param system to view
      */
-    public void setSystem(System system, List<Site> sites, RadioReferenceDecoder decoder, SystemInformation systemInformation)
+    public void setSystem(System system, List<EnrichedSite> sites, RadioReferenceDecoder decoder,
+                          SystemInformation systemInformation)
     {
         mCurrentSystem = system;
         mCurrentSystemInformation = systemInformation;
@@ -205,13 +205,12 @@ public class SystemSiteSelectionEditor extends GridPane
         return mPlaceholderLabel;
     }
 
-    private TableView<Site> getSiteTableView()
+    private TableView<EnrichedSite> getSiteTableView()
     {
         if(mSiteTableView == null)
         {
             mSiteTableView = new TableView<>();
             mSiteTableView.setPlaceholder(getPlaceholderLabel());
-            mSiteTableView.setPrefHeight(125);
 
             TableColumn numberColumn = new TableColumn();
             numberColumn.setText("Site");
@@ -236,8 +235,11 @@ public class SystemSiteSelectionEditor extends GridPane
             mSiteTableView.getColumns().addAll(numberColumn, rfssColumn, countyColumn, descriptionColumn);
             mSiteTableView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
             mSiteTableView.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, selected) -> getSiteEditor()
-                    .setSite(selected, mCurrentSystem, mCurrentSystemInformation, mRadioReferenceDecoder));
+                .addListener((observable, oldValue, selected) ->
+                {
+                    getSiteEditor().setSite(selected, mCurrentSystem, mCurrentSystemInformation,
+                        mRadioReferenceDecoder);
+                });
         }
 
         return mSiteTableView;

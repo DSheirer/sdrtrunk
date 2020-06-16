@@ -54,6 +54,7 @@ import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -281,13 +282,14 @@ public class SystemEditor extends VBox
                     List<Site> sites = mRadioReference.getService().getSites(system.getSystemId());
 
                     //The service api doesn't provide the county name, so we run a separate query to update each value
+                    List<EnrichedSite> enrichedSites = new ArrayList<>();
                     for(Site site: sites)
                     {
                         CountyInfo countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
-                        site.setCountyName(countyInfo.getName());
+                        enrichedSites.add(new EnrichedSite(site, countyInfo));
                     }
 
-                    Platform.runLater(() -> getSystemSiteSelectionEditor().setSystem(system, sites, mRadioReferenceDecoder,
+                    Platform.runLater(() -> getSystemSiteSelectionEditor().setSystem(system, enrichedSites, mRadioReferenceDecoder,
                         systemInformation));
 
                     //Query and load the talkgroup view second

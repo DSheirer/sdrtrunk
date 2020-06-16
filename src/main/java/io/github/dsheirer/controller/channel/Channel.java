@@ -39,6 +39,7 @@ import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigFactory;
 import io.github.dsheirer.source.config.SourceConfigRecording;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import javafx.beans.Observable;
@@ -48,10 +49,13 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.beans.Transient;
 import java.util.Objects;
 
 @JacksonXmlRootElement(localName = "channel")
@@ -78,6 +82,7 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     private StringProperty mSystem = new SimpleStringProperty();
     private StringProperty mSite = new SimpleStringProperty();
     private StringProperty mName = new SimpleStringProperty();
+    private ObservableList<Long> mFrequencyList;
 
     private BooleanProperty mProcessing = new SimpleBooleanProperty();
     private BooleanProperty mAutoStart = new SimpleBooleanProperty();
@@ -179,6 +184,23 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     }
 
     /**
+     * Updates the frequencies property as the source configuration changes or is initialized.
+     */
+    private void updateFrequencies()
+    {
+        getFrequencyList().clear();
+
+        if(mSourceConfiguration instanceof SourceConfigTuner)
+        {
+            getFrequencyList().add(((SourceConfigTuner)mSourceConfiguration).getFrequency());
+        }
+        else if(mSourceConfiguration instanceof SourceConfigTunerMultipleFrequency)
+        {
+            getFrequencyList().addAll(((SourceConfigTunerMultipleFrequency)mSourceConfiguration).getFrequencies());
+        }
+    }
+
+    /**
      * Alias list name property
      */
     public StringProperty aliasListNameProperty()
@@ -241,6 +263,23 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public int getChannelID()
     {
         return mChannelID;
+    }
+
+    /**
+     * List of frequencies extracted from the source configuration.  This method only exists to support JavaFX
+     * monitoring of frequency list changes.  Use the source configuration to manage frequencies.
+     */
+    @JsonIgnore
+    @Transient
+    public ObservableList<Long> getFrequencyList()
+    {
+        if(mFrequencyList == null)
+        {
+            mFrequencyList = FXCollections.observableArrayList();
+            updateFrequencies();
+        }
+
+        return mFrequencyList;
     }
 
     /**
@@ -529,6 +568,8 @@ public class Channel extends Configuration implements Listener<SourceEvent>
             mSourceConfiguration = config;
         }
 
+        updateFrequencies();
+
         //Clear the tune channel object so that it can be recreated if the
         //source configuration changes
         mTunerChannel = null;
@@ -676,6 +717,7 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     public static Callback<Channel,Observable[]> extractor()
     {
         return (Channel c) -> new Observable[] {c.processingProperty(), c.nameProperty(), c.aliasListNameProperty(),
-            c.autoStartOrderProperty(), c.autoStartProperty(), c.siteProperty(), c.systemProperty()};
+            c.autoStartOrderProperty(), c.autoStartProperty(), c.siteProperty(), c.systemProperty(),
+            c.getFrequencyList()};
     }
 }

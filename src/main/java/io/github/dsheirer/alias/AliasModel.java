@@ -86,6 +86,8 @@ public class AliasModel
         {
             removeAlias(alias);
         }
+
+        mAliasListNames.clear();
     }
 
     /**
