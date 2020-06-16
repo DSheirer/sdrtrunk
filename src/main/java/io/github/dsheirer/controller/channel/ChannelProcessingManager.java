@@ -83,6 +83,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private SourceManager mSourceManager;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
+    private List<Long> mUnTunableFrequencies = new ArrayList<>();
 
     /**
      * Constructs the channel processing manager
@@ -185,15 +186,25 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                         if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
                         {
                             long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-                            mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequency +
-                                "] - " + ce.getMessage());
+
+                            if(!mUnTunableFrequencies.contains(frequency))
+                            {
+                                mUnTunableFrequencies.add(frequency);
+                                mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequency +
+                                    "] - " + ce.getMessage());
+                            }
                         }
                         else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
                         {
                             List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel
                                 .getSourceConfiguration()).getFrequencies();
-                            mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequencies +
-                                "] - " + ce.getMessage());
+
+                            if(frequencies.size() > 0 && !mUnTunableFrequencies.contains(frequencies.get(0)))
+                            {
+                                mUnTunableFrequencies.add(frequencies.get(0));
+                                mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequencies +
+                                    "] - " + ce.getMessage());
+                            }
                         }
                         else
                         {
