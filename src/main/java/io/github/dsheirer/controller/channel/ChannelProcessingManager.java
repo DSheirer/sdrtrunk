@@ -49,6 +49,9 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
+import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +122,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Indicates if any channels are currently processing.
+     * @return true if channels are processing.
+     */
+    public boolean isProcessing()
+    {
+        return !mProcessingChains.isEmpty();
+    }
+
+    /**
      * Returns the current processing chain associated with the channel, or
      * null if a processing chain is not currently setup for the channel
      */
@@ -164,37 +176,68 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             case REQUEST_ENABLE:
                 if(!isProcessing(channel))
                 {
-                    startProcessing(event);
+                    try
+                    {
+                        startProcessing(event);
+                    }
+                    catch(ChannelException ce)
+                    {
+                        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+                        {
+                            long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+                            mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequency +
+                                "] - " + ce.getMessage());
+                        }
+                        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
+                        {
+                            List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel
+                                .getSourceConfiguration()).getFrequencies();
+                            mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequencies +
+                                "] - " + ce.getMessage());
+                        }
+                        else
+                        {
+                            mLog.error("Error starting requested channel [" + channel.getName() + "] - " + ce.getMessage());
+                        }
+                    }
                 }
                 break;
             case REQUEST_DISABLE:
                 if(channel.isProcessing())
                 {
-                    switch(channel.getChannelType())
+                    try
                     {
-                        case STANDARD:
-                            stopProcessing(channel, true);
-                            break;
-                        case TRAFFIC:
-                            //Don't remove traffic channel processing chains
-                            //until explicitly deleted, so that we can reuse them
-                            stopProcessing(channel, false);
-                            break;
-                        default:
-                            break;
+                        switch(channel.getChannelType())
+                        {
+                            case STANDARD:
+                                stopProcessing(channel, true);
+                                break;
+                            case TRAFFIC:
+                                //Don't remove traffic channel processing chains
+                                //until explicitly deleted, so that we can reuse them
+                                stopProcessing(channel, false);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    catch(ChannelException ce)
+                    {
+                        mLog.error("Error stopping channel [" + channel.getName() + "] - " + ce.getMessage());
                     }
                 }
+                break;
             case NOTIFICATION_DELETE:
                 if(channel.isProcessing())
                 {
-                    stopProcessing(channel, true);
-                }
-                break;
-            case NOTIFICATION_CONFIGURATION_CHANGE:
-                if(isProcessing(channel))
-                {
-                    stopProcessing(channel, true);
-                    startProcessing(event);
+                    try
+                    {
+                        stopProcessing(channel, true);
+                    }
+                    catch(ChannelException ce)
+                    {
+                        mLog.error("Error stopping deleted channel [" + channel.getName() + "] - " + ce.getMessage());
+                    }
                 }
                 break;
             default:
@@ -203,11 +246,30 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Starts the specified channel.
+     * @param channel to start
+     * @throws ChannelException if the channel can't be started
+     */
+    public void start(Channel channel) throws ChannelException
+    {
+        startProcessing(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_ENABLE));
+    }
+
+    /**
+     * Stops the specified channel
+     * @param channel to stop
+     */
+    public void stop(Channel channel) throws ChannelException
+    {
+        stopProcessing(channel, !channel.isTrafficChannel());
+    }
+
+    /**
      * Starts a channel/processing chain
      *
      * @param event that requested the channel start
      */
-    private void startProcessing(ChannelEvent event)
+    private void startProcessing(ChannelEvent event) throws ChannelException
     {
         Channel channel = event.getChannel();
 
@@ -216,7 +278,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         //If we're already processing, ignore the request
         if(processingChain != null && processingChain.isProcessing())
         {
-            return;
+            throw new ChannelException("Channel is already playing");
         }
 
         //Ensure that we can get a source before we construct a new processing chain
@@ -234,12 +296,13 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         if(source == null)
         {
-            channel.setProcessing(false);
+            //This has to be done on the FX event thread when the playlist editor is constructed
+            Platform.runLater(() -> channel.setProcessing(false));
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
 
-            return;
+            throw new ChannelException("No Tuner Available");
         }
 
         if(processingChain == null)
@@ -276,8 +339,17 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
                     if(toShutdown != null)
                     {
-                        mLog.info("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
-                        stopProcessing(toShutdown, true);
+                        mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
+
+                        try
+                        {
+                            stopProcessing(toShutdown, true);
+                        }
+                        catch(ChannelException ce)
+                        {
+                            mLog.error("Error stopping channel [" + channel.getName() + "] with source error - " +
+                                ce.getMessage());
+                        }
                     }
                 }
             });
@@ -364,7 +436,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         }
 
         processingChain.start();
-        channel.setProcessing(true);
+        //This has to be done on the FX event thread when the playlist editor is constructed
+        Platform.runLater(() -> channel.setProcessing(true));
 
         getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
 
@@ -379,9 +452,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * @param channel to stop
      * @param remove set to true to remove the associated processing chain.
      */
-    private void stopProcessing(Channel channel, boolean remove)
+    private void stopProcessing(Channel channel, boolean remove) throws ChannelException
     {
-        channel.setProcessing(false);
+        //This has to be done on the FX event thread when the playlist editor is constructed
+        Platform.runLater(() -> channel.setProcessing(false));
 
         if(mProcessingChains.containsKey(channel))
         {
@@ -411,6 +485,10 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 processingChain.dispose();
             }
         }
+        else
+        {
+            throw new ChannelException("Channel is not currently playing");
+        }
     }
 
     /**
@@ -422,7 +500,14 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         for(Channel channel : channelsToStop)
         {
-            stopProcessing(channel, true);
+            try
+            {
+                stopProcessing(channel, true);
+            }
+            catch(ChannelException ce)
+            {
+                mLog.error("Error stopping channel [" + channel.getName() + "] - " + ce.getMessage());
+            }
         }
     }
 

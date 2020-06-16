@@ -19,11 +19,11 @@
 package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.AudioBroadcaster;
+import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
 
-public abstract class IcecastAudioBroadcaster extends AudioBroadcaster
+public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
 {
     private IBroadcastMetadataUpdater mMetadataUpdater;
     private AliasModel mAliasModel;

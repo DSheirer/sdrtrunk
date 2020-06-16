@@ -186,7 +186,7 @@ public class PDUHeader implements IBitErrorProvider
         sb.append("PDU HEADER FORMAT:");
         sb.append(getFormat().getLabel());
         sb.append(isConfirmationRequired() ? " CONFIRMED" : " UNCONFIRMED");
-        sb.append(" VENDOR:" + getVendor().getLabel());
+        sb.append(" VENDOR:").append(getVendor().getLabel());
         sb.append(isOutbound() ? "TO" : "FROM").append(" LLID").append(getLLID());
 
         return sb.toString();

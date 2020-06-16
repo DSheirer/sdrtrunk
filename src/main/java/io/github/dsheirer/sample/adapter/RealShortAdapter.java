@@ -26,7 +26,6 @@ import java.nio.ByteOrder;
 public class RealShortAdapter extends RealSampleAdapter
 {
     private ByteBuffer mByteBuffer;
-    private ShortToFloatMap mMap = new ShortToFloatMap();
     private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
 
     /**
@@ -54,7 +53,7 @@ public class RealShortAdapter extends RealSampleAdapter
 
         while(mByteBuffer.hasRemaining())
         {
-            convertedSamples[pointer] = mMap.get(mByteBuffer.getShort());
+            convertedSamples[pointer] = (float) mByteBuffer.getShort() / 32768.0f;
             pointer++;
         }
 

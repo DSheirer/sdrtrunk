@@ -34,6 +34,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.passport.identifier.PassportRadioId;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 
 public class PassportDecoderState extends DecoderState
 {
@@ -56,7 +58,7 @@ public class PassportDecoderState extends DecoderState
 
     private Set<PassportTalkgroup> mTalkgroupsFirstHeard = new HashSet<>();
     private Set<PassportTalkgroup> mTalkgroups = new TreeSet<>();
-    private Set<PassportTalkgroup> mMobileIDs = new TreeSet<>();
+    private Set<PassportRadioId> mMobileIDs = new TreeSet<>();
     private Map<Integer,Long> mSiteLCNs = new HashMap<>();
     private Map<Integer,Long> mNeighborLCNs = new HashMap<>();
     private Map<Integer,DecodeEvent> mDetectedCalls = new HashMap<>();
@@ -208,7 +210,7 @@ public class PassportDecoderState extends DecoderState
                         broadcast(new DecoderStateEvent(this, Event.END, State.CALL));
                         break;
                     case ID_RDIO:
-                        PassportTalkgroup mobileId = passport.getFromIdentifier();
+                        PassportRadioId mobileId = passport.getFromIdentifier();
                         mMobileIDs.add(mobileId);
                         getIdentifierCollection().update(mobileId);
 
@@ -260,15 +262,14 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            List<Integer> channels = new ArrayList<>(mSiteLCNs.keySet());
-            Collections.sort(channels);
-
-            for(Integer channel : channels)
-            {
-                sb.append("  " + channel);
-                sb.append("\t" + mSiteLCNs.get(channel));
-                sb.append("\n");
-            }
+            mSiteLCNs.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> {
+                        sb.append("  " + entry.getKey());
+                        sb.append("\t" + entry.getValue());
+                        sb.append("\n");
+                    });
         }
 
         sb.append("\nNeighbor Channels\n");
@@ -279,15 +280,14 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            List<Integer> channels = new ArrayList<>(mNeighborLCNs.keySet());
-            Collections.sort(channels);
-
-            for(Integer channel : channels)
-            {
-                sb.append("  " + channel);
-                sb.append("\t" + mNeighborLCNs.get(channel));
-                sb.append("\n");
-            }
+            mNeighborLCNs.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> {
+                        sb.append("  " + entry.getKey());
+                        sb.append("\t" + entry.getValue());
+                        sb.append("\n");
+                    });
         }
 
         sb.append("\nTalkgroups\n");
@@ -298,11 +298,9 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            Iterator<PassportTalkgroup> it = mTalkgroups.iterator();
 
-            while(it.hasNext())
-            {
-                sb.append("  ").append(it.next()).append("\n");
+            for (PassportTalkgroup mTalkgroup : mTalkgroups) {
+                sb.append("  ").append(mTalkgroup).append("\n");
             }
         }
 
@@ -314,11 +312,8 @@ public class PassportDecoderState extends DecoderState
         }
         else
         {
-            Iterator<PassportTalkgroup> it = mMobileIDs.iterator();
-
-            while(it.hasNext())
-            {
-                sb.append("  ").append(it.next()).append("\n");
+            for (PassportRadioId mMobileID : mMobileIDs) {
+                sb.append("  ").append(mMobileID).append("\n");
             }
         }
 

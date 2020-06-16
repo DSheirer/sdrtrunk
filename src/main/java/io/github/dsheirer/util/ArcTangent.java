@@ -41,13 +41,14 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.sample.complex.Complex;
+import org.apache.commons.math3.util.FastMath;
 
 public class ArcTangent
 {
 	public static final double sTANGENT_MAP_RESOLUTION = 0.003921549;
 	public static final double sRADIANS_PER_DEGREE = 0.017453293;
 	public static final int sTANGENT_MAP_SIZE = 256;
-	public static final double sHALF_PI = Math.PI / 2;
+	public static final double sHALF_PI = FastMath.PI / 2;
 
 	//ArcTangents from 0 to pi/4 radians
 	private static double[] sLOOKUP_TABLE = new double[] {
@@ -158,8 +159,8 @@ public class ArcTangent
 		}
 		
 		//Normalize to +/- 45 degree range
-		double x_abs = Math.abs( x );
-		double y_abs = Math.abs( y );
+		double x_abs = FastMath.abs( x );
+		double y_abs = FastMath.abs( y );
 		
 		//Calculate the ratio ( opposite/adjacent )
 		double z;
@@ -208,7 +209,7 @@ public class ArcTangent
 			}
 			else                     // 135 to 180 or -180 to -135
 			{
-				angle = Math.PI;
+				angle = FastMath.PI;
 				
 				if( y >= 0.0 )
 				{

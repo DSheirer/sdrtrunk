@@ -71,14 +71,14 @@ public class LCSecondaryControlChannelBroadcast extends LinkControlWord implemen
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" SITE:" + getRFSS() + "-" + getSite());
-        sb.append(" CHAN A:" + getChannelA());
-        sb.append(" SERVICE CLASS:" + getSystemServiceClassA());
+        sb.append(" SITE:").append(getRFSS()).append("-").append(getSite());
+        sb.append(" CHAN A:").append(getChannelA());
+        sb.append(" SERVICE CLASS:").append(getSystemServiceClassA());
 
         if(hasChannelB())
         {
-            sb.append(" CHAN B:" + getChannelB());
-            sb.append(" SERVICE CLASS:" + getSystemServiceClassB());
+            sb.append(" CHAN B:").append(getChannelB());
+            sb.append(" SERVICE CLASS:").append(getSystemServiceClassB());
         }
         return sb.toString();
     }

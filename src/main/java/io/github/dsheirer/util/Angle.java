@@ -17,16 +17,18 @@
  ******************************************************************************/
 package io.github.dsheirer.util;
 
+import org.apache.commons.math3.util.FastMath;
+
 public class Angle
 {
 
 	public static double degreesFromRadians( double radians )
 	{
-		return radians * ( 180 / Math.PI );
+		return radians * ( 180 / FastMath.PI );
 	}
 	
 	public static double radiansFromDegrees( double degrees )
 	{
-		return degrees * ( Math.PI / 180 );
+		return degrees * ( FastMath.PI / 180 );
 	}
 }

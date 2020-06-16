@@ -25,14 +25,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.config.WithCallTimeout;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
-public class DecodeConfigMPT1327 extends DecodeConfiguration
+public class DecodeConfigMPT1327 extends DecodeConfiguration implements WithCallTimeout
 {
     private String mChannelMapName;
     private Sync mSync = Sync.NORMAL;
 
-    private int mCallTimeout = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
+    private int mCallTimeoutSeconds = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
 
     public DecodeConfigMPT1327()
@@ -68,25 +69,25 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "call_timeout")
-    public int getCallTimeout()
+    public int getCallTimeoutSeconds()
     {
-        return mCallTimeout;
+        return mCallTimeoutSeconds;
     }
 
     /**
-     * Sets the call timeout value in seconds ( 10 - 600 );
+     * Sets the call timeout value in seconds ( 1 - 180 );
      *
      * @param timeout
      */
-    public void setCallTimeout(int timeout)
+    public void setCallTimeoutSeconds(int timeout)
     {
         if(CALL_TIMEOUT_MINIMUM <= timeout && timeout <= CALL_TIMEOUT_MAXIMUM)
         {
-            mCallTimeout = timeout;
+            mCallTimeoutSeconds = timeout;
         }
         else
         {
-            mCallTimeout = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
+            mCallTimeoutSeconds = DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
         }
     }
 

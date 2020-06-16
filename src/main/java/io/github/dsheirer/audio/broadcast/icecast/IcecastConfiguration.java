@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 import java.util.Base64;
 
@@ -35,7 +37,7 @@ import java.util.Base64;
 public abstract class IcecastConfiguration extends BroadcastConfiguration
 {
     protected String mUserName = "source";
-    private String mMountPoint = "/stream";
+    protected StringProperty mMountPoint = new SimpleStringProperty("/stream");
     private String mDescription;
     private String mGenre;
     private boolean mPublic;
@@ -51,6 +53,7 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
 
     public IcecastConfiguration()
     {
+        this(BroadcastFormat.MP3);
     }
 
     /**
@@ -99,7 +102,7 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     @JacksonXmlProperty(isAttribute = true, localName = "mount_point")
     public String getMountPoint()
     {
-        return mMountPoint;
+        return mMountPoint.get();
     }
 
     /**
@@ -113,18 +116,18 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
         {
             if(mountPoint.startsWith("/"))
             {
-                mMountPoint = mountPoint;
+                mMountPoint.setValue(mountPoint);
             }
             else
             {
-                mMountPoint = "/" + mountPoint;
+                mMountPoint.setValue("/" + mountPoint);
             }
         }
     }
 
     public boolean hasMountPoint()
     {
-        return mMountPoint != null;
+        return mMountPoint.get() != null;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "description")

@@ -30,7 +30,7 @@ import io.github.dsheirer.protocol.Protocol;
 /**
  * Integer radio identifier range of values with protocol.
  */
-public class RadioRange extends AliasID
+public class RadioRange extends AliasID implements Comparable<RadioRange>
 {
     private Protocol mProtocol = Protocol.UNKNOWN;
     private int mMinRadio;
@@ -39,6 +39,12 @@ public class RadioRange extends AliasID
     public RadioRange()
     {
         //No arg JAXB constructor
+    }
+
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
     }
 
     /**
@@ -63,6 +69,7 @@ public class RadioRange extends AliasID
     public void setMinRadio(int minRadio)
     {
         mMinRadio = minRadio;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "max")
@@ -74,6 +81,7 @@ public class RadioRange extends AliasID
     public void setMaxRadio(int maxRadio)
     {
         mMaxRadio = maxRadio;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -99,7 +107,8 @@ public class RadioRange extends AliasID
         return radioFormat.getMinimumValidValue() <= mMinRadio &&
                mMinRadio <= radioFormat.getMaximumValidValue() &&
                radioFormat.getMinimumValidValue() <= mMaxRadio &&
-               mMaxRadio <= radioFormat.getMaximumValidValue();
+               mMaxRadio <= radioFormat.getMaximumValidValue() &&
+               mMinRadio < mMaxRadio;
     }
 
     public String toString()
@@ -142,6 +151,13 @@ public class RadioRange extends AliasID
         return getMinRadio() <= radioValue && radioValue <= getMaxRadio();
     }
 
+    @Override
+    public boolean overlaps(AliasID other)
+    {
+        return other instanceof RadioRange && overlaps((RadioRange)other);
+    }
+
+
     /**
      * Indicates if this talkgroup range overlaps the talkgroup range argument.
      * @param radioRange to check for overlap
@@ -162,5 +178,31 @@ public class RadioRange extends AliasID
     public AliasIDType getType()
     {
         return AliasIDType.RADIO_ID_RANGE;
+    }
+
+
+    @Override
+    public int compareTo(RadioRange other)
+    {
+        if(other == null)
+        {
+            return -1;
+        }
+
+        if(getProtocol().equals(other.getProtocol()))
+        {
+            if(getMinRadio() == other.getMinRadio())
+            {
+                return Integer.compare(getMaxRadio(), other.getMaxRadio());
+            }
+            else
+            {
+                return Integer.compare(getMinRadio(), other.getMinRadio());
+            }
+        }
+        else
+        {
+            return getProtocol().compareTo(other.getProtocol());
+        }
     }
 }

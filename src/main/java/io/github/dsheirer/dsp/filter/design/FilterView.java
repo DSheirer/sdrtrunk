@@ -23,6 +23,7 @@ import javafx.scene.chart.XYChart.Series;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +141,7 @@ public class FilterView extends BorderPane
         mImpulseXAxis.setUpperBound(taps.length - 1);
         mImpulseXAxis.setTickUnit(1.0);
 
-        double padding = Math.abs(largest - smallest) * .1;
+        double padding = FastMath.abs(largest - smallest) * .1;
 
         mImpulseYAxis.setLowerBound(smallest - padding);
         mImpulseYAxis.setUpperBound(largest + padding);
@@ -180,7 +181,7 @@ public class FilterView extends BorderPane
         {
             index = x * 2;
 
-            decibels[x] = 20.0f * (float)Math.log10(((dft[index] * dft[index]) +
+            decibels[x] = 20.0f * (float)FastMath.log10(((dft[index] * dft[index]) +
                 (dft[index + 1] * dft[index + 1])));
         }
 

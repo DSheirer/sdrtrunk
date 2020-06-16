@@ -20,18 +20,21 @@
 
 package io.github.dsheirer.alias.id.talkgroup;
 
+import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.AbstractIntegerFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
-import io.github.dsheirer.preference.identifier.talkgroup.IntegerFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MDC1200TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.PassportTalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.UnknownTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +44,7 @@ import java.util.Map;
 public class TalkgroupFormatter
 {
     private final static Logger mLog = LoggerFactory.getLogger(TalkgroupFormatter.class);
-    private static Map<Protocol,IntegerFormatter> mFormatterMap = new HashMap<>();
+    private static Map<Protocol,AbstractIntegerFormatter> mFormatterMap = new EnumMap<>(Protocol.class);
 
     static
     {
@@ -50,11 +53,10 @@ public class TalkgroupFormatter
         LTRTalkgroupFormatter ltr = new LTRTalkgroupFormatter();
         mFormatterMap.put(Protocol.LTR, ltr);
         mFormatterMap.put(Protocol.LTR_NET, ltr);
-        mFormatterMap.put(Protocol.LTR_STANDARD, ltr);
         mFormatterMap.put(Protocol.MDC1200, new MDC1200TalkgroupFormatter());
         mFormatterMap.put(Protocol.MPT1327, new MPT1327TalkgroupFormatter());
         mFormatterMap.put(Protocol.PASSPORT, new PassportTalkgroupFormatter());
-        mFormatterMap.put(Protocol.UNKNOWN, new IntegerFormatter());
+        mFormatterMap.put(Protocol.UNKNOWN, new UnknownTalkgroupFormatter());
     }
 
     public TalkgroupFormatter()
@@ -66,7 +68,7 @@ public class TalkgroupFormatter
      */
     public static int parse(Protocol protocol, String value) throws ParseException
     {
-        IntegerFormatter formatter = mFormatterMap.get(protocol);
+        AbstractIntegerFormatter formatter = mFormatterMap.get(protocol);
 
         if(formatter == null)
         {
@@ -81,7 +83,7 @@ public class TalkgroupFormatter
      */
     public static String format(Protocol protocol, int value)
     {
-        IntegerFormatter formatter = mFormatterMap.get(protocol);
+        AbstractIntegerFormatter formatter = mFormatterMap.get(protocol);
 
         if(formatter == null)
         {
@@ -89,5 +91,20 @@ public class TalkgroupFormatter
         }
 
         return formatter.format(value);
+    }
+
+    /**
+     * Formats the integer value to the specified integer format using the protocol specific formatter
+     */
+    public static String format(Protocol protocol, int value, IntegerFormat format)
+    {
+        AbstractIntegerFormatter formatter = mFormatterMap.get(protocol);
+
+        if(formatter == null)
+        {
+            formatter = mFormatterMap.get(Protocol.UNKNOWN);
+        }
+
+        return formatter.format(value, format);
     }
 }

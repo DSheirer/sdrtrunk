@@ -76,7 +76,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
                 fireTableCellUpdated(row, COLUMN_TIME);
             }
         }
-        else if(preferenceType == PreferenceType.IDENTIFIER)
+        else if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
             for(int row = 0; row < mEvents.size(); row++)
             {

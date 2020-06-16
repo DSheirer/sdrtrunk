@@ -22,8 +22,10 @@ package io.github.dsheirer.preference;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
+import io.github.dsheirer.preference.duplicate.DuplicateCallDetectionPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
+import io.github.dsheirer.preference.javafx.JavaFxPreferences;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
@@ -32,7 +34,6 @@ import io.github.dsheirer.preference.source.ChannelMultiFrequencyPreference;
 import io.github.dsheirer.preference.source.TunerPreference;
 import io.github.dsheirer.preference.swing.SwingPreference;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.source.mixer.MixerManager;
 
 /**
  * User Preferences.  A collection of preferences that can be accessed by preference type.
@@ -52,17 +53,20 @@ import io.github.dsheirer.source.mixer.MixerManager;
  */
 public class UserPreferences implements Listener<PreferenceType>
 {
-    private JmbeLibraryPreference mJmbeLibraryPreference;
+    private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
-    private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
+    private DuplicateCallDetectionPreference mDuplicateCallDetectionPreference;
+    private JmbeLibraryPreference mJmbeLibraryPreference;
     private PlaybackPreference mPlaybackPreference;
     private PlaylistPreference mPlaylistPreference;
     private RadioReferencePreference mRadioReferencePreference;
     private RecordPreference mRecordPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
+
     private SwingPreference mSwingPreference = new SwingPreference();
+    private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
 
     /**
      * Constructs a new user preferences instance
@@ -70,6 +74,14 @@ public class UserPreferences implements Listener<PreferenceType>
     public UserPreferences()
     {
         loadPreferenceTypes();
+    }
+
+    /**
+     * Java FX window management preferences
+     */
+    public JavaFxPreferences getJavaFxPreferences()
+    {
+        return mJavaFxPreferences;
     }
 
     /**
@@ -162,14 +174,23 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * Duplicate call detection preferences
+     */
+    public DuplicateCallDetectionPreference getDuplicateCallDetectionPreference()
+    {
+        return mDuplicateCallDetectionPreference;
+    }
+
+    /**
      * Loads the managed preferences
      */
     private void loadPreferenceTypes()
     {
-        mDecodeEventPreference = new DecodeEventPreference(this::receive);
-        mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
-        mDirectoryPreference = new DirectoryPreference(this::receive);
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
+        mDecodeEventPreference = new DecodeEventPreference(this::receive);
+        mDirectoryPreference = new DirectoryPreference(this::receive);
+        mDuplicateCallDetectionPreference = new DuplicateCallDetectionPreference(this::receive);
+        mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
         mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);

@@ -19,7 +19,7 @@
 package io.github.dsheirer.map;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.settings.MapViewSetting;
 import io.github.dsheirer.settings.SettingsManager;
 import net.miginfocom.swing.MigLayout;
@@ -43,11 +43,11 @@ public class MapPanel extends JPanel implements IPlottableUpdateListener
     private JXMapViewer mMapViewer = new JXMapViewer();
     private PlottableEntityPainter mMapPainter;
 
-    public MapPanel(MapService mapService, AliasModel aliasModel, IconManager iconManager, SettingsManager settingsManager)
+    public MapPanel(MapService mapService, AliasModel aliasModel, IconModel iconModel, SettingsManager settingsManager)
     {
         mSettingsManager = settingsManager;
         mMapService = mapService;
-        mMapPainter = new PlottableEntityPainter(aliasModel, iconManager);
+        mMapPainter = new PlottableEntityPainter(aliasModel, iconModel);
 
         init();
     }

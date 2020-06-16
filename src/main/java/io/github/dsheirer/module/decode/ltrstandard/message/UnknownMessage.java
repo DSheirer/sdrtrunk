@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * Unknown message type
  */
-public class UnknownMessage extends LTRStandardMessage
+public class UnknownMessage extends LTRMessage
 {
     public UnknownMessage(CorrectedBinaryMessage message, MessageDirection direction, CRC crc)
     {

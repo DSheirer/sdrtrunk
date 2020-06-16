@@ -26,7 +26,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -75,7 +75,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private Color mValueColor;
     private boolean mMuted = false;
 
-    private IconManager mIconManager;
+    private IconModel mIconModel;
     private SettingsManager mSettingsManager;
     private UserPreferences mUserPreferences;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
@@ -90,10 +90,10 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private AliasModel mAliasModel;
     private Lock mLock = new ReentrantLock();
 
-    public AudioChannelPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
+    public AudioChannelPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
                              AudioOutput audioOutput, AliasModel aliasModel)
     {
-        mIconManager = iconManager;
+        mIconModel = iconModel;
         mSettingsManager = settingsManager;
         mSettingsManager.addListener(this);
         mAliasModel = aliasModel;
@@ -123,7 +123,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
-        if(preferenceType == PreferenceType.IDENTIFIER)
+        if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
             updateLabels();
         }
@@ -325,7 +325,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
                 identifier = "-----";
             }
 
-            final ImageIcon icon = iconName != null ? mIconManager.getIcon(iconName, 18) : null;
+            final ImageIcon icon = iconName != null ? mIconModel.getIcon(iconName, 18) : null;
             final String identifierText = identifier;
 
             EventQueue.invokeLater(() -> {

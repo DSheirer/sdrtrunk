@@ -23,6 +23,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import javafx.beans.binding.Bindings;
 
 @JsonSubTypes.Type(value=IcecastHTTPConfiguration.class, name="icecastHTTPConfiguration")
 public class IcecastHTTPConfiguration extends IcecastConfiguration
@@ -40,6 +41,9 @@ public class IcecastHTTPConfiguration extends IcecastConfiguration
     {
         super(format);
         setPassword("change me!");
+
+        mValid.bind(Bindings.and(Bindings.and(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)),
+            Bindings.isNotNull(mMountPoint)), Bindings.isNotNull(mPassword)));
     }
 
     @Override

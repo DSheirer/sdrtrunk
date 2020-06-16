@@ -36,8 +36,9 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractAudioModule extends Module implements IAudioSegmentProvider, IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractAudioModule.class);
-    private static final int MAX_SEGMENT_AUDIO_SAMPLE_LENGTH = 8000 * 60 * 1; //8 kHz - 1 minute
+    private static final int DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH = 60 * 8000; // 1 minute @ 8kHz
 
+    private final int mMaxSegmentAudioSampleLength;
     private Listener<AudioSegment> mAudioSegmentListener;
     protected MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
@@ -48,11 +49,23 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
     /**
      * Constructs an abstract audio module
+     *
+     * @param aliasList for aliasing identifiers
+     * @param maxSegmentAudioSampleLength in milliseconds
+     */
+    public AbstractAudioModule(AliasList aliasList, long maxSegmentAudioSampleLength)
+    {
+        mAliasList = aliasList;
+        mMaxSegmentAudioSampleLength = (int)(maxSegmentAudioSampleLength * 8); //Convert milliseconds to samples
+        mIdentifierUpdateNotificationBroadcaster.addListener(mIdentifierCollection);
+    }
+
+    /**
+     * Constructs an abstract audio module
      */
     public AbstractAudioModule(AliasList aliasList)
     {
-        mAliasList = aliasList;
-        mIdentifierUpdateNotificationBroadcaster.addListener(mIdentifierCollection);
+        this(aliasList, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
     }
 
     protected abstract int getTimeslot();
@@ -68,6 +81,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             {
                 mAudioSegment.completeProperty().set(true);
                 mIdentifierUpdateNotificationBroadcaster.removeListener(mAudioSegment);
+                mAudioSegment.decrementConsumerCount();
                 mAudioSegment = null;
             }
         }
@@ -90,6 +104,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             if(mAudioSegment == null)
             {
                 mAudioSegment = new AudioSegment(mAliasList, getTimeslot());
+                mAudioSegment.incrementConsumerCount();
                 mAudioSegment.addIdentifiers(mIdentifierCollection.getIdentifiers());
                 mIdentifierUpdateNotificationBroadcaster.addListener(mAudioSegment);
 
@@ -117,7 +132,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
 
         //If the current segment exceeds the max samples length, close it so that a new segment gets generated
         //and then link the segments together
-        if(mAudioSampleCount >= MAX_SEGMENT_AUDIO_SAMPLE_LENGTH)
+        if(mAudioSampleCount >= mMaxSegmentAudioSampleLength)
         {
             AudioSegment previous = getAudioSegment();
             closeAudioSegment();
@@ -125,8 +140,15 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
             audioSegment.linkTo(previous);
         }
 
-        audioSegment.addAudio(audioBuffer);
-        mAudioSampleCount += audioBuffer.length;
+        try
+        {
+            audioSegment.addAudio(audioBuffer);
+            mAudioSampleCount += audioBuffer.length;
+        }
+        catch(Exception e)
+        {
+            closeAudioSegment();
+        }
     }
 
     /**

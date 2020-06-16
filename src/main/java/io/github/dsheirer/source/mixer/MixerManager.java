@@ -311,11 +311,11 @@ public class MixerManager
         for(Mixer.Info mixerInfo : AudioSystem.getMixerInfo())
         {
             sb.append("\n--------------------------------------------------");
-            sb.append("\nMIXER name:" + mixerInfo.getName() +
-                "\n      desc:" + mixerInfo.getDescription() +
-                "\n      vendor:" + mixerInfo.getVendor() +
-                "\n      version:" + mixerInfo.getVersion() +
-                "\n");
+            sb.append("\nMIXER name:").append(mixerInfo.getName())
+                    .append("\n      desc:").append(mixerInfo.getDescription())
+                    .append("\n      vendor:").append(mixerInfo.getVendor())
+                    .append("\n      version:").append(mixerInfo.getVersion())
+                    .append("\n");
 
             Mixer mixer = AudioSystem.getMixer(mixerInfo);
 
@@ -323,20 +323,20 @@ public class MixerManager
 
             for(Line.Info lineInfo : sourceLines)
             {
-                sb.append("      SOURCE LINE desc:" + lineInfo.toString() +
-                    "\n               class:" + lineInfo.getClass() +
-                    "\n               lineclass:" + lineInfo.getLineClass() +
-                    "\n");
+                sb.append("      SOURCE LINE desc:").append(lineInfo)
+                        .append("\n               class:").append(lineInfo.getClass())
+                        .append("\n               lineclass:").append(lineInfo.getLineClass())
+                        .append("\n");
             }
 
             Line.Info[] targetLines = mixer.getTargetLineInfo();
 
             for(Line.Info lineInfo : targetLines)
             {
-                sb.append("      TARGET LINE desc:" + lineInfo.toString() +
-                    "\n                class:" + lineInfo.getClass() +
-                    "\n                lineclass:" + lineInfo.getLineClass() +
-                    "\n");
+                sb.append("      TARGET LINE desc:").append(lineInfo)
+                        .append("\n                class:").append(lineInfo.getClass())
+                        .append("\n                lineclass:").append(lineInfo.getLineClass())
+                        .append("\n");
             }
 
             Line.Info portInfo = new Line.Info(Port.class);

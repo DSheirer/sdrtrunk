@@ -65,6 +65,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioSegment.class);
     private BooleanProperty mComplete = new SimpleBooleanProperty(false);
+    private BooleanProperty mDuplicate = new SimpleBooleanProperty(false);
     private BooleanProperty mRecordAudio = new SimpleBooleanProperty(false);
     private IntegerProperty mMonitorPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private ObservableSet<BroadcastChannel> mBroadcastChannels = FXCollections.observableSet(new HashSet<>());
@@ -74,6 +75,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     private AtomicInteger mConsumerCount = new AtomicInteger();
     private AliasList mAliasList;
     private long mStartTimestamp = System.currentTimeMillis();
+    private long mSampleCount = 0;
     private boolean mDisposing = false;
     private AudioSegment mLinkedAudioSegment;
     private int mTimeslot;
@@ -108,6 +110,24 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     }
 
     /**
+     * End timestamp as calculated from start timestamp and current sample count
+     */
+    public long getEndTimestamp()
+    {
+        return mStartTimestamp + getDuration();
+    }
+
+    /**
+     * Current duration of this audio segment.  Note: this is a dynamic value until the complete property is set to true.
+     *
+     * @return duration in milliseconds
+     */
+    public long getDuration()
+    {
+        return (mSampleCount / 8); //8 kHz audio generates 8 samples per millisecond
+    }
+
+    /**
      * The complete property is used by the audio segment producer to signal that the segment is complete and no
      * additional audio or identifiers will be added to the segment.
      *
@@ -116,6 +136,15 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     public BooleanProperty completeProperty()
     {
         return mComplete;
+    }
+
+    /**
+     * Duplicate call audio property.  This flag is set to true whenever a duplicate call detection function detects
+     * an audio segment is a duplicate.
+     */
+    public BooleanProperty duplicateProperty()
+    {
+        return mDuplicate;
     }
 
     /**
@@ -347,6 +376,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
         }
 
         mAudioBuffers.add(audioBuffer);
+        mSampleCount += audioBuffer.length;
     }
 
     /**
@@ -384,10 +414,7 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
             }
 
             //Add all broadcast channels for the alias ... let the set handle duplication.
-            for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
-            {
-                mBroadcastChannels.add(broadcastChannel);
-            }
+            mBroadcastChannels.addAll(alias.getBroadcastChannels());
 
             //Only assign a playback priority if it is lower priority than the current setting.
             int playbackPriority = alias.getPlaybackPriority();
@@ -397,6 +424,23 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
                 mMonitorPriority.set(playbackPriority);
             }
         }
+    }
+
+    /**
+     * Indicates if this audio segment has been flagged as a duplicate audio call
+     */
+    public boolean isDuplicate()
+    {
+        return mDuplicate.get();
+    }
+
+    /**
+     * Sets the duplicate audio call flag for this audio segment
+     * @param duplicate true if this is a duplicate audio segment
+     */
+    public void setDuplicate(boolean duplicate)
+    {
+        mDuplicate.set(duplicate);
     }
 
     /**

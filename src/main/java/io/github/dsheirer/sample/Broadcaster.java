@@ -118,7 +118,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void removeListener(Listener<T> listener)
     {
-        if(listener != null && mListeners.contains(listener))
+        if(listener != null)
         {
             mListeners.remove(listener);
         }

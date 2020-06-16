@@ -72,11 +72,11 @@ public class LCAdjacentSiteStatusBroadcast extends LinkControlWord implements IF
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getMessageStub());
-        sb.append(" RFSS:" + getRfss());
-        sb.append(" SITE:" + getSite());
+        sb.append(" RFSS:").append(getRfss());
+        sb.append(" SITE:").append(getSite());
         sb.append(" SYSTEM:").append(getSystem());
         sb.append(" LRA:").append(getLocationRegistrationArea());
-        sb.append(" CHAN:" + getChannel());
+        sb.append(" CHAN:").append(getChannel());
         sb.append(" SERVICE OPTIONS:").append(getSystemServiceClass());
         return sb.toString();
     }

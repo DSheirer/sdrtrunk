@@ -19,71 +19,53 @@
 package io.github.dsheirer.controller;
 
 import com.jidesoft.swing.JideTabbedPane;
-import io.github.dsheirer.alias.AliasController;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.BroadcastModel;
-import io.github.dsheirer.audio.broadcast.BroadcastPanel;
 import io.github.dsheirer.audio.playback.AudioPanel;
 import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.channel.metadata.NowPlayingPanel;
-import io.github.dsheirer.controller.channel.ChannelController;
-import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.map.MapPanel;
 import io.github.dsheirer.map.MapService;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.TunerViewPanel;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.swing.Icon;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 
 public class ControllerPanel extends JPanel
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ControllerPanel.class);
     private static final long serialVersionUID = 1L;
+    private int mSettingsTabIndex = -1;
 
-    private AliasController mAliasController;
     private AudioPanel mAudioPanel;
-    private BroadcastPanel mBroadcastPanel;
-    private ChannelController mChannelController;
     private NowPlayingPanel mNowPlayingPanel;
-    private ChannelModel mChannelModel;
     private MapPanel mMapPanel;
     private TunerViewPanel mTunerManagerPanel;
-    private BroadcastModel mBroadcastModel;
 
     private JideTabbedPane mTabbedPane;
 
-    public ControllerPanel(AudioPlaybackManager audioPlaybackManager, AliasModel aliasModel, BroadcastModel broadcastModel,
-                           ChannelModel channelModel, ChannelMapModel channelMapModel, ChannelProcessingManager channelProcessingManager,
-                           IconManager iconManager, MapService mapService, SettingsManager settingsManager,
-                           SourceManager sourceManager, TunerModel tunerModel, UserPreferences userPreferences)
+    public ControllerPanel(PlaylistManager playlistManager, AudioPlaybackManager audioPlaybackManager,
+                           IconModel iconModel, MapService mapService, SettingsManager settingsManager,
+                           SourceManager sourceManager, UserPreferences userPreferences)
     {
-        mBroadcastModel = broadcastModel;
-        mChannelModel = channelModel;
-
-        mAudioPanel = new AudioPanel(iconManager, userPreferences, settingsManager, sourceManager, audioPlaybackManager,
-            aliasModel);
-
-        mNowPlayingPanel = new NowPlayingPanel(channelModel, channelProcessingManager, iconManager,
-            aliasModel, userPreferences);
-
-        mMapPanel = new MapPanel(mapService, aliasModel, iconManager, settingsManager);
-
-        mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, iconManager, userPreferences);
-
-        mChannelController = new ChannelController(channelModel, channelProcessingManager, channelMapModel,
-            sourceManager, aliasModel, userPreferences);
-
-        mAliasController = new AliasController(aliasModel, broadcastModel, iconManager, userPreferences);
-
-        mTunerManagerPanel = new TunerViewPanel(tunerModel, userPreferences);
+        mAudioPanel = new AudioPanel(iconModel, userPreferences, settingsManager, sourceManager, audioPlaybackManager,
+            playlistManager.getAliasModel());
+        mNowPlayingPanel = new NowPlayingPanel(playlistManager, iconModel, userPreferences);
+        mMapPanel = new MapPanel(mapService, playlistManager.getAliasModel(), iconModel, settingsManager);
+        mTunerManagerPanel = new TunerViewPanel(sourceManager.getTunerModel(), userPreferences);
 
         init();
     }
@@ -94,20 +76,34 @@ public class ControllerPanel extends JPanel
 
         add(mAudioPanel, "wrap");
 
-        //Tabbed View - configuration, calls, messages, map
-        mTabbedPane = new JideTabbedPane();
+        mTabbedPane = new JideTabbedPane()
+        {
+            @Override
+            public void setSelectedIndex(int index)
+            {
+                if(index == mSettingsTabIndex)
+                {
+                    MyEventBus.getEventBus().post(new ViewPlaylistRequest());
+                }
+                else
+                {
+                    super.setSelectedIndex(index);
+                }
+            }
+        };
         mTabbedPane.setFont(this.getFont());
         mTabbedPane.setForeground(Color.BLACK);
         mTabbedPane.addTab("Now Playing", mNowPlayingPanel);
-        mTabbedPane.addTab("Aliases", mAliasController);
-        mTabbedPane.addTab("Channels", mChannelController);
         mTabbedPane.addTab("Map", mMapPanel);
-        mTabbedPane.addTab("Streaming", mBroadcastPanel);
         mTabbedPane.addTab("Tuners", mTunerManagerPanel);
+
+        Icon gearIcon = IconFontSwing.buildIcon(FontAwesome.COG, 20, Color.DARK_GRAY);
+        mTabbedPane.addTab("Playlist Editor", gearIcon, new JLabel("Show Playlist Manager"));
+        mSettingsTabIndex = mTabbedPane.getTabCount() - 1;
 
         //Set preferred size to influence the split between these panels
         mTabbedPane.setPreferredSize(new Dimension(880, 500));
 
-        add(mTabbedPane,"wrap");
+        add(mTabbedPane, "wrap");
     }
 }

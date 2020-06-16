@@ -20,6 +20,7 @@
 
 package io.github.dsheirer.record.wave;
 
+import com.google.common.base.Joiner;
 import com.mpatric.mp3agic.ID3v24Tag;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
@@ -42,11 +43,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AudioMetadataUtils
 {
@@ -78,7 +75,7 @@ public class AudioMetadataUtils
      */
     public static Map<AudioMetadata, String> getMetadataMap(IdentifierCollection identifierCollection, AliasList aliasList)
     {
-        Map<AudioMetadata, String> audioMetadata = new HashMap<>();
+        Map<AudioMetadata, String> audioMetadata = new EnumMap<>(AudioMetadata.class);
         StringBuilder comments = new StringBuilder();
         audioMetadata.put(AudioMetadata.COMPOSER, SystemProperties.getInstance().getApplicationName());
         String dateCreated = SDF.format(new Date(System.currentTimeMillis()));
@@ -96,9 +93,9 @@ public class AudioMetadataUtils
 
                 List<Alias> aliases = aliasList.getAliases(to);
 
-                for(Alias alias: aliases)
+                if(!aliases.isEmpty())
                 {
-                    sb.append(" ").append(alias.toString());
+                    sb.append("\"").append(Joiner.on("\",\"").join(aliases)).append("\"");
                 }
 
                 audioMetadata.put(AudioMetadata.TRACK_TITLE, sb.toString());
@@ -185,36 +182,36 @@ public class AudioMetadataUtils
     {
         ID3v24Tag tag = new ID3v24Tag();
 
-        for(AudioMetadata metadata: metadataMap.keySet())
+        for(Map.Entry<AudioMetadata, String> entry : metadataMap.entrySet())
         {
-            switch(metadata)
+            switch(entry.getKey())
             {
                 case ALBUM_TITLE:
-                    tag.setAlbum(metadataMap.get(metadata));
+                    tag.setAlbum(entry.getValue());
                     break;
                 case ARTIST_NAME:
-                    tag.setArtist(metadataMap.get(metadata));
+                    tag.setArtist(entry.getValue());
                     break;
                 case COMMENTS:
-                    tag.setComment(metadataMap.get(metadata));
+                    tag.setComment(entry.getValue());
                     break;
                 case COMPOSER:
-                    tag.setComposer(metadataMap.get(metadata));
+                    tag.setComposer(entry.getValue());
                     break;
                 case DATE_CREATED:
-                    tag.setDate(metadataMap.get(metadata));
+                    tag.setDate(entry.getValue());
                     break;
                 case GENRE:
-                    tag.setGenreDescription(metadataMap.get(metadata));
+                    tag.setGenreDescription(entry.getValue());
                     break;
                 case GROUPING:
-                    tag.setGrouping(metadataMap.get(metadata));
+                    tag.setGrouping(entry.getValue());
                     break;
                 case TRACK_TITLE:
-                    tag.setTitle(metadataMap.get(metadata));
+                    tag.setTitle(entry.getValue());
                     break;
                 case YEAR:
-                    tag.setYear(metadataMap.get(metadata));
+                    tag.setYear(entry.getValue());
                     break;
             }
         }

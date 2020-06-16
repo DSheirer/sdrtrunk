@@ -27,7 +27,7 @@ import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.ltrstandard.message.Call;
 import io.github.dsheirer.module.decode.ltrstandard.message.CallEnd;
 import io.github.dsheirer.module.decode.ltrstandard.message.Idle;
-import io.github.dsheirer.module.decode.ltrstandard.message.LTRStandardMessage;
+import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
 import io.github.dsheirer.module.decode.ltrstandard.message.UnknownMessage;
 import io.github.dsheirer.sample.Listener;
 
@@ -62,12 +62,12 @@ public class LTRStandardMessageProcessor implements Listener<CorrectedBinaryMess
 
             if(crc.passes())
             {
-                LTRStandardMessage message;
+                LTRMessage message;
 
-                int channel = binaryMessage.getInt(LTRStandardMessage.CHANNEL);
-                int home = binaryMessage.getInt(LTRStandardMessage.HOME_REPEATER);
-                int free = binaryMessage.getInt(LTRStandardMessage.FREE);
-                int group = binaryMessage.getInt(LTRStandardMessage.GROUP);
+                int channel = binaryMessage.getInt(LTRMessage.CHANNEL);
+                int home = binaryMessage.getInt(LTRMessage.HOME_REPEATER);
+                int free = binaryMessage.getInt(LTRMessage.FREE);
+                int group = binaryMessage.getInt(LTRMessage.GROUP);
 
                 if(isValidChannel(channel) && isValidChannel(home) && isValidChannel(free))
                 {

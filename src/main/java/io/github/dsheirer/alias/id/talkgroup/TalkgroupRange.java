@@ -28,7 +28,7 @@ import io.github.dsheirer.protocol.Protocol;
 /**
  * Integer talkgroup identifier range of values with protocol.
  */
-public class TalkgroupRange extends AliasID
+public class TalkgroupRange extends AliasID implements Comparable<TalkgroupRange>
 {
     private Protocol mProtocol = Protocol.UNKNOWN;
     private int mMinTalkgroup;
@@ -52,6 +52,12 @@ public class TalkgroupRange extends AliasID
         mMaxTalkgroup = maxTalkgroup;
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "min")
     public int getMinTalkgroup()
     {
@@ -61,6 +67,7 @@ public class TalkgroupRange extends AliasID
     public void setMinTalkgroup(int minTalkgroup)
     {
         mMinTalkgroup = minTalkgroup;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "max")
@@ -72,6 +79,7 @@ public class TalkgroupRange extends AliasID
     public void setMaxTalkgroup(int maxTalkgroup)
     {
         mMaxTalkgroup = maxTalkgroup;
+        updateValueProperty();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "protocol")
@@ -83,6 +91,7 @@ public class TalkgroupRange extends AliasID
     public void setProtocol(Protocol protocol)
     {
         mProtocol = protocol;
+        updateValueProperty();
     }
 
     @Override
@@ -97,7 +106,8 @@ public class TalkgroupRange extends AliasID
         return talkgroupFormat.getMinimumValidValue() <= mMinTalkgroup &&
                mMinTalkgroup <= talkgroupFormat.getMaximumValidValue() &&
                talkgroupFormat.getMinimumValidValue() <= mMaxTalkgroup &&
-               mMaxTalkgroup <= talkgroupFormat.getMaximumValidValue();
+               mMaxTalkgroup <= talkgroupFormat.getMaximumValidValue() &&
+               mMinTalkgroup < mMaxTalkgroup;
     }
 
     public String toString()
@@ -140,6 +150,12 @@ public class TalkgroupRange extends AliasID
         return getMinTalkgroup() <= talkgroupValue && talkgroupValue <= getMaxTalkgroup();
     }
 
+    @Override
+    public boolean overlaps(AliasID other)
+    {
+        return other instanceof TalkgroupRange && overlaps((TalkgroupRange)other);
+    }
+
     /**
      * Indicates if this talkgroup range overlaps the talkgroup range argument.
      * @param talkgroupRange to check for overlap
@@ -160,5 +176,30 @@ public class TalkgroupRange extends AliasID
     public AliasIDType getType()
     {
         return AliasIDType.TALKGROUP_RANGE;
+    }
+
+    @Override
+    public int compareTo(TalkgroupRange other)
+    {
+        if(other == null)
+        {
+            return -1;
+        }
+
+        if(getProtocol().equals(other.getProtocol()))
+        {
+            if(getMinTalkgroup() == other.getMinTalkgroup())
+            {
+                return Integer.compare(getMaxTalkgroup(), other.getMaxTalkgroup());
+            }
+            else
+            {
+                return Integer.compare(getMinTalkgroup(), other.getMinTalkgroup());
+            }
+        }
+        else
+        {
+            return getProtocol().compareTo(other.getProtocol());
+        }
     }
 }

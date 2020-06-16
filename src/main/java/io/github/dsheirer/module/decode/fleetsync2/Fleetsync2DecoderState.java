@@ -167,11 +167,9 @@ public class Fleetsync2DecoderState extends DecoderState
         }
         else
         {
-            Iterator<FleetsyncIdentifier> it = mIdents.iterator();
 
-            while(it.hasNext())
-            {
-                sb.append("  ").append(it.next().formatted()).append("\n");
+            for (FleetsyncIdentifier mIdent : mIdents) {
+                sb.append("  ").append(mIdent.formatted()).append("\n");
             }
         }
 

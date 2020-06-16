@@ -19,7 +19,7 @@
  */
 package io.github.dsheirer.map;
 
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
@@ -39,11 +39,11 @@ public class MapService implements Listener<IDecodeEvent>
     private int mMaxHistory = 2;
     private List<IPlottableUpdateListener> mListeners = new ArrayList<IPlottableUpdateListener>();
     private Map<Identifier,PlottableEntityHistory> mEntityHistories = new HashMap<>();
-    private IconManager mIconManager;
+    private IconModel mIconModel;
 
-    public MapService(IconManager resourceManager)
+    public MapService(IconModel resourceManager)
     {
-        mIconManager = resourceManager;
+        mIconModel = resourceManager;
     }
 
     @Override

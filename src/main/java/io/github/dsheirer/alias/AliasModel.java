@@ -1,59 +1,70 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
  */
 package io.github.dsheirer.alias;
 
+import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
-import io.github.dsheirer.sample.Broadcaster;
-import io.github.dsheirer.sample.Listener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Alias Model contains all aliases and is responsible for creation and management of alias lists.  Alias lists are a
  * set of aliases that all share a common alias list name and can be attached to a decoding channel for aliasing
  * identifiers produced by channel decoder(s).
  */
-public class AliasModel extends AbstractTableModel
+public class AliasModel
 {
-    private static final long serialVersionUID = 1L;
-
-    public static final int COLUMN_LIST = 0;
-    public static final int COLUMN_GROUP = 1;
-    public static final int COLUMN_NAME = 2;
-    public static final int COLUMN_ICON = 3;
-    public static final int COLUMN_COLOR = 4;
-
-    private List<Alias> mAliases = new CopyOnWriteArrayList<>();
-    private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
+    private final static Logger mLog = LoggerFactory.getLogger(AliasModel.class);
+    public static final String NO_ALIAS_LIST = "(No Alias List)";
+    private ObservableList<Alias> mAliases = FXCollections.observableArrayList(Alias.extractor());
+    private ObservableList<String> mAliasListNames = FXCollections.observableArrayList();
     private Map<String,AliasList> mAliasListMap = new HashMap<>();
 
     public AliasModel()
     {
+        //Register a listener to detect alias changes and broadcast change events to cause playlist save requests
+        mAliases.addListener(new AliasListChangeListener());
+    }
+
+    public ObservableList<Alias> aliasList()
+    {
+        return mAliases;
+    }
+
+    public ObservableList<String> aliasListNames()
+    {
+        return mAliasListNames;
     }
 
     /**
@@ -64,14 +75,17 @@ public class AliasModel extends AbstractTableModel
         return Collections.unmodifiableList(mAliases);
     }
 
-    public Alias getAliasAtIndex(int row)
+    /**
+     * Removes all aliases from the list and broadcasts the alias delete event for each
+     */
+    public void clear()
     {
-        if(mAliases.size() >= row)
-        {
-            return mAliases.get(row);
-        }
+        List<Alias> aliasToRemove = new ArrayList<>(mAliases);
 
-        return null;
+        for(Alias alias: aliasToRemove)
+        {
+            removeAlias(alias);
+        }
     }
 
     /**
@@ -117,25 +131,23 @@ public class AliasModel extends AbstractTableModel
             return new AliasList(name);
         }
 
-        if(mAliasListMap.containsKey(name))
+        AliasList mapValue = mAliasListMap.get(name);
+        if (mapValue != null)
         {
-            return mAliasListMap.get(name);
+            return mapValue;
         }
 
         AliasList aliasList = new AliasList(name);
 
         for(Alias alias : mAliases)
         {
-            if(alias.hasList() && alias.getList().equalsIgnoreCase(name))
+            if(alias.hasList() && alias.getAliasListName().equalsIgnoreCase(name))
             {
                 aliasList.addAlias(alias);
             }
         }
 
         mAliasListMap.put(name, aliasList);
-
-        //Register the new alias list to receive updates from this model
-        addListener(aliasList);
 
         return aliasList;
     }
@@ -145,19 +157,7 @@ public class AliasModel extends AbstractTableModel
      */
     public List<String> getListNames()
     {
-        List<String> listNames = new ArrayList<>();
-
-        for(Alias alias : mAliases)
-        {
-            if(alias.hasList() && !listNames.contains(alias.getList()))
-            {
-                listNames.add(alias.getList());
-            }
-        }
-
-        Collections.sort(listNames);
-
-        return listNames;
+        return mAliasListNames;
     }
 
     /**
@@ -181,33 +181,6 @@ public class AliasModel extends AbstractTableModel
     }
 
     /**
-     * Returns a list of alias group names for all aliases that have a matching
-     * list name value
-     */
-    public List<String> getGroupNames(String listName)
-    {
-        List<String> groupNames = new ArrayList<>();
-
-        if(listName != null)
-        {
-            for(Alias alias : mAliases)
-            {
-                if(alias.hasList() &&
-                    alias.hasGroup() &&
-                    listName.equals(alias.getList()) &&
-                    !groupNames.contains(alias.getGroup()))
-                {
-                    groupNames.add(alias.getGroup());
-                }
-            }
-        }
-
-        Collections.sort(groupNames);
-
-        return groupNames;
-    }
-
-    /**
      * Bulk loading of aliases
      */
     public void addAliases(List<Alias> aliases)
@@ -221,173 +194,177 @@ public class AliasModel extends AbstractTableModel
     /**
      * Adds the alias to the model
      */
-    public int addAlias(Alias alias)
+    public void addAlias(Alias alias)
     {
-        if(alias != null)
+        if(mAliases.contains(alias))
         {
-            mAliases.add(alias);
-
-            int index = mAliases.size() - 1;
-
-            fireTableRowsInserted(index, index);
-
-            broadcast(new AliasEvent(alias, AliasEvent.Event.ADD));
-
-            return index;
+            removeAlias(alias);
         }
 
-        return -1;
+        mAliases.add(alias);
+    }
+
+    private boolean hasAliasList(String aliasListName)
+    {
+        return aliasListName != null && mAliasListMap.containsKey(aliasListName);
+    }
+
+    public void addAliasList(String aliasListName)
+    {
+        if(aliasListName != null && !aliasListName.isEmpty())
+        {
+            if(!mAliasListNames.contains(aliasListName))
+            {
+                mAliasListNames.add(aliasListName);
+            }
+        }
+        else if(!mAliasListNames.contains(NO_ALIAS_LIST))
+        {
+            //This list allows users to view unassigned aliases so that they can move them to a valid alias list, but
+            // it is not assignable to a channel
+            mAliasListNames.add(NO_ALIAS_LIST);
+        }
     }
 
     /**
-     * Removes the channel from the model and broadcasts a channel remove event
+     * Removes the alias from this model and an alias list (if one exists)
      */
     public void removeAlias(Alias alias)
     {
         if(alias != null)
         {
-            int index = mAliases.indexOf(alias);
-
             mAliases.remove(alias);
 
-            fireTableRowsDeleted(index, index);
-
-            broadcast(new AliasEvent(alias, AliasEvent.Event.DELETE));
+            if(hasAliasList(alias.getAliasListName()))
+            {
+                getAliasList(alias.getAliasListName()).removeAlias(alias);
+            }
         }
     }
 
     /**
-     * Renames any broadcast channels that have the previous name.
-     *
-     * @param previousName to rename
-     * @param newName to assign to the broadcast channel
+     * Retrieves all aliases that match the alias list and have at least one alias ID of the specified type
+     * @param aliasListName to search
+     * @param type to find
+     * @return list of aliases
      */
-    public void renameBroadcastChannel(String previousName, String newName)
+    public List<Alias> getAliases(String aliasListName, AliasIDType type)
     {
-        if(previousName == null || previousName.isEmpty() || newName == null || newName.isEmpty())
+        List<Alias> aliases = new ArrayList<>();
+
+        for(Alias alias : mAliases)
+        {
+            if(alias.hasList() && alias.getAliasListName().equalsIgnoreCase(aliasListName))
+            {
+                for(AliasID aliasID: alias.getAliasIdentifiers())
+                {
+                    if(aliasID.getType() == type)
+                    {
+                        aliases.add(alias);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return aliases;
+    }
+
+    /**
+     * Indicates that one or more of the aliases managed by this model are configured to stream to the specified
+     * broadcast channel argument.
+     * @param broadcastChannel to check
+     * @return true if the broadcast channel is non-null, non-empty and at least one alias is configured to stream to
+     * the specified stream name.
+     */
+    public boolean hasAliasesWithBroadcastChannel(String broadcastChannel)
+    {
+        if(broadcastChannel == null || broadcastChannel.isEmpty())
+        {
+            return false;
+        }
+
+        for(Alias alias: mAliases)
+        {
+            if(alias.hasBroadcastChannel(broadcastChannel))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Updates all aliases configured to stream to the previousStreamName with the updatedStreamName
+     * @param previousStreamName to be removed
+     * @param updatedStreamName to be added
+     */
+    public void updateBroadcastChannel(String previousStreamName, String updatedStreamName)
+    {
+        if(previousStreamName == null || previousStreamName.isEmpty() || updatedStreamName == null || updatedStreamName.isEmpty())
         {
             return;
         }
 
-        for(Alias alias : mAliases)
+        for(Alias alias: mAliases)
         {
-            if(alias.hasBroadcastChannel(previousName))
+            if(alias.hasBroadcastChannel(previousStreamName))
             {
-                for(BroadcastChannel broadcastChannel : alias.getBroadcastChannels())
+                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
                 {
-                    if(broadcastChannel.getChannelName().contentEquals(previousName))
+                    if(broadcastChannel.getChannelName().contentEquals(previousStreamName))
                     {
-                        broadcastChannel.setChannelName(newName);
+                        alias.removeAliasID(broadcastChannel);
+
+                        if(!alias.hasBroadcastChannel(updatedStreamName))
+                        {
+                            alias.addAliasID(new BroadcastChannel(updatedStreamName));
+                        }
                     }
                 }
             }
         }
     }
 
-    @Override
-    public int getRowCount()
+    /**
+     * Monitors alias additions and removals and updates alias lists
+     */
+    public class AliasListChangeListener implements ListChangeListener<Alias>
     {
-        return mAliases.size();
-    }
-
-    @Override
-    public int getColumnCount()
-    {
-        return 5;
-    }
-
-    @Override
-    public String getColumnName(int columnIndex)
-    {
-        switch(columnIndex)
+        @Override
+        public void onChanged(ListChangeListener.Change<? extends Alias> change)
         {
-            case COLUMN_LIST:
-                return "List";
-            case COLUMN_GROUP:
-                return "Group";
-            case COLUMN_NAME:
-                return "Name";
-            case COLUMN_ICON:
-                return "Icon";
-            case COLUMN_COLOR:
-                return "Color";
+            while(change.next())
+            {
+                if(change.wasAdded())
+                {
+                    for(Alias alias: change.getAddedSubList())
+                    {
+                        addAliasList(alias.getAliasListName());
+
+                        if(hasAliasList(alias.getAliasListName()))
+                        {
+                            getAliasList(alias.getAliasListName()).addAlias(alias);
+                        }
+                    }
+                }
+                else if(change.wasRemoved())
+                {
+                    for(Alias alias: change.getRemoved())
+                    {
+                        if(hasAliasList(alias.getAliasListName()))
+                        {
+                            AliasList aliasList = getAliasList(alias.getName());
+
+                            if(alias != null)
+                            {
+                                aliasList.removeAlias(alias);
+                            }
+                        }
+                    }
+                }
+            }
         }
-
-        return null;
-    }
-
-    @Override
-    public Class<?> getColumnClass(int columnIndex)
-    {
-        if(columnIndex == COLUMN_COLOR)
-        {
-            return Integer.class;
-        }
-
-        return String.class;
-    }
-
-    @Override
-    public boolean isCellEditable(int rowIndex, int columnIndex)
-    {
-        return false;
-    }
-
-    @Override
-    public Object getValueAt(int rowIndex, int columnIndex)
-    {
-        Alias alias = mAliases.get(rowIndex);
-
-        switch(columnIndex)
-        {
-            case COLUMN_LIST:
-                return alias.getList();
-            case COLUMN_GROUP:
-                return alias.getGroup();
-            case COLUMN_NAME:
-                return alias.getName();
-            case COLUMN_ICON:
-                return alias.getIconName();
-            case COLUMN_COLOR:
-                return alias.getColor();
-        }
-
-        return null;
-    }
-
-    @Override
-    public void setValueAt(Object aValue, int rowIndex, int columnIndex)
-    {
-        throw new IllegalArgumentException("Not yet implemented");
-    }
-
-    public void broadcast(AliasEvent event)
-    {
-        Alias alias = event.getAlias();
-
-        //Validate the alias following a user action that changed the alias or any alias IDs
-        if(alias != null)
-        {
-            alias.validate();
-        }
-
-        if(event.getEvent() == AliasEvent.Event.CHANGE)
-        {
-            int index = mAliases.indexOf(event.getAlias());
-
-            fireTableRowsUpdated(index, index);
-        }
-
-        mAliasEventBroadcaster.broadcast(event);
-    }
-
-    public void addListener(Listener<AliasEvent> listener)
-    {
-        mAliasEventBroadcaster.addListener(listener);
-    }
-
-    public void removeListener(Listener<AliasEvent> listener)
-    {
-        mAliasEventBroadcaster.removeListener(listener);
     }
 }

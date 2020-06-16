@@ -40,6 +40,7 @@ import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.config.WithCallTimeout;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -108,14 +109,19 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         mStateMachine.addListener(mSquelchController);
         mStateMachine.setChannelType(mChannel.getChannelType());
         mStateMachine.setIdentifierUpdateListener(mIdentifierCollection);
-        mStateMachine.setEndTimeoutBuffer(RESET_TIMEOUT_DELAY);
+        mStateMachine.setEndTimeoutBufferMilliseconds(RESET_TIMEOUT_DELAY);
         if(channel.getChannelType() == ChannelType.STANDARD)
         {
-            mStateMachine.setFadeTimeoutBuffer(FADE_TIMEOUT_DELAY);
+            mStateMachine.setFadeTimeoutBufferMilliseconds(FADE_TIMEOUT_DELAY);
         }
         else
         {
-            mStateMachine.setFadeTimeoutBuffer(DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS * 1000);
+            final DecodeConfiguration decodeConfig = channel.getDecodeConfiguration();
+            final int fadeTimeoutSeconds = decodeConfig instanceof WithCallTimeout
+                ? ((WithCallTimeout) decodeConfig).getCallTimeoutSeconds()
+                : DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS;
+
+            mStateMachine.setFadeTimeoutBufferMilliseconds(fadeTimeoutSeconds * 1000);
         }
     }
 
@@ -428,7 +434,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
-                            mStateMachine.setFadeTimeoutBuffer(timeout.getCallTimeout());
+                            mStateMachine.setFadeTimeoutBufferMilliseconds(timeout.getCallTimeoutMilliseconds());
                         }
                     case CONTINUATION:
                     case DECODE:

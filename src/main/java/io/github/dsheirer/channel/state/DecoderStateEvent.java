@@ -128,11 +128,11 @@ public class DecoderStateEvent
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Decoder State Event - source[" + mSource.getClass() +
-            "] event[" + mEvent.toString() +
-            "] state[" + mState.toString() +
-            "] timeslot[" + mTimeslot +
-            "] frequency [" + mFrequency + "]");
+        sb.append("Decoder State Event - source[").append(mSource.getClass())
+                .append("] event[").append(mEvent)
+                .append("] state[").append(mState)
+                .append("] timeslot[").append(mTimeslot)
+                .append("] frequency [").append(mFrequency).append("]");
 
         return sb.toString();
     }

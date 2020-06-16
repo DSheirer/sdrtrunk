@@ -81,6 +81,22 @@ public class ChannelEvent
     }
 
     /**
+     * Creates a request enable channel event
+     */
+    public static ChannelEvent requestEnable(Channel channel)
+    {
+        return new ChannelEvent(channel, Event.REQUEST_ENABLE);
+    }
+
+    /**
+     * Creates a new request disable channel event
+     */
+    public static ChannelEvent requestDisable(Channel channel)
+    {
+        return new ChannelEvent(channel, Event.REQUEST_DISABLE);
+    }
+
+    /**
      * Channel events to describe the specific event
      */
     public enum Event

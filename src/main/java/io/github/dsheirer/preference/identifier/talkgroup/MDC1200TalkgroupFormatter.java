@@ -23,7 +23,7 @@ package io.github.dsheirer.preference.identifier.talkgroup;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 
-public class MDC1200TalkgroupFormatter extends IntegerFormatter
+public class MDC1200TalkgroupFormatter extends AbstractIntegerFormatter
 {
     public static final int DECIMAL_WIDTH = 5;
     public static final int HEXADECIMAL_WIDTH = 4;
@@ -58,6 +58,21 @@ public class MDC1200TalkgroupFormatter extends IntegerFormatter
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
+        }
+    }
+
+    @Override
+    public String format(int value, IntegerFormat integerFormat)
+    {
+        switch(integerFormat)
+        {
+            case DECIMAL:
+            case FORMATTED:
+                return format(value);
+            case HEXADECIMAL:
+                return toHex(value);
+            default:
+                throw new IllegalArgumentException("Unrecognized integer format: " + integerFormat);
         }
     }
 }

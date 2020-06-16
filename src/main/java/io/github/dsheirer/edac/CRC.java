@@ -63,16 +63,10 @@ public enum CRC
 
         StringBuilder sb = new StringBuilder();
 
-        for(int x = 0; x < checks.length; x++)
-        {
-            CRC check = checks[x];
-
-            if(check != null)
-            {
+        for (CRC check : checks) {
+            if (check != null) {
                 sb.append(check.getAbbreviation());
-            }
-            else
-            {
+            } else {
                 sb.append(CRC.UNKNOWN.getAbbreviation());
             }
         }

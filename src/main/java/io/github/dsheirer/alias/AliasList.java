@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -28,9 +28,11 @@ import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.Radio;
 import io.github.dsheirer.alias.id.radio.RadioRange;
-import io.github.dsheirer.alias.id.status.StatusID;
+import io.github.dsheirer.alias.id.status.UnitStatusID;
+import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
+import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
@@ -40,32 +42,41 @@ import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.status.UnitStatusIdentifier;
 import io.github.dsheirer.identifier.status.UserStatusIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.identifier.tone.ToneIdentifier;
+import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.protocol.Protocol;
-import io.github.dsheirer.sample.Listener;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
  * List of aliases that share the same alias list name and provides convenient methods for looking up alias
  * objects that match an identifier.
  */
-public class AliasList implements Listener<AliasEvent>
+public class AliasList
 {
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
-    private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new HashMap<>();
-    private Map<Protocol,RadioAliasList> mRadioProtocolMap = new HashMap<>();
+    private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new EnumMap<>(Protocol.class);
+    private Map<Protocol,RadioAliasList> mRadioProtocolMap = new EnumMap<>(Protocol.class);
     private Map<String,Alias> mESNMap = new HashMap<>();
-    private Map<Integer,Alias> mStatusMap = new HashMap<>();
+    private Map<Integer,Alias> mUnitStatusMap = new HashMap<>();
+    private Map<Integer,Alias> mUserStatusMap = new HashMap<>();
+    private Map<ToneSequence,Alias> mToneSequenceMap = new HashMap<>();
     private boolean mHasAliasActions = false;
     private String mName;
+    private ObservableList<Alias> mAliases = FXCollections.observableArrayList(Alias.extractor());
 
     /**
      * List of aliases where all aliases share the same list name.  Contains
@@ -79,21 +90,31 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
+     * Observable list of aliases contained in this alias list
+     */
+    public ObservableList<Alias> aliases()
+    {
+        return mAliases;
+    }
+
+    /**
      * Adds the alias to this list
      */
     public void addAlias(Alias alias)
     {
         if(alias != null)
         {
-            for(AliasID aliasID : alias.getId())
-            {
-                addAliasID(aliasID, alias);
-            }
+            alias.getAliasIdentifiers().stream().forEach(aliasID -> addAliasID(aliasID, alias));
         }
 
         if(alias.hasActions())
         {
             mHasAliasActions = true;
+        }
+
+        if(!mAliases.contains(alias))
+        {
+            mAliases.add(alias);
         }
     }
 
@@ -161,7 +182,7 @@ public class AliasList implements Listener<AliasEvent>
                         radioRangeAliasList.add(radioRange, alias);
                         break;
                     case ESN:
-                        String esn = ((Esn) id).getEsn();
+                        String esn = ((Esn)id).getEsn();
 
                         if(esn != null && !esn.isEmpty())
                         {
@@ -169,7 +190,67 @@ public class AliasList implements Listener<AliasEvent>
                         }
                         break;
                     case STATUS:
-                        mStatusMap.put(((StatusID) id).getStatus(), alias);
+                        int userStatus = ((UserStatusID)id).getStatus();
+
+                        if(mUserStatusMap.containsKey(userStatus) && !mUserStatusMap.get(userStatus).equals(alias))
+                        {
+                            id.setOverlap(true);
+
+                            Alias existing = mUserStatusMap.get(userStatus);
+
+                            for(AliasID aliasID: existing.getAliasIdentifiers())
+                            {
+                                if(aliasID instanceof UserStatusID && ((UserStatusID)aliasID).getStatus() == userStatus)
+                                {
+                                    aliasID.setOverlap(true);
+                                }
+                            }
+                        }
+                        mUserStatusMap.put(userStatus, alias);
+                        break;
+                    case UNIT_STATUS:
+                        int unitStatus = ((UnitStatusID)id).getStatus();
+
+                        if(mUnitStatusMap.containsKey(unitStatus) && !mUnitStatusMap.get(unitStatus).equals(alias))
+                        {
+                            id.setOverlap(true);
+
+                            Alias existing = mUnitStatusMap.get(unitStatus);
+
+                            for(AliasID aliasID: existing.getAliasIdentifiers())
+                            {
+                                if(aliasID instanceof UnitStatusID && ((UnitStatusID)aliasID).getStatus() == unitStatus)
+                                {
+                                    aliasID.setOverlap(true);
+                                }
+                            }
+                        }
+                        mUnitStatusMap.put(unitStatus, alias);
+                        break;
+                    case TONES:
+                        ToneSequence toneSequence = ((TonesID)id).getToneSequence();
+
+                        if(toneSequence != null)
+                        {
+                            if(mToneSequenceMap.containsKey(toneSequence) && !mToneSequenceMap.get(toneSequence).equals(alias))
+                            {
+                                id.setOverlap(true);
+
+                                Alias existing = mToneSequenceMap.get(toneSequence);
+
+                                for(AliasID aliasID: existing.getAliasIdentifiers())
+                                {
+                                    if(aliasID instanceof TonesID && aliasID.equals(id))
+                                    {
+                                        aliasID.setOverlap(true);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                mToneSequenceMap.put(toneSequence, alias);
+                            }
+                        }
                         break;
                 }
             }
@@ -185,13 +266,45 @@ public class AliasList implements Listener<AliasEvent>
      */
     public void removeAlias(Alias alias)
     {
-        for(TalkgroupAliasList talkgroupAliasList: mTalkgroupProtocolMap.values())
+        //Note: because the alias' identifiers could have changed from when we initially added the alias, we have to
+        //inspect every collection and map to remove the alias completely.
+        mAliases.remove(alias);
+
+        mTalkgroupProtocolMap.values().stream().forEach(talkgroupAliasList -> talkgroupAliasList.remove(alias));
+        mRadioProtocolMap.values().stream().forEach(radioAliasList -> radioAliasList.remove(alias));
+
+        Collection<Alias> collection = Collections.singleton(alias);
+        mESNMap.values().removeAll(collection);
+        mUnitStatusMap.values().removeAll(collection);
+        mUserStatusMap.values().removeAll(collection);
+        mToneSequenceMap.values().removeAll(collection);
+
+        validate();
+    }
+
+    /**
+     * Identifies all aliases with an alias identifier that has the overlap flag set, resets the flag, and then readds
+     * each alias back to this alias list so that overlap can be detected again.
+     */
+    public void validate()
+    {
+        Set<Alias> overlapAliases = new HashSet<>();
+
+        List<Alias> aliases = new ArrayList<>(mAliases);
+
+        for(Alias alias: aliases)
         {
-            talkgroupAliasList.remove(alias);
+            for(AliasID aliasID: alias.getAliasIdentifiers())
+            {
+                if(aliasID.overlapProperty().get())
+                {
+                    aliasID.setOverlap(false);
+                    overlapAliases.add(alias);
+                }
+            }
         }
 
-        remove(alias, mStatusMap);
-        remove(alias, mESNMap);
+        overlapAliases.stream().forEach(alias -> addAlias(alias));
     }
 
     /**
@@ -235,39 +348,15 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
-     * Receive alias change event notifications and modify this list accordingly
+     * Updates the alias by removing it from this list and then adding it back to this list when the list name matches.
      */
-    @Override
-    public void receive(AliasEvent event)
+    public void updateAlias(Alias alias)
     {
-        if(hasName())
-        {
-            Alias alias = event.getAlias();
+        removeAlias(alias);
 
-            switch(event.getEvent())
-            {
-                case ADD:
-                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
-                    {
-                        addAlias(alias);
-                    }
-                    break;
-                case CHANGE:
-                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
-                    {
-                        removeAlias(alias);
-                        addAlias(alias);
-                    }
-                    break;
-                case DELETE:
-                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
-                    {
-                        removeAlias(alias);
-                    }
-                    break;
-                default:
-                    break;
-            }
+        if(hasName() && getName().equals(alias.getAliasListName()))
+        {
+            addAlias(alias);
         }
     }
 
@@ -342,14 +431,31 @@ public class AliasList implements Listener<AliasEvent>
                     if(identifier instanceof UnitStatusIdentifier)
                     {
                         int status = ((UnitStatusIdentifier)identifier).getValue();
-                        return toList(mStatusMap.get(status));
+                        return toList(mUserStatusMap.get(status));
                     }
                     break;
                 case USER_STATUS:
                     if(identifier instanceof UserStatusIdentifier)
                     {
                         int status = ((UserStatusIdentifier)identifier).getValue();
-                        return toList(mStatusMap.get(status));
+                        return toList(mUserStatusMap.get(status));
+                    }
+                    break;
+                case TONE:
+                    if(identifier instanceof ToneIdentifier)
+                    {
+                        ToneSequence toneSequence = ((ToneIdentifier)identifier).getValue();
+
+                        if(toneSequence != null && toneSequence.hasTones())
+                        {
+                            for(Map.Entry<ToneSequence,Alias> entry: mToneSequenceMap.entrySet())
+                            {
+                                if(entry.getKey().isContainedIn(toneSequence))
+                                {
+                                    return toList(entry.getValue());
+                                }
+                            }
+                        }
                     }
                     break;
             }
@@ -483,23 +589,6 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
-     * Removes the alias (as a value) from the specified map
-     */
-    public static void remove(Alias alias, Map map)
-    {
-        Iterator<Map.Entry> it = map.entrySet().iterator();
-
-        while(it.hasNext())
-        {
-            if(it.next().getValue().equals(alias))
-            {
-                it.remove();
-            }
-        }
-    }
-
-
-    /**
      * Listing of talkgroups and ranges for a specific protocol
      */
     public class TalkgroupAliasList
@@ -515,16 +604,17 @@ public class AliasList implements Listener<AliasEvent>
         {
             int value = identifier.getValue();
 
-            if(mTalkgroupAliasMap.containsKey(value))
+            Alias mapValue = mTalkgroupAliasMap.get(value);
+            if (mapValue != null)
             {
-                return mTalkgroupAliasMap.get(value);
+                return mapValue;
             }
 
-            for(TalkgroupRange talkgroupRange: mTalkgroupRangeAliasMap.keySet())
+            for(Map.Entry<TalkgroupRange, Alias> entry : mTalkgroupRangeAliasMap.entrySet())
             {
-                if(talkgroupRange.contains(value))
+                if(entry.getKey().contains(value))
                 {
-                    return mTalkgroupRangeAliasMap.get(talkgroupRange);
+                    return entry.getValue();
                 }
             }
 
@@ -533,16 +623,22 @@ public class AliasList implements Listener<AliasEvent>
 
         public void add(Talkgroup talkgroup, Alias alias)
         {
-            //Detect talkgroup collisions
+            //Detect talkgroup collisions and set overlap flag for both
             if(mTalkgroupAliasMap.containsKey(talkgroup.getValue()))
             {
                 Alias existing = mTalkgroupAliasMap.get(talkgroup.getValue());
 
                 if(!existing.equals(alias))
                 {
-                    mLog.warn("Alias [" + alias.getName() + "] talkgroup [" + talkgroup.getValue() +
-                        "] has the same talkgroup value as alias [" + existing.getName() +
-                        "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+                    talkgroup.setOverlap(true);
+
+                    for(AliasID aliasID: existing.getAliasIdentifiers())
+                    {
+                        if(aliasID instanceof Talkgroup && ((Talkgroup)aliasID).getValue() == talkgroup.getValue())
+                        {
+                            aliasID.setOverlap(true);
+                        }
+                    }
                 }
             }
 
@@ -556,32 +652,21 @@ public class AliasList implements Listener<AliasEvent>
             {
                 if(talkgroupRange.overlaps(entry.getKey()) && !entry.getValue().equals(alias))
                 {
-                    mLog.warn("Alias [" + alias.getName() + "] with talkgroup range [" + talkgroupRange.toString() +
-                        "] overlaps with alias [" + entry.getValue().getName() +
-                        "] with talkgroup range [" + entry.getKey().toString() + "] for alias list [" + getName() + "]");
+                    talkgroupRange.setOverlap(true);
+                    entry.getKey().setOverlap(true);
                 }
             }
 
             mTalkgroupRangeAliasMap.put(talkgroupRange, alias);
         }
 
-        public void remove(Talkgroup talkgroup)
-        {
-            mTalkgroupAliasMap.remove(talkgroup.getValue());
-        }
-
-        public void remove(TalkgroupRange talkgroupRange)
-        {
-            mTalkgroupRangeAliasMap.remove(talkgroupRange);
-        }
-
         /**
-         * Removes the alias from all internal maps
+         * Removes the alias from both the talkgroup and the talkgroup range maps.
          */
         public void remove(Alias alias)
         {
-            AliasList.remove(alias, mTalkgroupAliasMap);
-            AliasList.remove(alias, mTalkgroupRangeAliasMap);
+            mTalkgroupAliasMap.values().removeAll(Collections.singleton(alias));
+            mTalkgroupRangeAliasMap.values().removeAll(Collections.singleton(alias));
         }
     }
 
@@ -601,16 +686,17 @@ public class AliasList implements Listener<AliasEvent>
         {
             int value = identifier.getValue();
 
-            if(mRadioAliasMap.containsKey(value))
+            Alias mapValue = mRadioAliasMap.get(value);
+            if(mapValue != null)
             {
-                return mRadioAliasMap.get(value);
+                return mapValue;
             }
 
-            for(RadioRange radioRange: mRadioRangeAliasMap.keySet())
+            for(Map.Entry<RadioRange, Alias> entry : mRadioRangeAliasMap.entrySet())
             {
-                if(radioRange.contains(value))
+                if(entry.getKey().contains(value))
                 {
-                    return mRadioRangeAliasMap.get(radioRange);
+                    return entry.getValue();
                 }
             }
 
@@ -626,9 +712,15 @@ public class AliasList implements Listener<AliasEvent>
 
                 if(!existing.equals(alias))
                 {
-                    mLog.warn("Alias [" + alias.getName() + "] radio ID [" + radio.getValue() +
-                        "] has the same value as alias [" + existing.getName() +
-                        "] - alias [" + alias.getName() + "] will be used for alias list [" + getName() + "]");
+                    radio.setOverlap(true);
+
+                    for(AliasID aliasID: existing.getAliasIdentifiers())
+                    {
+                        if(aliasID instanceof Radio && ((Radio)aliasID).getValue() == radio.getValue())
+                        {
+                            aliasID.setOverlap(true);
+                        }
+                    }
                 }
             }
 
@@ -642,32 +734,21 @@ public class AliasList implements Listener<AliasEvent>
             {
                 if(radioRange.overlaps(entry.getKey()) && !entry.getValue().equals(alias))
                 {
-                    mLog.warn("Alias [" + alias.getName() + "] with radio ID range [" + radioRange.toString() +
-                        "] overlaps with alias [" + entry.getValue().getName() +
-                        "] with range [" + entry.getKey().toString() + "] for alias list [" + getName() + "]");
+                    radioRange.setOverlap(true);
+                    entry.getKey().setOverlap(true);
                 }
             }
 
             mRadioRangeAliasMap.put(radioRange, alias);
         }
 
-        public void remove(Radio radio)
-        {
-            mRadioAliasMap.remove(radio.getValue());
-        }
-
-        public void remove(RadioRange radioRange)
-        {
-            mRadioRangeAliasMap.remove(radioRange);
-        }
-
         /**
-         * Removes the alias from all internal maps
+         * Removes the alias from both the radio and the radio range maps.
          */
         public void remove(Alias alias)
         {
-            AliasList.remove(alias, mRadioAliasMap);
-            AliasList.remove(alias, mRadioRangeAliasMap);
+            mRadioAliasMap.values().removeAll(Collections.singleton(alias));
+            mRadioRangeAliasMap.values().removeAll(Collections.singleton(alias));
         }
     }
 }

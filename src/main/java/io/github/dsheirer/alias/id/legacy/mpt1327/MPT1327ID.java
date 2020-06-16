@@ -32,6 +32,12 @@ public class MPT1327ID extends AliasID
     {
     }
 
+    @Override
+    public boolean isAudioIdentifier()
+    {
+        return false;
+    }
+
     @JacksonXmlProperty(isAttribute = true, localName = "ident")
     public String getIdent()
     {

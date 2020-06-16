@@ -21,13 +21,11 @@ package io.github.dsheirer.channel.metadata;
 
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
-import io.github.dsheirer.controller.channel.ChannelModel;
-import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import net.miginfocom.swing.MigLayout;
 
@@ -45,13 +43,12 @@ public class NowPlayingPanel extends JPanel
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
      * messages, events, and spectral view.
      */
-    public NowPlayingPanel(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
-                           IconManager iconManager, AliasModel aliasModel, UserPreferences userPreferences)
+    public NowPlayingPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences)
     {
-        mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
-        mDecodeEventPanel = new DecodeEventPanel(iconManager, userPreferences, aliasModel);
+        mChannelDetailPanel = new ChannelDetailPanel(playlistManager.getChannelProcessingManager());
+        mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
-        mChannelMetadataPanel = new ChannelMetadataPanel(channelModel, channelProcessingManager, iconManager, userPreferences);
+        mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
 
         init();
     }

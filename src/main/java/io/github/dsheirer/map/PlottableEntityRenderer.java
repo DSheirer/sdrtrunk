@@ -22,7 +22,7 @@ package io.github.dsheirer.map;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
@@ -38,12 +38,12 @@ import java.util.List;
 public class PlottableEntityRenderer
 {
     private AliasModel mAliasModel;
-    private IconManager mIconManager;
+    private IconModel mIconModel;
 
-    public PlottableEntityRenderer(AliasModel aliasModel, IconManager iconManager)
+    public PlottableEntityRenderer(AliasModel aliasModel, IconModel iconModel)
     {
         mAliasModel = aliasModel;
-        mIconManager = iconManager;
+        mIconModel = iconModel;
     }
 
     public void paintPlottableEntity(Graphics2D g, JXMapViewer viewer, PlottableEntityHistory entity, boolean antiAliasing)
@@ -118,7 +118,7 @@ public class PlottableEntityRenderer
     private ImageIcon getIcon(Alias alias)
     {
         String iconName = (alias != null ? alias.getIconName() : null);
-        return mIconManager.getIcon(iconName, IconManager.DEFAULT_ICON_SIZE);
+        return mIconModel.getIcon(iconName, IconModel.DEFAULT_ICON_SIZE);
     }
 
     private void paintIcon(Graphics2D graphics, Point2D point, ImageIcon icon)

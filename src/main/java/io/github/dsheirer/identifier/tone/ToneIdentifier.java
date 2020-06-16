@@ -23,16 +23,16 @@
 package io.github.dsheirer.identifier.tone;
 
 import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.string.StringIdentifier;
 
 /**
  * Pass-band audio tones identifier
  */
-public abstract class ToneIdentifier extends StringIdentifier
+public abstract class ToneIdentifier extends Identifier<ToneSequence>
 {
-    public ToneIdentifier(String value)
+    public ToneIdentifier(ToneSequence value)
     {
         super(value, IdentifierClass.USER, Form.TONE, Role.FROM);
     }

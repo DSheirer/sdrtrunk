@@ -28,7 +28,6 @@ import java.nio.ByteOrder;
 public class ComplexShortAdapter extends ComplexSampleAdapter
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexShortAdapter.class);
-    private ShortToFloatMap mMap = new ShortToFloatMap();
     private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
     private ByteBuffer mByteBuffer;
 
@@ -57,7 +56,7 @@ public class ComplexShortAdapter extends ComplexSampleAdapter
 
         while(mByteBuffer.hasRemaining())
         {
-            convertedSamples[pointer] = mMap.get(mByteBuffer.getShort());
+            convertedSamples[pointer] = (float) mByteBuffer.getShort() / 32768.0f;
             pointer++;
         }
 

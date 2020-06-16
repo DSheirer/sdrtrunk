@@ -28,6 +28,7 @@ import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
@@ -49,6 +50,7 @@ import io.github.dsheirer.spectrum.menu.FrameRateItem;
 import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,13 +123,10 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
      * the DFT is translated to decibels for display in the spectrum and
      * waterfall components.
      */
-    public SpectralDisplayPanel(ChannelModel channelModel,
-                                ChannelProcessingManager channelProcessingManager,
-                                SettingsManager settingsManager,
-                                TunerModel tunerModel)
+    public SpectralDisplayPanel(PlaylistManager playlistManager, SettingsManager settingsManager, TunerModel tunerModel)
     {
-        mChannelModel = channelModel;
-        mChannelProcessingManager = channelProcessingManager;
+        mChannelModel = playlistManager.getChannelModel();
+        mChannelProcessingManager = playlistManager.getChannelProcessingManager();
         mSettingsManager = settingsManager;
         mTunerModel = tunerModel;
 
@@ -312,7 +311,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
     public int getZoomMultiplier()
     {
-        return (int)Math.pow(2.0, mZoom);
+        return (int) FastMath.pow(2.0, mZoom);
     }
 
     /**

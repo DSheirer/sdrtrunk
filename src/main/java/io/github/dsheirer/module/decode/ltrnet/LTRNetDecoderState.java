@@ -573,7 +573,7 @@ public class LTRNetDecoderState extends DecoderState
         else
         {
             List<LTRTalkgroup> talkgroups = new ArrayList<>(mTalkgroups);
-            Collections.sort(talkgroups, Comparator.comparingInt(Identifier::getValue));
+            talkgroups.sort(Comparator.comparingInt(Identifier::getValue));
 
             for(LTRTalkgroup talkgroup: talkgroups)
             {
@@ -590,7 +590,7 @@ public class LTRNetDecoderState extends DecoderState
         else
         {
             List<LtrNetRadioIdentifier> ltrNetRadioIdentifiers = new ArrayList<>(mLtrNetRadioIdentifiers);
-            Collections.sort(ltrNetRadioIdentifiers, Comparator.comparingInt(Identifier::getValue));
+            ltrNetRadioIdentifiers.sort(Comparator.comparingInt(Identifier::getValue));
 
             for(LtrNetRadioIdentifier ltrNetRadioIdentifier : ltrNetRadioIdentifiers)
             {

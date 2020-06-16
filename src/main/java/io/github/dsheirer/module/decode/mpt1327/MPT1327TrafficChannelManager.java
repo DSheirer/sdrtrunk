@@ -325,23 +325,14 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                 switch(channelEvent.getEvent())
                 {
                     case NOTIFICATION_PROCESSING_STOP:
-                        MPT1327Channel toRemove = null;
-
-                        for(Map.Entry<MPT1327Channel,Channel> entry : mAllocatedTrafficChannelMap.entrySet())
-                        {
-                            if(entry.getValue() == channel)
-                            {
-                                toRemove = entry.getKey();
-                                continue;
-                            }
-                        }
+                        final var toRemove = mptChannelForChannel(channel);
 
                         if(toRemove != null)
                         {
                             mAllocatedTrafficChannelMap.remove(toRemove);
                             mAvailableTrafficChannelQueue.add(channel);
 
-                            MPT1327ChannelGrantEvent event = mChannelGrantEventMap.get(toRemove);
+                            final var event = mChannelGrantEventMap.remove(toRemove);
 
                             if(event != null)
                             {
@@ -351,23 +342,14 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                         }
                         break;
                     case NOTIFICATION_PROCESSING_START_REJECTED:
-                        MPT1327Channel rejected = null;
-
-                        for(Map.Entry<MPT1327Channel,Channel> entry : mAllocatedTrafficChannelMap.entrySet())
-                        {
-                            if(entry.getValue() == channel)
-                            {
-                                rejected = entry.getKey();
-                                continue;
-                            }
-                        }
+                        final var rejected = mptChannelForChannel(channel);
 
                         if(rejected != null)
                         {
                             mAllocatedTrafficChannelMap.remove(rejected);
                             mAvailableTrafficChannelQueue.add(channel);
 
-                            MPT1327ChannelGrantEvent event = mChannelGrantEventMap.get(rejected);
+                            final var event = mChannelGrantEventMap.remove(rejected);
 
                             if(event != null)
                             {
@@ -385,6 +367,18 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                         break;
                 }
             }
+        }
+
+        private MPT1327Channel mptChannelForChannel(final Channel channel)
+        {
+            for (final var entry : mAllocatedTrafficChannelMap.entrySet())
+            {
+                if (entry.getValue() == channel)
+                {
+                    return entry.getKey();
+                }
+            }
+            return null;
         }
     }
 }

@@ -17,6 +17,7 @@
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -293,7 +294,7 @@ public class ChannelCalculator
     {
         double offset = frequency - getCenterFrequency();
 
-        if(Math.abs(offset) < getHalfChannelBandwidth())
+        if(FastMath.abs(offset) < getHalfChannelBandwidth())
         {
             return 0; //Center index
         }

@@ -1,34 +1,45 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+/*
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.controller.channel.map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import javafx.beans.Observable;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import javafx.util.Callback;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ChannelMap
 {
-    private String mName;
-    private boolean mInvalid = false;
-
-    private List<ChannelRange> mRanges = new ArrayList<ChannelRange>();
+    private StringProperty mName = new SimpleStringProperty();
+    private BooleanProperty mValidProperty = new SimpleBooleanProperty();
+    private ObservableList<ChannelRange> mRanges = FXCollections.observableArrayList(ChannelRange.extractor());
 
     public ChannelMap()
     {
@@ -37,12 +48,29 @@ public class ChannelMap
 
     public ChannelMap(String name)
     {
-        mName = name;
+        mName.set(name);
+        mRanges.addListener((ListChangeListener<ChannelRange>)c -> validate());
+    }
+
+    public StringProperty nameProperty()
+    {
+        return mName;
+    }
+
+    public BooleanProperty validProperty()
+    {
+        return mValidProperty;
+    }
+
+    @JsonIgnore
+    public ObservableList<ChannelRange> getItems()
+    {
+        return mRanges;
     }
 
     public ChannelMap copyOf()
     {
-        ChannelMap map = new ChannelMap(new String(mName));
+        ChannelMap map = new ChannelMap(new String(mName.get()));
 
         for(ChannelRange range : mRanges)
         {
@@ -53,14 +81,14 @@ public class ChannelMap
     }
 
     @JsonIgnore
-    public boolean isInvalid()
+    public boolean isValid()
     {
-        return mInvalid;
+        return mValidProperty.get();
     }
 
     public String toString()
     {
-        return mName + (mInvalid ? " - Error" : "");
+        return mName.get();
     }
 
     @JacksonXmlProperty(isAttribute = false, localName = "range")
@@ -71,20 +99,18 @@ public class ChannelMap
 
     public void setRanges(List<ChannelRange> ranges)
     {
-        mRanges = ranges;
-
-        validate();
+        mRanges.setAll(ranges);
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "name")
     public String getName()
     {
-        return mName;
+        return mName.get();
     }
 
     public void setName(String name)
     {
-        mName = name;
+        mName.set(name);
     }
 
     public long getFrequency(int channelNumber)
@@ -105,20 +131,27 @@ public class ChannelMap
      */
     private void validate()
     {
-        mInvalid = false;
+        mValidProperty.set(true);
+
+        for(ChannelRange channelRange: mRanges)
+        {
+            channelRange.setOverlapping(false);
+        }
 
         for(int x = 0; x < mRanges.size(); x++)
         {
             if(!mRanges.get(x).isValid())
             {
-                mInvalid = true;
+                mValidProperty.set(false);
             }
 
             for(int y = x + 1; y < mRanges.size(); y++)
             {
                 if(mRanges.get(x).overlaps(mRanges.get(y)))
                 {
-                    mInvalid = true;
+                    mRanges.get(x).setOverlapping(true);
+                    mRanges.get(y).setOverlapping(true);
+                    mValidProperty.set(false);
                 }
             }
         }
@@ -128,15 +161,19 @@ public class ChannelMap
     public void addRange(ChannelRange range)
     {
         mRanges.add(range);
-
-        validate();
     }
 
     public void removeRange(ChannelRange range)
     {
         mRanges.remove(range);
-
-        validate();
     }
 
+
+    /**
+     * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
+     */
+    public static Callback<ChannelMap,Observable[]> extractor()
+    {
+        return (ChannelMap c) -> new Observable[] {c.nameProperty(), c.validProperty(), c.getItems()};
+    }
 }

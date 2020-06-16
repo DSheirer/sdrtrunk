@@ -30,15 +30,28 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 public class ChangeChannelTimeoutEvent extends DecoderStateEvent
 {
     private ChannelType mChannelType;
-    private long mCallTimeout;
+    private long mCallTimeoutMilliseconds;
 
+    /**
+     * Constructs an instance
+     * @param source of the event
+     * @param channelType for the event
+     * @param timeout in milliseconds
+     * @param timeslot of the event
+     */
     public ChangeChannelTimeoutEvent(Object source, ChannelType channelType, long timeout, int timeslot)
     {
         super(source, Event.CHANGE_CALL_TIMEOUT, State.IDLE, timeslot);
         mChannelType = channelType;
-        mCallTimeout = timeout;
+        mCallTimeoutMilliseconds = timeout;
     }
 
+    /**
+     * Constructs an instance
+     * @param source of the event
+     * @param channelType for the event
+     * @param timeout value in milliseconds
+     */
     public ChangeChannelTimeoutEvent(Object source, ChannelType channelType, long timeout)
     {
         this(source, channelType, timeout, 0);
@@ -49,8 +62,11 @@ public class ChangeChannelTimeoutEvent extends DecoderStateEvent
         return mChannelType;
     }
 
-    public long getCallTimeout()
+    /**
+     * Call timeout value in milliseconds
+     */
+    public long getCallTimeoutMilliseconds()
     {
-        return mCallTimeout;
+        return mCallTimeoutMilliseconds;
     }
 }

@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.module.decode.p25.audio;
 
-import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
@@ -29,7 +28,10 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.tone.AmbeTone;
 import io.github.dsheirer.identifier.tone.P25ToneIdentifier;
+import io.github.dsheirer.identifier.tone.Tone;
+import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToTalk;
@@ -247,15 +249,15 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
      */
     public class ToneMetadataProcessor
     {
-        private List<ToneMetadata> mToneMetadata = new ArrayList<>();
-        private ToneMetadata mCurrentToneMetadata;
+        private List<Tone> mTones = new ArrayList<>();
+        private Tone mCurrentTone;
 
         /**
-         * Resets or clears any accumulated call tone metadata to prepare for the next call.
+         * Resets or clears any accumulated call tone sequences to prepare for the next call.
          */
         public void reset()
         {
-            mToneMetadata.clear();
+            mTones.clear();
         }
 
         /**
@@ -271,18 +273,22 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 return null;
             }
 
-            if(mCurrentToneMetadata != null && mCurrentToneMetadata.matches(type, value))
+            AmbeTone tone = AmbeTone.fromValues(type, value);
+
+            if(tone == AmbeTone.INVALID)
             {
-                mCurrentToneMetadata.incrementCount();
-            }
-            else
-            {
-                mCurrentToneMetadata = new ToneMetadata(type, value);
-                mToneMetadata.add(mCurrentToneMetadata);
-                mCurrentToneMetadata.incrementCount();
+                return null;
             }
 
-            return P25ToneIdentifier.create(Joiner.on(",").join(mToneMetadata));
+            if(mCurrentTone == null || mCurrentTone.getAmbeTone() != tone)
+            {
+                mCurrentTone = new Tone(tone);
+                mTones.add(mCurrentTone);
+            }
+
+            mCurrentTone.incrementDuration();
+
+            return P25ToneIdentifier.create(new ToneSequence(new ArrayList<>(mTones)));
         }
 
         /**
@@ -290,85 +296,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
          */
         public void closeMetadata()
         {
-            mCurrentToneMetadata = null;
-        }
-    }
-
-    /**
-     * Metadata about the tone type being transmitted and the duration.
-     *
-     * Note: each AMBE frame is 20 milliseconds in duration, so total duration is the count of 20 ms tone frames
-     * of the same metadata type.
-     */
-    public class ToneMetadata
-    {
-        private String mType;
-        private String mValue;
-        private int mCount;
-
-        /**
-         * Constructs an instance
-         * @param type of tone
-         * @param value of the tone
-         */
-        public ToneMetadata(String type, String value)
-        {
-            mType = type;
-            mValue = value;
-            mCount = 0;
-        }
-
-        /**
-         * Indicates if this tone metadata matches the tone metadata represented by the arguments
-         * @param type of tone
-         * @param value of tone
-         * @return true if they match
-         */
-        public boolean matches(String type, String value)
-        {
-            return type != null && value != null && type.matches(mType) && value.matches(mValue);
-        }
-
-        /**
-         * Type of tone
-         */
-        public String getType()
-        {
-            return mType;
-        }
-
-        /**
-         * Value of tone
-         */
-        public String getValue()
-        {
-            return mValue;
-        }
-
-        /**
-         * Number of times this tone has occurred sequentially
-         */
-        public int getCount()
-        {
-            return mCount;
-        }
-
-        /**
-         * Increments the count of the number of sequential frames that contained the tone
-         */
-        public void incrementCount()
-        {
-            mCount++;
-        }
-
-        @Override
-        public String toString()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.append(mType);
-            sb.append(" ").append(mValue);
-            sb.append(" (").append(mCount * 20).append("ms)");
-            return sb.toString();
+            mCurrentTone = null;
         }
     }
 

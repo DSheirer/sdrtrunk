@@ -83,7 +83,7 @@ public class LtrChannel implements IChannelDescriptor, Comparable<LtrChannel>
     @Override
     public Protocol getProtocol()
     {
-        return Protocol.LTR_STANDARD;
+        return Protocol.LTR;
     }
 
     @Override
@@ -101,5 +101,11 @@ public class LtrChannel implements IChannelDescriptor, Comparable<LtrChannel>
     public int compareTo(LtrChannel o)
     {
         return Integer.compare(getChannel(), o.getChannel());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof LtrChannel)) return false;
+        return compareTo((LtrChannel) o) == 0;
     }
 }

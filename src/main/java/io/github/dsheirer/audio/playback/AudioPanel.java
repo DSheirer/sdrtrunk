@@ -25,15 +25,14 @@ import io.github.dsheirer.audio.AudioException;
 import io.github.dsheirer.audio.IAudioController;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
-import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
-import io.github.dsheirer.source.mixer.MixerManager;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
@@ -59,7 +58,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.List;
 
 import static io.github.dsheirer.audio.playback.AudioChannelPanel.PROPERTY_MUTED;
 
@@ -69,11 +67,12 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
     private static final Logger mLog = LoggerFactory.getLogger(AudioPanel.class);
 
-    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon("images/audio_muted.png", 20);
-    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon("images/audio_unmuted.png", 20);
+    private static ImageIcon MUTED_ICON = IconModel.getScaledIcon("images/audio_muted.png", 20);
+    private static ImageIcon UNMUTED_ICON = IconModel.getScaledIcon("images/audio_unmuted.png", 20);
 
+    // private IconManager mIconManager;
+    private IconModel mIconModel;
 
-    private IconManager mIconManager;
     private SettingsManager mSettingsManager;
     private SourceManager mSourceManager;
     private IAudioController mController;
@@ -84,10 +83,10 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
     private AudioChannelsPanel mAudioChannelsPanel;
     private boolean mMuted;
 
-    public AudioPanel(IconManager iconManager, UserPreferences userPreferences, SettingsManager settingsManager,
+    public AudioPanel(IconModel iconModel, UserPreferences userPreferences, SettingsManager settingsManager,
                       SourceManager sourceManager, IAudioController controller, AliasModel aliasModel)
     {
-        mIconManager = iconManager;
+        mIconModel = iconModel;
         mSettingsManager = settingsManager;
         mSourceManager = sourceManager;
         mController = controller;
@@ -109,7 +108,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
         mMuteButton.setBackground(getBackground());
         add(mMuteButton);
 
-        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mUserPreferences, mSettingsManager, mController, mAliasModel);
+        mAudioChannelsPanel = new AudioChannelsPanel(mIconModel, mUserPreferences, mSettingsManager, mController, mAliasModel);
 
         add(mAudioChannelsPanel);
 
@@ -131,7 +130,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     {
                         remove(mAudioChannelsPanel);
                         mAudioChannelsPanel.dispose();
-                        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mUserPreferences, mSettingsManager, mController, mAliasModel);
+                        mAudioChannelsPanel = new AudioChannelsPanel(mIconModel, mUserPreferences, mSettingsManager, mController, mAliasModel);
                         add(mAudioChannelsPanel);
                         mAudioChannelsPanel.repaint();
                         revalidate();
@@ -191,7 +190,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     @Override
                     public void actionPerformed(ActionEvent e)
                     {
-                        MyEventBus.getEventBus().post(new PreferenceEditorViewRequest(PreferenceEditorType.AUDIO_PLAYBACK));
+                        MyEventBus.getEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_OUTPUT));
                     }
                 });
                 popup.add(outputMenu);

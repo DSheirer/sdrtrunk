@@ -1,25 +1,36 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ */
 package io.github.dsheirer.controller.channel.map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
+import javafx.beans.Observable;
+import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.util.Callback;
 
 import java.text.DecimalFormat;
 
@@ -28,28 +39,64 @@ public class ChannelRange
 {
     private static final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat("#.0000");
 
-    private int mFirst = 1;
-    private int mLast = 1023;
-    private int mBase = 450000000;
-    private int mSize = 12500;
-
-    private boolean mOverlapping = false;
+    private IntegerProperty mFirstChannel = new SimpleIntegerProperty(1);
+    private IntegerProperty mLastChannel = new SimpleIntegerProperty(1023);
+    private IntegerProperty mBaseFrequency = new SimpleIntegerProperty(450000000);
+    private IntegerProperty mStepSize = new SimpleIntegerProperty(12500);
+    private BooleanProperty mValid = new SimpleBooleanProperty();
+    private BooleanProperty mOverlapping = new SimpleBooleanProperty();
 
     public ChannelRange()
     {
+        //Bind valid to first channel is less than last channel
+        mValid.bind(Bindings.lessThan(mFirstChannel, mLastChannel));
     }
 
-    public ChannelRange(int first, int last, int base, int size)
+    public ChannelRange(int first, int last, int base, int sizeProperty)
     {
-        mFirst = first;
-        mLast = last;
-        mBase = base;
-        mSize = size;
+        this();
+        mFirstChannel.set(first);
+        mLastChannel.set(last);
+        mBaseFrequency.set(base);
+        mStepSize.set(sizeProperty);
     }
 
     public ChannelRange copyOf()
     {
-        return new ChannelRange(mFirst, mLast, mBase, mSize);
+        return new ChannelRange(mFirstChannel.get(), mLastChannel.get(), mBaseFrequency.get(), mStepSize.get());
+    }
+
+    /**
+     * Indicates if this channel range overlaps with another channel range
+     */
+    public BooleanProperty overlappingProperty()
+    {
+        return mOverlapping;
+    }
+
+    public BooleanProperty validProperty()
+    {
+        return mValid;
+    }
+
+    public IntegerProperty firstChannelProperty()
+    {
+        return mFirstChannel;
+    }
+
+    public IntegerProperty lastChannelProperty()
+    {
+        return mLastChannel;
+    }
+
+    public IntegerProperty baseFrequencyProperty()
+    {
+        return mBaseFrequency;
+    }
+
+    public IntegerProperty stepSizeProperty()
+    {
+        return mStepSize;
     }
 
     @JsonIgnore
@@ -60,15 +107,15 @@ public class ChannelRange
         if(isValid())
         {
             sb.append("First: ");
-            sb.append(mFirst + "=");
+            sb.append(mFirstChannel.get()).append("=");
 
-            long frequency = getFrequency(mFirst);
+            long frequency = getFrequency(mFirstChannel.get());
 
             sb.append(FREQUENCY_FORMATTER.format((double)frequency / 1E6D));
             sb.append("  Last: ");
-            sb.append(mLast + "=");
+            sb.append(mLastChannel.get()).append("=");
 
-            frequency = getFrequency(mLast);
+            frequency = getFrequency(mLastChannel.get());
             sb.append(FREQUENCY_FORMATTER.format((double)frequency / 1E6D));
             sb.append(" MHz");
         }
@@ -93,38 +140,38 @@ public class ChannelRange
     @JsonIgnore
     public boolean isValid()
     {
-        return mFirst < mLast;
+        return mValid.get();
     }
 
     public boolean overlaps(ChannelRange other)
     {
-        return (mFirst <= other.mFirst && other.mFirst <= mLast) ||
-            (mFirst <= other.mLast && other.mLast <= mLast) ||
-            (mFirst <= other.mFirst && other.mLast <= mLast) ||
-            (other.mFirst <= mFirst && mLast <= other.mLast);
+        return (mFirstChannel.get() <= other.mFirstChannel.get() && other.mFirstChannel.get() <= mLastChannel.get()) ||
+            (mFirstChannel.get() <= other.mLastChannel.get() && other.mLastChannel.get() <= mLastChannel.get()) ||
+            (mFirstChannel.get() <= other.mFirstChannel.get() && other.mLastChannel.get() <= mLastChannel.get()) ||
+            (other.mFirstChannel.get() <= mFirstChannel.get() && mLastChannel.get() <= other.mLastChannel.get());
     }
 
     @JsonIgnore
     public boolean isOverlapping()
     {
-        return mOverlapping;
+        return mOverlapping.get();
     }
 
     public void setOverlapping(boolean overlapping)
     {
-        mOverlapping = overlapping;
+        mOverlapping.set(overlapping);
     }
 
     public boolean hasChannel(int channel)
     {
-        return mFirst <= channel && channel <= mLast;
+        return mFirstChannel.get() <= channel && channel <= mLastChannel.get();
     }
 
     public long getFrequency(int channel)
     {
         if(hasChannel(channel))
         {
-            return mBase + ((channel - mFirst) * mSize);
+            return mBaseFrequency.get() + ((channel - mFirstChannel.get()) * mStepSize.get());
         }
         else
         {
@@ -135,54 +182,63 @@ public class ChannelRange
     @JacksonXmlProperty(isAttribute = true, localName = "first")
     public int getFirstChannelNumber()
     {
-        return mFirst;
+        return mFirstChannel.get();
     }
 
     public void setFirstChannelNumber(int first)
     {
-        mFirst = first;
+        mFirstChannel.set(first);;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "last")
     public void setLastChannelNumber(int last)
     {
-        mLast = last;
+        mLastChannel.set(last);;
     }
 
     public int getLastChannelNumber()
     {
-        return mLast;
+        return mLastChannel.get();
     }
 
     /**
      * Sets the base frequency
      *
-     * @param base frequency in hertz
+     * @param baseFrequency frequency in hertz
      */
     @JacksonXmlProperty(isAttribute = true, localName = "base")
-    public void setBase(int base)
+    public void setBaseFrequency(int baseFrequency)
     {
-        mBase = base;
+        this.mBaseFrequency.set(baseFrequency);
     }
 
-    public int getBase()
+    public int getBaseFrequency()
     {
-        return mBase;
+        return mBaseFrequency.get();
     }
 
     /**
      * Sets the channel size
      *
-     * @param size in hertz
+     * @param stepSize in hertz
      */
     @JacksonXmlProperty(isAttribute = true, localName = "size")
-    public void setSize(int size)
+    public void setStepSize(int stepSize)
     {
-        mSize = size;
+        this.mStepSize.set(stepSize);
     }
 
-    public int getSize()
+    public int getStepSize()
     {
-        return mSize;
+        return mStepSize.get();
+    }
+
+    /**
+     * Creates an observable property extractor for use with obserable lists to detect changes internal to this object.
+     */
+    public static Callback<ChannelRange,Observable[]> extractor()
+    {
+        return (ChannelRange c) -> new Observable[] {c.firstChannelProperty(), c.lastChannelProperty(),
+            c.baseFrequencyProperty(), c.stepSizeProperty(), c.validProperty(), c.overlappingProperty()};
     }
 }

@@ -91,7 +91,7 @@ public class FrequencyBandUpdate extends OSPMessage implements IFrequencyBand
     @Override
     public long getTransmitOffset()
     {
-        long offset = getMessage().getLong(TRANSMIT_OFFSET) * getChannelSpacing();
+        long offset = getMessage().getLong(TRANSMIT_OFFSET) * 250000;
 
         if(!getMessage().get(TRANSMIT_OFFSET_SIGN))
         {

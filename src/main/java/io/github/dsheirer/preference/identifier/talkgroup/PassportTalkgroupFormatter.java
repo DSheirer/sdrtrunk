@@ -20,13 +20,17 @@
 
 package io.github.dsheirer.preference.identifier.talkgroup;
 
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 
-public class PassportTalkgroupFormatter extends IntegerFormatter
+public class PassportTalkgroupFormatter extends AbstractIntegerFormatter
 {
-    public static final int DECIMAL_WIDTH = 5;
-    public static final int HEXADECIMAL_WIDTH = 4;
+    public static final int GROUP_DECIMAL_WIDTH = 5;
+    public static final int GROUP_HEXADECIMAL_WIDTH = 4;
+
+    public static final int UNIT_DECIMAL_WIDTH = 7;
+    public static final int UNIT_HEXADECIMAL_WIDTH = 6;
 
     /**
      * Formats the individual or group identifier to the specified format and width.
@@ -39,9 +43,9 @@ public class PassportTalkgroupFormatter extends IntegerFormatter
             {
                 case DECIMAL:
                 case FORMATTED:
-                    return toDecimal(identifier.getValue(), DECIMAL_WIDTH);
+                    return toDecimal(identifier.getValue(), GROUP_DECIMAL_WIDTH);
                 case HEXADECIMAL:
-                    return toHex(identifier.getValue(), HEXADECIMAL_WIDTH);
+                    return toHex(identifier.getValue(), GROUP_HEXADECIMAL_WIDTH);
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
@@ -58,6 +62,54 @@ public class PassportTalkgroupFormatter extends IntegerFormatter
                 default:
                     throw new IllegalArgumentException("Unrecognized integer format: " + format);
             }
+        }
+    }
+
+    /**
+     * Formats the individual or group identifier to the specified format and width.
+     */
+    public static String format(RadioIdentifier identifier, IntegerFormat format, boolean fixedWidth)
+    {
+        if(fixedWidth)
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    return toDecimal(identifier.getValue(), UNIT_DECIMAL_WIDTH);
+                case HEXADECIMAL:
+                    return toHex(identifier.getValue(), UNIT_HEXADECIMAL_WIDTH);
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+        else
+        {
+            switch(format)
+            {
+                case DECIMAL:
+                case FORMATTED:
+                    return identifier.getValue().toString();
+                case HEXADECIMAL:
+                    return toHex(identifier.getValue());
+                default:
+                    throw new IllegalArgumentException("Unrecognized integer format: " + format);
+            }
+        }
+    }
+
+    @Override
+    public String format(int value, IntegerFormat format)
+    {
+        switch(format)
+        {
+            case DECIMAL:
+            case FORMATTED:
+                return format(value);
+            case HEXADECIMAL:
+                return toHex(value);
+            default:
+                throw new IllegalArgumentException("Unrecognized integer format: " + format);
         }
     }
 }

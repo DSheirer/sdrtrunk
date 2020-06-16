@@ -23,16 +23,13 @@ package io.github.dsheirer.module.decode.ltrstandard;
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.module.decode.ltrstandard.message.LTRStandardMessage;
+import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class LTRStandardMessageFilter extends Filter<IMessage>
 {
-    private Map<LtrStandardMessageType,FilterElement<LtrStandardMessageType>> mElements = new HashMap<>();
+    private Map<LtrStandardMessageType,FilterElement<LtrStandardMessageType>> mElements = new EnumMap<>(LtrStandardMessageType.class);
 
     public LTRStandardMessageFilter()
     {
@@ -49,7 +46,7 @@ public class LTRStandardMessageFilter extends Filter<IMessage>
     {
         if(mEnabled && canProcess(message))
         {
-            LTRStandardMessage ltr = (LTRStandardMessage)message;
+            LTRMessage ltr = (LTRMessage)message;
 
             if(mElements.containsKey(ltr.getMessageType()))
             {
@@ -62,7 +59,7 @@ public class LTRStandardMessageFilter extends Filter<IMessage>
 
     public boolean canProcess(IMessage message)
     {
-        return message instanceof LTRStandardMessage;
+        return message instanceof LTRMessage;
     }
 
     @Override

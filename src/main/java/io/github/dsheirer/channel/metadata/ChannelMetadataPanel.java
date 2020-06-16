@@ -1,24 +1,22 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
+
 package io.github.dsheirer.channel.metadata;
 
 import com.google.common.base.Joiner;
@@ -28,11 +26,12 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
-import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
@@ -55,7 +54,7 @@ import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,23 +63,22 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     private static final String TABLE_PREFERENCE_KEY = "channel.metadata.panel";
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private IconManager mIconManager;
+    private IconModel mIconModel;
     private UserPreferences mUserPreferences;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
-    private Map<State,Color> mBackgroundColors = new HashMap<>();
-    private Map<State,Color> mForegroundColors = new HashMap<>();
+    private Map<State,Color> mBackgroundColors = new EnumMap<>(State.class);
+    private Map<State,Color> mForegroundColors = new EnumMap<>(State.class);
     private JTableColumnWidthMonitor mTableColumnMonitor;
 
     /**
      * Table view for currently decoding channel metadata
      */
-    public ChannelMetadataPanel(ChannelModel channelModel, ChannelProcessingManager channelProcessingManager,
-                                IconManager iconManager, UserPreferences userPreferences)
+    public ChannelMetadataPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences)
     {
-        mChannelModel = channelModel;
-        mChannelProcessingManager = channelProcessingManager;
-        mIconManager = iconManager;
+        mChannelModel = playlistManager.getChannelModel();
+        mChannelProcessingManager = playlistManager.getChannelProcessingManager();
+        mIconModel = iconModel;
         mUserPreferences = userPreferences;
         init();
     }
@@ -169,9 +167,6 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 {
                     Channel selectedChannel = mChannelProcessingManager.getChannelMetadataModel()
                         .getChannelFromMetadata(selectedMetadata);
-
-
-
                     processingChain = mChannelProcessingManager.getProcessingChain(selectedChannel);
                 }
             }
@@ -242,7 +237,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 if(!aliases.isEmpty())
                 {
                     label.setText(Joiner.on(", ").skipNulls().join(aliases));
-                    label.setIcon(mIconManager.getIcon(aliases.get(0).getIconName(), IconManager.DEFAULT_ICON_SIZE));
+                    label.setIcon(mIconModel.getIcon(aliases.get(0).getIconName(), IconModel.DEFAULT_ICON_SIZE));
                     label.setForeground(aliases.get(0).getDisplayColor());
                 }
                 else
