@@ -201,6 +201,17 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
             {
                 mBinaryMessage.add(dibit.getBit1());
                 mBinaryMessage.add(dibit.getBit2());
+                
+                if(mBinaryMessage.isFull())
+                {
+                    //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
+                    if(mDataUnitID.hasTrailingStatusDibit())
+                    {
+                        mTrailingDibitsToSuppress = 1;
+                    }
+
+                    dispatchMessage();
+                }
             }
             catch(BitSetFullException bsfe)
             {
@@ -208,17 +219,6 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
                 //Reset so that we can start over again
                 reset(0);
-            }
-
-            if(mBinaryMessage.isFull())
-            {
-                //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
-                if(mDataUnitID.hasTrailingStatusDibit())
-                {
-                    mTrailingDibitsToSuppress = 1;
-                }
-
-                dispatchMessage();
             }
         }
         else
