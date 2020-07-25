@@ -19,7 +19,6 @@
 package io.github.dsheirer.source.tuner.fcd.proplusV2;
 
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.MixerTunerDataLine;
 import io.github.dsheirer.source.tuner.MixerTunerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -31,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 
+import javax.sound.sampled.TargetDataLine;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -42,10 +42,10 @@ public class FCD2TunerController extends FCDTunerController
     public static final int MAXIMUM_TUNABLE_FREQUENCY = 2050000000;
     public static final int SAMPLE_RATE = 192000;
 
-    public FCD2TunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
+    public FCD2TunerController(TargetDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
     {
-        super(mixerTDL, device, descriptor, MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getDisplayString(),
-            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getAudioFormat());
+        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, device, descriptor,
+            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY);
     }
 
     public void init() throws SourceException

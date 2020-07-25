@@ -43,8 +43,8 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
+import javax.sound.sampled.TargetDataLine;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -285,13 +285,11 @@ public class TunerManager
         }
     }
 
-    private TunerInitStatus initTuner(Device device,
-                                      DeviceDescriptor descriptor)
+    private TunerInitStatus initTuner(Device device, DeviceDescriptor descriptor)
     {
         if(device != null && descriptor != null)
         {
-            TunerClass tunerClass = TunerClass.valueOf(descriptor.idVendor(),
-                descriptor.idProduct());
+            TunerClass tunerClass = TunerClass.valueOf(descriptor.idVendor(), descriptor.idProduct());
 
             switch(tunerClass)
             {
@@ -358,8 +356,7 @@ public class TunerManager
         }
     }
 
-    private TunerInitStatus initAirspyTuner(Device device,
-                                            DeviceDescriptor descriptor)
+    private TunerInitStatus initAirspyTuner(Device device, DeviceDescriptor descriptor)
     {
         try
         {
@@ -381,35 +378,30 @@ public class TunerManager
     }
 
 
-    private TunerInitStatus initEttusB100Tuner(Device device,
-                                               DeviceDescriptor descriptor)
+    private TunerInitStatus initEttusB100Tuner(Device device, DeviceDescriptor descriptor)
     {
-        return new TunerInitStatus(null, "Ettus B100 tuner not currently "
-            + "supported");
+        return new TunerInitStatus(null, "Ettus B100 tuner not currently supported");
     }
 
     private TunerInitStatus initFuncubeProTuner(Device device, DeviceDescriptor descriptor)
     {
         String reason = "NOT LOADED";
 
-        MixerTunerDataLine dataline = getMixerTunerDataLine(TunerClass.FUNCUBE_DONGLE_PRO.getTunerType());
+        TargetDataLine tdl = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO);
 
-        if(dataline != null)
+        if(tdl != null)
         {
-            FCD1TunerController controller = new FCD1TunerController(dataline, device, descriptor);
+            FCD1TunerController controller = new FCD1TunerController(tdl, device, descriptor);
 
             try
             {
                 controller.init();
-
                 FCDTuner tuner = new FCDTuner(controller, mUserPreferences);
-
                 return new TunerInitStatus(tuner, "LOADED");
             }
             catch(SourceException e)
             {
                 mLog.error("couldn't load funcube dongle pro tuner", e);
-
                 reason = "error during initialization - " + e.getLocalizedMessage();
             }
         }
@@ -418,15 +410,14 @@ public class TunerManager
             reason = "couldn't find matching mixer dataline";
         }
 
-        return new TunerInitStatus(null, "Funcube Dongle Pro tuner not "
-            + "loaded - " + reason);
+        return new TunerInitStatus(null, "Funcube Dongle Pro tuner not loaded - " + reason);
     }
 
     private TunerInitStatus initFuncubeProPlusTuner(Device device, DeviceDescriptor descriptor)
     {
         String reason = "NOT LOADED";
 
-        MixerTunerDataLine dataline = getMixerTunerDataLine(TunerClass.FUNCUBE_DONGLE_PRO_PLUS.getTunerType());
+        TargetDataLine dataline = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS);
 
         if(dataline != null)
         {
@@ -435,17 +426,13 @@ public class TunerManager
             try
             {
                 controller.init();
-
                 FCDTuner tuner = new FCDTuner(controller, mUserPreferences);
-
                 return new TunerInitStatus(tuner, "LOADED");
             }
             catch(SourceException e)
             {
                 mLog.error("couldn't load funcube dongle pro plus tuner", e);
-
-                reason = "error during initialization - " +
-                    e.getLocalizedMessage();
+                reason = "error during initialization - " + e.getLocalizedMessage();
             }
         }
         else
@@ -453,8 +440,7 @@ public class TunerManager
             reason = "couldn't find matching mixer dataline";
         }
 
-        return new TunerInitStatus(null, "Funcube Dongle Pro tuner not "
-            + "loaded - " + reason);
+        return new TunerInitStatus(null, "Funcube Dongle Pro tuner not loaded - " + reason);
     }
 
     private TunerInitStatus initHackRFTuner(Device device, DeviceDescriptor descriptor)
@@ -473,14 +459,11 @@ public class TunerManager
         {
             mLog.error("couldn't construct HackRF controller/tuner", se);
 
-            return new TunerInitStatus(null,
-                "error constructing HackRF tuner controller");
+            return new TunerInitStatus(null, "error constructing HackRF tuner controller");
         }
     }
 
-    private TunerInitStatus initRTL2832Tuner(TunerClass tunerClass,
-                                             Device device,
-                                             DeviceDescriptor deviceDescriptor)
+    private TunerInitStatus initRTL2832Tuner(TunerClass tunerClass, Device device, DeviceDescriptor deviceDescriptor)
     {
         String reason = "NOT LOADED";
 
@@ -540,39 +523,12 @@ public class TunerManager
             case RAFAELMICRO_R828D:
             case UNKNOWN:
             default:
-                reason = "SDRTRunk doesn't currently support RTL2832 "
-                    + "Dongle with [" + tunerType.toString() +
+                reason = "SDRTRunk doesn't currently support RTL2832 Dongle with [" + tunerType.toString() +
                     "] tuner for tuner class[" + tunerClass.toString() + "]";
                 break;
         }
 
         return new TunerInitStatus(null, reason);
-    }
-
-    /**
-     * Gets the first tuner mixer dataline that corresponds to the tuner class.
-     *
-     * Note: this method is not currently able to align multiple tuner mixer
-     * data lines of the same tuner type.  If you have multiple Funcube Dongle
-     * tuners of the same TYPE, there is no guarantee that you will get the
-     * correct mixer.
-     *
-     * @param tunerClass
-     * @return
-     */
-    private MixerTunerDataLine getMixerTunerDataLine(TunerType tunerClass)
-    {
-        Collection<MixerTunerDataLine> datalines = MixerManager.getMixerTunerDataLines();
-
-        for(MixerTunerDataLine mixerTDL : datalines)
-        {
-            if(mixerTDL.getMixerTunerType().getTunerClass() == tunerClass)
-            {
-                return mixerTDL;
-            }
-        }
-
-        return null;
     }
 
     public class TunerInitStatus
