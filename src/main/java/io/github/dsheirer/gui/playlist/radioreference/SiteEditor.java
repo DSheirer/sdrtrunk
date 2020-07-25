@@ -479,20 +479,19 @@ public class SiteEditor extends GridPane
 
     private void createControlChannel()
     {
-        SiteFrequency control = null;
+        List<SiteFrequency> controls = new ArrayList<>();
 
         for(SiteFrequency siteFrequency: getSiteFrequencyTableView().getItems())
         {
             if(isControl(siteFrequency) && siteFrequency.getFrequency() > 0.01)
             {
-                control = siteFrequency;
-                continue;
+                controls.add(siteFrequency);
             }
         }
 
-        if(control == null)
+        if(controls.isEmpty())
         {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Site Has No Control Channel", ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Site Has No Control Channel(s)", ButtonType.OK);
             alert.setTitle("Create Channel Configuration");
             alert.setHeaderText("Can't Create Channel Configuration");
             alert.initOwner((getCreateChannelConfigurationButton()).getScene().getWindow());
@@ -514,9 +513,24 @@ public class SiteEditor extends GridPane
 
             channel.setDecodeConfiguration(getDecodeConfiguration(decoderType, mCurrentSite.getSite(), mCurrentSystemInformation));
 
-            SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
-            sourceConfigTuner.setFrequency((long)(control.getFrequency() * 1E6));
-            channel.setSourceConfiguration(sourceConfigTuner);
+            if(controls.size() == 1)
+            {
+                SourceConfigTuner sourceConfigTuner = new SourceConfigTuner();
+                sourceConfigTuner.setFrequency((long)(controls.get(0).getFrequency() * 1E6));
+                channel.setSourceConfiguration(sourceConfigTuner);
+            }
+            else
+            {
+                SourceConfigTunerMultipleFrequency sourceConfig = new SourceConfigTunerMultipleFrequency();
+
+                for(SiteFrequency control: controls)
+                {
+                    sourceConfig.addFrequency((long)(control.getFrequency() * 1E6));
+                }
+
+                channel.setSourceConfiguration(sourceConfig);
+            }
+
             mPlaylistManager.getChannelModel().addChannel(channel);
 
             if(getGoToChannelEditorCheckBox().isSelected())
@@ -548,7 +562,7 @@ public class SiteEditor extends GridPane
 
         if(siteFrequencies.isEmpty())
         {
-            Alert alert = new Alert(Alert.AlertType.ERROR, "Site Has No Control or Alternate Channels", ButtonType.OK);
+            Alert alert = new Alert(Alert.AlertType.ERROR, "Site Has No Control or Alternate Channel(s)", ButtonType.OK);
             alert.setTitle("Create Channel Configuration");
             alert.setHeaderText("Can't Create Channel Configuration");
             alert.initOwner((getCreateChannelConfigurationButton()).getScene().getWindow());
