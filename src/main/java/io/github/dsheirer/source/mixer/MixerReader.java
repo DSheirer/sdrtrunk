@@ -66,10 +66,9 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
         mBufferSize = (int)(mAudioFormat.getSampleRate() * 0.1) * mAudioFormat.getFrameSize();
     }
 
-    public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine,
-                       AbstractSampleAdapter<T> abstractSampleAdapter)
+    public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine, AbstractSampleAdapter<T> abstractSampleAdapter)
     {
-        this(audioFormat, targetDataLine, abstractSampleAdapter, null);
+        this(audioFormat, targetDataLine, abstractSampleAdapter, new HeartbeatManager());
     }
 
     /**
@@ -104,8 +103,12 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
 
         mBuffer = new byte[mBufferSize];
 
-        mTargetDataLine.open(mAudioFormat);
+        mTargetDataLine.open(getAudioFormat());
+        mLog.info("TDL Open:" + mTargetDataLine.isOpen() + " Active:" + mTargetDataLine.isActive() + " Running:" + mTargetDataLine.isRunning());
+        mLog.info("Format:" + mTargetDataLine.getFormat().toString());
         mTargetDataLine.start();
+        mLog.info("TDL Open:" + mTargetDataLine.isOpen() + " Active:" + mTargetDataLine.isActive() + " Running:" + mTargetDataLine.isRunning());
+
     }
 
     /**
@@ -115,7 +118,15 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     {
         if(mTargetDataLine != null && mTargetDataLine.isOpen())
         {
-            mTargetDataLine.close();
+            if(mTargetDataLine.isRunning())
+            {
+                mTargetDataLine.stop();
+            }
+
+            if(mTargetDataLine.isOpen())
+            {
+                mTargetDataLine.close();
+            }
         }
     }
 
@@ -215,9 +226,9 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
                     }
                 }
             }
-            catch(Exception e)
+            catch(Throwable t)
             {
-                mLog.error("MixerSource - error while reading from the mixer target data line", e);
+                mLog.error("MixerSource - error while reading from the mixer target data line", t);
                 stop();
             }
         }

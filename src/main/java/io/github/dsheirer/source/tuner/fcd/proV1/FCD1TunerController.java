@@ -18,7 +18,6 @@
 package io.github.dsheirer.source.tuner.fcd.proV1;
 
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.MixerTunerDataLine;
 import io.github.dsheirer.source.tuner.MixerTunerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -30,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 
+import javax.sound.sampled.TargetDataLine;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
@@ -53,10 +53,10 @@ public class FCD1TunerController extends FCDTunerController
     private FCD1TunerConfiguration mTunerConfiguration;
     private FCD1TunerEditor mEditor;
 
-    public FCD1TunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
+    public FCD1TunerController(TargetDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
     {
-        super(mixerTDL, device, descriptor, MixerTunerType.FUNCUBE_DONGLE_PRO.getDisplayString(), MINIMUM_TUNABLE_FREQUENCY,
-            MAXIMUM_TUNABLE_FREQUENCY, MixerTunerType.FUNCUBE_DONGLE_PRO.getAudioFormat());
+        super(MixerTunerType.FUNCUBE_DONGLE_PRO, mixerTDL, device, descriptor,
+            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY);
     }
 
     public void init() throws SourceException
@@ -78,10 +78,7 @@ public class FCD1TunerController extends FCDTunerController
         }
         catch(Exception e)
         {
-            e.printStackTrace();
-
-            throw new SourceException("FCDTunerController error " +
-                "during construction", e);
+            throw new SourceException("FCDTunerController error during construction", e);
         }
     }
 
