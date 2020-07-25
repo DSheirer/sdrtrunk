@@ -22,6 +22,8 @@ package io.github.dsheirer.module.decode.ip;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
+import io.github.dsheirer.module.decode.ip.cellocator.MCGPHeader;
+import io.github.dsheirer.module.decode.ip.cellocator.MCGPMessageFactory;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Header;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
@@ -91,6 +93,13 @@ public class PacketMessageFactory
     {
         switch(destinationPort)
         {
+            case 231:
+                //Cellocator
+                if(MCGPHeader.isCellocatorMessage(binaryMessage, offset))
+                {
+                    return MCGPMessageFactory.create(binaryMessage, offset);
+                }
+                break;
             case 4001: //Location Service
                 break;
             case 4004: //XCMP Service

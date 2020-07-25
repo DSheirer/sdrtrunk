@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,62 +14,57 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.ip.ars;
+package io.github.dsheirer.module.decode.ip.cellocator;
 
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
-import io.github.dsheirer.module.decode.ip.Packet;
-import java.util.Collections;
-import java.util.List;
+import io.github.dsheirer.module.decode.ip.UnknownPacket;
 
-public class ARSPacket extends Packet
+/**
+ * MCGP Packet - Unknown Message Type
+ */
+public class UnknownMCGPMessage extends MCGPPacket
 {
-    private ARSHeader mHeader;
+    private IPacket mPayload;
 
     /**
      * Constructs a parser for a header contained within a binary message starting at the offset.
      *
+     * @param header for this message
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public ARSPacket(BinaryMessage message, int offset)
+    public UnknownMCGPMessage(MCGPHeader header, BinaryMessage message, int offset)
     {
-        super(message, offset);
-    }
-
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ARS ").append(getHeader());
-        return sb.toString();
+        super(header, message, offset);
     }
 
     @Override
-    public ARSHeader getHeader()
+    public String toString()
     {
-        if(mHeader == null)
-        {
-            ARSPDUType pduType = ARSHeader.getPDUType(getMessage(), getOffset());
-            mHeader = ARSHeaderFactory.create(pduType, getMessage(), getOffset());
-        }
-
-        return mHeader;
+        StringBuilder sb = new StringBuilder();
+        sb.append("CELLOCATOR UNKNOWN MESSAGE TYPE [");
+        sb.append(getHeader().getMessageTypeValue()).append("] ").append(getPayload());
+        return sb.toString();
     }
 
     @Override
     public IPacket getPayload()
     {
-        //There are no payloads for ARS packets ... the header parses all of the information.
-        return null;
+        if(mPayload == null)
+        {
+            mPayload = new UnknownPacket(getMessage(), getOffset());
+        }
+
+        return mPayload;
     }
 
     @Override
-    public List<Identifier> getIdentifiers()
+    protected CellocatorRadioIdentifier getRadioId()
     {
-        return Collections.emptyList();
+        return null;
     }
 }

@@ -18,7 +18,7 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.ip.ars;
+package io.github.dsheirer.module.decode.ip.cellocator;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
@@ -27,50 +27,53 @@ import io.github.dsheirer.module.decode.ip.Packet;
 import java.util.Collections;
 import java.util.List;
 
-public class ARSPacket extends Packet
+/**
+ * Cellocator MCGP Packet
+ */
+public abstract class MCGPPacket extends Packet
 {
-    private ARSHeader mHeader;
+    private MCGPHeader mHeader;
 
     /**
      * Constructs a parser for a header contained within a binary message starting at the offset.
      *
+     * @param header for this message
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public ARSPacket(BinaryMessage message, int offset)
+    public MCGPPacket(MCGPHeader header, BinaryMessage message, int offset)
     {
         super(message, offset);
-    }
-
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ARS ").append(getHeader());
-        return sb.toString();
+        mHeader = header;
     }
 
     @Override
-    public ARSHeader getHeader()
+    public MCGPHeader getHeader()
     {
-        if(mHeader == null)
-        {
-            ARSPDUType pduType = ARSHeader.getPDUType(getMessage(), getOffset());
-            mHeader = ARSHeaderFactory.create(pduType, getMessage(), getOffset());
-        }
-
         return mHeader;
     }
+
+    /**
+     * Unit ID (to/from) for this packet
+     */
+    protected abstract CellocatorRadioIdentifier getRadioId();
 
     @Override
     public IPacket getPayload()
     {
-        //There are no payloads for ARS packets ... the header parses all of the information.
         return null;
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
+        CellocatorRadioIdentifier radioIdentifier = getRadioId();
+
+        if(radioIdentifier != null)
+        {
+            return Collections.singletonList(radioIdentifier);
+        }
+
         return Collections.emptyList();
     }
 }
