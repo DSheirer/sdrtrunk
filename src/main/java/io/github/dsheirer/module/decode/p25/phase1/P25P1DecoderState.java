@@ -962,7 +962,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
                         DecodeEvent cellocatorEvent = P25DecodeEvent.builder(message.getTimestamp())
                                 .channel(getCurrentChannel())
-                                .eventDescription("CELLOCATOR")
+                                .eventDescription("Cellocator")
                                 .identifiers(ic)
                                 .details(mcgpPacket.toString() + " " + ipv4.toString())
                                 .build();

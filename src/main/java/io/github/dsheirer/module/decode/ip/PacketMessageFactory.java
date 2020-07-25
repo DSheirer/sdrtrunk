@@ -84,12 +84,13 @@ public class PacketMessageFactory
     /**
      * Creates a UDP/IP packet payload parser
      *
+     * @param sourcePort for the packet (to identify the protocol/format)
      * @param destinationPort for the packet (to identify the protocol/format)
      * @param binaryMessage containing the IP/UDP payload
      * @param offset in the message to the start of the payload
      * @return constructed packet messge parser
      */
-    public static IPacket createUDPPayload(int destinationPort, BinaryMessage binaryMessage, int offset)
+    public static IPacket createUDPPayload(int sourcePort, int destinationPort, BinaryMessage binaryMessage, int offset)
     {
         switch(destinationPort)
         {
@@ -110,6 +111,23 @@ public class PacketMessageFactory
                 break;
             case 4008: //Telemetry Service
                 break;
+        }
+
+        switch(sourcePort)
+        {
+            case 231:
+                //Cellocator
+                if(MCGPHeader.isCellocatorMessage(binaryMessage, offset))
+                {
+                    return MCGPMessageFactory.create(binaryMessage, offset);
+                }
+                break;
+        }
+
+        //This is normally source or destination port 231, but can be on other ports as well.
+        if(MCGPHeader.isCellocatorMessage(binaryMessage, offset))
+        {
+            return MCGPMessageFactory.create(binaryMessage, offset);
         }
 
         return new UnknownPacket(binaryMessage, offset);
