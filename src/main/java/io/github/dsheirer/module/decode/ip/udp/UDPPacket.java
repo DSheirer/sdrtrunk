@@ -26,6 +26,7 @@ import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
 import io.github.dsheirer.module.decode.ip.PacketMessageFactory;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -80,7 +81,8 @@ public class UDPPacket extends Packet
         {
             if(getHeader().isValid())
             {
-                mPayload = PacketMessageFactory.createUDPPayload(getHeader().getDestinationPort(), getMessage(), getOffset() + getHeader().getLength());
+                mPayload = PacketMessageFactory.createUDPPayload(getHeader().getSourcePort(),
+                    getHeader().getDestinationPort(), getMessage(), getOffset() + getHeader().getLength());
             }
             else
             {
