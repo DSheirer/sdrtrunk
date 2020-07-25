@@ -157,10 +157,10 @@ public class AudioRecordingManager implements Listener<AudioSegment>
                 }
 
                 audioSegment.decrementConsumerCount();
-
-                //Grab the next one to record
-                audioSegment = mCompletedAudioSegmentQueue.poll();
             }
+
+            //Grab the next one to record
+            audioSegment = mCompletedAudioSegmentQueue.poll();
         }
     }
 
