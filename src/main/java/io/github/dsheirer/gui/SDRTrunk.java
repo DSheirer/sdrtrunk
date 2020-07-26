@@ -93,6 +93,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+
 public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
@@ -108,12 +111,14 @@ public class SDRTrunk implements Listener<TunerEvent>
     private AudioStreamingManager mAudioStreamingManager;
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private ControllerPanel mControllerPanel;
+    private PasswordPanel mPasswordPanel;
     private IconModel mIconModel = new IconModel();
     private PlaylistManager mPlaylistManager;
     private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
     private JFrame mMainGui = new JFrame();
+    private JFrame mPasswordGui = new JFrame();
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
@@ -193,6 +198,8 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
             mSettingsManager, mSourceManager, mUserPreferences);
+        
+        mPasswordPanel = new PasswordPanel(mMainGui, mPasswordGui);
 
         mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, tunerModel);
 
@@ -214,7 +221,8 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventQueue.invokeLater(() -> {
             try
             {
-                mMainGui.setVisible(true);
+                // mMainGui.setVisible(true);
+                mPasswordGui.setVisible(true);
                 autoStartChannels();
             }
             catch(Exception e)
@@ -246,29 +254,37 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void initGUI()
     {
         mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
+        mPasswordGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
 
         /**
          * Setup main JFrame window
          */
         mTitle = SystemProperties.getInstance().getApplicationName();
         mMainGui.setTitle(mTitle);
+        mPasswordGui.setTitle(" ");
 
         Point location = mUserPreferences.getSwingPreference().getLocation(WINDOW_FRAME_IDENTIFIER);
         if(location != null)
         {
             mMainGui.setLocation(location);
+            mPasswordGui.setLocation(location);
         }
         else
         {
             mMainGui.setLocationRelativeTo(null);
+            mPasswordGui.setLocationRelativeTo(null);
         }
         mMainGui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mMainGui.addWindowListener(new ShutdownMonitor());
+        
+        mPasswordGui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mPasswordGui.addWindowListener(new ShutdownMonitor());
 
         Dimension dimension = mUserPreferences.getSwingPreference().getDimension(WINDOW_FRAME_IDENTIFIER);
 
         mSpectralPanel.setPreferredSize(new Dimension(1280, 300));
         mControllerPanel.setPreferredSize(new Dimension(1280, 500));
+        mPasswordPanel.setPreferredSize(new Dimension(1280,500));
 
         if(dimension != null)
         {
@@ -285,10 +301,12 @@ public class SDRTrunk implements Listener<TunerEvent>
             }
 
             mMainGui.setSize(dimension);
+            mPasswordGui.setSize(dimension);
 
             if(mUserPreferences.getSwingPreference().getMaximized(WINDOW_FRAME_IDENTIFIER, false))
             {
                 mMainGui.setExtendedState(JFrame.MAXIMIZED_BOTH);
+                mPasswordGui.setExtendedState(JFrame.MAXIMIZED_BOTH);
             }
         }
         else
@@ -310,6 +328,15 @@ public class SDRTrunk implements Listener<TunerEvent>
         }
 
         mMainGui.add(mSplitPane, "cell 0 0,span,grow");
+        
+        Box box = new Box(BoxLayout.Y_AXIS);
+        box.add(Box.createVerticalGlue());
+        box.add(mPasswordPanel);
+        box.add(Box.createVerticalGlue());
+        
+        mPasswordGui.add(box);
+        mPasswordPanel.init();
+        
 
         /**
          * Menu items
@@ -319,6 +346,21 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         JMenu fileMenu = new JMenu("File");
         menuBar.add(fileMenu);
+        
+        JMenuItem lockMenu = new JMenuItem("Lock");
+        lockMenu.addActionListener(
+            new ActionListener()
+            {
+                public void actionPerformed(ActionEvent event)
+                {
+                    mPasswordGui.setVisible(true);
+                    mMainGui.setVisible(false);
+                    mPasswordPanel.toggleLoginFields(false);
+                }
+            }
+        );
+
+        fileMenu.add(lockMenu);
 
         JMenuItem exitMenu = new JMenuItem("Exit");
         exitMenu.addActionListener(

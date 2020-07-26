@@ -22,6 +22,8 @@ package io.github.dsheirer.module.decode.ip;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
+import io.github.dsheirer.module.decode.ip.cellocator.MCGPHeader;
+import io.github.dsheirer.module.decode.ip.cellocator.MCGPMessageFactory;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Header;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
@@ -82,15 +84,23 @@ public class PacketMessageFactory
     /**
      * Creates a UDP/IP packet payload parser
      *
+     * @param sourcePort for the packet (to identify the protocol/format)
      * @param destinationPort for the packet (to identify the protocol/format)
      * @param binaryMessage containing the IP/UDP payload
      * @param offset in the message to the start of the payload
      * @return constructed packet messge parser
      */
-    public static IPacket createUDPPayload(int destinationPort, BinaryMessage binaryMessage, int offset)
+    public static IPacket createUDPPayload(int sourcePort, int destinationPort, BinaryMessage binaryMessage, int offset)
     {
         switch(destinationPort)
         {
+            case 231:
+                //Cellocator
+                if(MCGPHeader.isCellocatorMessage(binaryMessage, offset))
+                {
+                    return MCGPMessageFactory.create(binaryMessage, offset);
+                }
+                break;
             case 4001: //Location Service
                 break;
             case 4004: //XCMP Service
@@ -101,6 +111,23 @@ public class PacketMessageFactory
                 break;
             case 4008: //Telemetry Service
                 break;
+        }
+
+        switch(sourcePort)
+        {
+            case 231:
+                //Cellocator
+                if(MCGPHeader.isCellocatorMessage(binaryMessage, offset))
+                {
+                    return MCGPMessageFactory.create(binaryMessage, offset);
+                }
+                break;
+        }
+
+        //This is normally source or destination port 231, but can be on other ports as well.
+        if(MCGPHeader.isCellocatorMessage(binaryMessage, offset))
+        {
+            return MCGPMessageFactory.create(binaryMessage, offset);
         }
 
         return new UnknownPacket(binaryMessage, offset);

@@ -21,8 +21,11 @@
 package io.github.dsheirer.module.decode.ip.ars;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
+import java.util.Collections;
+import java.util.List;
 
 public class ARSPacket extends Packet
 {
@@ -63,5 +66,11 @@ public class ARSPacket extends Packet
     {
         //There are no payloads for ARS packets ... the header parses all of the information.
         return null;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.emptyList();
     }
 }

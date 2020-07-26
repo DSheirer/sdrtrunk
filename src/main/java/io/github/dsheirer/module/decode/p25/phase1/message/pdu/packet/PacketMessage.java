@@ -264,11 +264,9 @@ public class PacketMessage extends P25Message
             mIdentifiers = new ArrayList<>();
             mIdentifiers.add(getPDUSequence().getHeader().getLLID());
 
-            if(getPacket() instanceof IPV4Packet)
+            if(getPacket() != null)
             {
-                IPV4Packet ipv4 = (IPV4Packet)getPacket();
-                mIdentifiers.add(ipv4.getHeader().getFromAddress());
-                mIdentifiers.add(ipv4.getHeader().getToAddress());
+                mIdentifiers.addAll(getPacket().getIdentifiers());
             }
         }
 

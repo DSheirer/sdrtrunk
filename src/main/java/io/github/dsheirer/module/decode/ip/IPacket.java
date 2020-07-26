@@ -20,6 +20,9 @@
 
 package io.github.dsheirer.module.decode.ip;
 
+import io.github.dsheirer.identifier.Identifier;
+import java.util.List;
+
 /**
  * Data packet interface
  */
@@ -28,16 +31,21 @@ public interface IPacket
     /**
      * Header for the data packet.
      */
-    public IHeader getHeader();
+    IHeader getHeader();
 
     /**
      * Optional payload for the packet
      * @return null if there is no payload
      */
-    public IPacket getPayload();
+    IPacket getPayload();
 
     /**
      * Indicates if this packet contains an optional payload
      */
-    public boolean hasPayload();
+    boolean hasPayload();
+
+    /**
+     * List of identifiers for this packet and any child payload packets.
+     */
+    List<Identifier> getIdentifiers();
 }

@@ -71,12 +71,16 @@ public class ChannelAutoStartFrame extends JFrame
         mChannelEventListener = listener;
         mChannels = channels;
         init();
+        startChannels();
 
+           /*
         EventQueue.invokeLater(() -> {
             setVisible(true);
             toFront();
             startTimer();
         });
+        */
+        
     }
 
     private void init()

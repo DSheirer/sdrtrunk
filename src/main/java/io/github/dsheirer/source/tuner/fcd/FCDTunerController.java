@@ -23,7 +23,7 @@ import io.github.dsheirer.sample.adapter.ComplexShortAdapter;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.ComplexMixer;
-import io.github.dsheirer.source.tuner.MixerTunerDataLine;
+import io.github.dsheirer.source.tuner.MixerTunerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -36,7 +36,7 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
-import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.TargetDataLine;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
@@ -71,8 +71,8 @@ public abstract class FCDTunerController extends TunerController
      * @param minTunableFrequency
      * @param maxTunableFrequency
      */
-    public FCDTunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor, String tunerName,
-                              int minTunableFrequency, int maxTunableFrequency, AudioFormat audioFormat)
+    public FCDTunerController(MixerTunerType tunerType, TargetDataLine mixerTDL, Device device,
+                              DeviceDescriptor descriptor, int minTunableFrequency, int maxTunableFrequency)
     {
         super(minTunableFrequency, maxTunableFrequency, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
         mDevice = device;
@@ -80,17 +80,17 @@ public abstract class FCDTunerController extends TunerController
 
         try
         {
-            mFrequencyController.setSampleRate((int)audioFormat.getSampleRate());
+            mFrequencyController.setSampleRate((int)tunerType.getAudioFormat().getSampleRate());
         }
         catch(SourceException se)
         {
-            mLog.error("Error setting sample rate to [" + audioFormat.getSampleRate() + "]", se);
+            mLog.error("Error setting sample rate to [" + tunerType.getAudioFormat().getSampleRate() + "]", se);
         }
 
-        mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName,
-            new ComplexShortAdapter(mixerTDL.getMixerTunerType().getDisplayString()));
+        mComplexMixer = new ComplexMixer( mixerTDL, tunerType.getAudioFormat(), tunerType.getDisplayString(),
+            new ComplexShortAdapter(tunerType.getDisplayString()));
 
-        mComplexMixer.setBufferSize(audioFormat.getFrameSize() * getBufferSampleCount());
+        mComplexMixer.setBufferSize(tunerType.getAudioFormat().getFrameSize() * getBufferSampleCount());
 
         mComplexMixer.setBufferListener(mReusableBufferBroadcaster);
     }

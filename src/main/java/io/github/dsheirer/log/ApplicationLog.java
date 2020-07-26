@@ -34,7 +34,12 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.Enumeration;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
 /**
  * Logback and SLF4j logging implementation.
@@ -126,6 +131,17 @@ public class ApplicationLog
             ((ch.qos.logback.classic.Logger)logger).addAppender(mRollingFileAppender);
 
 //            StatusPrinter.print(loggerContext);
+            Attributes atts = findManifestAttributes();
+            if (atts != null) {
+                mLog.info("SDRTrunk Version  : " + atts.getValue("Implementation-Version"));
+                mLog.info("Gradle Version    : " + atts.getValue("Created-By"));
+                mLog.info("Build Timestamp   : " + atts.getValue("Build-Timestamp"));
+                mLog.info("Build-JDK         : " + atts.getValue("Build-JDK"));
+                mLog.info("Build OS          : " + atts.getValue("Build-OS"));
+            }
+            else{
+                mLog.info("Failed to find build information.");
+            }
 
             mLog.info("");
             mLog.info("*******************************************************************");
@@ -162,5 +178,26 @@ public class ApplicationLog
             ((ch.qos.logback.classic.Logger)logger).detachAppender(mRollingFileAppender);
             mRollingFileAppender = null;
         }
+    }
+
+    private Attributes findManifestAttributes() {
+        try {
+            Enumeration<URL> resources = getClass().getClassLoader().getResources("META-INF/MANIFEST.MF");
+            while (resources.hasMoreElements()) {
+                try {
+                    Manifest manifest = new Manifest(resources.nextElement().openStream());
+                    Attributes atts = manifest.getMainAttributes();
+                    Boolean hasTitle = atts.containsValue("sdrtrunk project");
+                    if (hasTitle) {
+                        return atts;
+                    }
+                } catch (IOException E) {
+                    return null;
+                }
+            }
+        } catch (Exception ex) {
+            return null;
+        }
+        return null;
     }
 }

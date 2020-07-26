@@ -422,7 +422,7 @@ public class AliasConfigurationEditor extends SplitPane
             mAliasTableView.setItems(getAliasSortedList());
             mAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             mAliasTableView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<Alias>)c -> {
-                setAliases(mAliasTableView.getSelectionModel().getSelectedItems());
+                Platform.runLater(() -> setAliases(mAliasTableView.getSelectionModel().getSelectedItems()));
             });
         }
 

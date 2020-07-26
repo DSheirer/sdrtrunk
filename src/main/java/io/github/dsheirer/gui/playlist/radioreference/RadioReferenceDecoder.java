@@ -287,7 +287,19 @@ public class RadioReferenceDecoder
      */
     public boolean isLSM(Site site)
     {
-        return site != null && site.getModulation() != null && site.getModulation().contentEquals("LSM");
+        if(site != null)
+        {
+            if(site.getModulation() != null && site.getModulation().contentEquals("LSM"))
+            {
+                return true;
+            }
+            else if(site.getDescription() != null && site.getDescription().contains("Simulcast"))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
