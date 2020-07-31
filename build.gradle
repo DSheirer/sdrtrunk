@@ -69,6 +69,7 @@ dependencies {
     implementation 'javax.usb:usb-api:1.0.2'
     implementation 'net.coderazzi:tablefilter-swing:5.4.0'
     implementation 'org.apache.commons:commons-compress:1.20'
+    implementation 'commons-cli:commons-cli:1.4'
     implementation 'commons-io:commons-io:2.7'
     implementation 'org.apache.commons:commons-lang3:3.8.1'
     implementation 'org.apache.commons:commons-math3:3.6.1'
