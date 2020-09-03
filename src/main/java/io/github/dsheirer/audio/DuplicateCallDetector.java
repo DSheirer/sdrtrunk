@@ -231,79 +231,87 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
          */
         private void process()
         {
-            //Transfer in newly arrived audio segments
-            mAudioSegmentQueue.drainTo(mAudioSegments);
-
-            //Remove any completed audio segments.
-            mAudioSegments.removeIf(audioSegment -> {
-                boolean complete = audioSegment.completeProperty().get();
-
-                if(complete)
-                {
-                    audioSegment.decrementConsumerCount();
-                }
-
-                return complete;
-            });
-
-            //Only check for duplicates if there is more than one call
-            if(mAudioSegments.size() > 1)
+            try
             {
-                List<AudioSegment> duplicates = new ArrayList<>();
+                //Transfer in newly arrived audio segments
+                mAudioSegmentQueue.drainTo(mAudioSegments);
 
-                int currentIndex = 0;
-                while(currentIndex < mAudioSegments.size() - 1)
-                {
-                    AudioSegment current = mAudioSegments.get(currentIndex);
+                //Remove any completed audio segments.
+                mAudioSegments.removeIf(audioSegment -> {
+                    boolean complete = audioSegment.completeProperty().get();
 
-                    if(!current.isDuplicate())
+                    if(complete)
                     {
-                        int checkIndex = currentIndex + 1;
+                        audioSegment.decrementConsumerCount();
+                    }
 
-                        while(checkIndex < mAudioSegments.size())
+                    return complete;
+                });
+
+                //Only check for duplicates if there is more than one call
+                if(mAudioSegments.size() > 1)
+                {
+                    List<AudioSegment> duplicates = new ArrayList<>();
+
+                    int currentIndex = 0;
+                    while(currentIndex < mAudioSegments.size() - 1)
+                    {
+                        AudioSegment current = mAudioSegments.get(currentIndex);
+
+                        if(!current.isDuplicate())
                         {
-                            AudioSegment toCheck = mAudioSegments.get(checkIndex);
+                            int checkIndex = currentIndex + 1;
 
-                            if(!toCheck.isDuplicate())
+                            while(checkIndex < mAudioSegments.size())
                             {
-                                if(isDuplicate(current, toCheck))
+                                AudioSegment toCheck = mAudioSegments.get(checkIndex);
+
+                                if(!toCheck.isDuplicate())
                                 {
-                                    toCheck.setDuplicate(true);
-                                    toCheck.decrementConsumerCount();
-                                    duplicates.add(toCheck);
+                                    if(isDuplicate(current, toCheck))
+                                    {
+                                        toCheck.setDuplicate(true);
+                                        toCheck.decrementConsumerCount();
+                                        duplicates.add(toCheck);
+                                    }
                                 }
+
+                                checkIndex++;
                             }
-
-                            checkIndex++;
                         }
+
+                        currentIndex++;
                     }
 
-                    currentIndex++;
+                    mAudioSegments.removeAll(duplicates);
                 }
 
-                mAudioSegments.removeAll(duplicates);
-            }
-
-            //Finally, if the audio segment queue is empty, shutdown montitoring until a new segment arrives
-            if(mAudioSegments.isEmpty())
-            {
-                //Block on the audio segment queue so that we can shutdown before any new segments are added, and
-                //allow the add(segment) to restart monitoring as soon as needed.
-                synchronized(mAudioSegmentQueue)
+                //Finally, if the audio segment queue is empty, shutdown montitoring until a new segment arrives
+                if(mAudioSegments.isEmpty())
                 {
-                    if(mAudioSegmentQueue.isEmpty())
+                    //Block on the audio segment queue so that we can shutdown before any new segments are added, and
+                    //allow the add(segment) to restart monitoring as soon as needed.
+                    synchronized(mAudioSegmentQueue)
                     {
-                        try
+                        if(mAudioSegmentQueue.isEmpty())
                         {
-                            stopMonitoring();
-                        }
-                        catch(Exception e)
-                        {
-                            mLog.error("Unexpected error during duplicate audio segment monitoring shutdown", e);
-                            //Do nothing, we got interrupted
+                            try
+                            {
+                                stopMonitoring();
+                            }
+                            catch(Exception e)
+                            {
+                                mLog.error("Unexpected error during duplicate audio segment monitoring shutdown", e);
+                                //Do nothing, we got interrupted
+                            }
                         }
                     }
                 }
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Unknown error while processing audio segments for duplicate call detection.  Please report " +
+                    "this to the developer.", t);
             }
         }
     }
