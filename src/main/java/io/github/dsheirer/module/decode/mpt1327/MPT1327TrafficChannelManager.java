@@ -81,11 +81,10 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
      * Processes channel grants to allocate traffic channels and track overall channel usage.  Generates
      * decode events for each new channel that is allocated.
      */
-    public void processChannelGrant(MPT1327Message mpt1327Message)
+    public void processChannelGrant(MPT1327Message mpt1327Message, IdentifierCollection identifierCollection)
     {
         if(mpt1327Message.getMessageType() == MPT1327Message.MPTMessageType.GTC)
         {
-            IdentifierCollection identifierCollection = new IdentifierCollection(mpt1327Message.getIdentifiers());
             MPT1327Channel mpt1327Channel = MPT1327Channel.create(mpt1327Message.getChannel());
             mpt1327Channel.setChannelMap(mChannelMap);
 
