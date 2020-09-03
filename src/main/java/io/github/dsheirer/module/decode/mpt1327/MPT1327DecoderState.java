@@ -205,7 +205,10 @@ public class MPT1327DecoderState extends DecoderState
                     case GTC:
                         if(mMPT1327TrafficChannelManager != null)
                         {
-                            mMPT1327TrafficChannelManager.processChannelGrant(mpt);
+                            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            ic.remove(IdentifierClass.USER);
+                            ic.update(mpt.getIdentifiers());
+                            mMPT1327TrafficChannelManager.processChannelGrant(mpt, ic);
                         }
                         else
                         {
