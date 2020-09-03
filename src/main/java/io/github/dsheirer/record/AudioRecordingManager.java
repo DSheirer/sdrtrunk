@@ -27,6 +27,9 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.string.StringIdentifier;
+import io.github.dsheirer.identifier.tone.Tone;
+import io.github.dsheirer.identifier.tone.ToneIdentifier;
+import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.StringUtils;
@@ -243,6 +246,39 @@ public class AudioRecordingManager implements Listener<AudioSegment>
                     }
                 }
             }
+
+            List<Identifier> toneIdentifiers = identifierCollection.getIdentifiers(IdentifierClass.USER, Form.TONE);
+
+            if(!toneIdentifiers.isEmpty())
+            {
+                try
+                {
+                    Identifier identifier = toneIdentifiers.get(0);
+
+                    if(identifier instanceof ToneIdentifier)
+                    {
+                        ToneIdentifier toneIdentifier = (ToneIdentifier)identifier;
+                        ToneSequence toneSequence = toneIdentifier.getValue();
+
+                        if(toneSequence.hasTones())
+                        {
+                            sb.append("_TONES");
+
+                            for(Tone tone: toneIdentifier.getValue().getTones())
+                            {
+                                String label = tone.getAmbeTone().toString();
+                                label = label.replace("TONE", "").trim();
+                                label = label.replace(" ", "_");
+                                sb.append("_").append(label);
+                            }
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error appending tones to audio recording filename");
+                }
+            }
         }
         else
         {
@@ -258,7 +294,18 @@ public class AudioRecordingManager implements Listener<AudioSegment>
         sbFinal.append(TimeStamp.getTimeStamp("_"));
 
         //Remove any illegal filename characters
-        sbFinal.append(StringUtils.replaceIllegalCharacters(sb.toString()));
+        String cleaned = StringUtils.replaceIllegalCharacters(sb.toString());
+
+        //Ensure total length doesn't exceed 255 characters.  Allow room for timestamp, versioning and extension.
+        int maxLength = 255 - sbFinal.length() - ("_V" + mDuplicateAudioRecordingSuffix).length() -
+            recordFormat.getExtension().length();
+
+        if(cleaned.length() > maxLength)
+        {
+            cleaned = cleaned.substring(0, maxLength);
+        }
+
+        sbFinal.append(cleaned);
 
         if(mPreviousRecordingPath != null && mPreviousRecordingPath.contentEquals(sbFinal.toString()))
         {
@@ -268,15 +315,6 @@ public class AudioRecordingManager implements Listener<AudioSegment>
         {
             mDuplicateAudioRecordingSuffix = 2;
             mPreviousRecordingPath = sbFinal.toString();
-        }
-
-        for(Identifier identifier: identifierCollection.getIdentifiers(Role.FROM))
-        {
-            if(identifier.getForm() == Form.TONE)
-            {
-                sbFinal.append("_WITH_TONES");
-                break;
-            }
         }
 
         sbFinal.append(recordFormat.getExtension());
