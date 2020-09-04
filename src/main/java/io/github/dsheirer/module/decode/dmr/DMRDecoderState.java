@@ -31,6 +31,7 @@ import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.message.IMessage;
@@ -41,6 +42,8 @@ import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusDataChannelGrant;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusRegistrationRequest;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusRegistrationResponse;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Aloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.grant.ChannelGrant;
@@ -53,6 +56,8 @@ import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +69,6 @@ import java.util.TreeMap;
 /**
  * Decoder state for an DMR channel.  Maintains the call/data/idle state of the channel and produces events by
  * monitoring the decoded message stream.
- *
  */
 public class DMRDecoderState extends TimeslotDecoderState
 {
@@ -82,13 +86,54 @@ public class DMRDecoderState extends TimeslotDecoderState
      * Constructs an DMR decoder state with an optional traffic channel manager.
      * @param channel with configuration details
      * @param trafficChannelManager for handling traffic channel grants.
+     * @param configurationMonitor for tracking activity summary
      */
-    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager)
+    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager,
+                           DMRNetworkConfigurationMonitor configurationMonitor)
     {
         super(timeslot);
         mChannelType = channel.getChannelType();
         mTrafficChannelManager = trafficChannelManager;
-        mNetworkConfigurationMonitor = new DMRNetworkConfigurationMonitor(timeslot, channel);
+        mNetworkConfigurationMonitor = configurationMonitor;
+        updateCurrentFrequency(channel);
+    }
+
+    /**
+     * Constructs an DMR decoder state with an optional traffic channel manager and no network configuration monitor.
+     * @param channel with configuration details
+     * @param trafficChannelManager for handling traffic channel grants.
+     */
+    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager)
+    {
+        this(channel, timeslot, trafficChannelManager, null);
+    }
+
+    /**
+     * Updates the traffic channel with the first frequency from the channel configuration.  Subsequent changes to the
+     * control frequency by the channel rotation monitor will be handled separately.
+     */
+    private void updateCurrentFrequency(Channel channel)
+    {
+        long currentFrequency = 0;
+
+        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+        {
+            currentFrequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+        }
+        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
+        {
+            SourceConfigTunerMultipleFrequency s = (SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration();
+
+            if(s.getFrequencies().size() >= 1)
+            {
+                currentFrequency = s.getFrequencies().get(0);
+            }
+        }
+
+        if(currentFrequency > 0)
+        {
+            mTrafficChannelManager.setCurrentControlFrequency(currentFrequency);
+        }
     }
 
     /**
@@ -154,6 +199,12 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
             }
+        }
+
+        //Pass the message to the network configuration monitor, if this decoder state has a non-null instance
+        if(mNetworkConfigurationMonitor != null && message.isValid() && message instanceof DMRMessage)
+        {
+            mNetworkConfigurationMonitor.process((DMRMessage)message);
         }
     }
 
@@ -294,7 +345,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case STANDARD_ANNOUNCEMENT:
-                //TODO: anything?
+            case MOTOROLA_CONPLUS_NEIGHBOR_REPORT:
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case STANDARD_TALKGROUP_VOICE_CHANNEL_GRANT:
@@ -342,14 +393,48 @@ public class DMRDecoderState extends TimeslotDecoderState
                     ConnectPlusVoiceChannelUser cpvcu = (ConnectPlusVoiceChannelUser)csbk;
                     mTrafficChannelManager.processChannelGrant(cpvcu.getChannel(), new IdentifierCollection(cpvcu.getIdentifiers()),
                         csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
-//                    processCallDetection(cpvcu.getChannel(), cpvcu.getIdentifiers(), cpvcu.getTimestamp(),
-//                        DecodeEventType.CALL_GROUP);
+                    processCallDetection(cpvcu.getChannel(), cpvcu.getIdentifiers(), cpvcu.getTimestamp(),
+                        DecodeEventType.CALL_GROUP);
                 }
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
-        }
+            case MOTOROLA_CONPLUS_REGISTRATION_REQUEST:
+                if(csbk instanceof ConnectPlusRegistrationRequest)
+                {
+                    ConnectPlusRegistrationRequest cprr = (ConnectPlusRegistrationRequest)csbk;
 
-        mNetworkConfigurationMonitor.process(csbk);
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    ic.remove(IdentifierClass.USER);
+                    ic.update(csbk.getIdentifiers());
+                    DecodeEvent event = DMRDecodeEvent.builder(csbk.getTimestamp())
+                        .details("Registration Request")
+                        .eventDescription(DecodeEventType.REGISTER.toString())
+                        .identifiers(ic)
+                        .timeslot(csbk.getTimeslot())
+                        .build();
+                    broadcast(event);
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
+                }
+                break;
+            case MOTOROLA_CONPLUS_REGISTRATION_RESPONSE:
+                if(csbk instanceof ConnectPlusRegistrationResponse)
+                {
+                    ConnectPlusRegistrationResponse cprresp = (ConnectPlusRegistrationResponse)csbk;
+
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    ic.remove(IdentifierClass.USER);
+                    ic.update(csbk.getIdentifiers());
+                    DecodeEvent event = DMRDecodeEvent.builder(csbk.getTimestamp())
+                        .details("Registration Response")
+                        .eventDescription(DecodeEventType.REGISTER.toString())
+                        .identifiers(ic)
+                        .timeslot(csbk.getTimeslot())
+                        .build();
+                    broadcast(event);
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
+                }
+                break;
+        }
     }
 
     /**
@@ -373,7 +458,11 @@ public class DMRDecoderState extends TimeslotDecoderState
            isSameCall(mCurrentCallEvent.getIdentifierCollection(), identifiers))
         {
             mCurrentFrequency = channel.getDownlinkFrequency();
-            mNetworkConfigurationMonitor.setCurrentChannel(channel);
+
+            if(mNetworkConfigurationMonitor != null)
+            {
+                mNetworkConfigurationMonitor.setCurrentChannel(channel);
+            }
         }
 
         DecodeEvent event = mDetectedCallEventsMap.get(channel.getLogicalSlotNumber());
@@ -475,8 +564,6 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void processLinkControl(LCMessage message)
     {
-        mNetworkConfigurationMonitor.process(message);
-
         switch(message.getOpcode())
         {
             case FULL_STANDARD_GROUP_VOICE_CHANNEL_USER:
@@ -572,7 +659,12 @@ public class DMRDecoderState extends TimeslotDecoderState
     @Override
     public String getActivitySummary()
     {
-        return mNetworkConfigurationMonitor.getActivitySummary();
+        if(mNetworkConfigurationMonitor != null)
+        {
+            return mNetworkConfigurationMonitor.getActivitySummary();
+        }
+
+        return "";
     }
 
     @Override
@@ -582,7 +674,10 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             case RESET:
                 resetState();
-                mNetworkConfigurationMonitor.reset();
+                if(mNetworkConfigurationMonitor != null)
+                {
+                    mNetworkConfigurationMonitor.reset();
+                }
                 break;
             default:
                 break;
@@ -595,7 +690,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannelType == ChannelType.TRAFFIC)
         {
-            broadcast(new ChangeChannelTimeoutEvent(this, ChannelType.TRAFFIC, 1000));
+            broadcast(new ChangeChannelTimeoutEvent(this, ChannelType.TRAFFIC, 1000, getTimeslot()));
         }
     }
 

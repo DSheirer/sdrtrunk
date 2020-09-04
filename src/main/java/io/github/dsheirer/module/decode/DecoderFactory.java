@@ -39,6 +39,7 @@ import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
+import io.github.dsheirer.module.decode.dmr.DMRNetworkConfigurationMonitor;
 import io.github.dsheirer.module.decode.dmr.DMRStandardDecoder;
 import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
@@ -340,7 +341,9 @@ public class DecoderFactory
     {
         modules.add(new DMRStandardDecoder(decodeConfig));
         DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(channel);
-        modules.add(new DMRDecoderState(channel, 1, trafficChannelManager));
+        modules.add(trafficChannelManager);
+        DMRNetworkConfigurationMonitor networkConfigurationMonitor = new DMRNetworkConfigurationMonitor(channel);
+        modules.add(new DMRDecoderState(channel, 1, trafficChannelManager, networkConfigurationMonitor));
         modules.add(new DMRDecoderState(channel, 2, trafficChannelManager));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 2));

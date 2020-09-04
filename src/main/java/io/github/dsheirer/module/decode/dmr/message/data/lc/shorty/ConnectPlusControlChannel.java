@@ -59,7 +59,6 @@ public class ConnectPlusControlChannel extends ShortLCMessage
         }
         sb.append("SLC MOTOROLA CON+ CONTROL CHANNEL NETWORK:").append(getNetwork());
         sb.append(" SITE:").append(getSite());
-        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 

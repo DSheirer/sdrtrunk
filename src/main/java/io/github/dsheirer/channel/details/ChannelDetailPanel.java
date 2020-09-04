@@ -113,7 +113,6 @@ public class ChannelDetailPanel extends JPanel implements Listener<ProcessingCha
             for(DecoderState decoderState : processingChain.getDecoderStates())
             {
                 sb.append(decoderState.getActivitySummary());
-                sb.append("============================================================\n");
             }
 
             details = sb.toString();

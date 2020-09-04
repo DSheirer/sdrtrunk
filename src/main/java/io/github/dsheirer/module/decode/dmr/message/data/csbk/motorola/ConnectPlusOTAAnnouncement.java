@@ -46,10 +46,10 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     private static final int[] VERSION = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] UNKNOWN = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
         57, 58, 59, 60, 61, 62, 63};
-    private static final int[] REPEATER = new int[]{64, 65, 66, 67};
-    private static final int[] TIMESLOT = new int[]{68};
+    private static final int[] DATA_REPEATER = new int[]{64, 65, 66, 67};
+    private static final int[] DATA_TIMESLOT = new int[]{68};
 
-    private DMRLogicalChannel mDMRLogicalChannel;
+    private DMRLogicalChannel mDataChannel;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -80,7 +80,7 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
         sb.append("CC:").append(getSlotType().getColorCode());
         sb.append(" CON+ ANNOUNCE OTA ").append(getMessageType());
         sb.append(" VER:").append(getMessageVersion());
-        sb.append(" AVAILABLE ON ").append(getDMRTimeslotFrequencyChannel());
+        sb.append(" AVAILABLE ON ").append(getDataChannel());
         sb.append(" MSG:").append(getMessage().toHexString());
 
         return sb.toString();
@@ -97,38 +97,38 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     }
 
     /**
-     * Repeater number
+     * Data repeater number
      */
-    public int getRepeater()
+    public int getDataRepeater()
     {
-        return getMessage().getInt(REPEATER);
+        return getMessage().getInt(DATA_REPEATER);
     }
 
     /**
-     * Timeslot
+     * Data Timeslot
      */
-    public int getTimeslot()
+    public int getDataTimeslot()
     {
-        return getMessage().getInt(TIMESLOT);
+        return getMessage().getInt(DATA_TIMESLOT);
     }
 
     /**
-     * DMR Channel
+     * DMR Channel where the data is available
      */
-    public DMRLogicalChannel getDMRTimeslotFrequencyChannel()
+    public DMRLogicalChannel getDataChannel()
     {
-        if(mDMRLogicalChannel == null)
+        if(mDataChannel == null)
         {
-            mDMRLogicalChannel = new DMRLogicalChannel(getRepeater(), getTimeslot());
+            mDataChannel = new DMRLogicalChannel(getDataRepeater(), getDataTimeslot());
         }
 
-        return mDMRLogicalChannel;
+        return mDataChannel;
     }
 
     @Override
     public int[] getLogicalTimeslotNumbers()
     {
-        return getDMRTimeslotFrequencyChannel().getLSNArray();
+        return getDataChannel().getLSNArray();
     }
 
     /**
@@ -141,9 +141,9 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(timeslotFrequency.getNumber() == getDMRTimeslotFrequencyChannel().getLogicalSlotNumber())
+            if(timeslotFrequency.getNumber() == getDataChannel().getLogicalSlotNumber())
             {
-                getDMRTimeslotFrequencyChannel().setTimeslotFrequency(timeslotFrequency);
+                getDataChannel().setTimeslotFrequency(timeslotFrequency);
             }
         }
     }
@@ -154,7 +154,7 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getDMRTimeslotFrequencyChannel());
+            mIdentifiers.add(getDataChannel());
         }
 
         return mIdentifiers;

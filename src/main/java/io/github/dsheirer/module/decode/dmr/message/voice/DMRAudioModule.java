@@ -86,6 +86,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     protected int getTimeslot() {
         return mTimeslot;
     }
+
     @Override
     public void reset()
     {
@@ -124,7 +125,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                     processAudio(frame);
                 }
             }
-            if(message instanceof VoiceMessage)
+            else if(message instanceof VoiceMessage)
             {
                 VoiceMessage voiceMessage = (VoiceMessage)message;
                 List<byte[]> frames = voiceMessage.getAMBEFrames();
@@ -153,6 +154,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
             {
                 reset();
             }
+
             //Note: the DMRMessageProcess extracts Full Link Control messages from Voice Frames B-C and sends them
             // independent of any DMR Burst messaging.  When encountered, it can be assumed that they are part of
             // an ongoing call and can be used to establish encryption state when the FLC is a voice channel user.

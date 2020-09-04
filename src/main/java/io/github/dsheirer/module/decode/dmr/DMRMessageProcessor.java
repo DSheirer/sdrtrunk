@@ -85,8 +85,6 @@ public class DMRMessageProcessor implements Listener<IMessage>
     @Override
     public void receive(IMessage message)
     {
-        dispatch(message);
-
         //Enrich messages that carry DMR Logical Slot Number channels with LCN to frequency mappings
         if(message instanceof ITimeslotFrequencyReceiver)
         {
@@ -194,6 +192,9 @@ public class DMRMessageProcessor implements Listener<IMessage>
 //                mLog.warn("*** MULTI-FRAGMENT DMR CAP+ SYSTEM STATUS MESSAGE DETECTED - PLEASE MAKE A .bits RECORDING AND NOTIFY DEVELOPER");
             }
         }
+
+        //Now that the message has been (potentially) enriched, dispatch it to the modules
+        dispatch(message);
     }
 
     /**
