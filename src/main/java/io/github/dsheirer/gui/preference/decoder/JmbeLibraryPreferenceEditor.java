@@ -82,11 +82,16 @@ public class JmbeLibraryPreferenceEditor extends VBox
         mUserPreferences = userPreferences;
 
         //Register to receive directory preference update notifications so we can update the path labels
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         setPadding(new Insets(10,10,10,10));
         setSpacing(10);
         getChildren().addAll(getEditorPane(), getButtonsBox(), getAlertUserWhenMissingCheckBox());
+    }
+
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
     }
 
     private CheckBox getAlertUserWhenMissingCheckBox()
@@ -214,7 +219,7 @@ public class JmbeLibraryPreferenceEditor extends VBox
                                     if(buttonType == ButtonType.YES)
                                     {
                                         mLog.info("Posting JMBE editor request to event bus");
-                                        MyEventBus.getEventBus().post(new JmbeEditorRequest(release));
+                                        MyEventBus.getGlobalEventBus().post(new JmbeEditorRequest(release));
                                     }
                                 });
                             }

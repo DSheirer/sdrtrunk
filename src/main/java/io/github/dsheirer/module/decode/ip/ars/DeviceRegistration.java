@@ -193,7 +193,7 @@ public class DeviceRegistration extends ARSHeader
             }
             catch(Exception e)
             {
-                mLog.error("Error parsing ARS device identifier from value [" + sb.toString() + "]", e);
+                mLog.error("Error parsing ARS device identifier from value [" + sb.toString() + "]");
             }
         }
 

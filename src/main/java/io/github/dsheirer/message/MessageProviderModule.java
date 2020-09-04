@@ -55,12 +55,6 @@ public class MessageProviderModule extends Module implements IMessageProvider
 
     }
 
-    @Override
-    public void dispose()
-    {
-
-    }
-
     public void receive(IMessage message)
     {
         if(mMessageListener != null)

@@ -34,7 +34,6 @@ import io.github.dsheirer.module.decode.fleetsync2.identifier.FleetsyncIdentifie
 import io.github.dsheirer.module.decode.fleetsync2.message.Fleetsync2Message;
 import io.github.dsheirer.protocol.Protocol;
 
-import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -144,7 +143,7 @@ public class Fleetsync2DecoderState extends DecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 reset();
                 break;
             default:

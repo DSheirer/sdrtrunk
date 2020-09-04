@@ -83,7 +83,7 @@ public class ControllerPanel extends JPanel
             {
                 if(index == mSettingsTabIndex)
                 {
-                    MyEventBus.getEventBus().post(new ViewPlaylistRequest());
+                    MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest());
                 }
                 else
                 {

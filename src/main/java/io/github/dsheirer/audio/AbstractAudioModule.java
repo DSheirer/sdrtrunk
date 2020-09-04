@@ -36,16 +36,17 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractAudioModule extends Module implements IAudioSegmentProvider, IdentifierUpdateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractAudioModule.class);
-    private static final int DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH = 60 * 8000; // 1 minute @ 8kHz
-
+    public static final long DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH = 60 * 8000; // 1 minute @ 8kHz
+    public static final int DEFAULT_TIMESLOT = 0;
     private final int mMaxSegmentAudioSampleLength;
     private Listener<AudioSegment> mAudioSegmentListener;
-    protected MutableIdentifierCollection mIdentifierCollection = new MutableIdentifierCollection();
+    protected MutableIdentifierCollection mIdentifierCollection;
     private Broadcaster<IdentifierUpdateNotification> mIdentifierUpdateNotificationBroadcaster = new Broadcaster<>();
     private AliasList mAliasList;
     private AudioSegment mAudioSegment;
     private int mAudioSampleCount = 0;
     private boolean mRecordAudioOverride;
+    private int mTimeslot;
 
     /**
      * Constructs an abstract audio module
@@ -53,22 +54,30 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
      * @param aliasList for aliasing identifiers
      * @param maxSegmentAudioSampleLength in milliseconds
      */
-    public AbstractAudioModule(AliasList aliasList, long maxSegmentAudioSampleLength)
+    public AbstractAudioModule(AliasList aliasList, int timeslot, long maxSegmentAudioSampleLength)
     {
         mAliasList = aliasList;
         mMaxSegmentAudioSampleLength = (int)(maxSegmentAudioSampleLength * 8); //Convert milliseconds to samples
+        mTimeslot = timeslot;
+        mIdentifierCollection = new MutableIdentifierCollection(getTimeslot());
         mIdentifierUpdateNotificationBroadcaster.addListener(mIdentifierCollection);
     }
 
     /**
-     * Constructs an abstract audio module
+     * Constructs an abstract audio module with a default maximum audio segment length and a default timeslot 0.
      */
     public AbstractAudioModule(AliasList aliasList)
     {
-        this(aliasList, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
+        this(aliasList, DEFAULT_TIMESLOT, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
     }
 
-    protected abstract int getTimeslot();
+    /**
+     * Timeslot for this audio module
+     */
+    protected int getTimeslot()
+    {
+        return mTimeslot;
+    }
 
     /**
      * Closes the current audio segment

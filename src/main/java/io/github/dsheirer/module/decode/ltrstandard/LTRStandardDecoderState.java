@@ -222,7 +222,7 @@ public class LTRStandardDecoderState extends DecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 break;
         }

@@ -62,7 +62,6 @@ public class ApplicationLog
     public ApplicationLog(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
-        MyEventBus.getEventBus().register(this);
     }
 
     @Subscribe
@@ -87,6 +86,8 @@ public class ApplicationLog
      */
     public void start()
     {
+        MyEventBus.getGlobalEventBus().register(this);
+
         if(mRollingFileAppender == null)
         {
             mApplicationLogPath = mUserPreferences.getDirectoryPreference().getDirectoryApplicationLog();
@@ -169,6 +170,7 @@ public class ApplicationLog
      */
     public void stop()
     {
+        MyEventBus.getGlobalEventBus().unregister(this);
         if(mRollingFileAppender != null)
         {
             mLog.info("Stopping application logging");

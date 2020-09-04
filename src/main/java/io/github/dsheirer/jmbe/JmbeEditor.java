@@ -164,7 +164,7 @@ public class JmbeEditor extends VBox
             alert.initOwner(getCreateButton().getScene().getWindow());
             alert.showAndWait().ifPresent(buttonType -> {
                 jmbeCreator.completeProperty().unbind();
-                MyEventBus.getEventBus().post(new JmbeEditorRequest(true));
+                MyEventBus.getGlobalEventBus().post(new JmbeEditorRequest(true));
             });
         });
         jmbeCreator.execute();

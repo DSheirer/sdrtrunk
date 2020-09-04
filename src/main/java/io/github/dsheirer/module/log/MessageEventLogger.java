@@ -46,12 +46,6 @@ public class MessageEventLogger extends EventLogger implements IMessageListener,
     }
 
     @Override
-    public void dispose()
-    {
-        super.stop();
-    }
-
-    @Override
     public void reset()
     {
     }

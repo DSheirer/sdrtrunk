@@ -45,8 +45,8 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
         32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         56, 57, 58, 59, 60, 61, 62, 63};
-    private static final int[] REPEATER = new int[]{64, 65, 66, 67};
-    private static final int[] TIMESLOT = new int[]{68};
+    private static final int[] TRAFFIC_CHANNEL_REPEATER = new int[]{64, 65, 66, 67};
+    private static final int[] TRAFFIC_CHANNEL_TIMESLOT = new int[]{68};
     private static final int[] UNKNOWN_FIELD = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
     private RadioIdentifier mRadio;
@@ -122,21 +122,22 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     }
 
     /**
-     * Repeater
+     * Traffic channel repeater
      */
-    public int getRepeater()
+    public int getTrafficChannelRepeater()
     {
-        return getMessage().getInt(REPEATER);
+        return getMessage().getInt(TRAFFIC_CHANNEL_REPEATER);
     }
 
-//    /**
-//     * Timeslot
-//     */
-//    public int getTimeslot()
-//    {
-//        return getMessage().getInt(TIMESLOT);
-//    }
-//
+    /**
+     * Traffic channel timeslot
+     * @return 1 or 2
+     */
+    public int getTrafficChannelTimeslot()
+    {
+        return getMessage().getInt(TRAFFIC_CHANNEL_TIMESLOT) + 1;
+    }
+
     /**
      * DMR Channel
      */
@@ -144,7 +145,7 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     {
         if(mDMRLogicalChannel == null)
         {
-            mDMRLogicalChannel = new DMRLogicalChannel(getRepeater(), getTimeslot());
+            mDMRLogicalChannel = new DMRLogicalChannel(getTrafficChannelRepeater(), getTrafficChannelTimeslot());
         }
 
         return mDMRLogicalChannel;

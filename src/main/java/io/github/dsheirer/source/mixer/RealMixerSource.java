@@ -140,11 +140,4 @@ public class RealMixerSource extends RealSource
     {
         mFrequency = frequency;
     }
-
-
-    @Override
-    public void dispose()
-    {
-        mMixerReader.dispose();
-    }
 }

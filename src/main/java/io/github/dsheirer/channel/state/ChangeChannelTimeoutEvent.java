@@ -41,7 +41,7 @@ public class ChangeChannelTimeoutEvent extends DecoderStateEvent
      */
     public ChangeChannelTimeoutEvent(Object source, ChannelType channelType, long timeout, int timeslot)
     {
-        super(source, Event.CHANGE_CALL_TIMEOUT, State.IDLE, timeslot);
+        super(source, Event.REQUEST_CHANGE_CALL_TIMEOUT, State.IDLE, timeslot);
         mChannelType = channelType;
         mCallTimeoutMilliseconds = timeout;
     }

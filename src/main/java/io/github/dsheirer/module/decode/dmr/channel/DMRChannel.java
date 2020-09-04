@@ -31,7 +31,7 @@ import org.apache.commons.lang3.Validate;
 /**
  * Base DMR Channel
  *
- * Note: timeslots are tracked as 0 or 1 which correlates to timeslots 1 and 2
+ * Note: timeslots are tracked as 1 and 2
  */
 public abstract class DMRChannel extends IntegerIdentifier implements IChannelDescriptor
 {
@@ -39,13 +39,13 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
 
     /**
      * Constructs an instance
-     * @param channel number or repeater number, zero-based where repeater number one is 0, repeater two is 1, etc.
-     * @param timeslot in range: 0 or 1
+     * @param channel number or repeater number, one-based repeater number.
+     * @param timeslot in range: 1 or 2
      */
     public DMRChannel(int channel, int timeslot)
     {
         super(channel, IdentifierClass.NETWORK, Form.CHANNEL, Role.BROADCAST);
-        Validate.inclusiveBetween(0, 1, timeslot, "Timeslot must be between 0 and 1");
+        Validate.inclusiveBetween(0, 2, timeslot, "Timeslot must be between 1 and 2");
         mTimeslot = timeslot;
     }
 
@@ -53,6 +53,14 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     public Protocol getProtocol()
     {
         return Protocol.DMR;
+    }
+
+    /**
+     * Repeater number for the channel.
+     */
+    public int getRepeater()
+    {
+        return getValue();
     }
 
     /**
@@ -65,16 +73,33 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     }
 
     /**
-     * Logical slot number for this channel.  LSN is a 1-based index value where repeater one, timeslot 0 is
-     * LSN 1, timeslot 1 is LSN 2, etc.
+     * Logical slot number for this channel.  LSN is a 1-based index value where repeater one, timeslot 1 is
+     * LSN 1, timeslot 2 is LSN 2, etc.
      *
-     * Formula: LSN = 2 * channel - 1 + timeslot
+     * Formula: LSN = ((channel - 1) * 2) + timeslot
      *
      * @return logical slot number, a 1-based index value
      */
     public int getLogicalSlotNumber()
     {
-        return getValue() * 2 - 1 + getTimeslot();
+        int repeater = getRepeater();
+
+        if(repeater > 0)
+        {
+            return ((repeater - 1) * 2) + getTimeslot();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Returns an array of length 1 containing this channel's logical slot number
+     */
+    public int[] getLSNArray()
+    {
+        int[] logicalSlotNumbers = new int[1];
+        logicalSlotNumbers[0] = getLogicalSlotNumber();
+        return logicalSlotNumbers;
     }
 
     /**

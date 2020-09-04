@@ -49,15 +49,6 @@ public abstract class PrimaryDecoder extends Decoder implements ISquelchStatePro
         return mDecodeConfiguration;
     }
 
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-
-        mSquelchStateListener = null;
-        mDecodeConfiguration = null;
-    }
-
     public void broadcast(SquelchStateEvent state)
     {
         if(mSquelchStateListener != null)

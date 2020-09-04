@@ -733,8 +733,6 @@ public class MPT1327Message extends Message
                 break;
         }
 
-        sb.append("                  ").append(mMessage.toHexString());
-
         return sb.toString();
     }
 

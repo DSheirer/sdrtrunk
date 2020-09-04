@@ -41,8 +41,8 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
 {
     private static final int[] LC_START_STOP = new int[]{16, 17};
     private static final int TIMESLOT = 18;
-    private static final int[] REPEATER = new int[]{19, 20, 21, 22};
-    private static final int[] REPEATER_TIMESLOT = new int[]{23};
+    private static final int[] REST_REPEATER = new int[]{19, 20, 21, 22};
+    private static final int[] REST_TIMESLOT = new int[]{23};
     private static final int ASYNC = 24;
     private static final int[] SITE = new int[]{25, 26, 27, 28};
     private static final int[] NEIGHBOR_COUNT = new int[]{29, 30, 31};
@@ -60,7 +60,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     private static final int[] NEIGHBOR_6_REST = new int[]{76, 77, 78, 79};
 
 
-    private DMRLogicalChannel mDMRLogicalChannel;
+    private DMRLogicalChannel mRestChannel;
     private DMRSite mSite;
     private List<Identifier> mIdentifiers;
 
@@ -91,7 +91,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
 
         sb.append("CC:").append(getSlotType().getColorCode());
         sb.append(" MOTOROLA CAP+ SITE:").append(getSite());
-        sb.append(" REST ").append(getChannel());
+        sb.append(" REST ").append(getRestChannel());
         sb.append(" FL:").append(getLCSS());
 
         if(hasNeighbor(1))
@@ -278,33 +278,37 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     /**
      * Rest repeater
      */
-    public int getRepeater()
+    public int getRestRepeater()
     {
-        return getMessage().getInt(REPEATER);
+        return getMessage().getInt(REST_REPEATER) + 1;
     }
 
-    public int getTimeslot()
+    /**
+     * Rest timeslot
+     * @return timeslot 1 or 2
+     */
+    public int getRestTimeslot()
     {
-        return getMessage().getInt(REPEATER_TIMESLOT);
+        return getMessage().getInt(REST_TIMESLOT) + 1;
     }
 
     /**
      * DMR Channel
      */
-    public DMRLogicalChannel getChannel()
+    public DMRLogicalChannel getRestChannel()
     {
-        if(mDMRLogicalChannel == null)
+        if(mRestChannel == null)
         {
-            mDMRLogicalChannel = new DMRLogicalChannel(getRepeater(), getTimeslot());
+            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
         }
 
-        return mDMRLogicalChannel;
+        return mRestChannel;
     }
 
     @Override
     public int[] getLogicalTimeslotNumbers()
     {
-        return getChannel().getLSNArray();
+        return getRestChannel().getLSNArray();
     }
 
     /**
@@ -317,9 +321,9 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(timeslotFrequency.getNumber() == getChannel().getLogicalSlotNumber())
+            if(timeslotFrequency.getNumber() == getRestChannel().getLogicalSlotNumber())
             {
-                getChannel().setTimeslotFrequency(timeslotFrequency);
+                getRestChannel().setTimeslotFrequency(timeslotFrequency);
             }
         }
     }
@@ -330,7 +334,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getChannel());
+            mIdentifiers.add(getRestChannel());
         }
 
         return mIdentifiers;

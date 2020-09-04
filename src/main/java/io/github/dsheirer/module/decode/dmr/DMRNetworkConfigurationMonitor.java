@@ -27,6 +27,7 @@ import io.github.dsheirer.identifier.site.SiteIdentifier;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRNetwork;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
+import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAdjacentSiteInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAnnouncement;
@@ -44,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,25 +66,21 @@ public class DMRNetworkConfigurationMonitor
 
     private List<SiteIdentifier> mNeighborSites = new ArrayList<>();
     private Map<Integer,AdjacentSiteInformation> mTier3NeighborSites = new HashMap<>();
-    private List<DMRChannel> mObservedDmrChannels = new ArrayList<>();
+    private Map<Integer,DMRChannel> mObservedChannelMap = new HashMap<>();
     private DMRNetwork mDMRNetwork;
     private DMRSite mDMRSite;
     private Model mTier3Model;
     private String mBrand;
     private Integer mColorCode;
-    private int mTimeslot;
     private DMRChannel mCurrentChannel;
     private Channel mChannel;
 
     /**
      * Constructs an instance
-     *
-     * @param timeslot to monitor
      * @param channel configuration
      */
-    public DMRNetworkConfigurationMonitor(int timeslot, Channel channel)
+    public DMRNetworkConfigurationMonitor(Channel channel)
     {
-        mTimeslot = timeslot;
         mChannel = channel;
     }
 
@@ -92,6 +90,22 @@ public class DMRNetworkConfigurationMonitor
     public void setCurrentChannel(DMRChannel channel)
     {
         mCurrentChannel = channel;
+    }
+
+    /**
+     * Process a DMR message
+     * @param message to process that has already been checked for isValid()
+     */
+    public void process(DMRMessage message)
+    {
+        if(message instanceof CSBKMessage)
+        {
+            process((CSBKMessage)message);
+        }
+        else if(message instanceof LCMessage)
+        {
+            process((LCMessage)message);
+        }
     }
 
     /**
@@ -260,17 +274,12 @@ public class DMRNetworkConfigurationMonitor
         }
     }
 
+    /**
+     * Adds the DMR channel to the observed channel map
+     */
     private void addDmrChannel(DMRChannel dmrChannel)
     {
-        for(DMRChannel channel: mObservedDmrChannels)
-        {
-            if(channel.getValue() == dmrChannel.getValue())
-            {
-                return;
-            }
-        }
-
-        mObservedDmrChannels.add(dmrChannel);
+        mObservedChannelMap.put(dmrChannel.getLogicalSlotNumber(), dmrChannel);
     }
 
     public void reset()
@@ -280,42 +289,57 @@ public class DMRNetworkConfigurationMonitor
         mDMRSite = null;
         mNeighborSites.clear();
         mTier3NeighborSites.clear();
+        mObservedChannelMap.clear();
     }
 
     public String getActivitySummary()
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Activity Summary - Decoder:DMR ");
-        sb.append("Timeslot: " + mTimeslot);
+        sb.append("Activity Summary - Decoder: DMR ");
 
         //DMR System Brand Name
         sb.append("\n\nBrand:").append((mBrand == null ? BRAND_STANDARD : mBrand));
 
-        ///Connect+ Network ID
         if(mDMRNetwork != null)
         {
             sb.append("\nNetwork:").append(mDMRNetwork);
         }
 
-        //Connect+ Site ID
         if(mDMRSite != null)
         {
             sb.append("\nSite:").append(mDMRSite);
         }
+
         if(mTier3Model != null)
         {
             sb.append("\nNetwork Model").append(mTier3Model);
         }
 
         //Observed DMR Channels
-        if(!mObservedDmrChannels.isEmpty())
+        if(!mObservedChannelMap.isEmpty())
         {
-            sb.append("\nObserved DMR Channels:");
+            sb.append("\nObserved Logical Slot Numbers (LSN):");
 
-            for(DMRChannel dmrChannel: mObservedDmrChannels)
+            List<Integer> lsns = new ArrayList<>(mObservedChannelMap.keySet());
+            Collections.sort(lsns);
+
+            for(Integer lsn: lsns)
             {
-                sb.append("\n\t").append(dmrChannel);
+                DMRChannel channel = mObservedChannelMap.get(lsn);
+
+                if(channel != null)
+                {
+                    sb.append("\n\t").append(channel);
+
+                    double frequency = channel.getDownlinkFrequency();
+
+                    if(frequency != 0)
+                    {
+                        frequency /= 1E6d;
+                    }
+                    sb.append(" ").append(frequency).append(" MHz");
+                }
             }
         }
 

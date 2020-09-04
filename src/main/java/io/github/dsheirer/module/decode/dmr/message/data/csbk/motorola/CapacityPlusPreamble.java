@@ -39,8 +39,8 @@ import java.util.List;
 public class CapacityPlusPreamble extends Preamble
 {
     private static final int RADIO_TALKGROUP_FLAG = 17;
-    private static final int[] UNKNOWN_1 = new int[]{18, 19, 20, 21, 22, 23};
-    private static final int[] BLOCKS_TO_FOLLOW = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int[] BLOCKS_TO_FOLLOW = new int[]{18, 19, 20, 21, 22};
+    private static final int[] UNKNOWN_1 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
     private static final int[] UNKNOWN_2 = new int[]{32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] TARGET_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55};
     private static final int[] UNKNOWN_3 = new int[]{56, 57, 58, 59, 60, 61, 62, 63};
@@ -79,8 +79,27 @@ public class CapacityPlusPreamble extends Preamble
         sb.append(" MOTOROLA CAP+").append(isCSBKPreamble() ? " CSBK" : " DATA");
         sb.append(" PREAMBLE FM:").append(getSourceAddress());
         sb.append(" TO:").append(getTargetAddress());
+        sb.append(" BLOCKS TO FOLLOW:").append(getBlocksToFollow());
+        sb.append(" UNK1:").append(getUnknown1());
+        sb.append(" UNK2:").append(getUnknown2());
+        sb.append(" UNK3:").append(getUnknown3());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
+    }
+
+    public String getUnknown1()
+    {
+        return getMessage().getHex(UNKNOWN_1, 2);
+    }
+
+    public String getUnknown2()
+    {
+        return getMessage().getHex(UNKNOWN_2, 2);
+    }
+
+    public String getUnknown3()
+    {
+        return getMessage().getHex(UNKNOWN_3, 2);
     }
 
     /**
@@ -88,7 +107,7 @@ public class CapacityPlusPreamble extends Preamble
      */
     public int getBlocksToFollow()
     {
-        return 0;
+        return getMessage().getInt(BLOCKS_TO_FOLLOW);
     }
 
     /**

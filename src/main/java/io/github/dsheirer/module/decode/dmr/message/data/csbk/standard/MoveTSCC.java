@@ -156,7 +156,7 @@ public class MoveTSCC extends CSBKMessage
             }
             else
             {
-                mDMRChannel = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER), 0);
+                mDMRChannel = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER), 1);
             }
         }
 

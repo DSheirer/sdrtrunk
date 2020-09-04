@@ -21,10 +21,15 @@
  */
 package io.github.dsheirer.source;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.EnumSet;
 
 public class SourceEvent
 {
+    private final static Logger mLog = LoggerFactory.getLogger(SourceEvent.class);
+
     public enum Event
     {
         NOTIFICATION_CHANNEL_COUNT_CHANGE,
@@ -46,6 +51,7 @@ public class SourceEvent
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
         REQUEST_FREQUENCY_ROTATION,
+        REQUEST_FREQUENCY_SELECTION,
         REQUEST_SOURCE_DISPOSE,
         REQUEST_START_SAMPLE_STREAM,
         REQUEST_STOP_SAMPLE_STREAM;
@@ -386,6 +392,15 @@ public class SourceEvent
     public static SourceEvent frequencyRotationRequest()
     {
         return new SourceEvent(Event.REQUEST_FREQUENCY_ROTATION);
+    }
+
+    /**
+     * Creates a request to cycle to a specific frequency.  This is normally used for decoders to request the
+     * next frequency in a list when a multiple-frequency source configuration is defined.
+     */
+    public static SourceEvent frequencySelectionRequest()
+    {
+        return new SourceEvent(Event.REQUEST_FREQUENCY_SELECTION);
     }
 
     /**

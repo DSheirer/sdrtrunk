@@ -155,7 +155,7 @@ public class Tait1200DecoderState extends DecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 break;
             default:

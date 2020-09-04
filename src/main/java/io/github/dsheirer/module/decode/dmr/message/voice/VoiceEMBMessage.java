@@ -34,19 +34,29 @@ public class VoiceEMBMessage extends VoiceMessage
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("CC:").append(getEMB().getColorCode());
-//        sb.append(" ").append(getEMB().toString());
-//        sb.append(" EMB:").append(getEMB().getMessage().toHexString());
-        if(getEMB().isEncrypted())
+
+        if(getEMB().isValid())
         {
-            sb.append(" ENCRYPTED");
+            sb.append("CC:").append(getEMB().getColorCode());
         }
+        else
+        {
+            sb.append("CC:?");
+        }
+
         sb.append(" ").append(getSyncPattern().toString());
 
-//        if(getEMB().getLCSS() == LCSS.SINGLE_FRAGMENT)
-//        {
-//            sb.append(" SINGLE FRAGMENT:").append(getFLCFragment().toHexString());
-//        }
+        if(getEMB().isValid())
+        {
+            if(getEMB().isEncrypted())
+            {
+                sb.append(" ENCRYPTED");
+            }
+        }
+        else
+        {
+            sb.append(" [EMB CRC-ERROR]");
+        }
 
         return sb.toString();
     }

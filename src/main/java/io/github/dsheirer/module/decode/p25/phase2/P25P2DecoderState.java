@@ -1229,7 +1229,7 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         {
             switch(event.getEvent())
             {
-                case RESET:
+                case REQUEST_RESET:
                     resetState();
                     mNetworkConfigurationMonitor.reset();
                     break;

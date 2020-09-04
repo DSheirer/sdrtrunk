@@ -190,7 +190,6 @@ public class UserPreferencesEditor extends BorderPane
             storageItem.setExpanded(true);
 
             TreeItem<String> sourceItem = new TreeItem<>("Source");
-            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_CHANNEL_MULTIPLE_FREQUENCY));
             sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNER_CHANNELIZER));
             treeRoot.getChildren().add(sourceItem);
             sourceItem.setExpanded(true);
@@ -247,7 +246,7 @@ public class UserPreferencesEditor extends BorderPane
 
             Menu viewMenu = new Menu("View");
             MenuItem playlistEditorItem = new MenuItem("Playlist Editor");
-            playlistEditorItem.setOnAction(event -> MyEventBus.getEventBus().post(new ViewPlaylistRequest()));
+            playlistEditorItem.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest()));
             viewMenu.getItems().add(playlistEditorItem);
             mMenuBar.getMenus().add(viewMenu);
         }

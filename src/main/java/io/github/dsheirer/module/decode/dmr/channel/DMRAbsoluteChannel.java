@@ -72,7 +72,7 @@ public class DMRAbsoluteChannel extends DMRChannel
         StringBuilder sb = new StringBuilder();
 
         sb.append(getValue());
-        sb.append(" TS:").append(getTimeslot() + 1);
+        sb.append(" TS:").append(getTimeslot());
         sb.append(" ").append(getDownlinkFrequency() / 1E6d);
 
         return sb.toString();

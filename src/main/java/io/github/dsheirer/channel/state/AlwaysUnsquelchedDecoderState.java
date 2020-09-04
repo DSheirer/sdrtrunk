@@ -24,10 +24,8 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.string.SimpleStringIdentifier;
-import io.github.dsheirer.identifier.string.StringIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.protocol.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +76,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
-        if(event.getEvent() == Event.RESET)
+        if(event.getEvent() == Event.REQUEST_RESET)
         {
             getIdentifierCollection().update(mChannelNameIdentifier);
         }
@@ -93,7 +91,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     @Override
     public void start()
     {
-        broadcast(new DecoderStateEvent(this, Event.ALWAYS_UNSQUELCH, State.IDLE));
+        broadcast(new DecoderStateEvent(this, Event.REQUEST_ALWAYS_UNSQUELCH, State.IDLE));
         getIdentifierCollection().update(mChannelNameIdentifier);
     }
 

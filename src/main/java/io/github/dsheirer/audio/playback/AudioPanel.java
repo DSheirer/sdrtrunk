@@ -183,7 +183,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                     @Override
                     public void actionPerformed(ActionEvent e)
                     {
-                        MyEventBus.getEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_OUTPUT));
+                        MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.AUDIO_OUTPUT));
                     }
                 });
                 popup.add(outputMenu);

@@ -25,10 +25,10 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
-import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.tone.AmbeTone;
 import io.github.dsheirer.identifier.tone.Tone;
 import io.github.dsheirer.identifier.tone.ToneSequence;
@@ -60,17 +60,18 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     private ToneMetadataProcessor mToneMetadataProcessor = new ToneMetadataProcessor();
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
     private List<byte[]> mQueuedAmbeFrames = new ArrayList<>();
-    private int mTimeslot;
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
 
-    //TODO: is this needed?  It seemed to be causing the audio to be saturated and raspy
-    private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-
+    /**
+     * Constructs an instance
+     * @param userPreferences for JMBE library location
+     * @param aliasList for audio
+     * @param timeslot for this audio module
+     */
     public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
-        super(userPreferences, aliasList);
-        mTimeslot = timeslot;
+        super(userPreferences, aliasList, timeslot);
     }
 
     @Override
@@ -79,17 +80,12 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         return mSquelchStateListener;
     }
 
-    /**
-     * Timeslot for this audio module
-     */
-    @Override
-    protected int getTimeslot() {
-        return mTimeslot;
-    }
     @Override
     public void reset()
     {
-        getIdentifierCollection().clear();
+        //Explicitly clear FROM identifiers to ensure previous call TONE identifiers are cleared.
+        mIdentifierCollection.remove(Role.FROM);
+
         mEncryptedCall = false;
         mEncryptedCallStateEstablished = false;
         mQueuedAmbeFrames.clear();
@@ -109,13 +105,13 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         {
             //Both Motorola and Hytera signal their Basic Privacy (BP) scrambling in some of the Voice B-F frames
             //in the EMB field.
-            if(message instanceof VoiceEMBMessage)
+            if(!mEncryptedCallStateEstablished && message instanceof VoiceEMBMessage)
             {
                 VoiceEMBMessage voiceMessage = (VoiceEMBMessage)message;
-                if(voiceMessage.getEMB().isEncrypted())
+                if(voiceMessage.getEMB().isValid())
                 {
-                    mEncryptedCall = true;
                     mEncryptedCallStateEstablished = true;
+                    mEncryptedCall = voiceMessage.getEMB().isEncrypted();
                 }
 
                 List<byte[]> frames = voiceMessage.getAMBEFrames();
@@ -124,7 +120,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                     processAudio(frame);
                 }
             }
-            if(message instanceof VoiceMessage)
+            else if(message instanceof VoiceMessage)
             {
                 VoiceMessage voiceMessage = (VoiceMessage)message;
                 List<byte[]> frames = voiceMessage.getAMBEFrames();
@@ -133,7 +129,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                     processAudio(frame);
                 }
             }
-            else if(message instanceof VoiceHeader)
+            else if(!mEncryptedCallStateEstablished && message instanceof VoiceHeader)
             {
                 LCMessage lc = ((VoiceHeader)message).getLCMessage();
 
@@ -145,22 +141,21 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                     {
                         mEncryptedCallStateEstablished = true;
                         mEncryptedCall = flc.isEncrypted();
-                        getIdentifierCollection().update(flc.getIdentifiers());
                     }
                 }
-            }
-            else if(message instanceof Terminator)
-            {
-                reset();
             }
             //Note: the DMRMessageProcess extracts Full Link Control messages from Voice Frames B-C and sends them
             // independent of any DMR Burst messaging.  When encountered, it can be assumed that they are part of
             // an ongoing call and can be used to establish encryption state when the FLC is a voice channel user.
-            else if(message instanceof AbstractVoiceChannelUser)
+            else if(!mEncryptedCallStateEstablished && message instanceof AbstractVoiceChannelUser)
             {
                 ServiceOptions serviceOptions = ((AbstractVoiceChannelUser)message).getServiceOptions();
                 mEncryptedCallStateEstablished = true;
                 mEncryptedCall = serviceOptions.isEncrypted();
+            }
+            else if(message instanceof Terminator)
+            {
+                reset();
             }
         }
     }
@@ -207,7 +202,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         }
         catch(Exception e)
         {
-            mLog.error("Error synthesizing AMBE audio - continuing [" + e.getLocalizedMessage() + "]");
+            mLog.error("Error synthesizing DMR AMBE audio - continuing [" + e.getMessage() + "]");
         }
     }
 
@@ -277,7 +272,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         @Override
         public void receive(SquelchStateEvent event)
         {
-            if(event.getSquelchState() == SquelchState.SQUELCH)
+            if(event.getTimeslot() == getTimeslot() && event.getSquelchState() == SquelchState.SQUELCH)
             {
                 closeAudioSegment();
             }

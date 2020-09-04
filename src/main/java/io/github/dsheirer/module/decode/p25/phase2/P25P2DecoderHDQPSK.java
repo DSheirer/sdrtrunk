@@ -182,16 +182,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
         return filter;
     }
 
-    public void dispose()
-    {
-        super.dispose();
-
-        mBasebandFilter.dispose();
-        mBasebandFilter = null;
-
-        mMessageFramer = null;
-    }
-
     @Override
     protected void process(SourceEvent sourceEvent)
     {

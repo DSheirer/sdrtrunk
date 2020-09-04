@@ -24,7 +24,6 @@ import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.duplicate.DuplicateCallPreferenceEditor;
 import io.github.dsheirer.gui.preference.playback.PlaybackPreferenceEditor;
 import io.github.dsheirer.gui.preference.record.RecordPreferenceEditor;
-import io.github.dsheirer.gui.preference.tuner.ChannelMultipleFrequencyPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.scene.Node;
@@ -50,8 +49,6 @@ public class PreferenceEditorFactory
                 return new DirectoryPreferenceEditor(userPreferences);
             case JMBE_LIBRARY:
                 return new JmbeLibraryPreferenceEditor(userPreferences);
-            case SOURCE_CHANNEL_MULTIPLE_FREQUENCY:
-                return new ChannelMultipleFrequencyPreferenceEditor(userPreferences);
             case SOURCE_TUNER_CHANNELIZER:
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:

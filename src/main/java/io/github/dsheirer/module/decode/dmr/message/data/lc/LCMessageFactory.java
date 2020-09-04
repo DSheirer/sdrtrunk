@@ -32,7 +32,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGr
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraTerminator;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusGroupVoiceChannelUser;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusUnknownOpcode4;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ActivityUpdateMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ConnectPlusControlChannel;
@@ -95,8 +95,8 @@ public class LCMessageFactory
             case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
                 flc = new CapacityPlusGroupVoiceChannelUser(message, timestamp, timeslot);
                 break;
-            case FULL_CAPACITY_PLUS_UNKNOWN_FLCO_4:
-                flc = new CapacityPlusUnknownOpcode4(message, timestamp, timeslot);
+            case FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER:
+                flc = new CapacityPlusWideAreaVoiceChannelUser(message, timestamp, timeslot);
                 break;
 
             case FULL_HYTERA_GROUP_VOICE_CHANNEL_USER:
@@ -112,7 +112,6 @@ public class LCMessageFactory
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
-                mLog.info("Detected DMR Talker Alias Messages - please make a .BITS recording and send to the sdrtrunk developer!!");
             default:
                 flc = new UnknownFullLCMessage(message, timestamp, timeslot);
                 break;

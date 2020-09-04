@@ -376,7 +376,7 @@ public class FrequencyEditor extends VBox
 
                     if(getShowCreatedChannelCheckBox().selectedProperty().get())
                     {
-                        MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                        MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
                     }
                     else
                     {

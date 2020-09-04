@@ -59,7 +59,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
 
     public DecodeEventModel()
     {
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
     }
 
     /**
@@ -86,16 +86,33 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
         }
     }
 
+    /**
+     * Access the complete list of events managed by this model.
+     */
+    public List<IDecodeEvent> getEvents()
+    {
+        return new ArrayList<>(mEvents);
+    }
 
     public void dispose()
     {
-        MyEventBus.getEventBus().unregister(this);
+        MyEventBus.getGlobalEventBus().unregister(this);
         Iterator<IDecodeEvent> it = mEvents.iterator();
 
         while(it.hasNext())
         {
             it.remove();
         }
+    }
+
+    /**
+     * Clears all events from this model and loads the events argument
+     */
+    public void clearAndSet(List<IDecodeEvent> events)
+    {
+        mEvents.clear();
+        mEvents.addAll(events);
+        fireTableDataChanged();
     }
 
     public void reset()

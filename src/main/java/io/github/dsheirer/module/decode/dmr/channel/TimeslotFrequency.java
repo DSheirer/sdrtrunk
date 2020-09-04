@@ -157,6 +157,12 @@ public class TimeslotFrequency
         getUplinkMHz().set(uplinkFrequency / 1E6);
     }
 
+    @Override
+    public String toString()
+    {
+        return "TIMESLOT LSN:" + getNumber() + " DOWNLINK:" + getDownlinkFrequency();
+    }
+
     /**
      * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
      */

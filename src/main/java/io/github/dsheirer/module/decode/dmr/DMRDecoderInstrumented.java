@@ -26,7 +26,10 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 
-public class DMRStandardDecoderInstrumented extends DMRStandardDecoder
+/**
+ * Instrumented version of DMR decoder
+ */
+public class DMRDecoderInstrumented extends DMRDecoder
 {
     private Listener<Double> mPLLPhaseErrorListener;
     private Listener<Double> mPLLFrequencyListener;
@@ -39,7 +42,7 @@ public class DMRStandardDecoderInstrumented extends DMRStandardDecoder
      * Instrumented version of the DMR decoder that supports registering listeners to provide access to data as
      * it is being processed by the decoder.
      */
-    public DMRStandardDecoderInstrumented(DecodeConfigDMR config)
+    public DMRDecoderInstrumented(DecodeConfigDMR config)
     {
         super(config);
     }

@@ -27,8 +27,9 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+import java.util.List;
 
 /**
  * Identifier collection with methods for changing or updating managed identifiers
@@ -260,12 +261,11 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public void clear()
     {
-        Iterator<Identifier> it = mIdentifiers.iterator();
+        List<Identifier> identifiers = new ArrayList<>();
 
-        while(it.hasNext())
+        for(Identifier identifier: identifiers)
         {
-            notifyRemove(it.next());
-            it.remove();
+            remove(identifier);
         }
     }
 
@@ -274,18 +274,13 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public void remove(IdentifierClass identifierClass)
     {
-        Iterator<Identifier> it = mIdentifiers.iterator();
+        List<Identifier> identifiers = new ArrayList<>(mIdentifiers);
 
-        Identifier next = null;
-
-        while(it.hasNext())
+        for(Identifier identifier: identifiers)
         {
-            next = it.next();
-
-            if(next.getIdentifierClass() == identifierClass)
+            if(identifier.getIdentifierClass() == identifierClass)
             {
-                it.remove();
-                notifyRemove(next);
+                remove(identifier);
             }
         }
     }
@@ -295,18 +290,13 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public void remove(Form form)
     {
-        Iterator<Identifier> it = mIdentifiers.iterator();
+        List<Identifier> identifiers = new ArrayList<>(mIdentifiers);
 
-        Identifier next = null;
-
-        while(it.hasNext())
+        for(Identifier identifier: identifiers)
         {
-            next = it.next();
-
-            if(next.getForm() == form)
+            if(identifier.getForm() == form)
             {
-                it.remove();
-                notifyRemove(next);
+                remove(identifier);
             }
         }
     }
@@ -316,18 +306,13 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public void remove(Role role)
     {
-        Iterator<Identifier> it = mIdentifiers.iterator();
+        List<Identifier> identifiers = new ArrayList<>(mIdentifiers);
 
-        Identifier next = null;
-
-        while(it.hasNext())
+        for(Identifier identifier: identifiers)
         {
-            next = it.next();
-
-            if(next.getRole() == role)
+            if(identifier.getRole() == role)
             {
-                it.remove();
-                notifyRemove(next);
+                remove(identifier);
             }
         }
     }
@@ -337,18 +322,15 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public void remove(IdentifierClass identifierClass, Form form, Role role)
     {
-        Iterator<Identifier> it = mIdentifiers.iterator();
+        List<Identifier> identifiers = new ArrayList<>(mIdentifiers);
 
-        Identifier next = null;
-
-        while(it.hasNext())
+        for(Identifier identifier: identifiers)
         {
-            next = it.next();
-
-            if(next.getIdentifierClass() == identifierClass && next.getForm() == form && next.getRole() == role)
+            if(identifier.getIdentifierClass() == identifierClass &&
+                identifier.getForm() == form &&
+                identifier.getRole() == role)
             {
-                it.remove();
-                notifyRemove(next);
+                remove(identifier);
             }
         }
     }
@@ -358,18 +340,13 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      */
     public void remove(IdentifierClass identifierClass, Role role)
     {
-        Iterator<Identifier> it = mIdentifiers.iterator();
+        List<Identifier> identifiers = new ArrayList<>(mIdentifiers);
 
-        Identifier next = null;
-
-        while(it.hasNext())
+        for(Identifier identifier: identifiers)
         {
-            next = it.next();
-
-            if(next.getIdentifierClass() == identifierClass && next.getRole() == role)
+            if(identifier.getIdentifierClass() == identifierClass && identifier.getRole() == role)
             {
-                it.remove();
-                notifyRemove(next);
+                remove(identifier);
             }
         }
     }

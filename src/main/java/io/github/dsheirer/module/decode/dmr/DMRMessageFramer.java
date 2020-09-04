@@ -189,6 +189,12 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         //Each burst is 288 bits
         updateBitsProcessed(288);
 
+        //This allows the frequency error monitor to be notified when we're in sync
+        if(mSyncDetectListener != null)
+        {
+            mSyncDetectListener.syncDetected(0);
+        }
+
         CACH cach = null;
 
         if(syncPattern.hasCACH())
@@ -302,6 +308,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 
         //Cap+ Multi-Site 1 - Traffic LCN 2
 //        String file = path + "20200716_210133_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
+//        String file = path + "20200716_212309_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
 
         //Cap+ Multi-Site Enhanced GPS Channel
 //        String file = path + "20200714_224018_9600BPS_DMR_Farmers_Electric_Cooperative_Hunt_LCN_3.bits"; //This may have PLL mis-align issues
@@ -329,7 +336,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         //Cap+ BP Scrambling
 //        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
 
-        String file = "/home/denny/SDRTrunk/recordings/20200831_095646_9600BPS_DMR_JPJ_Communications_(DMR)_Madison_Control.bits";
+        String file = "/home/denny/SDRTrunk/recordings/20200927_054837_9600BPS_DMR_Blair_Communications_(Capacity_Plus)_Dallas_Control_9.bits";
+
+
 
         MessageListener listener = new MessageListener();
         DecodeConfigDMR config = new DecodeConfigDMR();

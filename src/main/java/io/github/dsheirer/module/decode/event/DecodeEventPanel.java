@@ -53,6 +53,7 @@ import java.awt.Component;
 import java.awt.EventQueue;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -64,7 +65,8 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
     private JTable mTable;
     private JTableColumnWidthMonitor mTableColumnWidthMonitor;
-    private DecodeEventModel mEmptyDecodeEventModel;
+    private DecodeEventModel mEventModel = new DecodeEventModel();
+    private DecodeEventHistory mCurrentEventHistory;
     private JScrollPane mEmptyScroller;
     private IconModel mIconModel;
     private AliasModel mAliasModel;
@@ -77,15 +79,14 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
      */
     public DecodeEventPanel(IconModel iconModel, UserPreferences userPreferences, AliasModel aliasModel)
     {
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
         mIconModel = iconModel;
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
         mTimestampCellRenderer = new TimestampCellRenderer();
-        mEmptyDecodeEventModel = new DecodeEventModel();
-        mTable = new JTable(mEmptyDecodeEventModel);
+        mTable = new JTable(mEventModel);
         mTable.setAutoCreateRowSorter(true);
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
@@ -93,6 +94,11 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
 
         mEmptyScroller = new JScrollPane(mTable);
         add(mEmptyScroller);
+    }
+
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
     }
 
     /**
@@ -129,20 +135,25 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     }
 
     @Override
-    public void receive(ProcessingChain processingChain)
+    public void receive(final ProcessingChain processingChain)
     {
+        if(mCurrentEventHistory != null)
+        {
+            mCurrentEventHistory.addListener(null);
+        }
+
         EventQueue.invokeLater(() -> {
-
-            //Dispose the current column width monitor and recreate after we swap out the table model
-            mTableColumnWidthMonitor.dispose();
-            mTable.setModel(processingChain != null ? processingChain.getDecodeEventModel() : mEmptyDecodeEventModel);
-
             if(processingChain != null)
             {
-                updateCellRenderers();
+                mCurrentEventHistory = processingChain.getDecodeEventHistory();
+                mEventModel.clearAndSet(mCurrentEventHistory.getItems());
+                processingChain.getDecodeEventHistory().addListener(mEventModel);
             }
-
-            mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
+            else
+            {
+                mCurrentEventHistory = null;
+                mEventModel.clearAndSet(Collections.emptyList());
+            }
         });
     }
 

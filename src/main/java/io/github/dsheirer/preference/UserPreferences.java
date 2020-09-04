@@ -208,6 +208,6 @@ public class UserPreferences implements Listener<PreferenceType>
     @Override
     public void receive(PreferenceType preferenceType)
     {
-        MyEventBus.getEventBus().post(preferenceType);
+        MyEventBus.getGlobalEventBus().post(preferenceType);
     }
 }

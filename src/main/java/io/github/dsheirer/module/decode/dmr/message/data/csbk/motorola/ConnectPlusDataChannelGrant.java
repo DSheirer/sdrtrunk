@@ -116,10 +116,11 @@ public class ConnectPlusDataChannelGrant extends CSBKMessage implements ITimeslo
 
     /**
      * Channel grant timeslot
+     * @return 1 or 2
      */
     public int getChannelGrantTimeslot()
     {
-        return getMessage().getInt(CHANNEL_GRANT_TIMESLOT);
+        return getMessage().getInt(CHANNEL_GRANT_TIMESLOT) + 1;
     }
 
     /**

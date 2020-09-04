@@ -203,7 +203,7 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
 
         if(mChannel == null)
         {
-            mChannel = new DMRLogicalChannel(getMessage().getInt(VOTED_CHANNEL_NUMBER), 0);
+            mChannel = new DMRLogicalChannel(getMessage().getInt(VOTED_CHANNEL_NUMBER), 1);
         }
 
         return mChannel;

@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Connect Plus - CSBK 60 Message
+ * Capacity Plus - CSBK 60 Message
  */
 public class CapacityPlusCSBKO_60 extends CSBKMessage
 {

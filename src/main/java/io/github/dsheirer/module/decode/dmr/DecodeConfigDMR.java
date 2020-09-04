@@ -51,6 +51,9 @@ public class DecodeConfigDMR extends DecodeConfiguration
         return 2;
     }
 
+    /**
+     * Timeslot identifiers
+     */
     @Override
     public int[] getTimeslots()
     {
@@ -66,18 +69,28 @@ public class DecodeConfigDMR extends DecodeConfiguration
         return DecoderType.DMR;
     }
 
+    /**
+     * Indicates if traffic channel grants for data calls should be ignored
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "ignore_data_calls")
     public boolean getIgnoreDataCalls()
     {
         return mIgnoreDataCalls;
     }
 
+    /**
+     * Sets flag to ignore data call traffic channel grants
+     * @param ignore true to ignore data calls.
+     */
     public void setIgnoreDataCalls(boolean ignore)
     {
         mIgnoreDataCalls = ignore;
     }
 
-
+    /**
+     * Traffic channel pool size.
+     * @return
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "traffic_channel_pool_size")
     public int getTrafficChannelPoolSize()
     {
@@ -104,7 +117,7 @@ public class DecodeConfigDMR extends DecodeConfiguration
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(50000.0, 12500, 5750.0, 6500.0);
+        return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0);
     }
 
     /**

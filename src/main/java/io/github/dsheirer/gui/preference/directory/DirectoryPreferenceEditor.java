@@ -98,10 +98,15 @@ public class DirectoryPreferenceEditor extends HBox
         mDirectoryPreference = userPreferences.getDirectoryPreference();
 
         //Register to receive directory preference update notifications so we can update the path labels
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         HBox.setHgrow(getEditorPane(), Priority.ALWAYS);
         getChildren().add(getEditorPane());
+    }
+
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
     }
 
     private GridPane getEditorPane()

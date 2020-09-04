@@ -140,4 +140,14 @@ public class SystemIdentityCode extends AbstractStructure
 
         return mSite;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getModel());
+        sb.append(" NETWORK:").append(getNetwork().getValue());
+        sb.append(" SITE:").append(getSite().getValue());
+        return sb.toString();
+    }
 }

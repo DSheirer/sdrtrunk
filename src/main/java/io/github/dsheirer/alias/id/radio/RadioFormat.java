@@ -114,6 +114,8 @@ public enum RadioFormat
         {
             case APCO25:
                 return APCO25;
+            case DMR:
+                return DMR;
             case PASSPORT:
                 return PASSPORT;
             default:

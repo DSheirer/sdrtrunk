@@ -27,7 +27,6 @@ import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSystemStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.header.MBCHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.PacketSequenceHeader;
@@ -39,9 +38,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessag
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCAssembler;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.PacketSequenceAssembler;
-import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.response.ResponseHeader;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,8 +55,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageProcessor.class);
 
-    private FLCAssembler mFLCAssemblerTimeslot0 = new FLCAssembler(0);
     private FLCAssembler mFLCAssemblerTimeslot1 = new FLCAssembler(1);
+    private FLCAssembler mFLCAssemblerTimeslot2 = new FLCAssembler(2);
     private MBCAssembler mMBCAssembler = new MBCAssembler();
     private PacketSequenceAssembler mPacketSequenceAssembler;
     private SLCAssembler mSLCAssembler = new SLCAssembler();
@@ -85,8 +82,6 @@ public class DMRMessageProcessor implements Listener<IMessage>
     @Override
     public void receive(IMessage message)
     {
-        dispatch(message);
-
         //Enrich messages that carry DMR Logical Slot Number channels with LCN to frequency mappings
         if(message instanceof ITimeslotFrequencyReceiver)
         {
@@ -114,24 +109,24 @@ public class DMRMessageProcessor implements Listener<IMessage>
         {
             VoiceEMBMessage voice = (VoiceEMBMessage)message;
 
-            if(message.getTimeslot() == 0)
-            {
-                FullLCMessage flco = mFLCAssemblerTimeslot0.process(voice.getEMB().getLCSS(),
-                    voice.getFLCFragment(), message.getTimestamp());
-                dispatch(flco);
-            }
-            else
+            if(message.getTimeslot() == 1)
             {
                 FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
                     voice.getFLCFragment(), message.getTimestamp());
-                dispatch(flco);
+                receive(flco);
+            }
+            else
+            {
+                FullLCMessage flco = mFLCAssemblerTimeslot2.process(voice.getEMB().getLCSS(),
+                    voice.getFLCFragment(), message.getTimestamp());
+                receive(flco);
             }
 
             if(voice.hasCACH())
             {
                 CACH cach = voice.getCACH();
                 ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
-                dispatch(slco);
+                receive(slco);
             }
         }
         //Extract the Short Link Control message fragment from the DMR burst message when it has one
@@ -143,7 +138,7 @@ public class DMRMessageProcessor implements Listener<IMessage>
             {
                 CACH cach = dmrBurst.getCACH();
                 ShortLCMessage slco = mSLCAssembler.process(cach.getLCSS(), cach.getPayload(), message.getTimestamp());
-                dispatch(slco);
+                receive(slco);
             }
 
             //Multi-Block CSBK Reassembly
@@ -154,7 +149,7 @@ public class DMRMessageProcessor implements Listener<IMessage>
             else if(message instanceof MBCContinuationBlock)
             {
                 //Returns either a fully reassembled MultiCSBK or null
-                dispatch(mMBCAssembler.process((MBCContinuationBlock)message));
+                receive(mMBCAssembler.process((MBCContinuationBlock)message));
             }
             else
             {
@@ -178,22 +173,10 @@ public class DMRMessageProcessor implements Listener<IMessage>
             {
                 mPacketSequenceAssembler.process((DataBlock)message);
             }
-            else if(message instanceof ResponseHeader)
-            {
-
-            }
         }
 
-        if(message instanceof CapacityPlusSystemStatus)
-        {
-            LCSS lcss = ((CapacityPlusSystemStatus)message).getFragmentIndicator();
-
-            //TODO: process Cap+ system status message that is fragmented ...
-            if(lcss != LCSS.SINGLE_FRAGMENT)
-            {
-//                mLog.warn("*** MULTI-FRAGMENT DMR CAP+ SYSTEM STATUS MESSAGE DETECTED - PLEASE MAKE A .bits RECORDING AND NOTIFY DEVELOPER");
-            }
-        }
+        //Now that the message has been (potentially) enriched, dispatch it to the modules
+        dispatch(message);
     }
 
     /**

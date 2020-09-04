@@ -165,16 +165,6 @@ public class P25P1DecoderC4FM extends P25P1Decoder
         return filter;
     }
 
-    public void dispose()
-    {
-        super.dispose();
-
-        mBasebandFilter.dispose();
-        mBasebandFilter = null;
-
-        mMessageFramer = null;
-    }
-
     @Override
     protected void process(SourceEvent sourceEvent)
     {

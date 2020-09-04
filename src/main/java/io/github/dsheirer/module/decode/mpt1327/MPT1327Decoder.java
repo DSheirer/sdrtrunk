@@ -103,18 +103,6 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
         mTrafficMessageFramer.reset();
     }
 
-    /**
-     * Cleanup method
-     */
-    public void dispose()
-    {
-        super.dispose();
-
-        mMessageProcessor.dispose();
-        mControlMessageFramer.dispose();
-        mTrafficMessageFramer.dispose();
-    }
-
     public MessageFramer getControlMessageFramer()
     {
         return mControlMessageFramer;

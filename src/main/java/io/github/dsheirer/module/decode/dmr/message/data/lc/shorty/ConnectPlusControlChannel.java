@@ -32,8 +32,8 @@ import java.util.List;
  */
 public class ConnectPlusControlChannel extends ShortLCMessage
 {
-    private static int[] NETWORK = new int[]{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    private static int[] SITE = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
+    private static final int[] NETWORK = new int[]{4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    private static final int[] SITE = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
 
     private DMRNetwork mNetwork;
     private DMRSite mSite;
@@ -59,7 +59,6 @@ public class ConnectPlusControlChannel extends ShortLCMessage
         }
         sb.append("SLC MOTOROLA CON+ CONTROL CHANNEL NETWORK:").append(getNetwork());
         sb.append(" SITE:").append(getSite());
-        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 

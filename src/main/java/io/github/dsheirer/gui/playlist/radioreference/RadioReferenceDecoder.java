@@ -361,13 +361,12 @@ public class RadioReferenceDecoder
             for(SiteFrequency siteFrequency: site.getSiteFrequencies())
             {
                 int lcn = siteFrequency.getLogicalChannelNumber();
-                int lsn = (lcn - 1) * 2 + 1;
 
                 if(siteFrequency.getChannelId() != null)
                 {
                     try
                     {
-                        lsn = Integer.parseInt(siteFrequency.getChannelId());
+                        lcn = Integer.parseInt(siteFrequency.getChannelId());
                     }
                     catch(Exception e)
                     {
@@ -375,6 +374,7 @@ public class RadioReferenceDecoder
                     }
                 }
 
+                int lsn = (lcn - 1) * 2 + 1;
                 TimeslotFrequency timeslot1Frequency = new TimeslotFrequency();
                 timeslot1Frequency.setNumber(lsn);
                 timeslot1Frequency.setDownlinkFrequency((long)(siteFrequency.getFrequency() * 1E6));
