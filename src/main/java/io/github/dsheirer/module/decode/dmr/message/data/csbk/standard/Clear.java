@@ -17,45 +17,46 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcement;
+package io.github.dsheirer.module.decode.dmr.message.data.csbk.standard;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
 import io.github.dsheirer.module.decode.dmr.message.type.AbsoluteChannelParameters;
 import io.github.dsheirer.module.decode.dmr.message.type.DataType;
-import io.github.dsheirer.module.decode.dmr.message.type.SystemIdentityCode;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DMR Tier III - Vote Now Advice
+ * DMR Tier III - Clear Channel (return to control channel)
  */
-public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyReceiver
+public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
 {
-    //Broadcast Parameters 1: 21-34
-    private static final int VOTED_SYSTEM_IDENTITY_CODE_OFFSET = 21;
+    private static final int[] CHANNEL_NUMBER = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    private static final int TALKGROUP_FLAG = 31;
+    protected static final int[] DESTINATION = new int[]{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+        48, 49, 50, 51, 52, 53, 54, 55};
+    protected static final int[] SOURCE = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72,
+        73, 74, 75, 76, 77, 78, 79};
 
-    //Broadcast Parameters 2: 56-79
-    private static final int NETWORK_CONNECTION_STATUS_AVAILABLE_FLAG = 56;
-    private static final int ACTIVE_NETWORK_CONNECTION_FLAG = 57;
-    private static final int[] CONFIRMED_CHANNEL_PRIORITY = new int[]{58, 59, 60};
-    private static final int[] ADJACENT_CHANNEL_PRIORITY = new int[]{61, 62, 63};
-    private static final int[] RESERVED = new int[]{64, 65, 66, 67};
-    private static final int[] VOTED_CHANNEL_NUMBER = new int[]{68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79};
-
-    private SystemIdentityCode mVotedSystemIdentityCode;
-    private List<Identifier> mIdentifiers;
     private DMRChannel mChannel;
     private AbsoluteChannelParameters mAbsoluteChannelParameters;
+    private RadioIdentifier mSourceRadio;
+    private IntegerIdentifier mDestinationId;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a single-block CSBK instance
@@ -67,7 +68,8 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
      * @param timestamp
      * @param timeslot
      */
-    public VoteNowAdvice(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
+    public Clear(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
+                 long timestamp, int timeslot)
     {
         super(syncPattern, message, cach, slotType, timestamp, timeslot);
     }
@@ -81,17 +83,41 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
      * @param slotType for this message
      * @param timestamp
      * @param timeslot
-     * @param multiBlock containing absolute frequency parameters
+     * @param multiBlock continuation containing absolute channel parameters
      */
-    public VoteNowAdvice(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
-                         long timestamp, int timeslot, MBCContinuationBlock multiBlock)
+    public Clear(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType,
+                 long timestamp, int timeslot, MBCContinuationBlock multiBlock)
     {
-        super(syncPattern, message, cach, slotType, timestamp, timeslot);
+        this(syncPattern, message, cach, slotType, timestamp, timeslot);
 
         if(multiBlock != null)
         {
-            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0, 0);
+            mAbsoluteChannelParameters = new AbsoluteChannelParameters(multiBlock.getMessage(), 0,
+                getMoveToTimeslot());
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if(!isValid())
+        {
+            sb.append("[CRC-ERROR] ");
+        }
+
+        sb.append("CC:").append(getSlotType().getColorCode());
+
+        if(isEncrypted())
+        {
+            sb.append(" ENCRYPTED");
+        }
+
+        sb.append(" CLEAR - RETURN TO ").append(getMoveToChannel());
+        sb.append(" FM:").append(getSourceRadio());
+        sb.append(" TO:").append(getDestinationId());
+        return sb.toString();
     }
 
     /**
@@ -110,69 +136,48 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
         }
     }
 
-    @Override
-    public String toString()
+    public RadioIdentifier getSourceRadio()
     {
-        StringBuilder sb = new StringBuilder();
-
-        if(!isValid())
+        if(mSourceRadio == null)
         {
-            sb.append("[CRC-ERROR] ");
+            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE));
         }
 
-        sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" VOTED NETWORK:").append(getVotedSystemIdentityCode().getNetwork());
-        sb.append(" SITE:").append(getVotedSystemIdentityCode().getSite());
-        sb.append(" CHAN:").append(getChannel());
-        sb.append(" THIS ").append(getSystemIdentityCode().getModel());
-        sb.append(" NETWORK:").append(getSystemIdentityCode().getNetwork());
-        sb.append(" SITE:").append(getSystemIdentityCode().getSite());
+        return mSourceRadio;
+    }
 
-        return sb.toString();
+    public IntegerIdentifier getDestinationId()
+    {
+        if(mDestinationId == null)
+        {
+            if(getMessage().get(TALKGROUP_FLAG))
+            {
+                mDestinationId = DMRTalkgroup.create(getMessage().getInt(DESTINATION));
+            }
+            else
+            {
+                mDestinationId = DMRRadio.createTo(getMessage().getInt(DESTINATION));
+            }
+        }
+
+        return mDestinationId;
+    }
+
+
+    /**
+     * Timeslot to use for the channel grant
+     */
+    private int getMoveToTimeslot()
+    {
+        return 1; //Back to the control channel timeslot
     }
 
     /**
-     * Indicates if the active network connection status is available.
-     *
-     * See also: isActiveNetworkConnection()
+     * Channel number to move to
      */
-    public boolean hasNetworkConnectionStatus()
+    private int getMoveToChannelNumber()
     {
-        return getMessage().get(NETWORK_CONNECTION_STATUS_AVAILABLE_FLAG);
-    }
-
-    /**
-     * Indicates if this site has an active network connection
-     *
-     * See also: hasNetworkConnectionStatus()
-     */
-    public boolean isActiveNetworkConnection()
-    {
-        return getMessage().get(ACTIVE_NETWORK_CONNECTION_FLAG);
-    }
-
-    /**
-     * Confirmed channel priority
-     */
-    public int getConfirmedChannelPriority()
-    {
-        return getMessage().getInt(CONFIRMED_CHANNEL_PRIORITY);
-    }
-
-    /**
-     * Adjacent channel priority
-     */
-    public int getAdjacentChannelPriority()
-    {
-        return getMessage().getInt(ADJACENT_CHANNEL_PRIORITY);
-    }
-
-    /**
-     * Control Channel Number for the voted site
-     */
-    public int getVotedChannelNumber()
-    {
-        return getMessage().getInt(VOTED_CHANNEL_NUMBER);
+        return getMessage().getInt(CHANNEL_NUMBER);
     }
 
     /**
@@ -192,9 +197,9 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
     }
 
     /**
-     * DMR Channel and Timeslot for the channel grant
+     * DMR Channel and Timeslot to move to
      */
-    public DMRChannel getChannel()
+    public DMRChannel getMoveToChannel()
     {
         if(hasAbsoluteChannelParameters())
         {
@@ -203,36 +208,10 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
 
         if(mChannel == null)
         {
-            mChannel = new DMRLogicalChannel(getMessage().getInt(VOTED_CHANNEL_NUMBER), 1);
+            mChannel = new DMRLogicalChannel(getMoveToChannelNumber(), getMoveToTimeslot());
         }
 
         return mChannel;
-    }
-
-    /**
-     * Voted Site System Identity Code structure
-     */
-    public SystemIdentityCode getVotedSystemIdentityCode()
-    {
-        if(mVotedSystemIdentityCode == null)
-        {
-            mVotedSystemIdentityCode = new SystemIdentityCode(getMessage(), VOTED_SYSTEM_IDENTITY_CODE_OFFSET, false);
-        }
-
-        return mVotedSystemIdentityCode;
-    }
-
-    @Override
-    public List<Identifier> getIdentifiers()
-    {
-        if(mIdentifiers == null)
-        {
-            mIdentifiers = new ArrayList<>();
-            mIdentifiers.add(getSystemIdentityCode().getNetwork());
-            mIdentifiers.add(getSystemIdentityCode().getSite());
-        }
-
-        return mIdentifiers;
     }
 
     /**
@@ -241,9 +220,9 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
     @Override
     public int[] getLogicalTimeslotNumbers()
     {
-        if(getChannel() instanceof DMRLogicalChannel)
+        if(getMoveToChannel() instanceof DMRLogicalChannel)
         {
-            return ((DMRLogicalChannel)getChannel()).getLSNArray();
+            return ((DMRLogicalChannel)getMoveToChannel()).getLSNArray();
         }
 
         return new int[0];
@@ -256,9 +235,9 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        if(getChannel() instanceof DMRLogicalChannel)
+        if(getMoveToChannel() instanceof DMRLogicalChannel)
         {
-            DMRLogicalChannel channel = (DMRLogicalChannel)getChannel();
+            DMRLogicalChannel channel = (DMRLogicalChannel)getMoveToChannel();
 
             for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
             {
@@ -268,5 +247,19 @@ public class VoteNowAdvice extends Announcement implements ITimeslotFrequencyRec
                 }
             }
         }
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getMoveToChannel());
+            mIdentifiers.add(getSourceRadio());
+            mIdentifiers.add(getDestinationId());
+        }
+
+        return mIdentifiers;
     }
 }

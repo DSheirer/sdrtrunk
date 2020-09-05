@@ -46,6 +46,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPl
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusTerminateChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Aloha;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Clear;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.MoveTSCC;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.acknowledge.Acknowledge;
@@ -184,6 +185,9 @@ public class CSBKMessageFactory
                     csbk = new BroadcastTalkgroupVoiceChannelGrant(pattern, message, cach, slotType, timestamp,
                             timeslot);
                     break;
+                case STANDARD_CLEAR:
+                    csbk = new Clear(pattern, message, cach, slotType, timestamp, timeslot);
+                    break;
                 case STANDARD_DUPLEX_PRIVATE_DATA_CHANNEL_GRANT:
                     csbk = new DuplexPrivateDataChannelGrant(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
@@ -241,10 +245,10 @@ public class CSBKMessageFactory
                 case MOTOROLA_CAPPLUS_SYSTEM_STATUS:
                     csbk = new CapacityPlusSystemStatus(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case MOTOROLA_CAPPLUS_WINDOW_ANNOUNCEMENT:
+                case MOTOROLA_CAPPLUS_DATA_WINDOW_ANNOUNCEMENT:
                     csbk = new CapacityPlusDataRevertWindowAnnouncement(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case MOTOROLA_CAPPLUS_WINDOW_GRANT:
+                case MOTOROLA_CAPPLUS_DATA_WINDOW_GRANT:
                     csbk = new CapacityPlusDataRevertWindowGrant(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
 
@@ -278,10 +282,10 @@ public class CSBKMessageFactory
                 case MOTOROLA_CONPLUS_VOICE_CHANNEL_USER:
                     csbk = new ConnectPlusVoiceChannelUser(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case MOTOROLA_CONPLUS_WINDOW_ANNOUNCEMENT:
+                case MOTOROLA_CONPLUS_DATA_WINDOW_ANNOUNCEMENT:
                     csbk = new ConnectPlusDataRevertWindowAnnouncement(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case MOTOROLA_CONPLUS_WINDOW_GRANT:
+                case MOTOROLA_CONPLUS_DATA_WINDOW_GRANT:
                     csbk = new ConnectPlusDataRevertWindowGrant(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
             }
@@ -343,6 +347,10 @@ public class CSBKMessageFactory
             case STANDARD_BROADCAST_TALKGROUP_VOICE_CHANNEL_GRANT:
                 csbk = new BroadcastTalkgroupVoiceChannelGrant(header.getSyncPattern(), header.getMessage(), header.getCACH(),
                     header.getSlotType(), header.getTimestamp(), header.getTimeslot(), getBlock1(continuationBlocks));
+                break;
+            case STANDARD_CLEAR:
+                csbk = new Clear(header.getSyncPattern(), header.getMessage(), header.getCACH(), header.getSlotType(),
+                    header.getTimestamp(), header.getTimeslot(), getBlock1(continuationBlocks));
                 break;
             case STANDARD_DUPLEX_PRIVATE_DATA_CHANNEL_GRANT:
                 csbk = new DuplexPrivateDataChannelGrant(header.getSyncPattern(), header.getMessage(), header.getCACH(),

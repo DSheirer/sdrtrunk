@@ -106,10 +106,11 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
 
     /**
      * Data Timeslot
+     * @return 1 or 2
      */
     public int getDataTimeslot()
     {
-        return getMessage().getInt(DATA_TIMESLOT);
+        return getMessage().getInt(DATA_TIMESLOT) + 1;
     }
 
     /**

@@ -98,7 +98,7 @@ public class DMRLogicalChannel extends DMRChannel
         StringBuilder sb = new StringBuilder();
         sb.append("LSN:").append(getLogicalSlotNumber());
         sb.append(" LCN:").append(getValue());
-        sb.append(" TS:").append(getTimeslot() + 1);
+        sb.append(" TS:").append(getTimeslot());
         return sb.toString();
     }
 }

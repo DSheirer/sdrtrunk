@@ -102,17 +102,32 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser
     {
         if(mRestChannel == null && hasRestChannel())
         {
-            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getMessage().getInt(REST_TIMESLOT));
+            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
         }
 
         return mRestChannel;
     }
 
+    /**
+     * Rest repeater number
+     */
     public int getRestRepeater()
     {
         return getMessage().getInt(REST_REPEATER);
     }
 
+    /**
+     * Rest timeslot
+     * @return
+     */
+    public int getRestTimeslot()
+    {
+        return getMessage().getInt(REST_TIMESLOT) + 1;
+    }
+
+    /**
+     * Indicates if this message has a rest channel
+     */
     public boolean hasRestChannel()
     {
         return getRestRepeater() != 0;

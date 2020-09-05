@@ -140,7 +140,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
 
                 int maxTrafficChannels = decodeConfig.getTrafficChannelPoolSize();
 
-                mLog.debug("Creating [" + maxTrafficChannels + "] traffic channels");
                 if(maxTrafficChannels > 0)
                 {
                     for(int x = 0; x < maxTrafficChannels; x++)
@@ -278,7 +277,7 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
         //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
         long frequency = channel.getDownlinkFrequency();
 
-        mLog.debug("Requested frequency is:" + frequency);
+        mLog.debug("Requested frequency [" + frequency + "] current frequency [" + mCurrentControlFrequency + "]");
 
         if(frequency > 0 && frequency != mCurrentControlFrequency &&
             !mAllocatedTrafficChannelFrequencyMap.containsKey(frequency))
@@ -291,7 +290,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
                     " " + MAX_TRAFFIC_CHANNELS_EXCEEDED;
                 channelGrantEvent.setDetails(details);
                 channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
-                mLog.error("No more traffic channels available - normal allocation");
             }
             else
             {
@@ -300,7 +298,7 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
                 sourceConfig.setFrequency(frequency);
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelFrequencyMap.put(frequency, trafficChannel);
-                broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, channel, identifierCollection));
+                broadcast(ChannelEvent.requestEnable(trafficChannel));
             }
         }
 
@@ -497,8 +495,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
                 }
             }
 
-            mLog.debug("Removing events for the following LSNS:" + lsnsToRemove);
-
             for(Integer lsn: lsnsToRemove)
             {
                 DMRChannelGrantEvent event = mLSNGrantEventMap.remove(lsn);
@@ -530,22 +526,26 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
             if(channel.isTrafficChannel() && (channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_STOP ||
                 channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_START_REJECTED))
             {
-                mLog.debug("Received Channel Stop Event: " + channel.toString() + " Event:" + channelEvent.getEvent());
+                mLog.debug("Received Channel Stop [" + channel.toString() + "] Event [" + channelEvent.getEvent() + "]");
                 String optionalDescription = (channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_START_REJECTED ?
                     "Rejected" : null);
+
+                long frequencyToRemove = 0;
 
                 for(Map.Entry<Long,Channel> entry: mAllocatedTrafficChannelFrequencyMap.entrySet())
                 {
                     if(channel == entry.getValue() && entry.getKey() != null)
                     {
-                        mLog.debug("Cleaning up channel frequency map for stopped traffic channel for entry: " + entry.getKey() + " and channel " + entry.getValue());
+                        frequencyToRemove = entry.getKey();
                         cleanupCallEvents(entry.getKey(), optionalDescription);
+                        break;
                     }
                 }
 
-                //Add the traffic channel back to the queue to be reused
-                mLog.debug("Adding traffic channel back to queue: " + channel);
+                int countBefore = mAllocatedTrafficChannelFrequencyMap.size();
+                mAllocatedTrafficChannelFrequencyMap.remove(frequencyToRemove);
 
+                //Add the traffic channel back to the queue to be reused
                 if(!mAvailableTrafficChannelQueue.contains(channel))
                 {
                     mAvailableTrafficChannelQueue.add(channel);

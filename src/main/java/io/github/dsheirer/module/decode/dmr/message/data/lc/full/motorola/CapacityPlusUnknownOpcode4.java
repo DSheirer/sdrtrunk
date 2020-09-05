@@ -107,11 +107,25 @@ public class CapacityPlusUnknownOpcode4 extends AbstractVoiceChannelUser
         return mRestChannel;
     }
 
+    /**
+     * Rest channel timeslot
+     */
+    public int getRestTimeslot()
+    {
+        return getMessage().getInt(REST_TIMESLOT) + 1;
+    }
+
+    /**
+     * Rest channel repeater number
+     */
     public int getRestRepeater()
     {
         return getMessage().getInt(REST_REPEATER);
     }
 
+    /**
+     * Indicates if this message has a reset channel defined.
+     */
     public boolean hasRestChannel()
     {
         return getRestRepeater() != 0;

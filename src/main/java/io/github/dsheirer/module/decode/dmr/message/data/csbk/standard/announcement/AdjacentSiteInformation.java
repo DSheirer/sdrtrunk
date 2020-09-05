@@ -120,8 +120,8 @@ public class AdjacentSiteInformation extends Announcement implements ITimeslotFr
 
         if(mChannel == null)
         {
-            //Timeslot hard-coded to 0
-            mChannel = new DMRLogicalChannel(getMessage().getInt(NEIGHBOR_CHANNEL_NUMBER), 0);
+            //Timeslot hard-coded to 1
+            mChannel = new DMRLogicalChannel(getMessage().getInt(NEIGHBOR_CHANNEL_NUMBER), 1);
         }
 
         return mChannel;

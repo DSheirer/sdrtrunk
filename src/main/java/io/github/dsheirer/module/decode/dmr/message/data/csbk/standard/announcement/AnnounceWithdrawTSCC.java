@@ -221,7 +221,7 @@ public class AnnounceWithdrawTSCC extends Announcement
             }
             else
             {
-                mChannel1 = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER_1), 0);
+                mChannel1 = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER_1), 1);
             }
         }
 
@@ -235,7 +235,7 @@ public class AnnounceWithdrawTSCC extends Announcement
     {
         if(mChannel2 == null)
         {
-            mChannel2 = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER_2), 0);
+            mChannel2 = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER_2), 1);
         }
 
         return mChannel2;

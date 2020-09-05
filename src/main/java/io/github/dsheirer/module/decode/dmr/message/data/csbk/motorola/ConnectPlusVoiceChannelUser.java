@@ -131,10 +131,11 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
 
     /**
      * Traffic channel timeslot
+     * @return 1 or 2
      */
     public int getTrafficChannelTimeslot()
     {
-        return getMessage().getInt(TRAFFIC_CHANNEL_TIMESLOT);
+        return getMessage().getInt(TRAFFIC_CHANNEL_TIMESLOT) + 1;
     }
 
     /**

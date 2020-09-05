@@ -328,11 +328,17 @@ public class DMRNetworkConfigurationMonitor
             {
                 DMRChannel channel = mObservedChannelMap.get(lsn);
 
-                sb.append("\n\tLSN:").append(lsn);
-
                 if(channel != null)
                 {
-                    sb.append(" ").append(channel);
+                    sb.append("\n\t").append(channel);
+
+                    double frequency = channel.getDownlinkFrequency();
+
+                    if(frequency != 0)
+                    {
+                        frequency /= 1E6d;
+                    }
+                    sb.append(" ").append(frequency).append(" MHz");
                 }
             }
         }

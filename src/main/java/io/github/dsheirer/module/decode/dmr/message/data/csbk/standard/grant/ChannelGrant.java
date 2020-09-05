@@ -39,8 +39,8 @@ import java.util.List;
  */
 public abstract class ChannelGrant extends CSBKMessage implements ITimeslotFrequencyReceiver
 {
-    private static final int[] CHANNEl_NUMBER = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
-    private static final int TIMESLOT = 28;
+    private static final int[] CHANNEL_NUMBER = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27};
+    private static final int[] TIMESLOT = new int[]{28};
     protected static final int[] DESTINATION = new int[]{32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
         48, 49, 50, 51, 52, 53, 54, 55};
     protected static final int[] SOURCE = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72,
@@ -109,7 +109,7 @@ public abstract class ChannelGrant extends CSBKMessage implements ITimeslotFrequ
      */
     private int getChannelGrantTimeslot()
     {
-        return getMessage().get(TIMESLOT) ? 1 : 0;
+        return getMessage().getInt(TIMESLOT) + 1;
     }
 
     /**
@@ -117,7 +117,7 @@ public abstract class ChannelGrant extends CSBKMessage implements ITimeslotFrequ
      */
     private int getChannelNumber()
     {
-        return getMessage().getInt(CHANNEl_NUMBER);
+        return getMessage().getInt(CHANNEL_NUMBER);
     }
 
     /**

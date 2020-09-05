@@ -340,8 +340,15 @@ public class DecoderFactory
                                    AliasList aliasList, DecodeConfigDMR decodeConfig)
     {
         modules.add(new DMRStandardDecoder(decodeConfig));
-        DMRTrafficChannelManager trafficChannelManager = new DMRTrafficChannelManager(channel);
-        modules.add(trafficChannelManager);
+
+        DMRTrafficChannelManager trafficChannelManager = null;
+
+        if(channel.isStandardChannel())
+        {
+            trafficChannelManager = new DMRTrafficChannelManager(channel);
+            modules.add(trafficChannelManager);
+        }
+
         DMRNetworkConfigurationMonitor networkConfigurationMonitor = new DMRNetworkConfigurationMonitor(channel);
         modules.add(new DMRDecoderState(channel, 1, trafficChannelManager, networkConfigurationMonitor));
         modules.add(new DMRDecoderState(channel, 2, trafficChannelManager));

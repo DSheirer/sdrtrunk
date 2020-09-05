@@ -329,7 +329,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         //Cap+ BP Scrambling
 //        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
 
-        String file = "/home/denny/SDRTrunk/recordings/20200831_095646_9600BPS_DMR_JPJ_Communications_(DMR)_Madison_Control.bits";
+        String file = "/home/denny/SDRTrunk/recordings/20200905_071921_9600BPS_DMR_TeamConnect_Dallas_TRAFFIC.bits";
 
         MessageListener listener = new MessageListener();
         DecodeConfigDMR config = new DecodeConfigDMR();

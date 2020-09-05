@@ -390,6 +390,8 @@ public class Channel extends Configuration implements Listener<SourceEvent>
         sb.append(hasSite() ? getSite() : "SITE");
         sb.append("_");
         sb.append(getName());
+        sb.append("_");
+        sb.append(getChannelID());
 
         return sb.toString();
     }

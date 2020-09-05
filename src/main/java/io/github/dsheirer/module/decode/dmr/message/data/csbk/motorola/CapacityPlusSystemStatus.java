@@ -111,10 +111,11 @@ public class CapacityPlusSystemStatus extends CSBKMessage implements ITimeslotFr
 
     /**
      * Rest Channel Timeslot
+     * @return 1 or 2
      */
     public int getRestTimeslot()
     {
-        return getMessage().getInt(REST_TIMESLOT);
+        return getMessage().getInt(REST_TIMESLOT) + 1;
     }
 
     /**
