@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
+import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioModule;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.channel.state.State;
@@ -241,8 +242,8 @@ public class DecoderFactory
         // Set max segment audio sample length slightly above call timeout to
         // not create a new segment if the processing chain finishes a bit after
         // actual call timeout.
-        int maxAudioSegmentLengthMillis = (callTimeoutMilliseconds + 5000);
-        modules.add(new AudioModule(aliasList, maxAudioSegmentLengthMillis));
+        long maxAudioSegmentLengthMillis = (callTimeoutMilliseconds + 5000);
+        modules.add(new AudioModule(aliasList, AbstractAudioModule.DEFAULT_TIMESLOT, maxAudioSegmentLengthMillis));
 
         SourceType sourceType = channel.getSourceConfiguration().getSourceType();
         if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)

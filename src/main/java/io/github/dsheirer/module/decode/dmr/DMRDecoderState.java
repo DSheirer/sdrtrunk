@@ -55,8 +55,14 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.announcem
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.grant.ChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.header.HeaderMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusGroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusUnknownOpcode4;
+import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
@@ -172,21 +178,13 @@ public class DMRDecoderState extends TimeslotDecoderState
         mDetectedCallEventsMap.clear();
     }
 
-/**
+    /**
      * Resets any temporal state details
      */
     protected void resetState()
     {
         super.resetState();
-
-        if(mCurrentCallEvent != null)
-        {
-            mCurrentCallEvent.end(System.currentTimeMillis());
-            broadcast(mCurrentCallEvent);
-            mCurrentCallEvent = null;
-        }
-
-        getIdentifierCollection().remove(IdentifierClass.USER);
+        closeCurrentCallEvent(System.currentTimeMillis());
     }
 
     /**
@@ -207,7 +205,11 @@ public class DMRDecoderState extends TimeslotDecoderState
             }
             else if(message instanceof LCMessage)
             {
-                processLinkControl((LCMessage)message);
+                processLinkControl((LCMessage)message, false);
+            }
+            else if(message instanceof DMRPacketMessage)
+            {
+                processPacket((DMRPacketMessage)message);
             }
             else if(message instanceof DMRMessage)
             {
@@ -223,11 +225,27 @@ public class DMRDecoderState extends TimeslotDecoderState
     }
 
     /**
+     * Processes a packet message
+     */
+    private void processPacket(DMRPacketMessage packet)
+    {
+        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA, getTimeslot()));
+
+        DecodeEvent packetEvent = DMRDecodeEvent.builder(packet.getTimestamp())
+            .eventDescription(DecodeEventType.DATA_PACKET.name())
+            .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
+            .timeslot(packet.getTimeslot())
+            .details(packet.toString())
+            .build();
+
+        broadcast(packetEvent);
+    }
+
+    /**
      * Processes voice messages
      */
     private void processVoice(VoiceMessage message)
     {
-        updateCurrentCall(DecodeEventType.CALL, null, message.getTimestamp());
         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
     }
 
@@ -253,7 +271,12 @@ public class DMRDecoderState extends TimeslotDecoderState
         }
 
         //Process the link control message to get the identifiers
-        processLinkControl(header.getLCMessage());
+        LCMessage lc = header.getLCMessage();
+
+        if(lc.isValid())
+        {
+            processLinkControl(lc, false);
+        }
     }
 
     /**
@@ -316,9 +339,15 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void processTerminator(Terminator terminator)
     {
-        processLinkControl(terminator.getLCMessage());
         closeCurrentCallEvent(terminator.getTimestamp());
         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
+
+        LCMessage lcMessage = terminator.getLCMessage();
+
+        if(lcMessage.isValid())
+        {
+            processLinkControl(lcMessage, true);
+        }
     }
 
     /**
@@ -326,11 +355,12 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void processVoiceHeader(HeaderMessage voiceHeader)
     {
-        //Since the header by itself doesn't have much detail, we'll start the call event and rely on the link control
-        //message to fill in the missing details
-        updateCurrentCall(DecodeEventType.CALL, null, voiceHeader.getTimestamp());
+        LCMessage lcMessage = voiceHeader.getLCMessage();
 
-        processLinkControl(voiceHeader.getLCMessage());
+        if(lcMessage.isValid())
+        {
+            processLinkControl(lcMessage, false);
+        }
     }
 
     private void processCSBK(CSBKMessage csbk)
@@ -443,7 +473,6 @@ public class DMRDecoderState extends TimeslotDecoderState
                             .build();
 
                         broadcast(ackEvent);
-
                         resetState();
                     }
                 }
@@ -689,7 +718,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             event = DMRDecodeEvent.builder(timestamp)
                 .timeslot(getTimeslot())
-                .identifiers(new IdentifierCollection(identifiers))
+                .identifiers(getMergedIdentifierCollection(identifiers))
                 .eventDescription(eventType.toString())
                 .build();
 //            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
@@ -706,7 +735,7 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 event = DMRDecodeEvent.builder(timestamp)
                     .timeslot(getTimeslot())
-                    .identifiers(new IdentifierCollection(identifiers))
+                    .identifiers(getMergedIdentifierCollection(identifiers))
                     .eventDescription(DecodeEventType.CALL_DETECT.toString())
                     .build();
 //                mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
@@ -779,35 +808,143 @@ public class DMRDecoderState extends TimeslotDecoderState
 
     /**
      * Processes Link Control Messages
+     * @param isTerminator set to true when the link control is carried by a terminator
      */
-    private void processLinkControl(LCMessage message)
+    private void processLinkControl(LCMessage message, boolean isTerminator)
     {
         switch(message.getOpcode())
         {
+            case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
+                if(message instanceof CapacityPlusGroupVoiceChannelUser)
+                {
+                    CapacityPlusGroupVoiceChannelUser cpgvcu = (CapacityPlusGroupVoiceChannelUser)message;
+
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(cpgvcu.getTalkgroup());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = cpgvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                    }
+                }
+                break;
+            case FULL_CAPACITY_PLUS_UNKNOWN_FLCO_4:
+                if(message instanceof CapacityPlusUnknownOpcode4)
+                {
+                    CapacityPlusUnknownOpcode4 cpuo4 = (CapacityPlusUnknownOpcode4)message;
+
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(cpuo4.getTalkgroup());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                    }
+                }
+                break;
+            case FULL_HYTERA_GROUP_VOICE_CHANNEL_USER:
+                if(message instanceof HyteraGroupVoiceChannelUser)
+                {
+                    HyteraGroupVoiceChannelUser hgvcu = (HyteraGroupVoiceChannelUser)message;
+
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(hgvcu.getTalkgroup());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = hgvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+
+                    }
+                }
+                break;
+            case FULL_HYTERA_TERMINATOR:
+            case FULL_STANDARD_TERMINATOR_DATA:
+                getIdentifierCollection().update(message.getIdentifiers());
+                break;
+            case FULL_HYTERA_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
+                if(message instanceof HyteraUnitToUnitVoiceChannelUser)
+                {
+                    HyteraUnitToUnitVoiceChannelUser huuvcu = (HyteraUnitToUnitVoiceChannelUser)message;
+
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(huuvcu.getTargetRadio());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = huuvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
+                            DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                    }
+                }
+                break;
             case FULL_STANDARD_GROUP_VOICE_CHANNEL_USER:
                 if(message instanceof GroupVoiceChannelUser)
                 {
-                    ServiceOptions serviceOptions = ((GroupVoiceChannelUser)message).getServiceOptions();
-                    updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                        DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                    GroupVoiceChannelUser gvcu = (GroupVoiceChannelUser)message;
+
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(gvcu.getTalkgroup());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = gvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                    }
                 }
-                getIdentifierCollection().update(message.getIdentifiers());
                 break;
             case FULL_STANDARD_UNIT_TO_UNIT_VOICE_CHANNEL_USER:
                 if(message instanceof UnitToUnitVoiceChannelUser)
                 {
-                    ServiceOptions serviceOptions = ((UnitToUnitVoiceChannelUser)message).getServiceOptions();
-                    updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
-                        DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                    UnitToUnitVoiceChannelUser uuvcu = (UnitToUnitVoiceChannelUser)message;
+
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(uuvcu.getTargetRadio());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = uuvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
+                            DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                    }
                 }
-                getIdentifierCollection().update(message.getIdentifiers());
                 break;
-            //SLC messages are all sent as timeslot 0 even though they apply to both timeslot 0 and 1, so we normally
-            //don't process them.  However, Connect+ always uses timeslot zero for the control channel
-            case SHORT_CONNECT_PLUS_CONTROL_CHANNEL:
-                if(getTimeslot() == 0)
+            case FULL_STANDARD_GPS_INFO:
+                if(message instanceof GPSInformation)
                 {
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
+                    GPSInformation gpsInformation = (GPSInformation)message;
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    ic.update(gpsInformation.getGPSLocation());
+
+                    DecodeEvent gpsEvent = DMRDecodeEvent.builder(message.getTimestamp())
+                        .eventDescription(DecodeEventType.GPS.name())
+                        .identifiers(ic)
+                        .timeslot(message.getTimeslot())
+                        .details("LOCATION:" + gpsInformation.getGPSLocation())
+                        .build();
+
+                    broadcast(gpsEvent);
                 }
                 break;
         }
@@ -834,7 +971,6 @@ public class DMRDecoderState extends TimeslotDecoderState
                 .build();
 
             broadcast(mCurrentCallEvent);
-
         }
         else
         {

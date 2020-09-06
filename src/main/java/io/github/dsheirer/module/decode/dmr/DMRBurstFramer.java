@@ -266,15 +266,18 @@ public class DMRBurstFramer implements Listener<Dibit>
                     {
                         mBurstDetectListener.burstDetected(burst1, mSyncTrackerTimeslot1.getSyncPattern(), 2);
                         mDibitCounter -= BURST_DIBIT_LENGTH;
+
+                        //Transfer the sync pattern from tracker 1 to tracker 2 so we don't lose voice framing
+                        mSyncTrackerTimeslot2.setSyncPattern(mSyncTrackerTimeslot1.getSyncPattern());
                     }
                     else
                     {
                         processSyncLossDibits(BURST_DIBIT_LENGTH, 2);
+                        mSyncTrackerTimeslot2.reset();
                     }
 
                     mTimeslotAlignmentTracker.reset();
                     mSyncTrackerTimeslot1.reset();
-                    mSyncTrackerTimeslot2.reset();
                     mDibitCounter = BURST_DIBIT_LENGTH;
                     mSynchronized = true;
                 }
@@ -469,6 +472,14 @@ public class DMRBurstFramer implements Listener<Dibit>
         public DMRSyncPattern getSyncPattern()
         {
             return mSyncPattern;
+        }
+
+        /**
+         * Explicitly sets the pattern for this tracker
+         */
+        public void setSyncPattern(DMRSyncPattern pattern)
+        {
+            mSyncPattern = pattern;
         }
 
         /**

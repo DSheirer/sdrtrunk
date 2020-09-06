@@ -54,9 +54,9 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     private IAudioCodec mAudioCodec;
     private UserPreferences mUserPreferences;
 
-    public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList)
+    public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
-        super(aliasList);
+        super(aliasList, timeslot, DEFAULT_SEGMENT_AUDIO_SAMPLE_LENGTH);
         mUserPreferences = userPreferences;
         MyEventBus.getEventBus().register(this);
         loadConverter();

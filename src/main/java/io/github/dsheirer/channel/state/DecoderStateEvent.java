@@ -31,11 +31,11 @@ public class DecoderStateEvent
     private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_2 =
         new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 2);
     private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_0 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 0);
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.IDLE, 0);
     private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_1 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 1);
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.IDLE, 1);
     private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_2 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 2);
+        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.IDLE, 2);
     private Object mSource;
     private Event mEvent;
     private State mState;

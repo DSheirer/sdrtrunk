@@ -83,9 +83,9 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
      * @param aliasList for aliasing identifiers
      * @param maxAudioSegmentLength in milliseconds
      */
-    public AudioModule(AliasList aliasList, long maxAudioSegmentLength)
+    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength)
     {
-        super(aliasList, maxAudioSegmentLength);
+        super(aliasList, timeslot, maxAudioSegmentLength);
     }
 
     /**

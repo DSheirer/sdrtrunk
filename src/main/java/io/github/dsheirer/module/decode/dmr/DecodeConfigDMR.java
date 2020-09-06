@@ -104,7 +104,8 @@ public class DecodeConfigDMR extends DecodeConfiguration
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(50000.0, 12500, 5750.0, 6500.0);
+//        return new ChannelSpecification(50000.0, 12500, 5750.0, 6500.0);
+        return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0);
     }
 
     /**

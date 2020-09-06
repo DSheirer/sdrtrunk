@@ -58,8 +58,8 @@ public class DMRMessageProcessor implements Listener<IMessage>
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRMessageProcessor.class);
 
-    private FLCAssembler mFLCAssemblerTimeslot0 = new FLCAssembler(0);
     private FLCAssembler mFLCAssemblerTimeslot1 = new FLCAssembler(1);
+    private FLCAssembler mFLCAssemblerTimeslot2 = new FLCAssembler(2);
     private MBCAssembler mMBCAssembler = new MBCAssembler();
     private PacketSequenceAssembler mPacketSequenceAssembler;
     private SLCAssembler mSLCAssembler = new SLCAssembler();
@@ -112,15 +112,15 @@ public class DMRMessageProcessor implements Listener<IMessage>
         {
             VoiceEMBMessage voice = (VoiceEMBMessage)message;
 
-            if(message.getTimeslot() == 0)
+            if(message.getTimeslot() == 1)
             {
-                FullLCMessage flco = mFLCAssemblerTimeslot0.process(voice.getEMB().getLCSS(),
+                FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
                     voice.getFLCFragment(), message.getTimestamp());
                 dispatch(flco);
             }
             else
             {
-                FullLCMessage flco = mFLCAssemblerTimeslot1.process(voice.getEMB().getLCSS(),
+                FullLCMessage flco = mFLCAssemblerTimeslot2.process(voice.getEMB().getLCSS(),
                     voice.getFLCFragment(), message.getTimestamp());
                 dispatch(flco);
             }

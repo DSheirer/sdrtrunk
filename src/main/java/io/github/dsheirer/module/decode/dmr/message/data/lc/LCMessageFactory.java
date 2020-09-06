@@ -112,7 +112,6 @@ public class LCMessageFactory
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
-                mLog.info("Detected DMR Talker Alias Messages - please make a .BITS recording and send to the sdrtrunk developer!!");
             default:
                 flc = new UnknownFullLCMessage(message, timestamp, timeslot);
                 break;

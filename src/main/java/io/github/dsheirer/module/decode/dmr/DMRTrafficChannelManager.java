@@ -277,8 +277,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
         //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
         long frequency = channel.getDownlinkFrequency();
 
-        mLog.debug("Requested frequency [" + frequency + "] current frequency [" + mCurrentControlFrequency + "]");
-
         if(frequency > 0 && frequency != mCurrentControlFrequency &&
             !mAllocatedTrafficChannelFrequencyMap.containsKey(frequency))
         {
@@ -293,7 +291,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
             }
             else
             {
-                mLog.debug("Allocating traffic channel for frequency " + frequency);
                 SourceConfigTuner sourceConfig = new SourceConfigTuner();
                 sourceConfig.setFrequency(frequency);
                 trafficChannel.setSourceConfiguration(sourceConfig);
@@ -526,7 +523,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
             if(channel.isTrafficChannel() && (channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_STOP ||
                 channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_START_REJECTED))
             {
-                mLog.debug("Received Channel Stop [" + channel.toString() + "] Event [" + channelEvent.getEvent() + "]");
                 String optionalDescription = (channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_START_REJECTED ?
                     "Rejected" : null);
 
