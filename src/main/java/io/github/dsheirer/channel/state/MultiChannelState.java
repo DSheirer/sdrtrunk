@@ -71,6 +71,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private Map<Integer,StateMachine> mStateMachineMap = new TreeMap<>();
     private Map<Integer,StateMonitoringSquelchController> mSquelchControllerMap = new TreeMap<>();
     private int[] mTimeslots;
+    private DecoderStateNotificationEventCache mStateNotificationCache = new DecoderStateNotificationEventCache();
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateListener = new IdentifierUpdateListenerProxy();
 
     /**
@@ -132,17 +133,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void stateChanged(State state, int timeslot)
     {
-        //Broadcast current channel state so that channel rotation monitor can track
-        if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(state))
-        {
-            broadcast(DecoderStateEvent.activeState(timeslot));
-        }
-        else
-        {
-            broadcast(DecoderStateEvent.inactiveState(timeslot));
-        }
-
-        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
+        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.get(state);
         mIdentifierCollectionMap.get(timeslot).update(stateIdentifier);
         mChannelMetadataMap.get(timeslot).receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
 
@@ -356,7 +347,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private void reset(int timeslot)
     {
         mStateMachineMap.get(timeslot).setState(State.RESET);
-        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE, timeslot));
+        broadcast(new DecoderStateEvent(this, Event.REQUEST_RESET, State.IDLE, timeslot));
         MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
         identifierCollection.remove(IdentifierClass.USER);
     }
@@ -482,7 +473,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
                     for(int timeslot: mTimeslots)
                     {
-                        broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY,
+                        broadcast(new DecoderStateEvent(this, Event.NOTIFICATION_SOURCE_FREQUENCY,
                             mStateMachineMap.get(timeslot).getState(), frequency));
 
                         //Create a new frequency configuration identifier so that downstream consumers receive the change
@@ -522,10 +513,10 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             {
                 switch(event.getEvent())
                 {
-                    case ALWAYS_UNSQUELCH:
+                    case REQUEST_ALWAYS_UNSQUELCH:
                         mSquelchControllerMap.get(event.getTimeslot()).setSquelchLock(true);
                         break;
-                    case CHANGE_CALL_TIMEOUT:
+                    case REQUEST_CHANGE_CALL_TIMEOUT:
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
@@ -538,19 +529,18 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                         if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(event.getState()))
                         {
                             mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
+
+                            //Broadcast current channel/timeslot state so that channel rotation monitor can track
+                            broadcast(mStateNotificationCache.getStateNotificationEvent(event.getState(), event.getTimeslot()));
                         }
                         break;
                     case END:
-                        if(mChannel.isTrafficChannel())
-                        {
-                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
-                        }
-                        else
-                        {
-                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
-                        }
+                        mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
+
+                        //Broadcast current channel/timeslot state so that channel rotation monitor can track
+                        broadcast(mStateNotificationCache.getStateNotificationEvent(event.getState(), event.getTimeslot()));
                         break;
-                    case RESET:
+                    case REQUEST_RESET:
                         /* Channel State does not respond to reset events */
                         break;
                     default:

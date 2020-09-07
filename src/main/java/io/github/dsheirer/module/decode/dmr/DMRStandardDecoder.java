@@ -100,6 +100,7 @@ public class DMRStandardDecoder extends DMRDecoder
     {
         //User accounting of the incoming buffer is handled by the filter
         ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
@@ -130,22 +131,6 @@ public class DMRStandardDecoder extends DMRDecoder
 
         if(filter == null)
         {
-            double sampleRate = getSampleRate();
-            int symbolRate = 4800;
-            double samplesPerSymbol = sampleRate / symbolRate / 2;
-            float alpha = 0.25f;
-            int filterSymbolCount = 20;
-
-//            FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-//                    .sampleRate((int)getSampleRate())
-//                    .passBandCutoff(4500)
-//                    .passBandAmplitude(1.0)
-//                    .passBandRipple(0.1)
-//                    .stopBandAmplitude(0.0)
-//                    .stopBandStart(7000)
-//                    .stopBandRipple(0.01)
-//                    .build();
-
             FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
                 .sampleRate((int)getSampleRate())
                 .passBandCutoff(5100)
@@ -159,7 +144,6 @@ public class DMRStandardDecoder extends DMRDecoder
             try
             {
                 filter = FilterFactory.getTaps(specification);//
-//                filter = FilterFactory.getRootRaisedCosine(samplesPerSymbol, filterSymbolCount, alpha);
             }
             catch(Exception fde) //FilterDesignException
             {

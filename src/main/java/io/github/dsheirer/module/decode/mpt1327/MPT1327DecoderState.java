@@ -431,10 +431,10 @@ public class MPT1327DecoderState extends DecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 break;
-            case SOURCE_FREQUENCY:
+            case NOTIFICATION_SOURCE_FREQUENCY:
                 mFrequency = event.getFrequency();
                 break;
             default:

@@ -132,7 +132,7 @@ public class LJ1200DecoderState extends DecoderState
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
-        if(event.getEvent() == Event.RESET)
+        if(event.getEvent() == Event.REQUEST_RESET)
         {
             resetState();
         }

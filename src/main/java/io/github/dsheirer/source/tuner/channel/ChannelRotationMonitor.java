@@ -43,21 +43,19 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Monitors channel state to detect when a channel is not in an identified active state and issues a request to rotate
- * the next channel frequency in the list.  This class depends on the ChannelState to provide a continuous
- * stream of channel active/inactive messaging in the form of DecoderStateEvents.
+ * the next channel frequency in the list.  This class depends on the ChannelState providing a continuous
+ * stream of channel state notification events in the form of DecoderStateEvents.
  */
 public class ChannelRotationMonitor extends Module implements ISourceEventProvider, IDecoderStateEventListener,
         Listener<DecoderStateEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelRotationMonitor.class);
-
     private UserPreferences mUserPreferences;
     private Collection<State> mActiveStates;
     private ScheduledFuture<?> mScheduledFuture;
     private Listener<SourceEvent> mSourceEventListener;
     private long mRotationDelay;
-    private boolean mActive;
-    private long mInactiveTimestamp = System.currentTimeMillis();
+    private long mLastActiveTimestamp = System.currentTimeMillis();
 
     /**
      * Constructs a channel rotation monitor.
@@ -100,21 +98,14 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     }
 
     @Override
-    public void receive(DecoderStateEvent decoderStateEvent)
+    public void receive(DecoderStateEvent event)
     {
-        if(decoderStateEvent.getEvent() == DecoderStateEvent.Event.NOTIFICATION_CHANNEL_ACTIVE_STATE)
+        if(event.getEvent() == DecoderStateEvent.Event.NOTIFICATION_CHANNEL_STATE)
         {
-            mActive = true;
-        }
-        else if(decoderStateEvent.getEvent() == DecoderStateEvent.Event.NOTIFICATION_CHANNEL_INACTIVE_STATE)
-        {
-            if(mActive)
+            if(mActiveStates.contains(event.getState()))
             {
-                //If we're toggling from active to inactive, update the timestamp,
-                mInactiveTimestamp = System.currentTimeMillis();
+                mLastActiveTimestamp = System.currentTimeMillis();
             }
-
-            mActive = false;
         }
     }
 
@@ -124,11 +115,10 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
      */
     private void checkState()
     {
-        if(mSourceEventListener != null && !mActive &&
-            ((mInactiveTimestamp + mRotationDelay) < System.currentTimeMillis()))
+        if(mSourceEventListener != null && ((mLastActiveTimestamp + mRotationDelay) < System.currentTimeMillis()))
         {
             mSourceEventListener.receive(SourceEvent.frequencyRotationRequest());
-            mInactiveTimestamp = System.currentTimeMillis();
+            mLastActiveTimestamp = System.currentTimeMillis();
         }
     }
 
@@ -148,7 +138,6 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     @Override
     public void reset()
     {
-
     }
 
     @Override
@@ -156,7 +145,7 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     {
         if(mScheduledFuture == null)
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> checkState(), 1, 1, TimeUnit.SECONDS);
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> checkState(), 2000, 500, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -166,6 +155,7 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
         if(mScheduledFuture != null)
         {
             mScheduledFuture.cancel(true);
+            mScheduledFuture = null;
         }
     }
 

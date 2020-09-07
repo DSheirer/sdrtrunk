@@ -355,6 +355,15 @@ public class DecoderFactory
         modules.add(new DMRDecoderState(channel, 2, trafficChannelManager));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 2));
+
+        //Add a channel rotation monitor when we have multiple control channel frequencies specified
+        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
+            ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+        {
+            List<State> activeStates = new ArrayList<>();
+            activeStates.add(State.CONTROL);
+            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+        }
     }
 
     /**

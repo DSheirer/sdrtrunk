@@ -200,7 +200,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         }
         catch(Exception e)
         {
-            mLog.error("Error synthesizing DMR AMBE audio - continuing [" + e.getLocalizedMessage() + "]");
+            mLog.error("Error synthesizing DMR AMBE audio - continuing [" + e.getMessage() + "]");
         }
     }
 

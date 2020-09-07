@@ -37,6 +37,7 @@ import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
+import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.event.DMRDecodeEvent;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
@@ -68,8 +69,6 @@ import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
-import io.github.dsheirer.source.config.SourceConfigTuner;
-import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +90,8 @@ public class DMRDecoderState extends TimeslotDecoderState
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
     private long mCurrentFrequency;
+    private Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
     private Map<Long,DecodeEvent> mDetectedCallEventsMap = new TreeMap<>();
-    private boolean mRestChannelMode = false;
 
     /**
      * Constructs an DMR decoder state with an optional traffic channel manager.
@@ -107,7 +106,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         mChannelType = channel.getChannelType();
         mTrafficChannelManager = trafficChannelManager;
         mNetworkConfigurationMonitor = configurationMonitor;
-        updateCurrentFrequency(channel);
+        updateFrequencyMapping(channel);
     }
 
     /**
@@ -132,27 +131,16 @@ public class DMRDecoderState extends TimeslotDecoderState
      * Updates the traffic channel with the first frequency from the channel configuration.  Subsequent changes to the
      * control frequency by the channel rotation monitor will be handled separately.
      */
-    private void updateCurrentFrequency(Channel channel)
+    private void updateFrequencyMapping(Channel channel)
     {
-        long currentFrequency = 0;
-
-        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
+//TODO: We many not need these
+        //Load the LSN:FREQUENCY mappings.
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR)
         {
-            currentFrequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-        }
-        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
-        {
-            SourceConfigTunerMultipleFrequency s = (SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration();
-
-            if(s.getFrequencies().size() >= 1)
+            for(TimeslotFrequency timeslotFrequency: ((DecodeConfigDMR)channel.getDecodeConfiguration()).getTimeslotMap())
             {
-                currentFrequency = s.getFrequencies().get(0);
+                mTimeslotFrequencyMap.put(timeslotFrequency.getNumber(), timeslotFrequency);
             }
-        }
-
-        if(currentFrequency > 0 && hasTrafficChannelManager())
-        {
-            mTrafficChannelManager.setCurrentControlFrequency(currentFrequency);
         }
     }
 
@@ -221,6 +209,26 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(mNetworkConfigurationMonitor != null && message.isValid() && message instanceof DMRMessage)
         {
             mNetworkConfigurationMonitor.process((DMRMessage)message);
+        }
+    }
+
+    /**
+     * Processes Capacity Plus rest channel notifications to detect when the rest channel has changed.  When a change
+     * is detected for the rest channel, the current control (ie non-traffic) channel issues a traffic channel allocation
+     * request and then immediately issues a change frequency request to the channel rotation monitor for the current
+     * channel.
+     *
+     * @param channel that is designated as the rest channel
+     */
+    private void updateRestChannel(DMRChannel channel)
+    {
+        //Only respond if this is a standard/control channel (not a traffic channel).
+        if(mChannelType == ChannelType.STANDARD)
+        {
+            if(mCurrentFrequency > 0 && mCurrentFrequency != channel.getDownlinkFrequency())
+            {
+//TODO: finish this.
+            }
         }
     }
 
@@ -1026,11 +1034,18 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 if(mNetworkConfigurationMonitor != null)
                 {
                     mNetworkConfigurationMonitor.reset();
+                }
+                break;
+            case NOTIFICATION_SOURCE_FREQUENCY:
+                mCurrentFrequency = event.getFrequency();
+                if(hasTrafficChannelManager())
+                {
+                    mTrafficChannelManager.setCurrentControlFrequency(mCurrentFrequency);
                 }
                 break;
             default:
