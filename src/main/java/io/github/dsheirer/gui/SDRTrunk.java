@@ -121,13 +121,13 @@ public class SDRTrunk implements Listener<TunerEvent>
     private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
-    private JFrame mMainGui = new JFrame();
+    private JFrame mMainGui;
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
     private ApplicationLog mApplicationLog;
-    private boolean mHeadlessMode;
-    private boolean mSilentMode;
+    public static boolean mHeadlessMode;
+    public static boolean mSilentMode;
 
     private String mTitle;
 
@@ -199,7 +199,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
         mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        if (!mHeadlessMode) {
+            mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        }
         new ChannelSelectionManager(mPlaylistManager.getChannelModel());
 
         AudioPlaybackManager audioPlaybackManager = null;
@@ -226,6 +228,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);
 
         if (!mHeadlessMode) {
+            mMainGui = new JFrame();
             MapService mapService = new MapService(mIconModel);
             mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
@@ -475,19 +478,25 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void processShutdown()
     {
         mLog.info("Application shutdown started ...");
-        mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
-        mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
-        mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
-            (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
-        mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
-        mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
-        mJavaFxWindowManager.shutdown();
+        if (mMainGui != null) 
+        {
+            mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
+            mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
+            mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
+                (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
+            mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
+            mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
+            mJavaFxWindowManager.shutdown();
+        }
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
         mAudioRecordingManager.stop();
 
-        mLog.info("Stopping spectral display ...");
-        mSpectralPanel.clearTuner();
+        if (mSpectralPanel != null) 
+        {
+            mLog.info("Stopping spectral display ...");
+            mSpectralPanel.clearTuner();
+        }
         mSourceManager.shutdown();
         mLog.info("Shutdown complete.");
         mApplicationLog.stop();

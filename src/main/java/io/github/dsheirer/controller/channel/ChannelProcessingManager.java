@@ -51,6 +51,7 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.gui.SDRTrunk;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -308,7 +309,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         if(source == null)
         {
             //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(false));
+            if (!SDRTrunk.mHeadlessMode) {
+                Platform.runLater(() -> channel.setProcessing(false));
+            }
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
