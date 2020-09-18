@@ -92,6 +92,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     @Override
     public void start()
     {
+        System.out.println("Started audio recording thread.");
         setBroadcastState(BroadcastState.CONNECTING);
         String response = testConnection(getBroadcastConfiguration());
         mLastConnectionAttempt = System.currentTimeMillis();
@@ -211,6 +212,7 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
 
             if(isValid(audioRecording) && audioRecording.getRecordingLength() > 0)
             {
+                System.out.println("Processing recording.");
                 float durationSeconds = (float)(audioRecording.getRecordingLength() / 1E3f);
                 long timestampSeconds = (int)(audioRecording.getStartTime() / 1E3);
                 String talkgroup = getTo(audioRecording);

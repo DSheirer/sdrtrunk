@@ -158,16 +158,18 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         String operatingSystem = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
 
-        if(operatingSystem.contains("mac") || operatingSystem.contains("nux"))
-        {
-            try
+        if (!mHeadlessMode) {
+            if(operatingSystem.contains("mac") || operatingSystem.contains("nux"))
             {
-                UIManager.setLookAndFeel(MetalLookAndFeel.class.getName());
-                LookAndFeelFactory.installJideExtension();
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error trying to set Metal look and feel for OS [" + operatingSystem + "]");
+                try
+                {
+                    UIManager.setLookAndFeel(MetalLookAndFeel.class.getName());
+                    LookAndFeelFactory.installJideExtension();
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error trying to set Metal look and feel for OS [" + operatingSystem + "]");
+                }
             }
         }
 

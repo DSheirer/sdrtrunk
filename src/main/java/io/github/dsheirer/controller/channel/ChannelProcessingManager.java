@@ -311,6 +311,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             //This has to be done on the FX event thread when the playlist editor is constructed
             if (!SDRTrunk.mHeadlessMode) {
                 Platform.runLater(() -> channel.setProcessing(false));
+            } else {
+                channel.setProcessing(false);
             }
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
@@ -453,6 +455,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         //This has to be done on the FX event thread when the playlist editor is constructed
         if (!SDRTrunk.mHeadlessMode) {
             Platform.runLater(() -> channel.setProcessing(true));
+        } else {
+            channel.setProcessing(true);
         }
 
         getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
