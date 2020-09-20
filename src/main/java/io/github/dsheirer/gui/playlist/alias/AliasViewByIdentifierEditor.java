@@ -190,22 +190,22 @@ public class AliasViewByIdentifierEditor extends VBox
     {
         if(mAliasAndIdentifierTableView == null)
         {
-            mAliasAndIdentifierTableView = new TableView(FXCollections.observableArrayList(AliasAndIdentifier.extractor()));
+            mAliasAndIdentifierTableView = new TableView<>(FXCollections.observableArrayList(AliasAndIdentifier.extractor()));
             mAliasAndIdentifierTableView.setPlaceholder(new Label("No aliases or identifiers available"));
             mIdentifierColumn = new TableColumn<>("Identifier");
             mIdentifierColumn.setCellValueFactory(new PropertyValueFactory<>("identifier"));
             mIdentifierColumn.setPrefWidth(350);
 
-            TableColumn aliasColumn = new TableColumn();
+            TableColumn<AliasAndIdentifier, String> aliasColumn = new TableColumn<>();
             aliasColumn.setText("Alias");
             aliasColumn.setCellValueFactory(new PropertyValueFactory<>("alias"));
             aliasColumn.setPrefWidth(200);
 
-            TableColumn groupColumn = new TableColumn();
+            TableColumn<AliasAndIdentifier, String> groupColumn = new TableColumn<>();
             groupColumn.setText("Group");
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
             groupColumn.setPrefWidth(200);
-
+            
             mAliasAndIdentifierTableView.getColumns().addAll(mIdentifierColumn, aliasColumn, groupColumn);
             mAliasAndIdentifierTableView.setMaxHeight(Double.MAX_VALUE);
 
