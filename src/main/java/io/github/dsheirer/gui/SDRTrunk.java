@@ -29,6 +29,7 @@ import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.controller.ControllerPanel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
+import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
@@ -58,6 +59,13 @@ import io.github.dsheirer.util.TimeStamp;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,31 +121,55 @@ public class SDRTrunk implements Listener<TunerEvent>
     private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
-    private JFrame mMainGui = new JFrame();
+    private JFrame mMainGui;
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
     private ApplicationLog mApplicationLog;
+    public static boolean mHeadlessMode;
+    public static boolean mSilentMode;
 
     private String mTitle;
 
-    public SDRTrunk()
+    public SDRTrunk(String[] args)
     {
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
 
+        //Handle command-line options
+        Options options = new Options();
+        options.addOption(null, "headless", false, "Disables the application GUI");
+        options.addOption(null, "silent", false, "Disables audio output");
+        options.addOption("h", "help", false, "Displays usage information");
+        CommandLineParser parser = new DefaultParser();
+        try {
+            CommandLine cli = parser.parse(options,  args);
+			if (cli.hasOption("help")) {
+				HelpFormatter formatter = new HelpFormatter();
+				formatter.printHelp("SDRTrunk", options);
+				System.exit(0);
+			}
+			mHeadlessMode = cli.hasOption("headless");
+			mSilentMode = cli.hasOption("silent");
+		} catch (ParseException e) {
+			mLog.error("Error trying to parse command line options");
+			e.printStackTrace();
+		}
+
         String operatingSystem = System.getProperty("os.name", "generic").toLowerCase(Locale.ENGLISH);
 
-        if(operatingSystem.contains("mac") || operatingSystem.contains("nux"))
-        {
-            try
+        if (!mHeadlessMode) {
+            if(operatingSystem.contains("mac") || operatingSystem.contains("nux"))
             {
-                UIManager.setLookAndFeel(MetalLookAndFeel.class.getName());
-                LookAndFeelFactory.installJideExtension();
-            }
-            catch(Exception e)
-            {
-                mLog.error("Error trying to set Metal look and feel for OS [" + operatingSystem + "]");
+                try
+                {
+                    UIManager.setLookAndFeel(MetalLookAndFeel.class.getName());
+                    LookAndFeelFactory.installJideExtension();
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error trying to set Metal look and feel for OS [" + operatingSystem + "]");
+                }
             }
         }
 
@@ -169,10 +201,16 @@ public class SDRTrunk implements Listener<TunerEvent>
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
         mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        if (!mHeadlessMode) {
+            mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        }
         new ChannelSelectionManager(mPlaylistManager.getChannelModel());
 
-        AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mUserPreferences);
+        AudioPlaybackManager audioPlaybackManager = null;
+        if (!mSilentMode)
+        {
+            audioPlaybackManager = new AudioPlaybackManager(mUserPreferences);
+        }
 
         mAudioRecordingManager = new AudioRecordingManager(mUserPreferences);
         mAudioRecordingManager.start();
@@ -184,44 +222,55 @@ public class SDRTrunk implements Listener<TunerEvent>
         DuplicateCallDetector duplicateCallDetector = new DuplicateCallDetector(mUserPreferences);
 
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(duplicateCallDetector);
-        mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(audioPlaybackManager);
+        if (!mSilentMode)
+        {
+            mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(audioPlaybackManager);
+        }
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioRecordingManager);
         mPlaylistManager.getChannelProcessingManager().addAudioSegmentListener(mAudioStreamingManager);
 
-        MapService mapService = new MapService(mIconModel);
-        mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
+        if (!mHeadlessMode) {
+            mMainGui = new JFrame();
+            MapService mapService = new MapService(mIconModel);
+            mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
-        mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
-            mSettingsManager, mSourceManager, mUserPreferences);
+            mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
+                mSettingsManager, mSourceManager, mUserPreferences);
 
-        mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, tunerModel);
+            mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, tunerModel);
 
-        TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
-            mPlaylistManager, mSettingsManager, tunerModel);
-        tunerModel.addListener(tunerSpectralDisplayManager);
-        tunerModel.addListener(this);
+            TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
+                mPlaylistManager, mSettingsManager, tunerModel);
+            tunerModel.addListener(tunerSpectralDisplayManager);
+            tunerModel.addListener(this);
+        }
 
         mPlaylistManager.init();
 
-        mLog.info("starting main application gui");
+        if (mHeadlessMode) {
+            autoStartChannels();
+        }
+        else
+        {
+            mLog.info("starting main application gui");
+            //Initialize the GUI
+            initGUI();
 
-        //Initialize the GUI
-        initGUI();
+	        tunerModel.requestFirstTunerDisplay();
 
-        tunerModel.requestFirstTunerDisplay();
-
-        //Start the gui
-        EventQueue.invokeLater(() -> {
-            try
-            {
-                mMainGui.setVisible(true);
-                autoStartChannels();
-            }
-            catch(Exception e)
-            {
-                e.printStackTrace();
-            }
-        });
+	        //Start the gui
+	        EventQueue.invokeLater(() -> {
+	            try
+	            {
+	                mMainGui.setVisible(true);
+	                autoStartChannels();
+	            }
+	            catch(Exception e)
+	            {
+	                e.printStackTrace();
+	            }
+	        });
+        }
     }
 
     /**
@@ -235,8 +284,18 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         if(channels.size() > 0)
         {
-            ChannelAutoStartFrame autoStartFrame = new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(),
-                channels);
+            if (mHeadlessMode)
+            {
+                for (Channel channel : channels)
+                {
+                    mPlaylistManager.getChannelProcessingManager().receive(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_ENABLE));
+                }
+            }
+            else
+            {
+                ChannelAutoStartFrame autoStartFrame = new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(),
+                    channels);
+            }
         }
     }
 
@@ -421,19 +480,25 @@ public class SDRTrunk implements Listener<TunerEvent>
     private void processShutdown()
     {
         mLog.info("Application shutdown started ...");
-        mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
-        mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
-        mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
-            (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
-        mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
-        mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
-        mJavaFxWindowManager.shutdown();
+        if (mMainGui != null) 
+        {
+            mUserPreferences.getSwingPreference().setLocation(WINDOW_FRAME_IDENTIFIER, mMainGui.getLocation());
+            mUserPreferences.getSwingPreference().setDimension(WINDOW_FRAME_IDENTIFIER, mMainGui.getSize());
+            mUserPreferences.getSwingPreference().setMaximized(WINDOW_FRAME_IDENTIFIER,
+                (mMainGui.getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH);
+            mUserPreferences.getSwingPreference().setDimension(SPECTRAL_PANEL_IDENTIFIER, mSpectralPanel.getSize());
+            mUserPreferences.getSwingPreference().setDimension(CONTROLLER_PANEL_IDENTIFIER, mControllerPanel.getSize());
+            mJavaFxWindowManager.shutdown();
+        }
         mLog.info("Stopping channels ...");
         mPlaylistManager.getChannelProcessingManager().shutdown();
         mAudioRecordingManager.stop();
 
-        mLog.info("Stopping spectral display ...");
-        mSpectralPanel.clearTuner();
+        if (mSpectralPanel != null) 
+        {
+            mLog.info("Stopping spectral display ...");
+            mSpectralPanel.clearTuner();
+        }
         mSourceManager.shutdown();
         mLog.info("Shutdown complete.");
         mApplicationLog.stop();
@@ -621,6 +686,6 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     public static void main(String[] args)
     {
-        new SDRTrunk();
+        new SDRTrunk(args);
     }
 }

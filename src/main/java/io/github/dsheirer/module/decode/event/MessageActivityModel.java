@@ -30,6 +30,7 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
+import io.github.dsheirer.gui.SDRTrunk;
 
 public class MessageActivityModel extends AbstractTableModel implements Listener<IMessage>
 {
@@ -62,18 +63,20 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
      */
     public void clear()
     {
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+        if (!SDRTrunk.mHeadlessMode) {
+            EventQueue.invokeLater(new Runnable()
             {
-                int messageCount = mMessageItems.size();
-
-                mMessageItems.clear();
-
-                fireTableRowsDeleted(0, messageCount - 1);
-            }
-        });
+                @Override
+                public void run()
+                {
+                    int messageCount = mMessageItems.size();
+    
+                    mMessageItems.clear();
+    
+                    fireTableRowsDeleted(0, messageCount - 1);
+                }
+            });
+        }
     }
 
     public FilterSet<IMessage> getMessageFilter()
@@ -125,18 +128,20 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
         {
             final MessageItem messageItem = new MessageItem(message);
 
-            EventQueue.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
+            if (!SDRTrunk.mHeadlessMode) {
+                EventQueue.invokeLater(new Runnable()
                 {
-                    mMessageItems.addFirst(messageItem);
-
-                    MessageActivityModel.this.fireTableRowsInserted(0, 0);
-
-                    prune();
-                }
-            });
+                    @Override
+                    public void run()
+                    {
+                        mMessageItems.addFirst(messageItem);
+    
+                        MessageActivityModel.this.fireTableRowsInserted(0, 0);
+    
+                        prune();
+                    }
+                });
+            }
         }
     }
 
