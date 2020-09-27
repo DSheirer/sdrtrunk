@@ -25,11 +25,12 @@ import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.playlist.PlaylistManager;
+import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -63,15 +64,19 @@ public class AliasViewByIdentifierEditor extends VBox
     private TableView<AliasAndIdentifier> mAliasAndIdentifierTableView;
     private TableColumn<AliasAndIdentifier,String> mIdentifierColumn;
     private Button mViewAliasButton;
+    private boolean aliasListInvalidated;
 
-    public AliasViewByIdentifierEditor(PlaylistManager playlistManager)
+    public AliasViewByIdentifierEditor(PlaylistManager playlistManager, ReadOnlyBooleanProperty tabSelectedProperty)
     {
+    	aliasListInvalidated = false;
         mPlaylistManager = playlistManager;
-        mPlaylistManager.getAliasModel().aliasList().addListener((ListChangeListener<Alias>)c -> {
-            //Refresh the list any time that the aliases change since we're using a static snapshot
-            AliasIDType selected = getAliasIDTypeComboBox().getSelectionModel().getSelectedItem();
-            getAliasIDTypeComboBox().getSelectionModel().select(null);
-            getAliasIDTypeComboBox().getSelectionModel().select(selected);
+        //Note if aliases change since we're using a static snapshot
+        mPlaylistManager.getAliasModel().aliasList().addListener((InvalidationListener)observable -> aliasListInvalidated = true);
+        
+        //Only update the list when this tab is selected to avoid many slow updates in the background
+        tabSelectedProperty.addListener(observable -> {
+        	if (aliasListInvalidated)
+        		updateList();
         });
 
         GridPane gridPane = new GridPane();
@@ -131,6 +136,8 @@ public class AliasViewByIdentifierEditor extends VBox
         }
 
         getAliasAndIdentifierTableView().getSortOrder().setAll(mIdentifierColumn);
+        
+        aliasListInvalidated = false;
     }
 
     /**
