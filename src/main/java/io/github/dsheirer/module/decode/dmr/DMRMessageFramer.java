@@ -302,6 +302,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 
         //Cap+ Multi-Site 1 - Traffic LCN 2
 //        String file = path + "20200716_210133_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
+//        String file = path + "20200716_212309_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
 
         //Cap+ Multi-Site Enhanced GPS Channel
 //        String file = path + "20200714_224018_9600BPS_DMR_Farmers_Electric_Cooperative_Hunt_LCN_3.bits"; //This may have PLL mis-align issues
@@ -329,7 +330,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         //Cap+ BP Scrambling
 //        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
 
-        String file = "/home/denny/SDRTrunk/recordings/20200906_050359_9600BPS_DMR_TeamConnect_Dallas_LSN_4-5_3.bits";
+        String file = "/home/denny/SDRTrunk/recordings/20200927_054837_9600BPS_DMR_Blair_Communications_(Capacity_Plus)_Dallas_Control_9.bits";
+
+
 
         MessageListener listener = new MessageListener();
         DecodeConfigDMR config = new DecodeConfigDMR();

@@ -30,9 +30,9 @@ import java.util.List;
  */
 public class HyteraXPTChannel extends ShortLCMessage
 {
-    private static int[] FREE_REPEATER = new int[]{12, 13, 14, 15};
-    private static int[] PRIORITY_CALL_REPEATER = new int[]{16, 17, 18, 19};
-    private static int[] PRIORITY_CALL_HASHED_ADDRESS = new int[]{20, 21, 22, 23, 24, 25, 26, 27};
+    private static final int[] FREE_REPEATER = new int[]{12, 13, 14, 15};
+    private static final int[] PRIORITY_CALL_REPEATER = new int[]{16, 17, 18, 19};
+    private static final int[] PRIORITY_CALL_HASHED_ADDRESS = new int[]{20, 21, 22, 23, 24, 25, 26, 27};
 
     /**
      * Constructs an instance

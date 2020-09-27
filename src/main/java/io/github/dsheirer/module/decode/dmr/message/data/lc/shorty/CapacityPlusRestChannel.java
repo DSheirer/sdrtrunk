@@ -34,11 +34,11 @@ import java.util.List;
  */
 public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslotFrequencyReceiver
 {
-    private static int[] UNKNOWN = new int[]{12, 13, 14};
-    private static int[] REPEATER = new int[]{15, 16, 17, 18};
-    private static int[] TIMESLOT = new int[]{19};
-    private static int[] SITE = new int[]{20, 21, 22, 23, 24};
-    private static int[] UNKNOWN_2 = new int[]{25, 26, 27};
+    private static final int[] UNKNOWN = new int[]{12, 13, 14};
+    private static final int[] REST_REPEATER = new int[]{15, 16, 17, 18};
+    private static final int[] REST_TIMESLOT = new int[]{19};
+    private static final int[] SITE = new int[]{20, 21, 22, 23, 24};
+    private static final int[] UNKNOWN_2 = new int[]{25, 26, 27};
 
     private DMRLogicalChannel mRestChannel;
     private DMRSite mSite;
@@ -88,7 +88,7 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
     {
         if(mRestChannel == null)
         {
-            mRestChannel = new DMRLogicalChannel(getRepeater(), getTimeslot());
+            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
         }
 
         return mRestChannel;
@@ -97,17 +97,17 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
     /**
      * Rest repeater
      */
-    public int getRepeater()
+    public int getRestRepeater()
     {
-        return getMessage().getInt(REPEATER);
+        return getMessage().getInt(REST_REPEATER) + 1;
     }
 
     /**
      * Rest timeslot
      */
-    public int getTimeslot()
+    public int getRestTimeslot()
     {
-        return getMessage().getInt(TIMESLOT);
+        return getMessage().getInt(REST_TIMESLOT) + 1;
     }
 
     /**

@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
@@ -28,6 +29,7 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.channel.state.TimeslotDecoderState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -43,6 +45,8 @@ import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusNeighbors;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSystemStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusDataChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Aloha;
@@ -62,13 +66,15 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoice
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusGroupVoiceChannelUser;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusUnknownOpcode4;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,13 +91,15 @@ public class DMRDecoderState extends TimeslotDecoderState
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRDecoderState.class);
     private static final long MAX_VALID_CALL_DURATION_MS = 30000;
-    private ChannelType mChannelType;
+    private Channel mChannel;
     private DMRNetworkConfigurationMonitor mNetworkConfigurationMonitor;
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
     private long mCurrentFrequency;
     private Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
     private Map<Long,DecodeEvent> mDetectedCallEventsMap = new TreeMap<>();
+    private static final AddChannelRotationActiveStateRequest CAPACITY_PLUS_ACTIVE_STATE_REQUEST =
+                            new AddChannelRotationActiveStateRequest(State.ACTIVE);
 
     /**
      * Constructs an DMR decoder state with an optional traffic channel manager.
@@ -103,7 +111,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                            DMRNetworkConfigurationMonitor configurationMonitor)
     {
         super(timeslot);
-        mChannelType = channel.getChannelType();
+        mChannel = channel;
         mTrafficChannelManager = trafficChannelManager;
         mNetworkConfigurationMonitor = configurationMonitor;
         updateFrequencyMapping(channel);
@@ -125,6 +133,23 @@ public class DMRDecoderState extends TimeslotDecoderState
     private boolean hasTrafficChannelManager()
     {
         return mTrafficChannelManager != null;
+    }
+
+    /**
+     * Processes channel configuration change notifications received over the processing chain event bus.  This is
+     * primarily used for Capacity+ systems when the standard channel is converted to a traffic channel.  In response,
+     * we nullify the traffic channel manager to ensure the traffic channel no longer behaves as a standard channel
+     * regarding channel conversions and allocations.
+     *
+     * @param notification of channel configuration change
+     */
+    @Subscribe
+    public void channelChanged(ChannelConfigurationChangeNotification notification)
+    {
+        if(notification.getChannel().isTrafficChannel())
+        {
+            mTrafficChannelManager = null;
+        }
     }
 
     /**
@@ -204,6 +229,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
             }
         }
+        //SLCO messages on timeslot 0 to catch capacity plus rest channel events
+        else if(message.isValid() && message.getTimeslot() == 0 && message instanceof LCMessage)
+        {
+            processLinkControl((LCMessage)message, false);
+        }
 
         //Pass the message to the network configuration monitor, if this decoder state has a non-null instance
         if(mNetworkConfigurationMonitor != null && message.isValid() && message instanceof DMRMessage)
@@ -213,22 +243,23 @@ public class DMRDecoderState extends TimeslotDecoderState
     }
 
     /**
-     * Processes Capacity Plus rest channel notifications to detect when the rest channel has changed.  When a change
-     * is detected for the rest channel, the current control (ie non-traffic) channel issues a traffic channel allocation
-     * request and then immediately issues a change frequency request to the channel rotation monitor for the current
-     * channel.
+     * Processes Capacity Plus rest channel notifications to detect when the rest channel has changed.  When a new
+     * rest channel is specified that is different from the current channel, notify the traffic channel manager so that
+     * it can convert the current channel to a traffic channel and start a new channel for the rest channel, using the
+     * current channel's configuration details and the specified rest channel frequency.  This approach ensures that
+     * there is no disruption to the currently processing channel and that the original channel configuration can be
+     * recreated to follow the rest channel.
      *
-     * @param channel that is designated as the rest channel
+     * @param restChannel currently indicated
      */
-    private void updateRestChannel(DMRChannel channel)
+    private void updateRestChannel(DMRChannel restChannel)
     {
         //Only respond if this is a standard/control channel (not a traffic channel).
-        if(mChannelType == ChannelType.STANDARD)
+        if(mChannel.isStandardChannel() && mCurrentFrequency > 0 &&
+            restChannel.getDownlinkFrequency() > 0 &&
+            restChannel.getDownlinkFrequency() != mCurrentFrequency && mTrafficChannelManager != null)
         {
-            if(mCurrentFrequency > 0 && mCurrentFrequency != channel.getDownlinkFrequency())
-            {
-//TODO: finish this.
-            }
+            mTrafficChannelManager.convertToTrafficChannel(mChannel, mCurrentFrequency, restChannel);
         }
     }
 
@@ -507,7 +538,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                                     .eventDescription(DecodeEventType.COMMAND.name())
                                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                     .timeslot(csbk.getTimeslot())
-                                    .details("VOTE NOW FOR SITE " + ((VoteNowAdvice)csbk).getVotedSystemIdentityCode())
+                                    .details("VOTE NOW FOR " + ((VoteNowAdvice)csbk).getVotedSystemIdentityCode())
                                     .build();
                                 broadcast(voteEvent);
                             }
@@ -540,8 +571,29 @@ public class DMRDecoderState extends TimeslotDecoderState
             case HYTERA_08_ANNOUNCEMENT:
             case HYTERA_68_ANNOUNCEMENT:
             case HYTERA_XPT_SITE_STATE:
+
             case MOTOROLA_CAPPLUS_NEIGHBOR_REPORT:
+                if(csbk instanceof CapacityPlusNeighbors)
+                {
+                    //Update state and rest channel
+                    updateRestChannel(((CapacityPlusNeighbors)csbk).getRestChannel());
+                }
+                break;
             case MOTOROLA_CAPPLUS_SYSTEM_STATUS:
+                if(csbk instanceof CapacityPlusSystemStatus)
+                {
+                    CapacityPlusSystemStatus cpss = (CapacityPlusSystemStatus)csbk;
+
+                    //Channel rotation monitor normally uses only CONTROL state, so when we detect that we're a
+                    //Capacity plus system, add ACTIVE as an active state to the monitor.  This can be requested repeatedly.
+                    getInterModuleEventBus().post(CAPACITY_PLUS_ACTIVE_STATE_REQUEST);
+
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
+
+                    //Update state and rest channel
+                    updateRestChannel(cpss.getRestChannel());
+                }
+                break;
             case MOTOROLA_CONPLUS_NEIGHBOR_REPORT:
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
@@ -822,10 +874,19 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         switch(message.getOpcode())
         {
+            case SHORT_CAPACITY_PLUS_REST_CHANNEL_NOTIFICATION:
+                if(message instanceof CapacityPlusRestChannel)
+                {
+                    updateRestChannel(((CapacityPlusRestChannel)message).getRestChannel());
+                }
+                break;
             case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
                 if(message instanceof CapacityPlusGroupVoiceChannelUser)
                 {
                     CapacityPlusGroupVoiceChannelUser cpgvcu = (CapacityPlusGroupVoiceChannelUser)message;
+
+                    //This is the current channel - what do we do with the voice channel number?
+//                    updateRestChannel(cpgvcu.getVoiceChannel());
 
                     if(isTerminator)
                     {
@@ -841,10 +902,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     }
                 }
                 break;
-            case FULL_CAPACITY_PLUS_UNKNOWN_FLCO_4:
-                if(message instanceof CapacityPlusUnknownOpcode4)
+            case FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER:
+                if(message instanceof CapacityPlusWideAreaVoiceChannelUser)
                 {
-                    CapacityPlusUnknownOpcode4 cpuo4 = (CapacityPlusUnknownOpcode4)message;
+                    CapacityPlusWideAreaVoiceChannelUser cpuo4 = (CapacityPlusWideAreaVoiceChannelUser)message;
+
+                    updateRestChannel(cpuo4.getRestChannel());
 
                     if(isTerminator)
                     {
@@ -1057,7 +1120,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     public void start()
     {
         //Change the default (45-second) traffic channel timeout to 1 second
-        if(mChannelType == ChannelType.TRAFFIC)
+        if(mChannel.isTrafficChannel())
         {
             broadcast(new ChangeChannelTimeoutEvent(this, ChannelType.TRAFFIC, 1000, getTimeslot()));
         }

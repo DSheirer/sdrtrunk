@@ -45,7 +45,7 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
     public DMRChannel(int channel, int timeslot)
     {
         super(channel, IdentifierClass.NETWORK, Form.CHANNEL, Role.BROADCAST);
-        Validate.inclusiveBetween(1, 2, timeslot, "Timeslot must be between 1 and 2");
+        Validate.inclusiveBetween(0, 2, timeslot, "Timeslot must be between 1 and 2");
         mTimeslot = timeslot;
     }
 
@@ -82,7 +82,24 @@ public abstract class DMRChannel extends IntegerIdentifier implements IChannelDe
      */
     public int getLogicalSlotNumber()
     {
-        return ((getRepeater() - 1) * 2) + getTimeslot();
+        int repeater = getRepeater();
+
+        if(repeater > 0)
+        {
+            return ((repeater - 1) * 2) + getTimeslot();
+        }
+
+        return 0;
+    }
+
+    /**
+     * Returns an array of length 1 containing this channel's logical slot number
+     */
+    public int[] getLSNArray()
+    {
+        int[] logicalSlotNumbers = new int[1];
+        logicalSlotNumbers[0] = getLogicalSlotNumber();
+        return logicalSlotNumbers;
     }
 
     /**

@@ -118,11 +118,14 @@ public class DecoderStateEvent
         NOTIFICATION_CHANNEL_STATE,
         NOTIFICATION_CHANNEL_ACTIVE_STATE,
         NOTIFICATION_CHANNEL_INACTIVE_STATE,
-        NOTIFICATION_REST_CHANNEL_CHANGE,
         NOTIFICATION_SOURCE_FREQUENCY,
+
 
         REQUEST_ALWAYS_UNSQUELCH,
         REQUEST_CHANGE_CALL_TIMEOUT,
-        REQUEST_RESET;
+        REQUEST_RESET,
+
+        //Request to convert the current channel to a traffic channel (used by DMR Cap+)
+        REQUEST_CONVERT_TO_TRAFFIC_CHANNEL;
     }
 }

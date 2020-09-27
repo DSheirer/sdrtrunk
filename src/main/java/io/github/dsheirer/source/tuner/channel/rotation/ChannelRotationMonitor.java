@@ -1,26 +1,23 @@
 /*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
-package io.github.dsheirer.source.tuner.channel;
+package io.github.dsheirer.source.tuner.channel.rotation;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -43,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Monitors channel state to detect when a channel is not in an identified active state and issues a request to rotate
- * the next channel frequency in the list.  This class depends on the ChannelState providing a continuous
+ * to the next channel frequency in the list.  This class depends on the ChannelState providing a continuous
  * stream of channel state notification events in the form of DecoderStateEvents.
  */
 public class ChannelRotationMonitor extends Module implements ISourceEventProvider, IDecoderStateEventListener,
@@ -56,9 +53,10 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     private Listener<SourceEvent> mSourceEventListener;
     private long mRotationDelay;
     private long mLastActiveTimestamp = System.currentTimeMillis();
+    private boolean mEnabled = true;
 
     /**
-     * Constructs a channel rotation monitor.
+     * Constructs a channel rotation monitor that uses the channel rotation delay specified by user preferences.
      *
      * @param activeStates to monitor
      * @param userPreferences to receive updates for rotation delay value from user preferences
@@ -69,8 +67,19 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
         mUserPreferences = userPreferences;
         mRotationDelay = mUserPreferences.getChannelMultiFrequencyPreference().getRotationDelay();
 
-        //Register to receive user preference updates
-        MyEventBus.getEventBus().register(this);
+        //Register to receive user preference updates via the @Subscribe annotated methods for this class
+        MyEventBus.getGlobalEventBus().register(this);
+    }
+
+    /**
+     * Constructs a channel rotation monitor that uses the specified rotation delay.
+     * @param activeStates to monitor
+     * @param rotationDelay specifies how long to remain on each frequency before rotating (in milliseconds).
+     */
+    public ChannelRotationMonitor(Collection<State> activeStates, long rotationDelay)
+    {
+        mActiveStates = activeStates;
+        mRotationDelay = rotationDelay;
     }
 
     /**
@@ -100,12 +109,38 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     @Override
     public void receive(DecoderStateEvent event)
     {
-        if(event.getEvent() == DecoderStateEvent.Event.NOTIFICATION_CHANNEL_STATE)
+        switch(event.getEvent())
         {
-            if(mActiveStates.contains(event.getState()))
-            {
-                mLastActiveTimestamp = System.currentTimeMillis();
-            }
+            case NOTIFICATION_CHANNEL_STATE:
+                if(mActiveStates.contains(event.getState()))
+                {
+                    mLastActiveTimestamp = System.currentTimeMillis();
+                }
+                break;
+        }
+    }
+
+    /**
+     * Processes a request to disable this monitor instance.
+     * @param request to disable
+     */
+    @Subscribe
+    public void disable(DisableChannelRotationMonitorRequest request)
+    {
+        mEnabled = false;
+        stop();
+    }
+
+    /**
+     * Processes a request to add an active state to the list of monitored active states.
+     * @param request to add
+     */
+    @Subscribe
+    public void addActiveState(AddChannelRotationActiveStateRequest request)
+    {
+        if(!mActiveStates.contains(request.getState()))
+        {
+            mActiveStates.add(request.getState());
         }
     }
 
@@ -115,7 +150,8 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
      */
     private void checkState()
     {
-        if(mSourceEventListener != null && ((mLastActiveTimestamp + mRotationDelay) < System.currentTimeMillis()))
+        if(mEnabled && mSourceEventListener != null &&
+           ((mLastActiveTimestamp + mRotationDelay) < System.currentTimeMillis()))
         {
             mSourceEventListener.receive(SourceEvent.frequencyRotationRequest());
             mLastActiveTimestamp = System.currentTimeMillis();
@@ -145,7 +181,8 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     {
         if(mScheduledFuture == null)
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> checkState(), 2000, 500, TimeUnit.MILLISECONDS);
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> checkState(), mRotationDelay,
+                mRotationDelay / 2, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -157,11 +194,6 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
             mScheduledFuture.cancel(true);
             mScheduledFuture = null;
         }
-    }
-
-    @Override
-    public void dispose()
-    {
     }
 }
 

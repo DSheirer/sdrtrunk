@@ -145,6 +145,7 @@ public class RealMixerSource extends RealSource
     @Override
     public void dispose()
     {
+        super.dispose();
         mMixerReader.dispose();
     }
 }

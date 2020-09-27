@@ -94,7 +94,7 @@ public class PlaylistManagerEditor extends HBox
         mUserPreferences = userPreferences;
 
         //Register to receive preferences updates
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         setPadding(new Insets(5, 5, 5, 5));
         HBox.setHgrow(getPlaylistTableView(), Priority.ALWAYS);

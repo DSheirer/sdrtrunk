@@ -95,11 +95,6 @@ public class MPT1327DecoderState extends DecoderState
         return mChannelType;
     }
 
-    public void dispose()
-    {
-        super.dispose();
-    }
-
     @Override
     public void receive(IMessage message)
     {

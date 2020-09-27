@@ -36,6 +36,7 @@ public class DecodeConfigDMR extends DecodeConfiguration
 {
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
+    private long mChannelRotationDelay = 0l;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
 
     public DecodeConfigDMR()
@@ -51,6 +52,9 @@ public class DecodeConfigDMR extends DecodeConfiguration
         return 2;
     }
 
+    /**
+     * Timeslot identifiers
+     */
     @Override
     public int[] getTimeslots()
     {
@@ -66,18 +70,28 @@ public class DecodeConfigDMR extends DecodeConfiguration
         return DecoderType.DMR;
     }
 
+    /**
+     * Indicates if traffic channel grants for data calls should be ignored
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "ignore_data_calls")
     public boolean getIgnoreDataCalls()
     {
         return mIgnoreDataCalls;
     }
 
+    /**
+     * Sets flag to ignore data call traffic channel grants
+     * @param ignore true to ignore data calls.
+     */
     public void setIgnoreDataCalls(boolean ignore)
     {
         mIgnoreDataCalls = ignore;
     }
 
-
+    /**
+     * Traffic channel pool size.
+     * @return
+     */
     @JacksonXmlProperty(isAttribute = true, localName = "traffic_channel_pool_size")
     public int getTrafficChannelPoolSize()
     {
@@ -104,8 +118,31 @@ public class DecodeConfigDMR extends DecodeConfiguration
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-//        return new ChannelSpecification(50000.0, 12500, 5750.0, 6500.0);
         return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0);
+    }
+
+    /**
+     * Channel rotation delay.  This setting is used when multiple channel frequencies are defined in the source
+     * config and controls how long the decoder will remaining on each frequency until the channel is identified as
+     * active or the channel is identified as inactive and a change frequency request is issued.
+     *
+     * Note: this value is ignored when the source config contains a single frequency.
+     *
+     * @return channel rotation delay in milliseconds.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "channel_rotation_delay")
+    public long getChannelRotationDelay()
+    {
+        return mChannelRotationDelay;
+    }
+
+    /**
+     * Sets the channel rotation delay.
+     * @param channelRotationDelay in milliseconds.
+     */
+    public void setChannelRotationDelay(long channelRotationDelay)
+    {
+        mChannelRotationDelay = channelRotationDelay;
     }
 
     /**

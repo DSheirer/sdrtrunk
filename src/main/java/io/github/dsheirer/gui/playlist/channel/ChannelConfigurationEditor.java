@@ -358,7 +358,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
                         if(optionalButtonType.isPresent() && optionalButtonType.get() == ButtonType.YES)
                         {
-                            MyEventBus.getEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.JMBE_LIBRARY));
+                            MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.JMBE_LIBRARY));
                             return;
                         }
                     }

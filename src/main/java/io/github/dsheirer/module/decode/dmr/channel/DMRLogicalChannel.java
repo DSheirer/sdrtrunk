@@ -42,16 +42,6 @@ public class DMRLogicalChannel extends DMRChannel
     }
 
     /**
-     * Returns an array of length 1 containing this channel's logical slot number
-     */
-    public int[] getLSNArray()
-    {
-        int[] lsns = new int[1];
-        lsns[0] = getLogicalSlotNumber();
-        return lsns;
-    }
-
-    /**
      * Downlink frequency
      * @return value in Hertz, or 0 if this channel doesn't have a timeslot frequency mapping
      */

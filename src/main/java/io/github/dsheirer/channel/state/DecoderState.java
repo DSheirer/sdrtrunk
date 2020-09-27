@@ -126,14 +126,6 @@ public abstract class DecoderState extends AbstractDecoderState
     public abstract void init();
 
     /**
-     * Disposes any resources or pointers held by this instance to prepare for
-     * garbage collection
-     */
-    public void dispose()
-    {
-    }
-
-    /**
      * Listens for configuration identifiers and adds them to this decoder state's identifier collection.
      * @return
      */

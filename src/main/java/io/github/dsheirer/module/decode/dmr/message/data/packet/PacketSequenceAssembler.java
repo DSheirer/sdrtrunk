@@ -53,7 +53,7 @@ public class PacketSequenceAssembler
         {
             if(mTimeslot0Sequence == null)
             {
-                mTimeslot0Sequence = new PacketSequence(0);
+                mTimeslot0Sequence = new PacketSequence(1);
             }
 
             return mTimeslot0Sequence;
@@ -62,7 +62,7 @@ public class PacketSequenceAssembler
         {
             if(mTimeslot1Sequence == null)
             {
-                mTimeslot1Sequence = new PacketSequence(1);
+                mTimeslot1Sequence = new PacketSequence(2);
             }
 
             return mTimeslot1Sequence;

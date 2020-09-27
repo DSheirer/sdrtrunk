@@ -280,7 +280,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
      */
     public int getRestRepeater()
     {
-        return getMessage().getInt(REST_REPEATER);
+        return getMessage().getInt(REST_REPEATER) + 1;
     }
 
     /**

@@ -19,7 +19,6 @@ package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageProvider;
-import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 
@@ -39,6 +38,7 @@ public abstract class Decoder extends Module implements IMessageProvider
     @Override
     public void dispose()
     {
+        super.dispose();
         mMessageListener = null;
     }
 

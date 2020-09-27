@@ -172,7 +172,7 @@ public class AliasItemEditor extends Editor<Alias>
         mPlaylistManager.getBroadcastModel().getConfiguredBroadcasts()
             .addListener((ListChangeListener<ConfiguredBroadcast>)c -> updateStreamViews());
 
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         setMaxWidth(Double.MAX_VALUE);
 
@@ -659,7 +659,7 @@ public class AliasItemEditor extends Editor<Alias>
 
                     if(selected != null)
                     {
-                        MyEventBus.getEventBus().post(new ViewAliasIdentifierRequest(selected));
+                        MyEventBus.getGlobalEventBus().post(new ViewAliasIdentifierRequest(selected));
                     }
                 }
             });
@@ -686,6 +686,12 @@ public class AliasItemEditor extends Editor<Alias>
             p25Menu.getItems().add(new AddUnitStatusItem());
             p25Menu.getItems().add(new SeparatorMenuItem());
             p25Menu.getItems().add(new AddTonesItem("Audio Tones (Phase 2 Only)"));
+
+            Menu dmrMenu = new ProtocolMenu(Protocol.DMR);
+            dmrMenu.getItems().add(new AddTalkgroupItem(Protocol.DMR));
+            dmrMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.DMR));
+            dmrMenu.getItems().add(new AddRadioIdItem(Protocol.DMR));
+            dmrMenu.getItems().add(new AddRadioIdRangeItem(Protocol.DMR));
 
             Menu fleetsyncMenu = new ProtocolMenu(Protocol.FLEETSYNC);
             fleetsyncMenu.getItems().add(new AddTalkgroupItem(Protocol.FLEETSYNC));
@@ -715,8 +721,8 @@ public class AliasItemEditor extends Editor<Alias>
             Menu lojackMenu = new ProtocolMenu(Protocol.LOJACK);
             lojackMenu.getItems().add(new AddLojackItem());
 
-            mAddIdentifierButton.getItems().addAll(p25Menu, fleetsyncMenu, ltrMenu, mdcMenu, mptMenu, passportMenu,
-                taitMenu, new SeparatorMenuItem(), lojackMenu);
+            mAddIdentifierButton.getItems().addAll(p25Menu, dmrMenu, fleetsyncMenu, ltrMenu, mdcMenu, mptMenu,
+                passportMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
         }
 
         return mAddIdentifierButton;

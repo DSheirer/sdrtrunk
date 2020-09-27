@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,23 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
-package io.github.dsheirer.eventbus;
-
-import com.google.common.eventbus.EventBus;
+package io.github.dsheirer.controller.channel;
 
 /**
- * System wide event bus for dispatching/broadcasting system wide events or objects
+ * Notification that a channel configuration has changed.
  */
-public class MyEventBus
+public class ChannelConfigurationChangeNotification
 {
-    private static final EventBus GLOBAL_EVENT_BUS = new EventBus();
+    private Channel mChannel;
 
-    //TODO: this is primarily used by the Preference Service ... move this event bus to the Preference Service
-    public static EventBus getGlobalEventBus()
+    /**
+     * Constructs an instance
+     * @param channel current
+     */
+    public ChannelConfigurationChangeNotification(Channel channel)
     {
-        return GLOBAL_EVENT_BUS;
+        mChannel = channel;
+    }
+
+    /**
+     * New channel configuration
+     */
+    public Channel getChannel()
+    {
+        return mChannel;
     }
 }

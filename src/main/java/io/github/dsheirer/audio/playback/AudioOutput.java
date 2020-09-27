@@ -168,7 +168,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         updateToneInsertionAudioClips();
 
         //Register to receive directory preference update notifications so we can update the preference items
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
     }
 
     /**

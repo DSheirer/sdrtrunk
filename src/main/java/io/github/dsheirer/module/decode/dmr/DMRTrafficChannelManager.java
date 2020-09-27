@@ -21,17 +21,18 @@
  */
 package io.github.dsheirer.module.decode.dmr;
 
+import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.ChannelConversionRequest;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
-import io.github.dsheirer.controller.channel.ChannelGrantEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.event.DMRChannelGrantEvent;
@@ -40,8 +41,13 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
+import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
+import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.tuner.channel.rotation.DisableChannelRotationMonitorRequest;
+import io.github.dsheirer.source.tuner.channel.rotation.FrequencyLockChangeRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +77,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * This manager monitors channel events watching for events related to managed traffic channels.
  */
-public class DMRTrafficChannelManager extends Module implements IDecodeEventProvider, IChannelEventListener,
+public class DMRTrafficChannelManager extends TrafficChannelManager implements IDecodeEventProvider, IChannelEventListener,
     IChannelEventProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRTrafficChannelManager.class);
@@ -162,6 +168,66 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
     }
 
     /**
+     * Used with Capacity Plus systems to convert the existing standard channel to a traffic channel and then recreate
+     * the original standard channel with the frequency specified for the new rest channel.
+     * @param channel
+     * @param currentFrequency of the standard channel
+     * @param restChannel to identify the new channel frequency to start
+     */
+    public void convertToTrafficChannel(Channel channel, long currentFrequency, IChannelDescriptor restChannel)
+    {
+        //Only do the conversion of the original channel has multiple frequencies defined and the rest channel is
+        //one of those frequencies
+        if(restChannel.getDownlinkFrequency() > 0 &&
+           !mAllocatedTrafficChannelFrequencyMap.containsKey(restChannel.getDownlinkFrequency()) &&
+           channel.getSourceConfiguration().getSourceType() == SourceType.TUNER_MULTIPLE_FREQUENCIES)
+        {
+            SourceConfigTunerMultipleFrequency originalSourceConfig = (SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration();
+
+            //Add the rest channel to the list of frequencies in the source configuration
+            if(!originalSourceConfig.getFrequencies().contains(restChannel.getDownlinkFrequency()))
+            {
+                originalSourceConfig.addFrequency(restChannel.getDownlinkFrequency());
+
+                //Note: the channel configuration modification is not persisted from here, to avoid unnecessary coupling
+                //to the channel model.  The configuration will simply be adjusted at runtime.
+            }
+
+            //Convert current channel to a traffic channel if one is available
+            Channel trafficChannel = mAvailableTrafficChannelQueue.poll();
+
+            if(trafficChannel != null && restChannel.getDownlinkFrequency() > 0)
+            {
+                //Disable the channel rotation manager when we have multiple frequencies defined
+                getInterModuleEventBus().post(new DisableChannelRotationMonitorRequest());
+
+                //Set the frequency for the traffic channel configuration
+                SourceConfigTuner trafficSourceConfig = new SourceConfigTuner();
+                trafficSourceConfig.setFrequency(currentFrequency);
+                trafficChannel.setSourceConfiguration(trafficSourceConfig);
+
+                //Dispatch a request to convert this processing chain to the traffic channel.  This will cause the
+                //processing chain to convert to a traffic channel and notify all of the modules, which will in-turn
+                //cause the decoder states (2 timeslots) to dereference this manager so that the existing channel can
+                //no longer allocate traffic channels.
+                getInterModuleEventBus().post(new ChannelConversionRequest(channel, trafficChannel));
+
+                mAllocatedTrafficChannelFrequencyMap.put(currentFrequency, trafficChannel);
+
+                //Set the preferred frequency to use when restarting the original channel
+                originalSourceConfig.setPreferredFrequency(restChannel.getDownlinkFrequency());
+
+                //Dispatch request to persistently start the original channel with the rest channel frequency and reuse
+                //this traffic channel manager in the new processing chain.
+                ChannelStartProcessingRequest request = new ChannelStartProcessingRequest(channel, this);
+                request.setPersistentAttempt(true);
+                getInterModuleEventBus().post(request);
+
+            }
+        }
+    }
+
+    /**
      * Broadcasts an initial or update decode event to any registered listener.
      */
     public void broadcast(DecodeEvent decodeEvent)
@@ -237,7 +303,7 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
                     sourceConfig.setFrequency(frequency);
                     trafficChannel.setSourceConfiguration(sourceConfig);
                     mAllocatedTrafficChannelFrequencyMap.put(frequency, trafficChannel);
-                    broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, channel, identifierCollection));
+                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, channel, identifierCollection));
                 }
                 else
                 {
@@ -422,6 +488,8 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
     @Override
     public void dispose()
     {
+        super.dispose();
+
         for(Channel trafficChannel : mAvailableTrafficChannelQueue)
         {
             broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
@@ -451,9 +519,22 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
     {
     }
 
+    /**
+     * Starts this traffic channel manager.
+     *
+     * Note: for Capacity+ systems, this traffic channel manager will be reused when the current channel is in use and
+     * a new rest channel is nominated.  This traffic channel manager instance will be transferred to the new standard
+     * channel created to monitor the new rest channel.  As such, this manager will have a list of currently allocated
+     * traffic channels.  Broadcast frequency lock requests for each allocated traffic channel frequency so that the
+     * new rest channel rotation manager doesn't rotate onto frequencies already being monitored as traffic channels.
+     */
     @Override
     public void start()
     {
+        for(Long frequency: mAllocatedTrafficChannelFrequencyMap.keySet())
+        {
+            getInterModuleEventBus().post(FrequencyLockChangeRequest.lock(frequency));
+        }
     }
 
     @Override
@@ -464,7 +545,6 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
         //Issue a disable request for each traffic channel
         for(Channel channel: channels)
         {
-            mLog.debug("Stopping traffic channel: " + channel);
             broadcast(new ChannelEvent(channel, Event.REQUEST_DISABLE));
         }
     }
@@ -538,8 +618,13 @@ public class DMRTrafficChannelManager extends Module implements IDecodeEventProv
                     }
                 }
 
-                int countBefore = mAllocatedTrafficChannelFrequencyMap.size();
-                mAllocatedTrafficChannelFrequencyMap.remove(frequencyToRemove);
+                if(frequencyToRemove > 0)
+                {
+                    mAllocatedTrafficChannelFrequencyMap.remove(frequencyToRemove);
+
+                    //Unlock the frequency in the channel rotation monitor
+                    getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(frequencyToRemove));
+                }
 
                 //Add the traffic channel back to the queue to be reused
                 if(!mAvailableTrafficChannelQueue.contains(channel))

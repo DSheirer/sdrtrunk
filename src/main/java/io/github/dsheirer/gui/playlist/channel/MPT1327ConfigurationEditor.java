@@ -276,7 +276,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
                         channelMapName = getChannelMapComboBox().getSelectionModel().getSelectedItem().getName();
                     }
 
-                    MyEventBus.getEventBus().post(new ViewChannelMapEditorRequest(channelMapName));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelMapEditorRequest(channelMapName));
                 }
             });
         }

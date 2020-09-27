@@ -482,7 +482,7 @@ public class SiteEditor extends GridPane
 
         if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
         {
-            MyEventBus.getEventBus().post(new ViewChannelRequest(gotoChannel));
+            MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(gotoChannel));
         }
     }
 
@@ -544,7 +544,7 @@ public class SiteEditor extends GridPane
 
             if(getGoToChannelEditorCheckBox().isSelected())
             {
-                MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
             }
         }
     }
@@ -618,7 +618,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected())
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
                 }
             }
             else
@@ -646,7 +646,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(gotoChannel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(gotoChannel));
                 }
             }
         }
@@ -710,7 +710,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected())
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
                 }
             }
             else
@@ -739,7 +739,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(gotoChannel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(gotoChannel));
                 }
             }
         }

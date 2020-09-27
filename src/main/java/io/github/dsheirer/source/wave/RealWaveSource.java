@@ -259,6 +259,7 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     @Override
     public void dispose()
     {
+        super.dispose();
         mListener = null;
     }
 

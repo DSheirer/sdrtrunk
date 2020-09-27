@@ -95,7 +95,7 @@ public class SourceManager
                 if(config instanceof SourceConfigTunerMultipleFrequency)
                 {
                     SourceConfigTunerMultipleFrequency sourceConfigTuner = (SourceConfigTunerMultipleFrequency)config;
-                    TunerChannel tunerChannel = sourceConfigTuner.getFirstTunerChannel(channelSpecification.getBandwidth());
+                    TunerChannel tunerChannel = sourceConfigTuner.getTunerChannel(channelSpecification.getBandwidth());
                     String preferredTuner = sourceConfigTuner.getPreferredTuner();
 
                     Source source = mTunerModel.getSource(tunerChannel, channelSpecification, preferredTuner);

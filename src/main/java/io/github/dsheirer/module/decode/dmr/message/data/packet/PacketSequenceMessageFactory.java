@@ -216,7 +216,7 @@ public class PacketSequenceMessageFactory
                 }
             }
 
-            mLog.info("Packet Bytes:" + packet.size() + " MSG:" + packet.toHexString());
+//            mLog.info("Packet Bytes:" + packet.size() + " MSG:" + packet.toHexString());
 
             return packet;
         }

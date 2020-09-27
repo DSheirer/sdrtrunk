@@ -37,6 +37,7 @@ public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
 {
     private List<Long> mFrequencies = new ArrayList<>();
     private String mPreferredTuner;
+    private Long mPreferredFrequency;
 
     public SourceConfigTunerMultipleFrequency()
     {
@@ -67,6 +68,37 @@ public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
     public boolean hasMultipleFrequencies()
     {
         return mFrequencies.size() > 1;
+    }
+
+    /**
+     * Preferred frequency to start first for this configuration
+     */
+    @JsonIgnore
+    public long getPreferredFrequency()
+    {
+        if(mPreferredFrequency != null)
+        {
+            return mPreferredFrequency;
+        }
+        else if(mFrequencies.size() > 0)
+        {
+            return mFrequencies.get(0);
+        }
+
+        return 0l;
+    }
+
+    /**
+     * Sets which is the preferred frequency to use for this config when it's started
+     * @param frequency to use first
+     */
+    public void setPreferredFrequency(long frequency)
+    {
+        //Only set the frequency if it is one of the frequencies in the list
+        if(mFrequencies.contains(frequency))
+        {
+            mPreferredFrequency = frequency;
+        }
     }
 
     /**
@@ -113,15 +145,8 @@ public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
     }
 
     @JsonIgnore
-    public TunerChannel getFirstTunerChannel(int bandwidth)
+    public TunerChannel getTunerChannel(int bandwidth)
     {
-        if(getFrequencies().size() > 0)
-        {
-            return new TunerChannel(getFrequencies().get(0), bandwidth);
-        }
-        else
-        {
-            return new TunerChannel(0l, bandwidth);
-        }
+        return new TunerChannel(getPreferredFrequency(), bandwidth);
     }
 }
