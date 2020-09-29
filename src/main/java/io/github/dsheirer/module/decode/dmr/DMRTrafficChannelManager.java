@@ -429,10 +429,6 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         {
             mChannelEventListener.receive(channelEvent);
         }
-        else
-        {
-            mLog.debug("Channel Event Listener is Null");
-        }
     }
 
     /**
