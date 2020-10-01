@@ -79,7 +79,9 @@ public class PasswordPanel extends JPanel {
      
      Timer activateTimer = new Timer(); 
      ActivateLockScreen activateTask = new ActivateLockScreen(mMainGui,mPasswordGui,this);
-     activateTimer.schedule(activateTask, 900000, 900000);  // 900000 = 15 minutes
+     if (SDRTrunk.lockable) {
+        activateTimer.schedule(activateTask, 900000, 900000);  // 900000 = 15 minutes
+     }
      
     }
     

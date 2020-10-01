@@ -638,8 +638,8 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             }
 
             if (!cancelRestart) {
-                mLog.debug("Restart channel now");
-                Channel m = mChannel;
+                // mLog.debug("Restart channel now");
+                // Channel m = mChannel;
             }
         }
     }

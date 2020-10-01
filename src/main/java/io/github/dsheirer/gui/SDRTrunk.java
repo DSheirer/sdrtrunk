@@ -105,6 +105,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private static final String CONTROLLER_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".control.panel";
     private static final String SPECTRAL_PANEL_IDENTIFIER = BASE_WINDOW_NAME + ".spectral.panel";
     private static final String WINDOW_FRAME_IDENTIFIER = BASE_WINDOW_NAME + ".frame";
+    public static boolean lockable = true;
 
     private boolean mBroadcastStatusVisible;
     private AudioRecordingManager mAudioRecordingManager;
@@ -221,8 +222,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventQueue.invokeLater(() -> {
             try
             {
-                // mMainGui.setVisible(true);
-                mPasswordGui.setVisible(true);
+                if (!lockable) {                    
+                    mMainGui.setVisible(true);
+                } else { 
+                    mPasswordGui.setVisible(true);
+                }
                 autoStartChannels();
             }
             catch(Exception e)

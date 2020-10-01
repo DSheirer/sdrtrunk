@@ -506,8 +506,8 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
             }
 
             if (!cancelRestart) {
-                mLog.debug("Restart channel now");
-                Channel m = mChannel;
+                // mLog.debug("Restart channel now");
+                // Channel m = mChannel;
             }
         }
     }

@@ -216,7 +216,7 @@ public class USBTransferProcessor implements TransferCallback
         {
             stop();
 
-            if(mRestartCount >= 3)
+            if(mRestartCount >= 300)
             {
                 mLog.warn("[" + mDeviceName + "] - maximum restart attempts [" + mRestartCount +
                     "] exceeded for tuner - stopping");
@@ -249,7 +249,7 @@ public class USBTransferProcessor implements TransferCallback
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 20, TimeUnit.MILLISECONDS);
+            ThreadPool.SCHEDULED.schedule(runnable, 5000, TimeUnit.MILLISECONDS);
         }
     }
 

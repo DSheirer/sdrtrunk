@@ -46,6 +46,7 @@ import java.awt.Dimension;
 
 public class ControllerPanel extends JPanel
 {
+    
     private final static Logger mLog = LoggerFactory.getLogger(ControllerPanel.class);
     private static final long serialVersionUID = 1L;
     private int mSettingsTabIndex = -1;

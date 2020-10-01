@@ -44,7 +44,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
@@ -213,19 +212,6 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                 //Reset so that we can start over again
                 reset(0);
             }
-
-            if(mBinaryMessage.isFull())
-            {
-                //TDU's have a trailing status symbol that has to be removed -- set flag to true to suppress it.
-                if(mDataUnitID.hasTrailingStatusDibit())
-                {
-                    mTrailingDibitsToSuppress = 1;
-                }
-
-                dispatchMessage();
-            } else if (mDataUnitID == P25P1DataUnitID.HEADER_DATA_UNIT ){
-                // mLog.debug("mBinaryMessage is not full and it is a TDU");
-            }
         }
         else
         {
@@ -337,22 +323,12 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                     TSBKMessage tsbkMessage = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
                         mDataUnitID, mBinaryMessage, mNAC, getTimestamp());
 
-                     mMessageListener.receive(tsbkMessage);
+                    mMessageListener.receive(tsbkMessage);
 
                     if(tsbkMessage.isLastBlock())
                     {
-                        switch(mDataUnitID)
-                        {
-                            case TRUNKING_SIGNALING_BLOCK_1:
-                                mTrailingDibitsToSuppress = 22;
-                                break;
-                            case TRUNKING_SIGNALING_BLOCK_2:
-                            case TRUNKING_SIGNALING_BLOCK_3:
-                                mTrailingDibitsToSuppress = 1;
-                                break;
-                        }
-
                         reset(mDataUnitID.getMessageLength());
+                        mTrailingDibitsToSuppress = 1;
                     }
                     else
                     {
@@ -370,7 +346,6 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                     break;
                 default:
                     P25Message message = P25MessageFactory.create(mDataUnitID, mNAC, getTimestamp(), mBinaryMessage);
-                    // mLog.debug(message.toString());
                     mMessageListener.receive(message);
                     reset(mDataUnitID.getMessageLength());
                     break;
