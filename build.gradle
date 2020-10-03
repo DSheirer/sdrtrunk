@@ -41,6 +41,10 @@ sourceSets {
     test.java.srcDirs 'src/test'
 }
 
+run {
+    jvmArgs = ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED']
+}
+
 dependencies {
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.assertj:assertj-core:3.8.0'
@@ -110,6 +114,7 @@ idea {
 }
 
 javafx {
+    version = "13.0.2"
     modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
