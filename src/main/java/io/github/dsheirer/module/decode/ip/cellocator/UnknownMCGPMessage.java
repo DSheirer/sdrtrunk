@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.ip.cellocator;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
 
@@ -37,7 +37,7 @@ public class UnknownMCGPMessage extends MCGPPacket
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public UnknownMCGPMessage(MCGPHeader header, BinaryMessage message, int offset)
+    public UnknownMCGPMessage(MCGPHeader header, CorrectedBinaryMessage message, int offset)
     {
         super(header, message, offset);
     }

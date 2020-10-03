@@ -29,6 +29,7 @@ import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.DMRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MDC1200TalkgroupFormatter;
@@ -40,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.prefs.Preferences;
@@ -150,6 +150,7 @@ public class TalkgroupFormatPreference extends Preference
             case MPT1327:
                 return IntegerFormat.FORMATTED;
             case APCO25:
+            case DMR:
             case MDC1200:
             case PASSPORT:
             case UNKNOWN:
@@ -168,6 +169,7 @@ public class TalkgroupFormatPreference extends Preference
             case MPT1327:
                 return IntegerFormat.DECIMAL_FORMATTED;
             case APCO25:
+            case DMR:
             case MDC1200:
             case PASSPORT:
             case UNKNOWN:
@@ -184,6 +186,7 @@ public class TalkgroupFormatPreference extends Preference
             case PASSPORT:
                 return false;
             case APCO25:
+            case DMR:
             case FLEETSYNC:
             case LTR:
             case LTR_NET:
@@ -311,6 +314,9 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
                 return APCO25TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.APCO25),
                     isTalkgroupFixedWidth(Protocol.APCO25));
+            case DMR:
+                return DMRTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.DMR),
+                    isTalkgroupFixedWidth(Protocol.DMR));
             case FLEETSYNC:
                 return FleetsyncTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.FLEETSYNC),
                     isTalkgroupFixedWidth(Protocol.FLEETSYNC));
@@ -362,6 +368,9 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
                 return APCO25TalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.APCO25),
                     isTalkgroupFixedWidth(Protocol.APCO25));
+            case DMR:
+                return DMRTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.DMR),
+                    isTalkgroupFixedWidth(Protocol.DMR));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(radioIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));

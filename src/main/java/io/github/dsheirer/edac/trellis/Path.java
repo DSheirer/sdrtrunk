@@ -18,6 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.edac.trellis;
 
+import com.google.common.base.Joiner;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,5 +129,11 @@ public class Path
     public Path copyOf()
     {
         return new Path(this);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "ERR:" + getError() + " " + Joiner.on(",").join(mNodes);
     }
 }

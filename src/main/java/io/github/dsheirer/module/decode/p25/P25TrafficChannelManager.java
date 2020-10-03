@@ -25,9 +25,9 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
-import io.github.dsheirer.controller.channel.ChannelGrantEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
@@ -35,7 +35,6 @@ import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
-import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -54,6 +53,7 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Net
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import org.slf4j.Logger;
@@ -85,7 +85,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * This manager monitors channel events watching for events related to managed traffic channels.
  */
-public class P25TrafficChannelManager extends Module implements IDecodeEventProvider, IChannelEventListener,
+public class P25TrafficChannelManager extends TrafficChannelManager implements IDecodeEventProvider, IChannelEventListener,
     IChannelEventProvider, IMessageListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25TrafficChannelManager.class);
@@ -314,7 +314,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                     sourceConfig.setFrequency(frequency);
                     trafficChannel.setSourceConfiguration(sourceConfig);
                     mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
-                    broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel, identifierCollection));
+                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
                 }
             }
 
@@ -360,7 +360,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             sourceConfig.setFrequency(frequency);
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
-            broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel, identifierCollection));
+            getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
         }
 
         broadcast(channelGrantEvent);
@@ -464,7 +464,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
                         decodeConfig.setScrambleParameters(mPhase2ScrambleParameters.copy());
                     }
 
-                    broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel, identifierCollection));
+                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
                 }
             }
 
@@ -518,7 +518,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
             sourceConfig.setFrequency(frequency);
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
-            broadcast(new ChannelGrantEvent(trafficChannel, Event.REQUEST_ENABLE, apco25Channel, identifierCollection));
+            getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
         }
 
         broadcast(channelGrantEvent);
@@ -649,6 +649,7 @@ public class P25TrafficChannelManager extends Module implements IDecodeEventProv
     @Override
     public void dispose()
     {
+        super.dispose();
         for(Channel trafficChannel : mAvailablePhase1TrafficChannelQueue)
         {
             broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));

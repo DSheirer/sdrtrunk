@@ -77,7 +77,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
      */
     public DecodeEventPanel(IconModel iconModel, UserPreferences userPreferences, AliasModel aliasModel)
     {
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
         mIconModel = iconModel;

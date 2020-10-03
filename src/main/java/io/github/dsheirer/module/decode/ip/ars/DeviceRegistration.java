@@ -21,9 +21,23 @@
 package io.github.dsheirer.module.decode.ip.ars;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.module.decode.ip.ars.identifier.ARSDevice;
+import io.github.dsheirer.module.decode.ip.ars.identifier.ARSPassword;
+import io.github.dsheirer.module.decode.ip.ars.identifier.ARSUser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Automatic Registration Service - Device Registration
+ */
 public class DeviceRegistration extends ARSHeader
 {
+    private final static Logger mLog = LoggerFactory.getLogger(DeviceRegistration.class);
+
     private static final int SECOND_HEADER_EXTENSION_FLAG = 24;
     private static final int[] EVENT = {25, 26};
     private static final int[] ENCODING = {27, 28, 29, 30, 31};
@@ -31,6 +45,11 @@ public class DeviceRegistration extends ARSHeader
     private static final int DEVICE_IDENTIFIER_START_EXTENDED_HEADER = 32;
 
     private static final int[] BYTE_VALUE = {0, 1, 2, 3, 4, 5, 6, 7};
+
+    private ARSDevice mDevice;
+    private ARSUser mUser;
+    private ARSPassword mPassword;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a parser for a header contained within a binary message starting at the offset.
@@ -41,6 +60,7 @@ public class DeviceRegistration extends ARSHeader
     public DeviceRegistration(BinaryMessage message, int offset)
     {
         super(message, offset);
+        parsePayload();
     }
 
     public String toString()
@@ -52,10 +72,23 @@ public class DeviceRegistration extends ARSHeader
         {
             if(hasHeaderExtension())
             {
-                sb.append(isInitialEvent() ? "-INITIAL " : "-REFRESH ");
+                sb.append(isInitialEvent() ? "-INITIAL" : "-REFRESH");
             }
 
-            sb.append(" ").append(getPayload());
+            if(hasDevice())
+            {
+                sb.append(" DEVICE:").append(getDevice());
+            }
+
+            if(hasUser())
+            {
+                sb.append(" USER:").append(getUser());
+            }
+
+            if(hasPassword())
+            {
+                sb.append(" PW:").append(getPassword());
+            }
         }
         else
         {
@@ -73,13 +106,61 @@ public class DeviceRegistration extends ARSHeader
     }
 
     /**
+     * ARS User Id
+     * @return user or null
+     */
+    public ARSUser getUser()
+    {
+        return mUser;
+    }
+
+    /**
+     * Indicates if this packet has a user Id
+     */
+    public boolean hasUser()
+    {
+        return mUser != null;
+    }
+
+    /**
+     * ARS Password
+     * @return password or null
+     */
+    public ARSPassword getPassword()
+    {
+        return mPassword;
+    }
+
+    /**
+     * Indicates if this packet has a password
+     */
+    public boolean hasPassword()
+    {
+        return mPassword != null;
+    }
+
+    /**
+     * ARS Device
+      * @return device or null
+     */
+    public ARSDevice getDevice()
+    {
+        return mDevice;
+    }
+
+    /**
+     * Indicates if this packet has a device Id
+     */
+    public boolean hasDevice()
+    {
+        return mDevice != null;
+    }
+
+    /**
      * Device, user and password values contained in the registration packet.
      */
-    public String getPayload()
+    private void parsePayload()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("DEVICE:");
-
         int pointer = getOffset();
 
         if(hasHeaderExtension())
@@ -91,53 +172,62 @@ public class DeviceRegistration extends ARSHeader
             pointer += DEVICE_IDENTIFIER_START;
         }
 
-        int identifierSize = getMessage().getInt(BYTE_VALUE, pointer += 8);
+        int deviceIdentifierSize = getMessage().getInt(BYTE_VALUE, pointer);
 
-        if(identifierSize > 0)
+        pointer += 8;
+
+        if(deviceIdentifierSize > 0)
         {
-            for(int x = 0; x < identifierSize; x++)
+            StringBuilder sb = new StringBuilder();
+
+            for(int x = 0; x < deviceIdentifierSize; x++)
             {
-                sb.append(getCharacter(pointer += 8));
+                sb.append(getCharacter(pointer));
+                pointer += 8;
+            }
+
+            try
+            {
+                int device = Integer.parseInt(sb.toString());
+                mDevice = ARSDevice.createFrom(device);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error parsing ARS device identifier from value [" + sb.toString() + "]");
             }
         }
-        else
-        {
-            sb.append("(none)");
-        }
 
-        sb.append(" USER:");
-
-        int userIdentifierSize = getMessage().getInt(BYTE_VALUE, pointer += 8);
+        int userIdentifierSize = getMessage().getInt(BYTE_VALUE, pointer);
+        pointer += 8;
 
         if(userIdentifierSize > 0)
         {
+            StringBuilder sb = new StringBuilder();
+
             for(int x = 0; x < userIdentifierSize; x++)
             {
-                sb.append(getCharacter(pointer += 8));
+                sb.append(getCharacter(pointer));
+                pointer += 8;
             }
-        }
-        else
-        {
-            sb.append("(none)");
+
+            mUser = ARSUser.createFrom(sb.toString());
         }
 
-        sb.append(" PASSWORD:");
-
-        int passwordSize = getMessage().getInt(BYTE_VALUE, pointer += 8);
+        int passwordSize = getMessage().getInt(BYTE_VALUE, pointer);
+        pointer += 8;
 
         if(passwordSize > 0)
         {
+            StringBuilder sb = new StringBuilder();
+
             for(int x = 0; x < passwordSize; x++)
             {
-                sb.append(getCharacter(pointer += 8));
+                sb.append(getCharacter(pointer));
+                pointer += 8;
             }
-        }
-        else
-        {
-            sb.append("(none)");
-        }
 
-        return sb.toString();
+            mPassword = ARSPassword.createFrom(sb.toString());
+        }
     }
 
     /**
@@ -149,5 +239,31 @@ public class DeviceRegistration extends ARSHeader
     private char getCharacter(int offset)
     {
         return (char)getMessage().getByte(BYTE_VALUE, offset);
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+
+            if(hasUser())
+            {
+                mIdentifiers.add(getUser());
+            }
+
+            if(hasDevice())
+            {
+                mIdentifiers.add(getDevice());
+            }
+
+            if(hasPassword())
+            {
+                mIdentifiers.add(getPassword());
+            }
+        }
+
+        return mIdentifiers;
     }
 }

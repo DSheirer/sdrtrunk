@@ -21,12 +21,13 @@
  */
 package io.github.dsheirer.channel.state;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
@@ -97,6 +98,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     private ChannelMetadata mChannelMetadata;
     private StateMachine mStateMachine = new StateMachine(0, State.SINGLE_CHANNEL_ACTIVE_STATES);
     private StateMonitoringSquelchController mSquelchController = new StateMonitoringSquelchController(0);
+    private DecoderStateNotificationEventCache mStateNotificationCache = new DecoderStateNotificationEventCache();
 
     public SingleChannelState(Channel channel, AliasModel aliasModel)
     {
@@ -107,10 +109,23 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
 
         mStateMachine.addListener(this);
         mStateMachine.addListener(mSquelchController);
-        mStateMachine.setChannelType(mChannel.getChannelType());
         mStateMachine.setIdentifierUpdateListener(mIdentifierCollection);
         mStateMachine.setEndTimeoutBufferMilliseconds(RESET_TIMEOUT_DELAY);
-        if(channel.getChannelType() == ChannelType.STANDARD)
+
+        configureChannelType(channel);
+    }
+
+
+
+    /**
+     * Configure items according to channel type
+     * @param channel configuration
+     */
+    private void configureChannelType(Channel channel)
+    {
+        mStateMachine.setChannelType(getChannel().getChannelType());
+
+        if(channel.isStandardChannel())
         {
             mStateMachine.setFadeTimeoutBufferMilliseconds(FADE_TIMEOUT_DELAY);
         }
@@ -128,6 +143,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     private boolean idleStateThreadCreated = false;
     private Thread handleIdleRestartThread;
     private void handleIdleState(State channelState) throws InterruptedException {
+	/*
         if (channelState == State.IDLE && !idleStateThreadCreated) {
             handleIdleRestartThread = new Thread(new SingleChannelState.StateIdleRestartThread());
             handleIdleRestartThread.start();
@@ -140,22 +156,24 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 handleIdleRestartThread = null;
             }
         }
+	*/
+    }
+    /**
+     * Receive notification that the underlying channel configuration has changed.
+     * @param notification
+     */
+    @Subscribe
+    public void channelConfigurationChanged(ChannelConfigurationChangeNotification notification)
+    {
+        updateChannelConfiguration(notification.getChannel());
+        configureChannelType(notification.getChannel());
+        createConfigurationIdentifiers(notification.getChannel());
     }
 
     @Override
     public void stateChanged(State state, int timeslot)
     {
-        //Broadcast current channel state so that channel rotation monitor can track
-        if(State.SINGLE_CHANNEL_ACTIVE_STATES.contains(state))
-        {
-            broadcast(DecoderStateEvent.activeState(timeslot));
-        }
-        else
-        {
-            broadcast(DecoderStateEvent.inactiveState(timeslot));
-        }
-
-        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
+        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.get(state);
         mIdentifierCollection.update(stateIdentifier);
         mChannelMetadata.receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
         try {
@@ -167,16 +185,16 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         switch(state)
         {
             case IDLE:
-                broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
+                broadcast(new DecoderStateEvent(this, Event.REQUEST_RESET, State.IDLE));
                 break;
             case RESET:
                 reset();
                 mStateMachine.setState(State.IDLE);
                 break;
             case TEARDOWN:
-                if(mChannel.isTrafficChannel())
+                if(getChannel().isTrafficChannel())
                 {
-                    broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
+                    broadcast(new ChannelEvent(getChannel(), ChannelEvent.Event.REQUEST_DISABLE));
                 }
                 else
                 {
@@ -292,7 +310,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     public void reset()
     {
         mStateMachine.setState(State.RESET);
-        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
+        broadcast(new DecoderStateEvent(this, Event.REQUEST_RESET, State.IDLE));
         mIdentifierCollection.remove(IdentifierClass.USER);
         sourceOverflow(false);
     }
@@ -302,7 +320,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     {
         mIdentifierCollection.broadcastIdentifiers();
 
-        if(mChannel.getChannelType() == ChannelType.TRAFFIC)
+        if(getChannel().isTrafficChannel())
         {
             mStateMachine.setState(State.ACTIVE);
         }
@@ -316,6 +334,9 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
 
     public void dispose()
     {
+        //Must invoke parent dispose to unregister from the event bus
+        super.dispose();
+
         mDecodeEventListener = null;
         mDecoderStateListener = null;
     }
@@ -394,7 +415,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                 case NOTIFICATION_FREQUENCY_CHANGE:
                     //Rebroadcast source frequency change events for the decoder(s) to process
                     long frequency = sourceEvent.getValue().longValue();
-                    broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, mStateMachine.getState(), frequency));
+                    broadcast(new DecoderStateEvent(this, Event.NOTIFICATION_SOURCE_FREQUENCY, mStateMachine.getState(), frequency));
 
                     //Create a new frequency configuration identifier so that downstream consumers receive the change
                     //via channel metadata and audio packet updates - this is a silent add that is sent as a notification
@@ -408,7 +429,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                     if(State.SINGLE_CHANNEL_ACTIVE_STATES.contains(mStateMachine.getState()))
                     {
                         broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
-                            mChannel.getChannelType().name()));
+                            getChannel().getChannelType().name()));
                     }
                     break;
             }
@@ -427,10 +448,10 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
             {
                 switch(event.getEvent())
                 {
-                    case ALWAYS_UNSQUELCH:
+                    case REQUEST_ALWAYS_UNSQUELCH:
                         mSquelchController.setSquelchLock(true);
                         break;
-                    case CHANGE_CALL_TIMEOUT:
+                    case REQUEST_CHANGE_CALL_TIMEOUT:
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
@@ -442,19 +463,28 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
                         if(State.SINGLE_CHANNEL_ACTIVE_STATES.contains(event.getState()))
                         {
                             mStateMachine.setState(event.getState());
+
+                            //Broadcast state so channel rotation manager can track
+                            broadcast(mStateNotificationCache.getStateNotificationEvent(event.getState(), event.getTimeslot()));
                         }
                         break;
                     case END:
-                        if(mChannel.isTrafficChannel())
+                        if(getChannel().isTrafficChannel())
                         {
                             mStateMachine.setState(State.TEARDOWN);
+
+                            //Broadcast state so channel rotation manager can track
+                            broadcast(mStateNotificationCache.getStateNotificationEvent(State.TEARDOWN, event.getTimeslot()));
                         }
                         else
                         {
                             mStateMachine.setState(State.FADE);
+
+                            //Broadcast state so channel rotation manager can track
+                            broadcast(mStateNotificationCache.getStateNotificationEvent(State.FADE, event.getTimeslot()));
                         }
                         break;
-                    case RESET:
+                    case REQUEST_RESET:
                         /* Channel State does not respond to reset events */
                         break;
                     default:

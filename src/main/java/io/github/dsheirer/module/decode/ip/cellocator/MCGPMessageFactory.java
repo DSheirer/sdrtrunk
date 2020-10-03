@@ -20,7 +20,7 @@
 
 package io.github.dsheirer.module.decode.ip.cellocator;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
  * Creates an MCGP packet and header for parsing the contents of the packet.
@@ -33,7 +33,7 @@ public class MCGPMessageFactory
      * @param offset into the message for the start of the MCGP payload
      * @return MCGP packet message parser
      */
-    public static MCGPPacket create(BinaryMessage message, int offset)
+    public static MCGPPacket create(CorrectedBinaryMessage message, int offset)
     {
         MCGPHeader header = new MCGPHeader(message, offset);
         int payloadOffset = offset + MCGPHeader.HEADER_LENGTH;

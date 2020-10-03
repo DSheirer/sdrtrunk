@@ -383,15 +383,15 @@ public class SDRTrunk implements Listener<TunerEvent>
         JMenu viewMenu = new JMenu("View");
 
         JMenuItem viewPlaylistItem = new JMenuItem("Playlist Editor");
-        viewPlaylistItem.addActionListener(e -> MyEventBus.getEventBus().post(new ViewPlaylistRequest()));
+        viewPlaylistItem.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest()));
         viewMenu.add(viewPlaylistItem);
 
         JMenuItem preferencesItem = new JMenuItem("User Preferences");
-        preferencesItem.addActionListener(e -> MyEventBus.getEventBus().post(new ViewUserPreferenceEditorRequest()));
+        preferencesItem.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest()));
         viewMenu.add(preferencesItem);
 
         JMenuItem settingsMenu = new JMenuItem("Icon Manager");
-        settingsMenu.addActionListener(arg0 -> MyEventBus.getEventBus().post(new ViewIconManagerRequest()));
+        settingsMenu.addActionListener(arg0 -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
         viewMenu.add(settingsMenu);
 
         JMenuItem logFilesMenu = new JMenuItem("Logs & Recordings");

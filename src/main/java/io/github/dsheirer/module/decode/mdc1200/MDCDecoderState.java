@@ -188,7 +188,7 @@ public class MDCDecoderState extends DecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 break;
             default:

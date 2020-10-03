@@ -22,16 +22,12 @@
 
 package io.github.dsheirer.channel.state;
 
+/**
+ * State and Status request and notification events used for communication between Decoder States and Channel states
+ * and by peripheral entities like the ChannelRotationMonitor.
+ */
 public class DecoderStateEvent
 {
-    private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_0 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 0);
-    private static final DecoderStateEvent ACTIVE_STATE_TIMESLOT_1 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_ACTIVE_STATE, State.ACTIVE, 1);
-    private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_0 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 0);
-    private static final DecoderStateEvent INACTIVE_STATE_TIMESLOT_1 =
-        new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_INACTIVE_STATE, State.ACTIVE, 1);
     private Object mSource;
     private Event mEvent;
     private State mState;
@@ -63,65 +59,14 @@ public class DecoderStateEvent
     }
 
     /**
-     * Creates a channel state active event for the specified timeslot
-     * @param timeslot that the state applies to
-     * @return new event
+     * Creates a decoder state notification event for a null source with the specified state and timeslot.
+     * @param state (current) of the decoder
+     * @param timeslot that is reporting state
+     * @return new decoder state event
      */
-    public static DecoderStateEvent activeState(int timeslot)
+    public static DecoderStateEvent stateNotification(State state, int timeslot)
     {
-        if(timeslot == 0)
-        {
-            return ACTIVE_STATE_TIMESLOT_0;
-        }
-        else if(timeslot == 1)
-        {
-            return ACTIVE_STATE_TIMESLOT_1;
-        }
-        else
-        {
-            throw new IllegalArgumentException("Only timeslots 0 and 1 are currently supported");
-        }
-    }
-
-    /**
-     * Creates a channel state active event for the specified timeslot.
-     * @param state currently
-     * @return new event
-     */
-    public static DecoderStateEvent activeState()
-    {
-        return activeState(0);
-    }
-
-    /**
-     * Creates a channel state inactive event for the specified timeslot
-     * @param timeslot that the state applies to
-     * @return new event
-     */
-    public static DecoderStateEvent inactiveState(int timeslot)
-    {
-        if(timeslot == 0)
-        {
-            return INACTIVE_STATE_TIMESLOT_0;
-        }
-        else if(timeslot == 1)
-        {
-            return INACTIVE_STATE_TIMESLOT_1;
-        }
-        else
-        {
-            throw new IllegalArgumentException("Only timeslots 0 and 1 are currently supported");
-        }
-    }
-
-    /**
-     * Creates a channel state active event for the specified timeslot.
-     * @param state currently
-     * @return new event
-     */
-    public static DecoderStateEvent inactiveState()
-    {
-        return inactiveState(0);
+        return new DecoderStateEvent(null, Event.NOTIFICATION_CHANNEL_STATE, state, timeslot);
     }
 
     public String toString()
@@ -164,15 +109,23 @@ public class DecoderStateEvent
 
     public enum Event
     {
-        ALWAYS_UNSQUELCH,
-        CHANGE_CALL_TIMEOUT,
+        //Decode state discrete events
         CONTINUATION,
         DECODE,
         END,
+        START,
+
+        NOTIFICATION_CHANNEL_STATE,
         NOTIFICATION_CHANNEL_ACTIVE_STATE,
         NOTIFICATION_CHANNEL_INACTIVE_STATE,
-        RESET,
-        SOURCE_FREQUENCY,
-        START;
+        NOTIFICATION_SOURCE_FREQUENCY,
+
+
+        REQUEST_ALWAYS_UNSQUELCH,
+        REQUEST_CHANGE_CALL_TIMEOUT,
+        REQUEST_RESET,
+
+        //Request to convert the current channel to a traffic channel (used by DMR Cap+)
+        REQUEST_CONVERT_TO_TRAFFIC_CHANNEL;
     }
 }

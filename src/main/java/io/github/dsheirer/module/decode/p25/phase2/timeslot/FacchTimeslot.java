@@ -24,7 +24,7 @@ package io.github.dsheirer.module.decode.p25.phase2.timeslot;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.ReedSolomon_63_35_29;
+import io.github.dsheirer.edac.ReedSolomon_63_35_29_P25;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
@@ -204,8 +204,7 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
 //            input[61] = 0; //Shortened
 //            input[62] = 0; //Shortened
 
-            //Reed-Solomon(45,26,20) code protects the SOEMI word.  Maximum correctable errors are: 13 (53 - 26 / 2)
-            ReedSolomon_63_35_29 reedSolomon_63_35_29 = new ReedSolomon_63_35_29(13);
+            ReedSolomon_63_35_29_P25 reedSolomon_63_35_29 = new ReedSolomon_63_35_29_P25();
 
             boolean irrecoverableErrors;
 

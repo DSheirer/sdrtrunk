@@ -247,7 +247,7 @@ public class UserPreferencesEditor extends BorderPane
 
             Menu viewMenu = new Menu("View");
             MenuItem playlistEditorItem = new MenuItem("Playlist Editor");
-            playlistEditorItem.setOnAction(event -> MyEventBus.getEventBus().post(new ViewPlaylistRequest()));
+            playlistEditorItem.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest()));
             viewMenu.getItems().add(playlistEditorItem);
             mMenuBar.getMenus().add(viewMenu);
         }

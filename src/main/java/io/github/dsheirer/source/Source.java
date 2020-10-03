@@ -86,11 +86,6 @@ public abstract class Source extends Module implements ISourceEventListener, ISo
     public abstract long getFrequency();
 
     /**
-     * Process any cleanup actions to prepare for garbage collection of this source
-     */
-    public abstract void dispose();
-
-    /**
      * Registers the listener to receive overflow state changes.  Use null argument to clear the listener
      */
     public void setOverflowListener(IOverflowListener listener)

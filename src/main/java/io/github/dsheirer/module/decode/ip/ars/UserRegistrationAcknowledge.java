@@ -21,6 +21,10 @@
 package io.github.dsheirer.module.decode.ip.ars;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+
+import java.util.Collections;
+import java.util.List;
 
 public class UserRegistrationAcknowledge extends ARSHeader
 {
@@ -84,5 +88,11 @@ public class UserRegistrationAcknowledge extends ARSHeader
         }
 
         return "NONE";
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.emptyList();
     }
 }

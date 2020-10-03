@@ -1,0 +1,131 @@
+/*
+ * *****************************************************************************
+ *  Copyright (C) 2014-2020 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
+package io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola;
+
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.radio.RadioIdentifier;
+import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
+import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
+import io.github.dsheirer.module.decode.dmr.message.CACH;
+import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Connect Plus - Radio:Talkgroup Affiliation
+ */
+public class ConnectPlusTalkgroupAffiliation extends CSBKMessage
+{
+    private static final int[] RADIO = new int[]{16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+        31, 32, 33, 34, 35, 36, 37, 38, 39};
+    private static final int[] TALKGROUP = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+        55, 56, 57, 58, 59, 60, 61, 62, 63};
+    private static final int[] UNKNOWN = new int[]{64, 65, 66, 67, 68, 69, 70, 71};
+
+    private List<Identifier> mIdentifiers;
+    private RadioIdentifier mRadio;
+    private TalkgroupIdentifier mTalkgroup;
+
+    /**
+     * Constructs an instance
+     *
+     * @param syncPattern for the CSBK
+     * @param message bits
+     * @param cach for the DMR burst
+     * @param slotType for this message
+     * @param timestamp
+     * @param timeslot
+     */
+    public ConnectPlusTalkgroupAffiliation(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
+    {
+        super(syncPattern, message, cach, slotType, timestamp, timeslot);
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if(!isValid())
+        {
+            sb.append("[CRC-ERROR] ");
+        }
+
+        sb.append("CC:").append(getSlotType().getColorCode());
+        sb.append(" CON+ AFFILIATE RADIO:").append(getRadio());
+        sb.append(" TO TALKGROUP:").append(getTalkgroup());
+        sb.append(" UNK:").append(getUnknown());
+        sb.append(" MSG:").append(getMessage().toHexString());
+
+        return sb.toString();
+    }
+
+    /**
+     * Unknown
+     */
+    public int getUnknown()
+    {
+        return getMessage().getInt(UNKNOWN);
+    }
+
+    /**
+     * Radio ID that is being affiliated
+     */
+    public RadioIdentifier getRadio()
+    {
+        if(mRadio == null)
+        {
+            mRadio = DMRRadio.createFrom(getMessage().getInt(RADIO));
+        }
+
+        return mRadio;
+    }
+
+    /**
+     * Talkgroup that the radio is affiliated to
+     */
+    public TalkgroupIdentifier getTalkgroup()
+    {
+        if(mTalkgroup == null)
+        {
+            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(TALKGROUP));
+        }
+
+        return mTalkgroup;
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        if(mIdentifiers == null)
+        {
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getRadio());
+            mIdentifiers.add(getTalkgroup());
+        }
+
+        return mIdentifiers;
+    }
+}

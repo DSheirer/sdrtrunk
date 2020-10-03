@@ -120,7 +120,7 @@ public class JavaFxWindowManager extends Application
     private void setup()
     {
         //Register this class to receive events via each method annotated with @Subscribe
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         //Register JavaFX icon fonts
         IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());

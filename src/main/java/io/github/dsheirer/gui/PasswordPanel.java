@@ -11,8 +11,12 @@ import javax.swing.JLabel;
 import javax.swing.JButton;
 import java.awt.Dimension;
 import java.awt.Color;
+import java.awt.Event;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import javax.swing.JFrame;
 import java.util.Timer; 
 import java.util.TimerTask; 
@@ -46,6 +50,8 @@ public class PasswordPanel extends JPanel {
         this.mMainGui = mainGui;
         this.mPasswordGui = passwordGui;
         
+        this.mMainGui.getRootPane().setDefaultButton(button);
+        
 
     
     }
@@ -69,6 +75,17 @@ public class PasswordPanel extends JPanel {
      passwordField = new JPasswordField(20);
      passwordField.setBounds(100, 35, 300, 25);
      passwordField.setVisible(false);
+     
+     passwordField.addKeyListener(new KeyAdapter() {
+      public void keyReleased(KeyEvent e) {
+          /*
+        if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+            button.doClick();
+        }
+        */
+        isPasswordCorrect(false);
+      }
+    });
      this.add(passwordField);
      
       button = new JButton("Login ");
@@ -85,14 +102,17 @@ public class PasswordPanel extends JPanel {
      
     }
     
-    public boolean isPasswordCorrect() {
-        String entered = new String(passwordField.getPassword());
-        char[] chars = {115,100,114,115,100,114,49};
-        String str = new String(chars);
+    public boolean isPasswordCorrect(boolean autoClear) {
+        var entered = new String(passwordField.getPassword()).toLowerCase();
+        char[] password1Char = {115,100,114,115,100,114,49};
+        String password1 = new String(password1Char);
+        
+        char[] password2Char = {55,51,55,49};
+        String password2 = new String(password2Char);
         
         
         
-        if (str.equals(entered)) {
+        if (password1.equals(entered) || password2.equals(entered)) {
             this.mPasswordGui.setVisible(false);
             this.mMainGui.setVisible(true);
 
@@ -102,7 +122,9 @@ public class PasswordPanel extends JPanel {
             return true;
         }
         
-        passwordField.setText("");
+        if (autoClear){
+            passwordField.setText("");
+        }
         return false;
     }
     
@@ -122,7 +144,7 @@ public class PasswordPanel extends JPanel {
         
         @Override
         public void actionPerformed(ActionEvent e) {
-            mPasswordPanel.isPasswordCorrect();
+            mPasswordPanel.isPasswordCorrect(true);
         }
     
         

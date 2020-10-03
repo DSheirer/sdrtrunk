@@ -34,8 +34,10 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public enum TalkgroupFormat
 {
-    APCO25("********", 0, 0xFFFFFF, "0 to 65,535",
+    APCO25("********", 0, 0xFFFF, "0 to 65,535",
         "<html>APCO25 talkgroup valid range is 0 to 65,535"),
+    DMR("********", 0, 0xFFFFFF, "0 to 16,777,215",
+        "<html>DMR talkgroup valid range is 0 to 16,777,215"),
     FLEETSYNC("###-####", 0, 0x7FFFFF, "001-0001 to 127-8192",
         "<html>Fleetsync valid ranges are 1-127(prefix)<br>and 1-8192(ident) (ie. 001-0001 to 127-8192)"),
     LTR("##-###", 0x101, 0x3FFF, "01-001 to 20-255",

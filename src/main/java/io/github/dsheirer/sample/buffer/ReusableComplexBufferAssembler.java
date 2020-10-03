@@ -65,7 +65,6 @@ public class ReusableComplexBufferAssembler
     public void dispose()
     {
         mReusableComplexBufferQueue.dispose();
-        mListener = null;
     }
 
     /**

@@ -95,11 +95,6 @@ public class MPT1327DecoderState extends DecoderState
         return mChannelType;
     }
 
-    public void dispose()
-    {
-        super.dispose();
-    }
-
     @Override
     public void receive(IMessage message)
     {
@@ -205,7 +200,10 @@ public class MPT1327DecoderState extends DecoderState
                     case GTC:
                         if(mMPT1327TrafficChannelManager != null)
                         {
-                            mMPT1327TrafficChannelManager.processChannelGrant(mpt);
+                            MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                            ic.remove(IdentifierClass.USER);
+                            ic.update(mpt.getIdentifiers());
+                            mMPT1327TrafficChannelManager.processChannelGrant(mpt, ic);
                         }
                         else
                         {
@@ -428,10 +426,10 @@ public class MPT1327DecoderState extends DecoderState
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 break;
-            case SOURCE_FREQUENCY:
+            case NOTIFICATION_SOURCE_FREQUENCY:
                 mFrequency = event.getFrequency();
                 break;
             default:

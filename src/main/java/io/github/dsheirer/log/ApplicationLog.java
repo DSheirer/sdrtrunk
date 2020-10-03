@@ -62,7 +62,7 @@ public class ApplicationLog
     public ApplicationLog(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
     }
 
     @Subscribe

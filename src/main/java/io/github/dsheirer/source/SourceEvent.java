@@ -47,6 +47,7 @@ public class SourceEvent
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
         REQUEST_FREQUENCY_ROTATION,
+        REQUEST_FREQUENCY_SELECTION,
         REQUEST_SOURCE_DISPOSE,
         REQUEST_START_SAMPLE_STREAM,
         REQUEST_STOP_SAMPLE_STREAM;
@@ -392,6 +393,15 @@ public class SourceEvent
     public static SourceEvent frequencyRotationRequest()
     {
         return new SourceEvent(Event.REQUEST_FREQUENCY_ROTATION);
+    }
+
+    /**
+     * Creates a request to cycle to a specific frequency.  This is normally used for decoders to request the
+     * next frequency in a list when a multiple-frequency source configuration is defined.
+     */
+    public static SourceEvent frequencySelectionRequest()
+    {
+        return new SourceEvent(Event.REQUEST_FREQUENCY_SELECTION);
     }
 
     /**

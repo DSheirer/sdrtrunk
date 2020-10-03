@@ -60,7 +60,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
 
     public ChannelMetadataModel()
     {
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
     }
 
     /**
@@ -95,6 +95,19 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
                 channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
             }
         });
+    }
+
+    /**
+     * Updates the mapping of channel metadata to the channel used to create the channel metadatas (and processing chain)
+     * @param channelMetadatas
+     * @param channel
+     */
+    public void updateChannelMetadataToChannelMap(Collection<ChannelMetadata> channelMetadatas, Channel channel)
+    {
+        for(ChannelMetadata channelMetadata: channelMetadatas)
+        {
+            mMetadataChannelMap.put(channelMetadata, channel);
+        }
     }
 
     public void remove(ChannelMetadata channelMetadata)

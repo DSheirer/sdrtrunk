@@ -151,12 +151,12 @@ public class PlaylistEditor extends BorderPane
 
             MenuItem iconManagerItem = new MenuItem("_Icon Manager");
             iconManagerItem.setAccelerator(new KeyCodeCombination(KeyCode.I, KeyCombination.ALT_ANY));
-            iconManagerItem.setOnAction(event -> MyEventBus.getEventBus().post(new ViewIconManagerRequest()));
+            iconManagerItem.setOnAction(event -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
             viewMenu.getItems().add(iconManagerItem);
 
             MenuItem userPreferenceItem = new MenuItem("_User Preferences");
             userPreferenceItem.setAccelerator(new KeyCodeCombination(KeyCode.U, KeyCombination.ALT_ANY));
-            userPreferenceItem.setOnAction(event -> MyEventBus.getEventBus()
+            userPreferenceItem.setOnAction(event -> MyEventBus.getGlobalEventBus()
                 .post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.TALKGROUP_FORMAT)));
             viewMenu.getItems().add(userPreferenceItem);
 

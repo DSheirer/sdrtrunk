@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.module.decode.ip.cellocator;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
  * Unit (Outbound) data being forwarded over the wireless interface to a central application
@@ -46,7 +46,7 @@ public class ForwardedDataMessage extends MCGPPacket
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public ForwardedDataMessage(MCGPHeader header, BinaryMessage message, int offset)
+    public ForwardedDataMessage(MCGPHeader header, CorrectedBinaryMessage message, int offset)
     {
         super(header, message, offset);
     }

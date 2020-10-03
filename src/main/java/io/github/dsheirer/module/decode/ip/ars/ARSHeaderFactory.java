@@ -44,7 +44,7 @@ public class ARSHeaderFactory
                 return new RegistrationAcknowledgement(message, offset);
             case UNKNOWN:
             default:
-                return new ARSHeader(message, offset);
+                return new UnknownARSHeader(message, offset);
         }
     }
 }

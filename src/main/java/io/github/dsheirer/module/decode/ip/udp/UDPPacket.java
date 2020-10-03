@@ -20,20 +20,21 @@
 
 package io.github.dsheirer.module.decode.ip.udp;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
 import io.github.dsheirer.module.decode.ip.PacketMessageFactory;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 public class UDPPacket extends Packet
 {
     private UDPHeader mHeader;
     private IPacket mPayload;
+    private List<Identifier> mIdentifiers;
 
     /**
      * Constructs a parser for a header contained within a binary message starting at the offset.
@@ -41,7 +42,7 @@ public class UDPPacket extends Packet
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public UDPPacket(BinaryMessage message, int offset)
+    public UDPPacket(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -77,7 +78,7 @@ public class UDPPacket extends Packet
     @Override
     public IPacket getPayload()
     {
-        if(mPayload == null)
+        if(mPayload == null && getHeader().isValid())
         {
             if(getHeader().isValid())
             {
@@ -97,11 +98,19 @@ public class UDPPacket extends Packet
     @Override
     public List<Identifier> getIdentifiers()
     {
-        if(hasPayload())
+        if(mIdentifiers == null)
         {
-            return getPayload().getIdentifiers();
+            mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getHeader().getSourcePort());
+            mIdentifiers.add(getHeader().getDestinationPort());
+
+            //Roll up the identifiers from the payload packet
+            if(hasPayload())
+            {
+                mIdentifiers.addAll(getPayload().getIdentifiers());
+            }
         }
 
-        return Collections.emptyList();
+        return mIdentifiers;
     }
 }

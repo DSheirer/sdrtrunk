@@ -35,7 +35,7 @@ public abstract class ImbeAudioModule extends JmbeAudioModule
 
     public ImbeAudioModule(UserPreferences userPreferences, AliasList aliasList)
     {
-        super(userPreferences, aliasList);
+        super(userPreferences, aliasList, DEFAULT_TIMESLOT);
 
         if(!sLibraryStatusLogged)
         {

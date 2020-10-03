@@ -143,6 +143,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     @Override
     public void dispose()
     {
+        super.dispose();
         stop();
     }
 

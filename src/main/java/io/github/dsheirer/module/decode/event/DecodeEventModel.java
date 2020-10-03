@@ -59,7 +59,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
 
     public DecodeEventModel()
     {
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
     }
 
     /**
@@ -89,7 +89,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
 
     public void dispose()
     {
-        MyEventBus.getEventBus().unregister(this);
+        MyEventBus.getGlobalEventBus().unregister(this);
         Iterator<IDecodeEvent> it = mEvents.iterator();
 
         while(it.hasNext())

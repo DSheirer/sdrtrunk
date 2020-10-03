@@ -93,12 +93,6 @@ public class AliasActionManager extends Module implements IMessageListener, List
         //No actions neeeded
     }
 
-    @Override
-    public void dispose()
-    {
-        //No actions neeeded
-    }
-
     /**
      * IMessageListener interface ... delegates to this class implementation of Listener<Message>
      */

@@ -33,9 +33,9 @@ public abstract class AmbeAudioModule extends JmbeAudioModule
     private static final String AMBE_CODEC = "AMBE 3600 x 2450";
     private static boolean sLibraryStatusLogged = false;
 
-    public AmbeAudioModule(UserPreferences userPreferences, AliasList aliasList)
+    public AmbeAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
-        super(userPreferences, aliasList);
+        super(userPreferences, aliasList, timeslot);
 
         if(!sLibraryStatusLogged)
         {

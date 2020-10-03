@@ -20,10 +20,11 @@
 
 package io.github.dsheirer.module.decode.ip.cellocator;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +42,7 @@ public abstract class MCGPPacket extends Packet
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public MCGPPacket(MCGPHeader header, BinaryMessage message, int offset)
+    public MCGPPacket(MCGPHeader header, CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
         mHeader = header;
