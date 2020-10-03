@@ -1,1 +1,3 @@
 rootProject.name = 'sdr-trunk'
+include ':SDRplayJava'
+project(':SDRplayJava').projectDir = new File('C:/Users/Sam/Documents/NetBeansProjects/SDRPlayAPIJava')
