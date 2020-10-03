@@ -208,18 +208,18 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             @Override
             public void actionPerformed(ActionEvent arg0)
             {
-                try
-                {
-                    mController.setAmplifierEnabled(mAmplifier.isSelected());
-                    save();
-                }
-                catch(UsbException e)
-                {
-                    mLog.error("couldn't enable/disable amplifier", e);
-
-                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "Couldn't change amplifier setting",
-                        "Error changing amplifier setting", JOptionPane.ERROR_MESSAGE);
-                }
+//                try
+//                {
+//                    mController.setAmplifierEnabled(mAmplifier.isSelected());
+//                    save();
+//                }
+//                catch(UsbException e)
+//                {
+//                    mLog.error("couldn't enable/disable amplifier", e);
+//
+//                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "Couldn't change amplifier setting",
+//                        "Error changing amplifier setting", JOptionPane.ERROR_MESSAGE);
+//                }
             }
         });
         add(mAmplifier);
@@ -404,16 +404,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             sb.append("<b>Part: Unknown</b><br>");
         }
 
-        String firmware = null;
-
-        try
-        {
-            firmware = mController.getFirmwareVersion();
-        }
-        catch(Exception e)
-        {
-            mLog.error("couldn't read HackRF firmware version", e);
-        }
+        String firmware = "";
 
         if(firmware != null)
         {

@@ -21,13 +21,11 @@
  */
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.source.tuner.hackrf.*;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.BoardID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +33,9 @@ public class SDRplayTuner extends Tuner
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRplayTuner.class);
 
-    public SDRplayTuner(HackRFTunerController controller, UserPreferences userPreferences) throws SourceException
+    public SDRplayTuner(SDRplayTunerController controller, UserPreferences userPreferences) throws SourceException
     {
-        super("HackRF", controller, userPreferences);
+        super("SDRplay", controller, userPreferences);
     }
 
     public SDRplayTunerController getController()
@@ -48,40 +46,32 @@ public class SDRplayTuner extends Tuner
     @Override
     public TunerClass getTunerClass()
     {
-        return TunerClass.HACKRF_ONE;
+        return TunerClass.SDRPLAY_RSP1;
     }
 
     @Override
     public TunerType getTunerType()
     {
-        return TunerType.HACKRF;
+        return TunerType.SDRPLAY;
     }
 
     @Override
     public double getSampleSize()
     {
-        return 11.0;
+        // TODO
+        return 12.0;
     }
 
     @Override
     public String getUniqueID()
     {
-        try
-        {
-            return getController().getSerial().getSerialNumber();
-        }
-        catch(Exception e)
-        {
-            mLog.error("error gettting serial number", e);
-        }
-
-        return BoardID.HACKRF_ONE.getLabel();
+        return getController().getSerial();
     }
 
     @Override
     public int getMaximumUSBBitsPerSecond()
     {
-        //16 bits per sample * 20 MSPS
-        return 320000000;
+        //12 bits per sample * 8.064 MSPS
+        return 96768000;  // This is sort of a rough guess;
     }
 }
