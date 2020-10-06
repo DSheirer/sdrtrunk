@@ -21,19 +21,26 @@
  */
 package io.github.dsheirer.source.tuner.sdrplay;
 
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
-import io.github.dsheirer.source.tuner.usb.converter.SignedByteSampleConverter;
+import io.github.sammy1am.sdrplay.ApiException;
+import io.github.sammy1am.sdrplay.ApiException.AlreadyInitialisedException;
 import io.github.sammy1am.sdrplay.ApiException.NotInitialisedException;
 import io.github.sammy1am.sdrplay.SDRplayDevice;
+import io.github.sammy1am.sdrplay.StreamsReceiver;
+import io.github.sammy1am.sdrplay.jnr.CallbackFnsT;
+import io.github.sammy1am.sdrplay.jnr.SDRplayAPIJNR;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
+import java.nio.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.usb.UsbException;
 
-public class SDRplayTunerController extends TunerController
+public class SDRplayTunerController extends TunerController implements StreamsReceiver
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRplayTunerController.class);
 
@@ -44,25 +51,36 @@ public class SDRplayTunerController extends TunerController
 
     private final SDRplayDevice mDevice;
 
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SDRplayTunerController");
+    
     public SDRplayTunerController(SDRplayDevice device) throws SourceException
     {
         super(MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
         mDevice = device;
+        mDevice.setStreamsReceiver(this);
+        //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Verbose);
         
         mFrequencyController.setFrequency((long) mDevice.getRfHz()); // Set our current frequency to the device's default
+        mFrequencyController.setSampleRate((int) mDevice.getSampleRate()); // Set our current sample rate to the device's default
     }
 
     @Override
     public int getBufferSampleCount()
     {
+        //return 1008;
         return 262144 / 2; // TODO: *shrug*
     }
 
     @Override
     public void dispose()
     {
+        try {
         mDevice.uninit();
         mDevice.release();
+        } catch (ApiException ae) {
+            // Report, but don't throw-- we're disposing anyway
+            mLog.warn("Exception while disposing", ae);
+        }
     }
 
     /**
@@ -158,4 +176,67 @@ public class SDRplayTunerController extends TunerController
         
         //TODO: HackRF set some sort of baseband filter based on the sample rate-- maybe try that?
     }
+    
+    /**
+     * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
+     */
+    @Override
+    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    {
+        if(!hasBufferListeners())
+        {
+            try {
+                mDevice.init();
+                setFrequency(getFrequency());
+            } catch (AlreadyInitialisedException aie) {
+                mLog.info("Attempted to initialized already initialized SDRplay device");
+            } catch (SourceException se) {
+                mLog.warn("Error setting frequency", se);
+            }
+        }
+        
+        super.addBufferListener(listener);
+    }
+    
+    /**
+     * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
+     */
+    @Override
+    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    {
+        super.removeBufferListener(listener);
+
+        if(!hasBufferListeners())
+        {
+            try {
+                mDevice.uninit();
+            } catch (ApiException ae) {
+                // Report this, but no need to throw (we're trying to uninitialize anyway)
+                mLog.warn("Exception will uninitializing", ae);
+            }
+        }
+    }
+
+    @Override
+    public void receiveStreamA(short[] xi, short[] xq, CallbackFnsT.StreamCbParamsT params, int numSamples, int reset) {
+        ReusableComplexBuffer buffer = mReusableComplexBufferQueue.getBuffer(numSamples*2);
+
+            float[] primitiveFloatBuffer = new float[numSamples*2]; // TODO Not the most efficient, ideall we'd have a ReusableBuffer with separate I/Q buffers
+
+            for (int s=0;s<numSamples;s++) {
+                primitiveFloatBuffer[s*2] = (float)xi[s]/4095; // Divide to bring value between -1 and 1
+                primitiveFloatBuffer[(s*2)+1] = (float)xq[s]/4095;
+            }
+
+            buffer.reloadFrom(FloatBuffer.wrap(primitiveFloatBuffer), System.currentTimeMillis());
+
+            mReusableBufferBroadcaster.broadcast(buffer);
+    }
+
+    @Override
+    public void receiveEvent(CallbackFnsT.EventT eventId, TunerParamsT.TunerSelectT tuner, CallbackFnsT.EventParamsT params) {
+        System.out.println("Event: " + eventId);
+    }
+    
+    
 }
