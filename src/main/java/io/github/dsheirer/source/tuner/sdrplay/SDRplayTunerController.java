@@ -25,14 +25,17 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.FrequencyErrorCorrectionManager;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.sammy1am.sdrplay.ApiException;
 import io.github.sammy1am.sdrplay.ApiException.AlreadyInitialisedException;
 import io.github.sammy1am.sdrplay.ApiException.NotInitialisedException;
+import io.github.sammy1am.sdrplay.EventParameters;
 import io.github.sammy1am.sdrplay.SDRplayDevice;
 import io.github.sammy1am.sdrplay.StreamsReceiver;
 import io.github.sammy1am.sdrplay.jnr.CallbackFnsT;
+import io.github.sammy1am.sdrplay.jnr.CallbackFnsT.EventT;
 import io.github.sammy1am.sdrplay.jnr.SDRplayAPIJNR;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
@@ -55,6 +58,8 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
 
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SDRplayTunerController");
     
+    public FrequencyErrorCorrectionManager mFrequencyErrorCorrectionManager;
+    
     public SDRplayTunerController(SDRplayDevice device) throws SourceException
     {
         super(MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
@@ -66,8 +71,32 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         mFrequencyController.setFrequency((long) mDevice.getRfHz());
         mFrequencyController.setSampleRate((int) mDevice.getSampleRate());
         mFrequencyController.setFrequencyCorrection(mDevice.getPPM());
+        
+        mFrequencyErrorCorrectionManager = new FrequencyErrorCorrectionManager(this);
     }
 
+    /**
+     * Manager for applying automatic frequency error PPM adjustments to the tuner controller based on
+     * frequency error measurements received from certain downstream decoders (e.g. P25).
+     * @return manager
+     */
+    public FrequencyErrorCorrectionManager getFrequencyErrorCorrectionManager()
+    {
+        return mFrequencyErrorCorrectionManager;
+    }
+    
+    /**
+     * Overrides updates for measured frequency error so that the updates can also be applied to the
+     * frequency error correction manager for automatic PPM updating.
+     * @param measuredFrequencyError in hertz averaged over a 5 second interval.
+     */
+    @Override
+    public void setMeasuredFrequencyError(int measuredFrequencyError)
+    {
+        super.setMeasuredFrequencyError(measuredFrequencyError);
+        getFrequencyErrorCorrectionManager().updatePPM(getPPMFrequencyError());
+    }
+    
     @Override
     public int getBufferSampleCount()
     {
@@ -132,41 +161,11 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
             SDRplayTunerConfiguration sdrPlayConfig = (SDRplayTunerConfiguration)config;
             
             setSampleRate(sdrPlayConfig.getSampleRate());
+            setFrequencyCorrection(sdrPlayConfig.getFrequencyCorrection());
+            getFrequencyErrorCorrectionManager().setEnabled(sdrPlayConfig.getAutoPPMCorrectionEnabled());
             
-            //TODO
-            //setSampleRate(sdrPlayConfig.getSampleRate());
-            //sdrPlayConfig.getFrequency();
-//
-//            //Convert legacy sample rate setting to new sample rates
-//            if(!sdrPlayConfig.getSampleRate().isValidSampleRate())
-//            {
-//                mLog.warn("Changing legacy HackRF Sample Rates Setting [" + sdrPlayConfig.getSampleRate().name() + "] to current valid setting");
-//                //TODO sdrPlayConfig.setSampleRate(HackRFSampleRate.RATE_5_0);
-//            }
-//
-//            try
-//            {
-//                //setSampleRate(sdrPlayConfig.getSampleRate());
-//                setFrequencyCorrection(sdrPlayConfig.getFrequencyCorrection());
-//                setAmplifierEnabled(sdrPlayConfig.getAmplifierEnabled());
-//                //setLNAGain(sdrPlayConfig.getLNAGain());
-//                //setVGAGain(sdrPlayConfig.getVGAGain());
-//                setFrequency(getFrequency());
-//            }
-//            catch(UsbException e)
-//            {
-//                throw new SourceException("Error while applying tuner "
-//                    + "configuration", e);
-//            }
-//
-//            try
-//            {
-//                setFrequency(sdrPlayConfig.getFrequency());
-//            }
-//            catch(SourceException se)
-//            {
-//                //Do nothing, we couldn't set the frequency
-//            }
+            mDevice.setIfType(sdrPlayConfig.getIfType());
+            mDevice.setBwType(sdrPlayConfig.getBwType());
         }
         else
         {
@@ -247,17 +246,23 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
             float[] primitiveFloatBuffer = new float[numSamples*2]; // TODO Not the most efficient, ideall we'd have a ReusableBuffer with separate I/Q buffers
 
             for (int s=0;s<numSamples;s++) {
-                primitiveFloatBuffer[s*2] = (float)xi[s]/4095; // Divide to bring value between -1 and 1
-                primitiveFloatBuffer[(s*2)+1] = (float)xq[s]/4095;
+                primitiveFloatBuffer[s*2] = (float)xi[s]/2047; // Divide 2^11 to bring value between -1 and 1
+                primitiveFloatBuffer[(s*2)+1] = (float)xq[s]/2047;
             }
-
+            
             buffer.reloadFrom(FloatBuffer.wrap(primitiveFloatBuffer), System.currentTimeMillis());
-
-            mReusableBufferBroadcaster.broadcast(buffer);
+            
+            broadcast(buffer);
     }
 
     @Override
-    public void receiveEvent(CallbackFnsT.EventT eventId, TunerParamsT.TunerSelectT tuner, CallbackFnsT.EventParamsT params) {
-        System.out.println("Event: " + eventId);
+    public void receiveEvent(EventT eventId, TunerParamsT.TunerSelectT tuner, EventParameters params) {
+        // Some weirdness here to avoid requiring importing JNR library
+        if (((Enum)eventId).equals(EventT.PowerOverloadChange)) {
+            System.out.println("Power Overload:" + ((Enum)params.powerOverloadParams.powerOverloadChangeType).toString());
+            mDevice.acknowledgeOverload();
+        } else {
+            System.out.println("Event: " + eventId);
+        }
     }
 }

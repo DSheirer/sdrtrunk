@@ -31,6 +31,7 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
 {
     private int mSampleRate = 2000000;
     private double mFrequencyCorrection = 0.0d;
+    private boolean mAutoPPMCorrection = true;
     
     private If_kHzT mIfType = If_kHzT.IF_Zero;
     private Bw_MHzT mBwType = Bw_MHzT.BW_0_200;
@@ -134,5 +135,24 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     public void setBwType(Bw_MHzT bwType)
     {
         mBwType = bwType;
+    }
+    
+        /**
+     * Indicates if automatic correction of PPM from measured frequency error is enabled/disabled.
+     * @return true if auto-correction is enabled.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "auto_ppm_correction_enabled")
+    public boolean getAutoPPMCorrectionEnabled()
+    {
+        return mAutoPPMCorrection;
+    }
+
+    /**
+     * Sets the enabled state for auto-correction of PPM from measured frequency error values.
+     * @param enabled
+     */
+    public void setAutoPPMCorrectionEnabled(boolean enabled)
+    {
+        mAutoPPMCorrection = enabled;
     }
 }

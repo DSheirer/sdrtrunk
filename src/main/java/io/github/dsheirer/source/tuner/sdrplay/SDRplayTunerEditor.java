@@ -48,6 +48,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
+import javax.swing.JCheckBox;
 
 public class SDRplayTunerEditor extends TunerConfigurationEditor
 {
@@ -59,6 +60,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     private JButton mTunerInfo;
     private JComboBox<Integer> mComboSampleRate;
     private JSpinner mFrequencyCorrection;
+    private JCheckBox mAutoPPMEnabled;
     
     private JComboBox<If_kHzT> mComboIfMode;
     private JComboBox<Bw_MHzT> mComboBandwidth;
@@ -92,7 +94,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",
-            "[][][][][][][][][grow]"));
+            "[][][][][][][][][][grow]"));
 
         add(new JLabel("SDRplay Tuner Configuration"), "span,align center");
 
@@ -195,6 +197,20 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         add(new JLabel("PPM:"));
         add(mFrequencyCorrection);
 
+        add(new JLabel(""), "span 3"); //filler
+        mAutoPPMEnabled = new JCheckBox("PPM Auto-Correction");
+        mAutoPPMEnabled.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                boolean enabled = mAutoPPMEnabled.isSelected();
+                mController.getFrequencyErrorCorrectionManager().setEnabled(enabled);
+                save();
+            }
+        });
+        add(mAutoPPMEnabled);
+        
         add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
         
 
@@ -443,6 +459,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 mConfigurationName.setText(config.getName());
                 mComboSampleRate.setSelectedItem(config.getSampleRate());
                 mFrequencyCorrection.setValue(config.getFrequencyCorrection());
+                mAutoPPMEnabled.setSelected(config.getAutoPPMCorrectionEnabled());
                 
                 mComboIfMode.setSelectedItem(config.getIfType());
                 mComboBandwidth.setSelectedItem(config.getBwType());
@@ -478,10 +495,11 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
 
             config.setName(mConfigurationName.getText());
 
+            config.setSampleRate((Integer)mComboSampleRate.getSelectedItem());
             double value = ((SpinnerNumberModel)mFrequencyCorrection
                 .getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
-            config.setSampleRate((Integer)mComboSampleRate.getSelectedItem());
+            config.setAutoPPMCorrectionEnabled(mAutoPPMEnabled.isSelected());
             
             config.setIfType((If_kHzT)mComboIfMode.getSelectedItem());
             config.setBwType((Bw_MHzT)mComboBandwidth.getSelectedItem());
