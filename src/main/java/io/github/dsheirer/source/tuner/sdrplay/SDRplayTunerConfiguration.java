@@ -22,16 +22,23 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
 
 public class SDRplayTunerConfiguration extends TunerConfiguration
 {
-    private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE_5_0;
+    private int mSampleRate = 2000000;
+    private double mFrequencyCorrection = 0.0d;
+    
+    private If_kHzT mIfType = If_kHzT.IF_Zero;
+    private Bw_MHzT mBwType = Bw_MHzT.BW_0_200;
+    
     private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_16;  // We can see some signal at this gain
     private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_16;  // We can see some signal at this gain
     private boolean mAmplifierEnabled = false;  //Probably should start off disabled
-    private double mFrequencyCorrection = 0.0d;
+    
 
     /**
      * Default constructor for JAXB
@@ -44,12 +51,12 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     {
         super(uniqueID, name);
     }
-
+    
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public TunerType getTunerType()
     {
-        return TunerType.HACKRF;
+        return TunerType.SDRPLAY;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "amplifier_enabled")
@@ -97,13 +104,35 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "sample_rate")
-    public HackRFSampleRate getSampleRate()
+    public int getSampleRate()
     {
         return mSampleRate;
     }
 
-    public void setSampleRate(HackRFSampleRate sampleRate)
+    public void setSampleRate(int sampleRate)
     {
         mSampleRate = sampleRate;
+    }
+    
+    @JacksonXmlProperty(isAttribute = true, localName = "if_type")
+    public If_kHzT getIfType()
+    {
+        return mIfType;
+    }
+
+    public void setIfType(If_kHzT ifType)
+    {
+        mIfType = ifType;
+    }
+    
+    @JacksonXmlProperty(isAttribute = true, localName = "bw_type")
+    public Bw_MHzT getBwType()
+    {
+        return mBwType;
+    }
+
+    public void setBwType(Bw_MHzT bwType)
+    {
+        mBwType = bwType;
     }
 }

@@ -35,6 +35,8 @@ import io.github.sammy1am.sdrplay.StreamsReceiver;
 import io.github.sammy1am.sdrplay.jnr.CallbackFnsT;
 import io.github.sammy1am.sdrplay.jnr.SDRplayAPIJNR;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
 import java.nio.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +48,7 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
 
     public static final long MIN_FREQUENCY = 10000000l;
     public static final long MAX_FREQUENCY = 6000000000l;
-    public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
+    public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
     private final SDRplayDevice mDevice;
@@ -60,8 +62,10 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         mDevice.setStreamsReceiver(this);
         //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Verbose);
         
-        mFrequencyController.setFrequency((long) mDevice.getRfHz()); // Set our current frequency to the device's default
-        mFrequencyController.setSampleRate((int) mDevice.getSampleRate()); // Set our current sample rate to the device's default
+        // Set controller to match device defaults
+        mFrequencyController.setFrequency((long) mDevice.getRfHz());
+        mFrequencyController.setSampleRate((int) mDevice.getSampleRate());
+        mFrequencyController.setFrequencyCorrection(mDevice.getPPM());
     }
 
     @Override
@@ -75,8 +79,8 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     public void dispose()
     {
         try {
-        mDevice.uninit();
-        mDevice.release();
+            mDevice.uninit();
+            mDevice.release();
         } catch (ApiException ae) {
             // Report, but don't throw-- we're disposing anyway
             mLog.warn("Exception while disposing", ae);
@@ -89,6 +93,14 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     public String getSerial()
     {
         return mDevice.getSerialNumber();
+    }
+    
+    /**
+     * SDRplay serial number
+     */
+    public String getModel()
+    {
+        return mDevice.getHWModel().name();
     }
 
     /**
@@ -103,11 +115,7 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        try {
-            mDevice.setRfHz((double)frequency);
-        } catch (NotInitialisedException nie) {
-            mLog.warn("Couldn't set frequency", nie);
-        }
+        mDevice.setRfHz((double)frequency);
     }
 
     @Override
@@ -122,6 +130,8 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         if(config instanceof SDRplayTunerConfiguration)
         {
             SDRplayTunerConfiguration sdrPlayConfig = (SDRplayTunerConfiguration)config;
+            
+            setSampleRate(sdrPlayConfig.getSampleRate());
             
             //TODO
             //setSampleRate(sdrPlayConfig.getSampleRate());
@@ -187,11 +197,8 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         {
             try {
                 mDevice.init();
-                setFrequency(getFrequency());
             } catch (AlreadyInitialisedException aie) {
                 mLog.info("Attempted to initialized already initialized SDRplay device");
-            } catch (SourceException se) {
-                mLog.warn("Error setting frequency", se);
             }
         }
         
@@ -216,6 +223,22 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
             }
         }
     }
+    
+    public void setIfType(If_kHzT ifType) {
+        mDevice.setIfType(ifType);    
+    }
+    
+    public If_kHzT getIfType() {
+        return mDevice.getIfType();
+    }
+    
+    public void setIFBandwidth(Bw_MHzT bwMode) {
+        mDevice.setBwType(bwMode);
+    }
+    
+    public Bw_MHzT getIFBandwidth() {
+        return mDevice.getBwType();
+    }
 
     @Override
     public void receiveStreamA(short[] xi, short[] xq, CallbackFnsT.StreamCbParamsT params, int numSamples, int reset) {
@@ -237,6 +260,4 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     public void receiveEvent(CallbackFnsT.EventT eventId, TunerParamsT.TunerSelectT tuner, CallbackFnsT.EventParamsT params) {
         System.out.println("Event: " + eventId);
     }
-    
-    
 }

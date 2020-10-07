@@ -15,15 +15,17 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.sdrplay;
 
-import io.github.dsheirer.source.tuner.hackrf.*;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEvent;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
+import io.github.sammy1am.sdrplay.ApiException;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,13 +43,11 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.usb.UsbException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
-import java.util.Collections;
 
 public class SDRplayTunerEditor extends TunerConfigurationEditor
 {
@@ -57,14 +57,18 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
 
     private JTextField mConfigurationName;
     private JButton mTunerInfo;
-    private JComboBox<HackRFSampleRate> mComboSampleRate;
+    private JComboBox<Integer> mComboSampleRate;
     private JSpinner mFrequencyCorrection;
+    
+    private JComboBox<If_kHzT> mComboIfMode;
+    private JComboBox<Bw_MHzT> mComboBandwidth;
+    
     private JToggleButton mAmplifier;
     private JComboBox<HackRFLNAGain> mComboLNAGain;
     private JComboBox<HackRFVGAGain> mComboVGAGain;
     private boolean mLoading;
 
-    private SDRplayTunerController mController;
+    private final SDRplayTunerController mController;
 
     public SDRplayTunerEditor(TunerConfigurationModel tunerConfigurationModel, SDRplayTuner tuner)
     {
@@ -75,11 +79,11 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         init();
     }
 
-    private HackRFTunerConfiguration getConfiguration()
+    private SDRplayTunerConfiguration getConfiguration()
     {
         if(hasItem())
         {
-            return (HackRFTunerConfiguration)getItem();
+            return (SDRplayTunerConfiguration)getItem();
         }
 
         return null;
@@ -88,9 +92,9 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",
-            "[][][][][][][grow]"));
+            "[][][][][][][][][grow]"));
 
-        add(new JLabel("HackRF Tuner Configuration"), "span,align center");
+        add(new JLabel("SDRplay Tuner Configuration"), "span,align center");
 
         mConfigurationName = new JTextField();
         mConfigurationName.setEnabled(false);
@@ -125,8 +129,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         add(mTunerInfo);
 
 
-        HackRFSampleRate[] validRates = HackRFSampleRate.VALID_SAMPLE_RATES
-            .toArray(new HackRFSampleRate[0]);
+        Integer[] validRates = {2000000,3000000,4000000,5000000,6000000,7000000,8000000,9000000,10000000};
         mComboSampleRate = new JComboBox<>(validRates);
         mComboSampleRate.setEnabled(false);
         mComboSampleRate.addActionListener(new ActionListener()
@@ -134,23 +137,18 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                HackRFSampleRate sampleRate = (HackRFSampleRate)mComboSampleRate.getSelectedItem();
+                int sampleRate = (Integer)mComboSampleRate.getSelectedItem();
 
-//                try
-//                {
-//
-//                    mController.setSampleRate(sampleRate);
-//                    save();
-//                }
-//                catch(SourceException | UsbException e2)
-//                {
-//                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "HackRF Tuner Controller"
-//                        + " - couldn't apply the sample rate setting [" + sampleRate.getLabel() +
-//                        "] " + e2.getLocalizedMessage());
-//
-//                    mLog.error("HackRF Tuner Controller - couldn't apply sample rate setting [" +
-//                        sampleRate.getLabel() + "]", e);
-//                }
+                try
+                {
+                    mController.setSampleRate(sampleRate);
+                    save();
+                }
+                catch(SourceException e2)
+                {
+                    mLog.error("SDRplay Tuner Controller - couldn't apply sample rate setting [" +
+                        sampleRate + "]", e);
+                }
             }
         });
         add(new JLabel("Sample Rate:"));
@@ -197,6 +195,49 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         add(new JLabel("PPM:"));
         add(mFrequencyCorrection);
 
+        add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
+        
+
+        If_kHzT[] ifModes = {If_kHzT.IF_Zero, If_kHzT.IF_0_450, If_kHzT.IF_1_620, If_kHzT.IF_2_048};
+        mComboIfMode = new JComboBox<>(ifModes);
+        mComboIfMode.setEnabled(false);
+        mComboIfMode.addActionListener((ActionEvent e) -> {
+            If_kHzT ifMode = (If_kHzT)mComboIfMode.getSelectedItem();
+            
+            try
+            {
+                mController.setIfType(ifMode);
+                save();
+            }
+            catch(ApiException ex)
+            {
+                mLog.error("SDRplay Tuner Controller - couldn't apply IF mode setting [" +
+                        ifMode + "]", ex);
+            }
+        });
+        add(new JLabel("IF Mode:"));
+        add(mComboIfMode);
+        
+        Bw_MHzT[] bwModes = {Bw_MHzT.BW_0_200,Bw_MHzT.BW_0_300,Bw_MHzT.BW_0_600,Bw_MHzT.BW_1_536,Bw_MHzT.BW_5_000,Bw_MHzT.BW_6_000,Bw_MHzT.BW_7_000,Bw_MHzT.BW_8_000};
+        mComboBandwidth = new JComboBox<>(bwModes);
+        mComboBandwidth.setEnabled(false);
+        mComboBandwidth.addActionListener((ActionEvent e) -> {
+            Bw_MHzT bwMode = (Bw_MHzT)mComboBandwidth.getSelectedItem();
+            
+            try
+            {
+                mController.setIFBandwidth(bwMode);
+                save();
+            }
+            catch(ApiException ex)
+            {
+                mLog.error("SDRplay Tuner Controller - couldn't apply IF bandwidth setting [" +
+                        bwMode + "]", ex);
+            }
+        });
+        add(new JLabel("IF Bandwidth:"));
+        add(mComboBandwidth);
+        
         add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
         add(new JLabel("Gain"));
         add(new JLabel(""), "span 2"); //filler
@@ -339,6 +380,16 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         {
             mComboSampleRate.setEnabled(enabled);
         }
+        
+        if(mComboIfMode.isEnabled() != enabled)
+        {
+            mComboIfMode.setEnabled(enabled);
+        }
+        
+        if(mComboBandwidth.isEnabled() != enabled)
+        {
+            mComboBandwidth.setEnabled(enabled);
+        }
 
         if(mAmplifier.isEnabled() != enabled)
         {
@@ -358,64 +409,17 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
 
     private String getTunerInfo()
     {
-        HackRFTunerController.BoardID board = HackRFTunerController.BoardID.INVALID;
-
-//        try
-//        {
-//            board = mController.getBoardID();
-//        }
-//        catch(UsbException e)
-//        {
-//            mLog.error("couldn't read HackRF board identifier", e);
-//        }
-
         StringBuilder sb = new StringBuilder();
 
-        sb.append("<html><h3>HackRF Tuner</h3>");
+        sb.append("<html><h3>SDRplay Tuner</h3>");
 
-        sb.append("<b>Board: </b>");
-        sb.append(board.getLabel());
+        sb.append("<b>Model: </b>");
+        sb.append(mController.getModel());
         sb.append("<br>");
 
-        HackRFTunerController.Serial serial = null;
-
-//        try
-//        {
-//            serial = mController.getSerial();
-//        }
-//        catch(Exception e)
-//        {
-//            mLog.error("couldn't read HackRF serial number", e);
-//        }
-
-        if(serial != null)
-        {
-            sb.append("<b>Serial: </b>");
-            sb.append(serial.getSerialNumber());
-            sb.append("<br>");
-
-            sb.append("<b>Part: </b>");
-            sb.append(serial.getPartID());
-            sb.append("<br>");
-        }
-        else
-        {
-            sb.append("<b>Serial: Unknown</b><br>");
-            sb.append("<b>Part: Unknown</b><br>");
-        }
-
-        String firmware = "";
-
-        if(firmware != null)
-        {
-            sb.append("<b>Firmware: </b>");
-            sb.append(firmware);
-            sb.append("<br>");
-        }
-        else
-        {
-            sb.append("<b>Firmware: Unknown</b><br>");
-        }
+        sb.append("<b>Serial: </b>");
+        sb.append(mController.getSerial());
+        sb.append("<br>");
 
         return sb.toString();
     }
@@ -430,7 +434,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
 
         if(hasItem())
         {
-            HackRFTunerConfiguration config = getConfiguration();
+            SDRplayTunerConfiguration config = getConfiguration();
 
             if(tunerConfiguration.isAssigned())
             {
@@ -439,6 +443,10 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 mConfigurationName.setText(config.getName());
                 mComboSampleRate.setSelectedItem(config.getSampleRate());
                 mFrequencyCorrection.setValue(config.getFrequencyCorrection());
+                
+                mComboIfMode.setSelectedItem(config.getIfType());
+                mComboBandwidth.setSelectedItem(config.getBwType());
+                
                 mAmplifier.setSelected(config.getAmplifierEnabled());
                 mComboLNAGain.setSelectedItem(config.getLNAGain());
                 mComboVGAGain.setSelectedItem(config.getVGAGain());
@@ -466,14 +474,18 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     {
         if(hasItem() && !mLoading)
         {
-            HackRFTunerConfiguration config = getConfiguration();
+            SDRplayTunerConfiguration config = getConfiguration();
 
             config.setName(mConfigurationName.getText());
 
             double value = ((SpinnerNumberModel)mFrequencyCorrection
                 .getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
-            config.setSampleRate((HackRFSampleRate)mComboSampleRate.getSelectedItem());
+            config.setSampleRate((Integer)mComboSampleRate.getSelectedItem());
+            
+            config.setIfType((If_kHzT)mComboIfMode.getSelectedItem());
+            config.setBwType((Bw_MHzT)mComboBandwidth.getSelectedItem());
+            
             config.setAmplifierEnabled(mAmplifier.isSelected());
             config.setLNAGain((HackRFLNAGain)mComboLNAGain.getSelectedItem());
             config.setVGAGain((HackRFVGAGain)mComboVGAGain.getSelectedItem());
