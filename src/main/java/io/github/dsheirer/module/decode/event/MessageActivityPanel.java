@@ -85,7 +85,7 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
     {
         if(mCurrentMessageHistory != null)
         {
-            mCurrentMessageHistory.addListener(null);
+            mCurrentMessageHistory.removeListener(mMessageModel);
         }
 
         if(processingChain != null)
