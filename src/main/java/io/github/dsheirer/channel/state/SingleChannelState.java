@@ -114,8 +114,6 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         configureChannelType(channel);
     }
 
-
-
     /**
      * Configure items according to channel type
      * @param channel configuration

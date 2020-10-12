@@ -3,9 +3,9 @@ package io.github.dsheirer.edac;
 import io.github.dsheirer.bits.BinaryMessage;
 
 /**
- * DMR Hamming(16,11,5) Error detection and correction utility.
+ * Hamming(16,11,5) Error detection and correction utility.
  */
-public class DMRHamming16
+public class Hamming16
 {
     private static int[] CHECKSUMS = new int[]{0x13, 0x1A, 0x1F, 0x1C, 0x0E, 0x15, 0x0B, 0x16, 0x19, 0x0D, 0x07};
 
