@@ -178,7 +178,7 @@ public class AliasViewByIdentifierEditor extends VBox
 
                 if(selected != null)
                 {
-                    MyEventBus.getEventBus().post(new ViewAliasRequest(selected.getAlias()));
+                    MyEventBus.getGlobalEventBus().post(new ViewAliasRequest(selected.getAlias()));
                 }
             });
         }

@@ -21,12 +21,13 @@
  */
 package io.github.dsheirer.channel.state;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.state.DecoderStateEvent.Event;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.controller.channel.Channel.ChannelType;
+import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
@@ -39,7 +40,6 @@ import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentif
 import io.github.dsheirer.identifier.configuration.SiteConfigurationIdentifier;
 import io.github.dsheirer.identifier.configuration.SystemConfigurationIdentifier;
 import io.github.dsheirer.identifier.decoder.ChannelStateIdentifier;
-import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -50,11 +50,28 @@ import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+/**
+ * Multi-Channel state tracks the overall state of all processing modules and decoders configured for the channel
+ * and provides squelch control and decoder state reset events.
+ *
+ * Uses a state enumeration that defines allowable channel state transitions in order to track a call or data decode
+ * event from start to finish.  Uses a timer to monitor for inactivity and to provide a FADE period that indicates
+ * to the user that the activity has stopped while continuing to provide details about the call, before the state is
+ * reset to IDLE.
+ *
+ * State Descriptions:
+ * IDLE:  Normal state. No voice or data call activity
+ * CALL/DATA/ENCRYPTED/CONTROL:  Decoding states.
+ * FADE:  The phase after a voice or data call when either an explicit call end has been received, or when no new
+ * signalling updates have been received, and the fade timer has expired.  This phase allows for gui updates to
+ * signal to the user that the call is ended, while continuing to display the call details for the user
+ * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
+ */
 public class MultiChannelState extends AbstractChannelState implements IDecoderStateEventListener, ISourceEventListener,
     IdentifierUpdateListener, IStateMachineListener
 {
@@ -70,33 +87,23 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private Map<Integer,MutableIdentifierCollection> mIdentifierCollectionMap = new TreeMap<>();
     private Map<Integer,StateMachine> mStateMachineMap = new TreeMap<>();
     private Map<Integer,StateMonitoringSquelchController> mSquelchControllerMap = new TreeMap<>();
-    private int mTimeslotCount;
+    private int[] mTimeslots;
+    private DecoderStateNotificationEventCache mStateNotificationCache = new DecoderStateNotificationEventCache();
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateListener = new IdentifierUpdateListenerProxy();
 
     /**
-     * Multi-Channel state tracks the overall state of all processing modules and decoders configured for the channel
-     * and provides squelch control and decoder state reset events.
-     *
-     * Uses a state enumeration that defines allowable channel state transitions in order to track a call or data decode
-     * event from start to finish.  Uses a timer to monitor for inactivity and to provide a FADE period that indicates
-     * to the user that the activity has stopped while continuing to provide details about the call, before the state is
-     * reset to IDLE.
-     *
-     * State Descriptions:
-     * IDLE:  Normal state. No voice or data call activity
-     * CALL/DATA/ENCRYPTED/CONTROL:  Decoding states.
-     * FADE:  The phase after a voice or data call when either an explicit call end has been received, or when no new
-     * signalling updates have been received, and the fade timer has expired.  This phase allows for gui updates to
-     * signal to the user that the call is ended, while continuing to display the call details for the user
-     * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
+     * Constructs an instance
+     * @param channel configuration
+     * @param aliasModel for channel metadata and identifiers
+     * @param timeslots array of timeslot numbers to use
      */
-    public MultiChannelState(Channel channel, AliasModel aliasModel, int timeslots)
+    public MultiChannelState(Channel channel, AliasModel aliasModel, int[] timeslots)
     {
         super(channel);
 
-        mTimeslotCount = timeslots;
+        mTimeslots = timeslots;
 
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: timeslots)
         {
             mChannelMetadataMap.put(timeslot, new ChannelMetadata(aliasModel, timeslot));
             MutableIdentifierCollection mutableIdentifierCollection = new MutableIdentifierCollection(timeslot);
@@ -113,36 +120,45 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             mSquelchControllerMap.put(timeslot, squelchController);
             stateMachine.addListener(squelchController);
 
-            stateMachine.setChannelType(mChannel.getChannelType());
             stateMachine.setIdentifierUpdateListener(mutableIdentifierCollection);
             stateMachine.setEndTimeoutBufferMilliseconds(RESET_TIMEOUT_DELAY);
-            if(channel.getChannelType() == ChannelType.STANDARD)
-            {
-                stateMachine.setFadeTimeoutBufferMilliseconds(FADE_TIMEOUT_DELAY);
-            }
-            else
-            {
-                stateMachine.setFadeTimeoutBufferMilliseconds(DecodeConfiguration.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS * 1000);
-            }
+            stateMachine.setFadeTimeoutBufferMilliseconds(FADE_TIMEOUT_DELAY);
         }
 
+        configureChannelType(channel);
+
         createConfigurationIdentifiers(channel);
+    }
+
+    /**
+     * Configure items according to channel type
+     * @param channel configuration
+     */
+    private void configureChannelType(Channel channel)
+    {
+        for(int timeslot: mTimeslots)
+        {
+            StateMachine stateMachine = mStateMachineMap.get(timeslot);
+            stateMachine.setChannelType(channel.getChannelType());
+        }
+    }
+
+    /**
+     * Receive notification that the underlying channel configuration has changed.
+     * @param notification
+     */
+    @Subscribe
+    public void channelConfigurationChanged(ChannelConfigurationChangeNotification notification)
+    {
+        updateChannelConfiguration(notification.getChannel());
+        configureChannelType(notification.getChannel());
+        createConfigurationIdentifiers(notification.getChannel());
     }
 
     @Override
     public void stateChanged(State state, int timeslot)
     {
-        //Broadcast current channel state so that channel rotation monitor can track
-        if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(state))
-        {
-            broadcast(DecoderStateEvent.activeState(timeslot));
-        }
-        else
-        {
-            broadcast(DecoderStateEvent.inactiveState(timeslot));
-        }
-
-        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.create(state);
+        ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.get(state);
         mIdentifierCollectionMap.get(timeslot).update(stateIdentifier);
         mChannelMetadataMap.get(timeslot).receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
 
@@ -153,7 +169,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                 mStateMachineMap.get(timeslot).setState(State.IDLE);
                 break;
             case TEARDOWN:
-                if(mChannel.isTrafficChannel())
+                if(getChannel().isTrafficChannel())
                 {
                     checkTeardown();
                 }
@@ -191,9 +207,9 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
 
         if(teardown && !active)
         {
-            if(mChannel.isTrafficChannel())
+            if(getChannel().isTrafficChannel())
             {
-                broadcast(new ChannelEvent(mChannel, ChannelEvent.Event.REQUEST_DISABLE));
+                broadcast(new ChannelEvent(getChannel(), ChannelEvent.Event.REQUEST_DISABLE));
             }
             else
             {
@@ -230,7 +246,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
      */
     private void createConfigurationIdentifiers(Channel channel)
     {
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: mTimeslots)
         {
             MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
 
@@ -334,9 +350,9 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     /**
      * Channel metadata for this channel.
      */
-    public Collection<ChannelMetadata> getChannelMetadata()
+    public List<ChannelMetadata> getChannelMetadata()
     {
-        return mChannelMetadataMap.values();
+        return new ArrayList<>(mChannelMetadataMap.values());
     }
 
     /**
@@ -345,7 +361,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void reset()
     {
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: mTimeslots)
         {
             reset(timeslot);
         }
@@ -356,7 +372,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     private void reset(int timeslot)
     {
         mStateMachineMap.get(timeslot).setState(State.RESET);
-        broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE, timeslot));
+        broadcast(new DecoderStateEvent(this, Event.REQUEST_RESET, State.IDLE, timeslot));
         MutableIdentifierCollection identifierCollection = mIdentifierCollectionMap.get(timeslot);
         identifierCollection.remove(IdentifierClass.USER);
     }
@@ -364,7 +380,7 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
     @Override
     public void start()
     {
-        for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+        for(int timeslot: mTimeslots)
         {
             mIdentifierCollectionMap.get(timeslot).broadcastIdentifiers();
             mStateMachineMap.get(timeslot).setState(State.RESET);
@@ -378,12 +394,6 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
         {
             squelchController.setSquelchLock(false);
         }
-    }
-
-    public void dispose()
-    {
-        mDecodeEventListener = null;
-        mDecoderStateListener = null;
     }
 
     @Override
@@ -480,9 +490,9 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                     //Rebroadcast source frequency change events for the decoder(s) to process
                     long frequency = sourceEvent.getValue().longValue();
 
-                    for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+                    for(int timeslot: mTimeslots)
                     {
-                        broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY,
+                        broadcast(new DecoderStateEvent(this, Event.NOTIFICATION_SOURCE_FREQUENCY,
                             mStateMachineMap.get(timeslot).getState(), frequency));
 
                         //Create a new frequency configuration identifier so that downstream consumers receive the change
@@ -497,12 +507,13 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
                     //Rebroadcast frequency error measurements to external listener if we're currently
                     //in an active (ie sync locked) state.
-                    for(int timeslot = 0; timeslot < mTimeslotCount; timeslot++)
+                    for(int timeslot: mTimeslots)
                     {
                         if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(mStateMachineMap.get(timeslot).getState()))
                         {
                             broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(),
-                                mChannel.getChannelType().name()));
+                                getChannel().getChannelType().name()));
+                            return;
                         }
                     }
                     break;
@@ -522,10 +533,10 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
             {
                 switch(event.getEvent())
                 {
-                    case ALWAYS_UNSQUELCH:
+                    case REQUEST_ALWAYS_UNSQUELCH:
                         mSquelchControllerMap.get(event.getTimeslot()).setSquelchLock(true);
                         break;
-                    case CHANGE_CALL_TIMEOUT:
+                    case REQUEST_CHANGE_CALL_TIMEOUT:
                         if(event instanceof ChangeChannelTimeoutEvent)
                         {
                             ChangeChannelTimeoutEvent timeout = (ChangeChannelTimeoutEvent)event;
@@ -538,19 +549,18 @@ public class MultiChannelState extends AbstractChannelState implements IDecoderS
                         if(State.MULTI_CHANNEL_ACTIVE_STATES.contains(event.getState()))
                         {
                             mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
+
+                            //Broadcast current channel/timeslot state so that channel rotation monitor can track
+                            broadcast(mStateNotificationCache.getStateNotificationEvent(event.getState(), event.getTimeslot()));
                         }
                         break;
                     case END:
-                        if(mChannel.isTrafficChannel())
-                        {
-                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
-                        }
-                        else
-                        {
-                            mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
-                        }
+                        mStateMachineMap.get(event.getTimeslot()).setState(event.getState());
+
+                        //Broadcast current channel/timeslot state so that channel rotation monitor can track
+                        broadcast(mStateNotificationCache.getStateNotificationEvent(event.getState(), event.getTimeslot()));
                         break;
-                    case RESET:
+                    case REQUEST_RESET:
                         /* Channel State does not respond to reset events */
                         break;
                     default:

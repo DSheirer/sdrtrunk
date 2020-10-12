@@ -38,6 +38,8 @@ import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -60,6 +62,8 @@ import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataPanel.class);
+
     private static final String TABLE_PREFERENCE_KEY = "channel.metadata.panel";
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
@@ -70,6 +74,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     private Map<State,Color> mBackgroundColors = new EnumMap<>(State.class);
     private Map<State,Color> mForegroundColors = new EnumMap<>(State.class);
     private JTableColumnWidthMonitor mTableColumnMonitor;
+    private Channel mUserSelectedChannel;
 
     /**
      * Table view for currently decoding channel metadata
@@ -91,6 +96,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
         mTable = new JTable(mChannelProcessingManager.getChannelMetadataModel());
+        mChannelProcessingManager.getChannelMetadataModel().setChannelAddListener(new ChannelAddListener());
 
         DefaultTableCellRenderer renderer = (DefaultTableCellRenderer)mTable.getDefaultRenderer(String.class);
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
@@ -165,9 +171,10 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                 if(selectedMetadata != null)
                 {
-                    Channel selectedChannel = mChannelProcessingManager.getChannelMetadataModel()
+                    mUserSelectedChannel = mChannelProcessingManager.getChannelMetadataModel()
                         .getChannelFromMetadata(selectedMetadata);
-                    processingChain = mChannelProcessingManager.getProcessingChain(selectedChannel);
+
+                    processingChain = mChannelProcessingManager.getProcessingChain(mUserSelectedChannel);
                 }
             }
 
@@ -419,6 +426,41 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 }
 
                 popupMenu.show(mTable, e.getX(), e.getY());
+            }
+        }
+    }
+
+    /**
+     * Listener to be notified when a channel and associated channel metadata(s) are added to the underlying
+     * channel metadata model.
+     *
+     * When a channel is added, it is compared the the last user selected channel and if they are the same, it
+     * invokes a selection event on the channel metadata row so that the channel metadata is re-selected.  This is
+     * primarily a hack to counter-act the DMR Capacity+ REST channel rotation where a channel is converted to a
+     * traffic channel and the previous channel is restarted.  The UI effect is that the user selected channel row
+     * in the Now Playing window continually loses selection over the channel and causes the user to perpetually
+     * chase the channel row.
+     */
+    public class ChannelAddListener implements Listener<ChannelAndMetadata>
+    {
+        @Override
+        public void receive(ChannelAndMetadata channelAndMetadata)
+        {
+            if(mUserSelectedChannel != null &&
+               mUserSelectedChannel.getChannelID() == channelAndMetadata.getChannel().getChannelID())
+            {
+                List<ChannelMetadata> metadata = channelAndMetadata.getChannelMetadata();
+
+                if(metadata.size() > 0)
+                {
+                    int modelRow = mChannelProcessingManager.getChannelMetadataModel().getRow(metadata.get(0));
+
+                    if(modelRow >= 0)
+                    {
+                        int tableRow = mTable.convertRowIndexToView(modelRow);
+                        mTable.getSelectionModel().setSelectionInterval(tableRow, tableRow);
+                    }
+                }
             }
         }
     }

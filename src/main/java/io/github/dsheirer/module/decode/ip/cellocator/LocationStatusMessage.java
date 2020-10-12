@@ -19,11 +19,12 @@
 
 package io.github.dsheirer.module.decode.ip.cellocator;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import org.apache.commons.math3.util.FastMath;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-import org.apache.commons.math3.util.FastMath;
 
 /**
  * Unit (Outbound) Status and Location
@@ -101,7 +102,7 @@ public class LocationStatusMessage extends MCGPPacket
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public LocationStatusMessage(MCGPHeader header, BinaryMessage message, int offset)
+    public LocationStatusMessage(MCGPHeader header, CorrectedBinaryMessage message, int offset)
     {
         super(header, message, offset);
     }

@@ -40,7 +40,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
     private static final long BUFFER_PROCESSOR_RUN_INTERVAL_MILLISECONDS = 50;
     private SourceEventListenerToProcessorAdapter mConsumerSourceEventListenerAdapter;
-    private TunerChannel mTunerChannel;
+    protected TunerChannel mTunerChannel;
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
     private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
@@ -115,12 +115,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public TunerChannel getTunerChannel()
     {
         return mTunerChannel;
-    }
-
-    @Override
-    public void dispose()
-    {
-        stop();
     }
 
     /**

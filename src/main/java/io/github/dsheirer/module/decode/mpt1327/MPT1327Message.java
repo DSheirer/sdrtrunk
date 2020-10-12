@@ -1301,7 +1301,7 @@ public class MPT1327Message extends Message
 
     public String getSDMTelex(MPTMessageType type)
     {
-        ArrayList<Integer> values = new ArrayList<Integer>();
+        ArrayList<Integer> values = new ArrayList<>();
 
         int blocks = 0;
 

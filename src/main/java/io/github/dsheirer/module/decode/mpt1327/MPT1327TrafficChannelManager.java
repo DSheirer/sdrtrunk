@@ -22,19 +22,19 @@ package io.github.dsheirer.module.decode.mpt1327;
 
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelEvent;
-import io.github.dsheirer.controller.channel.ChannelGrantEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
+import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.mpt1327.channel.MPT1327Channel;
+import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import org.slf4j.Logger;
@@ -49,8 +49,8 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class MPT1327TrafficChannelManager extends Module implements IDecodeEventProvider, IChannelEventListener,
-    IChannelEventProvider
+public class MPT1327TrafficChannelManager extends TrafficChannelManager implements IDecodeEventProvider,
+    IChannelEventListener, IChannelEventProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327TrafficChannelManager.class);
 
@@ -133,7 +133,8 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
                 sourceConfig.setFrequency(mpt1327Channel.getDownlinkFrequency());
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelMap.put(mpt1327Channel, trafficChannel);
-                broadcast(new ChannelGrantEvent(trafficChannel, ChannelEvent.Event.REQUEST_ENABLE, mpt1327Channel, identifierCollection));
+                getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, mpt1327Channel,
+                    identifierCollection));
             }
 
             broadcast(channelGrantEvent);
@@ -241,6 +242,7 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
     @Override
     public void stop()
     {
+        mAvailableTrafficChannelQueue.clear();
         List<Channel> channels = new ArrayList<>(mAllocatedTrafficChannelMap.values());
 
         //Issue a disable request for each traffic channel
@@ -283,18 +285,6 @@ public class MPT1327TrafficChannelManager extends Module implements IDecodeEvent
 
         return null;
     }
-
-    @Override
-    public void dispose()
-    {
-        for(Channel trafficChannel : mAvailableTrafficChannelQueue)
-        {
-            broadcast(new ChannelEvent(trafficChannel, ChannelEvent.Event.REQUEST_DISABLE));
-        }
-
-        mAvailableTrafficChannelQueue.clear();
-    }
-
 
     @Override
     public void addDecodeEventListener(Listener<IDecodeEvent> listener)

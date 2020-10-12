@@ -21,7 +21,14 @@
 package io.github.dsheirer.module.decode.ip.ars;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Automatic Registration Service - User De-Registration
+ */
 public class UserDeRegistration extends ARSHeader
 {
     /**
@@ -38,7 +45,13 @@ public class UserDeRegistration extends ARSHeader
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("ARS USER DE-REGISTRATION");
+        sb.append("USER DE-REGISTRATION");
         return sb.toString();
+    }
+
+    @Override
+    public List<Identifier> getIdentifiers()
+    {
+        return Collections.emptyList();
     }
 }

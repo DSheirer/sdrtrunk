@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * (Immutable) Collection of identifiers with convenient accessor methods
@@ -36,7 +37,7 @@ import java.util.List;
 public class IdentifierCollection
 {
     private final static Logger mLog = LoggerFactory.getLogger(IdentifierCollection.class);
-    protected List<Identifier> mIdentifiers = new ArrayList<>();
+    protected List<Identifier> mIdentifiers = new CopyOnWriteArrayList<>();
     protected AliasListConfigurationIdentifier mAliasListConfigurationIdentifier;
     private int mTimeslot = 0;
 

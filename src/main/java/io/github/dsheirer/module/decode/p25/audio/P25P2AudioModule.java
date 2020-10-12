@@ -55,21 +55,13 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     private Listener<IdentifierUpdateNotification> mIdentifierUpdateNotificationListener;
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private ToneMetadataProcessor mToneMetadataProcessor = new ToneMetadataProcessor();
-    private int mTimeslot;
     private Queue<AbstractVoiceTimeslot> mQueuedAudioTimeslots = new ArrayDeque<>();
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
 
     public P25P2AudioModule(UserPreferences userPreferences, int timeslot, AliasList aliasList)
     {
-        super(userPreferences, aliasList);
-        mTimeslot = timeslot;
-        getIdentifierCollection().setTimeslot(timeslot);
-    }
-
-    protected int getTimeslot()
-    {
-        return mTimeslot;
+        super(userPreferences, aliasList, timeslot);
     }
 
     @Override

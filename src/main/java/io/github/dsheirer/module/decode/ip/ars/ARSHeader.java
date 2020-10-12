@@ -21,9 +21,12 @@
 package io.github.dsheirer.module.decode.ip.ars;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.Header;
 
-public class ARSHeader extends Header
+import java.util.List;
+
+public abstract class ARSHeader extends Header
 {
     private static final int[] LENGTH = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int HEADER_EXTENSION_FLAG = 16;
@@ -41,19 +44,6 @@ public class ARSHeader extends Header
     public ARSHeader(BinaryMessage message, int offset)
     {
         super(message, offset);
-    }
-
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ARS ").append(getPDUType());
-
-        if(getPDUType() == ARSPDUType.UNKNOWN)
-        {
-            sb.append(" PACKET:").append(getMessage().toHexString());
-        }
-
-        return sb.toString();
     }
 
     /**
@@ -141,4 +131,9 @@ public class ARSHeader extends Header
             return 16 + 8;
         }
     }
+
+    /**
+     * Identifiers for this packet
+     */
+    public abstract List<Identifier> getIdentifiers();
 }

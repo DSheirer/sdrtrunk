@@ -105,7 +105,7 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     public SystemTalkgroupSelectionEditor(UserPreferences userPreferences, PlaylistManager playlistManager)
     {
         //Register to receive flash alias box requests
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         mUserPreferences = userPreferences;
         mPlaylistManager = playlistManager;
@@ -170,6 +170,11 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         GridPane.setVgrow(getTalkgroupEditor(), Priority.ALWAYS);
         GridPane.setConstraints(getTalkgroupEditor(), 1, row);
         getChildren().add(getTalkgroupEditor());
+    }
+
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
     }
 
     public void clear()

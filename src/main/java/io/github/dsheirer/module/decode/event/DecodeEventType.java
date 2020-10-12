@@ -22,6 +22,7 @@ package io.github.dsheirer.module.decode.event;
 
 public enum DecodeEventType
 {
+    AFFILIATE("Affiliate"),
     ANNOUNCEMENT("Announcement"),
     AUTOMATIC_REGISTRATION_SERVICE("Motorola ARS"),
     CALL("Call"),
@@ -55,6 +56,7 @@ public enum DecodeEventType
     NOTIFICATION("Notification"),
     PAGE("Page"),
     QUERY("Query"),
+    RADIO_CHECK("Radio Check"),
     REGISTER("Register"),
     REGISTER_ESN("ESN"),
     REQUEST("Request"),

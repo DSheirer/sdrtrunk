@@ -298,12 +298,6 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public void dispose()
-    {
-        mListener = null;
-    }
-
-    @Override
     public File getFile()
     {
         return mFile;

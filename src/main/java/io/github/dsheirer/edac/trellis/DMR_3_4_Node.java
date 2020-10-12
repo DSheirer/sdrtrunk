@@ -83,4 +83,10 @@ public class DMR_3_4_Node extends Node
     {
         return DMR_TRANSITION_MATRIX[precedingNode.getInputValue()][getInputValue()];
     }
+
+    @Override
+    public String toString()
+    {
+        return "IN:" + getInputValue() + " OUT:" + getTransmittedOutputValue();
+    }
 }

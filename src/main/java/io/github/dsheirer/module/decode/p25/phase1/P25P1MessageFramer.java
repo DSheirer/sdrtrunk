@@ -44,7 +44,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.preference.UserPreferences;
@@ -450,7 +449,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
-        Path directory = Paths.get("/home/denny/Documents/TMR/APCO25/GPS/cnyicc_cellocator");
+        Path directory = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25/Ken Noffsinger");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
         UserPreferences userPreferences = new UserPreferences();
@@ -464,7 +463,6 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
         recordingManager.start();
         ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
-
         processingChain.addAudioSegmentListener(recordingManager);
         processingChain.addModule(new P25P1DecoderState(channel));
         processingChain.addModule(new P25P1AudioModule(userPreferences, aliasList));
@@ -515,7 +513,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                                                        mLog.error("Error", ioe);
                                                    }
 
-                                                   if(message instanceof PacketMessage)
+                                                   if(!(message instanceof SyncLossMessage))
                                                    {
                                                        mLog.debug(message.toString());
                                                    }
@@ -548,5 +546,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         {
             mLog.error("Error", ioe);
         }
+
+        mLog.info("Finished!");
     }
 }

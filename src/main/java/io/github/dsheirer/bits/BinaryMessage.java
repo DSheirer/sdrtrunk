@@ -835,6 +835,24 @@ public class BinaryMessage extends BitSet
     }
 
     /**
+     * Returns the twos-complement value of the bits between start and end, inclusive
+     * @param start bit position
+     * @param end bit position
+     * @return twos complement value
+     */
+    public int getTwosComplement(int start, int end)
+    {
+        BinaryMessage sub = getSubMessage(start, end);
+        boolean negative = sub.get(start);
+        sub.flip(0, sub.size());
+
+        int value = sub.getInt(0, sub.size()) + 1;
+        value *= (negative ? -1 : 1);
+        return value;
+    }
+
+
+    /**
      * Returns the long value represented by the bit range.  This method will
      * parse the bits in big endian or little endian format.  The start value
      * represents the MSB and the end value represents the LSB of the value.

@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.playlist;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
@@ -244,7 +245,8 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
         JacksonXmlModule xmlModule = new JacksonXmlModule();
         xmlModule.setDefaultUseWrapper(false);
-        ObjectMapper objectMapper = new XmlMapper(xmlModule);
+        ObjectMapper objectMapper = new XmlMapper(xmlModule)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         try(InputStream in = Files.newInputStream(path))
         {
@@ -483,7 +485,8 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             try(InputStream in = Files.newInputStream(files.getPlaylist()))
             {
@@ -505,7 +508,8 @@ public class PlaylistManager implements Listener<ChannelEvent>
 
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             try(InputStream in = Files.newInputStream(files.getLegacyPlaylist()))
             {

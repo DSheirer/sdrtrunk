@@ -21,25 +21,24 @@
  */
 package io.github.dsheirer.controller.channel;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioSegment;
-import io.github.dsheirer.channel.IChannelDescriptor;
+import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
+import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.controller.channel.event.PreloadDataContent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
-import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
-import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
-import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderFactory;
@@ -51,6 +50,7 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +60,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Channel processing manager handles all starting and stopping of channel decoding.  A processing chain is created
@@ -83,7 +85,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private SourceManager mSourceManager;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
-    private List<Long> mUnTunableFrequencies = new ArrayList<>();
+    private List<Long> mLoggedFrequencies = new ArrayList<>();
+    private List<ScheduledFuture<?>> mDelayedChannelStartTasks = new ArrayList<>();
 
     /**
      * Constructs the channel processing manager
@@ -167,6 +170,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      *
      * @param event that requests either enable/start or disable/stop a channel.
      */
+    @Deprecated //TODO: convert all usage to start(ChannelStartProcessingRequest request) method
     @Override
     public synchronized void receive(ChannelEvent event)
     {
@@ -179,7 +183,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 {
                     try
                     {
-                        startProcessing(event);
+                        startProcessing(new ChannelStartProcessingRequest(event.getChannel()));
                     }
                     catch(ChannelException ce)
                     {
@@ -187,9 +191,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                         {
                             long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
 
-                            if(!mUnTunableFrequencies.contains(frequency))
+                            if(!mLoggedFrequencies.contains(frequency))
                             {
-                                mUnTunableFrequencies.add(frequency);
+                                mLoggedFrequencies.add(frequency);
                                 mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequency +
                                     "] - " + ce.getMessage());
                             }
@@ -199,9 +203,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                             List<Long> frequencies = ((SourceConfigTunerMultipleFrequency)channel
                                 .getSourceConfiguration()).getFrequencies();
 
-                            if(frequencies.size() > 0 && !mUnTunableFrequencies.contains(frequencies.get(0)))
+                            if(frequencies.size() > 0 && !mLoggedFrequencies.contains(frequencies.get(0)))
                             {
-                                mUnTunableFrequencies.add(frequencies.get(0));
+                                mLoggedFrequencies.add(frequencies.get(0));
                                 mLog.error("Error starting requested channel [" + channel.getName() + ":" + frequencies +
                                     "] - " + ce.getMessage());
                             }
@@ -214,40 +218,16 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 }
                 break;
             case REQUEST_DISABLE:
-                if(channel.isProcessing())
-                {
-                    try
-                    {
-                        switch(channel.getChannelType())
-                        {
-                            case STANDARD:
-                                stopProcessing(channel, true);
-                                break;
-                            case TRAFFIC:
-                                //Don't remove traffic channel processing chains
-                                //until explicitly deleted, so that we can reuse them
-                                stopProcessing(channel, false);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    catch(ChannelException ce)
-                    {
-                        mLog.error("Error stopping channel [" + channel.getName() + "] - " + ce.getMessage());
-                    }
-                }
-                break;
             case NOTIFICATION_DELETE:
                 if(channel.isProcessing())
                 {
                     try
                     {
-                        stopProcessing(channel, true);
+                        stopProcessing(channel);
                     }
                     catch(ChannelException ce)
                     {
-                        mLog.error("Error stopping deleted channel [" + channel.getName() + "] - " + ce.getMessage());
+                        mLog.error("Error stopping channel [" + channel.getName() + "] - " + ce.getMessage());
                     }
                 }
                 break;
@@ -263,7 +243,33 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public void start(Channel channel) throws ChannelException
     {
-        startProcessing(new ChannelEvent(channel, ChannelEvent.Event.REQUEST_ENABLE));
+        startProcessing(new ChannelStartProcessingRequest(channel));
+    }
+
+    /**
+     * Request to start processing a channel received over the Guava event bus.
+     *
+     * Note: since this is received over the event bus, we handle any channel exceptions inside this method.
+     */
+    @Subscribe
+    public void startChannelRequest(ChannelStartProcessingRequest request)
+    {
+        if(!isProcessing(request.getChannel()))
+        {
+            try
+            {
+                startProcessing(request);
+            }
+            catch(ChannelException ce)
+            {
+                if(request.isPersistentAttempt())
+                {
+                    ScheduledFuture<?> future = ThreadPool.SCHEDULED
+                        .schedule(new DelayedChannelStartTask(request), 500, TimeUnit.MILLISECONDS);
+                    mDelayedChannelStartTasks.add(future);
+                }
+            }
+        }
     }
 
     /**
@@ -272,24 +278,21 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public void stop(Channel channel) throws ChannelException
     {
-        stopProcessing(channel, !channel.isTrafficChannel());
+        stopProcessing(channel);
     }
 
     /**
-     * Starts a channel/processing chain
-     *
-     * @param event that requested the channel start
+     * Starts a channel processing
+     * @param request containing channel and other details
+     * @throws ChannelException if a source is not available for the channel
      */
-    private void startProcessing(ChannelEvent event) throws ChannelException
+    private void startProcessing(ChannelStartProcessingRequest request) throws ChannelException
     {
-        Channel channel = event.getChannel();
+        Channel channel = request.getChannel();
 
-        ProcessingChain processingChain = mProcessingChains.get(channel);
-
-        //If we're already processing, ignore the request
-        if(processingChain != null && processingChain.isProcessing())
+        if(isProcessing(channel))
         {
-            throw new ChannelException("Channel is already playing");
+            return;
         }
 
         //Ensure that we can get a source before we construct a new processing chain
@@ -316,74 +319,90 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             throw new ChannelException("No Tuner Available");
         }
 
-        if(processingChain == null)
+        ProcessingChain processingChain = new ProcessingChain(channel, mAliasModel);
+
+        //Certain decoders aggregate the decode events in the parent channel that also includes any events produced
+        //by the traffic channels.  Establish listener registration depending on if this channel is a traffic channel
+        //and the request contains the parent event history, or if this is a parent channel and the request contains
+        //the traffic channel event history.
+        if(request.hasParentDecodeEventHistory())
         {
-            processingChain = new ProcessingChain(channel, mAliasModel);
-            mChannelEventBroadcaster.addListener(processingChain);
-
-            /* Register global listeners */
-            for(Listener<AudioSegment> listener : mAudioSegmentListeners)
-            {
-                processingChain.addAudioSegmentListener(listener);
-            }
-
-            for(Listener<IDecodeEvent> listener : mDecodeEventListeners)
-            {
-                processingChain.addDecodeEventListener(listener);
-            }
-
-            //Add a listener to detect source error state that indicates the channel should be shutdown
-            processingChain.addSourceEventListener(sourceEvent ->
-            {
-                if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
-                {
-                    Channel toShutdown = null;
-
-                    for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChains.entrySet())
-                    {
-                        if(entry.getValue().hasSource(sourceEvent.getSource()))
-                        {
-                            toShutdown = entry.getKey();
-                            break;
-                        }
-                    }
-
-                    if(toShutdown != null)
-                    {
-                        mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
-
-                        try
-                        {
-                            stopProcessing(toShutdown, true);
-                        }
-                        catch(ChannelException ce)
-                        {
-                            mLog.error("Error stopping channel [" + channel.getName() + "] with source error - " +
-                                ce.getMessage());
-                        }
-                    }
-                }
-            });
-
-            //Register this manager to receive channel events from traffic channel manager modules within
-            //the processing chain
-            processingChain.addChannelEventListener(this);
-
-            //Register channel to receive frequency correction events to show in the spectral display (hack!)
-            processingChain.addFrequencyChangeListener(channel);
-
-            /* Processing Modules */
-            List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences);
-            processingChain.addModules(modules);
-
-            /* Setup message activity model with filtering */
-            FilterSet<IMessage> messageFilter = DecoderFactory.getMessageFilters(modules);
-            MessageActivityModel messageModel = new MessageActivityModel(messageFilter);
-            processingChain.setMessageActivityModel(messageModel);
-
+            processingChain.getDecodeEventHistory().addListener(request.getParentDecodeEventHistory());
+        }
+        else if(request.hasChildDecodeEventHistory())
+        {
+            request.getChildDecodeEventHistory().addListener(processingChain.getDecodeEventHistory());
         }
 
-        /* Setup event logging */
+        //Register to receive event bus requests/notifications
+        processingChain.getEventBus().register(ChannelProcessingManager.this);
+
+        mChannelEventBroadcaster.addListener(processingChain);
+
+        /* Register global listeners */
+        for(Listener<AudioSegment> listener : mAudioSegmentListeners)
+        {
+            processingChain.addAudioSegmentListener(listener);
+        }
+
+        for(Listener<IDecodeEvent> listener : mDecodeEventListeners)
+        {
+            processingChain.addDecodeEventListener(listener);
+        }
+
+        //Add a listener to detect source error state that indicates the channel should be shutdown
+        processingChain.addSourceEventListener(sourceEvent ->
+        {
+            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
+            {
+                Channel toShutdown = null;
+
+                for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChains.entrySet())
+                {
+                    if(entry.getValue().hasSource(sourceEvent.getSource()))
+                    {
+                        toShutdown = entry.getKey();
+                        break;
+                    }
+                }
+
+                if(toShutdown != null)
+                {
+                    mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
+
+                    try
+                    {
+                        stopProcessing(toShutdown);
+                    }
+                    catch(ChannelException ce)
+                    {
+                        mLog.error("Error stopping channel [" + channel.getName() + "] with source error - " +
+                            ce.getMessage());
+                    }
+                }
+            }
+        });
+
+        //Register this manager to receive channel events from traffic channel manager modules within
+        //the processing chain
+        processingChain.addChannelEventListener(this);
+
+        //Register channel to receive frequency correction events to show in the spectral display (hack!)
+        processingChain.addFrequencyChangeListener(channel);
+
+        /* Processing Modules */
+        List<Module> modules = DecoderFactory.getModules(mChannelMapModel, channel, mAliasModel, mUserPreferences,
+            request.getTrafficChannelManager());
+        processingChain.addModules(modules);
+
+        //Post preload data from the request to the event bus.  Modules that can handle preload data will annotate
+        //their processor method with @Subscribe to receive each specific preload data content class.
+        for(PreloadDataContent preloadDataContent: request.getPreloadDataContents())
+        {
+            processingChain.getEventBus().post(preloadDataContent);
+        }
+
+        //Setup event logging
         List<Module> loggers = mEventLogManager.getLoggers(channel);
 
         if(!loggers.isEmpty())
@@ -398,25 +417,22 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         processingChain.setSource(source);
 
         //Inject the channel identifier for traffic channels and preload user identifiers
-        if(channel.isTrafficChannel() && event instanceof ChannelGrantEvent)
+        if(channel.isTrafficChannel())
         {
-            ChannelGrantEvent channelGrantEvent = (ChannelGrantEvent)event;
-            IChannelDescriptor channelDescriptor = channelGrantEvent.getChannelDescriptor();
-
-            IdentifierCollection identifierCollection = channelGrantEvent.getIdentifierCollection();
-
-            if(channelDescriptor != null)
+            if(request.hasChannelDescriptor() && request.hasIdentifierCollection())
             {
-                for(int timeslot = 0; timeslot < channelDescriptor.getTimeslotCount(); timeslot++)
+                for(int timeslot = 0; timeslot < request.getChannelDescriptor().getTimeslotCount(); timeslot++)
                 {
                     DecoderLogicalChannelNameIdentifier identifier =
-                        DecoderLogicalChannelNameIdentifier.create(channelDescriptor.toString(), channelDescriptor.getProtocol());
+                        DecoderLogicalChannelNameIdentifier.create(request.getChannelDescriptor().toString(),
+                            request.getChannelDescriptor().getProtocol());
                     IdentifierUpdateNotification notification = new IdentifierUpdateNotification(identifier,
                         IdentifierUpdateNotification.Operation.ADD, timeslot);
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
 
                     //Inject scramble parameters
-                    for(Identifier scrambleParameters: identifierCollection.getIdentifiers(Form.SCRAMBLE_PARAMETERS))
+                    for(Identifier scrambleParameters: request.getIdentifierCollection()
+                        .getIdentifiers(Form.SCRAMBLE_PARAMETERS))
                     {
                         //Broadcast scramble parameters to both timeslots
                         IdentifierUpdateNotification scrambleNotification = new IdentifierUpdateNotification(scrambleParameters,
@@ -426,13 +442,13 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 }
             }
 
-            for(Identifier userIdentifier : identifierCollection.getIdentifiers(IdentifierClass.USER))
+            for(Identifier userIdentifier : request.getIdentifierCollection().getIdentifiers(IdentifierClass.USER))
             {
-                if(channelDescriptor.getTimeslotCount() > 1)
+                if(request.getChannelDescriptor().getTimeslotCount() > 1)
                 {
                     //Only broadcast an identifier update for the timeslot specified in the originating collection
                     IdentifierUpdateNotification notification = new IdentifierUpdateNotification(userIdentifier,
-                        IdentifierUpdateNotification.Operation.ADD, channelGrantEvent.getIdentifierCollection().getTimeslot());
+                        IdentifierUpdateNotification.Operation.ADD, request.getIdentifierCollection().getTimeslot());
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
                 }
                 else
@@ -446,13 +462,13 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         }
 
+        mProcessingChains.put(channel, processingChain);
         processingChain.start();
+
         //This has to be done on the FX event thread when the playlist editor is constructed
         Platform.runLater(() -> channel.setProcessing(true));
 
-        getChannelMetadataModel().add(processingChain.getChannelState().getChannelMetadata(), channel);
-
-        mProcessingChains.put(channel, processingChain);
+        getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
 
         mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
     }
@@ -461,16 +477,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      * Stops the channel/processing chain.
      *
      * @param channel to stop
-     * @param remove set to true to remove the associated processing chain.
      */
-    private void stopProcessing(Channel channel, boolean remove) throws ChannelException
+    private void stopProcessing(Channel channel) throws ChannelException
     {
         //This has to be done on the FX event thread when the playlist editor is constructed
         Platform.runLater(() -> channel.setProcessing(false));
 
         if(mProcessingChains.containsKey(channel))
         {
-            ProcessingChain processingChain = mProcessingChains.get(channel);
+            ProcessingChain processingChain = mProcessingChains.remove(channel);
 
             for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
             {
@@ -480,7 +495,6 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.stop();
 
             processingChain.removeEventLoggingModules();
-
             processingChain.removeRecordingModules();
 
             //Deregister channel from receive frequency correction events to show in the spectral display (hack!)
@@ -488,13 +502,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             channel.resetFrequencyCorrection();
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
+            mChannelEventBroadcaster.removeListener(processingChain);
 
-            if(remove)
-            {
-                mChannelEventBroadcaster.removeListener(processingChain);
-                mProcessingChains.remove(channel);
-                processingChain.dispose();
-            }
+            //Unregister for event bus requests and notifications
+            processingChain.getEventBus().unregister(ChannelProcessingManager.this);
+            processingChain.dispose();
         }
         else
         {
@@ -507,18 +519,61 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public void shutdown()
     {
+        List<ScheduledFuture<?>> delayedTasks = new ArrayList<>(mDelayedChannelStartTasks);
+
+        for(ScheduledFuture<?> delayedTask: delayedTasks)
+        {
+            delayedTask.cancel(true);
+            mDelayedChannelStartTasks.remove(delayedTask);
+        }
+
         List<Channel> channelsToStop = new ArrayList<>(mProcessingChains.keySet());
 
         for(Channel channel : channelsToStop)
         {
             try
             {
-                stopProcessing(channel, true);
+                stopProcessing(channel);
             }
             catch(ChannelException ce)
             {
                 mLog.error("Error stopping channel [" + channel.getName() + "] - " + ce.getMessage());
             }
+        }
+    }
+
+    /**
+     * Process a request to convert a currently processing standard channel type to a traffic channel type.
+     * @param request from the currently processing channel's processing chain event bus
+     */
+    @Subscribe
+    public void convertToTrafficChannel(ChannelConversionRequest request)
+    {
+        //Update the channel to processing chain map.
+        ProcessingChain processingChain = mProcessingChains.remove(request.getCurrentChannel());
+
+        if(processingChain != null)
+        {
+            //Remove the traffic channel manager from this processing chain.  Reuse or reinsertion of the traffic
+            //channel manager to another processing chain is handled separately.
+            processingChain.removeTrafficChannelManager();
+
+            //Update processing flag for each configuration.
+            Platform.runLater(() -> {
+                request.getCurrentChannel().setProcessing(false);
+                request.getTrafficChannel().setProcessing(true);
+            });
+
+            mProcessingChains.put(request.getTrafficChannel(), processingChain);
+            mChannelMetadataModel.updateChannelMetadataToChannelMap(processingChain.getChannelState().getChannelMetadata(),
+                request.getTrafficChannel());
+
+            //Post a change notification so that processing chain modules can reconfigure
+            processingChain.channelConfigurationChanged(new ChannelConfigurationChangeNotification(request.getTrafficChannel()));
+        }
+        else
+        {
+            mLog.warn("Request to convert to traffic channel ignored - no processing chain was found");
         }
     }
 
@@ -570,5 +625,32 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     public void removeChannelEventListener(Listener<ChannelEvent> listener)
     {
         mChannelEventBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Task to scheduling attempt to start a channel after previous attempts failed for lack of tuner channel
+     */
+    public class DelayedChannelStartTask implements Runnable
+    {
+        private ChannelStartProcessingRequest mRequest;
+
+        public DelayedChannelStartTask(ChannelStartProcessingRequest request)
+        {
+            mRequest = request;
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+                mDelayedChannelStartTasks.remove(this);
+                startChannelRequest(mRequest);
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error executing persistent channel start task");
+            }
+        }
     }
 }

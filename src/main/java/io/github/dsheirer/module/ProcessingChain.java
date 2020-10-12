@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module;
 
+import com.google.common.eventbus.EventBus;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.audio.AudioSegmentBroadcaster;
@@ -35,6 +36,7 @@ import io.github.dsheirer.channel.state.IDecoderStateEventProvider;
 import io.github.dsheirer.channel.state.MultiChannelState;
 import io.github.dsheirer.channel.state.SingleChannelState;
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
 import io.github.dsheirer.controller.channel.ChannelEvent;
 import io.github.dsheirer.controller.channel.IChannelEventListener;
 import io.github.dsheirer.controller.channel.IChannelEventProvider;
@@ -44,11 +46,12 @@ import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.IMessageProvider;
-import io.github.dsheirer.module.decode.event.DecodeEventModel;
+import io.github.dsheirer.message.MessageHistory;
+import io.github.dsheirer.module.decode.event.DecodeEventHistory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
-import io.github.dsheirer.module.decode.event.MessageActivityModel;
+import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.module.log.EventLogger;
 import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
@@ -76,6 +79,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -115,64 +119,105 @@ public class ProcessingChain implements Listener<ChannelEvent>
     private Broadcaster<SquelchStateEvent> mSquelchStateEventBroadcaster = new Broadcaster<>();
     private AtomicBoolean mRunning = new AtomicBoolean();
     private List<Module> mModules = new ArrayList<>();
-    private DecodeEventModel mDecodeEventModel;
+    private DecodeEventHistory mDecodeEventHistory = new DecodeEventHistory(500);
+    private MessageHistory mMessageHistory = new MessageHistory(500);
     private AbstractChannelState mChannelState;
-    private MessageActivityModel mMessageActivityModel;
+    private EventBus mEventBus;
     protected Source mSource;
 
     /**
      * Creates a processing chain for managing a set of modules
      *
-     * @param channel
+     * @param channel with configuration details for this processing chain
+     * @param aliasModel for looking up aliases
      */
     public ProcessingChain(Channel channel, AliasModel aliasModel)
     {
+        mEventBus = new EventBus("Processing Chain Event Bus - Channel: " + channel.getName());
+
         if(channel.getDecodeConfiguration().getTimeslotCount() == 1)
         {
             mChannelState = new SingleChannelState(channel, aliasModel);
         }
         else
         {
-            mChannelState = new MultiChannelState(channel, aliasModel, channel.getDecodeConfiguration().getTimeslotCount());
+            mChannelState = new MultiChannelState(channel, aliasModel, channel.getDecodeConfiguration().getTimeslots());
         }
 
         addModule(mChannelState);
-        mDecodeEventModel = new DecodeEventModel();
-        addDecodeEventListener(mDecodeEventModel);
+        addModule(mDecodeEventHistory);
+        addModule(mMessageHistory);
     }
 
+    /**
+     * Event bus used for inter-module communication.
+     * @return event bus
+     */
+    public EventBus getEventBus()
+    {
+        return mEventBus;
+    }
+
+    /**
+     * Channel state
+     */
     public AbstractChannelState getChannelState()
     {
         return mChannelState;
     }
 
-    public DecodeEventModel getDecodeEventModel()
+    /**
+     * Decode event history module.
+     */
+    public DecodeEventHistory getDecodeEventHistory()
     {
-        return mDecodeEventModel;
+        return mDecodeEventHistory;
     }
 
-    public MessageActivityModel getMessageActivityModel()
+    /**
+     * Message history module
+     */
+    public MessageHistory getMessageHistory()
     {
-        return mMessageActivityModel;
+        return mMessageHistory;
     }
 
-
-    //TODO: should we introduce the concept of getTimeslot() to messages and events and then use that to vector the
-    //TODO: inbound stream to the appropriate message and event models?
-
-    public void setMessageActivityModel(MessageActivityModel model)
+    /**
+     * Process a channel configuration change notification.
+     *
+     * Note: this will normally occur when a standard channel is converted to a traffic channel.
+     * @param notification of the change
+     */
+    public void channelConfigurationChanged(ChannelConfigurationChangeNotification notification)
     {
-        mMessageActivityModel = model;
+        getEventBus().post(notification);
+    }
 
-        addMessageListener(mMessageActivityModel);
+    /**
+     * Removes any module that is an instance of a TrafficChannelManager
+     */
+    public void removeTrafficChannelManager()
+    {
+        Iterator<Module> it = mModules.iterator();
+
+        while(it.hasNext())
+        {
+            if(it.next() instanceof TrafficChannelManager)
+            {
+                it.remove();
+            }
+        }
     }
 
     public void dispose()
     {
         stop();
 
-        for(Module module : mModules)
+        List<Module> modules = new ArrayList<>(mModules);
+
+        for(Module module : modules)
         {
+            removeModule(module);
             module.dispose();
         }
 
@@ -280,7 +325,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
     public void addModule(Module module)
     {
         mModules.add(module);
-
+        module.setInterModuleEventBus(getEventBus());
         registerListeners(module);
         registerProviders(module);
     }
@@ -293,7 +338,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         unregisterListeners(module);
         unregisterProviders(module);
-
+        module.setInterModuleEventBus(null);
         mModules.remove(module);
     }
 
@@ -778,38 +823,11 @@ public class ProcessingChain implements Listener<ChannelEvent>
     }
 
     /**
-     * Adds the listener to receive decoded messages from all decoders.
-     */
-    public void addMessageListener(Listener<IMessage> listener)
-    {
-        mMessageBroadcaster.addListener(listener);
-    }
-
-    /**
-     * Adds the list of listeners to receive decoded messages from all decoders.
-     */
-    public void addMessageListeners(List<Listener<IMessage>> listeners)
-    {
-        for(Listener<IMessage> listener : listeners)
-        {
-            mMessageBroadcaster.addListener(listener);
-        }
-    }
-
-    /**
      * Adds a listener to receive source events from this processing chain
      */
     public void addSourceEventListener(Listener<SourceEvent> listener)
     {
         mSourceEventBroadcaster.addListener(listener);
-    }
-
-    /**
-     * Removes the listener from receiving decoded messages from all decoders.
-     */
-    public void removeMessageListener(Listener<IMessage> listener)
-    {
-        mMessageBroadcaster.removeListener(listener);
     }
 
     /**

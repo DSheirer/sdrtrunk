@@ -34,7 +34,8 @@ public class DecoderPaneFactory
         DecoderType.LTR_NET,
         DecoderType.MDC1200,
         DecoderType.MPT1327,
-        DecoderType.TAIT_1200);
+        DecoderType.TAIT_1200,
+            DecoderType.DMR);
 
     /**
      * Creates a decoder pane for the decoder type
@@ -59,6 +60,8 @@ public class DecoderPaneFactory
                 throw new IllegalArgumentException("Use the getP25P1DecoderPane() method for P25 decoder type");
             case P25_PHASE2:
                 return new P25Phase2HDQPSKPane();
+            case DMR:
+                return new DMRPane();
         }
 
         return getDefaultPane();

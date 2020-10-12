@@ -2113,7 +2113,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     {
         switch(event.getEvent())
         {
-            case RESET:
+            case REQUEST_RESET:
                 resetState();
                 mNetworkConfigurationMonitor.reset();
                 break;

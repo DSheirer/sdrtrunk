@@ -73,11 +73,11 @@ public class IPV4Header extends Header
             return;
         }
 
-        if(getMessage().size() < totalLength + getOffset())
-        {
-            setValid(false);
-            return;
-        }
+//        if(getMessage().size() < totalLength + getOffset())
+//        {
+//            setValid(false);
+//            return;
+//        }
     }
 
     @Override

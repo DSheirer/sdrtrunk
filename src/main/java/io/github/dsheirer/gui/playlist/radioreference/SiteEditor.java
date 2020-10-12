@@ -27,6 +27,8 @@ import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
@@ -222,6 +224,12 @@ public class SiteEditor extends GridPane
 
         switch(decoderType)
         {
+            case DMR:
+                DecodeConfigDMR dmr = new DecodeConfigDMR();
+                List<TimeslotFrequency> timeslotFrequencies = mRadioReferenceDecoder
+                    .getTimeslotFrequencies(systemInformation, site);
+                dmr.setTimeslotMap(timeslotFrequencies);
+                return dmr;
             case P25_PHASE1:
                 DecodeConfiguration p1config = DecoderFactory.getDecodeConfiguration(decoderType);
 
@@ -289,6 +297,7 @@ public class SiteEditor extends GridPane
                 return DecoderFactory.getDecodeConfiguration(decoderType);
         }
     }
+
 
     public void setSite(EnrichedSite site, System system, SystemInformation systemInformation, RadioReferenceDecoder decoder)
     {
@@ -473,7 +482,7 @@ public class SiteEditor extends GridPane
 
         if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
         {
-            MyEventBus.getEventBus().post(new ViewChannelRequest(gotoChannel));
+            MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(gotoChannel));
         }
     }
 
@@ -535,7 +544,7 @@ public class SiteEditor extends GridPane
 
             if(getGoToChannelEditorCheckBox().isSelected())
             {
-                MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
             }
         }
     }
@@ -609,7 +618,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected())
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
                 }
             }
             else
@@ -637,7 +646,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(gotoChannel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(gotoChannel));
                 }
             }
         }
@@ -701,7 +710,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected())
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(channel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel));
                 }
             }
             else
@@ -730,7 +739,7 @@ public class SiteEditor extends GridPane
 
                 if(getGoToChannelEditorCheckBox().isSelected() && gotoChannel != null)
                 {
-                    MyEventBus.getEventBus().post(new ViewChannelRequest(gotoChannel));
+                    MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(gotoChannel));
                 }
             }
         }

@@ -18,30 +18,84 @@
 
 package io.github.dsheirer.module;
 
+import com.google.common.eventbus.EventBus;
+
+/**
+ * Defines the basic component level class for all processing, demodulation and decoding components that can operate
+ * within a processing chain.
+ *
+ * Modules can optionally implement any of the following legacy interfaces:
+ *
+ * IAudioPacketListener				consumes audio packets
+ * IAudioPacketProvider				produces audio packets
+ * ICallEventListener				consumes call events
+ * ICallEventProvider				provides call events
+ * IChannelEventListener			consumes channel events
+ * IChannelEventProvider			provides channel events (reset, selection, start, etc)
+ * IFrequencyCorrectionController	provides tuned frequency error corrections
+ * IMessageProvider					produces messages
+ * IRealBufferListener				consumes demodulated real sample buffers
+ * IRealBufferListener				produces demodulated real sample buffers
+ * IReusableComplexBufferListener	consumes complex samples and normally produces demodulated real sample buffers
+ * ISquelchStateListener			consumes squelch states
+ * ISquelchStateProvider			provides squelch states
+ *
+ * TODO: convert all pub/sub interfaces to use the inter-module event bus for event broadcast/subscribe and remove
+ * all of these interfaces.
+ */
 public abstract class Module
 {
+
 	/**
-	 * Defines the basic component level class for all processing, demodulation
-	 * and decoding components that can operate within a processing chain.
-	 * 
-	 * Modules can optionally implement any of the following interfaces:
-	 * 
-	 * IAudioPacketListener				consumes audio packets
-	 * IAudioPacketProvider				produces audio packets
-	 * ICallEventListener				consumes call events
-	 * ICallEventProvider				provides call events
-	 * IChannelEventListener			consumes channel events
-	 * IChannelEventProvider			provides channel events (reset, selection, start, etc)
-	 * IFrequencyCorrectionController	provides tuned frequency error corrections
-	 * IMessageProvider					produces messages
-	 * IRealBufferListener				consumes demodulated real sample buffers
-	 * IRealBufferListener				produces demodulated real sample buffers
-	 * IReusableComplexBufferListener	consumes complex samples and normally produces demodulated real sample buffers
-	 * ISquelchStateListener			consumes squelch states
-	 * ISquelchStateProvider			provides squelch states
+	 * Event bus for inter-module communication of processing chain events.  Note: this is an externally provided
+	 * resource, typically provided by the ProcessingChain parent for each module.
+	 */
+	private EventBus mInterModuleEventBus;
+
+	/**
+	 * Constructs an instance
 	 */
 	public Module()
 	{
+	}
+
+	/**
+	 * Sets the event bus to be used for inter-module event broadcasting and subscribing.
+	 * @param interModuleEventBus to use
+	 */
+	public void setInterModuleEventBus(EventBus interModuleEventBus)
+	{
+		//Unregister from the current event bus (if one exists)
+		if(hasInterModuleEventBus())
+		{
+			getInterModuleEventBus().unregister(this);
+		}
+
+		mInterModuleEventBus = interModuleEventBus;
+
+		//Auto-register with the event bus
+		if(hasInterModuleEventBus())
+		{
+			getInterModuleEventBus().register(this);
+		}
+	}
+
+	/**
+	 * Event bus for inter-module communication.  Note: use hasEventBus() to check that the module is assigned a bus.
+	 * @return event bus or null if one has not been established.
+	 */
+	protected EventBus getInterModuleEventBus()
+	{
+		return mInterModuleEventBus;
+	}
+
+	/**
+	 * Indicates if this module has an assigned event bus.
+	 * @return true if event bus is non-null.
+	 */
+	protected boolean hasInterModuleEventBus()
+	{
+		return mInterModuleEventBus != null;
 	}
 
 	/**
@@ -68,6 +122,11 @@ public abstract class Module
 	/**
 	 * Dispose of all resources and listeners and prepare for garbage collection
 	 */
-	public abstract void dispose();
-	
+	public void dispose()
+	{
+		if(hasInterModuleEventBus())
+		{
+			getInterModuleEventBus().unregister(this);
+		}
+	}
 }

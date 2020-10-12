@@ -278,7 +278,7 @@ public class TalkgroupEditor extends GridPane
                     alert.setHeaderText("An alias list is required to create aliases");
                     alert.initOwner((getCreateAliasButton()).getScene().getWindow());
                     alert.showAndWait();
-                    MyEventBus.getEventBus().post(new FlashAliasListComboBoxRequest());
+                    MyEventBus.getGlobalEventBus().post(new FlashAliasListComboBoxRequest());
                 }
                 else if(mRadioReferenceDecoder != null && mTalkgroup != null && mSystem != null)
                 {
@@ -309,7 +309,7 @@ public class TalkgroupEditor extends GridPane
             mEditAliasButton.setOnAction(event -> {
                 if(mAlias != null)
                 {
-                    MyEventBus.getEventBus().post(new ViewAliasRequest(mAlias));
+                    MyEventBus.getGlobalEventBus().post(new ViewAliasRequest(mAlias));
                 }
             });
         }

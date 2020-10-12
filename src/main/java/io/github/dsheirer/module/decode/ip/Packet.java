@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.ip;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 public abstract class Packet implements IPacket
 {
-    private BinaryMessage mMessage;
+    private CorrectedBinaryMessage mMessage;
     private int mOffset;
 
     /**
@@ -32,7 +32,7 @@ public abstract class Packet implements IPacket
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public Packet(BinaryMessage message, int offset)
+    public Packet(CorrectedBinaryMessage message, int offset)
     {
         mMessage = message;
         mOffset = offset;
@@ -41,7 +41,7 @@ public abstract class Packet implements IPacket
     /**
      * Underlying message that contains this packet
      */
-    public BinaryMessage getMessage()
+    public CorrectedBinaryMessage getMessage()
     {
         return mMessage;
     }

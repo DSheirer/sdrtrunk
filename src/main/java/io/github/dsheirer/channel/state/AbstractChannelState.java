@@ -41,7 +41,7 @@ import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
+import java.util.List;
 
 public abstract class AbstractChannelState extends Module implements IChannelEventProvider, IDecodeEventProvider,
     IDecoderStateEventProvider, ISourceEventProvider, IHeartbeatListener, ISquelchStateProvider,
@@ -53,13 +53,33 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
     protected Listener<IDecodeEvent> mDecodeEventListener;
     protected Listener<DecoderStateEvent> mDecoderStateListener;
     protected Listener<SourceEvent> mExternalSourceEventListener;
-    protected Channel mChannel;
+    private Channel mChannel;
     protected boolean mSourceOverflow = false;
     private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
 
+    /**
+     * Constructs an instance
+     * @param channel configuration
+     */
     public AbstractChannelState(Channel channel)
     {
         mChannel = channel;
+    }
+
+    /**
+     * Updates/replaces the current channel configuration with the argument.
+     */
+    protected void updateChannelConfiguration(Channel channel)
+    {
+        mChannel = channel;
+    }
+
+    /**
+     * Channel configuration for this channel state
+     */
+    protected Channel getChannel()
+    {
+        return mChannel;
     }
 
     /**
@@ -69,7 +89,7 @@ public abstract class AbstractChannelState extends Module implements IChannelEve
      */
     protected abstract void checkState();
 
-    public abstract Collection<ChannelMetadata> getChannelMetadata();
+    public abstract List<ChannelMetadata> getChannelMetadata();
 
     public abstract void updateChannelStateIdentifiers(IdentifierUpdateNotification notification);
 

@@ -36,6 +36,8 @@ public enum RadioFormat
 {
     APCO25("********", 0, 0xFFFFFF, "0 to 16,777,215",
         "<html>APCO25 valid range is 0 to 16,777,215"),
+    DMR("********", 0, 0xFFFFFF, "0 to 16,777,215",
+        "<html>DMR unit id valid range is 0 to 16,777,215"),
     PASSPORT("********", 0, 0x7FFFFF, "0 to 8,388,607",
         "<html>PASSPORT valid range is 0 to 8,388,607"),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
@@ -112,6 +114,8 @@ public enum RadioFormat
         {
             case APCO25:
                 return APCO25;
+            case DMR:
+                return DMR;
             case PASSPORT:
                 return PASSPORT;
             default:

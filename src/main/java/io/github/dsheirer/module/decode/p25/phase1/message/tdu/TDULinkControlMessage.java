@@ -23,7 +23,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.edac.Golay24;
-import io.github.dsheirer.edac.ReedSolomon_63_47_17;
+import io.github.dsheirer.edac.ReedSolomon_24_12_13_P25;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase1.message.IFrequencyBandReceiver;
@@ -62,7 +62,7 @@ public class TDULinkControlMessage extends P25Message implements IFrequencyBandR
     public static final int[] RS_HEX_11 = {270, 271, 272, 273, 274, 275};
 
     //Reed-Solomon(24,12,13) code protects the link control word.  Maximum correctable errors are:  6
-    private static final ReedSolomon_63_47_17 reedSolomon_63_47_17 = new ReedSolomon_63_47_17(6);
+    private static final ReedSolomon_24_12_13_P25 REED_SOLOMON_24_12_13_P25 = new ReedSolomon_24_12_13_P25();
 
     private LinkControlWord mLinkControlWord;
 
@@ -146,7 +146,7 @@ public class TDULinkControlMessage extends P25Message implements IFrequencyBandR
         input[23] = getMessage().getInt(LC_HEX_0);
         /* indexes 24 - 62 are defaulted to zero */
 
-        boolean irrecoverableErrors = reedSolomon_63_47_17.decode(input, output);
+        boolean irrecoverableErrors = REED_SOLOMON_24_12_13_P25.decode(input, output);
 
         //Transfer error corrected output to a new binary message
         BinaryMessage binaryMessage = new BinaryMessage(72);

@@ -60,6 +60,15 @@ public class DecodeConfigP25Phase2 extends DecodeConfiguration
         return 2;
     }
 
+    @Override
+    public int[] getTimeslots()
+    {
+        int[] timeslots = new int[2];
+        timeslots[0] = 0;
+        timeslots[1] = 1;
+        return timeslots;
+    }
+
     /**
      * Optional scramble (ie randomizer) parameters to use for the channel.
      */

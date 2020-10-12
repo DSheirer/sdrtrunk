@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
+import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioModule;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.channel.state.State;
@@ -38,6 +39,11 @@ import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DMRDecoder;
+import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
+import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
+import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
+import io.github.dsheirer.module.decode.dmr.message.voice.DMRAudioModule;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
 import io.github.dsheirer.module.decode.fleetsync2.FleetsyncMessageFilter;
@@ -80,12 +86,13 @@ import io.github.dsheirer.module.decode.passport.PassportDecoderState;
 import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
 import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
 import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
+import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.module.demodulate.am.AMDemodulatorModule;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import io.github.dsheirer.source.tuner.channel.ChannelRotationMonitor;
+import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,18 +114,25 @@ public class DecoderFactory
      * @return list of configured decoders
      */
     public static List<Module> getModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
-                                          UserPreferences userPreferences)
+                                          UserPreferences userPreferences, TrafficChannelManager trafficChannelManager)
     {
-        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences);
+        List<Module> modules = getPrimaryModules(channelMapModel, channel, aliasModel, userPreferences, trafficChannelManager);
         modules.addAll(getAuxiliaryDecoders(channel.getAuxDecodeConfiguration()));
         return modules;
     }
 
     /**
      * Constructs a primary decoder as specified in the decode configuration
+     *
+     * @param channelMapModel for channel map lookups
+     * @param channel configuration
+     * @param aliasModel for alias lookups
+     * @param userPreferences instance
+     * @param trafficChannelManager optional traffic channel manager to use
+     * @return list of modules to use for a processing chain
      */
-    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel,
-                                                 AliasModel aliasModel, UserPreferences userPreferences)
+    public static List<Module> getPrimaryModules(ChannelMapModel channelMapModel, Channel channel, AliasModel aliasModel,
+                                                 UserPreferences userPreferences, TrafficChannelManager trafficChannelManager)
     {
         List<Module> modules = new ArrayList<Module>();
 
@@ -135,6 +149,10 @@ public class DecoderFactory
             case AM:
                 processAM(channel, modules, aliasList, decodeConfig);
                 break;
+            case DMR:
+                processDMR(channel, userPreferences, modules, aliasList, (DecodeConfigDMR)decodeConfig,
+                    trafficChannelManager);
+                break;
             case NBFM:
                 processNBFM(channel, modules, aliasList, decodeConfig);
                 break;
@@ -145,7 +163,7 @@ public class DecoderFactory
                 processLTRNet(channel, modules, aliasList, (DecodeConfigLTRNet) decodeConfig);
                 break;
             case MPT1327:
-                processMPT1327(channelMapModel, channel, userPreferences, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
+                processMPT1327(channelMapModel, channel, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
                 break;
             case PASSPORT:
                 processPassport(channel, modules, aliasList, decodeConfig);
@@ -207,7 +225,8 @@ public class DecoderFactory
         {
             List<State> activeStates = new ArrayList<>();
             activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+            modules.add(new ChannelRotationMonitor(activeStates,
+                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay()));
         }
     }
 
@@ -221,7 +240,7 @@ public class DecoderFactory
         }
     }
 
-    private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
+    private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
         DecodeConfigMPT1327 mptConfig = decodeConfig;
         ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
         Sync sync = mptConfig.getSync();
@@ -232,8 +251,8 @@ public class DecoderFactory
         // Set max segment audio sample length slightly above call timeout to
         // not create a new segment if the processing chain finishes a bit after
         // actual call timeout.
-        int maxAudioSegmentLengthMillis = (callTimeoutMilliseconds + 5000);
-        modules.add(new AudioModule(aliasList, maxAudioSegmentLengthMillis));
+        long maxAudioSegmentLengthMillis = (callTimeoutMilliseconds + 5000);
+        modules.add(new AudioModule(aliasList, AbstractAudioModule.DEFAULT_TIMESLOT, maxAudioSegmentLengthMillis));
 
         SourceType sourceType = channel.getSourceConfiguration().getSourceType();
         if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
@@ -258,7 +277,8 @@ public class DecoderFactory
         {
             List<State> activeStates = new ArrayList<>();
             activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+            modules.add(new ChannelRotationMonitor(activeStates,
+                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay()));
         }
     }
 
@@ -316,6 +336,57 @@ public class DecoderFactory
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
             modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+        }
+    }
+
+    /**
+     * Creates modules for DMR decoder setup.
+     *
+     * Note: on some DMR systems (e.g. Capacity+) we convert standard channels to traffic channels (when rest channel
+     * changes) and so we reuse the traffic channel manager from the converted channel.
+     *
+     * @param channel for the DMR decoder
+     * @param userPreferences for access to JMBE audio library
+     * @param modules list to add to
+     * @param aliasList for the audio module
+     * @param decodeConfig for the DMR configuration
+     * @param trafficChannelManager optional traffic channel manager to re-use
+     */
+    private static void processDMR(Channel channel, UserPreferences userPreferences, List<Module> modules,
+                                   AliasList aliasList, DecodeConfigDMR decodeConfig,
+                                   TrafficChannelManager trafficChannelManager)
+    {
+        modules.add(new DMRDecoder(decodeConfig));
+
+        DMRTrafficChannelManager dmrTrafficChannelManager = null;
+
+        if(channel.isStandardChannel())
+        {
+            if(trafficChannelManager instanceof DMRTrafficChannelManager)
+            {
+                dmrTrafficChannelManager = (DMRTrafficChannelManager)trafficChannelManager;
+            }
+            else
+            {
+                dmrTrafficChannelManager = new DMRTrafficChannelManager(channel);
+            }
+
+            modules.add(dmrTrafficChannelManager);
+        }
+
+        modules.add(new DMRDecoderState(channel, 1, dmrTrafficChannelManager));
+        modules.add(new DMRDecoderState(channel, 2, dmrTrafficChannelManager));
+        modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
+        modules.add(new DMRAudioModule(userPreferences, aliasList, 2));
+
+        //Add a channel rotation monitor when we have multiple control channel frequencies specified
+        if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency &&
+            ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).hasMultipleFrequencies())
+        {
+            List<State> activeStates = new ArrayList<>();
+            activeStates.add(State.CONTROL);
+            modules.add(new ChannelRotationMonitor(activeStates,
+                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay()));
         }
     }
 
@@ -419,6 +490,9 @@ public class DecoderFactory
             case PASSPORT:
                 filters.add(new PassportMessageFilter());
                 break;
+            case DMR:
+                //filters.add(new DMR) //todo: not finished
+                break;
             default:
                 break;
         }
@@ -439,10 +513,12 @@ public class DecoderFactory
         {
             case AM:
                 return new DecodeConfigAM();
-            case LTR_NET:
-                return new DecodeConfigLTRNet();
+            case DMR:
+                return new DecodeConfigDMR();
             case LTR:
                 return new DecodeConfigLTRStandard();
+            case LTR_NET:
+                return new DecodeConfigLTRNet();
             case MPT1327:
                 return new DecodeConfigMPT1327();
             case NBFM:
@@ -472,6 +548,8 @@ public class DecoderFactory
                     DecodeConfigAM origAM = (DecodeConfigAM)config;
                     copyAM.setRecordAudio(origAM.getRecordAudio());
                     return copyAM;
+                case DMR:
+                    return new DecodeConfigDMR();
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet)config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();

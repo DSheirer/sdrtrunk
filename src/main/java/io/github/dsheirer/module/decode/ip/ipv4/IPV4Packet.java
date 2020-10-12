@@ -20,12 +20,13 @@
 
 package io.github.dsheirer.module.decode.ip.ipv4;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
 import io.github.dsheirer.module.decode.ip.PacketMessageFactory;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,7 +45,7 @@ public class IPV4Packet extends Packet
      * @param message containing an IPV4 packet
      * @param offset to the start of the packet within the binary message
      */
-    public IPV4Packet(BinaryMessage message, int offset)
+    public IPV4Packet(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -120,14 +121,14 @@ public class IPV4Packet extends Packet
         if(mIdentifiers == null)
         {
             mIdentifiers = new ArrayList<>();
+            mIdentifiers.add(getHeader().getFromAddress());
+            mIdentifiers.add(getHeader().getToAddress());
 
+            //Roll up the identifiers from the payload packet
             if(hasPayload())
             {
                 mIdentifiers.addAll(getPayload().getIdentifiers());
             }
-
-            mIdentifiers.add(getHeader().getToAddress());
-            mIdentifiers.add(getHeader().getFromAddress());
         }
 
         return mIdentifiers;

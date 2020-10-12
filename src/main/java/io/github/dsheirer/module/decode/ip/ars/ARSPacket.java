@@ -20,11 +20,11 @@
 
 package io.github.dsheirer.module.decode.ip.ars;
 
-import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
-import java.util.Collections;
+
 import java.util.List;
 
 public class ARSPacket extends Packet
@@ -37,7 +37,7 @@ public class ARSPacket extends Packet
      * @param message containing the packet
      * @param offset to the packet within the message
      */
-    public ARSPacket(BinaryMessage message, int offset)
+    public ARSPacket(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -71,6 +71,6 @@ public class ARSPacket extends Packet
     @Override
     public List<Identifier> getIdentifiers()
     {
-        return Collections.emptyList();
+        return getHeader().getIdentifiers();
     }
 }

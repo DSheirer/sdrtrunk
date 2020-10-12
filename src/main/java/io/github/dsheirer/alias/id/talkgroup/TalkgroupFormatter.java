@@ -23,6 +23,7 @@ package io.github.dsheirer.alias.id.talkgroup;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.AbstractIntegerFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.DMRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.MDC1200TalkgroupFormatter;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -49,6 +49,7 @@ public class TalkgroupFormatter
     static
     {
         mFormatterMap.put(Protocol.APCO25, new APCO25TalkgroupFormatter());
+        mFormatterMap.put(Protocol.DMR, new DMRTalkgroupFormatter());
         mFormatterMap.put(Protocol.FLEETSYNC, new FleetsyncTalkgroupFormatter());
         LTRTalkgroupFormatter ltr = new LTRTalkgroupFormatter();
         mFormatterMap.put(Protocol.LTR, ltr);

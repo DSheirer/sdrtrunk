@@ -26,18 +26,25 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.protocol.Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Channel state identifier.  Reflects the current state of the channel.
+ */
 public class ChannelStateIdentifier extends Identifier<State>
 {
-    public static final ChannelStateIdentifier ACTIVE = ChannelStateIdentifier.create(State.ACTIVE);
-    public static final ChannelStateIdentifier CALL = ChannelStateIdentifier.create(State.CALL);
-    public static final ChannelStateIdentifier CONTROL = ChannelStateIdentifier.create(State.CONTROL);
-    public static final ChannelStateIdentifier DATA = ChannelStateIdentifier.create(State.DATA);
-    public static final ChannelStateIdentifier ENCRYPTED = ChannelStateIdentifier.create(State.ENCRYPTED);
-    public static final ChannelStateIdentifier FADE = ChannelStateIdentifier.create(State.FADE);
-    public static final ChannelStateIdentifier IDLE = ChannelStateIdentifier.create(State.IDLE);
-    public static final ChannelStateIdentifier TEARDOWN = ChannelStateIdentifier.create(State.TEARDOWN);
-    public static final ChannelStateIdentifier RESET = ChannelStateIdentifier.create(State.RESET);
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelStateIdentifier.class);
+
+    public static final ChannelStateIdentifier ACTIVE = new ChannelStateIdentifier(State.ACTIVE);
+    public static final ChannelStateIdentifier CALL = new ChannelStateIdentifier(State.CALL);
+    public static final ChannelStateIdentifier CONTROL = new ChannelStateIdentifier(State.CONTROL);
+    public static final ChannelStateIdentifier DATA = new ChannelStateIdentifier(State.DATA);
+    public static final ChannelStateIdentifier ENCRYPTED = new ChannelStateIdentifier(State.ENCRYPTED);
+    public static final ChannelStateIdentifier FADE = new ChannelStateIdentifier(State.FADE);
+    public static final ChannelStateIdentifier IDLE = new ChannelStateIdentifier(State.IDLE);
+    public static final ChannelStateIdentifier TEARDOWN = new ChannelStateIdentifier(State.TEARDOWN);
+    public static final ChannelStateIdentifier RESET = new ChannelStateIdentifier(State.RESET);
 
     public ChannelStateIdentifier(State value)
     {
@@ -53,9 +60,32 @@ public class ChannelStateIdentifier extends Identifier<State>
     /**
      * Creates a decoder state identifier from the decoder state value
      */
-    public static ChannelStateIdentifier create(State state)
+    public static ChannelStateIdentifier get(State state)
     {
-        return new ChannelStateIdentifier(state);
+        switch(state)
+        {
+            case ACTIVE:
+                return ACTIVE;
+            case CALL:
+                return CALL;
+            case CONTROL:
+                return CONTROL;
+            case DATA:
+                return DATA;
+            case ENCRYPTED:
+                return ENCRYPTED;
+            case FADE:
+                return FADE;
+            case IDLE:
+                return IDLE;
+            case RESET:
+                return RESET;
+            case TEARDOWN:
+                return TEARDOWN;
+            default:
+                mLog.warn("Creating new channel state identifier for unrecognized state [" + state + "]");
+                return new ChannelStateIdentifier(state);
+        }
     }
 
     @Override

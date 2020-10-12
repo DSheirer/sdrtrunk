@@ -129,7 +129,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     public void dispose()
     {
         //Deregister from receiving preference update notifications
-        MyEventBus.getEventBus().unregister(this);
+        MyEventBus.getGlobalEventBus().unregister(this);
 
         if(mAudioOutput != null)
         {
@@ -141,7 +141,7 @@ public class AudioChannelPanel extends JPanel implements Listener<AudioEvent>, S
     private void init()
     {
         //Register to receive preference updates
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         setLayout(new MigLayout("align center center, insets 0 0 0 0",
             "[][][align right]0[grow,fill]", ""));

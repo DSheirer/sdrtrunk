@@ -27,10 +27,11 @@ import com.google.common.eventbus.EventBus;
  */
 public class MyEventBus
 {
-    private static final EventBus EVENT_BUS = new EventBus();
+    private static final EventBus GLOBAL_EVENT_BUS = new EventBus();
 
-    public static EventBus getEventBus()
+    //TODO: this is primarily used by the Preference Service ... move this event bus to the Preference Service
+    public static EventBus getGlobalEventBus()
     {
-        return EVENT_BUS;
+        return GLOBAL_EVENT_BUS;
     }
 }

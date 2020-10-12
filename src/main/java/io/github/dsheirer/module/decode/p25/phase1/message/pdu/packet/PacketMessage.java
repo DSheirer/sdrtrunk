@@ -21,6 +21,7 @@
 package io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.PacketMessageFactory;
@@ -46,7 +47,7 @@ public class PacketMessage extends P25Message
 
     private PDUSequence mPDUSequence;
     private BinaryMessage mPayload;
-    private BinaryMessage mPacketMessage;
+    private CorrectedBinaryMessage mPacketMessage;
     private SNDCPPacketHeader mSNDCPPacketHeader;
     private IPacket mPacket;
     private List<Identifier> mIdentifiers;
@@ -185,7 +186,7 @@ public class PacketMessage extends P25Message
         return mPacket;
     }
 
-    public BinaryMessage getPacketMessage()
+    public CorrectedBinaryMessage getPacketMessage()
     {
         if(mPacketMessage == null)
         {
@@ -197,13 +198,14 @@ public class PacketMessage extends P25Message
                 end -= (getHeader().getPadOctetCount() * 8);
                 if(end > start)
                 {
-                    mPacketMessage = getPayloadMessage().getSubMessage(start, end);
+                    BinaryMessage message = getPayloadMessage().getSubMessage(start, end);
+                    mPacketMessage = new CorrectedBinaryMessage(message);
                 }
             }
 
             if(mPacketMessage == null)
             {
-                mPacketMessage = new BinaryMessage(0);
+                mPacketMessage = new CorrectedBinaryMessage(0);
             }
         }
 

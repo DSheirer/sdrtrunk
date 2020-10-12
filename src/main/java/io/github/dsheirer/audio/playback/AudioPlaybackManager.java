@@ -73,7 +73,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     public AudioPlaybackManager(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
-        MyEventBus.getEventBus().register(this);
+        MyEventBus.getGlobalEventBus().register(this);
 
         MixerChannelConfiguration configuration = mUserPreferences.getPlaybackPreference().getMixerChannelConfiguration();
 
@@ -254,6 +254,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 
     public void dispose()
     {
+        MyEventBus.getGlobalEventBus().unregister(this);
         if(mProcessingTask != null)
         {
             mProcessingTask.cancel(true);
