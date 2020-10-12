@@ -81,6 +81,15 @@ public abstract class HistoryModule<T> extends Module implements Listener<T>
     }
 
     /**
+     * Removes the listener from receiving items.
+     * @param listener to remove
+     */
+    public void removeListener(Listener<T> listener)
+    {
+        mBroadcaster.removeListener(listener);
+    }
+
+    /**
      * Primary item receiver method.
      */
     @Override

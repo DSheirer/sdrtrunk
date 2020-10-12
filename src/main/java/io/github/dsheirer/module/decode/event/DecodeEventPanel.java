@@ -139,7 +139,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     {
         if(mCurrentEventHistory != null)
         {
-            mCurrentEventHistory.addListener(null);
+            mCurrentEventHistory.removeListener(mEventModel);
         }
 
         EventQueue.invokeLater(() -> {
