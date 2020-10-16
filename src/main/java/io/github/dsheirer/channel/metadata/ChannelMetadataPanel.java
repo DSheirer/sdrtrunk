@@ -25,7 +25,8 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.controller.channel.ChannelUtils;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
@@ -412,11 +413,12 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                             if(channel != null)
                             {
-                                popupMenu.add(ChannelUtils.getContextMenu(mChannelModel, mChannelProcessingManager, channel, mTable));
+                                JMenuItem viewChannel = new JMenuItem("View/Edit: " + channel.getShortTitle());
+                                viewChannel.addActionListener(e2 -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
+                                popupMenu.add(viewChannel);
                                 populated = true;
                             }
                         }
-
                     }
                 }
 
