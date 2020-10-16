@@ -65,19 +65,40 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
     private ComboBox<String> mPreferredTunerComboBox;
     private VBox mFrequencyBoxContainer;
     private Spinner<Integer> mChannelRotationDelaySpinner;
-    private boolean mAllowMultipleFrequencies;
+    private boolean mAllowMultipleFrequencies = false;
+    private int mFrequencyRotationMinimum = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM;
+    private int mFrequencyRotationMaximum = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MAXIMUM;
 
     /**
-     * Constructs an instance.
+     * Constructs an instance with support for multiple frequency values.  The min and max rotation delay values
+     * define constraints for the channel rotation delay monitor, how long the monitor dwells on each frequency in a
+     * multi-frequency configuration.
+     *
      * @param tunerModel for accessing list of tuners to select a preferred tuner
-     * @param allowMultipleFrequencies toggles behavior of the editor between single frequency (false) or multiple
-     * frequencies (true).
+     * @param minRotationDelay in milliseconds for channel/frequency dwell
+     * @param maxRotationDelay in milliseconds for channel/frequency dwell
      */
-    public FrequencyEditor(TunerModel tunerModel, boolean allowMultipleFrequencies)
+    public FrequencyEditor(TunerModel tunerModel, int minRotationDelay, int maxRotationDelay)
     {
         mTunerModel = tunerModel;
-        mAllowMultipleFrequencies = allowMultipleFrequencies;
+        mAllowMultipleFrequencies = true;
+        mFrequencyRotationMinimum = minRotationDelay;
+        mFrequencyRotationMaximum = maxRotationDelay;
+        init();
+    }
 
+    /**
+     * Constructs an instance with a default behavior of single frequency support only.
+     * @param tunerModel for accessing list of tuners to select a preferred tuner
+     */
+    public FrequencyEditor(TunerModel tunerModel)
+    {
+        mTunerModel = tunerModel;
+        init();
+    }
+
+    private void init()
+    {
         HBox hBox = new HBox();
         hBox.setPadding(new Insets(10,10,10,10));
         hBox.setSpacing(10);
@@ -93,17 +114,25 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
         tunerBox.setSpacing(10);
         tunerBox.getChildren().addAll(preferredTunerLabel, getPreferredTunerComboBox());
 
-        Label frequencyRotationLabel = new Label("Frequency Rotation Delay (ms)");
-        HBox frequencyBox = new HBox();
-        frequencyBox.setAlignment(Pos.CENTER_LEFT);
-        frequencyBox.setSpacing(10);
-        frequencyBox.getChildren().addAll(frequencyRotationLabel, getFrequencyRotationDelaySpinner());
-        getFrequencyRotationDelaySpinner().disableProperty().bind(Bindings.greaterThan(2, Bindings.size(mFrequencyBoxes)));
-
         VBox vbox = new VBox();
         vbox.setSpacing(10);
         vbox.setPadding(new Insets(0,0,0,20));
-        vbox.getChildren().addAll(tunerBox, frequencyBox);
+
+        if(mAllowMultipleFrequencies)
+        {
+            Label frequencyRotationLabel = new Label("Frequency Rotation Delay (ms)");
+            HBox frequencyBox = new HBox();
+            frequencyBox.setAlignment(Pos.CENTER_LEFT);
+            frequencyBox.setSpacing(10);
+            frequencyBox.getChildren().addAll(frequencyRotationLabel, getFrequencyRotationDelaySpinner());
+            getFrequencyRotationDelaySpinner().disableProperty().bind(Bindings.greaterThan(2, Bindings.size(mFrequencyBoxes)));
+
+            vbox.getChildren().addAll(tunerBox, frequencyBox);
+        }
+        else
+        {
+            vbox.getChildren().addAll(tunerBox);
+        }
 
         hBox.getChildren().add(vbox);
 
@@ -225,7 +254,25 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
             SourceConfigTunerMultipleFrequency sourceMulti = (SourceConfigTunerMultipleFrequency)sourceConfiguration;
             setFrequencies(sourceMulti.getFrequencies());
             preferredTuner = sourceMulti.getPreferredTuner();
-            getFrequencyRotationDelaySpinner().getValueFactory().setValue(sourceMulti.getFrequencyRotationDelay());
+
+            int rotationDelay = sourceMulti.getFrequencyRotationDelay();
+
+            if(rotationDelay < mFrequencyRotationMinimum)
+            {
+                rotationDelay = mFrequencyRotationMinimum;
+
+                //For backward compatibility, we'll automatically update the value in the source config
+                sourceMulti.setFrequencyRotationDelay(rotationDelay);
+            }
+            if(rotationDelay > mFrequencyRotationMaximum)
+            {
+                rotationDelay = mFrequencyRotationMaximum;
+
+                //For backward compatibility, we'll automatically update the value in the source config
+                sourceMulti.setFrequencyRotationDelay(rotationDelay);
+            }
+
+            getFrequencyRotationDelaySpinner().getValueFactory().setValue(rotationDelay);
         }
         else
         {
@@ -235,7 +282,6 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
         }
 
         updatePreferredTuners();
-
 
         if(preferredTuner != null)
         {
@@ -267,9 +313,8 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
             mChannelRotationDelaySpinner.setTooltip(
                 new Tooltip("Delay on each frequency before rotating to next when seeking to next active channel frequency"));
             mChannelRotationDelaySpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
-            int min = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM;
-            int max = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MAXIMUM;
-            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(min, max, min, 50);
+            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(mFrequencyRotationMinimum,
+                mFrequencyRotationMaximum, mFrequencyRotationMinimum, 50);
             mChannelRotationDelaySpinner.setValueFactory(svf);
             mChannelRotationDelaySpinner.getValueFactory().valueProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
@@ -277,7 +322,6 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
 
         return mChannelRotationDelaySpinner;
     }
-
 
     /**
      * Updates the preferred tuner's combo box to reflect the current set of tuners.

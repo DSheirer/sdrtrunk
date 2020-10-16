@@ -34,6 +34,8 @@ import java.util.List;
  */
 public class DecodeConfigDMR extends DecodeConfiguration
 {
+    public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
+    public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
