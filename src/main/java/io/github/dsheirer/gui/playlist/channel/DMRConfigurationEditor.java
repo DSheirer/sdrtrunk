@@ -231,7 +231,9 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mSourceConfigurationEditor == null)
         {
-            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel(), true);
+            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel(),
+                DecodeConfigDMR.CHANNEL_ROTATION_DELAY_MINIMUM_MS,
+                DecodeConfigDMR.CHANNEL_ROTATION_DELAY_MAXIMUM_MS);
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()
