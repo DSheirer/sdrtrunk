@@ -87,8 +87,8 @@ dependencies {
     implementation 'org.usb4java:usb4java-javax:1.3.0'
     implementation 'pl.edu.icm:JLargeArrays:1.6'
     
-    //Temporary local import for testing (need to move to mavenCentral/jCenter eventually)
-    implementation project(":SDRplayJava")
+    // SDRplay support
+    implementation 'io.github.sammy1am:SDRplayJava:0.6.0'
 
     //These must remain as compile options to ensure they are included in the build to produce multi-OS images
     compile "org.openjfx:javafx-base:13.0.2:win"
