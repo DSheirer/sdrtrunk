@@ -271,11 +271,11 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     public void receiveEvent(EventT eventId, TunerParamsT.TunerSelectT tuner, EventParameters params) {
         switch (eventId) {
             case PowerOverloadChange:
-                System.out.println("Power Overload: " + params.powerOverloadParams.powerOverloadChangeType.toString());
+                mLog.info("Power Overload: " + params.powerOverloadParams.powerOverloadChangeType.toString());
                 mDevice.acknowledgeOverload();
                 break;
             default:
-                System.out.println("Event: " + eventId);
+                mLog.info("Event: " + eventId);
         }
     }
 }
