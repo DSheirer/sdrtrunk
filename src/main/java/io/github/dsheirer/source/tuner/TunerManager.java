@@ -206,21 +206,28 @@ public class TunerManager
      */
     private void initSDRplayTuners()
     {   
-        List<SDRplayDevice> devices = new ArrayList<>();
+        
         
         try {
             SDRplayAPI.open(); // Open API
+        } catch (UnsatisfiedLinkError | Exception ex) {
+            mLog.info("Unable to open SDRplay API (make sure the API is in your PATH", ex);
+            return;
+        }
+        
+        List<SDRplayDevice> devices = new ArrayList<>();
+        
+        try {
             mLog.info("SDRplay API Version: " + SDRplayAPI.getApiVersion());
             SDRplayAPI.lockDeviceApi(); // Lock device API (so we don't conflict with other apps
             devices = SDRplayAPI.getDevices(16); // TODO: Why 16 max?
-            
+
             /* Select all the devices we found (this reserves them for our app,
             and also loads their device parameters from the API.
             */
             for (SDRplayDevice device : devices) {
                 device.select();
-            }
-            
+            } 
         } finally {
             // Now that we've selected all our devices, unlock the API.
             try {
