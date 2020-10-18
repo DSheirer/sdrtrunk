@@ -238,6 +238,18 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     public Bw_MHzT getIFBandwidth() {
         return mDevice.getBwType();
     }
+    
+    public int getNumLNAStates() {
+        return mDevice.getNumLNAStates();
+    }
+    
+    public void setLNAState(int lnaState) {
+        mDevice.setLNAState((byte) lnaState);
+    }
+    
+    public int getLNAState() {
+        return mDevice.getLNAState();
+    }
 
     @Override
     public void receiveStreamA(short[] xi, short[] xq, CallbackFnsT.StreamCbParamsT params, int numSamples, int reset) {
@@ -257,12 +269,13 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
 
     @Override
     public void receiveEvent(EventT eventId, TunerParamsT.TunerSelectT tuner, EventParameters params) {
-        // Some weirdness here to avoid requiring importing JNR library
-        if (((Enum)eventId).equals(EventT.PowerOverloadChange)) {
-            System.out.println("Power Overload:" + ((Enum)params.powerOverloadParams.powerOverloadChangeType).toString());
-            mDevice.acknowledgeOverload();
-        } else {
-            System.out.println("Event: " + eventId);
+        switch (eventId) {
+            case PowerOverloadChange:
+                System.out.println("Power Overload: " + params.powerOverloadParams.powerOverloadChangeType.toString());
+                mDevice.acknowledgeOverload();
+                break;
+            default:
+                System.out.println("Event: " + eventId);
         }
     }
 }

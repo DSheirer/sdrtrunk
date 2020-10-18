@@ -15,6 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.sdrplay;
 
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.SourceEvent.Event;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
@@ -26,6 +29,7 @@ import io.github.sammy1am.sdrplay.ApiException;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
+import java.awt.Color;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +52,9 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
+import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
+import javax.swing.JSlider;
 
 public class SDRplayTunerEditor extends TunerConfigurationEditor
 {
@@ -64,6 +70,8 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     
     private JComboBox<If_kHzT> mComboIfMode;
     private JComboBox<Bw_MHzT> mComboBandwidth;
+    
+    private JSlider mLNAState;
     
     private JToggleButton mAmplifier;
     private JComboBox<HackRFLNAGain> mComboLNAGain;
@@ -94,7 +102,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",
-            "[][][][][][][][][][grow]"));
+            "[][][][][][][][][grow]"));
 
         add(new JLabel("SDRplay Tuner Configuration"), "span,align center");
 
@@ -255,94 +263,62 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         add(mComboBandwidth);
         
         add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
-        add(new JLabel("Gain"));
-        add(new JLabel(""), "span 2"); //filler
-
-        mAmplifier = new JToggleButton("Amplifier");
-        mAmplifier.setEnabled(false);
-        mAmplifier.addActionListener(new ActionListener()
+        
+        add(new JLabel(""), "span 2");
+        add(new JLabel("<html>RF Gain Reduction<br/>(LNA State)</html>"), "top");
+        
+        mLNAState = new JSlider();
+        mLNAState.setEnabled(false);
+        mLNAState.setMajorTickSpacing(1);
+        mLNAState.setPaintTicks(true);
+        mLNAState.setPaintLabels(true);
+        mLNAState.setPaintTrack(false);
+        mLNAState.setSnapToTicks(true);
+        mLNAState.setMinimum(0);
+        mLNAState.setMaximum(mController.getNumLNAStates()-1);
+        mLNAState.addChangeListener(new ChangeListener()
         {
             @Override
-            public void actionPerformed(ActionEvent arg0)
+            public void stateChanged(ChangeEvent e)
             {
-//                try
-//                {
-//                    mController.setAmplifierEnabled(mAmplifier.isSelected());
-//                    save();
-//                }
-//                catch(UsbException e)
-//                {
-//                    mLog.error("couldn't enable/disable amplifier", e);
-//
-//                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "Couldn't change amplifier setting",
-//                        "Error changing amplifier setting", JOptionPane.ERROR_MESSAGE);
-//                }
-            }
-        });
-        add(mAmplifier);
+                final int value = mLNAState.getValue();
 
-        mComboLNAGain = new JComboBox<HackRFLNAGain>(HackRFLNAGain.values());
-        mComboLNAGain.setEnabled(false);
-        mComboLNAGain.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent arg0)
-            {
-//                try
-//                {
-//                    HackRFLNAGain lnaGain = (HackRFLNAGain)mComboLNAGain.getSelectedItem();
-//
-//                    if(lnaGain == null)
-//                    {
-//                        lnaGain = HackRFLNAGain.GAIN_16;
-//                    }
-//
-//                    mController.setLNAGain(lnaGain);
-//                    save();
-//                }
-//                catch(UsbException e)
-//                {
-//                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "HackRF Tuner Controller"
-//                        + " - couldn't apply the LNA gain setting - " + e.getLocalizedMessage());
-//
-//                    mLog.error("HackRF Tuner Controller - couldn't apply LNA gain setting - ", e);
-//                }
-            }
-        });
-        mComboLNAGain.setToolTipText("<html>LNA Gain.  Adjust to set the IF gain</html>");
-        add(new JLabel("LNA:"));
-        add(mComboLNAGain);
+                try
+                {
+                    mController.setLNAState(value);
+                    save();
+                }
+                catch(ApiException ae)
+                {
+                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "SDRplay Tuner Controller"
+                        + " - couldn't apply LNA State value: " + value +
+                        ae.getLocalizedMessage());
 
-        mComboVGAGain = new JComboBox<HackRFVGAGain>(HackRFVGAGain.values());
-        mComboVGAGain.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent arg0)
-            {
-//                try
-//                {
-//                    HackRFVGAGain vgaGain = (HackRFVGAGain)mComboVGAGain.getSelectedItem();
-//
-//                    if(vgaGain == null)
-//                    {
-//                        vgaGain = HackRFVGAGain.GAIN_16;
-//                    }
-//
-//                    mController.setVGAGain(vgaGain);
-//                    save();
-//                }
-//                catch(UsbException e)
-//                {
-//                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "HackRF Tuner Controller"
-//                        + " - couldn't apply the VGA gain setting - " + e.getLocalizedMessage());
-//
-//                    mLog.error("HackRF Tuner Controller - couldn't apply VGA gain setting", e);
-//                }
+                    mLog.error("SDRplay Tuner Controller - couldn't apply LNA State value: " + value, ae);
+                }
             }
         });
-        mComboVGAGain.setToolTipText("<html>VGA Gain.  Adjust to set the baseband gain</html>");
-        add(new JLabel("VGA:"));
-        add(mComboVGAGain);
+        /*
+        TODO: This addListener call will likely slowly leak memory because it doesn't
+        have a corresponding removeListener call anywhere.  However, there doesn't seem to be a
+        editor.close() method available, so without resorting to finalizer(), there's nowhere
+        to appropriately remove us as a listener.
+        */
+        mController.addListener(new ISourceEventProcessor() {
+            @Override
+            public void process(SourceEvent event) throws SourceException {
+                if (Event.NOTIFICATION_FREQUENCY_CHANGE.equals(event.getEvent())){
+                    // Different LNA states are available for different frequencies, so 
+                    // update the maximum state here
+                    int newMax = mController.getNumLNAStates()-1;
+                    if (mLNAState.getValue() > newMax) {
+                        mLNAState.setValue(newMax);
+                    }
+                    mLNAState.setMaximum(newMax);
+                }
+            }
+        });
+        add(mLNAState);
     }
 
     /**
@@ -407,19 +383,9 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             mComboBandwidth.setEnabled(enabled);
         }
 
-        if(mAmplifier.isEnabled() != enabled)
+        if(mLNAState.isEnabled() != enabled)
         {
-            mAmplifier.setEnabled(enabled);
-        }
-
-        if(mComboLNAGain.isEnabled() != enabled)
-        {
-            mComboLNAGain.setEnabled(enabled);
-        }
-
-        if(mComboVGAGain.isEnabled() != enabled)
-        {
-            mComboVGAGain.setEnabled(enabled);
+            mLNAState.setEnabled(enabled);
         }
     }
 
@@ -464,9 +430,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 mComboIfMode.setSelectedItem(config.getIfType());
                 mComboBandwidth.setSelectedItem(config.getBwType());
                 
-                mAmplifier.setSelected(config.getAmplifierEnabled());
-                mComboLNAGain.setSelectedItem(config.getLNAGain());
-                mComboVGAGain.setSelectedItem(config.getVGAGain());
+                mLNAState.setValue(config.getLNAState());
 
                 //Update enabled state to reflect when frequency and sample rate controls are locked
                 mComboSampleRate.setEnabled(!mController.isLocked());
@@ -504,9 +468,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             config.setIfType((If_kHzT)mComboIfMode.getSelectedItem());
             config.setBwType((Bw_MHzT)mComboBandwidth.getSelectedItem());
             
-            config.setAmplifierEnabled(mAmplifier.isSelected());
-            config.setLNAGain((HackRFLNAGain)mComboLNAGain.getSelectedItem());
-            config.setVGAGain((HackRFVGAGain)mComboVGAGain.getSelectedItem());
+            config.setLNAState(mLNAState.getValue());
 
             getTunerConfigurationModel().broadcast(
                 new TunerConfigurationEvent(getConfiguration(), TunerConfigurationEvent.Event.CHANGE));

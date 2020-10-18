@@ -36,9 +36,7 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     private If_kHzT mIfType = If_kHzT.IF_Zero;
     private Bw_MHzT mBwType = Bw_MHzT.BW_0_200;
     
-    private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_16;  // We can see some signal at this gain
-    private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_16;  // We can see some signal at this gain
-    private boolean mAmplifierEnabled = false;  //Probably should start off disabled
+    private int mLNAState = 0;
     
 
     /**
@@ -60,37 +58,15 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
         return TunerType.SDRPLAY;
     }
 
-    @JacksonXmlProperty(isAttribute = true, localName = "amplifier_enabled")
-    public boolean getAmplifierEnabled()
+    @JacksonXmlProperty(isAttribute = true, localName = "lna_state")
+    public int getLNAState()
     {
-        return mAmplifierEnabled;
+        return mLNAState;
     }
 
-    public void setAmplifierEnabled(boolean enabled)
+    public void setLNAState(int lnaState)
     {
-        mAmplifierEnabled = enabled;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "lna_gain")
-    public HackRFLNAGain getLNAGain()
-    {
-        return mLNAGain;
-    }
-
-    public void setLNAGain(HackRFLNAGain lnaGain)
-    {
-        mLNAGain = lnaGain;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "vga_gain")
-    public HackRFVGAGain getVGAGain()
-    {
-        return mVGAGain;
-    }
-
-    public void setVGAGain(HackRFVGAGain vgaGain)
-    {
-        mVGAGain = vgaGain;
+        mLNAState = lnaState;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "frequency_correction")
