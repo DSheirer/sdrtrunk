@@ -823,15 +823,20 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         }
         else
         {
+            mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
+            mCurrentCallEvent.end(timestamp);
+            broadcast(mCurrentCallEvent);
+
             if(type == DecodeEventType.CALL_ENCRYPTED)
             {
                 mCurrentCallEvent.setEventDescription(type.toString());
                 mCurrentCallEvent.setDetails(details);
+                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED));
             }
-            mCurrentCallEvent.setIdentifierCollection(getIdentifierCollection().copyOf());
-            mCurrentCallEvent.end(timestamp);
-            broadcast(mCurrentCallEvent);
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+            else
+            {
+                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+            }
         }
     }
 
