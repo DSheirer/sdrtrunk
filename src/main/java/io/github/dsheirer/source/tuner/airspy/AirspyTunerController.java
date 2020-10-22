@@ -406,6 +406,25 @@ public class AirspyTunerController extends USBTunerController
             {
                 mSampleRate = rate.getRate();
                 mFrequencyController.setSampleRate(mSampleRate);
+
+                // Update the Usable Bandwidth Percentage, as the usable range varies with the sample rate.
+                // Values below are from https://github.com/DSheirer/sdrtrunk/issues/815#issuecomment-699859590
+                switch(mSampleRate)
+                {
+                    default:
+                    case 10000000:
+                        super.setUsableBandwidthPercentage(0.90);
+                        break;
+                    case 6000000:
+                        super.setUsableBandwidthPercentage(0.83);
+                        break;
+                    case 3000000:
+                        super.setUsableBandwidthPercentage(0.66);
+                        break;
+                    case 2500000:
+                        super.setUsableBandwidthPercentage(0.60);
+                        break;
+                }
             }
         }
     }
