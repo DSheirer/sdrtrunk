@@ -56,7 +56,7 @@ public class ChannelStartProcessingRequest extends ModuleEventBusMessage
     {
         mChannel = channel;
         mChannelDescriptor = channelDescriptor;
-        mIdentifierCollection = identifierCollection;
+        mIdentifierCollection = (identifierCollection != null ? identifierCollection : new IdentifierCollection());
         mTrafficChannelManager = trafficChannelManager;
     }
 
