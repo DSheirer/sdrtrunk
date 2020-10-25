@@ -186,6 +186,7 @@ public class Channel extends Configuration implements Listener<SourceEvent>
      * ten characters each.
      * @return short title
      */
+    @JsonIgnore
     public String getShortTitle()
     {
         StringBuilder sb = new StringBuilder();
