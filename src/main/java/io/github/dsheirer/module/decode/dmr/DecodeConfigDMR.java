@@ -39,6 +39,7 @@ public class DecodeConfigDMR extends DecodeConfiguration
     public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
+    private boolean mIgnoreCRCChecksums = false;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
 
     public DecodeConfigDMR()
@@ -88,6 +89,24 @@ public class DecodeConfigDMR extends DecodeConfiguration
     public void setIgnoreDataCalls(boolean ignore)
     {
         mIgnoreDataCalls = ignore;
+    }
+
+    /**
+     * Indicates if decoder should ignore CRC checksums when validating decoded messages
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "ignore_crc")
+    public boolean getIgnoreCRCChecksums()
+    {
+        return mIgnoreCRCChecksums;
+    }
+
+    /**
+     * Sets flag to ignore CRC checksums
+     * @param ignore true to ignore CRC checksums.
+     */
+    public void setIgnoreCRCChecksums(boolean ignore)
+    {
+        mIgnoreCRCChecksums = ignore;
     }
 
     /**

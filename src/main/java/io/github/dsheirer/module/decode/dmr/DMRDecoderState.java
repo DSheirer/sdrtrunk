@@ -94,6 +94,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
     private long mCurrentFrequency;
+    private boolean mIgnoreCRCChecksums;
     private Map<Integer,DecodeEvent> mDetectedCallEventsMap = new TreeMap<>();
     private static final AddChannelRotationActiveStateRequest CAPACITY_PLUS_ACTIVE_STATE_REQUEST =
                             new AddChannelRotationActiveStateRequest(State.ACTIVE);
@@ -115,6 +116,12 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(timeslot == 1)
         {
             mNetworkConfigurationMonitor = new DMRNetworkConfigurationMonitor(channel);
+        }
+
+        //For RAS protected systems, allows user to ignore CRC checksums and still decode the system
+        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR)
+        {
+            mIgnoreCRCChecksums = ((DecodeConfigDMR)channel.getDecodeConfiguration()).getIgnoreCRCChecksums();
         }
     }
 
@@ -190,7 +197,7 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 processData((DataMessage)message);
             }
-            else if(message.isValid() && message instanceof LCMessage)
+            else if((message.isValid() || mIgnoreCRCChecksums) && message instanceof LCMessage)
             {
                 processLinkControl((LCMessage)message, false);
             }
@@ -204,13 +211,14 @@ public class DMRDecoderState extends TimeslotDecoderState
             }
         }
         //SLCO messages on timeslot 0 to catch capacity plus rest channel events
-        else if(message.isValid() && message.getTimeslot() == 0 && message instanceof LCMessage)
+        else if((message.isValid() || mIgnoreCRCChecksums) && message.getTimeslot() == 0 && message instanceof LCMessage)
         {
             processLinkControl((LCMessage)message, false);
         }
 
         //Pass the message to the network configuration monitor, if this decoder state has a non-null instance
-        if(mNetworkConfigurationMonitor != null && message.isValid() && message instanceof DMRMessage)
+        if(mNetworkConfigurationMonitor != null && (message.isValid() || mIgnoreCRCChecksums) &&
+            message instanceof DMRMessage)
         {
             mNetworkConfigurationMonitor.process((DMRMessage)message);
         }
@@ -264,7 +272,7 @@ public class DMRDecoderState extends TimeslotDecoderState
      */
     private void processPacket(DMRPacketMessage packet)
     {
-        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA, getTimeslot()));
+        broadcast(new DecoderStateEvent(this, Event.START, State.DATA, getTimeslot()));
 
         DecodeEvent packetEvent = DMRDecodeEvent.builder(packet.getTimestamp())
             .eventDescription(DecodeEventType.DATA_PACKET.name())
@@ -301,7 +309,7 @@ public class DMRDecoderState extends TimeslotDecoderState
             case MBC_ENC_HEADER:
             case DATA_ENC_HEADER:
             case CHANNEL_CONTROL_ENC_HEADER:
-                broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA, getTimeslot()));
+                broadcast(new DecoderStateEvent(this, Event.START, State.DATA, getTimeslot()));
                 break;
         }
 
@@ -325,7 +333,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         switch(message.getSlotType().getDataType())
         {
             case CSBK:
-                if(message.isValid() && message instanceof CSBKMessage)
+                if((message.isValid() || mIgnoreCRCChecksums) && message instanceof CSBKMessage)
                 {
                     processCSBK((CSBKMessage)message);
                 }
@@ -360,10 +368,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                     processTerminator((Terminator)message);
                 }
                 break;
-            case MBC_BLOCK:
             case RATE_1_OF_2_DATA:
             case RATE_3_OF_4_DATA:
             case RATE_1_DATA:
+                broadcast(new DecoderStateEvent(this, Event.START, State.DATA, getTimeslot()));
+                break;
+            case MBC_BLOCK:
             case RESERVED_15:
             case UNKNOWN:
             default:
@@ -410,7 +420,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(csbk instanceof Acknowledge)
                 {
                     DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                        .eventDescription(DecodeEventType.RESPONSE.name())
+                        .eventDescription(DecodeEventType.RESPONSE.toString())
                         .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                         .timeslot(csbk.getTimeslot())
                         .details(((Acknowledge)csbk).getReason().toString())
@@ -425,7 +435,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(csbk instanceof Acknowledge)
                 {
                     DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                        .eventDescription(DecodeEventType.RESPONSE.name())
+                        .eventDescription(DecodeEventType.RESPONSE.toString())
                         .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                         .timeslot(csbk.getTimeslot())
                         .details(((Acknowledge)csbk).getReason().toString())
@@ -442,7 +452,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         case AUTHENTICATE_REGISTER_RADIO_CHECK_SERVICE:
                             DecodeEvent registerEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                .eventDescription(DecodeEventType.COMMAND.name())
+                                .eventDescription(DecodeEventType.COMMAND.toString())
                                 .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                 .timeslot(csbk.getTimeslot())
                                 .details(DecodeEventType.REGISTER.toString())
@@ -451,7 +461,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                             break;
                         case CANCEL_CALL_SERVICE:
                             DecodeEvent cancelEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                .eventDescription(DecodeEventType.COMMAND.name())
+                                .eventDescription(DecodeEventType.COMMAND.toString())
                                 .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                 .timeslot(csbk.getTimeslot())
                                 .details("CANCEL CALL")
@@ -462,7 +472,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                             if(csbk instanceof StunReviveKill)
                             {
                                 DecodeEvent stunEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                    .eventDescription(DecodeEventType.COMMAND.name())
+                                    .eventDescription(DecodeEventType.COMMAND.toString())
                                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                     .timeslot(csbk.getTimeslot())
                                     .details(((StunReviveKill)csbk).getCommand() + " RADIO")
@@ -483,7 +493,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                                 ServiceRadioCheck src = (ServiceRadioCheck)csbk;
 
                                 DecodeEvent checkEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                    .eventDescription(DecodeEventType.RADIO_CHECK.name())
+                                    .eventDescription(DecodeEventType.RADIO_CHECK.toString())
                                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                     .timeslot(csbk.getTimeslot())
                                     .details(src.getServiceDescription() + " SERVICE FOR " +
@@ -504,7 +514,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(aloha.hasRadioIdentifier())
                     {
                         DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                            .eventDescription(DecodeEventType.RESPONSE.name())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                             .timeslot(csbk.getTimeslot())
                             .details("Aloha Acknowledge")
@@ -523,7 +533,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         case MASS_REGISTRATION:
                             DecodeEvent massEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                .eventDescription(DecodeEventType.REGISTER.name())
+                                .eventDescription(DecodeEventType.REGISTER.toString())
                                 .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                 .timeslot(csbk.getTimeslot())
                                 .details("MASS REGISTRATION")
@@ -534,7 +544,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                             if(csbk instanceof VoteNowAdvice)
                             {
                                 DecodeEvent voteEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                    .eventDescription(DecodeEventType.COMMAND.name())
+                                    .eventDescription(DecodeEventType.COMMAND.toString())
                                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                                     .timeslot(csbk.getTimeslot())
                                     .details("VOTE NOW FOR " + ((VoteNowAdvice)csbk).getVotedSystemIdentityCode())
@@ -558,7 +568,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(csbk instanceof Protect)
                 {
                     DecodeEvent protectEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                        .eventDescription(DecodeEventType.COMMAND.name())
+                        .eventDescription(DecodeEventType.COMMAND.toString())
                         .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                         .timeslot(csbk.getTimeslot())
                         .details("PROTECT: " + ((Protect)csbk).getProtectKind())
@@ -722,7 +732,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(cmAloha.hasRadioIdentifier())
                     {
                         DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                            .eventDescription(DecodeEventType.RESPONSE.name())
+                            .eventDescription(DecodeEventType.RESPONSE.toString())
                             .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                             .timeslot(csbk.getTimeslot())
                             .details("Aloha Acknowledge")
@@ -1082,7 +1092,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     ic.update(gpsInformation.getGPSLocation());
 
                     DecodeEvent gpsEvent = DMRDecodeEvent.builder(message.getTimestamp())
-                        .eventDescription(DecodeEventType.GPS.name())
+                        .eventDescription(DecodeEventType.GPS.toString())
                         .identifiers(ic)
                         .timeslot(message.getTimeslot())
                         .details("LOCATION:" + gpsInformation.getGPSLocation())

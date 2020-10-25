@@ -84,6 +84,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
     private ToggleSwitch mIgnoreDataCallsButton;
+    private ToggleSwitch mIgnoreCRCChecksumsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
     private TableView<TimeslotFrequency> mTimeslotFrequencyTable;
     private IntegerTextField mLogicalSlotNumberField;
@@ -149,17 +150,25 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getIgnoreDataCallsButton(), 2, row);
             gridPane.getChildren().add(getIgnoreDataCallsButton());
 
-            Label directionLabel = new Label("Ignore Data Calls");
-            GridPane.setHalignment(directionLabel, HPos.LEFT);
-            GridPane.setConstraints(directionLabel, 3, row);
-            gridPane.getChildren().add(directionLabel);
+            Label ignoreDataLabel = new Label("Ignore Data Calls");
+            GridPane.setHalignment(ignoreDataLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreDataLabel, 3, row);
+            gridPane.getChildren().add(ignoreDataLabel);
+
+            GridPane.setConstraints(getIgnoreCRCChecksumsButton(), 4, row);
+            gridPane.getChildren().add(getIgnoreCRCChecksumsButton());
+
+            Label ignoreCRCLabel = new Label("Ignore CRC Checksums (RAS)");
+            GridPane.setHalignment(ignoreCRCLabel, HPos.LEFT);
+            GridPane.setConstraints(ignoreCRCLabel, 5, row);
+            gridPane.getChildren().add(ignoreCRCLabel);
 
             Label timeslotTableLabel = new Label("Logical Slot Number (LSN) to Frequency Map. Required for: Connect Plus and Tier-III systems that don't use absolute frequencies");
             GridPane.setHalignment(timeslotTableLabel, HPos.LEFT);
-            GridPane.setConstraints(timeslotTableLabel, 0, ++row, 4, 1);
+            GridPane.setConstraints(timeslotTableLabel, 0, ++row, 6, 1);
             gridPane.getChildren().add(timeslotTableLabel);
 
-            GridPane.setConstraints(getTimeslotTable(), 0, ++row, 4, 3);
+            GridPane.setConstraints(getTimeslotTable(), 0, ++row, 6, 3);
             gridPane.getChildren().add(getTimeslotTable());
 
             VBox buttonsBox = new VBox();
@@ -167,7 +176,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             buttonsBox.setSpacing(10);
             buttonsBox.getChildren().addAll(getAddTimeslotFrequencyButton(), getDeleteTimeslotFrequencyButton());
 
-            GridPane.setConstraints(buttonsBox, 4, row, 1, 3);
+            GridPane.setConstraints(buttonsBox, 6, row, 1, 3);
             gridPane.getChildren().addAll(buttonsBox);
 
             row += 3;
@@ -489,6 +498,19 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         return mIgnoreDataCallsButton;
     }
 
+    private ToggleSwitch getIgnoreCRCChecksumsButton()
+    {
+        if(mIgnoreCRCChecksumsButton == null)
+        {
+            mIgnoreCRCChecksumsButton = new ToggleSwitch();
+            mIgnoreCRCChecksumsButton.setDisable(true);
+            mIgnoreCRCChecksumsButton.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mIgnoreCRCChecksumsButton;
+    }
+
     private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
     {
         if(mTrafficChannelPoolSizeSpinner == null)
@@ -553,6 +575,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
+        getIgnoreCRCChecksumsButton().setDisable(config == null);
         getIgnoreDataCallsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
         getTimeslotTable().getItems().clear();
@@ -572,6 +595,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             DecodeConfigDMR decodeConfig = (DecodeConfigDMR)config;
 
             getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
+            getIgnoreCRCChecksumsButton().setSelected(decodeConfig.getIgnoreCRCChecksums());
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
 
             for(TimeslotFrequency timeslotFrequency: decodeConfig.getTimeslotMap())
@@ -581,6 +605,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         }
         else
         {
+            getIgnoreCRCChecksumsButton().setSelected(false);
             getIgnoreDataCallsButton().setSelected(false);
             getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
             getChannelRotationDelaySpinner().getValueFactory().setValue(200);
@@ -602,6 +627,7 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
         }
 
 //        config.setChannelRotationDelay(getChannelRotationDelaySpinner().getValue());
+        config.setIgnoreCRCChecksums(getIgnoreCRCChecksumsButton().isSelected());
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
         config.setTimeslotMap(new ArrayList<>(getTimeslotTable().getItems()));
