@@ -276,6 +276,14 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
+     * Sets the usable bandwidth percentage -- this can change based on samplerate for some tuners
+     */
+    public void setUsableBandwidthPercentage(double usableBandwidthPercentage)
+    {
+        mUsableBandwidthPercentage = usableBandwidthPercentage;
+    }
+
+    /**
      * Usable half bandwidth - total bandwidth minus unusable space at either end of the spectrum.
      *
      * Note: this does not account for any DC spike protected frequency region at the center of the tuner
