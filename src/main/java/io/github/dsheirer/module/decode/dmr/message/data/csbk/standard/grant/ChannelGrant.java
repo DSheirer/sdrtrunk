@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
@@ -148,7 +149,7 @@ public abstract class ChannelGrant extends CSBKMessage implements ITimeslotFrequ
 
         if(mChannel == null)
         {
-            mChannel = new DMRLogicalChannel(getChannelNumber(), getChannelGrantTimeslot());
+            mChannel = new DMRTier3Channel(getChannelNumber(), getChannelGrantTimeslot());
         }
 
         return mChannel;

@@ -24,6 +24,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
@@ -121,7 +122,7 @@ public class AdjacentSiteInformation extends Announcement implements ITimeslotFr
         if(mChannel == null)
         {
             //Timeslot hard-coded to 1
-            mChannel = new DMRLogicalChannel(getMessage().getInt(NEIGHBOR_CHANNEL_NUMBER), 1);
+            mChannel = new DMRTier3Channel(getMessage().getInt(NEIGHBOR_CHANNEL_NUMBER), 1);
         }
 
         return mChannel;

@@ -24,7 +24,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
@@ -156,7 +156,7 @@ public class MoveTSCC extends CSBKMessage
             }
             else
             {
-                mDMRChannel = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER), 1);
+                mDMRChannel = new DMRTier3Channel(getMessage().getInt(CHANNEL_NUMBER), 1);
             }
         }
 

@@ -23,7 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
@@ -221,7 +221,7 @@ public class AnnounceWithdrawTSCC extends Announcement
             }
             else
             {
-                mChannel1 = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER_1), 1);
+                mChannel1 = new DMRTier3Channel(getMessage().getInt(CHANNEL_NUMBER_1), 1);
             }
         }
 
@@ -235,7 +235,7 @@ public class AnnounceWithdrawTSCC extends Announcement
     {
         if(mChannel2 == null)
         {
-            mChannel2 = new DMRLogicalChannel(getMessage().getInt(CHANNEL_NUMBER_2), 1);
+            mChannel2 = new DMRTier3Channel(getMessage().getInt(CHANNEL_NUMBER_2), 1);
         }
 
         return mChannel2;
