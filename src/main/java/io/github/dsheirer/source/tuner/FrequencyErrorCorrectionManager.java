@@ -19,6 +19,8 @@ import io.github.dsheirer.source.SourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DecimalFormat;
+
 /**
  * Monitors measured frequency error PPM values from the tuner and (when enabled) applies the current
  * error measurement to the tuner controller to adjust the tuner's PPM and align the frequency value.
@@ -32,6 +34,7 @@ public class FrequencyErrorCorrectionManager
     private long mObservationPeriodStart;
     private double mPPMRequired;
     private boolean mEnabled = true;
+    private DecimalFormat mDecimalFormat = new DecimalFormat("0.0");
     private TunerController mTunerController;
 
     /**
@@ -72,7 +75,7 @@ public class FrequencyErrorCorrectionManager
 
             try
             {
-                mLog.info("Auto-Correcting Tuner PPM to [" + frequencyCorrection + "]");
+                mLog.info("Auto-Correcting Tuner PPM to [" + mDecimalFormat.format(frequencyCorrection) + "]");
 
                 mTunerController.setFrequencyCorrection(frequencyCorrection);
                 reset();

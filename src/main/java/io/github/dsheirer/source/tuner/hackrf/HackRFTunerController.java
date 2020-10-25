@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class HackRFTunerController extends USBTunerController
 {
@@ -69,6 +70,7 @@ public class HackRFTunerController extends USBTunerController
     private Device mDevice;
     private DeviceDescriptor mDeviceDescriptor;
     private DeviceHandle mDeviceHandle;
+    private ReentrantLock mLock = new ReentrantLock();
 
     public HackRFTunerController(Device device, DeviceDescriptor descriptor) throws SourceException
     {
@@ -246,9 +248,16 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setBasebandFilter(BasebandFilter filter) throws UsbException
     {
-        write(Request.BASEBAND_FILTER_BANDWIDTH_SET,
-            filter.getLowValue(),
-            filter.getHighValue());
+        mLock.lock();
+
+        try
+        {
+            write(Request.BASEBAND_FILTER_BANDWIDTH_SET, filter.getLowValue(), filter.getHighValue());
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -256,9 +265,17 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setAmplifierEnabled(boolean enabled) throws UsbException
     {
-        write(Request.AMP_ENABLE, (enabled ? 1 : 0), 0);
+        mLock.lock();
 
-        mAmplifierEnabled = enabled;
+        try
+        {
+            write(Request.AMP_ENABLE, (enabled ? 1 : 0), 0);
+            mAmplifierEnabled = enabled;
+        }
+        finally
+        {
+            mLock.unlock();;
+        }
     }
 
     public boolean getAmplifier()
@@ -271,11 +288,18 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setLNAGain(HackRFLNAGain gain) throws UsbException
     {
-        int result = readByte(Request.SET_LNA_GAIN, 0, gain.getValue(), true);
-
-        if(result != 1)
+        try
         {
-            throw new UsbException("couldn't set lna gain to " + gain);
+            int result = readByte(Request.SET_LNA_GAIN, 0, gain.getValue(), true);
+
+            if(result != 1)
+            {
+                throw new UsbException("couldn't set lna gain to " + gain);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -284,11 +308,20 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setVGAGain(HackRFVGAGain gain) throws UsbException
     {
-        int result = readByte(Request.SET_VGA_GAIN, 0, gain.getValue(), true);
+        mLock.lock();
 
-        if(result != 1)
+        try
         {
-            throw new UsbException("couldn't set vga gain to " + gain);
+            int result = readByte(Request.SET_VGA_GAIN, 0, gain.getValue(), true);
+
+            if(result != 1)
+            {
+                throw new UsbException("couldn't set vga gain to " + gain);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -303,27 +336,34 @@ public class HackRFTunerController extends USBTunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        ByteBuffer buffer = ByteBuffer.allocateDirect(8);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-        int mhz = (int)(frequency / 1E6);
-        int hz = (int)(frequency - (mhz * 1E6));
-
-        buffer.putInt(mhz);
-        buffer.putInt(hz);
-
-        buffer.rewind();
+        mLock.lock();
 
         try
         {
-            write(Request.SET_FREQUENCY, 0, 0, buffer);
-        }
-        catch(UsbException e)
-        {
-            mLog.error("error setting frequency [" + frequency + "]", e);
+            ByteBuffer buffer = ByteBuffer.allocateDirect(8);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-            throw new SourceException("error setting frequency [" +
-                frequency + "]", e);
+            int mhz = (int)(frequency / 1E6);
+            int hz = (int)(frequency - (mhz * 1E6));
+
+            buffer.putInt(mhz);
+            buffer.putInt(hz);
+
+            buffer.rewind();
+
+            try
+            {
+                write(Request.SET_FREQUENCY, 0, 0, buffer);
+            }
+            catch(UsbException e)
+            {
+                mLog.error("error setting frequency [" + frequency + "]", e);
+                throw new SourceException("error setting frequency [" + frequency + "]", e);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 

@@ -46,6 +46,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class RTL2832TunerController extends USBTunerController
 {
@@ -60,6 +61,7 @@ public abstract class RTL2832TunerController extends USBTunerController
     public final static long TIMEOUT_US = 1000000l; //uSeconds
     public final static byte REQUEST_ZERO = (byte) 0;
     public final static byte EEPROM_ADDRESS = (byte) 0xA0;
+    protected ReentrantLock mLock = new ReentrantLock();
 
     public final static byte[] sFIR_COEFFICIENTS =
         {
