@@ -124,7 +124,7 @@ public class AliasEditor extends TabPane
     {
         if(mAliasViewByIdentifierEditor == null)
         {
-            mAliasViewByIdentifierEditor = new AliasViewByIdentifierEditor(mPlaylistManager);
+            mAliasViewByIdentifierEditor = new AliasViewByIdentifierEditor(mPlaylistManager, getAliasIdentifierTab().selectedProperty());
         }
 
         return mAliasViewByIdentifierEditor;
