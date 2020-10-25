@@ -83,6 +83,8 @@ public class FCD2TunerController extends FCDTunerController
 
     public void setLNAGain(boolean enabled) throws SourceException
     {
+        mLock.lock();
+
         try
         {
             send(FCDCommand.APP_SET_LNA_GAIN, enabled ? 1 : 0);
@@ -91,10 +93,16 @@ public class FCD2TunerController extends FCDTunerController
         {
             throw new SourceException("error while setting LNA Gain", e);
         }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     public void setMixerGain(boolean enabled) throws SourceException
     {
+        mLock.lock();
+
         try
         {
             send(FCDCommand.APP_SET_MIXER_GAIN, enabled ? 1 : 0);
@@ -102,6 +110,10 @@ public class FCD2TunerController extends FCDTunerController
         catch(Exception e)
         {
             throw new SourceException("error while setting Mixer Gain", e);
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -159,6 +171,8 @@ public class FCD2TunerController extends FCDTunerController
 
     public void setDCCorrection(int value)
     {
+        mLock.lock();
+
         try
         {
             send(FCDCommand.APP_SET_DC_CORRECTION, value);
@@ -166,6 +180,10 @@ public class FCD2TunerController extends FCDTunerController
         catch(Exception e)
         {
             mLog.error("error setting dc correction to [" + value + "]", e);
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -191,6 +209,8 @@ public class FCD2TunerController extends FCDTunerController
 
     public void setIQCorrection(int value)
     {
+        mLock.lock();
+
         try
         {
             send(FCDCommand.APP_SET_IQ_CORRECTION, value);
@@ -198,6 +218,10 @@ public class FCD2TunerController extends FCDTunerController
         catch(Exception e)
         {
             mLog.error("error setting IQ correction to [" + value + "]", e);
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 }

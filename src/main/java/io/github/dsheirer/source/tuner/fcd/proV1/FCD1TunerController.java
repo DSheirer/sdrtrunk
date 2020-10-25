@@ -176,10 +176,18 @@ public class FCD1TunerController extends FCDTunerController
      * @throws UsbException
      * @throws UsbClaimException
      */
-    public void setLNAGain(LNAGain gain)
-        throws UsbException, UsbClaimException
+    public void setLNAGain(LNAGain gain) throws UsbException, UsbClaimException
     {
-        send(FCDCommand.APP_SET_LNA_GAIN, gain.getSetting());
+        mLock.lock();
+
+        try
+        {
+            send(FCDCommand.APP_SET_LNA_GAIN, gain.getSetting());
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -269,7 +277,16 @@ public class FCD1TunerController extends FCDTunerController
         //Merge the results
         long correction = longGain | phase;
 
-        send(FCDCommand.APP_SET_IQ_CORRECTION, correction);
+        mLock.lock();
+
+        try
+        {
+            send(FCDCommand.APP_SET_IQ_CORRECTION, correction);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -402,15 +419,16 @@ public class FCD1TunerController extends FCDTunerController
         //Merge the results
         long correction = shiftedQuadrature | maskedInphase;
 
-//		Log.info( "FCD1: setting iq correction," +
-//				" inphase:" + inphase +
-//				" masked inphase:" + maskedInphase +
-//				" quad:" + quadrature +
-//				" masked quad:" + maskedQuadrature +
-//				" shifted quadrature:" + shiftedQuadrature +
-//				" correction:" + correction );
+        mLock.lock();
 
-        send(FCDCommand.APP_SET_DC_CORRECTION, correction);
+        try
+        {
+            send(FCDCommand.APP_SET_DC_CORRECTION, correction);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     private void getDCIQCorrection() throws UsbClaimException,
@@ -464,10 +482,18 @@ public class FCD1TunerController extends FCDTunerController
         return mLNAEnhance;
     }
 
-    public void setLNAEnhance(LNAEnhance enhance)
-        throws UsbClaimException, UsbException
+    public void setLNAEnhance(LNAEnhance enhance) throws UsbClaimException, UsbException
     {
-        send(FCDCommand.APP_SET_LNA_ENHANCE, enhance.getSetting());
+        mLock.lock();
+
+        try
+        {
+            send(FCDCommand.APP_SET_LNA_ENHANCE, enhance.getSetting());
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     private void getMixerGainSetting() throws UsbClaimException, UsbException
@@ -488,7 +514,16 @@ public class FCD1TunerController extends FCDTunerController
 
     public void setMixerGain(MixerGain gain) throws UsbClaimException, UsbException
     {
-        send(FCDCommand.APP_SET_MIXER_GAIN, gain.getSetting());
+        mLock.lock();
+
+        try
+        {
+            send(FCDCommand.APP_SET_MIXER_GAIN, gain.getSetting());
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     public enum Block

@@ -41,6 +41,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class AirspyTunerController extends USBTunerController
 {
@@ -79,6 +80,7 @@ public class AirspyTunerController extends USBTunerController
     private AirspyDeviceInformation mDeviceInfo;
     private List<AirspySampleRate> mSampleRates = new ArrayList<>();
     private int mSampleRate = 0;
+    private ReentrantLock mLock = new ReentrantLock();
     private USBTransferProcessor mUSBTransferProcessor;
 
     public AirspyTunerController(Device device) throws SourceException
@@ -347,32 +349,35 @@ public class AirspyTunerController extends USBTunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        if(FREQUENCY_MIN <= frequency && frequency <= FREQUENCY_MAX)
+        mLock.lock();
+
+        try
         {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(4);
-
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-            buffer.putInt((int) frequency);
-
-            buffer.rewind();
-
-            try
+            if(FREQUENCY_MIN <= frequency && frequency <= FREQUENCY_MAX)
             {
-                write(Command.SET_FREQUENCY, 0, 0, buffer);
+                ByteBuffer buffer = ByteBuffer.allocateDirect(4);
+                buffer.order(ByteOrder.LITTLE_ENDIAN);
+                buffer.putInt((int) frequency);
+                buffer.rewind();
+
+                try
+                {
+                    write(Command.SET_FREQUENCY, 0, 0, buffer);
+                }
+                catch(UsbException e)
+                {
+                    mLog.error("error setting frequency [" + frequency + "]", e);
+                    throw new SourceException("error setting frequency [" + frequency + "]", e);
+                }
             }
-            catch(UsbException e)
+            else
             {
-                mLog.error("error setting frequency [" + frequency + "]", e);
-
-                throw new SourceException("error setting frequency [" +
-                    frequency + "]", e);
+                throw new SourceException("Frequency [" + frequency + "] outside " + "of tunable range " + FREQUENCY_MIN + "-" + FREQUENCY_MAX);
             }
         }
-        else
+        finally
         {
-            throw new SourceException("Frequency [" + frequency + "] outside "
-                + "of tunable range " + FREQUENCY_MIN + "-" + FREQUENCY_MAX);
+            mLock.unlock();
         }
     }
 
@@ -494,14 +499,22 @@ public class AirspyTunerController extends USBTunerController
      * @throws LibUsbException on unsuccessful read operation
      * @throws UsbException    on USB error
      */
-    public void setMixerAGC(boolean enabled)
-        throws LibUsbException, UsbException
+    public void setMixerAGC(boolean enabled) throws LibUsbException, UsbException
     {
-        int result = readByte(Command.SET_MIXER_AGC, 0, (enabled ? 1 : 0), true);
+        mLock.lock();
 
-        if(result != LibUsb.SUCCESS)
+        try
         {
-            throw new UsbException("Couldnt set mixer AGC enabled: " + enabled);
+            int result = readByte(Command.SET_MIXER_AGC, 0, (enabled ? 1 : 0), true);
+
+            if(result != LibUsb.SUCCESS)
+            {
+                throw new UsbException("Couldnt set mixer AGC enabled: " + enabled);
+            }
+        }
+        finally
+        {
+            mLock.unlock();;
         }
     }
 
@@ -514,11 +527,20 @@ public class AirspyTunerController extends USBTunerController
      */
     public void setLNAAGC(boolean enabled) throws LibUsbException, UsbException
     {
-        int result = readByte(Command.SET_LNA_AGC, 0, (enabled ? 1 : 0), true);
+        mLock.lock();
 
-        if(result != LibUsb.SUCCESS)
+        try
         {
-            throw new UsbException("Couldnt set LNA AGC enabled: " + enabled);
+            int result = readByte(Command.SET_LNA_AGC, 0, (enabled ? 1 : 0), true);
+
+            if(result != LibUsb.SUCCESS)
+            {
+                throw new UsbException("Couldnt set LNA AGC enabled: " + enabled);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -542,22 +564,30 @@ public class AirspyTunerController extends USBTunerController
      * @throws UsbException             on error in USB transfer
      * @throws IllegalArgumentException if gain value is invalid
      */
-    public void setLNAGain(int gain)
-        throws LibUsbException, UsbException, IllegalArgumentException
+    public void setLNAGain(int gain) throws LibUsbException, UsbException, IllegalArgumentException
     {
-        if(LNA_GAIN_MIN <= gain && gain <= LNA_GAIN_MAX)
-        {
-            int result = readByte(Command.SET_LNA_GAIN, 0, gain, true);
+        mLock.lock();
 
-            if(result != LibUsb.SUCCESS)
+        try
+        {
+            if(LNA_GAIN_MIN <= gain && gain <= LNA_GAIN_MAX)
             {
-                throw new UsbException("Couldnt set LNA gain to: " + gain);
+                int result = readByte(Command.SET_LNA_GAIN, 0, gain, true);
+
+                if(result != LibUsb.SUCCESS)
+                {
+                    throw new UsbException("Couldnt set LNA gain to: " + gain);
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException("LNA gain value [" + gain +
+                    "] is outside value range: " + LNA_GAIN_MIN + "-" + LNA_GAIN_MAX);
             }
         }
-        else
+        finally
         {
-            throw new IllegalArgumentException("LNA gain value [" + gain +
-                "] is outside value range: " + LNA_GAIN_MIN + "-" + LNA_GAIN_MAX);
+            mLock.unlock();
         }
     }
 
@@ -569,22 +599,30 @@ public class AirspyTunerController extends USBTunerController
      * @throws UsbException             on error in USB transfer
      * @throws IllegalArgumentException if gain value is invalid
      */
-    public void setMixerGain(int gain)
-        throws LibUsbException, UsbException, IllegalArgumentException
+    public void setMixerGain(int gain) throws LibUsbException, UsbException, IllegalArgumentException
     {
-        if(MIXER_GAIN_MIN <= gain && gain <= MIXER_GAIN_MAX)
-        {
-            int result = readByte(Command.SET_MIXER_GAIN, 0, gain, true);
+        mLock.lock();
 
-            if(result != LibUsb.SUCCESS)
+        try
+        {
+            if(MIXER_GAIN_MIN <= gain && gain <= MIXER_GAIN_MAX)
             {
-                throw new UsbException("Couldnt set mixer gain to: " + gain);
+                int result = readByte(Command.SET_MIXER_GAIN, 0, gain, true);
+
+                if(result != LibUsb.SUCCESS)
+                {
+                    throw new UsbException("Couldnt set mixer gain to: " + gain);
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException("Mixer gain value [" + gain +
+                    "] is outside value range: " + MIXER_GAIN_MIN + "-" + MIXER_GAIN_MAX);
             }
         }
-        else
+        finally
         {
-            throw new IllegalArgumentException("Mixer gain value [" + gain +
-                "] is outside value range: " + MIXER_GAIN_MIN + "-" + MIXER_GAIN_MAX);
+            mLock.unlock();
         }
     }
 
@@ -596,22 +634,30 @@ public class AirspyTunerController extends USBTunerController
      * @throws UsbException             on error in USB transfer
      * @throws IllegalArgumentException if gain value is invalid
      */
-    public void setIFGain(int gain)
-        throws LibUsbException, UsbException, IllegalArgumentException
+    public void setIFGain(int gain) throws LibUsbException, UsbException, IllegalArgumentException
     {
-        if(IF_GAIN_MIN <= gain && gain <= IF_GAIN_MAX)
-        {
-            int result = readByte(Command.SET_VGA_GAIN, 0, gain, true);
+        mLock.lock();
 
-            if(result != LibUsb.SUCCESS)
+        try
+        {
+            if(IF_GAIN_MIN <= gain && gain <= IF_GAIN_MAX)
             {
-                throw new UsbException("Couldnt set VGA gain to: " + gain);
+                int result = readByte(Command.SET_VGA_GAIN, 0, gain, true);
+
+                if(result != LibUsb.SUCCESS)
+                {
+                    throw new UsbException("Couldnt set VGA gain to: " + gain);
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException("VGA gain value [" + gain +
+                    "] is outside value range: " + IF_GAIN_MIN + "-" + IF_GAIN_MAX);
             }
         }
-        else
+        finally
         {
-            throw new IllegalArgumentException("VGA gain value [" + gain +
-                "] is outside value range: " + IF_GAIN_MIN + "-" + IF_GAIN_MAX);
+            mLock.unlock();
         }
     }
 
