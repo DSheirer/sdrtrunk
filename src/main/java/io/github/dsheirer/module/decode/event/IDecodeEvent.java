@@ -39,6 +39,12 @@ public interface IDecodeEvent
     long getTimeStart();
 
     /**
+     * Event end time
+     * @return timestamp in milliseconds
+     */
+    long getTimeEnd();
+
+    /**
      * Event duration.
      *
      * @return event duration in milliseconds or 0 if there is no duration

@@ -66,6 +66,7 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
     private VBox mFrequencyBoxContainer;
     private Spinner<Integer> mChannelRotationDelaySpinner;
     private boolean mAllowMultipleFrequencies = false;
+    private int mFrequencyRotationDefault = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_DEFAULT;
     private int mFrequencyRotationMinimum = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM;
     private int mFrequencyRotationMaximum = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MAXIMUM;
 
@@ -78,12 +79,13 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
      * @param minRotationDelay in milliseconds for channel/frequency dwell
      * @param maxRotationDelay in milliseconds for channel/frequency dwell
      */
-    public FrequencyEditor(TunerModel tunerModel, int minRotationDelay, int maxRotationDelay)
+    public FrequencyEditor(TunerModel tunerModel, int minRotationDelay, int maxRotationDelay, int defaultRotationDelay)
     {
         mTunerModel = tunerModel;
         mAllowMultipleFrequencies = true;
         mFrequencyRotationMinimum = minRotationDelay;
         mFrequencyRotationMaximum = maxRotationDelay;
+        mFrequencyRotationDefault = defaultRotationDelay;
         init();
     }
 

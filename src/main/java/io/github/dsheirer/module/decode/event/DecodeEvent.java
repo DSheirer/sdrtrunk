@@ -34,7 +34,7 @@ import io.github.dsheirer.protocol.Protocol;
 public class DecodeEvent implements IDecodeEvent
 {
     private long mTimeStart;
-    private long mDuration;
+    private long mTimeEnd;
     private String mEventDescription;
     private IdentifierCollection mIdentifierCollection;
     private IChannelDescriptor mChannelDescriptor;
@@ -66,7 +66,7 @@ public class DecodeEvent implements IDecodeEvent
     {
         if(timestamp > mTimeStart)
         {
-            mDuration = timestamp - mTimeStart;
+            mTimeEnd = timestamp;
         }
     }
 
@@ -88,12 +88,25 @@ public class DecodeEvent implements IDecodeEvent
     }
 
     /**
+     * Event end in milliseconds
+     */
+    public long getTimeEnd()
+    {
+        return mTimeEnd;
+    }
+
+    /**
      * Event duration in milliseconds
      */
     @Override
     public long getDuration()
     {
-        return mDuration;
+        if(mTimeEnd < mTimeStart)
+        {
+            return 0;
+        }
+
+        return mTimeEnd - mTimeStart;
     }
 
     /**
@@ -101,7 +114,7 @@ public class DecodeEvent implements IDecodeEvent
      */
     public void setDuration(long duration)
     {
-        mDuration = duration;
+        mTimeEnd = mTimeStart + duration;
     }
 
     /**
@@ -229,7 +242,7 @@ public class DecodeEvent implements IDecodeEvent
         {
             sb.append(" IDS:").append(Joiner.on(",").join(mIdentifierCollection.getIdentifiers()));
         }
-        sb.append(" DURATION:").append(mDuration);
+        sb.append(" DURATION:").append(getDuration());
         sb.append(" CHANNEL:").append(mChannelDescriptor);
         return sb.toString();
     }

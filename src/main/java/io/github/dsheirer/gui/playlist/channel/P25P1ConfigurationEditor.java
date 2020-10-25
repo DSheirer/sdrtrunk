@@ -193,7 +193,8 @@ public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
         {
             mSourceConfigurationEditor = new FrequencyEditor(getTunerModel(),
                 DecodeConfigP25Phase1.CHANNEL_ROTATION_DELAY_MINIMUM_MS,
-                DecodeConfigP25Phase1.CHANNEL_ROTATION_DELAY_MAXIMUM_MS);
+                DecodeConfigP25Phase1.CHANNEL_ROTATION_DELAY_MAXIMUM_MS,
+                DecodeConfigP25Phase1.CHANNEL_ROTATION_DELAY_DEFAULT_MS);
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()
