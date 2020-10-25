@@ -165,34 +165,25 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     {
         PolyphaseChannelSource channelSource = null;
 
-        try
+        List<Integer> polyphaseIndexes = mChannelCalculator.getChannelIndexes(tunerChannel);
+
+        IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
+
+        if(outputProcessor != null)
         {
-            List<Integer> polyphaseIndexes = mChannelCalculator.getChannelIndexes(tunerChannel);
+            long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
 
-            IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
-
-            if(outputProcessor != null)
+            try
             {
-                long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
+                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
+                    mChannelCalculator.getChannelSampleRate(), centerFrequency, channelSpecification);
 
-                try
-                {
-                    channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
-                        mChannelCalculator.getChannelSampleRate(), centerFrequency, channelSpecification);
-
-                    mChannelSources.add(channelSource);
-                }
-                catch(FilterDesignException fde)
-                {
-                    mLog.debug("Couldn't design final output low pass filter for polyphase channel source");
-                }
+                mChannelSources.add(channelSource);
             }
-        }
-        catch(IllegalArgumentException iae)
-        {
-            mLog.info("Can't provide DDC for " + tunerChannel.toString() + " due to channelizer frequency [" +
-                mChannelCalculator.getCenterFrequency() + "] and sample rate [" +
-                (mChannelCalculator.getChannelCount() * mChannelCalculator.getChannelBandwidth()) + "]");
+            catch(FilterDesignException fde)
+            {
+                mLog.debug("Couldn't design final output low pass filter for polyphase channel source");
+            }
         }
 
         return channelSource;

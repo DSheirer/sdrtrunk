@@ -41,6 +41,7 @@ import io.github.dsheirer.message.MessageHistoryResponse;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.event.DMRChannelGrantEvent;
+import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.Opcode;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventHistory;
@@ -90,8 +91,12 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
     IChannelEventProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRTrafficChannelManager.class);
-    public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
+    public static final String CHANNEL_START_REJECTED = " REJECTED - NO TUNER";
+    public static final String DATA_CALL_IGNORED = "DATA CALL IGNORED";
+    public static final String IGNORED = " - Ignored";
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
+    public static final String NO_FREQUENCY = "NO FREQUENCY - CHECK LSN CHANNEL MAP";
+    public static final long EVENT_TIME_STALE_THRESHOLD = 5000; //5 seconds
 
     private Queue<Channel> mAvailableTrafficChannelQueue = new ConcurrentLinkedQueue<>();
     private List<Channel> mManagedTrafficChannels;
@@ -325,7 +330,19 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
         DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
 
-        if(event != null && isSameCall(identifierCollection, event.getIdentifierCollection()))
+        if(isStale(event, timestamp, identifierCollection)) //Create new event
+        {
+            event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
+                .channel(channel)
+                .eventDescription(getEventType(opcode, identifierCollection, encrypted).toString())
+                .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
+                .identifiers(identifierCollection)
+                .build();
+
+            mLSNGrantEventMap.put(lsn, event);
+
+        }
+        else //Update current event
         {
             Identifier from = getIdentifier(identifierCollection, Role.FROM);
 
@@ -336,115 +353,98 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 {
                     event.end(timestamp);
 
-                    DMRChannelGrantEvent continuationGrantEvent = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
+                    event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
                         .channel(channel)
-                        .eventDescription(getEventType(opcode, event.isEncrypted()).toString() + " - Continue")
+                        .eventDescription(getEventType(opcode, identifierCollection, encrypted).toString() + " - Continue")
                         .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                         .identifiers(identifierCollection)
                         .build();
 
-                    mLSNGrantEventMap.put(lsn, continuationGrantEvent);
-                    broadcast(continuationGrantEvent);
+                    mLSNGrantEventMap.put(lsn, event);
+                    broadcast(event);
                 }
             }
 
             //update the ending timestamp so that the duration value is correctly calculated
             event.update(timestamp);
-            broadcast(event);
-
-            //Even though we have an event, the initial channel grant may have been rejected.  Check to see if there
-            //is a traffic channel allocated.  If not, allocate one and update the event description.
-            long frequency = channel.getDownlinkFrequency();
-
-            if(frequency > 0 && frequency != mCurrentControlFrequency &&
-                !mAllocatedTrafficChannelFrequencyMap.containsKey(channel.getDownlinkFrequency()) &&
-                !(mIgnoreDataCalls && opcode.isDataChannelGrantOpcode()))
-            {
-                Channel trafficChannel = mAvailableTrafficChannelQueue.poll();
-
-                if(trafficChannel != null)
-                {
-                    event.setEventDescription(getEventType(opcode, event.isEncrypted()).toString());
-                    event.setDetails("CHANNEL GRANT " + (encrypted ? " ENCRYPTED" : ""));
-                    event.setChannelDescriptor(channel);
-                    broadcast(event);
-
-                    SourceConfigTuner sourceConfig = new SourceConfigTuner();
-                    sourceConfig.setFrequency(frequency);
-                    trafficChannel.setSourceConfiguration(sourceConfig);
-                    mAllocatedTrafficChannelFrequencyMap.put(frequency, trafficChannel);
-                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, channel, identifierCollection));
-                }
-                else
-                {
-                    String description = (event.getEventDescription() != null ? event.getEventDescription() : "") +
-                        " - MAX TRAFFIC CHANNELS EXCEEDED";
-                    event.setEventDescription(description);
-                }
-            }
-
-            return;
         }
 
-        if(mIgnoreDataCalls && opcode.isDataChannelGrantOpcode())
-        {
-            DMRChannelGrantEvent channelGrantEvent = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
-                .encrypted(encrypted)
-                .channel(channel)
-                .eventDescription(getEventType(opcode, encrypted).toString() + " - Ignored")
-                .details("DATA CALL IGNORED")
-                .identifiers(identifierCollection)
-                .build();
+        broadcast(event);
 
-            mLSNGrantEventMap.put(channel.getLogicalSlotNumber(), channelGrantEvent);
-            broadcast(channelGrantEvent);
-            return;
-        }
-
-        DMRChannelGrantEvent channelGrantEvent = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
-            .encrypted(encrypted)
-            .channel(channel)
-            .eventDescription(getEventType(opcode, encrypted).toString())
-            .details("CHANNEL GRANT")
-            .identifiers(identifierCollection)
-            .build();
-
-        mLSNGrantEventMap.put(channel.getLogicalSlotNumber(), channelGrantEvent);
-
-        //Allocate a traffic channel for the downlink frequency if one isn't already allocated
-        //NOTE: we could also allocate a traffic channel for the uplink frequency here, in the future
+        //Even though we have an event, the initial or continuation channel grant may have been rejected.  Check to see
+        // if there is a traffic channel allocated.  If not, allocate one and update the event description.
         long frequency = channel.getDownlinkFrequency();
 
-        if(frequency > 0 && frequency != mCurrentControlFrequency &&
-            !mAllocatedTrafficChannelFrequencyMap.containsKey(frequency))
+        if(frequency == 0)
         {
+            if(event.getDetails() == null)
+            {
+                event.setDetails(NO_FREQUENCY);
+            }
+            else if(!event.getDetails().endsWith(NO_FREQUENCY))
+            {
+                event.setDetails(event.getDetails() + " - " + NO_FREQUENCY);
+            }
+
+            return;
+        }
+
+        if(frequency != mCurrentControlFrequency && !mAllocatedTrafficChannelFrequencyMap.containsKey(frequency))
+        {
+            if(mIgnoreDataCalls && opcode.isDataChannelGrantOpcode())
+            {
+                if(event.getEventDescription() == null)
+                {
+                    event.setEventDescription(getEventType(opcode, identifierCollection, encrypted) + IGNORED);
+                }
+                else if(!event.getEventDescription().endsWith(IGNORED))
+                {
+                    event.setEventDescription(event.getEventDescription() + IGNORED);
+                }
+
+                if(event.getDetails() == null)
+                {
+                    event.setDetails(DATA_CALL_IGNORED);
+                }
+                else if(!event.getDetails().endsWith(DATA_CALL_IGNORED))
+                {
+                    event.setDetails(event.getDetails() + " - " + DATA_CALL_IGNORED);
+                }
+
+                broadcast(event);
+                return;
+            }
+
             Channel trafficChannel = mAvailableTrafficChannelQueue.poll();
 
-            if(trafficChannel == null)
-            {
-                String details = (channelGrantEvent.getDetails() != null ? channelGrantEvent.getDetails() : "") +
-                    " " + MAX_TRAFFIC_CHANNELS_EXCEEDED;
-                channelGrantEvent.setDetails(details);
-                channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
-            }
-            else
+            if(trafficChannel != null)
             {
                 SourceConfigTuner sourceConfig = new SourceConfigTuner();
                 sourceConfig.setFrequency(frequency);
                 trafficChannel.setSourceConfiguration(sourceConfig);
                 mAllocatedTrafficChannelFrequencyMap.put(frequency, trafficChannel);
-                broadcast(ChannelEvent.requestEnable(trafficChannel));
+                getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, channel,
+                    identifierCollection));
+            }
+            else
+            {
+                if(event.getDetails() == null)
+                {
+                    event.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
+                }
+                else if(!event.getDetails().endsWith(MAX_TRAFFIC_CHANNELS_EXCEEDED))
+                {
+                    event.setDetails(event.getDetails() + " - " + MAX_TRAFFIC_CHANNELS_EXCEEDED);
+                }
             }
         }
-
-        broadcast(channelGrantEvent);
     }
 
 
     /**
      * Creates a call event type description for the specified opcode and service options
      */
-    private DecodeEventType getEventType(Opcode opcode, boolean encrypted)
+    private DecodeEventType getEventType(Opcode opcode, IdentifierCollection identifierCollection, boolean encrypted)
     {
         DecodeEventType type = null;
 
@@ -452,8 +452,20 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         {
             case STANDARD_TALKGROUP_VOICE_CHANNEL_GRANT:
             case STANDARD_BROADCAST_TALKGROUP_VOICE_CHANNEL_GRANT:
-            case MOTOROLA_CONPLUS_VOICE_CHANNEL_USER:
                 type = encrypted ? DecodeEventType.CALL_GROUP_ENCRYPTED : DecodeEventType.CALL_GROUP;
+                break;
+
+            case MOTOROLA_CONPLUS_VOICE_CHANNEL_USER:
+                Identifier to = identifierCollection.getToIdentifier();
+
+                if(to instanceof DMRRadio)
+                {
+                    type = encrypted ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED : DecodeEventType.CALL_UNIT_TO_UNIT;
+                }
+                else
+                {
+                    type = encrypted ? DecodeEventType.CALL_GROUP_ENCRYPTED : DecodeEventType.CALL_GROUP;
+                }
                 break;
 
             case STANDARD_PRIVATE_VOICE_CHANNEL_GRANT:
@@ -534,6 +546,31 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         Identifier toIdentifier2 = getIdentifier(collection2, Role.TO);
         return Objects.equals(toIdentifier1, toIdentifier2);
     }
+
+    /**
+     * Indicates if the event is a stale event, meaning that the event is null, or the event start exceeds the max
+     * valid call duration threshold, or if the event identifiers don't match the current identifiers.
+     *
+     * @param event to check for staleness
+     * @param timestamp to check the event against
+     * @param currentIdentifiers to compare against the event
+     * @return true if the event is stale.
+     */
+    private boolean isStale(DecodeEvent event, long timestamp, IdentifierCollection currentIdentifiers)
+    {
+        if(event == null)
+        {
+            return true;
+        }
+
+        if(timestamp - event.getTimeEnd() > EVENT_TIME_STALE_THRESHOLD)
+        {
+            return true;
+        }
+
+        return !isSameCall(event.getIdentifierCollection(), currentIdentifiers);
+    }
+
 
     /**
      * Retrieves the first identifier with a TO role.
@@ -617,9 +654,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         /**
          * Removes any call events that are associated with the specified frequency.
          * @param frequency that was removed
-         * @param description to optionally append to the details for the event
          */
-        private void cleanupCallEvents(long frequency, String description)
+        private void removeCallEvents(long frequency)
         {
             List<Integer> lsnsToRemove = new ArrayList<>();
 
@@ -633,20 +669,35 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
             for(Integer lsn: lsnsToRemove)
             {
-                DMRChannelGrantEvent event = mLSNGrantEventMap.remove(lsn);
+                mLSNGrantEventMap.remove(lsn);
+            }
+        }
+
+        private void updateCallEventDetails(long frequency, String detailFragment)
+        {
+            List<Integer> lsnsToUpdate = new ArrayList<>();
+
+            for(Map.Entry<Integer,DMRChannelGrantEvent> entry: mLSNGrantEventMap.entrySet())
+            {
+                if(entry.getValue().getChannelDescriptor().getDownlinkFrequency() == frequency)
+                {
+                    lsnsToUpdate.add(entry.getKey());
+                }
+            }
+
+            for(Integer lsn: lsnsToUpdate)
+            {
+                DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
 
                 if(event != null)
                 {
-                    if(description != null)
+                    if(event.getDetails() == null)
                     {
-                        if(event.getEventDescription() != null)
-                        {
-                            event.setEventDescription(event.getEventDescription() + " - " + description);
-                        }
-                        else
-                        {
-                            event.setEventDescription(description);
-                        }
+                        event.setDetails(detailFragment);
+                    }
+                    else if(!event.getDetails().endsWith(detailFragment))
+                    {
+                        event.setDetails(event.getDetails() + detailFragment);
                     }
 
                     broadcast(event);
@@ -659,36 +710,64 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         {
             Channel channel = channelEvent.getChannel();
 
-            if(channel.isTrafficChannel() && (channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_STOP ||
-                channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_START_REJECTED))
+            if(channel.isTrafficChannel())
             {
-                String optionalDescription = (channelEvent.getEvent() == Event.NOTIFICATION_PROCESSING_START_REJECTED ?
-                    "Rejected" : null);
-
-                long frequencyToRemove = 0;
-
-                for(Map.Entry<Long,Channel> entry: mAllocatedTrafficChannelFrequencyMap.entrySet())
+                switch(channelEvent.getEvent())
                 {
-                    if(channel == entry.getValue() && entry.getKey() != null)
-                    {
-                        frequencyToRemove = entry.getKey();
-                        cleanupCallEvents(entry.getKey(), optionalDescription);
+                    case NOTIFICATION_PROCESSING_STOP:
+                        long frequencyToRemove = 0;
+
+                        for(Map.Entry<Long,Channel> entry: mAllocatedTrafficChannelFrequencyMap.entrySet())
+                        {
+                            if(channel == entry.getValue() && entry.getKey() != null)
+                            {
+                                frequencyToRemove = entry.getKey();
+                                removeCallEvents(entry.getKey());
+                                break;
+                            }
+                        }
+
+                        if(frequencyToRemove > 0)
+                        {
+                            mAllocatedTrafficChannelFrequencyMap.remove(frequencyToRemove);
+
+                            //Unlock the frequency in the channel rotation monitor
+                            getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(frequencyToRemove));
+                        }
+
+                        //Add the traffic channel back to the queue to be reused
+                        if(!mAvailableTrafficChannelQueue.contains(channel))
+                        {
+                            mAvailableTrafficChannelQueue.add(channel);
+                        }
                         break;
-                    }
-                }
+                    case NOTIFICATION_PROCESSING_START_REJECTED:
+                        long frequencyToUpdate = 0;
 
-                if(frequencyToRemove > 0)
-                {
-                    mAllocatedTrafficChannelFrequencyMap.remove(frequencyToRemove);
+                        for(Map.Entry<Long,Channel> entry: mAllocatedTrafficChannelFrequencyMap.entrySet())
+                        {
+                            if(channel == entry.getValue() && entry.getKey() != null)
+                            {
+                                frequencyToUpdate = entry.getKey();
+                                updateCallEventDetails(entry.getKey(), CHANNEL_START_REJECTED);
+                                break;
+                            }
+                        }
 
-                    //Unlock the frequency in the channel rotation monitor
-                    getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(frequencyToRemove));
-                }
+                        if(frequencyToUpdate > 0)
+                        {
+                            mAllocatedTrafficChannelFrequencyMap.remove(frequencyToUpdate);
 
-                //Add the traffic channel back to the queue to be reused
-                if(!mAvailableTrafficChannelQueue.contains(channel))
-                {
-                    mAvailableTrafficChannelQueue.add(channel);
+                            //Unlock the frequency in the channel rotation monitor
+                            getInterModuleEventBus().post(FrequencyLockChangeRequest.unlock(frequencyToUpdate));
+                        }
+
+                        //Add the traffic channel back to the queue to be reused
+                        if(!mAvailableTrafficChannelQueue.contains(channel))
+                        {
+                            mAvailableTrafficChannelQueue.add(channel);
+                        }
+                        break;
                 }
             }
         }
