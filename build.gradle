@@ -33,7 +33,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.5.0-alpha4'
+version = '0.5.0-alpha5'
 sourceCompatibility = '13'
 
 sourceSets {
