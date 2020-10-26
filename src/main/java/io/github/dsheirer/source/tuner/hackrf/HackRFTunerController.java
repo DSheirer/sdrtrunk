@@ -288,6 +288,8 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setLNAGain(HackRFLNAGain gain) throws UsbException
     {
+        mLock.lock();
+
         try
         {
             int result = readByte(Request.SET_LNA_GAIN, 0, gain.getValue(), true);
@@ -398,8 +400,7 @@ public class HackRFTunerController extends USBTunerController
             }
             catch(UsbException e)
             {
-                throw new SourceException("Error while applying tuner "
-                    + "configuration", e);
+                throw new SourceException("Error while applying tuner configuration", e);
             }
 
             try
@@ -413,8 +414,7 @@ public class HackRFTunerController extends USBTunerController
         }
         else
         {
-            throw new IllegalArgumentException("Invalid tuner configuration "
-                + "type [" + config.getClass() + "]");
+            throw new IllegalArgumentException("Invalid tuner configuration type [" + config.getClass() + "]");
         }
     }
 
