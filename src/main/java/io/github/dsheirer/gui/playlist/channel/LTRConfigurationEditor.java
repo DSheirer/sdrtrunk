@@ -210,7 +210,7 @@ public class LTRConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mSourceConfigurationEditor == null)
         {
-            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel(), false);
+            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel());
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()

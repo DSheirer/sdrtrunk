@@ -28,6 +28,7 @@ import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.preference.PreferenceType;
+import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +58,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
 
     private List<ChannelMetadata> mChannelMetadata = new ArrayList();
     private Map<ChannelMetadata,Channel> mMetadataChannelMap = new HashMap();
+    private Listener<ChannelAndMetadata> mChannelAddListener;
 
     public ChannelMetadataModel()
     {
@@ -82,17 +84,49 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
         }
     }
 
-    public void add(Collection<ChannelMetadata> channelMetadatas, Channel channel)
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
+    }
+
+    /**
+     * Lookup model row for the specified channel metadata
+     */
+    public int getRow(ChannelMetadata channelMetadata)
+    {
+        if(mChannelMetadata.contains(channelMetadata))
+        {
+            return mChannelMetadata.indexOf(channelMetadata);
+        }
+
+        return -1;
+    }
+
+    /**
+     * Registers the listener to be notified when channel metadata(s) are added to the model.
+     * @param listener to receive channel associated with the channel metadata(s) that were added
+     */
+    public void setChannelAddListener(Listener<ChannelAndMetadata> listener)
+    {
+        mChannelAddListener = listener;
+    }
+
+    public void add(ChannelAndMetadata channelAndMetadata)
     {
         //Execute on the swing thread to avoid threading issues
         EventQueue.invokeLater(() -> {
-            for(ChannelMetadata channelMetadata: channelMetadatas)
+            for(ChannelMetadata channelMetadata: channelAndMetadata.getChannelMetadata())
             {
                 mChannelMetadata.add(channelMetadata);
-                mMetadataChannelMap.put(channelMetadata, channel);
+                mMetadataChannelMap.put(channelMetadata, channelAndMetadata.getChannel());
                 int index = mChannelMetadata.indexOf(channelMetadata);
                 fireTableRowsInserted(index, index);
                 channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
+            }
+
+            if(mChannelAddListener != null)
+            {
+                mChannelAddListener.receive(channelAndMetadata);
             }
         });
     }

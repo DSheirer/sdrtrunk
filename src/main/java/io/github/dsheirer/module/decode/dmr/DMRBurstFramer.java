@@ -340,7 +340,7 @@ public class DMRBurstFramer implements Listener<Dibit>
 
         if(mPhaseLockedLoop != null)
         {
-            mLog.warn("Repairing PLL Phase Lock Mis-Alignment - Detected: " + carrierLock);
+//            mLog.warn("Repairing PLL Phase Lock Mis-Alignment - Detected: " + carrierLock);
             switch(carrierLock)
             {
                 case PLUS_90:

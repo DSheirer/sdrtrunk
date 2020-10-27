@@ -73,15 +73,6 @@ public class Tait1200Decoder extends AbstractAFSKDecoder implements IBinarySymbo
         return DecoderType.TAIT_1200;
     }
 
-    public void dispose()
-    {
-        super.dispose();
-        mMessageFramerGPS.dispose();
-        mMessageFramerANI.dispose();
-        mMessageAProcessor.dispose();
-        mMessageBProcessor.dispose();
-    }
-
     @Override
     public void process(boolean symbol)
     {

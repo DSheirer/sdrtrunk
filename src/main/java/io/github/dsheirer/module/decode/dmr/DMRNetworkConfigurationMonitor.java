@@ -313,7 +313,7 @@ public class DMRNetworkConfigurationMonitor
 
         if(mTier3Model != null)
         {
-            sb.append("\nNetwork Model").append(mTier3Model);
+            sb.append("\nNetwork Model: ").append(mTier3Model);
         }
 
         //Observed DMR Channels

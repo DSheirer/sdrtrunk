@@ -24,6 +24,7 @@ import com.jidesoft.swing.JideSplitButton;
 import io.github.dsheirer.filter.FilterEditorPanel;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.MessageHistory;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
@@ -53,12 +54,17 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(MessageActivityPanel.class);
     private static final String TABLE_PREFERENCE_KEY = "message.activity.panel";
-    private static MessageActivityModel EMPTY_MODEL = new MessageActivityModel();
-    private JTable mTable = new JTable(EMPTY_MODEL);
+    private static MessageActivityModel mMessageModel = new MessageActivityModel();
+    private MessageHistory mCurrentMessageHistory;
+    private JTable mTable = new JTable(mMessageModel);
     private JTableColumnWidthMonitor mTableColumnWidthMonitor;
     private UserPreferences mUserPreferences;
     private MessageManagementPanel mManagementPanel = new MessageManagementPanel();
 
+    /**
+     * Constructs an instance
+     * @param userPreferences
+     */
     public MessageActivityPanel(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
@@ -71,33 +77,30 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
         mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
     }
 
+    /**
+     * Updates the message activity model with message history from the specified processing chain
+     */
     @Override
     public void receive(ProcessingChain processingChain)
     {
-        EventQueue.invokeLater(new Runnable()
+        if(mCurrentMessageHistory != null)
         {
-            @Override
-            public void run()
-            {
-                //Remove the existing table column width monitor and replace after swapping the table model
-                mTableColumnWidthMonitor.dispose();
-                mTable.setModel(processingChain != null ? processingChain.getMessageActivityModel() : EMPTY_MODEL);
+            mCurrentMessageHistory.removeListener(mMessageModel);
+        }
 
-                mTable.getColumnModel().getColumn(0).setPreferredWidth(18);
-                mTable.getColumnModel().getColumn(1).setPreferredWidth(15);
-                mTable.getColumnModel().getColumn(2).setPreferredWidth(600);
-
-                if(processingChain != null)
-                {
-                    mManagementPanel.enableButtons();
-                }
-                else
-                {
-                    mManagementPanel.disableButtons();
-                }
-                mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
-            }
-        });
+        if(processingChain != null)
+        {
+            mCurrentMessageHistory = processingChain.getMessageHistory();
+            mMessageModel.clearAndSet(mCurrentMessageHistory.getItems());
+            mCurrentMessageHistory.addListener(mMessageModel);
+            mManagementPanel.enableButtons();
+        }
+        else
+        {
+            mCurrentMessageHistory = null;
+            mMessageModel.clear();
+            mManagementPanel.disableButtons();
+        }
     }
 
     public class MessageManagementPanel extends JPanel
@@ -227,7 +230,7 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
 
                     @SuppressWarnings("unchecked")
                     FilterSet<IMessage> filter = (FilterSet<IMessage>) ((MessageActivityModel) mTable.getModel())
-                            .getMessageFilter();
+                            .getMessageFilterSet();
 
                     FilterEditorPanel<IMessage> panel = new FilterEditorPanel<>(filter);
 

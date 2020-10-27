@@ -35,13 +35,6 @@ public abstract class Decoder extends Module implements IMessageProvider
     {
     }
 
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-        mMessageListener = null;
-    }
-
     public void start()
     {
         //no-op

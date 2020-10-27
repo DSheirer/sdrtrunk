@@ -52,7 +52,6 @@ import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -115,8 +114,6 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         configureChannelType(channel);
     }
 
-
-
     /**
      * Configure items according to channel type
      * @param channel configuration
@@ -140,24 +137,6 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         }
     }
 
-    private boolean idleStateThreadCreated = false;
-    private Thread handleIdleRestartThread;
-    private void handleIdleState(State channelState) throws InterruptedException {
-	/*
-        if (channelState == State.IDLE && !idleStateThreadCreated) {
-            handleIdleRestartThread = new Thread(new SingleChannelState.StateIdleRestartThread());
-            handleIdleRestartThread.start();
-            idleStateThreadCreated = true;
-        } else if (channelState != State.IDLE && idleStateThreadCreated){
-            idleStateThreadCreated = false;
-            if (handleIdleRestartThread != null) {
-                handleIdleRestartThread.interrupt();
-                handleIdleRestartThread.join();
-                handleIdleRestartThread = null;
-            }
-        }
-	*/
-    }
     /**
      * Receive notification that the underlying channel configuration has changed.
      * @param notification
@@ -176,11 +155,6 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         ChannelStateIdentifier stateIdentifier = ChannelStateIdentifier.get(state);
         mIdentifierCollection.update(stateIdentifier);
         mChannelMetadata.receive(new IdentifierUpdateNotification(stateIdentifier, IdentifierUpdateNotification.Operation.ADD, timeslot));
-        try {
-            handleIdleState(state);
-        } catch (InterruptedException ex) {
-
-        }
 
         switch(state)
         {
@@ -298,7 +272,7 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     /**
      * Channel metadata for this channel.
      */
-    public Collection<ChannelMetadata> getChannelMetadata()
+    public List<ChannelMetadata> getChannelMetadata()
     {
         return Collections.singletonList(mChannelMetadata);
     }
@@ -330,15 +304,6 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
     public void stop()
     {
         mSquelchController.setSquelchLock(false);
-    }
-
-    public void dispose()
-    {
-        //Must invoke parent dispose to unregister from the event bus
-        super.dispose();
-
-        mDecodeEventListener = null;
-        mDecoderStateListener = null;
     }
 
     @Override
@@ -523,22 +488,6 @@ public class SingleChannelState extends AbstractChannelState implements IDecoder
         public void removeListener()
         {
             mIdentifierUpdateNotificationListener = null;
-        }
-    }
-
-    public class StateIdleRestartThread implements Runnable {
-        public void run(){
-            boolean cancelRestart = false;
-            try {
-                Thread.sleep(60000);
-            } catch (InterruptedException ex) {
-                cancelRestart = true;
-            }
-
-            if (!cancelRestart) {
-                // mLog.debug("Restart channel now");
-                // Channel m = mChannel;
-            }
         }
     }
 }

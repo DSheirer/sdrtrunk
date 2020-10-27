@@ -19,10 +19,12 @@
 
 package io.github.dsheirer.controller.channel;
 
+import io.github.dsheirer.module.ModuleEventBusMessage;
+
 /**
  * Notification that a channel configuration has changed.
  */
-public class ChannelConfigurationChangeNotification
+public class ChannelConfigurationChangeNotification extends ModuleEventBusMessage
 {
     private Channel mChannel;
 

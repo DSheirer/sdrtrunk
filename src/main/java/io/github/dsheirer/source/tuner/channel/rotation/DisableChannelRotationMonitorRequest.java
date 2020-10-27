@@ -19,9 +19,11 @@
 
 package io.github.dsheirer.source.tuner.channel.rotation;
 
+import io.github.dsheirer.module.ModuleEventBusMessage;
+
 /**
  * Request to disable the channel rotation monitor.
  */
-public class DisableChannelRotationMonitorRequest
+public class DisableChannelRotationMonitorRequest extends ModuleEventBusMessage
 {
 }

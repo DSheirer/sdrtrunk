@@ -138,27 +138,6 @@ public class AMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public void dispose()
-    {
-        super.dispose();
-
-        if(mIQFilter != null)
-        {
-            mIQFilter.dispose();
-            mIQFilter = null;
-        }
-
-        if(mLowPassFilter != null)
-        {
-            mLowPassFilter.dispose();
-            mLowPassFilter = null;
-        }
-
-        mDemodulator = null;
-        mAGC = null;
-    }
-
-    @Override
     public void reset()
     {
     }

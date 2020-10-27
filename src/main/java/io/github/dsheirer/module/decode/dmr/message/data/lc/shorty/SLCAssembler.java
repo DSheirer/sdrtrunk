@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc.shorty;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-import io.github.dsheirer.edac.DMRHamming17;
+import io.github.dsheirer.edac.Hamming17;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.type.LCSS;
 import org.slf4j.Logger;
@@ -147,7 +147,7 @@ public class SLCAssembler
 
             for(int row = 0; row < 4; row++)
             {
-                int rowErrorCount = DMRHamming17.checkAndCorrect(deinterleaved, row * 17);
+                int rowErrorCount = Hamming17.checkAndCorrect(deinterleaved, row * 17);
                 errorCount += rowErrorCount;
 
                 if(rowErrorCount > 1)

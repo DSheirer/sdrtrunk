@@ -168,22 +168,6 @@ public class P25P1DecoderLSM extends P25P1Decoder
         mFrequencyCorrectionSyncMonitor.reset();
     }
 
-    public void dispose()
-    {
-        super.dispose();
-
-        mBasebandFilter.dispose();
-        mBasebandFilter = null;
-
-        mAGC.dispose();
-        mAGC = null;
-
-        mQPSKDemodulator.dispose();
-        mQPSKDemodulator = null;
-
-        mMessageFramer = null;
-    }
-
     public Modulation getModulation()
     {
         return Modulation.CQPSK;

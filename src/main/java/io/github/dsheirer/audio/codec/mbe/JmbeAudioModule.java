@@ -62,6 +62,14 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
         loadConverter();
     }
 
+    @Override
+    public void dispose()
+    {
+        super.dispose();
+        MyEventBus.getGlobalEventBus().unregister(this);
+        mAudioCodec = null;
+    }
+
     protected IAudioCodec getAudioCodec()
     {
         return mAudioCodec;
@@ -237,10 +245,4 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
         }
     }
 
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-        mAudioCodec = null;
-    }
 }

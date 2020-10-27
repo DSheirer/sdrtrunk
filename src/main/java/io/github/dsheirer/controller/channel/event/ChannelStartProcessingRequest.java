@@ -22,17 +22,25 @@ package io.github.dsheirer.controller.channel.event;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.module.ModuleEventBusMessage;
+import io.github.dsheirer.module.decode.event.DecodeEventHistory;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Request to start/enable processing for the specified channel
  */
-public class ChannelStartProcessingRequest
+public class ChannelStartProcessingRequest extends ModuleEventBusMessage
 {
-    private Channel mChannel;
-    private IChannelDescriptor mChannelDescriptor;
-    private IdentifierCollection mIdentifierCollection;
-    private TrafficChannelManager mTrafficChannelManager;
+    private final Channel mChannel;
+    private final IChannelDescriptor mChannelDescriptor;
+    private final IdentifierCollection mIdentifierCollection;
+    private final TrafficChannelManager mTrafficChannelManager;
+    private final List<PreloadDataContent<?>> mPreloadDataContents = new ArrayList<>();
+    private DecodeEventHistory mParentDecodeEventHistory;
+    private DecodeEventHistory mChildDecodeEventHistory;
     private boolean mPersistentAttempt;
 
     /**
@@ -48,7 +56,7 @@ public class ChannelStartProcessingRequest
     {
         mChannel = channel;
         mChannelDescriptor = channelDescriptor;
-        mIdentifierCollection = identifierCollection;
+        mIdentifierCollection = (identifierCollection != null ? identifierCollection : new IdentifierCollection());
         mTrafficChannelManager = trafficChannelManager;
     }
 
@@ -68,7 +76,6 @@ public class ChannelStartProcessingRequest
      * Constructs an instance
      * @param channel to start processing
      * @param trafficChannelManager optional to use in the processing chain
-     * @param channelDescriptor identifying which frequency to use in a multi-frequency configuration
      */
     public ChannelStartProcessingRequest(Channel channel, TrafficChannelManager trafficChannelManager)
     {
@@ -104,7 +111,7 @@ public class ChannelStartProcessingRequest
 
     /**
      * Channel to start processing
-     * @return
+     * @return channel to start
      */
     public Channel getChannel()
     {
@@ -118,6 +125,56 @@ public class ChannelStartProcessingRequest
     public TrafficChannelManager getTrafficChannelManager()
     {
         return mTrafficChannelManager;
+    }
+
+    /**
+     * Optional parent decode event history module to be added as a decode event listener
+     */
+    public DecodeEventHistory getParentDecodeEventHistory()
+    {
+        return mParentDecodeEventHistory;
+    }
+
+    /**
+     * Indicates if this request has a parent decode event history
+     */
+    public boolean hasParentDecodeEventHistory()
+    {
+        return mParentDecodeEventHistory != null;
+    }
+
+    /**
+     * Sets the parent decode event history
+     * @param parentHistory
+     */
+    public void setParentDecodeEventHistory(DecodeEventHistory parentHistory)
+    {
+        mParentDecodeEventHistory = parentHistory;
+    }
+
+    /**
+     * Optional child decode event history module
+     */
+    public DecodeEventHistory getChildDecodeEventHistory()
+    {
+        return mChildDecodeEventHistory;
+    }
+
+    /**
+     * Indicates if this request has a child decode event history
+     */
+    public boolean hasChildDecodeEventHistory()
+    {
+        return mChildDecodeEventHistory != null;
+    }
+
+    /**
+     * Sets the child decode event history
+     * @param childHistory
+     */
+    public void setChildDecodeEventHistory(DecodeEventHistory childHistory)
+    {
+        mChildDecodeEventHistory = childHistory;
     }
 
     /**
@@ -150,5 +207,22 @@ public class ChannelStartProcessingRequest
     public boolean hasIdentifierCollection()
     {
         return mIdentifierCollection != null;
+    }
+
+    /**
+     * Adds data content to be preloaded onto the event bus at startup.
+     * @param content to broadcast.
+     */
+    public void addPreloadDataContent(PreloadDataContent<?> content)
+    {
+        mPreloadDataContents.add(content);
+    }
+
+    /**
+     * Data content that should be broadcast on the processing chain event bus at startup.
+     */
+    public List<PreloadDataContent<?>> getPreloadDataContents()
+    {
+        return mPreloadDataContents;
     }
 }

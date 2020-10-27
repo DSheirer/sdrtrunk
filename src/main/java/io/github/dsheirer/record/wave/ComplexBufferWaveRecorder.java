@@ -150,13 +150,6 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     }
 
     @Override
-    public void dispose()
-    {
-        super.dispose();
-        stop();
-    }
-
-    @Override
     public void reset()
     {
     }

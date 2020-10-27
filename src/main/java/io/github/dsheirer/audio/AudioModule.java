@@ -103,14 +103,6 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     }
 
     @Override
-    public void dispose()
-    {
-        super.dispose();
-        removeAudioSegmentListener();
-        mSquelchStateListener = null;
-    }
-
-    @Override
     public void reset()
     {
         getIdentifierCollection().clear();

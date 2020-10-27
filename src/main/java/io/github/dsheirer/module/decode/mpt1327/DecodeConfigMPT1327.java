@@ -30,6 +30,10 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
 public class DecodeConfigMPT1327 extends DecodeConfiguration implements WithCallTimeout
 {
+    public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 500;
+    public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
+    public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
+
     private String mChannelMapName;
     private Sync mSync = Sync.NORMAL;
 

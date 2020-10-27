@@ -242,6 +242,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
     @Override
     public void stop()
     {
+        mAvailableTrafficChannelQueue.clear();
         List<Channel> channels = new ArrayList<>(mAllocatedTrafficChannelMap.values());
 
         //Issue a disable request for each traffic channel
@@ -284,19 +285,6 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
 
         return null;
     }
-
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-        for(Channel trafficChannel : mAvailableTrafficChannelQueue)
-        {
-            broadcast(new ChannelEvent(trafficChannel, ChannelEvent.Event.REQUEST_DISABLE));
-        }
-
-        mAvailableTrafficChannelQueue.clear();
-    }
-
 
     @Override
     public void addDecodeEventListener(Listener<IDecodeEvent> listener)

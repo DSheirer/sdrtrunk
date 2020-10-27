@@ -189,6 +189,12 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         //Each burst is 288 bits
         updateBitsProcessed(288);
 
+        //This allows the frequency error monitor to be notified when we're in sync
+        if(mSyncDetectListener != null)
+        {
+            mSyncDetectListener.syncDetected(0);
+        }
+
         CACH cach = null;
 
         if(syncPattern.hasCACH())

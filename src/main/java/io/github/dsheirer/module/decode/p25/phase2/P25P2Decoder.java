@@ -124,14 +124,6 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
         return (float)(getSampleRate() / getSymbolRate());
     }
 
-    public void dispose()
-    {
-        super.dispose();
-
-        mMessageProcessor.dispose();
-        mMessageProcessor = null;
-    }
-
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {

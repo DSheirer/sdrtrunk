@@ -102,6 +102,11 @@ public class PlaylistManagerEditor extends HBox
         updateButtons();
     }
 
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
+    }
+
     /**
      * Indicates if the path argument is the same as the current playlist path
      */

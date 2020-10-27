@@ -19,10 +19,12 @@
 
 package io.github.dsheirer.source.tuner.channel.rotation;
 
+import io.github.dsheirer.module.ModuleEventBusMessage;
+
 /**
  * Request to lock or unlock a frequency from use.
  */
-public class FrequencyLockChangeRequest
+public class FrequencyLockChangeRequest extends ModuleEventBusMessage
 {
     private long mFrequency;
     private boolean mLock;

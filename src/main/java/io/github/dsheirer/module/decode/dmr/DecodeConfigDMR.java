@@ -34,9 +34,12 @@ import java.util.List;
  */
 public class DecodeConfigDMR extends DecodeConfiguration
 {
+    public static final int CHANNEL_ROTATION_DELAY_MINIMUM_MS = 200;
+    public static final int CHANNEL_ROTATION_DELAY_DEFAULT_MS = 500;
+    public static final int CHANNEL_ROTATION_DELAY_MAXIMUM_MS = 2000;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
-    private long mChannelRotationDelay = 0l;
+    private boolean mIgnoreCRCChecksums = false;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
 
     public DecodeConfigDMR()
@@ -89,6 +92,24 @@ public class DecodeConfigDMR extends DecodeConfiguration
     }
 
     /**
+     * Indicates if decoder should ignore CRC checksums when validating decoded messages
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "ignore_crc")
+    public boolean getIgnoreCRCChecksums()
+    {
+        return mIgnoreCRCChecksums;
+    }
+
+    /**
+     * Sets flag to ignore CRC checksums
+     * @param ignore true to ignore CRC checksums.
+     */
+    public void setIgnoreCRCChecksums(boolean ignore)
+    {
+        mIgnoreCRCChecksums = ignore;
+    }
+
+    /**
      * Traffic channel pool size.
      * @return
      */
@@ -119,30 +140,6 @@ public class DecodeConfigDMR extends DecodeConfiguration
     public ChannelSpecification getChannelSpecification()
     {
         return new ChannelSpecification(50000.0, 12500, 6500.0, 7200.0);
-    }
-
-    /**
-     * Channel rotation delay.  This setting is used when multiple channel frequencies are defined in the source
-     * config and controls how long the decoder will remaining on each frequency until the channel is identified as
-     * active or the channel is identified as inactive and a change frequency request is issued.
-     *
-     * Note: this value is ignored when the source config contains a single frequency.
-     *
-     * @return channel rotation delay in milliseconds.
-     */
-    @JacksonXmlProperty(isAttribute = true, localName = "channel_rotation_delay")
-    public long getChannelRotationDelay()
-    {
-        return mChannelRotationDelay;
-    }
-
-    /**
-     * Sets the channel rotation delay.
-     * @param channelRotationDelay in milliseconds.
-     */
-    public void setChannelRotationDelay(long channelRotationDelay)
-    {
-        mChannelRotationDelay = channelRotationDelay;
     }
 
     /**

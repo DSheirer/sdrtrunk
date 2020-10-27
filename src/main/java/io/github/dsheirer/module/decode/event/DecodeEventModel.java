@@ -86,6 +86,13 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
         }
     }
 
+    /**
+     * Access the complete list of events managed by this model.
+     */
+    public List<IDecodeEvent> getEvents()
+    {
+        return new ArrayList<>(mEvents);
+    }
 
     public void dispose()
     {
@@ -96,6 +103,16 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
         {
             it.remove();
         }
+    }
+
+    /**
+     * Clears all events from this model and loads the events argument
+     */
+    public void clearAndSet(List<IDecodeEvent> events)
+    {
+        mEvents.clear();
+        mEvents.addAll(events);
+        fireTableDataChanged();
     }
 
     public void reset()

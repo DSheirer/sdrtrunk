@@ -18,13 +18,8 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
-import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.alias.id.record.Record;
-import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
-import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
-import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
@@ -33,26 +28,17 @@ import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageProviderModule;
-import io.github.dsheirer.message.StuffBitsMessage;
-import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageFramer;
-import io.github.dsheirer.module.decode.p25.phase1.P25P1MessageProcessor;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
-import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +48,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.function.Consumer;
 
 /**

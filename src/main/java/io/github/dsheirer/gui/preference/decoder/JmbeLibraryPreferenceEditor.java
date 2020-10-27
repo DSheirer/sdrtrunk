@@ -89,6 +89,11 @@ public class JmbeLibraryPreferenceEditor extends VBox
         getChildren().addAll(getEditorPane(), getButtonsBox(), getAlertUserWhenMissingCheckBox());
     }
 
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
+    }
+
     private CheckBox getAlertUserWhenMissingCheckBox()
     {
         if(mAlertUserWhenMissingCheckBox == null)

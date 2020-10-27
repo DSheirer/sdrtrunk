@@ -180,6 +180,8 @@ public class R820TTunerController extends RTL2832TunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
+        mLock.lock();
+
         try
         {
             enableI2CRepeater(mDeviceHandle, true);
@@ -199,6 +201,10 @@ public class R820TTunerController extends RTL2832TunerController
             throw new SourceException("R820TTunerController - exception "
                 + "while setting frequency [" + frequency + "] - " +
                 e.getLocalizedMessage());
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -693,7 +699,16 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void setLNAGain(R820TLNAGain gain, boolean controlI2C) throws UsbException
     {
-        writeR820TRegister(Register.LNA_GAIN, gain.getSetting(), controlI2C);
+        mLock.lock();
+
+        try
+        {
+            writeR820TRegister(Register.LNA_GAIN, gain.getSetting(), controlI2C);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -701,7 +716,16 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void setMixerGain(R820TMixerGain gain, boolean controlI2C) throws UsbException
     {
-        writeR820TRegister(Register.MIXER_GAIN, gain.getSetting(), controlI2C);
+        mLock.lock();
+
+        try
+        {
+            writeR820TRegister(Register.MIXER_GAIN, gain.getSetting(), controlI2C);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -709,7 +733,16 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void setVGAGain(R820TVGAGain gain, boolean controlI2C) throws UsbException
     {
-        writeR820TRegister(Register.VGA_GAIN, gain.getSetting(), controlI2C);
+        mLock.lock();
+
+        try
+        {
+            writeR820TRegister(Register.VGA_GAIN, gain.getSetting(), controlI2C);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**

@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.module.decode.event;
 
+import io.github.dsheirer.filter.AllPassFilter;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.StuffBitsMessage;
@@ -30,6 +31,7 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
+import java.util.List;
 
 public class MessageActivityModel extends AbstractTableModel implements Listener<IMessage>
 {
@@ -46,15 +48,18 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
 
     private SimpleDateFormat mSDFTime = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
 
-    private FilterSet<IMessage> mMessageFilter;
-
-    public MessageActivityModel(FilterSet<IMessage> messageFilter)
-    {
-        mMessageFilter = messageFilter;
-    }
+    private FilterSet<IMessage> mMessageFilterSet = new FilterSet<>(new AllPassFilter<>());
 
     public MessageActivityModel()
     {
+    }
+
+    /**
+     * Applies the filter set
+     */
+    public void setFilters(FilterSet filterSet)
+    {
+        mMessageFilterSet = filterSet;
     }
 
     /**
@@ -62,23 +67,30 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
      */
     public void clear()
     {
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+        EventQueue.invokeLater(() -> {
+            mMessageItems.clear();
+            fireTableDataChanged();
+        });
+    }
+
+    /**
+     * Clears the current messages and loads the messages argument
+     */
+    public void clearAndSet(List<IMessage> messages)
+    {
+        EventQueue.invokeLater(() -> {
+            mMessageItems.clear();
+            fireTableDataChanged();
+            for(IMessage message: messages)
             {
-                int messageCount = mMessageItems.size();
-
-                mMessageItems.clear();
-
-                fireTableRowsDeleted(0, messageCount - 1);
+                receive(message);
             }
         });
     }
 
-    public FilterSet<IMessage> getMessageFilter()
+    public FilterSet<IMessage> getMessageFilterSet()
     {
-        return mMessageFilter;
+        return mMessageFilterSet;
     }
 
     public void dispose()
@@ -121,7 +133,7 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
             return;
         }
 
-        if(mMessageFilter.passes(message))
+        if(mMessageFilterSet.passes(message))
         {
             final MessageItem messageItem = new MessageItem(message);
 

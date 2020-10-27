@@ -463,7 +463,6 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         AudioRecordingManager recordingManager = new AudioRecordingManager(userPreferences);
         recordingManager.start();
         ProcessingChain processingChain = new ProcessingChain(channel, new AliasModel());
-
         processingChain.addAudioSegmentListener(recordingManager);
         processingChain.addModule(new P25P1DecoderState(channel));
         processingChain.addModule(new P25P1AudioModule(userPreferences, aliasList));

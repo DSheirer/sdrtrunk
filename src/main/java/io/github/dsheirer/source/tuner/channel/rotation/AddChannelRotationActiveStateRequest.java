@@ -20,11 +20,12 @@
 package io.github.dsheirer.source.tuner.channel.rotation;
 
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.module.ModuleEventBusMessage;
 
 /**
  * Request to add a channel state to the list of active channel states monitored by the channel rotation monitor.
  */
-public class AddChannelRotationActiveStateRequest
+public class AddChannelRotationActiveStateRequest extends ModuleEventBusMessage
 {
     private State mState;
 

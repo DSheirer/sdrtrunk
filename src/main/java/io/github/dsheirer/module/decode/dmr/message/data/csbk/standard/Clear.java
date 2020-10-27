@@ -26,6 +26,7 @@ import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
@@ -208,7 +209,7 @@ public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
 
         if(mChannel == null)
         {
-            mChannel = new DMRLogicalChannel(getMoveToChannelNumber(), getMoveToTimeslot());
+            mChannel = new DMRTier3Channel(getMoveToChannelNumber(), getMoveToTimeslot());
         }
 
         return mChannel;

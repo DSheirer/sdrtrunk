@@ -179,7 +179,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mSourceConfigurationEditor == null)
         {
-            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel(), false);
+            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel());
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()
@@ -305,7 +305,7 @@ public class P25P2ConfigurationEditor extends ChannelConfigurationEditor
             config.setAutoDetectScrambleParameters(false);
             int wacn = getWacnTextField().get();
             int system = getSystemTextField().get();
-            int nac = getSystemTextField().get();
+            int nac = getNacTextField().get();
             config.setScrambleParameters(new ScrambleParameters(wacn, system, nac));
         }
         else

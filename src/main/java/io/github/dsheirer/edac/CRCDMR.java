@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * P25 CRC check/correction methods
+ * DMR CRC check/correction methods
  */
 public class CRCDMR
 {
@@ -72,55 +72,6 @@ public class CRCDMR
             0x0DD, 0x16E, 0x09B, 0x14D, 0x1A6
         };
 
-
-    /*
-    /**
-     * Performs error detection and single-bit error correction against the
-     * data blocks of a PDU1 message.
-
-     */
-    public static BinaryMessage correctCSBK(BinaryMessage message, long[] checksums, int crcStart)
-    {
-        long calculated = 0; //Starting value
-
-        int messageStart = 160;
-
-        /* Iterate the set bits and XOR running checksum with lookup value */
-        for(int i = message.nextSetBit(messageStart);
-            i >= messageStart && i < crcStart;
-            i = message.nextSetBit(i + 1))
-        {
-            calculated ^= checksums[i - messageStart];
-        }
-
-        long checksum = getLongChecksum(message, crcStart, 32);
-
-        long error = calculated ^ checksum;
-
-        if(error == 0 || error == 0xFFFFFFFFl)
-        {
-            message.setCRC(CRC.PASSED);
-
-            return message;
-        }
-        else
-        {
-            int errorLocation = getBitError(error, checksums);
-
-            if(errorLocation >= 0)
-            {
-                message.flip(errorLocation + messageStart);
-
-                message.setCRC(CRC.CORRECTED);
-
-                return message;
-            }
-        }
-
-        message.setCRC(CRC.FAILED_CRC);
-
-        return message;
-    }
 
     /**
      * Error detection and correction of single-bit errors for CCITT 16-bit CRC protected 80-bit messages.
@@ -204,10 +155,6 @@ public class CRCDMR
 
         int residual = calculated ^ checksum;
 
-//        mLog.debug("CALC:" + Integer.toHexString(calculated).toUpperCase() +
-//            " CHECK:" + Integer.toHexString(checksum).toUpperCase() +
-//            " RESI:" + Integer.toHexString(residual).toUpperCase());
-
         if(residual == 0 || residual == 0xFFFF)
         {
             return 0;
@@ -262,8 +209,6 @@ public class CRCDMR
 
         int residual = calculated ^ checksum;
 
-//		mLog.debug( "CALC:" + calculated + " CHECK:" + checksum + " RESID:" + residual );
-
         if(residual == 0 || residual == 0x1FF)
         {
             return CRC.PASSED;
@@ -271,33 +216,6 @@ public class CRCDMR
 
         return CRC.FAILED_CRC;
     }
-
-
-    /**
-     * Performs Galois 24/12/7 error detection and correction against the 12
-     * encoded 24-bit message segments following the 64-bit NID in the message
-     *
-     * @return - true if all 12 segments of the message can be checked/corrected
-     */
-    public static boolean correctGalois24(CorrectedBinaryMessage tdulc)
-    {
-        boolean passes = true;
-
-        int x = 64;
-
-        while(x < tdulc.size() && passes)
-        {
-
-            int errors = Golay24.checkAndCorrect(tdulc, x);
-
-            passes = errors < 2;
-
-            x += 24;
-        }
-
-        return passes;
-    }
-
 
     /**
      * Calculates the value of the message checksum as a long
@@ -348,6 +266,7 @@ public class CRCDMR
 
         return -1;
     }
+
     public static int crc8(BinaryMessage bits, int len) {
         int crc=0;
         final int K = 8;
@@ -367,28 +286,5 @@ public class CRCDMR
             crc = (crc << 1) + (buf[len + i] ? 1:0);
         }
         return crc;
-    }
-    public static void main(String[] args)
-    {
-        String raw = "100000010000011001010001010100100101001101011100000010110000000000000000000010110000001001111001";
-
-        CorrectedBinaryMessage message = new CorrectedBinaryMessage(96);
-        try
-        {
-            for(int i = 0; i < 96; i++) {
-                message.add(raw.charAt(i) == '0' ? false :true);
-            }
-            mLog.debug("MSG:" + message.toString());
-
-            int ret = correctCCITT80(message, 0, 80, 0xa5a5);//
-
-            mLog.debug("COR:" + message.toString());
-
-            mLog.debug("Results: " + ret);
-        } catch(Exception ex) {
-            ex.printStackTrace();
-        }
-
-
     }
 }

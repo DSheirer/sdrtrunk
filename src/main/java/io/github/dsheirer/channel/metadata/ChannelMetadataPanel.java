@@ -25,7 +25,8 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.controller.channel.ChannelUtils;
+import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.configuration.FrequencyConfigurationIdentifier;
@@ -74,6 +75,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
     private Map<State,Color> mBackgroundColors = new EnumMap<>(State.class);
     private Map<State,Color> mForegroundColors = new EnumMap<>(State.class);
     private JTableColumnWidthMonitor mTableColumnMonitor;
+    private Channel mUserSelectedChannel;
 
     /**
      * Table view for currently decoding channel metadata
@@ -95,6 +97,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
         mTable = new JTable(mChannelProcessingManager.getChannelMetadataModel());
+        mChannelProcessingManager.getChannelMetadataModel().setChannelAddListener(new ChannelAddListener());
 
         DefaultTableCellRenderer renderer = (DefaultTableCellRenderer)mTable.getDefaultRenderer(String.class);
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
@@ -169,9 +172,10 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                 if(selectedMetadata != null)
                 {
-                    Channel selectedChannel = mChannelProcessingManager.getChannelMetadataModel()
+                    mUserSelectedChannel = mChannelProcessingManager.getChannelMetadataModel()
                         .getChannelFromMetadata(selectedMetadata);
-                    processingChain = mChannelProcessingManager.getProcessingChain(selectedChannel);
+
+                    processingChain = mChannelProcessingManager.getProcessingChain(mUserSelectedChannel);
                 }
             }
 
@@ -409,11 +413,12 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
                             if(channel != null)
                             {
-                                popupMenu.add(ChannelUtils.getContextMenu(mChannelModel, mChannelProcessingManager, channel, mTable));
+                                JMenuItem viewChannel = new JMenuItem("View/Edit: " + channel.getShortTitle());
+                                viewChannel.addActionListener(e2 -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
+                                popupMenu.add(viewChannel);
                                 populated = true;
                             }
                         }
-
                     }
                 }
 
@@ -423,6 +428,41 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 }
 
                 popupMenu.show(mTable, e.getX(), e.getY());
+            }
+        }
+    }
+
+    /**
+     * Listener to be notified when a channel and associated channel metadata(s) are added to the underlying
+     * channel metadata model.
+     *
+     * When a channel is added, it is compared the the last user selected channel and if they are the same, it
+     * invokes a selection event on the channel metadata row so that the channel metadata is re-selected.  This is
+     * primarily a hack to counter-act the DMR Capacity+ REST channel rotation where a channel is converted to a
+     * traffic channel and the previous channel is restarted.  The UI effect is that the user selected channel row
+     * in the Now Playing window continually loses selection over the channel and causes the user to perpetually
+     * chase the channel row.
+     */
+    public class ChannelAddListener implements Listener<ChannelAndMetadata>
+    {
+        @Override
+        public void receive(ChannelAndMetadata channelAndMetadata)
+        {
+            if(mUserSelectedChannel != null &&
+               mUserSelectedChannel.getChannelID() == channelAndMetadata.getChannel().getChannelID())
+            {
+                List<ChannelMetadata> metadata = channelAndMetadata.getChannelMetadata();
+
+                if(metadata.size() > 0)
+                {
+                    int modelRow = mChannelProcessingManager.getChannelMetadataModel().getRow(metadata.get(0));
+
+                    if(modelRow >= 0)
+                    {
+                        int tableRow = mTable.convertRowIndexToView(modelRow);
+                        mTable.getSelectionModel().setSelectionInterval(tableRow, tableRow);
+                    }
+                }
             }
         }
     }

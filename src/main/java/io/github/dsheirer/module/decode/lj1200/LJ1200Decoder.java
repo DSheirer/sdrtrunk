@@ -69,13 +69,6 @@ public class LJ1200Decoder extends AbstractAFSKDecoder implements IBinarySymbolP
         return DecoderType.LJ_1200;
     }
 
-    public void dispose()
-    {
-        super.dispose();
-        mTowerMessageFramer.dispose();
-        mMessageProcessor.dispose();
-    }
-
     @Override
     public void process(boolean symbol)
     {

@@ -25,7 +25,6 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
-import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
@@ -64,9 +63,12 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
 
-    //TODO: is this needed?  It seemed to be causing the audio to be saturated and raspy
-    private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
-
+    /**
+     * Constructs an instance
+     * @param userPreferences for JMBE library location
+     * @param aliasList for audio
+     * @param timeslot for this audio module
+     */
     public DMRAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
         super(userPreferences, aliasList, timeslot);

@@ -60,14 +60,6 @@ public class MDCDecoder extends AbstractAFSKDecoder
         mMessageProcessor.addMessageListener(getMessageListener());
     }
 
-    public void dispose()
-    {
-        super.dispose();
-        mNRZDecoder.dispose();
-        mMessageFramer.dispose();
-        mMessageProcessor.dispose();
-    }
-
     @Override
     public DecoderType getDecoderType()
     {

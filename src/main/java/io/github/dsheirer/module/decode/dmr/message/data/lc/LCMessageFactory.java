@@ -41,6 +41,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ControlChanne
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.HyteraXPTChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.NullMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ShortLCMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.TrafficChannelSystemParameters;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.UnknownShortLCMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,11 +153,13 @@ public class LCMessageFactory
             case SHORT_STANDARD_CONTROL_CHANNEL_SYSTEM_PARAMETERS:
                 slc = new ControlChannelSystemParameters(message, timestamp, timeslot);
                 break;
+            case SHORT_STANDARD_TRAFFIC_CHANNEL_SYSTEM_PARAMETERS:
+                slc = new TrafficChannelSystemParameters(message, timestamp, timeslot);
+                break;
             case SHORT_HYTERA_XPT_CHANNEL:
             case SHORT_STANDARD_XPT_CHANNEL:
                 slc = new HyteraXPTChannel(message, timestamp, timeslot);
                 break;
-            case SHORT_STANDARD_TRAFFIC_CHANNEL_SYSTEM_PARAMETERS:
             case SHORT_STANDARD_UNKNOWN:
             default:
                 slc = new UnknownShortLCMessage(message, timestamp, timeslot);

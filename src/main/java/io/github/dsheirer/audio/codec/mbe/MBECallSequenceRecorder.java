@@ -89,6 +89,7 @@ public abstract class MBECallSequenceRecorder extends Module implements IMessage
     {
     }
 
+
     /**
      * Writes an MBE call sequence recording to the recording directory
      * @param sequence to write

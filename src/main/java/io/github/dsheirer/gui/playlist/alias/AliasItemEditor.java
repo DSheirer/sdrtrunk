@@ -410,6 +410,7 @@ public class AliasItemEditor extends Editor<Alias>
     @Override
     public void dispose()
     {
+        MyEventBus.getGlobalEventBus().unregister(this);
     }
 
     private VBox getTitledPanesBox()
@@ -1110,7 +1111,7 @@ public class AliasItemEditor extends Editor<Alias>
             mGroupField.setDisable(true);
             mGroupField.setMaxWidth(Double.MAX_VALUE);
             mGroupField.textProperty().addListener(mEditorModificationListener);
-            new AutoCompletionTextFieldBinding<>(mGroupField, getGroupSuggestionProvider());
+            // new AutoCompletionTextFieldBinding<>(mGroupField, getGroupSuggestionProvider());
         }
 
         return mGroupField;

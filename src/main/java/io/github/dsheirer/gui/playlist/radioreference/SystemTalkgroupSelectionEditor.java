@@ -172,6 +172,11 @@ public class SystemTalkgroupSelectionEditor extends GridPane
         getChildren().add(getTalkgroupEditor());
     }
 
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
+    }
+
     public void clear()
     {
         mTalkgroupList.clear();

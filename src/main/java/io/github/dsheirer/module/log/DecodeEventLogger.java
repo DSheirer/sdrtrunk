@@ -72,13 +72,6 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
     }
 
     @Override
-    public void dispose()
-    {
-        super.dispose();
-        super.stop();
-    }
-
-    @Override
     public void reset()
     {
     }

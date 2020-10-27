@@ -23,7 +23,6 @@ import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventListener;
 import io.github.dsheirer.channel.state.State;
-import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
@@ -46,6 +45,10 @@ import java.util.concurrent.TimeUnit;
 public class ChannelRotationMonitor extends Module implements ISourceEventProvider, IDecoderStateEventListener,
         Listener<DecoderStateEvent>
 {
+    public static final int CHANNEL_ROTATION_DELAY_MINIMUM = 200;
+    public static final int CHANNEL_ROTATION_DELAY_DEFAULT = 500;
+    public static final int CHANNEL_ROTATION_DELAY_MAXIMUM = 2000;
+
     private final static Logger mLog = LoggerFactory.getLogger(ChannelRotationMonitor.class);
     private UserPreferences mUserPreferences;
     private Collection<State> mActiveStates;
@@ -56,22 +59,6 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     private boolean mEnabled = true;
 
     /**
-     * Constructs a channel rotation monitor that uses the channel rotation delay specified by user preferences.
-     *
-     * @param activeStates to monitor
-     * @param userPreferences to receive updates for rotation delay value from user preferences
-     */
-    public ChannelRotationMonitor(Collection<State> activeStates, UserPreferences userPreferences)
-    {
-        mActiveStates = activeStates;
-        mUserPreferences = userPreferences;
-        mRotationDelay = mUserPreferences.getChannelMultiFrequencyPreference().getRotationDelay();
-
-        //Register to receive user preference updates via the @Subscribe annotated methods for this class
-        MyEventBus.getGlobalEventBus().register(this);
-    }
-
-    /**
      * Constructs a channel rotation monitor that uses the specified rotation delay.
      * @param activeStates to monitor
      * @param rotationDelay specifies how long to remain on each frequency before rotating (in milliseconds).
@@ -80,6 +67,11 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     {
         mActiveStates = activeStates;
         mRotationDelay = rotationDelay;
+
+        if(mRotationDelay == 0)
+        {
+            mRotationDelay = 200;
+        }
     }
 
     /**
@@ -151,7 +143,7 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     private void checkState()
     {
         if(mEnabled && mSourceEventListener != null &&
-           ((mLastActiveTimestamp + mRotationDelay) < System.currentTimeMillis()))
+            ((mLastActiveTimestamp + mRotationDelay) < System.currentTimeMillis()))
         {
             mSourceEventListener.receive(SourceEvent.frequencyRotationRequest());
             mLastActiveTimestamp = System.currentTimeMillis();
@@ -181,7 +173,18 @@ public class ChannelRotationMonitor extends Module implements ISourceEventProvid
     {
         if(mScheduledFuture == null)
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(() -> checkState(), mRotationDelay,
+            Runnable runnable = () -> {
+                try
+                {
+                    checkState();
+                }
+                catch(Throwable t)
+                {
+                    mLog.warn("Error while checking state", t);
+                }
+            };
+
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(runnable, mRotationDelay,
                 mRotationDelay / 2, TimeUnit.MILLISECONDS);
         }
     }

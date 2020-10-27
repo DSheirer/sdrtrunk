@@ -123,6 +123,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             mIgnoreDataCalls = ((DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration()).getIgnoreDataCalls();
         }
+
         createPhase1TrafficChannels();
         createPhase2TrafficChannels();
     }
@@ -524,7 +525,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         broadcast(channelGrantEvent);
     }
 
-
     /**
      * Creates a call event type description for the specified opcode and service options
      */
@@ -646,21 +646,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         return null;
     }
 
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-        for(Channel trafficChannel : mAvailablePhase1TrafficChannelQueue)
-        {
-            broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
-        }
-
-        for(Channel trafficChannel : mAvailablePhase2TrafficChannelQueue)
-        {
-            broadcast(new ChannelEvent(trafficChannel, Event.REQUEST_DISABLE));
-        }
-    }
-
     /**
      * Implements the IDecodeEventProvider interface to provide channel events to an external listener.
      */
@@ -692,6 +677,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     @Override
     public void stop()
     {
+        mAvailablePhase1TrafficChannelQueue.clear();
+        mAvailablePhase2TrafficChannelQueue.clear();
+
         List<Channel> channels = new ArrayList<>(mAllocatedTrafficChannelMap.values());
 
         //Issue a disable request for each traffic channel
@@ -735,7 +723,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         return mMessageListener;
     }
 
-   /**
+    /**
      * Converts a phase 2 channel to a phase 1 channel
      * @param channel to convert
      * @return channel converted to phase 1 or the original channel if no conversion is necessary
@@ -748,8 +736,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         {
             P25P2ExplicitChannel phase2 = (P25P2ExplicitChannel)toConvert;
             return APCO25ExplicitChannel.create(phase2.getDownlinkBandIdentifier(),
-                    phase2.getDownlinkChannelNumber(), phase2.getUplinkBandIdentifier(),
-                    phase2.getUplinkChannelNumber());
+                phase2.getDownlinkChannelNumber(), phase2.getUplinkBandIdentifier(),
+                phase2.getUplinkChannelNumber());
         }
         else if(toConvert instanceof P25P2Channel)
         {

@@ -126,8 +126,6 @@ public class Channel extends Configuration implements Listener<SourceEvent>
         mChannelID = UNIQUE_ID++;
     }
 
-
-
     /**
      * Creates a (new) deep copy of this channel
      */
@@ -181,6 +179,70 @@ public class Channel extends Configuration implements Listener<SourceEvent>
         channel.setSourceConfiguration(SourceConfigFactory.copy(mSourceConfiguration));
 
         return channel;
+    }
+
+    /**
+     * Creates a short title containing the system, site and channel name where each value is constrained to
+     * ten characters each.
+     * @return short title
+     */
+    @JsonIgnore
+    public String getShortTitle()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if(getSystem() != null)
+        {
+            if(getSystem().length() > 10)
+            {
+                sb.append(getSystem().substring(0, 10)).append("..");
+            }
+            else
+            {
+                sb.append(getSystem());
+            }
+        }
+        else
+        {
+            sb.append("No System");
+        }
+
+        sb.append("/");
+
+        if(getSite() != null)
+        {
+            if(getSite().length() > 10)
+            {
+                sb.append(getSite().substring(0, 10)).append("..");
+            }
+            else
+            {
+                sb.append(getSite());
+            }
+        }
+        else
+        {
+            sb.append("No Site");
+        }
+        sb.append("/");
+
+        if(getName() != null)
+        {
+            if(getName().length() > 10)
+            {
+                sb.append(getName().substring(0, 10)).append("..");
+            }
+            else
+            {
+                sb.append(getName());
+            }
+        }
+        else
+        {
+            sb.append("No Channel");
+        }
+
+        return sb.toString();
     }
 
     /**

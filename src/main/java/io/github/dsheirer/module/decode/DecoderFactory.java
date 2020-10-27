@@ -39,9 +39,8 @@ import io.github.dsheirer.module.decode.am.AMDecoder;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dmr.DMRDecoder;
 import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
-import io.github.dsheirer.module.decode.dmr.DMRNetworkConfigurationMonitor;
-import io.github.dsheirer.module.decode.dmr.DMRStandardDecoder;
 import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.message.voice.DMRAudioModule;
@@ -164,7 +163,7 @@ public class DecoderFactory
                 processLTRNet(channel, modules, aliasList, (DecodeConfigLTRNet) decodeConfig);
                 break;
             case MPT1327:
-                processMPT1327(channelMapModel, channel, userPreferences, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
+                processMPT1327(channelMapModel, channel, modules, aliasList, channelType, (DecodeConfigMPT1327) decodeConfig);
                 break;
             case PASSPORT:
                 processPassport(channel, modules, aliasList, decodeConfig);
@@ -226,7 +225,8 @@ public class DecoderFactory
         {
             List<State> activeStates = new ArrayList<>();
             activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+            modules.add(new ChannelRotationMonitor(activeStates,
+                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay()));
         }
     }
 
@@ -240,7 +240,7 @@ public class DecoderFactory
         }
     }
 
-    private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
+    private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
         DecodeConfigMPT1327 mptConfig = decodeConfig;
         ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
         Sync sync = mptConfig.getSync();
@@ -277,7 +277,8 @@ public class DecoderFactory
         {
             List<State> activeStates = new ArrayList<>();
             activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates, userPreferences));
+            modules.add(new ChannelRotationMonitor(activeStates,
+                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay()));
         }
     }
 
@@ -355,7 +356,7 @@ public class DecoderFactory
                                    AliasList aliasList, DecodeConfigDMR decodeConfig,
                                    TrafficChannelManager trafficChannelManager)
     {
-        modules.add(new DMRStandardDecoder(decodeConfig));
+        modules.add(new DMRDecoder(decodeConfig));
 
         DMRTrafficChannelManager dmrTrafficChannelManager = null;
 
@@ -373,8 +374,7 @@ public class DecoderFactory
             modules.add(dmrTrafficChannelManager);
         }
 
-        DMRNetworkConfigurationMonitor networkConfigurationMonitor = new DMRNetworkConfigurationMonitor(channel);
-        modules.add(new DMRDecoderState(channel, 1, dmrTrafficChannelManager, networkConfigurationMonitor));
+        modules.add(new DMRDecoderState(channel, 1, dmrTrafficChannelManager));
         modules.add(new DMRDecoderState(channel, 2, dmrTrafficChannelManager));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 1));
         modules.add(new DMRAudioModule(userPreferences, aliasList, 2));
@@ -385,7 +385,8 @@ public class DecoderFactory
         {
             List<State> activeStates = new ArrayList<>();
             activeStates.add(State.CONTROL);
-            modules.add(new ChannelRotationMonitor(activeStates, decodeConfig.getChannelRotationDelay()));
+            modules.add(new ChannelRotationMonitor(activeStates,
+                ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencyRotationDelay()));
         }
     }
 

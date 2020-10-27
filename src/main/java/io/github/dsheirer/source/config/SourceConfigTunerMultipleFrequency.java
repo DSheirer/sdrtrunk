@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,7 @@ public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
     private List<Long> mFrequencies = new ArrayList<>();
     private String mPreferredTuner;
     private Long mPreferredFrequency;
+    private int mFrequencyRotationDelay = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM;
 
     public SourceConfigTunerMultipleFrequency()
     {
@@ -148,5 +150,40 @@ public class SourceConfigTunerMultipleFrequency extends SourceConfiguration
     public TunerChannel getTunerChannel(int bandwidth)
     {
         return new TunerChannel(getPreferredFrequency(), bandwidth);
+    }
+
+    /**
+     * Channel rotation delay.  This setting is used when multiple channel frequencies are defined in the source
+     * config and controls how long the decoder will remaining on each frequency until the channel is identified as
+     * active or the channel is identified as inactive and a change frequency request is issued.
+     *
+     * Note: this value is ignored when the source config contains a single frequency.
+     *
+     * @return channel rotation delay in milliseconds.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "frequency_rotation_delay")
+    public int getFrequencyRotationDelay()
+    {
+        return mFrequencyRotationDelay;
+    }
+
+    /**
+     * Sets the channel rotation delay.
+     * @param frequencyRotationDelay in milliseconds.
+     */
+    public void setFrequencyRotationDelay(int frequencyRotationDelay)
+    {
+        if(frequencyRotationDelay < ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM)
+        {
+            mFrequencyRotationDelay = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MINIMUM;
+        }
+        else if(frequencyRotationDelay > ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MAXIMUM)
+        {
+            mFrequencyRotationDelay = ChannelRotationMonitor.CHANNEL_ROTATION_DELAY_MAXIMUM;
+        }
+        else
+        {
+            mFrequencyRotationDelay = frequencyRotationDelay;
+        }
     }
 }

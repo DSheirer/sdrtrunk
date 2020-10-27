@@ -39,7 +39,6 @@ import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.event.DMRDecodeEvent;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
@@ -96,10 +95,9 @@ public class DMRDecoderState extends TimeslotDecoderState
     private DMRTrafficChannelManager mTrafficChannelManager;
     private DecodeEvent mCurrentCallEvent;
     private long mCurrentFrequency;
-    private Map<Integer,TimeslotFrequency> mTimeslotFrequencyMap = new TreeMap<>();
     private Map<Long,DecodeEvent> mDetectedCallEventsMap = new TreeMap<>();
     private static final AddChannelRotationActiveStateRequest CAPACITY_PLUS_ACTIVE_STATE_REQUEST =
-                            new AddChannelRotationActiveStateRequest(State.ACTIVE);
+            new AddChannelRotationActiveStateRequest(State.ACTIVE);
 
     /**
      * Constructs an DMR decoder state with an optional traffic channel manager.
@@ -107,24 +105,18 @@ public class DMRDecoderState extends TimeslotDecoderState
      * @param trafficChannelManager for handling traffic channel grants.
      * @param configurationMonitor for tracking activity summary
      */
-    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager,
-                           DMRNetworkConfigurationMonitor configurationMonitor)
+    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager)
     {
         super(timeslot);
         mChannel = channel;
         mTrafficChannelManager = trafficChannelManager;
-        mNetworkConfigurationMonitor = configurationMonitor;
-        updateFrequencyMapping(channel);
-    }
 
-    /**
-     * Constructs an DMR decoder state with an optional traffic channel manager and no network configuration monitor.
-     * @param channel with configuration details
-     * @param trafficChannelManager for handling traffic channel grants.
-     */
-    public DMRDecoderState(Channel channel, int timeslot, DMRTrafficChannelManager trafficChannelManager)
-    {
-        this(channel, timeslot, trafficChannelManager, null);
+        //The decoder state passes all messages to the network configuration monitor, so we only contruct
+        //the monitor for timeslot 1.
+        if(timeslot == 1)
+        {
+            mNetworkConfigurationMonitor = new DMRNetworkConfigurationMonitor(channel);
+        }
     }
 
     /**
@@ -149,23 +141,6 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(notification.getChannel().isTrafficChannel())
         {
             mTrafficChannelManager = null;
-        }
-    }
-
-    /**
-     * Updates the traffic channel with the first frequency from the channel configuration.  Subsequent changes to the
-     * control frequency by the channel rotation monitor will be handled separately.
-     */
-    private void updateFrequencyMapping(Channel channel)
-    {
-//TODO: We many not need these
-        //Load the LSN:FREQUENCY mappings.
-        if(channel.getDecodeConfiguration() instanceof DecodeConfigDMR)
-        {
-            for(TimeslotFrequency timeslotFrequency: ((DecodeConfigDMR)channel.getDecodeConfiguration()).getTimeslotMap())
-            {
-                mTimeslotFrequencyMap.put(timeslotFrequency.getNumber(), timeslotFrequency);
-            }
         }
     }
 
@@ -256,10 +231,32 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         //Only respond if this is a standard/control channel (not a traffic channel).
         if(mChannel.isStandardChannel() && mCurrentFrequency > 0 &&
-            restChannel.getDownlinkFrequency() > 0 &&
-            restChannel.getDownlinkFrequency() != mCurrentFrequency && mTrafficChannelManager != null)
+                restChannel.getDownlinkFrequency() > 0 &&
+                restChannel.getDownlinkFrequency() != mCurrentFrequency && mTrafficChannelManager != null)
         {
-            mTrafficChannelManager.convertToTrafficChannel(mChannel, mCurrentFrequency, restChannel);
+            mTrafficChannelManager.convertToTrafficChannel(mChannel, mCurrentFrequency, restChannel,
+                    mNetworkConfigurationMonitor);
+        }
+    }
+
+    /**
+     * Preloads the DMR network configuration monitor that is optionally delivered as preload data.  This is primarily
+     * used during a Capacity plus REST channel rotation to pass the monitor from the previous REST channel to the
+     * current REST channel to ensure data continuity.
+     *
+     * Note: the monitor is only assigned to the timeslot 1 decoder state since the decoder state passes all received
+     * messages (Timeslots 0, 1, and 2) to the monitor.
+     *
+     * Note: this method is invoked over the Guava event but by the ChannelProcessingManager.
+     *
+     * @param preloadData containing a DMR network configuration monitor.
+     */
+    @Subscribe
+    public void preload(DMRNetworkConfigurationPreloadData preloadData)
+    {
+        if(getTimeslot() == 1 && preloadData.hasData())
+        {
+            mNetworkConfigurationMonitor = preloadData.getData();
         }
     }
 
@@ -271,11 +268,11 @@ public class DMRDecoderState extends TimeslotDecoderState
         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA, getTimeslot()));
 
         DecodeEvent packetEvent = DMRDecodeEvent.builder(packet.getTimestamp())
-            .eventDescription(DecodeEventType.DATA_PACKET.name())
-            .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
-            .timeslot(packet.getTimeslot())
-            .details(packet.toString())
-            .build();
+                .eventDescription(DecodeEventType.DATA_PACKET.name())
+                .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
+                .timeslot(packet.getTimeslot())
+                .details(packet.toString())
+                .build();
 
         broadcast(packetEvent);
     }
@@ -411,11 +408,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(csbk instanceof Acknowledge)
                 {
                     DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                        .eventDescription(DecodeEventType.RESPONSE.name())
-                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                        .timeslot(csbk.getTimeslot())
-                        .details(((Acknowledge)csbk).getReason().toString())
-                        .build();
+                            .eventDescription(DecodeEventType.RESPONSE.name())
+                            .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                            .timeslot(csbk.getTimeslot())
+                            .details(((Acknowledge)csbk).getReason().toString())
+                            .build();
 
                     broadcast(ackEvent);
                 }
@@ -426,11 +423,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(csbk instanceof Acknowledge)
                 {
                     DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                        .eventDescription(DecodeEventType.RESPONSE.name())
-                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                        .timeslot(csbk.getTimeslot())
-                        .details(((Acknowledge)csbk).getReason().toString())
-                        .build();
+                            .eventDescription(DecodeEventType.RESPONSE.name())
+                            .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                            .timeslot(csbk.getTimeslot())
+                            .details(((Acknowledge)csbk).getReason().toString())
+                            .build();
 
                     broadcast(ackEvent);
                 }
@@ -443,31 +440,31 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         case AUTHENTICATE_REGISTER_RADIO_CHECK_SERVICE:
                             DecodeEvent registerEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                .eventDescription(DecodeEventType.COMMAND.name())
-                                .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                                .timeslot(csbk.getTimeslot())
-                                .details(DecodeEventType.REGISTER.toString())
-                                .build();
+                                    .eventDescription(DecodeEventType.COMMAND.name())
+                                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                    .timeslot(csbk.getTimeslot())
+                                    .details(DecodeEventType.REGISTER.toString())
+                                    .build();
                             broadcast(registerEvent);
                             break;
                         case CANCEL_CALL_SERVICE:
                             DecodeEvent cancelEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                .eventDescription(DecodeEventType.COMMAND.name())
-                                .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                                .timeslot(csbk.getTimeslot())
-                                .details("CANCEL CALL")
-                                .build();
+                                    .eventDescription(DecodeEventType.COMMAND.name())
+                                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                    .timeslot(csbk.getTimeslot())
+                                    .details("CANCEL CALL")
+                                    .build();
                             broadcast(cancelEvent);
                             break;
                         case SUPPLEMENTARY_SERVICE:
                             if(csbk instanceof StunReviveKill)
                             {
                                 DecodeEvent stunEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                    .eventDescription(DecodeEventType.COMMAND.name())
-                                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                                    .timeslot(csbk.getTimeslot())
-                                    .details(((StunReviveKill)csbk).getCommand() + " RADIO")
-                                    .build();
+                                        .eventDescription(DecodeEventType.COMMAND.name())
+                                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                        .timeslot(csbk.getTimeslot())
+                                        .details(((StunReviveKill)csbk).getCommand() + " RADIO")
+                                        .build();
                                 broadcast(stunEvent);
                             }
                             break;
@@ -484,12 +481,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                                 ServiceRadioCheck src = (ServiceRadioCheck)csbk;
 
                                 DecodeEvent checkEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                    .eventDescription(DecodeEventType.RADIO_CHECK.name())
-                                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                                    .timeslot(csbk.getTimeslot())
-                                    .details(src.getServiceDescription() + " SERVICE FOR " +
-                                        (src.isTalkgroupTarget() ? "TALKGROUP" : "RADIO"))
-                                    .build();
+                                        .eventDescription(DecodeEventType.RADIO_CHECK.name())
+                                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                        .timeslot(csbk.getTimeslot())
+                                        .details(src.getServiceDescription() + " SERVICE FOR " +
+                                                (src.isTalkgroupTarget() ? "TALKGROUP" : "RADIO"))
+                                        .build();
                                 broadcast(checkEvent);
                             }
                             break;
@@ -505,11 +502,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(aloha.hasRadioIdentifier())
                     {
                         DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                            .eventDescription(DecodeEventType.RESPONSE.name())
-                            .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                            .timeslot(csbk.getTimeslot())
-                            .details("Aloha Acknowledge")
-                            .build();
+                                .eventDescription(DecodeEventType.RESPONSE.name())
+                                .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                .timeslot(csbk.getTimeslot())
+                                .details("Aloha Acknowledge")
+                                .build();
 
                         broadcast(ackEvent);
                         resetState();
@@ -524,22 +521,22 @@ public class DMRDecoderState extends TimeslotDecoderState
                     {
                         case MASS_REGISTRATION:
                             DecodeEvent massEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                .eventDescription(DecodeEventType.REGISTER.name())
-                                .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                                .timeslot(csbk.getTimeslot())
-                                .details("MASS REGISTRATION")
-                                .build();
+                                    .eventDescription(DecodeEventType.REGISTER.name())
+                                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                    .timeslot(csbk.getTimeslot())
+                                    .details("MASS REGISTRATION")
+                                    .build();
                             broadcast(massEvent);
                             break;
                         case VOTE_NOW_ADVICE:
                             if(csbk instanceof VoteNowAdvice)
                             {
                                 DecodeEvent voteEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                                    .eventDescription(DecodeEventType.COMMAND.name())
-                                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                                    .timeslot(csbk.getTimeslot())
-                                    .details("VOTE NOW FOR " + ((VoteNowAdvice)csbk).getVotedSystemIdentityCode())
-                                    .build();
+                                        .eventDescription(DecodeEventType.COMMAND.name())
+                                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                        .timeslot(csbk.getTimeslot())
+                                        .details("VOTE NOW FOR " + ((VoteNowAdvice)csbk).getVotedSystemIdentityCode())
+                                        .build();
                                 broadcast(voteEvent);
                             }
                             break;
@@ -559,11 +556,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                 if(csbk instanceof Protect)
                 {
                     DecodeEvent protectEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                        .eventDescription(DecodeEventType.COMMAND.name())
-                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                        .timeslot(csbk.getTimeslot())
-                        .details("PROTECT: " + ((Protect)csbk).getProtectKind())
-                        .build();
+                            .eventDescription(DecodeEventType.COMMAND.name())
+                            .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                            .timeslot(csbk.getTimeslot())
+                            .details("PROTECT: " + ((Protect)csbk).getProtectKind())
+                            .build();
                     broadcast(protectEvent);
                 }
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL, getTimeslot()));
@@ -608,7 +605,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(hasTrafficChannelManager())
                     {
                         mTrafficChannelManager.processChannelGrant(channel, getMergedIdentifierCollection(csbk.getIdentifiers()),
-                            csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     processCallDetection(dataGrant.getChannel(), dataGrant.getIdentifiers(), dataGrant.getTimestamp(), DecodeEventType.DATA_CALL);
                 }
@@ -622,7 +619,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(hasTrafficChannelManager())
                     {
                         mTrafficChannelManager.processChannelGrant(channel, getMergedIdentifierCollection(csbk.getIdentifiers()),
-                            csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     processCallDetection(tgGrant.getChannel(), tgGrant.getIdentifiers(), tgGrant.getTimestamp(), DecodeEventType.CALL_GROUP);
                 }
@@ -636,10 +633,10 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(hasTrafficChannelManager())
                     {
                         mTrafficChannelManager.processChannelGrant(channel, getMergedIdentifierCollection(csbk.getIdentifiers()),
-                            csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     processCallDetection(channelGrant.getChannel(), channelGrant.getIdentifiers(),
-                        channelGrant.getTimestamp(), DecodeEventType.CALL_UNIT_TO_UNIT);
+                            channelGrant.getTimestamp(), DecodeEventType.CALL_UNIT_TO_UNIT);
                 }
                 break;
             case MOTOROLA_CAPMAX_ALOHA:
@@ -650,11 +647,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(cmAloha.hasRadioIdentifier())
                     {
                         DecodeEvent ackEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                            .eventDescription(DecodeEventType.RESPONSE.name())
-                            .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                            .timeslot(csbk.getTimeslot())
-                            .details("Aloha Acknowledge")
-                            .build();
+                                .eventDescription(DecodeEventType.RESPONSE.name())
+                                .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                                .timeslot(csbk.getTimeslot())
+                                .details("Aloha Acknowledge")
+                                .build();
 
                         broadcast(ackEvent);
 
@@ -670,30 +667,30 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(hasTrafficChannelManager())
                     {
                         mTrafficChannelManager.processChannelGrant(cpdcg.getChannel(),
-                            getMergedIdentifierCollection(csbk.getIdentifiers()), csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
+                                getMergedIdentifierCollection(csbk.getIdentifiers()), csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     processCallDetection(cpdcg.getChannel(), cpdcg.getIdentifiers(), cpdcg.getTimestamp(),
-                        DecodeEventType.DATA_CALL);
+                            DecodeEventType.DATA_CALL);
                 }
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_REGISTRATION_REQUEST:
                 DecodeEvent event = DMRDecodeEvent.builder(csbk.getTimestamp())
-                    .details("Registration Request")
-                    .eventDescription(DecodeEventType.REGISTER.toString())
-                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(csbk.getTimeslot())
-                    .build();
+                        .details("Registration Request")
+                        .eventDescription(DecodeEventType.REGISTER.toString())
+                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                        .timeslot(csbk.getTimeslot())
+                        .build();
                 broadcast(event);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_REGISTRATION_RESPONSE:
                 DecodeEvent regRespEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                    .details("Registration Response")
-                    .eventDescription(DecodeEventType.REGISTER.toString())
-                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(csbk.getTimeslot())
-                    .build();
+                        .details("Registration Response")
+                        .eventDescription(DecodeEventType.REGISTER.toString())
+                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                        .timeslot(csbk.getTimeslot())
+                        .build();
                 broadcast(regRespEvent);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
@@ -704,20 +701,20 @@ public class DMRDecoderState extends TimeslotDecoderState
                     if(hasTrafficChannelManager())
                     {
                         mTrafficChannelManager.processChannelGrant(channel, getMergedIdentifierCollection(csbk.getIdentifiers()),
-                            csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
+                                csbk.getOpcode(), csbk.getTimestamp(), csbk.isEncrypted());
                     }
                     processCallDetection(channel, csbk.getIdentifiers(), csbk.getTimestamp(),
-                        DecodeEventType.CALL_GROUP);
+                            DecodeEventType.CALL_GROUP);
                 }
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_TALKGROUP_AFFILIATION:
                 DecodeEvent affiliateEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
-                    .details("TALKGROUP AFFILIATION")
-                    .eventDescription(DecodeEventType.AFFILIATE.toString())
-                    .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
-                    .timeslot(csbk.getTimeslot())
-                    .build();
+                        .details("TALKGROUP AFFILIATION")
+                        .eventDescription(DecodeEventType.AFFILIATE.toString())
+                        .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
+                        .timeslot(csbk.getTimeslot())
+                        .build();
                 broadcast(affiliateEvent);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
@@ -762,7 +759,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         //Check to see if there is a current call event to see if the detected call event is actually for this timeslot
         //and we can then identify the LSN for this timeslot
         if(mCurrentFrequency == 0 && mCurrentCallEvent != null &&
-           isSameCall(mCurrentCallEvent.getIdentifierCollection(), identifiers))
+                isSameCall(mCurrentCallEvent.getIdentifierCollection(), identifiers))
         {
             mCurrentFrequency = channel.getDownlinkFrequency();
 
@@ -777,27 +774,27 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(event == null)
         {
             event = DMRDecodeEvent.builder(timestamp)
-                .timeslot(getTimeslot())
-                .identifiers(getMergedIdentifierCollection(identifiers))
-                .eventDescription(eventType.toString())
-                .build();
+                    .timeslot(getTimeslot())
+                    .identifiers(getMergedIdentifierCollection(identifiers))
+                    .eventDescription(eventType.toString())
+                    .build();
 //            mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
         }
         else
         {
             if(event.getIdentifierCollection() != null &&
-               isSameCall(event.getIdentifierCollection(), identifiers) &&
-                FastMath.abs(timestamp - event.getTimeStart()) < MAX_VALID_CALL_DURATION_MS)
+                    isSameCall(event.getIdentifierCollection(), identifiers) &&
+                    FastMath.abs(timestamp - event.getTimeStart()) < MAX_VALID_CALL_DURATION_MS)
             {
                 event.update(timestamp);
             }
             else
             {
                 event = DMRDecodeEvent.builder(timestamp)
-                    .timeslot(getTimeslot())
-                    .identifiers(getMergedIdentifierCollection(identifiers))
-                    .eventDescription(DecodeEventType.CALL_DETECT.toString())
-                    .build();
+                        .timeslot(getTimeslot())
+                        .identifiers(getMergedIdentifierCollection(identifiers))
+                        .eventDescription(DecodeEventType.CALL_DETECT.toString())
+                        .build();
 //                mDetectedCallEventsMap.put(channel.getLogicalSlotNumber(), event);
             }
         }
@@ -850,14 +847,14 @@ public class DMRDecoderState extends TimeslotDecoderState
         for(Identifier identifier: identifiers)
         {
             if(identifier.getRole() == Role.TO &&
-               identifier instanceof IntegerIdentifier &&
-               ((IntegerIdentifier)identifier).getValue() == to.getValue())
+                    identifier instanceof IntegerIdentifier &&
+                    ((IntegerIdentifier)identifier).getValue() == to.getValue())
             {
                 toMatch = true;
             }
             else if(identifier.getRole() == Role.FROM &&
-                identifier instanceof IntegerIdentifier &&
-                ((IntegerIdentifier)identifier).getValue() == from.getValue())
+                    identifier instanceof IntegerIdentifier &&
+                    ((IntegerIdentifier)identifier).getValue() == from.getValue())
             {
                 fromMatch = true;
             }
@@ -898,7 +895,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = cpgvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -935,7 +932,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = hgvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
 
                     }
                 }
@@ -959,7 +956,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = huuvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
-                            DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -978,7 +975,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = gvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
-                            DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -997,7 +994,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                         getIdentifierCollection().update(message.getIdentifiers());
                         ServiceOptions serviceOptions = uuvcu.getServiceOptions();
                         updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED :
-                            DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
+                                DecodeEventType.CALL_UNIT_TO_UNIT, serviceOptions.toString(), message.getTimestamp());
                     }
                 }
                 break;
@@ -1009,11 +1006,11 @@ public class DMRDecoderState extends TimeslotDecoderState
                     ic.update(gpsInformation.getGPSLocation());
 
                     DecodeEvent gpsEvent = DMRDecodeEvent.builder(message.getTimestamp())
-                        .eventDescription(DecodeEventType.GPS.name())
-                        .identifiers(ic)
-                        .timeslot(message.getTimeslot())
-                        .details("LOCATION:" + gpsInformation.getGPSLocation())
-                        .build();
+                            .eventDescription(DecodeEventType.GPS.name())
+                            .identifiers(ic)
+                            .timeslot(message.getTimeslot())
+                            .details("LOCATION:" + gpsInformation.getGPSLocation())
+                            .build();
 
                     broadcast(gpsEvent);
                 }
@@ -1035,11 +1032,11 @@ public class DMRDecoderState extends TimeslotDecoderState
         if(mCurrentCallEvent == null)
         {
             mCurrentCallEvent = DMRDecodeEvent.builder(timestamp)
-                .channel(getCurrentChannel())
-                .eventDescription(type.toString())
-                .details(details)
-                .identifiers(getIdentifierCollection().copyOf())
-                .build();
+                    .channel(getCurrentChannel())
+                    .eventDescription(type.toString())
+                    .details(details)
+                    .identifiers(getIdentifierCollection().copyOf())
+                    .build();
 
             broadcast(mCurrentCallEvent);
         }

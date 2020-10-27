@@ -515,6 +515,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
      */
     public void dispose()
     {
+        MyEventBus.getGlobalEventBus().unregister(this);
         mCanProcessAudio = false;
 
         if(mProcessorFuture != null)

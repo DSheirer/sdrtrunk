@@ -73,7 +73,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         return mTunerID;
     }
 
-
     /**
      * Signals that this tuner channel source has an error state so that any channel processing can be shutdown.
      * @param errorMessage describing the error
@@ -124,13 +123,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public TunerChannel getTunerChannel()
     {
         return mTunerChannel;
-    }
-
-    @Override
-    public void dispose()
-    {
-        super.dispose();
-        stop();
     }
 
     /**
@@ -213,9 +205,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
                 //Ignore
                 break;
-	    case NOTIFICATION_TUNER_ID:
-		//Ignore
-		break;
             default:
                 mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent() + " from [" +
                     (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "") + "]");

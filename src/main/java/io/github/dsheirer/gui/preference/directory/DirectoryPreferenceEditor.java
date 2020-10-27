@@ -104,6 +104,11 @@ public class DirectoryPreferenceEditor extends HBox
         getChildren().add(getEditorPane());
     }
 
+    public void dispose()
+    {
+        MyEventBus.getGlobalEventBus().unregister(this);
+    }
+
     private GridPane getEditorPane()
     {
         if(mEditorPane == null)

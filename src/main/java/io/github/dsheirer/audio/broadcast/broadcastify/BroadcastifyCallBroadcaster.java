@@ -323,6 +323,11 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
                                         audioRecording.removePendingReplay();
                                     }
                                 }
+                                else if(urlResponse.startsWith("1 SKIPPED"))
+                                {
+                                    //Broadcastify is telling us to skip audio upload - someone already uploaded it
+                                    audioRecording.removePendingReplay();
+                                }
                                 else
                                 {
                                     mLog.error("Broadcastify calls API upload URL request failed [" + urlResponse + "]");

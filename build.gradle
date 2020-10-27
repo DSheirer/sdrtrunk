@@ -24,7 +24,7 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.openjfx.javafxplugin' version '0.0.8'
-    id 'org.beryx.runtime' version '1.8.1'
+    id 'org.beryx.runtime' version '1.11.4'
 }
 
 repositories {
@@ -33,7 +33,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.5.0-alpha3'
+version = '0.5.0-alpha6'
 sourceCompatibility = '13'
 
 sourceSets {
@@ -74,7 +74,7 @@ dependencies {
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'org.apache.mina:mina-core:2.1.3'
     implementation 'org.apache.mina:mina-http:2.1.3'
-    implementation 'org.controlsfx:controlsfx:11.0.1'
+    implementation 'org.controlsfx:controlsfx:11.0.2'
     implementation 'org.rauschig:jarchivelib:1.0.0'
 
     implementation 'org.slf4j:slf4j-api:1.7.25'
@@ -84,18 +84,18 @@ dependencies {
     implementation 'pl.edu.icm:JLargeArrays:1.6'
 
     //These must remain as compile options to ensure they are included in the build to produce multi-OS images
-    compile "org.openjfx:javafx-base:13.0.2:win"
-    compile "org.openjfx:javafx-base:13.0.2:linux"
-    compile "org.openjfx:javafx-base:13.0.2:mac"
-    compile "org.openjfx:javafx-controls:13.0.2:win"
-    compile "org.openjfx:javafx-controls:13.0.2:linux"
-    compile "org.openjfx:javafx-controls:13.0.2:mac"
-    compile "org.openjfx:javafx-graphics:13.0.2:win"
-    compile "org.openjfx:javafx-graphics:13.0.2:linux"
-    compile "org.openjfx:javafx-graphics:13.0.2:mac"
-    compile "org.openjfx:javafx-swing:13.0.2:win"
-    compile "org.openjfx:javafx-swing:13.0.2:linux"
-    compile "org.openjfx:javafx-swing:13.0.2:mac"
+    compile "org.openjfx:javafx-base:15:win"
+    compile "org.openjfx:javafx-base:15:linux"
+    compile "org.openjfx:javafx-base:15:mac"
+    compile "org.openjfx:javafx-controls:15:win"
+    compile "org.openjfx:javafx-controls:15:linux"
+    compile "org.openjfx:javafx-controls:15:mac"
+    compile "org.openjfx:javafx-graphics:15:win"
+    compile "org.openjfx:javafx-graphics:15:linux"
+    compile "org.openjfx:javafx-graphics:15:mac"
+    compile "org.openjfx:javafx-swing:15:win"
+    compile "org.openjfx:javafx-swing:15:linux"
+    compile "org.openjfx:javafx-swing:15:mac"
 }
 
 application {
@@ -110,7 +110,7 @@ idea {
 }
 
 javafx {
-    version = "13.0.2"
+    version = "15"
     modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
@@ -119,7 +119,6 @@ jar {
         attributes (
                 'Implementation-Title'  : 'sdrtrunk project',
                 'Implementation-Version' : archiveVersion,
-                'Class-Path'            : 'jmbe-1.0.4.jar',
                 'Created-By'            : "Gradle ${gradle.gradleVersion}",
                 'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
                 'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
@@ -140,48 +139,58 @@ task runSdr(type: JavaExec) {
  * tasks to produce platform-specific builds.  If none of these paths exists, then an image will be created for the
  * host OS using the installed JDK.
  */
-def jdk_linux_x86_64 = '/media/denny/WD250GB/java/bellsoft/linux-x64/jdk-14'
-def jdk_linux_x86_32 = '/media/denny/WD250GB/java/bellsoft/linux-x86/jdk-14'
-def jdk_osx_x86_64 = '/media/denny/WD250GB/java/bellsoft/osx-x64/jdk-14.jdk'
-def jdk_windows_x86_64 = '/media/denny/WD250GB/java/bellsoft/windows-x64/jdk-14'
-def jdk_windows_x86_32 = '/media/denny/WD250GB/java/bellsoft/windows-x86/jdk-14'
+def jdk_base = '/media/denny/WD250GB/java/bellsoft/'
 
+def jdk_linux_arm64 = jdk_base + 'linux-arm64/jdk-15'
+def jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-15'
+def jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-15.jdk'
+def jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-15'
+
+def file_jdk_linux_arm64 = new File(jdk_linux_arm64)
 def file_jdk_linux_x86_64 = new File(jdk_linux_x86_64)
-def file_jdk_linux_x86_32 = new File(jdk_linux_x86_32)
 def file_jdk_osx_x86_64 = new File(jdk_osx_x86_64)
 def file_jdk_windows_x86_64 = new File(jdk_windows_x86_64)
-def file_jdk_windows_x86_32 = new File(jdk_windows_x86_32)
 
-def hasTargetJdk = file_jdk_linux_x86_32.exists() ||
-        file_jdk_linux_x86_64.exists() ||
+def hasTargetJdk = file_jdk_linux_x86_64.exists() ||
+        file_jdk_linux_arm64 ||
         file_jdk_osx_x86_64.exists() ||
-        file_jdk_windows_x86_32.exists() ||
         file_jdk_windows_x86_64.exists()
 
 runtime {
+    if(file_jdk_linux_arm64.exists())
+    {
+        targetPlatform('linux-arm64-v' + version, jdk_linux_arm64)
+    }
+    else
+    {
+        println("Skipping OS Image - Linux ARM 64-bit JDK was not found at " + jdk_linux_arm64)
+    }
+
     if(file_jdk_linux_x86_64.exists())
     {
         targetPlatform('linux-x86_64-v' + version, jdk_linux_x86_64)
     }
-
-    if(file_jdk_linux_x86_32.exists())
+    else
     {
-        targetPlatform('linux-x86_32-v' + version, jdk_linux_x86_32)
+        println("Skipping OS Image - Linux x86 64-bit JDK was not found at " + jdk_linux_x86_64)
     }
 
     if(file_jdk_osx_x86_64.exists())
     {
         targetPlatform('osx-x86_64-v' + version, jdk_osx_x86_64)
     }
+    else
+    {
+        println("Skipping OS Image - OSX x86 64-bit JDK was not found at " + jdk_osx_x86_64);
+    }
 
     if(file_jdk_windows_x86_64.exists())
     {
         targetPlatform('windows-x86_64-v' + version, jdk_windows_x86_64)
     }
-
-    if(file_jdk_windows_x86_32.exists())
+    else
     {
-        targetPlatform('windows-x86_32-v' + version, jdk_windows_x86_32)
+        println("Skipping OS Image - Windows x86 64-bit JDK was not found at " + jdk_windows_x86_64)
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
@@ -191,50 +200,18 @@ runtime {
 }
 
 /**
- * Check for existence of JDK folders for each supported platform before creating runtime images
+ * Copy JavaFX OS-specific libraries from each JDK to each platform target directory
  */
-tasks.runtime.doFirst {
-
-    if(!file_jdk_linux_x86_64.exists())
-    {
-        println("Skipping OS Image - Linux x86 64-bit JDK was not found at " + jdk_linux_x86_64)
-    }
-
-    if(!file_jdk_linux_x86_32.exists())
-    {
-        println("Skipping OS Image - Linux x86 32-bit JDK was not found at " + jdk_linux_x86_32)
-    }
-
-    if(!file_jdk_osx_x86_64.exists())
-    {
-        println("Skipping OS Image - OSX x86 64-bit JDK was not found at " + jdk_osx_x86_64);
-    }
-
-    if(!file_jdk_windows_x86_64.exists())
-    {
-        println("Skipping OS Image - Windows x86 64-bit JDK was not found at " + jdk_windows_x86_64)
-    }
-
-    if(!file_jdk_windows_x86_32.exists())
-    {
-        println("Skipping OS Image - Windows x86 32-bit JDK was not found at " + jdk_windows_x86_32)
-    }
-}
-
-/**
- * Remove unused JavaFX OS-specific libraries from each platform target directory
- */
-tasks.runtime.doLast {
+tasks.runtime.doLast
+{
+    delete(fileTree('build/image/sdr-trunk-linux-arm64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-linux-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-linux-x86_32-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86_32-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
 
     //JavaFX web and media modules are transitive dependencies of ControlsFX but are not required for this application
+    delete(fileTree('build/image/sdr-trunk-linux-arm64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
     delete(fileTree('build/image/sdr-trunk-linux-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-linux-x86_32-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
     delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
     delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86_32-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
 }

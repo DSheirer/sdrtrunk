@@ -42,6 +42,7 @@ import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class FCDTunerController extends TunerController
 {
@@ -60,6 +61,7 @@ public abstract class FCDTunerController extends TunerController
 
     private FCDConfiguration mConfiguration = new FCDConfiguration();
     protected ComplexMixer mComplexMixer;
+    protected ReentrantLock mLock = new ReentrantLock();
 
 
     /**
@@ -302,6 +304,8 @@ public abstract class FCDTunerController extends TunerController
      */
     public void setTunedFrequency(long frequency) throws SourceException
     {
+        mLock.lock();
+
         try
         {
             send(FCDCommand.APP_SET_FREQUENCY_HZ, frequency);
@@ -310,6 +314,10 @@ public abstract class FCDTunerController extends TunerController
         {
             throw new SourceException("Couldn't set FCD Local " +
                 "Oscillator Frequency [" + frequency + "]", e);
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 

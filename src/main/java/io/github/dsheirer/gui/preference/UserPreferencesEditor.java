@@ -190,7 +190,6 @@ public class UserPreferencesEditor extends BorderPane
             storageItem.setExpanded(true);
 
             TreeItem<String> sourceItem = new TreeItem<>("Source");
-            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_CHANNEL_MULTIPLE_FREQUENCY));
             sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNER_CHANNELIZER));
             treeRoot.getChildren().add(sourceItem);
             sourceItem.setExpanded(true);

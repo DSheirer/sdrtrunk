@@ -19,11 +19,13 @@
 
 package io.github.dsheirer.controller.channel;
 
+import io.github.dsheirer.module.ModuleEventBusMessage;
+
 /**
  * Request to convert a currently processing standard channel type to a traffic channel type.  This request will
  * normally be handled by the ChannelProcessingManager instance.
  */
-public class ChannelConversionRequest
+public class ChannelConversionRequest extends ModuleEventBusMessage
 {
     private Channel mCurrentChannel;
     private Channel mTrafficChannel;
