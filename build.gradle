@@ -41,9 +41,17 @@ sourceSets {
     test.java.srcDirs 'src/test'
 }
 
+test {
+    useJUnitPlatform()
+}
+
 dependencies {
+
+    // JUnit Tests
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.assertj:assertj-core:3.8.0'
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     //Jitpack imports
     implementation 'com.github.nwaldispuehl:java-lame:v3.98.4'

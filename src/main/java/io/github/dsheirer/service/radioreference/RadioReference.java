@@ -22,18 +22,22 @@
 
 package io.github.dsheirer.service.radioreference;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
+import io.github.dsheirer.rrapi.response.Fault;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.UserInfo;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Scanner;
 
 /**
@@ -51,7 +55,19 @@ public class RadioReference
     private StringProperty mPassword = new SimpleStringProperty();
     private StringProperty mAccountExpiresProperty = new SimpleStringProperty();
     private BooleanProperty mAvailable = new SimpleBooleanProperty();
+    private BooleanProperty mPremiumAccount = new SimpleBooleanProperty();
+    private LoginStatus mLoginStatus = LoginStatus.UNKNOWN;
 
+    /**
+     * Enum to determine "validity" of a RR Login
+     */
+    public enum LoginStatus
+    {
+        UNKNOWN,
+        INVALID_LOGIN,
+        EXPIRED_PREMIUM,
+        VALID_PREMIUM
+    }
 
     /**
      * Constructs an instance of the radio reference service
@@ -68,6 +84,22 @@ public class RadioReference
     public BooleanProperty availableProperty()
     {
         return mAvailable;
+    }
+
+    /**
+     * Externally monitored and controlled status indicator for a Premium RR Account
+     */
+    public BooleanProperty premiumAccountProperty()
+    {
+        return mPremiumAccount;
+    }
+
+    /**
+     * Current login state / validity
+     */
+    public LoginStatus getLoginStatus()
+    {
+        return mLoginStatus;
     }
 
     /**
@@ -140,7 +172,94 @@ public class RadioReference
     }
 
     /**
-     * Login with credentials
+     * Tests the connection to radio reference service using the provided credentials.
+     * @param userName for radio reference account
+     * @param password for radio reference account
+     * @return The state and "validity" of the account
+     * @throws RadioReferenceException if there are any issues with the connection
+     */
+    public static LoginStatus testConnectionWithExp(String userName, String password) throws  RadioReferenceException
+    {
+
+        AuthorizationInformation credentials = new AuthorizationInformation(SDRTRUNK_APP_KEY, userName, password);
+
+        try
+        {
+            RadioReferenceService service = new RadioReferenceService(credentials);
+            UserInfo ui = service.getUserInfo();
+
+            return CheckExpDate(ui.getExpirationDate());
+        }
+        catch (RadioReferenceException rre)
+        {
+            if (rre.hasFault())
+            {
+                Fault fault = rre.getFault();
+
+                if (fault.getFaultCode() != null && fault.getFaultCode().contentEquals("AUTH"))
+                {
+                    return LoginStatus.INVALID_LOGIN;
+                }
+                else
+                {
+                    throw rre;
+                }
+            }
+            else
+            {
+                throw rre;
+            }
+        }
+    }
+
+    /**
+     * Determines the account status (Premium) based on the given expiration date
+     * @param RRExpirationString The Premium Expiration string returned from RR
+     * @return Account Login Status
+     */
+    @VisibleForTesting
+    protected static LoginStatus CheckExpDate(String RRExpirationString)
+    {
+        try
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat("MM-dd-yyyy", Locale.ENGLISH);
+            Date RRExpDate = formatter.parse(RRExpirationString);
+
+            // We want to err on the side of the user getting an error with an invalid subscription,
+            // rather than the user being prevented from using their valid, but shortly expiring, subscription.
+
+            // Get the current Date and subtract two days (due to no >=, only > ),
+            // as I am not sure how timezones work for RR and the end user.
+
+            Calendar c = Calendar.getInstance();
+            c.setTime(new Date());
+            c.add(Calendar.DAY_OF_MONTH, -2);
+
+            if(RRExpDate.after(c.getTime()))
+            {
+                return LoginStatus.VALID_PREMIUM;
+            }
+            else
+            {
+                return LoginStatus.EXPIRED_PREMIUM;
+            }
+        }
+        catch (ParseException e)
+        {
+            // This doesn't have to be a date; it can also be a string
+            // If we get anything we can't parse, assume it's a string and valid
+            // Accounts that have never had a valid subscription return a year of 1969
+
+            // See https://wiki.radioreference.com/index.php/RadioReference.com_Web_Service3.1#Versions :
+            // Version 5 - Issued a fix for the getUserData method which returned a subscription expiration
+            // date in 1969 for admins and feed providers. Now returns "Never - Feed Provider" and "Never - Admin"
+            // in string format.
+            return LoginStatus.VALID_PREMIUM;
+        }
+    }
+
+    /**
+     * Login with credentials, and update properties based on the login status
      */
     private void login()
     {
@@ -148,12 +267,31 @@ public class RadioReference
         {
             UserInfo userInfo = getService().getUserInfo();
             accountExpiresProperty().setValue(userInfo.getExpirationDate());
-            availableProperty().set(true);
+
+            mLoginStatus = CheckExpDate(userInfo.getExpirationDate());
+            if(mLoginStatus == LoginStatus.VALID_PREMIUM)
+            {
+                availableProperty().set(true);
+                premiumAccountProperty().set(true);
+            }
+            else if (mLoginStatus == LoginStatus.EXPIRED_PREMIUM)
+            {
+                availableProperty().set(true);
+                premiumAccountProperty().set(false);
+            }
+            else
+            {
+                availableProperty().set(false);
+                premiumAccountProperty().set(false);
+            }
         }
         catch(RadioReferenceException rre)
         {
             accountExpiresProperty().setValue(null);
+            mLoginStatus = LoginStatus.UNKNOWN;
             availableProperty().set(false);
+            premiumAccountProperty().set(false);
+
         }
     }
 

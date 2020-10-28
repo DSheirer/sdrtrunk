@@ -21,6 +21,7 @@ package io.github.dsheirer.gui.playlist.radioreference;
 
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.CountyInfo;
 import io.github.dsheirer.rrapi.type.Flavor;
 import io.github.dsheirer.rrapi.type.Site;
@@ -229,6 +230,18 @@ public class SystemEditor extends VBox
 
     private String getType(System system)
     {
+        if(mRadioReferenceDecoder == null)
+        {
+            try
+            {
+                initRadioReferenceDecoder();
+            }
+            catch (Throwable t)
+            {
+                mLog.error("Error retrieving system information", t);
+            }
+        }
+
         if(mRadioReferenceDecoder != null)
         {
             Type type = mRadioReferenceDecoder.getType(system);
@@ -268,12 +281,7 @@ public class SystemEditor extends VBox
                 {
                     if(mRadioReferenceDecoder == null)
                     {
-                        Map<Integer,Type> typeMap = mRadioReference.getService().getTypesMap();
-                        Map<Integer,Flavor> flavorMap = mRadioReference.getService().getFlavorsMap();
-                        Map<Integer,Voice> voiceMap = mRadioReference.getService().getVoicesMap();
-                        Map<Integer,Tag> tagMap = mRadioReference.getService().getTagsMap();
-                        mRadioReferenceDecoder = new RadioReferenceDecoder(mUserPreferences, typeMap, flavorMap,
-                            voiceMap, tagMap);
+                        initRadioReferenceDecoder();
                     }
 
                     //Query and load the system view editor first
@@ -318,6 +326,20 @@ public class SystemEditor extends VBox
             getSystemSiteSelectionEditor().clear();
             getSystemTalkgroupSelectionEditor().clear();
         }
+    }
+
+    /**
+     * Initializes the Radio Reference Decoder
+     * @throws RadioReferenceException
+     */
+    private void initRadioReferenceDecoder() throws RadioReferenceException
+    {
+        Map<Integer, Type> typeMap = mRadioReference.getService().getTypesMap();
+        Map<Integer, Flavor> flavorMap = mRadioReference.getService().getFlavorsMap();
+        Map<Integer, Voice> voiceMap = mRadioReference.getService().getVoicesMap();
+        Map<Integer, Tag> tagMap = mRadioReference.getService().getTagsMap();
+        mRadioReferenceDecoder = new RadioReferenceDecoder(mUserPreferences, typeMap, flavorMap,
+                voiceMap, tagMap);
     }
 
     public class SystemListCell extends ListCell<System>
