@@ -360,6 +360,12 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                             }
                             catch(RadioReferenceException rre)
                             {
+
+                                // Set an error state
+                                getTestPassIcon().setVisible(false);
+                                getTestFailIcon().setVisible(true);
+                                getTestExpiredIcon().setVisible(false);
+
                                 if(rre.getCause() instanceof ConnectException)
                                 {
                                     Alert alert = new Alert(Alert.AlertType.ERROR, "Please check network or radio reference availability", ButtonType.OK);
@@ -391,10 +397,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                                 }
                             }
 
-                            // Set an error state
-                            getTestPassIcon().setVisible(false);
-                            getTestFailIcon().setVisible(true);
-                            getTestExpiredIcon().setVisible(false);
+
                             getTestConnectionButton().setDisable(false);
                         }
                     });
