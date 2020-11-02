@@ -35,6 +35,7 @@ import io.github.dsheirer.rrapi.type.StateInfo;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -43,12 +44,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -67,10 +63,12 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
     private PlaylistManager mPlaylistManager;
     private VBox mTopBox;
     private HBox mCredentialsBox;
+    private Label mRRStatusText;
     private TextField mUserNameText;
     private TextField mAccountExpiresText;
     private IconNode mTestPassIcon;
     private IconNode mTestFailIcon;
+    private IconNode mTestExpiredIcon;
     private Button mLoginButton;
     private GridPane mComboBoxPane;
     private ComboBox<Country> mCountryComboBox;
@@ -99,13 +97,13 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         login();
 
-        if(mRadioReference.availableProperty().get())
+        if(mRadioReference.premiumAccountProperty().get())
         {
             refreshCountries();
         }
 
         //Refresh the countries combo box once we're logged on, if not already
-        mRadioReference.availableProperty().addListener((observable, oldValue, newValue) -> {
+        mRadioReference.premiumAccountProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue)
             {
                 refreshCountries();
@@ -173,6 +171,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
             mTabPane.getTabs().addAll(getCountySystemTab(), getStateSystemTab(), getCountyAgencyTab(),
                 getStateAgencyTab(), getNationalAgencyTab());
+            mTabPane.disableProperty().bind(mRadioReference.premiumAccountProperty().not());
         }
 
         return mTabPane;
@@ -395,6 +394,8 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             GridPane.setConstraints(getCountyComboBox(), 2, 1);
             GridPane.setHgrow(getCountyComboBox(), Priority.ALWAYS);
             mComboBoxPane.getChildren().add(getCountyComboBox());
+
+            mComboBoxPane.disableProperty().bind(mRadioReference.premiumAccountProperty().not());
         }
 
         return mComboBoxPane;
@@ -407,16 +408,41 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
             mCredentialsBox = new HBox();
             mCredentialsBox.setAlignment(Pos.CENTER_RIGHT);
             mCredentialsBox.setSpacing(5.0);
+            Region leftFiller = new Region();
+            HBox.setHgrow(leftFiller, Priority.ALWAYS);
+            mCredentialsBox.getChildren().add(leftFiller);
+            mCredentialsBox.getChildren().add(getRRPremiumReqText());
+            Region rightFiller = new Region();
+            HBox.setHgrow(rightFiller, Priority.ALWAYS);
+            mCredentialsBox.getChildren().add(rightFiller);
             mCredentialsBox.getChildren().add(new Label("User Name:"));
             mCredentialsBox.getChildren().add(getUserNameText());
             mCredentialsBox.getChildren().add(new Label("Expires:"));
             mCredentialsBox.getChildren().add(getAccountExpiresText());
             mCredentialsBox.getChildren().add(getTestFailIcon());
             mCredentialsBox.getChildren().add(getTestPassIcon());
+            mCredentialsBox.getChildren().add(getTestExpiredIcon());
             mCredentialsBox.getChildren().add(getLoginButton());
         }
 
         return mCredentialsBox;
+    }
+
+    private Label getRRPremiumReqText()
+    {
+        if(mRRStatusText == null)
+        {
+            mRRStatusText = new Label();
+            mRRStatusText.setText("A premium Radio Reference subscription is required to import systems.");
+            mRRStatusText.visibleProperty().bind(
+                    Bindings.and(
+                            mRadioReference.availableProperty(),
+                            mRadioReference.premiumAccountProperty().not()));
+            mRRStatusText.setTextFill(Color.ORANGERED);
+            mRRStatusText.setStyle("-fx-font-weight: bold;"); // I guess
+        }
+
+        return mRRStatusText;
     }
 
     private TextField getUserNameText()
@@ -449,7 +475,12 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
         {
             mTestPassIcon = new IconNode(FontAwesome.CHECK);
             mTestPassIcon.setFill(Color.GREEN);
-            mTestPassIcon.visibleProperty().bind(mRadioReference.availableProperty());
+            mTestPassIcon.setVisible(false);
+            // Need to have a valid account, _and_ have premium
+            mTestPassIcon.visibleProperty().bind(
+                    Bindings.and(
+                            mRadioReference.availableProperty(),
+                            mRadioReference.premiumAccountProperty()));
         }
 
         return mTestPassIcon;
@@ -461,10 +492,27 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
         {
             mTestFailIcon = new IconNode(FontAwesome.TIMES);
             mTestFailIcon.setFill(Color.RED);
+            mTestFailIcon.setVisible(false);
             mTestFailIcon.visibleProperty().bind(mRadioReference.availableProperty().not());
         }
 
         return mTestFailIcon;
+    }
+
+    private IconNode getTestExpiredIcon()
+    {
+        if(mTestExpiredIcon == null)
+        {
+            mTestExpiredIcon = new IconNode(FontAwesome.EXCLAMATION_TRIANGLE);
+            mTestExpiredIcon.setFill(Color.ORANGERED);
+            // Need to be signed in, but _not_ have a valid premium subscription
+            mTestExpiredIcon.visibleProperty().bind(
+                    Bindings.and(
+                            mRadioReference.availableProperty(),
+                            mRadioReference.premiumAccountProperty().not()));
+        }
+
+        return mTestExpiredIcon;
     }
 
     private Button getLoginButton()

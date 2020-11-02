@@ -49,6 +49,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
+import java.text.ParseException;
+import java.util.Calendar;
+import java.util.Date;
 
 /**
  * Login dialog for radioreference.com with support for testing connection to the service.
@@ -66,6 +69,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
     private Button mTestConnectionButton;
     private IconNode mTestPassIcon;
     private IconNode mTestFailIcon;
+    private IconNode mTextExpiredIcon;
 
     /**
      * Constructs an instance.
@@ -166,6 +170,10 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
             getTestFailIcon().setVisible(false);
             GridPane.setConstraints(getTestFailIcon(), 2, 4);
             mGridPane.getChildren().add(getTestFailIcon());
+
+            getTestExpiredIcon().setVisible(false);
+            GridPane.setConstraints(getTestExpiredIcon(), 2, 4);
+            mGridPane.getChildren().add(getTestExpiredIcon());
         }
 
         return mGridPane;
@@ -275,6 +283,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                     getTestConnectionButton().setDisable(true);
                     getTestPassIcon().setVisible(false);
                     getTestFailIcon().setVisible(false);
+                    getTestExpiredIcon().setVisible(false);
 
                     String userName = getUserNameText().getText();
                     String password = getPasswordField().isVisible() ? getPasswordField().getText() : getPasswordText().getText();
@@ -307,13 +316,56 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                         public void run()
                         {
                             boolean success = false;
+                            RadioReference.LoginStatus loginStatus;
 
                             try
                             {
-                                success = RadioReference.testConnection(userName, password);
+                                loginStatus = RadioReference.testConnectionWithExp(userName, password);
+
+                                if(loginStatus == RadioReference.LoginStatus.VALID_PREMIUM)
+                                {
+                                    getTestPassIcon().setVisible(true);
+                                    getTestFailIcon().setVisible(false);
+                                    getTestExpiredIcon().setVisible(false);
+                                }
+                                else if (loginStatus == RadioReference.LoginStatus.EXPIRED_PREMIUM)
+                                {
+                                    getTestPassIcon().setVisible(false);
+                                    getTestFailIcon().setVisible(false);
+                                    getTestExpiredIcon().setVisible(true);
+
+                                    Alert alert = new Alert(Alert.AlertType.WARNING, "You do not have a valid Radio Reference Premium Subscription (it may have expired).", ButtonType.OK);
+                                    alert.setHeaderText("Expired Premium Account");
+                                    alert.setTitle("Radio Reference Account issue");
+                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
+                                    alert.showAndWait();
+                                }
+                                else if (loginStatus == RadioReference.LoginStatus.INVALID_LOGIN)
+                                {
+                                    getTestPassIcon().setVisible(false);
+                                    getTestFailIcon().setVisible(true);
+                                    getTestExpiredIcon().setVisible(false);
+
+                                    Alert alert = new Alert(Alert.AlertType.ERROR, "Please verify username and password", ButtonType.OK);
+                                    alert.setHeaderText("Login Failed");
+                                    alert.setTitle("Test Failed");
+                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
+                                    alert.showAndWait();
+                                    mLog.error("Login failed. Invalid username or password.  Can't login to radioreference.com");
+                                }
+                                else
+                                {
+                                    // Only way to get here is via an exception
+                                }
                             }
                             catch(RadioReferenceException rre)
                             {
+
+                                // Set an error state
+                                getTestPassIcon().setVisible(false);
+                                getTestFailIcon().setVisible(true);
+                                getTestExpiredIcon().setVisible(false);
+
                                 if(rre.getCause() instanceof ConnectException)
                                 {
                                     Alert alert = new Alert(Alert.AlertType.ERROR, "Please check network or radio reference availability", ButtonType.OK);
@@ -327,24 +379,12 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                                 {
                                     Fault fault = rre.getFault();
 
-                                    if(fault.getFaultCode() != null && fault.getFaultCode().contentEquals("AUTH"))
-                                    {
-                                        Alert alert = new Alert(Alert.AlertType.ERROR, "Please verify username and password", ButtonType.OK);
-                                        alert.setHeaderText("Login Failed");
-                                        alert.setTitle("Test Failed");
-                                        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                        alert.showAndWait();
-                                        mLog.error("Login failed. Invalid username or password.  Can't login to radioreference.com");
-                                    }
-                                    else
-                                    {
-                                        Alert alert = new Alert(Alert.AlertType.ERROR, fault.getFaultString(), ButtonType.OK);
-                                        alert.setHeaderText(fault.getFaultCode());
-                                        alert.setTitle("Test Failed");
-                                        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
-                                        alert.showAndWait();
-                                        mLog.error("Test failed.  Fault [" + fault.toString() + "] Can't login to radioreference.com");
-                                    }
+                                    Alert alert = new Alert(Alert.AlertType.ERROR, fault.getFaultString(), ButtonType.OK);
+                                    alert.setHeaderText(fault.getFaultCode());
+                                    alert.setTitle("Test Failed");
+                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
+                                    alert.showAndWait();
+                                    mLog.error("Test failed.  Fault [" + fault.toString() + "] Can't login to radioreference.com");
                                 }
                                 else
                                 {
@@ -357,8 +397,7 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
                                 }
                             }
 
-                            getTestPassIcon().setVisible(success);
-                            getTestFailIcon().setVisible(!success);
+
                             getTestConnectionButton().setDisable(false);
                         }
                     });
@@ -391,5 +430,17 @@ public class LoginDialog extends Dialog<AuthorizationInformation>
         }
 
         return mTestFailIcon;
+    }
+
+    private IconNode getTestExpiredIcon()
+    {
+        if(mTextExpiredIcon == null)
+        {
+            mTextExpiredIcon = new IconNode(FontAwesome.EXCLAMATION_TRIANGLE);
+            mTextExpiredIcon.setIconSize(32);
+            mTextExpiredIcon.setFill(Color.ORANGERED);
+        }
+
+        return mTextExpiredIcon;
     }
 }
