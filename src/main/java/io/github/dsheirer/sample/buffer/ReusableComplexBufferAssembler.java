@@ -149,12 +149,14 @@ public class ReusableComplexBufferAssembler
      */
     public void flush()
     {
-        if(mListener != null && mBuffer.position() > 0)
+        Listener<ReusableComplexBuffer> listener = mListener;
+
+        if(listener != null && mBuffer.position() > 0)
         {
             mBuffer.rewind();
             ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mBufferSize);
             reusableComplexBuffer.reloadFrom(mBuffer, mCurrentBufferTimestamp);
-            mListener.receive(reusableComplexBuffer);
+            listener.receive(reusableComplexBuffer);
         }
 
         mBuffer.rewind();

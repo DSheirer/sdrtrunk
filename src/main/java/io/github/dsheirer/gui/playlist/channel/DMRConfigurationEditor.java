@@ -626,7 +626,6 @@ public class DMRConfigurationEditor extends ChannelConfigurationEditor
             config = new DecodeConfigDMR();
         }
 
-//        config.setChannelRotationDelay(getChannelRotationDelaySpinner().getValue());
         config.setIgnoreCRCChecksums(getIgnoreCRCChecksumsButton().isSelected());
         config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
