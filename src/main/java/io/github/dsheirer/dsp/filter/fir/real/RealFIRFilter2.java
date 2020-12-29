@@ -85,8 +85,7 @@ public class RealFIRFilter2 extends FIRFilter
         //Use vector dot product to leverage SIMD intrinsics
         for(int x = 0; x < mCoefficients.length; x++)
         {
-            //Note: Math.fma() is 2.5x faster than explicit multiply then accumulate
-            Math.fma(mData[x], mCoefficients[x], mAccumulator);
+            mAccumulator = Math.fma(mData[x], mCoefficients[x], mAccumulator);
         }
 
         /* Apply gain and return the filtered value */
