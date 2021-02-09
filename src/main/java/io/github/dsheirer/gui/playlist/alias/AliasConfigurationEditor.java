@@ -32,7 +32,13 @@ import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.ObjectBinding;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.FilteredList;
@@ -73,6 +79,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -445,6 +452,19 @@ public class AliasConfigurationEditor extends SplitPane
         {
             mAliasSortedList = new SortedList<>(getAliasFilteredList());
             mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
+            
+            //Don't re-sort while the bulk editor is still applying changes to aliases
+            getAliasBulkEditor().changeInProgressProperty().addListener((observable, oldValue, newValue) -> {
+            	if(newValue)
+            	{
+            		mAliasSortedList.comparatorProperty().unbind();
+            		mAliasSortedList.setComparator(null);
+            	}
+            	else
+            	{
+            		mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
+            	}
+            });
         }
 
         return mAliasSortedList;
