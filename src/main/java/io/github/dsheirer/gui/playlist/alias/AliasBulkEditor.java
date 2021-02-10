@@ -19,12 +19,16 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import java.util.List;
+
+import org.controlsfx.control.ToggleSwitch;
+
 import com.google.common.collect.Ordering;
+
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
-import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -45,9 +49,6 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.util.Callback;
-import org.controlsfx.control.ToggleSwitch;
-
-import java.util.List;
 
 /**
  * Editor for multiple selected aliases providing limited options for changing attributes of multiple aliases
