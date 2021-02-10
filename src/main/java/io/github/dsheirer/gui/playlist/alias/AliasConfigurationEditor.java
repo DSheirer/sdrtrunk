@@ -22,6 +22,15 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
+
+import org.controlsfx.control.textfield.TextFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
@@ -68,14 +77,6 @@ import javafx.util.Callback;
 import jiconfont.IconCode;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
-import org.controlsfx.control.textfield.TextFields;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 /**
  * Editor for aliases
@@ -445,6 +446,19 @@ public class AliasConfigurationEditor extends SplitPane
         {
             mAliasSortedList = new SortedList<>(getAliasFilteredList());
             mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
+            
+            //Don't re-sort while the bulk editor is still applying changes to aliases
+            getAliasBulkEditor().changeInProgressProperty().addListener((observable, oldValue, newValue) -> {
+            	if(newValue)
+            	{
+            		mAliasSortedList.comparatorProperty().unbind();
+            		mAliasSortedList.setComparator(null);
+            	}
+            	else
+            	{
+            		mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
+            	}
+            });
         }
 
         return mAliasSortedList;
