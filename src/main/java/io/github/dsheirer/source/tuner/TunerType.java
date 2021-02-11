@@ -36,6 +36,7 @@ public enum TunerType
 	RAFAELMICRO_R820T( "R820T" ),
 	RAFAELMICRO_R828D( "R828D" ),
 	RTL2832_VARIOUS( "Generic" ),
+        SDRPLAY("SDRplay"),
 	TEST("Test"),
 	RECORDING("Recording"),
 	UNKNOWN( "Unknown" );

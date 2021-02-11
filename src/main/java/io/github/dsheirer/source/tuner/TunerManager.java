@@ -35,7 +35,12 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832Tuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController;
+import io.github.dsheirer.source.tuner.sdrplay.SDRplayTuner;
+import io.github.dsheirer.source.tuner.sdrplay.SDRplayTunerController;
 import io.github.dsheirer.source.tuner.usb.USBMasterProcessor;
+import io.github.sammy1am.sdrplay.ApiException;
+import io.github.sammy1am.sdrplay.SDRplayAPI;
+import io.github.sammy1am.sdrplay.SDRplayDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
@@ -101,9 +106,17 @@ public class TunerManager
     }
 
     /**
+     * Loads all supported tuners
+     */
+    private void initTuners() {
+        initUSBTuners();
+        initSDRplayTuners();
+    }
+    
+    /**
      * Loads all USB tuners and USB/Mixer tuner devices
      */
-    private void initTuners()
+    private void initUSBTuners()
     {
         DeviceList deviceList = new DeviceList();
 
@@ -188,6 +201,56 @@ public class TunerManager
         LibUsb.freeDeviceList(deviceList, true);
     }
 
+    /**
+     * Loads all SDRplayAPI Tuners
+     */
+    private void initSDRplayTuners()
+    {   
+        
+        
+        try {
+            SDRplayAPI.open(); // Open API
+        } catch (UnsatisfiedLinkError | Exception ex) {
+            mLog.info("Unable to open SDRplay API (make sure the API is in your PATH", ex);
+            return;
+        }
+        
+        List<SDRplayDevice> devices = new ArrayList<>();
+        
+        try {
+            mLog.info("SDRplay API Version: " + SDRplayAPI.getApiVersion());
+            SDRplayAPI.lockDeviceApi(); // Lock device API (so we don't conflict with other apps
+            devices = SDRplayAPI.getDevices(16); // TODO: Why 16 max?
+
+            /* Select all the devices we found (this reserves them for our app,
+            and also loads their device parameters from the API.
+            */
+            for (SDRplayDevice device : devices) {
+                device.select();
+            } 
+        } finally {
+            // Now that we've selected all our devices, unlock the API.
+            try {
+                SDRplayAPI.unlockDeviceApi();
+            } catch (ApiException ae) {
+                mLog.warn("Exception unlocking SDRplay API", ae);
+            }
+        }
+
+        for (SDRplayDevice device : devices) {
+            try {
+            SDRplayTunerController tunerController = new SDRplayTunerController(device);
+            SDRplayTuner tuner = new SDRplayTuner(tunerController, mUserPreferences);
+            mTunerModel.addTuner(tuner);
+            
+            mLog.info("Loaded SDRplayTuner " + tuner.getTunerClass() + " Serial No: " + tuner.getUniqueID());
+            
+            } catch (SourceException se) {
+                mLog.warn("Unable to load SDRplayTuner SerNo: " + device.getSerialNumber());
+            }
+        }
+    }
+    
     private static String getDeviceClass(byte deviceClass)
     {
         switch(deviceClass)

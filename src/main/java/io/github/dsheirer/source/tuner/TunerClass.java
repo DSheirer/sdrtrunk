@@ -57,6 +57,7 @@ public enum TunerClass
 	TERRATEC_T_STICK_PLUS( TunerType.ELONICS_E4000, "0CCD", "00D7", "Terratec", "T Stick Plus" ),
 	TWINTECH_UT40( TunerType.FITIPOWER_FC0013, "1B80", "D3A4", "Twintech", "UT-40" ),
 	ZAAPA_ZTMINDVBZP( TunerType.FITIPOWER_FC0012, "1B80", "D398", "Zaapa", "ZT-MINDVBZP" ),
+        SDRPLAY_RSP1(TunerType.SDRPLAY, "0", "1", "SDRplay", "RSP1"),
 	TEST_TUNER(TunerType.TEST, "0", "0", "ABC Tuners Inc.", "Model XYZ"),
 	RECORDING_TUNER(TunerType.RECORDING, "0", "0", "Recording Tuner", "Recording"),
 	UNKNOWN( TunerType.UNKNOWN, "0", "0", "Unknown Manufacturer", "Unknown Device" );
