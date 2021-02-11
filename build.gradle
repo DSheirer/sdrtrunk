@@ -43,6 +43,7 @@ sourceSets {
 
 test {
     useJUnitPlatform()
+}
 run {
     jvmArgs = ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED']
 }
