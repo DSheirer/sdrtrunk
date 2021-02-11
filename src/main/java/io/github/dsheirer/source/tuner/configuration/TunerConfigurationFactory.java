@@ -44,6 +44,11 @@ import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerEditor;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerEditor;
+import io.github.dsheirer.source.tuner.sdrplay.RSP1ATunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSP1TunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSP2TunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSPduoTunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSPdxTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.SDRplayTuner;
 import io.github.dsheirer.source.tuner.sdrplay.SDRplayTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.SDRplayTunerEditor;
@@ -72,8 +77,16 @@ public class TunerConfigurationFactory
                 return new R820TTunerConfiguration(uniqueID, name);
             case RECORDING:
                 return new RecordingTunerConfiguration(uniqueID, name);
-            case SDRPLAY:
-                return new SDRplayTunerConfiguration(uniqueID, name);
+            case SDRPLAY_RSP1:
+            	return new RSP1TunerConfiguration(uniqueID, name);
+            case SDRPLAY_RSP1A:
+            	return new RSP1ATunerConfiguration(uniqueID, name);
+            case SDRPLAY_RSP2:
+            	return new RSP2TunerConfiguration(uniqueID, name);
+            case SDRPLAY_RSPDUO:
+            	return new RSPduoTunerConfiguration(uniqueID, name);
+            case SDRPLAY_RSPDX:
+                return new RSPdxTunerConfiguration(uniqueID, name);
             default:
                 throw new IllegalArgumentException("Unrecognized tuner type ["
                     + type.name() + "] - can't create named [" + name + "] tuner"
@@ -102,7 +115,11 @@ public class TunerConfigurationFactory
                 return new R820TTunerEditor(model, (RTL2832Tuner)tuner);
             case RECORDING:
                 return new RecordingTunerConfigurationEditor(model, (RecordingTuner)tuner);
-            case SDRPLAY:
+            case SDRPLAY_RSP1:
+            case SDRPLAY_RSP1A:
+            case SDRPLAY_RSP2:
+            case SDRPLAY_RSPDUO:
+            case SDRPLAY_RSPDX:
                 return new SDRplayTunerEditor(model, (SDRplayTuner)tuner);
             case UNKNOWN:
             default:

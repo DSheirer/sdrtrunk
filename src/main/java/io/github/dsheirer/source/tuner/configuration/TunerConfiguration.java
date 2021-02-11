@@ -34,6 +34,11 @@ import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSP1ATunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSP1TunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSP2TunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSPduoTunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.RSPdxTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.SDRplayTunerConfiguration;
 
 /**
@@ -46,9 +51,14 @@ import io.github.dsheirer.source.tuner.sdrplay.SDRplayTunerConfiguration;
     @JsonSubTypes.Type(value=FCD1TunerConfiguration.class, name="fcd1TunerConfiguration"),
     @JsonSubTypes.Type(value=FCD2TunerConfiguration.class, name="fcd2TunerConfiguration"),
     @JsonSubTypes.Type(value=HackRFTunerConfiguration.class, name="hackRFTunerConfiguration"),
-    @JsonSubTypes.Type(value= RecordingTunerConfiguration.class, name="recordingTunerConfiguration"),
+    @JsonSubTypes.Type(value=RecordingTunerConfiguration.class, name="recordingTunerConfiguration"),
     @JsonSubTypes.Type(value=R820TTunerConfiguration.class, name="r820TTunerConfiguration"),
-    @JsonSubTypes.Type(value=SDRplayTunerConfiguration.class, name="SDRplayTunerConfiguration"),
+    //@JsonSubTypes.Type(value=SDRplayTunerConfiguration.class, name="SDRplayTunerConfiguration"),
+    @JsonSubTypes.Type(value=RSP1TunerConfiguration.class, name="RSP1TunerConfiguration"),
+    @JsonSubTypes.Type(value=RSP1ATunerConfiguration.class, name="RSP1ATunerConfiguration"),
+    @JsonSubTypes.Type(value=RSP2TunerConfiguration.class, name="RSP2TunerConfiguration"),
+    @JsonSubTypes.Type(value=RSPdxTunerConfiguration.class, name="RSPDXTunerConfiguration"),
+    @JsonSubTypes.Type(value=RSPduoTunerConfiguration.class, name="RSPDUOTunerConfiguration"),
 })
 @JacksonXmlRootElement( localName = "tuner_configuration" )
 public abstract class TunerConfiguration

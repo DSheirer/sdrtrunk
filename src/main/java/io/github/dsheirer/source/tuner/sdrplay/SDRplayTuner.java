@@ -36,6 +36,7 @@ public class SDRplayTuner extends Tuner
     public SDRplayTuner(SDRplayTunerController controller, UserPreferences userPreferences) throws SourceException
     {
         super("SDRplay", controller, userPreferences);
+        setName("SDRplay:"+controller.getModel());
     }
 
     public SDRplayTunerController getController()
@@ -46,13 +47,49 @@ public class SDRplayTuner extends Tuner
     @Override
     public TunerClass getTunerClass()
     {
-        return TunerClass.SDRPLAY_RSP1;
+    	TunerClass retval = TunerClass.UNKNOWN;
+    	switch(getController().getModel()) {
+    	case ("RSP1"):
+    				retval = TunerClass.SDRPLAY_RSP1;
+    				break;
+    	case ("RSP1A"):
+    				retval = TunerClass.SDRPLAY_RSP1A;
+    				break;
+    	case ("RSPDX"):
+    				retval = TunerClass.SDRPLAY_RSPDX;
+    				break;
+    	case ("RSP2"):
+    				retval = TunerClass.SDRPLAY_RSP2;
+    				break;
+    	case ("RSPDUO"):
+    				retval =  TunerClass.SDRPLAY_RSPDUO;
+    				break;
+    	}
+    	return retval;
     }
 
     @Override
     public TunerType getTunerType()
     {
-        return TunerType.SDRPLAY;
+       	TunerType retval = TunerType.UNKNOWN;
+    	switch(getController().getModel()) {
+    	case ("RSP1"):
+    				retval = TunerType.SDRPLAY_RSP1;
+    				break;
+    	case ("RSP1A"):
+    				retval = TunerType.SDRPLAY_RSP1A;
+    				break;
+    	case ("RSPDX"):
+    				retval = TunerType.SDRPLAY_RSPDX;
+    				break;
+    	case ("RSP2"):
+    				retval = TunerType.SDRPLAY_RSP2;
+    				break;
+    	case ("RSPDUO"):
+    				retval =  TunerType.SDRPLAY_RSPDUO;
+    				break;
+    	}
+    	return retval;
     }
 
     @Override

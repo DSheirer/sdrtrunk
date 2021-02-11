@@ -23,36 +23,40 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEvent;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
 import io.github.sammy1am.sdrplay.ApiException;
-import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
-import java.awt.Color;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.LoModeT;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
-import javax.swing.JToggleButton;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import java.awt.CardLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.text.DecimalFormat;
-import javax.swing.BorderFactory;
+import java.util.Arrays;
+
 import javax.swing.JCheckBox;
 import javax.swing.JSlider;
 
@@ -65,17 +69,23 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     private JTextField mConfigurationName;
     private JButton mTunerInfo;
     private JComboBox<Integer> mComboSampleRate;
+    private JComboBox<Integer> mComboDecFactor;
     private JSpinner mFrequencyCorrection;
     private JCheckBox mAutoPPMEnabled;
     
-    private JComboBox<If_kHzT> mComboIfMode;
-    private JComboBox<Bw_MHzT> mComboBandwidth;
+    private JLabel mLabelIfMode;
+    private JLabel mLabelIFBandwidth;
+    private JCheckBox mAGCEnabled;
+    
+    private JPanel mDeviceParams;
+    private JCheckBox mRfNotch;
+    private JCheckBox mDABNotch;
+    private JCheckBox mBiasT;
     
     private JSlider mLNAState;
-    
-    private JToggleButton mAmplifier;
-    private JComboBox<HackRFLNAGain> mComboLNAGain;
-    private JComboBox<HackRFVGAGain> mComboVGAGain;
+    DefaultComboBoxModel<Integer> mAllDecModel = new DefaultComboBoxModel<Integer>(new Integer[] {1, 2, 4, 8, 16, 32});
+    DefaultComboBoxModel<Integer> mNoDecModel = new DefaultComboBoxModel<Integer>(new Integer[] {1});
+
     private boolean mLoading;
 
     private final SDRplayTunerController mController;
@@ -101,7 +111,8 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",
+        //setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",
+        setLayout(new MigLayout("fill,wrap 6", "[left][][][][][]",
             "[][][][][][][][][grow]"));
 
         add(new JLabel("SDRplay Tuner Configuration"), "span,align center");
@@ -121,10 +132,10 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             {
             }
         });
+        add(new JLabel("Name:"), "split 2");
+        add(mConfigurationName, "growx, span 3");
 
-        add(new JLabel("Name:"));
-        add(mConfigurationName, "span 2");
-
+        
         mTunerInfo = new JButton("Tuner Info");
         mTunerInfo.setEnabled(false);
         mTunerInfo.addActionListener(new ActionListener()
@@ -136,10 +147,12 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                     "Tuner Info", JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        add(mTunerInfo);
+        add(mTunerInfo, "wrap");
 
-
-        Integer[] validRates = {2000000,3000000,4000000,5000000,6000000,7000000,8000000,9000000,10000000};
+        /**
+         * Sample Rate
+         */
+        Integer[] validRates = {2_000_000, 3_000_000, 4_000_000, 5_000_000, 6_000_000, 7_000_000, 8_000_000, 9_000_000, 10_000_000};
         mComboSampleRate = new JComboBox<>(validRates);
         mComboSampleRate.setEnabled(false);
         mComboSampleRate.addActionListener(new ActionListener()
@@ -152,6 +165,8 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 try
                 {
                     mController.setSampleRate(sampleRate);
+                    mLabelIfMode.setText(mController.getIfType().name());
+                    mLabelIFBandwidth.setText(mController.getIFBandwidth().name());
                     save();
                 }
                 catch(SourceException e2)
@@ -161,14 +176,29 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 }
             }
         });
-        add(new JLabel("Sample Rate:"));
-        add(mComboSampleRate);
+        add(new JLabel("Sample Rate:"), "split 2, left");
+        add(mComboSampleRate, "left");
 
+        /**
+         * Show values for IF Mode and IF Bandwidth
+         */
+        add(new JLabel("IF Mode: "), "span 2, split 4");
+        mLabelIfMode = new JLabel("");
+        mLabelIfMode.setEnabled(false);
+        add(mLabelIfMode, "left");
+        
+        add(new JLabel("IF Bandwidth: "));
+        mLabelIFBandwidth = new JLabel("");
+        mLabelIFBandwidth.setEnabled(false);
+        add(mLabelIFBandwidth, "left, wrap");
+        
+        /**
+         * PPM Frequency Correction - this PPM correction is implemented in sdrtrunk, not sdrplay device
+         */
         SpinnerModel model = new SpinnerNumberModel(0.0,   //initial value
             -1000.0,   //min
             1000.0,   //max
             0.1); //step
-
         mFrequencyCorrection = new JSpinner(model);
         mFrequencyCorrection.setEnabled(false);
         JSpinner.NumberEditor editor = (JSpinner.NumberEditor)mFrequencyCorrection.getEditor();
@@ -192,20 +222,21 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 }
                 catch(SourceException e1)
                 {
-                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "HackRF Tuner Controller"
+                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "SDRplay Tuner Controller"
                         + " - couldn't apply frequency correction value: " + value +
                         e1.getLocalizedMessage());
 
-                    mLog.error("HackRF Tuner Controller - couldn't apply frequency correction "
+                    mLog.error("SDRplay Tuner Controller - couldn't apply frequency correction "
                         + "value: " + value, e1);
                 }
             }
         });
-
-        add(new JLabel("PPM:"));
+        add(new JLabel("PPM:"), "split 2");
         add(mFrequencyCorrection);
 
-        add(new JLabel(""), "span 3"); //filler
+        /**
+         * PPM Auto Correction - implemented in sdrtrunk code not sdrplay device
+         */
         mAutoPPMEnabled = new JCheckBox("PPM Auto-Correction");
         mAutoPPMEnabled.addActionListener(new ActionListener()
         {
@@ -216,54 +247,99 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 mController.getFrequencyErrorCorrectionManager().setEnabled(enabled);
                 save();
             }
+            
         });
         add(mAutoPPMEnabled);
         
-        add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
+  
         
-
-        If_kHzT[] ifModes = {If_kHzT.IF_Zero, If_kHzT.IF_0_450, If_kHzT.IF_1_620, If_kHzT.IF_2_048};
-        mComboIfMode = new JComboBox<>(ifModes);
-        mComboIfMode.setEnabled(false);
-        mComboIfMode.addActionListener((ActionEvent e) -> {
-            If_kHzT ifMode = (If_kHzT)mComboIfMode.getSelectedItem();
-            
-            try
+        /**
+         * Automatic Gain Control
+         * 
+         */
+        mAGCEnabled = new JCheckBox("AGC");
+        mAGCEnabled.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
             {
-                mController.setIfType(ifMode);
+                boolean enabled = mAGCEnabled.isSelected();
+                mController.setAGCEnabled(enabled);
                 save();
             }
-            catch(ApiException ex)
-            {
-                mLog.error("SDRplay Tuner Controller - couldn't apply IF mode setting [" +
-                        ifMode + "]", ex);
-            }
-        });
-        add(new JLabel("IF Mode:"));
-        add(mComboIfMode);
-        
-        Bw_MHzT[] bwModes = {Bw_MHzT.BW_0_200,Bw_MHzT.BW_0_300,Bw_MHzT.BW_0_600,Bw_MHzT.BW_1_536,Bw_MHzT.BW_5_000,Bw_MHzT.BW_6_000,Bw_MHzT.BW_7_000,Bw_MHzT.BW_8_000};
-        mComboBandwidth = new JComboBox<>(bwModes);
-        mComboBandwidth.setEnabled(false);
-        mComboBandwidth.addActionListener((ActionEvent e) -> {
-            Bw_MHzT bwMode = (Bw_MHzT)mComboBandwidth.getSelectedItem();
             
-            try
+        });
+        add(mAGCEnabled);
+        
+        /******************************************************************************/
+        /**
+         * Decimation
+         */
+    
+        Integer[] decFactors = {1, 2, 4, 8, 16, 32};
+        mComboDecFactor = new JComboBox<>(decFactors);
+        mComboDecFactor.setEnabled(false);
+        mComboDecFactor.addItemListener(new ItemListener()
+        {
+            @Override
+            public void itemStateChanged(ItemEvent event)
             {
-                mController.setIFBandwidth(bwMode);
-                save();
-            }
-            catch(ApiException ex)
-            {
-                mLog.error("SDRplay Tuner Controller - couldn't apply IF bandwidth setting [" +
-                        bwMode + "]", ex);
+            	if(event.getStateChange() == ItemEvent.SELECTED)
+            	{
+	                //int decFactor = (Integer)mComboDecFactor.getSelectedItem();
+            		int decFactor = (Integer)event.getItem();
+	                try
+	                {
+	                    mController.setDecFactor(decFactor);
+	                    save();
+	                }
+	                catch(ApiException ae)
+	                {
+	                    JOptionPane.showMessageDialog(SDRplayTunerEditor.this, "SDRplay Tuner Controller"
+	                        + " - couldn't apply Decimation factor: " + decFactor +
+	                        ae.getLocalizedMessage());
+	
+	                    mLog.error("SDRplay Tuner Controller - couldn't apply Decimation factor: " + decFactor, ae);
+	                }
+            	}
+                
             }
         });
-        add(new JLabel("IF Bandwidth:"));
-        add(mComboBandwidth);
+        add(new JLabel("Decimation:"));
+        add(mComboDecFactor);
         
-        add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
+        // When sample rate changes, make sure 
+        // only valid decimation factors are available.
+        mComboSampleRate.addItemListener(new ItemListener()
+        {
+            @Override
+            public void itemStateChanged(ItemEvent event)
+            {
+            	if(event.getStateChange() == ItemEvent.SELECTED)
+            	{
+	            	mLog.debug("special mComboSampleRate listener");
+	             	for(int i = 0; i < mComboDecFactor.getItemCount(); i++)
+	            		System.out.printf("mComboDecFactor Item %d %s %b \n", i, mComboDecFactor.getItemAt(i).toString(), i == mComboDecFactor.getSelectedIndex());
+	        		mComboDecFactor.setEnabled(false);
+	        		int sel = mComboDecFactor.getSelectedIndex();
+	        		mComboDecFactor.removeAllItems();
+	        	    if((Integer)mComboSampleRate.getSelectedItem() <= 5_000_000) {
+	        	    	for(Integer factor : decFactors)
+	        	    		mComboDecFactor.addItem(factor);
+	        	    	mComboDecFactor.setSelectedIndex(sel);
+	                }
+	                else {
+	                	mComboDecFactor.addItem(decFactors[0]);
+	                	mComboDecFactor.setSelectedIndex(0);
+	                }
+	        	    mComboDecFactor.setEnabled(true);
+            	}
+            }});
         
+        /******************************************************************************/
+        /**
+         * RF Gain Reduction - aka. Low Noise Amplifier(LNA) Gain Reduction
+         */
         add(new JLabel(""), "span 2");
         add(new JLabel("<html>RF Gain Reduction<br/>(LNA State)</html>"), "top");
         
@@ -298,11 +374,15 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 }
             }
         });
-        /*
-        TODO: This addListener call will likely slowly leak memory because it doesn't
-        have a corresponding removeListener call anywhere.  However, there doesn't seem to be a
-        editor.close() method available, so without resorting to finalizer(), there's nowhere
-        to appropriately remove us as a listener.
+        
+        /**
+         * Adjust maximum available LNA states when bandwidth frequency is changed
+         * This value is very dependent upon the specific SDRplay device
+         * 
+         * TODO: This addListener call will likely slowly leak memory because it doesn't
+         * have a corresponding removeListener call anywhere.  However, there doesn't seem to be a
+         * editor.close() method available, so without resorting to finalizer(), there's nowhere
+         * to appropriately remove us as a listener.
         */
         mController.addListener(new ISourceEventProcessor() {
             @Override
@@ -315,10 +395,90 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                         mLNAState.setValue(newMax);
                     }
                     mLNAState.setMaximum(newMax);
+                    
+   
                 }
             }
         });
-        add(mLNAState);
+        add(mLNAState, "wrap");        
+        
+        add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
+        
+  
+        /**
+         * 
+         * START DEVICE SPECIFIC PARAMETERS
+         * 
+         * Handle SDRPlay specific device parameters (RSP1, RSP1A, RSPdx, etc.)
+         * For now focus on RSP1 and RSP1A
+         * Each panel contained in mDeviceParams provides for editing device specific attributes
+         * RSP1 has no device specific attributes, so is empty.
+         */
+        mDeviceParams = new JPanel(new CardLayout());
+        JPanel rsp1Panel = new JPanel();
+        JPanel rsp1aPanel = new JPanel();
+        JPanel rspdxPanel = new JPanel();
+        JPanel rsp2Panel = new JPanel();
+        JPanel rspduoPanel = new JPanel();
+        
+        // FM Broadcast Notch
+        mRfNotch = new JCheckBox("FM-BC Notch");
+        mRfNotch.setEnabled(false);
+        mRfNotch.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                mController.setRfNotch(mRfNotch.isSelected());
+                save();
+            }
+            
+        });
+        rsp1aPanel.add(mRfNotch);
+        
+        // Digital Audio Broadcast (DAB) Notch
+        mDABNotch = new JCheckBox("DAB Notch");
+        mDABNotch.setEnabled(false);
+        mDABNotch.addActionListener(new ActionListener()
+        {
+        	@Override
+        	public void actionPerformed(ActionEvent e)
+        	{
+        		mController.setDABNotch(mRfNotch.isSelected());
+        		save();
+        	}
+        });
+        rsp1aPanel.add(mDABNotch);
+        
+        // Bias T Enable
+        mBiasT = new JCheckBox("BiasT");
+        mBiasT.setEnabled(false);
+        mBiasT.addActionListener(new ActionListener()
+        {
+        	@Override
+        	public void actionPerformed(ActionEvent e)
+        	{
+        		mController.setDABNotch(mBiasT.isSelected());
+        		save();
+        	}
+        });
+        rsp1aPanel.add(mBiasT);
+        
+        mDeviceParams.add(rsp1aPanel, "RSP1A");
+        mDeviceParams.add(rsp1Panel, "RSP1");
+        mDeviceParams.add(rsp2Panel, "RSP2");
+        mDeviceParams.add(rspduoPanel, "RSPduo");
+        mDeviceParams.add(rspdxPanel, "RSPdx");
+        CardLayout c1 = (CardLayout) mDeviceParams.getLayout();
+        String dev = mController.getModel();
+        if((Arrays.asList("RSP1A", "RSP1", "RSP2", "RSPduo", "RSPdx").contains(dev)))
+		{
+        	c1.show(mDeviceParams, dev);
+        	add(mDeviceParams, "span");
+		}
+        
+        
+       
     }
 
     /**
@@ -328,7 +488,7 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
     {
         if(mController.isLocked())
         {
-            mComboSampleRate.setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
+            mComboSampleRate.setToolTipText("Sample Rate is locked.  Stop channel decoding to unlock.");
         }
         else
         {
@@ -373,20 +533,44 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
             mComboSampleRate.setEnabled(enabled);
         }
         
-        if(mComboIfMode.isEnabled() != enabled)
-        {
-            mComboIfMode.setEnabled(enabled);
-        }
-        
-        if(mComboBandwidth.isEnabled() != enabled)
-        {
-            mComboBandwidth.setEnabled(enabled);
-        }
-
         if(mLNAState.isEnabled() != enabled)
         {
             mLNAState.setEnabled(enabled);
         }
+        
+        if(mDeviceParams.isEnabled() != enabled)
+        {
+        	mDeviceParams.setEnabled(enabled);
+        }
+        if(mRfNotch.isEnabled() != enabled)
+        {
+        	mRfNotch.setEnabled(enabled);
+        }
+        if(mDABNotch.isEnabled() != enabled)
+        {
+        	mDABNotch.setEnabled(enabled);
+        }
+        if(mBiasT.isEnabled() != enabled)
+        {
+        	mBiasT.setEnabled(enabled);
+        }
+        if(mLabelIfMode.isEnabled() != enabled)
+        {
+        	mLabelIfMode.setEnabled(enabled);
+        }
+        if(mLabelIFBandwidth.isEnabled() != enabled)
+        {
+        	mLabelIFBandwidth.setEnabled(enabled);
+        }
+        if(mComboDecFactor.isEnabled() != enabled)
+        {
+        	mComboDecFactor.setEnabled(enabled);
+        }
+        if(mAGCEnabled.isEnabled() != enabled)
+        {
+        	mAGCEnabled.setEnabled(enabled);
+        }
+
     }
 
     private String getTunerInfo()
@@ -406,6 +590,9 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         return sb.toString();
     }
 
+    /**
+     * Initializes each value as the Panel is loaded
+     */
     @Override
     public void setItem(TunerConfiguration tunerConfiguration)
     {
@@ -413,27 +600,32 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
 
         //Toggle loading so that we don't fire a change event and schedule a settings file save
         mLoading = true;
-
+        mLog.debug("setItem entered...");
         if(hasItem())
         {
+        	mLog.debug("setItem hasItem() entered...");
             SDRplayTunerConfiguration config = getConfiguration();
 
             if(tunerConfiguration.isAssigned())
             {
+            	mLog.debug("setItem tunerConfiguration.isAssigned entered...");
                 setControlsEnabled(true);
 
                 mConfigurationName.setText(config.getName());
-                mComboSampleRate.setSelectedItem(config.getSampleRate());
+                mComboDecFactor.setSelectedItem(config.getDecFactor()); //must be before setting mComboSampleRate!
+                mComboSampleRate.setSelectedItem(config.getSampleRate()); //must be after setting mComboDecFactor!
                 mFrequencyCorrection.setValue(config.getFrequencyCorrection());
                 mAutoPPMEnabled.setSelected(config.getAutoPPMCorrectionEnabled());
-                
-                mComboIfMode.setSelectedItem(config.getIfType());
-                mComboBandwidth.setSelectedItem(config.getBwType());
-                
+                mAGCEnabled.setSelected(config.getAGCEnabled());
                 mLNAState.setValue(config.getLNAState());
 
+                mRfNotch.setSelected(config.getRfNotch());
+                mDABNotch.setSelected(config.getDABNotch());
+                mBiasT.setSelected(config.getBiasT());
+                
                 //Update enabled state to reflect when frequency and sample rate controls are locked
                 mComboSampleRate.setEnabled(!mController.isLocked());
+                
             }
             else
             {
@@ -450,6 +642,9 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
         mLoading = false;
     }
 
+    /**
+     * Saves each value for later use
+     */
     @Override
     public void save()
     {
@@ -464,11 +659,12 @@ public class SDRplayTunerEditor extends TunerConfigurationEditor
                 .getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
             config.setAutoPPMCorrectionEnabled(mAutoPPMEnabled.isSelected());
-            
-            config.setIfType((If_kHzT)mComboIfMode.getSelectedItem());
-            config.setBwType((Bw_MHzT)mComboBandwidth.getSelectedItem());
-            
+            config.setDecFactor((Integer)mComboDecFactor.getSelectedItem());
             config.setLNAState(mLNAState.getValue());
+            config.setAGCEnabled(mAGCEnabled.isSelected());
+            config.setRfNotch(mRfNotch.isSelected());
+            config.setDABNotch(mDABNotch.isSelected());
+            config.setBiasT(mBiasT.isSelected());
 
             getTunerConfigurationModel().broadcast(
                 new TunerConfigurationEvent(getConfiguration(), TunerConfigurationEvent.Event.CHANGE));

@@ -21,22 +21,29 @@ package io.github.dsheirer.source.tuner.sdrplay;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
-import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.LoModeT;
+
 
 public class SDRplayTunerConfiguration extends TunerConfiguration
 {
-    private int mSampleRate = 2000000;
+    private int mSampleRate = 10_000_000;
     private double mFrequencyCorrection = 0.0d;
     private boolean mAutoPPMCorrection = true;
     
     private If_kHzT mIfType = If_kHzT.IF_Zero;
-    private Bw_MHzT mBwType = Bw_MHzT.BW_0_200;
+    private Bw_MHzT mBwType = Bw_MHzT.BW_8_000;
+    
+    private boolean mAGCEnabled = false;
     
     private int mLNAState = 0;
+    
+ 
+	private boolean mRfNotch = true;
+	private boolean mDABNotch = true;
+	private boolean mBiasT = false;
+	private int mDecFactor = 1;
     
 
     /**
@@ -55,7 +62,7 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     @Override
     public TunerType getTunerType()
     {
-        return TunerType.SDRPLAY;
+        return TunerType.SDRPLAY_RSP1;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "lna_state")
@@ -113,7 +120,55 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
         mBwType = bwType;
     }
     
-        /**
+    
+    @JacksonXmlProperty(isAttribute = true, localName = "agc_enabled")
+    public boolean getAGCEnabled()
+    {
+        return mAGCEnabled;
+    }
+
+    public void setAGCEnabled(boolean enabled)
+    {
+        mAGCEnabled = enabled;
+    }
+    
+    /**
+     * FM Broadcast Notch
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "rf_notch")
+    public boolean getRfNotch() {
+    	return mRfNotch;
+    }
+    
+    public void setRfNotch(boolean rfNotch) {
+    	mRfNotch = rfNotch;
+    }
+    
+    /**
+     * Digital Audio Broadcast(DAB) Notch
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "dab_notch")
+    public boolean getDABNotch() {
+    	return mDABNotch;
+    }
+    
+    public void setDABNotch(boolean dabNotch) {
+    	mDABNotch = dabNotch;
+    }    
+
+    /**
+     * BiasT 
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "bias_t")
+    public boolean getBiasT() {
+    	return mBiasT;
+    }
+    
+    public void setBiasT(boolean biasT) {
+    	mBiasT = biasT;
+    }    
+    
+    /**
      * Indicates if automatic correction of PPM from measured frequency error is enabled/disabled.
      * @return true if auto-correction is enabled.
      */
@@ -130,5 +185,17 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     public void setAutoPPMCorrectionEnabled(boolean enabled)
     {
         mAutoPPMCorrection = enabled;
+    }
+    
+    /**
+     * Decimation Factor
+     */
+    
+    @JacksonXmlProperty(isAttribute = true, localName = "dec_factor")
+    public int getDecFactor() {
+    	return mDecFactor;
+    }
+    public void setDecFactor(int newDecFactor) {
+    	mDecFactor = newDecFactor;
     }
 }

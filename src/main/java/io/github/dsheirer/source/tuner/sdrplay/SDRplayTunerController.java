@@ -40,6 +40,11 @@ import io.github.sammy1am.sdrplay.jnr.SDRplayAPIJNR;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.Bw_MHzT;
 import io.github.sammy1am.sdrplay.jnr.TunerParamsT.If_kHzT;
+import io.github.sammy1am.sdrplay.jnr.TunerParamsT.LoModeT;
+import io.github.sammy1am.sdrplay.model.RSP1A;
+import io.github.sammy1am.sdrplay.model.RSPDuo;
+import io.github.sammy1am.sdrplay.SDRplayAPI;
+
 import java.nio.FloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +54,8 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRplayTunerController.class);
 
-    public static final long MIN_FREQUENCY = 10000000l;
-    public static final long MAX_FREQUENCY = 6000000000l;
+    public static final long MIN_FREQUENCY = 10_000_000l;
+    public static final long MAX_FREQUENCY = 6_000_000_000l;
     public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
@@ -64,15 +69,22 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     {
         super(MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
         mDevice = device;
+        	
         mDevice.setStreamsReceiver(this);
         //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Verbose);
         
-        // Set controller to match device defaults
         mFrequencyController.setFrequency((long) mDevice.getRfHz());
         mFrequencyController.setSampleRate((int) mDevice.getSampleRate());
         mFrequencyController.setFrequencyCorrection(mDevice.getPPM());
-        
         mFrequencyErrorCorrectionManager = new FrequencyErrorCorrectionManager(this);
+        
+        //Set Local Oscillator to Auto - only used for AM?
+        mDevice.setLoMode(LoModeT.LO_Auto);
+        
+        //Set DC Offset
+        mDevice.setDcOffset(true);
+        
+        
     }
 
     /**
@@ -164,8 +176,16 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
             setFrequencyCorrection(sdrPlayConfig.getFrequencyCorrection());
             getFrequencyErrorCorrectionManager().setEnabled(sdrPlayConfig.getAutoPPMCorrectionEnabled());
             
-            mDevice.setIfType(sdrPlayConfig.getIfType());
-            mDevice.setBwType(sdrPlayConfig.getBwType());
+            //setIfType(sdrPlayConfig.getIfType());
+            //setIFBandwidth(sdrPlayConfig.getBwType());
+            
+            //NDH added
+            setRfNotch(sdrPlayConfig.getRfNotch());
+            setDABNotch(sdrPlayConfig.getDABNotch());
+            //setAGCEnabled(sdrPlayConfig.getAGCEnabled());
+            //setDecFactor(sdrPlayConfig.getDecFactor());
+            
+            
         }
         else
         {
@@ -176,14 +196,39 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
 
     /**
      * Sample Rate
-     *
+     * Sets the Sample Rate and the IF Bandwidth to match.
+     * Also forces IF Mode to Zero IF for all sample rates.
+     * These are optimum settings for sdrtrunk P25 demodulation,
+     * any other combination of values do not produce results.
+     * These combinations were reverse engineered from SDRuno.
+     * @param newSampleRate
      */
     public void setSampleRate(int newSampleRate) throws SourceException
     {
         mDevice.setSampleRate(newSampleRate);
         mFrequencyController.setSampleRate(newSampleRate);
         
-        //TODO: HackRF set some sort of baseband filter based on the sample rate-- maybe try that?
+        Bw_MHzT newbwType;
+        switch(newSampleRate) {
+        case 2_000_000: case 3_000_000: case 4_000_000:
+        	newbwType = Bw_MHzT.BW_1_536;
+        	break;
+        case 5_000_000:
+        	newbwType = Bw_MHzT.BW_5_000;
+        	break;
+        case 6_000_000:
+        	newbwType = Bw_MHzT.BW_6_000;
+        	break;
+        case 7_000_000:
+        	newbwType = Bw_MHzT.BW_7_000;
+        	break;
+        case 8_000_000: case 9_000_000: case 10_000_000:
+        	newbwType = Bw_MHzT.BW_8_000;
+        	break;
+        default:
+        	newbwType = Bw_MHzT.BW_1_536;
+        }
+        mDevice.setSampleRateAndIF(newSampleRate, newbwType, If_kHzT.IF_Zero);
     }
     
     /**
@@ -239,6 +284,13 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         return mDevice.getBwType();
     }
     
+    public boolean getAGCEnabled() {
+    	return mDevice.getAGCEnabled();
+    }
+    public void setAGCEnabled(boolean newAGCstate) {
+    	mDevice.setAGCEnabled(newAGCstate);
+    }
+    
     public int getNumLNAStates() {
         return mDevice.getNumLNAStates();
     }
@@ -250,7 +302,38 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     public int getLNAState() {
         return mDevice.getLNAState();
     }
+    
+    public boolean getRfNotch() {
+    		return  mDevice.getRfNotch();
+    }
+    
+    public void setRfNotch(boolean rfNotch) {
+    	mDevice.setRfNotch(rfNotch);
+    }
 
+    public boolean getDABNotch() {
+    		return  mDevice.getDABNotch();
+    }
+    
+    public void setDABNotch(boolean DABNotch) {
+    	mDevice.setDABNotch(DABNotch);
+    }
+    
+    public boolean getBiasT() {
+		return  mDevice.getBiasT();
+    }
+
+    public void setBiasT(boolean biasT) {
+    	mDevice.setBiasT(biasT);
+    }    
+    
+    public int getDecFactor() {
+    	return mDevice.getDecFactor();
+    }
+    public void setDecFactor(int newDecFactor) {
+    	mDevice.setDecFactor(newDecFactor);
+    }
+    
     @Override
     public void receiveStreamA(short[] xi, short[] xq, CallbackFnsT.StreamCbParamsT params, int numSamples, int reset) {
         ReusableComplexBuffer buffer = mReusableComplexBufferQueue.getBuffer(numSamples*2);
