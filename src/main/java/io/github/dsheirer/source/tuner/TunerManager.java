@@ -63,7 +63,8 @@ public class TunerManager
     private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
     private Map<Integer,List<Tuner>> mUSBBusTunerMap = new TreeMap<>();
-
+    private static final short SDRPLAY_VENDOR_ID = 0x1DF7;
+    private boolean mSDRplayTunerFound = false;
     /**
      * Application-wide LibUSB timeout processor for transfer buffers.  All classes that need to use USB transfer
      * buffers can register with this processor and the processor will auto-start and auto-stop while USB transfer
@@ -110,7 +111,8 @@ public class TunerManager
      */
     private void initTuners() {
         initUSBTuners();
-        initSDRplayTuners();
+        if(mSDRplayTunerFound)
+            initSDRplayTuners();
     }
     
     /**
@@ -170,6 +172,8 @@ public class TunerManager
                 sb.append(String.format("%04X", descriptor.idProduct()));
                 sb.append("]");
 
+                mSDRplayTunerFound = descriptor.idVendor() == SDRPLAY_VENDOR_ID ? true : mSDRplayTunerFound;
+
                 if(status.isLoaded())
                 {
                     Tuner tuner = status.getTuner();
@@ -209,6 +213,7 @@ public class TunerManager
         
         
         try {
+            mLog.info("Found SDRPlay Device: Initializing SDRPlay API");
             SDRplayAPI.open(); // Open API
         } catch (UnsatisfiedLinkError | Exception ex) {
             mLog.info("Unable to open SDRplay API (make sure the API is in your PATH", ex);
