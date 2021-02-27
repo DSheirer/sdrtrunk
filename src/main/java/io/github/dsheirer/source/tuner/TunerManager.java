@@ -41,6 +41,8 @@ import io.github.dsheirer.source.tuner.usb.USBMasterProcessor;
 import io.github.sammy1am.sdrplay.ApiException;
 import io.github.sammy1am.sdrplay.SDRplayAPI;
 import io.github.sammy1am.sdrplay.SDRplayDevice;
+import io.github.sammy1am.sdrplay.jnr.SDRplayAPIJNR.DbgLvl_t;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;

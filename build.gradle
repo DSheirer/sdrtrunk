@@ -31,14 +31,15 @@ repositories {
     jcenter()
     mavenCentral()
     maven { url "https://jitpack.io" }
+	}
 }
 
 version = '0.5.0-alpha6'
 sourceCompatibility = '13'
 
 sourceSets {
-    main.java.srcDirs 'src/main'
-    test.java.srcDirs 'src/test'
+    main.java.srcDirs 'src/main/java'
+    test.java.srcDirs 'src/main/test'
 }
 
 test {
@@ -95,7 +96,8 @@ dependencies {
     implementation 'pl.edu.icm:JLargeArrays:1.6'
     
     // SDRplay support
-    implementation 'io.github.Sammy1Am:SDRplayJava:0.7.0'
+    implementation 'io.github.sammy1am:SDRplayJava:0.8.0'
+    implementation 'com.github.jnr:jnr-ffi:2.2.0'
 
     //These must remain as compile options to ensure they are included in the build to produce multi-OS images
     compile "org.openjfx:javafx-base:15:win"

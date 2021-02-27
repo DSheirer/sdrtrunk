@@ -32,6 +32,8 @@ import io.github.sammy1am.sdrplay.ApiException;
 import io.github.sammy1am.sdrplay.ApiException.AlreadyInitialisedException;
 import io.github.sammy1am.sdrplay.ApiException.NotInitialisedException;
 import io.github.sammy1am.sdrplay.EventParameters;
+import io.github.sammy1am.sdrplay.EventParameters.GainCbParam;
+import io.github.sammy1am.sdrplay.EventParameters.PowerOverloadCbParam;
 import io.github.sammy1am.sdrplay.SDRplayDevice;
 import io.github.sammy1am.sdrplay.StreamsReceiver;
 import io.github.sammy1am.sdrplay.jnr.CallbackFnsT;
@@ -55,11 +57,13 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     private final static Logger mLog = LoggerFactory.getLogger(SDRplayTunerController.class);
 
     public static final long MIN_FREQUENCY = 10_000_000l;
-    public static final long MAX_FREQUENCY = 6_000_000_000l;
+    public static final long MAX_FREQUENCY = 2_000_000_000l;
     public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
     private final SDRplayDevice mDevice;
+    private GainChangeListener mUIGainChangeListener;
+    private OverloadListener mUIOverloadListener;
 
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SDRplayTunerController");
     
@@ -69,9 +73,14 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     {
         super(MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
         mDevice = device;
-        	
+        
+        //tell device to send SDRPlay events to this object's implementation of StreamsReceiver
         mDevice.setStreamsReceiver(this);
-        //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Verbose);
+        
+        mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Verbose);
+        //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Error);
+        //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Message);
+        //mDevice.debugEnable(SDRplayAPIJNR.DbgLvl_t.DbgLvl_Warning);
         
         mFrequencyController.setFrequency((long) mDevice.getRfHz());
         mFrequencyController.setSampleRate((int) mDevice.getSampleRate());
@@ -81,10 +90,26 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         //Set Local Oscillator to Auto - only used for AM?
         mDevice.setLoMode(LoModeT.LO_Auto);
         
-        //Set DC Offset
-        mDevice.setDcOffset(true);
+        mUIGainChangeListener = new GainChangeListener() {};
+        mUIOverloadListener = new OverloadListener() {};
         
         
+    }
+    
+    public interface GainChangeListener {
+    	default void gainChange (GainCbParam params) {}
+    }
+    
+    public void addGainChangeListener(GainChangeListener gainL) {
+    	this.mUIGainChangeListener = gainL;
+    }
+    
+    public interface OverloadListener {
+    	default void overloadEvent(PowerOverloadCbParam ol) {}
+    }
+    
+    public void addOverloadListener(OverloadListener ovrLdListener) {
+    	this.mUIOverloadListener = ovrLdListener;
     }
 
     /**
@@ -176,16 +201,6 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
             setFrequencyCorrection(sdrPlayConfig.getFrequencyCorrection());
             getFrequencyErrorCorrectionManager().setEnabled(sdrPlayConfig.getAutoPPMCorrectionEnabled());
             
-            //setIfType(sdrPlayConfig.getIfType());
-            //setIFBandwidth(sdrPlayConfig.getBwType());
-            
-            //NDH added
-            setRfNotch(sdrPlayConfig.getRfNotch());
-            setDABNotch(sdrPlayConfig.getDABNotch());
-            //setAGCEnabled(sdrPlayConfig.getAGCEnabled());
-            //setDecFactor(sdrPlayConfig.getDecFactor());
-            
-            
         }
         else
         {
@@ -193,7 +208,7 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
                 + "type [" + config.getClass() + "]");
         }
     }
-
+    
     /**
      * Sample Rate
      * Sets the Sample Rate and the IF Bandwidth to match.
@@ -263,7 +278,7 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
                 mDevice.uninit();
             } catch (ApiException ae) {
                 // Report this, but no need to throw (we're trying to uninitialize anyway)
-                mLog.warn("Exception will uninitializing", ae);
+                mLog.warn("Exception while uninitializing", ae);
             }
         }
     }
@@ -303,6 +318,14 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
         return mDevice.getLNAState();
     }
     
+    public void setIFGain(int ifGain) {
+    	mDevice.setIFGain(ifGain);
+    }
+    
+    public int getIFGain() {
+    	return mDevice.getIFGain();
+    }
+    
     public boolean getRfNotch() {
     		return  mDevice.getRfNotch();
     }
@@ -334,6 +357,17 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
     	mDevice.setDecFactor(newDecFactor);
     }
     
+    public float getTotalGain() {
+    	return mDevice.getTotalGain();
+    }
+    
+    public int getAntenna() {
+    	return mDevice.getAntenna();
+    }
+    public void setAntenna(int antSel) {
+    	mDevice.setAntenna(antSel);
+    }
+    
     @Override
     public void receiveStreamA(short[] xi, short[] xq, CallbackFnsT.StreamCbParamsT params, int numSamples, int reset) {
         ReusableComplexBuffer buffer = mReusableComplexBufferQueue.getBuffer(numSamples*2);
@@ -352,13 +386,19 @@ public class SDRplayTunerController extends TunerController implements StreamsRe
 
     @Override
     public void receiveEvent(EventT eventId, TunerParamsT.TunerSelectT tuner, EventParameters params) {
-        switch (eventId) {
+        switch (eventId) 
+        {
             case PowerOverloadChange:
-                mLog.info("Power Overload: " + params.powerOverloadParams.powerOverloadChangeType.toString());
                 mDevice.acknowledgeOverload();
+                mUIOverloadListener.overloadEvent(params.powerOverloadParams);
+                //mLog.info("Power Overload: " + params.powerOverloadParams.powerOverloadChangeType.toString());
                 break;
+            case GainChange:
+            	mUIGainChangeListener.gainChange(params.gainParams);
+            	//mLog.info("Gain Change:" + Double.toString( params.gainParams.currGain ));
+            	break;
             default:
-                mLog.info("Event: " + eventId);
+                mLog.info("Event: " + eventId.name());
         }
     }
 }

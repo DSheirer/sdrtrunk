@@ -38,12 +38,14 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     private boolean mAGCEnabled = false;
     
     private int mLNAState = 0;
+    private int mIFGain = 20;
     
  
 	private boolean mRfNotch = true;
 	private boolean mDABNotch = true;
 	private boolean mBiasT = false;
 	private int mDecFactor = 1;
+	private int mAntenna = 0;
     
 
     /**
@@ -74,6 +76,16 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     public void setLNAState(int lnaState)
     {
         mLNAState = lnaState;
+    }
+    
+    @JacksonXmlProperty(isAttribute = true, localName = "if_gain")
+    public int getIFGain() {
+    	return mIFGain;
+    }
+    
+    public void setIFGain(int ifGain)
+    {
+    	mIFGain = ifGain;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "frequency_correction")
@@ -197,5 +209,13 @@ public class SDRplayTunerConfiguration extends TunerConfiguration
     }
     public void setDecFactor(int newDecFactor) {
     	mDecFactor = newDecFactor;
+    }
+    
+    @JacksonXmlProperty(isAttribute = true, localName = "ant_select")
+    public int getAntenna() {
+    	return mAntenna;
+    }
+    public void setAntenna(int antSel) {
+    	mAntenna = antSel;
     }
 }
