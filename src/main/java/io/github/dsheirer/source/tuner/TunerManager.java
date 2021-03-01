@@ -35,7 +35,14 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832Tuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController;
+import io.github.dsheirer.source.tuner.sdrplay.SDRplayTuner;
+import io.github.dsheirer.source.tuner.sdrplay.SDRplayTunerController;
 import io.github.dsheirer.source.tuner.usb.USBMasterProcessor;
+import io.github.sammy1am.sdrplay.ApiException;
+import io.github.sammy1am.sdrplay.SDRplayAPI;
+import io.github.sammy1am.sdrplay.SDRplayDevice;
+import io.github.sammy1am.sdrplay.jnr.SDRplayAPIJNR.DbgLvl_t;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
@@ -58,7 +65,8 @@ public class TunerManager
     private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
     private Map<Integer,List<Tuner>> mUSBBusTunerMap = new TreeMap<>();
-
+    private static final short SDRPLAY_VENDOR_ID = 0x1DF7;
+    private boolean mSDRplayTunerFound = false;
     /**
      * Application-wide LibUSB timeout processor for transfer buffers.  All classes that need to use USB transfer
      * buffers can register with this processor and the processor will auto-start and auto-stop while USB transfer
@@ -101,9 +109,18 @@ public class TunerManager
     }
 
     /**
+     * Loads all supported tuners
+     */
+    private void initTuners() {
+        initUSBTuners();
+        if(mSDRplayTunerFound)
+            initSDRplayTuners();
+    }
+    
+    /**
      * Loads all USB tuners and USB/Mixer tuner devices
      */
-    private void initTuners()
+    private void initUSBTuners()
     {
         DeviceList deviceList = new DeviceList();
 
@@ -157,6 +174,8 @@ public class TunerManager
                 sb.append(String.format("%04X", descriptor.idProduct()));
                 sb.append("]");
 
+                mSDRplayTunerFound = descriptor.idVendor() == SDRPLAY_VENDOR_ID ? true : mSDRplayTunerFound;
+
                 if(status.isLoaded())
                 {
                     Tuner tuner = status.getTuner();
@@ -188,6 +207,57 @@ public class TunerManager
         LibUsb.freeDeviceList(deviceList, true);
     }
 
+    /**
+     * Loads all SDRplayAPI Tuners
+     */
+    private void initSDRplayTuners()
+    {   
+        
+        
+        try {
+            mLog.info("Found SDRPlay Device: Initializing SDRPlay API");
+            SDRplayAPI.open(); // Open API
+        } catch (UnsatisfiedLinkError | Exception ex) {
+            mLog.info("Unable to open SDRplay API (make sure the API is in your PATH", ex);
+            return;
+        }
+        
+        List<SDRplayDevice> devices = new ArrayList<>();
+        
+        try {
+            mLog.info("SDRplay API Version: " + SDRplayAPI.getApiVersion());
+            SDRplayAPI.lockDeviceApi(); // Lock device API (so we don't conflict with other apps
+            devices = SDRplayAPI.getDevices(16); // TODO: Why 16 max?
+
+            /* Select all the devices we found (this reserves them for our app,
+            and also loads their device parameters from the API.
+            */
+            for (SDRplayDevice device : devices) {
+                device.select();
+            } 
+        } finally {
+            // Now that we've selected all our devices, unlock the API.
+            try {
+                SDRplayAPI.unlockDeviceApi();
+            } catch (ApiException ae) {
+                mLog.warn("Exception unlocking SDRplay API", ae);
+            }
+        }
+
+        for (SDRplayDevice device : devices) {
+            try {
+            SDRplayTunerController tunerController = new SDRplayTunerController(device);
+            SDRplayTuner tuner = new SDRplayTuner(tunerController, mUserPreferences);
+            mTunerModel.addTuner(tuner);
+            
+            mLog.info("Loaded SDRplayTuner " + tuner.getTunerClass() + " Serial No: " + tuner.getUniqueID());
+            
+            } catch (SourceException se) {
+                mLog.warn("Unable to load SDRplayTuner SerNo: " + device.getSerialNumber());
+            }
+        }
+    }
+    
     private static String getDeviceClass(byte deviceClass)
     {
         switch(deviceClass)
