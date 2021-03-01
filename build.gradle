@@ -31,7 +31,6 @@ repositories {
     jcenter()
     mavenCentral()
     maven { url "https://jitpack.io" }
-	}
 }
 
 version = '0.5.0-alpha6'
