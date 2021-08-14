@@ -28,7 +28,7 @@ import io.github.dsheirer.audio.convert.MP3Setting;
 public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
 {
     private IBroadcastMetadataUpdater mMetadataUpdater;
-    private AliasModel mAliasModel;
+    protected AliasModel mAliasModel;
 
     public IcecastAudioBroadcaster(BroadcastConfiguration broadcastConfiguration, InputAudioFormat inputAudioFormat,
                                    MP3Setting mp3Setting, AliasModel aliasModel)

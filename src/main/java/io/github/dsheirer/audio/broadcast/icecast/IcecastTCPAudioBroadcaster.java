@@ -21,9 +21,11 @@ package io.github.dsheirer.audio.broadcast.icecast;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.icecast.codec.IcecastCodecFactory;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastMetadata;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
@@ -39,13 +41,14 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 {
     private final static Logger mLog = LoggerFactory.getLogger(IcecastTCPAudioBroadcaster.class);
-    private final static String TERMINATOR = "\r\n";
+    private final static String TERMINATOR = "\n";
     private final static String SEPARATOR = ":";
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 3000; //3 seconds
     private static final long CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS = 5000; //5 seconds
@@ -78,11 +81,35 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
     {
         if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
-            mStreamingSession.write(audio);
+            if(mInlineActive)
+            {
+                byte[] metadata = IcecastMetadata.formatInline(IcecastMetadata.getTitle(identifierCollection, mAliasModel)).getBytes();
+                if (mInlineRemaining == -1)
+                {
+                    mInlineRemaining = mInlineInterval;
+                }
+                int audioOffset = 0;
+                while(audioOffset < audio.length)
+                {
+                    byte[] chunk = Arrays.copyOfRange(audio, audioOffset, Math.min(audioOffset + mInlineRemaining, audio.length));
+                    mInlineRemaining -= chunk.length;
+                    audioOffset += chunk.length;
+                    mStreamingSession.write(chunk);
+                    if(mInlineRemaining == 0)
+                    {
+                        mInlineRemaining = mInlineInterval;
+                        mStreamingSession.write(metadata);
+                    }
+                }
+            }
+            else
+            {
+                mStreamingSession.write(audio);
+            }
         }
     }
 
@@ -238,7 +265,18 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     .append(getConfiguration().getDescription()).append(TERMINATOR);
             }
 
-            sb.append(TERMINATOR).append(TERMINATOR);
+            if(getConfiguration().hasInline())
+            {
+                mInlineActive = true;
+                mInlineInterval = getConfiguration().getInlineInterval();
+                sb.append(IcecastHeader.METAINT.getValue()).append(SEPARATOR)
+                    .append(String.valueOf(mInlineInterval))
+                    .append(TERMINATOR);
+            }
+            else
+            {
+                mInlineActive = false;
+            }
 
             session.write(sb.toString());
         }

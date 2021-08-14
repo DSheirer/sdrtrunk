@@ -23,6 +23,8 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastMetadata;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -73,6 +75,12 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      */
     public void update(IdentifierCollection identifierCollection)
     {
+        if(mIcecastConfiguration.hasInline())
+        {
+            // Never send out-of-band metadata if inline metadata is enabled.
+            return;
+        }
+
         StringBuilder sb = new StringBuilder();
 
         try
@@ -84,7 +92,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             sb.append("/admin/metadata?mode=updinfo&mount=");
             sb.append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
             sb.append("&charset=UTF%2d8");
-            sb.append("&song=").append(URLEncoder.encode(getSong(identifierCollection), UTF8));
+            sb.append("&song=").append(URLEncoder.encode(IcecastMetadata.getTitle(identifierCollection, mAliasModel), UTF8));
         }
         catch(UnsupportedEncodingException uee)
         {
@@ -157,82 +165,4 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
         }
     }
 
-    /**
-     * Creates the song information for a metadata update
-     */
-    private String getSong(IdentifierCollection identifierCollection)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        if(identifierCollection != null)
-        {
-            AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
-
-            Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
-
-            if(to == null)
-            {
-                to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
-            }
-
-            if(to == null)
-            {
-                List<Identifier> toIdentifiers = identifierCollection.getIdentifiers(Role.TO);
-                if(!toIdentifiers.isEmpty())
-                {
-                    to = toIdentifiers.get(0);
-                }
-            }
-
-            if(to != null)
-            {
-                sb.append("TO:").append(to);
-
-                List<Alias> aliases = aliasList.getAliases(to);
-
-                if(aliases != null && !aliases.isEmpty())
-                {
-                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
-                }
-            }
-            else
-            {
-                sb.append("TO:UNKNOWN");
-            }
-
-            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
-
-            if(from == null)
-            {
-                List<Identifier> fromIdentifiers = identifierCollection.getIdentifiers(Role.FROM);
-
-                if(!fromIdentifiers.isEmpty())
-                {
-                    from = fromIdentifiers.get(0);
-                }
-            }
-
-            if(from != null)
-            {
-                sb.append(" FROM:").append(from);
-
-                List<Alias> aliases = aliasList.getAliases(from);
-
-                if(aliases != null && !aliases.isEmpty())
-                {
-                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
-                }
-            }
-            else
-            {
-                sb.append(" FROM:UNKNOWN");
-            }
-        }
-        else
-        {
-            sb.append("Scanning ....");
-        }
-
-        return sb.toString();
-    }
 }

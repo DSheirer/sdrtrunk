@@ -20,9 +20,11 @@ package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastMetadata;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
@@ -42,6 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,14 +83,41 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
     {
         if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
             IoBuffer buffer = IoBuffer.allocate(audio.length);
-            buffer.put(audio);
-            buffer.flip();
 
+            if(mInlineActive)
+            {
+                byte[] metadata = IcecastMetadata.formatInline(IcecastMetadata.getTitle(identifierCollection, mAliasModel)).getBytes();
+                buffer.setAutoExpand(true);
+                if (mInlineRemaining == -1)
+                {
+                    mInlineRemaining = mInlineInterval;
+                }
+                int audioOffset = 0;
+                while(audioOffset < audio.length)
+                {
+                    byte[] chunk = Arrays.copyOfRange(audio, audioOffset, Math.min(audioOffset + mInlineRemaining, audio.length));
+                    mInlineRemaining -= chunk.length;
+                    audioOffset += chunk.length;
+                    buffer.put(chunk);
+                    if(mInlineRemaining == 0)
+                    {
+                        mInlineRemaining = mInlineInterval;
+                        buffer.put(metadata);
+                    }
+                }
+                buffer.shrink();
+            }
+            else
+            {
+                buffer.put(audio);
+            }
+
+            buffer.flip();
             mStreamingSession.write(buffer);
         }
     }
@@ -237,6 +267,17 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 if(getConfiguration().hasBitRate())
                 {
                     mHTTPHeaders.put(IcecastHeader.BITRATE.getValue(), String.valueOf(getConfiguration().getBitRate()));
+                }
+
+                if(getConfiguration().hasInline())
+                {
+                    mInlineActive = true;
+                    mInlineInterval = getConfiguration().getInlineInterval();
+                    mHTTPHeaders.put(IcecastHeader.METAINT.getValue(), String.valueOf(mInlineInterval));
+                }
+                else
+                {
+                    mInlineActive = false;
                 }
             }
 

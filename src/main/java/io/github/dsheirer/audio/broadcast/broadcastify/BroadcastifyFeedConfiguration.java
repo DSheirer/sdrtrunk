@@ -54,6 +54,7 @@ public class BroadcastifyFeedConfiguration extends IcecastTCPConfiguration
         setBitRate(16);
         setChannels(1);
         setSampleRate(8000);
+        setInline(true);
     }
 
     public static BroadcastifyFeedConfiguration from(UserFeedBroadcast userFeedBroadcast)
@@ -86,9 +87,9 @@ public class BroadcastifyFeedConfiguration extends IcecastTCPConfiguration
         copy.setName(getName());
         copy.setHost(getHost());
         copy.setPort(getPort());
+        copy.setInline(getInline());
         copy.setPassword(getPassword());
         copy.setDelay(getDelay());
-
         copy.setEnabled(false);
 
         //Icecast Configuration Parameters
