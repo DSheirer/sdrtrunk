@@ -24,7 +24,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.lang.Float;
+import java.lang.Math;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AudioUtils
@@ -78,4 +81,43 @@ public class AudioUtils
 
         return stream.toByteArray();
     }
+
+    /**
+     * Normalize audio samples
+     */
+    public static List<float[]> normalize(List<float[]> audioBuffers)
+    {
+        float targetMax = 0.95f; // -0.44dBFS
+        float max = 0.1f; // Initialize at 0.1 (-20dBFS) to limit maximum gain
+
+        for(float[] audioBuffer: audioBuffers)
+        {
+            for(float value: audioBuffer)
+            {
+                float newMax = Math.max(max, Math.abs(value));
+                if(!Float.isNaN(newMax))
+                {
+                    max = newMax;
+                }
+            }
+        }
+
+        if(targetMax == max)
+        {
+            return audioBuffers;
+        }
+
+        float gain = targetMax / max;
+
+        for(float[] audioBuffer: audioBuffers)
+        {
+            for(int i=0;i<audioBuffer.length;i++)
+            {
+                audioBuffer[i] *= gain;
+            }
+        }
+
+        return audioBuffers;
+    }
+
 }

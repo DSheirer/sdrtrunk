@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.audio.convert;
 
+import io.github.dsheirer.audio.AudioUtils;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.sample.ConversionUtils;
 import net.sourceforge.lame.lowlevel.LameEncoder;
@@ -73,6 +74,7 @@ public class MP3AudioConverter implements IAudioConverter
     public List<byte[]> convert(List<float[]> audioPackets)
     {
         List<byte[]> converted = new ArrayList<>();
+        audioPackets = AudioUtils.normalize(audioPackets);
 
         if(mResampler != null)
         {
