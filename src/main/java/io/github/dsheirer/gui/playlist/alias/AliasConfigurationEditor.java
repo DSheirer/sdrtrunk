@@ -42,7 +42,6 @@ import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -178,9 +177,7 @@ public class AliasConfigurationEditor extends SplitPane
 
             //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
             alert.setResizable(true);
-            alert.onShownProperty().addListener(e -> {
-                Platform.runLater(() -> alert.setResizable(false));
-            });
+            alert.onShownProperty().addListener(e -> Platform.runLater(() -> alert.setResizable(false)));
 
             Optional<ButtonType> result = alert.showAndWait();
 
@@ -478,32 +475,7 @@ public class AliasConfigurationEditor extends SplitPane
             TableColumn<Alias,Boolean> errorsColumn = new TableColumn<>("Error");
             errorsColumn.setPrefWidth(80);
             errorsColumn.setCellValueFactory(new PropertyValueFactory<>("overlap"));
-            errorsColumn.setCellFactory(param -> {
-                TableCell<Alias,Boolean> tableCell = new TableCell<>()
-                {
-                    @Override
-                    protected void updateItem(Boolean item, boolean empty)
-                    {
-                        setAlignment(Pos.CENTER);
-                        setText(null);
-
-                        if(empty || item == null || !item)
-                        {
-                            setGraphic(null);
-                        }
-                        else
-                        {
-                            IconNode iconNode = new IconNode(FontAwesome.EXCLAMATION_CIRCLE);
-                            iconNode.setFill(Color.RED);
-                            setGraphic(iconNode);
-                            setText("Identifier Overlap");
-                        }
-                    }
-                };
-
-                return tableCell;
-            });
-
+            errorsColumn.setCellFactory(param -> new TableCell<>());
 
             mAliasTableView.getColumns().addAll(nameColumn, groupColumn, colorColumn, iconColumn, priorityColumn,
                 recordColumn, streamColumn, idsColumn, errorsColumn);
