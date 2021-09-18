@@ -37,6 +37,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     private String mGenre;
     private String mURL;
     private boolean mPublic = true;
+    private boolean mIsTlsStatus;
 
     public ShoutcastV2Configuration()
     {
@@ -63,6 +64,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
         copy.setPassword(getPassword());
         copy.setDelay(getDelay());
         copy.setEnabled(false);
+        copy.setTLSEnabled(isTlsEnabled());
 
         //Shoutcast V2 Configuration Parameters
         copy.setStreamID(getStreamID());
@@ -204,4 +206,15 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     {
         return mURL != null && !mURL.isEmpty();
     }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "tls_enabled")
+    public boolean isTlsEnabled()
+    {
+        return mIsTlsStatus;
+    }
+
+    public void setTlsStatus(boolean tlsStatus){
+        this.mIsTlsStatus = tlsStatus;
+    }
+
 }

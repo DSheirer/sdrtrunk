@@ -45,6 +45,7 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     private int mChannels = 1;
     private int mSampleRate = 8000;
     private String mURL;
+    private boolean mIsTlsStatus;
 
     public IcecastConfiguration(BroadcastFormat format)
     {
@@ -258,6 +259,16 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     public String getURL()
     {
         return mURL;
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "tls_enabled")
+    public boolean isTlsEnabled()
+    {
+        return mIsTlsStatus;
+    }
+
+    public void setTlsStatus(boolean tlsStatus){
+        this.mIsTlsStatus = tlsStatus;
     }
 
     /**

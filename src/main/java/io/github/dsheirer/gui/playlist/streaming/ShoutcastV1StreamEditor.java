@@ -87,6 +87,7 @@ public class ShoutcastV1StreamEditor extends AbstractStreamEditor<ShoutcastV1Con
             getItem().setDescription(getDescriptionTextField().getText());
             getItem().setGenre(getGenreTextField().getText());
             getItem().setPublic(getPublicToggleSwitch().isSelected());
+            getItem().setTlsStatus(getTLSSwitch().isSelected());
         }
 
         super.save();
@@ -149,6 +150,14 @@ public class ShoutcastV1StreamEditor extends AbstractStreamEditor<ShoutcastV1Con
 
             GridPane.setConstraints(getPortTextField(), 3, 2);
             mEditorPane.getChildren().add(getPortTextField());
+
+            Label tlsLabel = new Label("SSL/TLS");
+            GridPane.setHalignment(tlsLabel, HPos.RIGHT);
+            GridPane.setConstraints(tlsLabel, 4, 2);
+            mEditorPane.getChildren().add(tlsLabel);
+
+            GridPane.setConstraints(getTLSSwitch(), 5, 2);
+            mEditorPane.getChildren().add(getTLSSwitch());
 
             Label passwordLabel = new Label("Password");
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
