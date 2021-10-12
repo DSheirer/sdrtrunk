@@ -91,6 +91,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private final static Logger mLog = LoggerFactory.getLogger(P25TrafficChannelManager.class);
     public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
     public static final String MAX_TRAFFIC_CHANNELS_EXCEEDED = "MAX TRAFFIC CHANNELS EXCEEDED";
+    public static final String IGNORING_ENCRYPTED_CHANNELS = "IGNORING ENCRYPTED CHANNELS";
 
     private Queue<Channel> mAvailablePhase1TrafficChannelQueue = new ConcurrentLinkedQueue<>();
     private List<Channel> mManagedPhase1TrafficChannels;
@@ -348,6 +349,13 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         if(!mAllocatedTrafficChannelMap.containsKey(frequency))
         {
+            if (serviceOptions != null && serviceOptions.isEncrypted()) {
+                channelGrantEvent.setDetails(IGNORING_ENCRYPTED_CHANNELS);
+                channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
+                mLog.debug("Channel is encrypted. Ignoring. - " + channelGrantEvent);
+                return;
+            }
+
             Channel trafficChannel = mAvailablePhase1TrafficChannelQueue.poll();
 
             if(trafficChannel == null)
@@ -506,6 +514,13 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel.getDownlinkFrequency()))
         {
+            if (serviceOptions != null && serviceOptions.isEncrypted()) {
+                channelGrantEvent.setDetails(IGNORING_ENCRYPTED_CHANNELS);
+                channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
+                mLog.debug("Channel is encrypted. Ignoring. - " + channelGrantEvent);
+                return;
+            }
+
             Channel trafficChannel = mAvailablePhase2TrafficChannelQueue.poll();
 
             if(trafficChannel == null)
