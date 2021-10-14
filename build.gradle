@@ -135,6 +135,10 @@ jar {
     }
 }
 
+run {
+    jvmArgs = ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED']
+}
+
 /**
  * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the 'bin'
  * directory within a JDK for each of the specified architectures.  These JDKs are used by the runtime and runtimeZip
