@@ -111,6 +111,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
     private Listener<IMessage> mMessageListener;
 
     private boolean mIgnoreDataCalls;
+    private boolean mIgnoreEncryptedChannels;
 
     /**
      * Constructs an instance.
@@ -123,6 +124,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         if(parentChannel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1)
         {
             mIgnoreDataCalls = ((DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration()).getIgnoreDataCalls();
+            mIgnoreEncryptedChannels = ((DecodeConfigP25Phase1)parentChannel.getDecodeConfiguration()).getIgnoreEncryptedChannels();
         }
 
         createPhase1TrafficChannels();
@@ -349,7 +351,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         if(!mAllocatedTrafficChannelMap.containsKey(frequency))
         {
-            if (serviceOptions != null && serviceOptions.isEncrypted()) {
+            if (mIgnoreEncryptedChannels && serviceOptions != null && serviceOptions.isEncrypted()) {
                 channelGrantEvent.setDetails(IGNORING_ENCRYPTED_CHANNELS);
                 channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
                 mLog.debug("Channel is encrypted. Ignoring. - " + channelGrantEvent);
@@ -514,7 +516,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
         //Allocate a traffic channel for the downlink frequency if one isn't already allocated
         if(!mAllocatedTrafficChannelMap.containsKey(apco25Channel.getDownlinkFrequency()))
         {
-            if (serviceOptions != null && serviceOptions.isEncrypted()) {
+            if (mIgnoreEncryptedChannels && serviceOptions != null && serviceOptions.isEncrypted()) {
                 channelGrantEvent.setDetails(IGNORING_ENCRYPTED_CHANNELS);
                 channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
                 mLog.debug("Channel is encrypted. Ignoring. - " + channelGrantEvent);

@@ -38,6 +38,7 @@ import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderFactory;
@@ -287,6 +288,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private void startProcessing(ChannelStartProcessingRequest request) throws ChannelException
     {
         Channel channel = request.getChannel();
+        boolean ignoreMutedTalkgroups = false;
+        if (channel.getDecodeConfiguration() instanceof DecodeConfigP25Phase1)
+        {
+            ignoreMutedTalkgroups = ((DecodeConfigP25Phase1)channel.getDecodeConfiguration()).getIgnoreMutedTalkgroups();
+        }
 
         if(isProcessing(channel))
         {
@@ -306,7 +312,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             mLog.debug("Error obtaining source for channel [" + channel.getName() + "]", se);
         }
 
-        if(request.hasIdentifierCollection())
+        if(ignoreMutedTalkgroups && request.hasIdentifierCollection())
         {
             Identifier identifier = request.getIdentifierCollection().getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
             if (identifier != null)
@@ -327,10 +333,6 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     throw new ChannelException("Muted Talkgroup");
                 }
             }
-        }
-        else
-        {
-            mLog.error("Unexpectedly request does not have an identifier collection");
         }
 
         if(source == null)
