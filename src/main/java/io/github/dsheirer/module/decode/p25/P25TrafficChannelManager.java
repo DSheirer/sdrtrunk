@@ -354,7 +354,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             if (mIgnoreEncryptedChannels && serviceOptions != null && serviceOptions.isEncrypted()) {
                 channelGrantEvent.setDetails(IGNORING_ENCRYPTED_CHANNELS);
                 channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
-                mLog.debug("Channel is encrypted. Ignoring. - " + channelGrantEvent);
+                mLog.debug("Channel is encrypted. Ignoring. - {}", channelGrantEvent);
                 return;
             }
 
@@ -519,7 +519,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             if (mIgnoreEncryptedChannels && serviceOptions != null && serviceOptions.isEncrypted()) {
                 channelGrantEvent.setDetails(IGNORING_ENCRYPTED_CHANNELS);
                 channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
-                mLog.debug("Channel is encrypted. Ignoring. - " + channelGrantEvent);
+                mLog.debug("Channel is encrypted. Ignoring. - {}", channelGrantEvent);
                 return;
             }
 

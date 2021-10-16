@@ -32,7 +32,11 @@ import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
 import io.github.dsheirer.controller.channel.event.PreloadDataContent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.identifier.*;
+import io.github.dsheirer.identifier.Form;
+import io.github.dsheirer.identifier.Identifier;
+import io.github.dsheirer.identifier.IdentifierClass;
+import io.github.dsheirer.identifier.IdentifierUpdateNotification;
+import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.decoder.DecoderLogicalChannelNameIdentifier;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
@@ -55,7 +59,10 @@ import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
@@ -322,7 +329,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
                 Optional<Alias> mutedAlias = aliasesFromTalkgroupIdentifier.stream().filter(alias -> alias.priorityProperty().getValue() < 0).findAny();
                 if (mutedAlias.isPresent()) {
-                    mLog.debug("Not processing channel due to talkgroup ID " + identifier + " because of muted alias " + mutedAlias.get() + " via " + aliasList.getName());
+                    mLog.debug("Not processing channel due to talkgroup ID {} because of muted alias {} via {}.", identifier, mutedAlias.get(), aliasList.getName());
 
                     //This has to be done on the FX event thread when the playlist editor is constructed
                     Platform.runLater(() -> channel.setProcessing(false));
