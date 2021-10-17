@@ -99,9 +99,11 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         List<Object> cells = new ArrayList<>();
 
         cells.add(mTimestampFormat.format(new Date(event.getTimeStart())));
-        cells.add(event.getDuration() > 0 ? event.getDuration() : null);
+        cells.add(event.getDuration() > 0 ? event.getDuration() : "");
         cells.add(event.getProtocol());
-        cells.add(event.getEventDescription());
+
+        String description = event.getEventDescription();
+        cells.add(description != null ? description : "");
 
         List<Identifier> fromIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.FROM);
         if(fromIdentifiers != null && !fromIdentifiers.isEmpty())
@@ -110,7 +112,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         }
         else
         {
-            cells.add(null);
+            cells.add("");
         }
 
         List<Identifier> toIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.TO);
@@ -129,15 +131,16 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
             }
             else
             {
-                cells.add(null);
+                cells.add("");
             }
         }
         else
         {
-            cells.add(null);
+            cells.add("");
         }
 
-        cells.add(event.getChannelDescriptor());
+        IChannelDescriptor descriptor = event.getChannelDescriptor();
+        cells.add(descriptor != null ? descriptor : "");
 
         Identifier frequency = event.getIdentifierCollection()
             .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
@@ -150,7 +153,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         }
         else
         {
-            cells.add(null);
+            cells.add("");
         }
 
         if(event.hasTimeslot())
@@ -159,7 +162,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         }
         else
         {
-            cells.add(null);
+            cells.add("");
         }
 
         String details = event.getDetails();
