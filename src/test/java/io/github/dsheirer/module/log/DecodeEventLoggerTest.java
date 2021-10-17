@@ -26,46 +26,68 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class DecodeEventLoggerTest {
+    IChannelDescriptor channelDescriptor = APCO25Channel.create(98765, 1);
+
+    APCO25Talkgroup fromIdentifier = new APCO25Talkgroup(123, Role.FROM);
+    APCO25Talkgroup toIdentifier = new APCO25Talkgroup(456, Role.TO);
+    FrequencyConfigurationIdentifier freqIdentifier = new FrequencyConfigurationIdentifier(859562500L);
+    DecoderTypeConfigurationIdentifier decoderIdentifier = new DecoderTypeConfigurationIdentifier(DecoderType.P25_PHASE1);
+    AliasListConfigurationIdentifier aliasListIdentifier = new AliasListConfigurationIdentifier("My Alias List");
+    AliasModel aliasModel = new AliasModel();
+
+    Path logDirectory = Paths.get(System.getProperty("java.io.tmpdir"), "sdr_trunk_tests");
 
     @BeforeEach
     void setUp() {
+        aliasModel.addAliasList(aliasListIdentifier.getValue());
     }
 
     @AfterEach
     void tearDown() {
     }
 
-    @Test
-    void test_receive_writesToCsv() {
-        IChannelDescriptor channelDescriptor = APCO25Channel.create(98765, 1);
-
-        APCO25Talkgroup fromIdentifier = new APCO25Talkgroup(123, Role.FROM);
-        APCO25Talkgroup toIdentifier = new APCO25Talkgroup(456, Role.TO);
-        FrequencyConfigurationIdentifier freqIdentifier = new FrequencyConfigurationIdentifier(859562500L);
-        DecoderTypeConfigurationIdentifier decoderIdentifier = new DecoderTypeConfigurationIdentifier(DecoderType.P25_PHASE1);
-        AliasListConfigurationIdentifier aliasListIdentifier = new AliasListConfigurationIdentifier("My Alias List");
-        IdentifierCollection identifierCollection = new IdentifierCollection(Arrays.asList(
+    IdentifierCollection buildIdentifierCollection() {
+        return new IdentifierCollection(Arrays.asList(
                 fromIdentifier,
                 toIdentifier,
                 decoderIdentifier,
                 freqIdentifier,
                 aliasListIdentifier
         ));
+    }
 
-        IDecodeEvent decodeEvent = DecodeEvent.builder(1634428994000L)
+    DecodeEvent.DecodeEventBuilder decodeEventBuilder() {
+        return DecodeEvent.builder(1634428994000L)
                 .channel(channelDescriptor)
-                .identifiers(identifierCollection)
+                .identifiers(buildIdentifierCollection())
                 .duration(111)
                 .protocol(Protocol.APCO25)
                 .eventDescription("DATA_PACKET")
                 .timeslot(2)
-                .details("Some details")
+                .details("Some details");
+    }
+
+    @Test
+    void test_receive_writesToCsv() {
+        IDecodeEvent decodeEvent = decodeEventBuilder().build();
+
+        DecodeEventLogger decodeEventLogger = new DecodeEventLogger(aliasModel, logDirectory, "_foo.txt", 859562500);
+        DecodeEventLogger spy = spy(decodeEventLogger);
+
+        doNothing().when(spy).write(anyString());
+
+        spy.receive(decodeEvent);
+
+        String expectedToCsvString =
+                "\"2021:10:16:20:03:14\",\"111\",\"APCO-25\",\"DATA_PACKET\",\"123\",\" (456)\",\"98765-1\",\"859.562500\",\"TS:2\",\"Some details\"";
+        verify(spy).write(expectedToCsvString);
+    }
+
+    @Test
+    void test_receive_withQuotesAndCommasInDetails_writesToCsv() {
+        IDecodeEvent decodeEvent = decodeEventBuilder()
+                .details("Some details now with \"quotes\" and, to an extent, commas!")
                 .build();
-
-        AliasModel aliasModel = new AliasModel();
-        aliasModel.addAliasList(aliasListIdentifier.getValue());
-
-        Path logDirectory = Paths.get(System.getProperty("java.io.tmpdir"), "sdr_trunk_tests");
 
         DecodeEventLogger decodeEventLogger = new DecodeEventLogger(aliasModel, logDirectory, "_foo.txt", 859562500);
         DecodeEventLogger spy = spy(decodeEventLogger);
