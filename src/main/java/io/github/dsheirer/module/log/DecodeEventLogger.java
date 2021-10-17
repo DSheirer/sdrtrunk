@@ -147,7 +147,7 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
         if(event.hasTimeslot())
         {
-            sb.append(",\"TS:").append(event.getTimeslot());
+            sb.append(",\"TS:").append(event.getTimeslot()).append("\"");
         }
         else
         {
