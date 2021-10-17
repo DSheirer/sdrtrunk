@@ -84,9 +84,9 @@ class DecodeEventLoggerTest {
     }
 
     @Test
-    void test_receive_withQuotesAndCommasInDetails_writesToCsv() {
+    void test_receive_withQuotesInDetails_writesToCsv() {
         IDecodeEvent decodeEvent = decodeEventBuilder()
-                .details("Some details now with \"quotes\" and, to an extent, commas!")
+                .details("Some details now with \"quotes\"!")
                 .build();
 
         DecodeEventLogger decodeEventLogger = new DecodeEventLogger(aliasModel, logDirectory, "_foo.txt", 859562500);
@@ -97,7 +97,25 @@ class DecodeEventLoggerTest {
         spy.receive(decodeEvent);
 
         String expectedToCsvString =
-                "\"2021:10:16:20:03:14\",\"111\",\"APCO-25\",\"DATA_PACKET\",\"123\",\" (456)\",\"98765-1\",\"859.562500\",\"TS:2\",\"Some details\"";
+                "\"2021:10:16:20:03:14\",\"111\",\"APCO-25\",\"DATA_PACKET\",\"123\",\" (456)\",\"98765-1\",\"859.562500\",\"TS:2\",\"Some details now with \"\"quotes\"\"!\"";
+        verify(spy).write(expectedToCsvString);
+    }
+
+    @Test
+    void test_receive_withCommasInDetails_writesToCsv() {
+        IDecodeEvent decodeEvent = decodeEventBuilder()
+                .details("Some details now with, to an extent, commas!")
+                .build();
+
+        DecodeEventLogger decodeEventLogger = new DecodeEventLogger(aliasModel, logDirectory, "_foo.txt", 859562500);
+        DecodeEventLogger spy = spy(decodeEventLogger);
+
+        doNothing().when(spy).write(anyString());
+
+        spy.receive(decodeEvent);
+
+        String expectedToCsvString =
+                "\"2021:10:16:20:03:14\",\"111\",\"APCO-25\",\"DATA_PACKET\",\"123\",\" (456)\",\"98765-1\",\"859.562500\",\"TS:2\",\"Some details now with, to an extent, commas!\"";
         verify(spy).write(expectedToCsvString);
     }
 }
