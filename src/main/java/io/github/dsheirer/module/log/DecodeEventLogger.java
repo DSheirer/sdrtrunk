@@ -33,7 +33,8 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 import io.github.dsheirer.preference.TimestampFormat;
 import io.github.dsheirer.sample.Listener;
-import org.apache.commons.text.StringEscapeUtils;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.QuoteMode;
 
 import java.nio.file.Path;
 import java.text.DecimalFormat;
@@ -41,7 +42,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DecodeEventLogger extends EventLogger implements IDecodeEventListener, Listener<IDecodeEvent>
 {
@@ -49,6 +49,16 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
     private DecimalFormat mFrequencyFormat = new DecimalFormat("0.000000");
     private AliasList mAliasList;
     private AliasModel mAliasModel;
+
+    /**
+     * The CSV format that SDR Trunk will use to write decode event logs
+     * <p>
+     * It uses the standard, default CSV format (RFC 4180 and permitting empty lines) but *always* quoting cells since
+     * that's what SDR Trunk has done previously when hand-crafting CSV rows.
+     */
+    private final CSVFormat mCsvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT)
+            .setQuoteMode(QuoteMode.ALL)
+            .build();
 
     public DecodeEventLogger(AliasModel aliasModel, Path logDirectory, String fileNameSuffix, long frequency)
     {
@@ -155,8 +165,6 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
         String details = event.getDetails();
         cells.add(details != null ? details : "");
 
-        return cells.stream()
-                .map(cell -> StringEscapeUtils.escapeCsv(String.valueOf(cell == null ? "" : cell)))
-                .collect(Collectors.joining(","));
+        return mCsvFormat.format(cells.toArray());
     }
 }
