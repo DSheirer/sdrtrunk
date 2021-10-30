@@ -24,9 +24,7 @@ public class NamingThreadFactory implements ThreadFactory
 
     public NamingThreadFactory( String prefix ) 
     {
-    	SecurityManager s = System.getSecurityManager();
-        
-        mThreadGroup = (s != null)? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+        mThreadGroup = Thread.currentThread().getThreadGroup();
         
         mNamePrefix = prefix + " pool-" + mPoolNumber.getAndIncrement() + "-thread-";
     }
