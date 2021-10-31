@@ -194,6 +194,10 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
                 break;
             case NOTIFICATION_FREQUENCY_ROTATION_FAILURE:
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
+            case NOTIFICATION_CHANNEL_POWER:
+            case NOTIFICATION_SQUELCH_THRESHOLD:
+            case REQUEST_CHANGE_SQUELCH_THRESHOLD:
+            case REQUEST_CURRENT_SQUELCH_THRESHOLD:
                 //Ignore
                 break;
             default:

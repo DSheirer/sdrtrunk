@@ -71,4 +71,15 @@ public class ChannelSpecification
     {
         return mStopFrequency;
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Channel Specification - min sample rate: ").append(mMinimumSampleRate);
+        sb.append(" bandwidth: ").append(mBandwidth);
+        sb.append(" pass: ").append(mPassFrequency);
+        sb.append(" stop: ").append(mStopFrequency);
+        return sb.toString();
+    }
 }

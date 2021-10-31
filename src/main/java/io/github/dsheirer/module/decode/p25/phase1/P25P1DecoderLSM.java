@@ -113,6 +113,9 @@ public class P25P1DecoderLSM extends P25P1Decoder
         //The filter will decrement the user count when finished
         ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
 
+        //Process the buffer for power measurements
+        mPowerMonitor.process(basebandFiltered);
+
         //AGC will decrement the user count when finished
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 

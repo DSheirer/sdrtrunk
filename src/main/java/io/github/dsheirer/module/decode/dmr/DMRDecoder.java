@@ -9,6 +9,7 @@ import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
+import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -50,6 +51,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     protected CostasLoop mCostasLoop;
     protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
     protected DMRMessageFramer mMessageFramer;
+    private PowerMonitor mPowerMonitor = new PowerMonitor();
 
     /**
      * Constructs an instance
@@ -91,6 +93,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
                 getSymbolRate() + " symbol rate)");
         }
 
+        mPowerMonitor.setSampleRate((int)sampleRate);
         mSampleRate = sampleRate;
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
@@ -124,6 +127,9 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     {
         //User accounting of the incoming buffer is handled by the filter
         ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+
+        //Process buffer for power measurements
+        mPowerMonitor.process(basebandFiltered);
 
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
@@ -278,6 +284,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     public void setSourceEventListener(Listener<SourceEvent> listener)
     {
         mSourceEventListener = listener;
+        mPowerMonitor.setSourceEventListener(listener);
     }
 
     /**
@@ -287,6 +294,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     public void removeSourceEventListener()
     {
         mSourceEventListener = null;
+        mPowerMonitor.setSourceEventListener(null);
     }
 
     @Override

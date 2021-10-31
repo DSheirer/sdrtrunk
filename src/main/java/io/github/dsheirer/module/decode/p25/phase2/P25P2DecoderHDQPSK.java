@@ -31,6 +31,7 @@ import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
+import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -119,6 +120,9 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     {
         //User accounting of the incoming buffer is handled by the filter
         ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+
+        //Process the buffer for power measurements
+        mPowerMonitor.process(basebandFiltered);
 
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);

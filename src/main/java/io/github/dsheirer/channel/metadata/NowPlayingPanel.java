@@ -22,6 +22,7 @@ package io.github.dsheirer.channel.metadata;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
+import io.github.dsheirer.gui.power.ChannelPowerPanel;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
@@ -38,6 +39,7 @@ public class NowPlayingPanel extends JPanel
     private ChannelDetailPanel mChannelDetailPanel;
     private DecodeEventPanel mDecodeEventPanel;
     private MessageActivityPanel mMessageActivityPanel;
+    private ChannelPowerPanel mChannelPowerPanel;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
@@ -49,6 +51,7 @@ public class NowPlayingPanel extends JPanel
         mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
         mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
+        mChannelPowerPanel = new ChannelPowerPanel(playlistManager);
 
         init();
     }
@@ -61,6 +64,7 @@ public class NowPlayingPanel extends JPanel
         tabbedPane.addTab("Details", mChannelDetailPanel);
         tabbedPane.addTab("Events", mDecodeEventPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
+        tabbedPane.addTab("Channel", mChannelPowerPanel);
         tabbedPane.setFont(this.getFont());
         tabbedPane.setForeground(Color.BLACK);
 
@@ -73,5 +77,6 @@ public class NowPlayingPanel extends JPanel
         mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mDecodeEventPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelPowerPanel);
     }
 }

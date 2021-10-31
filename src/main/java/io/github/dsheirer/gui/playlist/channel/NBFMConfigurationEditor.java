@@ -22,6 +22,9 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import io.github.dsheirer.gui.control.DbPowerMeter;
+import io.github.dsheirer.gui.control.HexFormatter;
+import io.github.dsheirer.gui.control.IntegerFormatter;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.source.FrequencyEditor;
@@ -34,15 +37,23 @@ import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.identifier.IntegerFormat;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.TextAlignment;
 import org.controlsfx.control.SegmentedButton;
@@ -64,12 +75,20 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TitledPane mEventLogPane;
     private TitledPane mRecordPane;
     private TitledPane mSourcePane;
-    private ToggleSwitch mAudioRecordSwitch;
+    private TextField mTalkgroupField;
+    private TextField mSquelchThresholdField;
+    private TextFormatter<Integer> mTalkgroupTextFormatter;
+    private IntegerFormatter mSquelchTextFormatter = new IntegerFormatter((int)DbPowerMeter.DEFAULT_MINIMUM_POWER,
+            (int)DbPowerMeter.DEFAULT_MAXIMUM_POWER);
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
+
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private AuxDecoderConfigurationEditor mAuxDecoderConfigurationEditor;
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
+    private TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
+    private IntegerFormatter mDecimalFormatter = new IntegerFormatter(1, 65535);
+    private HexFormatter mHexFormatter = new HexFormatter(1, 65535);
 
     /**
      * Constructs an instance
@@ -109,19 +128,36 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         {
             mDecoderPane = new TitledPane();
             mDecoderPane.setText("Decoder: NBFM");
-            mDecoderPane.setExpanded(false);
+            mDecoderPane.setExpanded(true);
 
             GridPane gridPane = new GridPane();
             gridPane.setPadding(new Insets(10,10,10,10));
             gridPane.setHgap(10);
+            gridPane.setVgap(10);
 
             Label bandwidthLabel = new Label("Channel Bandwidth");
-            GridPane.setHalignment(bandwidthLabel, HPos.LEFT);
+            GridPane.setHalignment(bandwidthLabel, HPos.RIGHT);
             GridPane.setConstraints(bandwidthLabel, 0, 0);
             gridPane.getChildren().add(bandwidthLabel);
 
             GridPane.setConstraints(getBandwidthButton(), 1, 0);
             gridPane.getChildren().add(getBandwidthButton());
+
+            Label squelchLabel = new Label("Squelch Threshold");
+            GridPane.setHalignment(squelchLabel, HPos.RIGHT);
+            GridPane.setConstraints(squelchLabel, 2, 0);
+            gridPane.getChildren().add(squelchLabel);
+
+            GridPane.setConstraints(getSquelchThresholdField(), 3, 0);
+            gridPane.getChildren().add(getSquelchThresholdField());
+
+            Label talkgroupLabel = new Label("Talkgroup To Assign");
+            GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
+            GridPane.setConstraints(talkgroupLabel, 4, 0);
+            gridPane.getChildren().add(talkgroupLabel);
+
+            GridPane.setConstraints(getTalkgroupField(), 5, 0);
+            gridPane.getChildren().add(getTalkgroupField());
 
             mDecoderPane.setContent(gridPane);
 
@@ -174,20 +210,12 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
-            GridPane.setConstraints(getAudioRecordSwitch(), 0, 0);
-            gridPane.getChildren().add(getAudioRecordSwitch());
-
-            Label recordAudioLabel = new Label("Audio");
-            GridPane.setHalignment(recordAudioLabel, HPos.LEFT);
-            GridPane.setConstraints(recordAudioLabel, 1, 0);
-            gridPane.getChildren().add(recordAudioLabel);
-
-            GridPane.setConstraints(getBasebandRecordSwitch(), 0, 1);
+            GridPane.setConstraints(getBasebandRecordSwitch(), 0, 0);
             gridPane.getChildren().add(getBasebandRecordSwitch());
 
             Label recordBasebandLabel = new Label("Channel (Baseband I&Q)");
             GridPane.setHalignment(recordBasebandLabel, HPos.LEFT);
-            GridPane.setConstraints(recordBasebandLabel, 1, 1);
+            GridPane.setConstraints(recordBasebandLabel, 1, 0);
             gridPane.getChildren().add(recordBasebandLabel);
 
             mRecordPane.setContent(gridPane);
@@ -255,23 +283,113 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             mBandwidthButton.getToggleGroup().selectedToggleProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+
+            //Note: there is a weird timing bug with the segmented button where the toggles are not added to
+            //the toggle group until well after the control is rendered.  We attempt to setItem() on the
+            //decode configuration and we're unable to correctly set the bandwidth setting.  As a work
+            //around, we'll listen for the toggles to be added and update them here.  This normally only
+            //happens when we first instantiate the editor and load an item for editing the first time.
+            mBandwidthButton.getToggleGroup().getToggles().addListener(new ListChangeListener<Toggle>()
+            {
+                @Override
+                public void onChanged(Change<? extends Toggle> c)
+                {
+                    //This change event happens when the toggles are added -- we don't need to inspect the change event
+                    if(getItem() != null && getItem().getDecodeConfiguration() instanceof DecodeConfigNBFM)
+                    {
+                        //Capture current modified state so that we can reapply after adjusting control states
+                        boolean modified = modifiedProperty().get();
+
+                        DecodeConfigNBFM config = (DecodeConfigNBFM)getItem().getDecodeConfiguration();
+                        DecodeConfigNBFM.Bandwidth bandwidth = config.getBandwidth();
+                        if(bandwidth == null)
+                        {
+                            bandwidth = DecodeConfigNBFM.Bandwidth.BW_12_5;
+                        }
+
+                        for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
+                        {
+                            toggle.setSelected(toggle.getUserData() == bandwidth);
+                        }
+
+                        modifiedProperty().set(modified);
+                    }
+                }
+            });
         }
 
         return mBandwidthButton;
     }
 
-    private ToggleSwitch getAudioRecordSwitch()
+    private TextField getTalkgroupField()
     {
-        if(mAudioRecordSwitch == null)
+        if(mTalkgroupField == null)
         {
-            mAudioRecordSwitch = new ToggleSwitch();
-            mAudioRecordSwitch.setDisable(true);
-            mAudioRecordSwitch.setTextAlignment(TextAlignment.RIGHT);
-            mAudioRecordSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+            mTalkgroupField = new TextField();
+            mTalkgroupField.setTextFormatter(mTalkgroupTextFormatter);
         }
 
-        return mAudioRecordSwitch;
+        return mTalkgroupField;
     }
+
+    private TextField getSquelchThresholdField()
+    {
+        if(mSquelchThresholdField == null)
+        {
+            mSquelchThresholdField = new TextField();
+            mSquelchThresholdField.setTextFormatter(mSquelchTextFormatter);
+        }
+
+        return mSquelchThresholdField;
+    }
+
+    /**
+     * Updates the talkgroup editor's text formatter.
+     * @param value to set in the control.
+     */
+    private void updateTextFormatter(int value)
+    {
+        if(mTalkgroupTextFormatter != null)
+        {
+            mTalkgroupTextFormatter.valueProperty().removeListener(mTalkgroupValueChangeListener);
+        }
+
+        IntegerFormat format = mUserPreferences.getTalkgroupFormatPreference().getTalkgroupFormat(Protocol.NBFM);
+
+        if(format == null)
+        {
+            format = IntegerFormat.DECIMAL;
+        }
+
+        if(format == IntegerFormat.DECIMAL)
+        {
+            mTalkgroupTextFormatter = mDecimalFormatter;
+            getTalkgroupField().setTooltip(new Tooltip("1 - 65,535"));
+        }
+        else
+        {
+            mTalkgroupTextFormatter = mDecimalFormatter;
+            getTalkgroupField().setTooltip(new Tooltip("1 - FFFF"));
+        }
+
+        mTalkgroupTextFormatter.setValue(value);
+
+        getTalkgroupField().setTextFormatter(mTalkgroupTextFormatter);
+        mTalkgroupTextFormatter.valueProperty().addListener(mTalkgroupValueChangeListener);
+    }
+
+    /**
+     * Change listener to detect when talkgroup value has changed and set modified property to true.
+     */
+    public class TalkgroupValueChangeListener implements ChangeListener<Integer>
+    {
+        @Override
+        public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue)
+        {
+            modifiedProperty().set(true);
+        }
+    }
+
 
     private ToggleSwitch getBasebandRecordSwitch()
     {
@@ -294,20 +412,17 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         {
             getBandwidthButton().setDisable(false);
             DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)config;
-            DecodeConfigNBFM.Bandwidth bandwidth = decodeConfigNBFM.getBandwidth();
-
-            if(bandwidth == null)
-            {
-                bandwidth = DecodeConfigNBFM.Bandwidth.BW_12_5;
-            }
+            final DecodeConfigNBFM.Bandwidth bandwidth = (decodeConfigNBFM.getBandwidth() != null ?
+                    decodeConfigNBFM.getBandwidth() : DecodeConfigNBFM.Bandwidth.BW_12_5);
 
             for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
             {
                 toggle.setSelected(toggle.getUserData() == bandwidth);
             }
 
-            getAudioRecordSwitch().setDisable(false);
-            getAudioRecordSwitch().selectedProperty().set(decodeConfigNBFM.getRecordAudio());
+            updateTextFormatter(decodeConfigNBFM.getTalkgroup());
+
+            mSquelchTextFormatter.setValue(decodeConfigNBFM.getSquelchThreshold());
         }
         else
         {
@@ -318,8 +433,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
                 toggle.setSelected(false);
             }
 
-            getAudioRecordSwitch().setDisable(true);
-            getAudioRecordSwitch().selectedProperty().set(false);
+            updateTextFormatter(0);
+            getTalkgroupField().setDisable(true);
         }
     }
 
@@ -346,8 +461,15 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setBandwidth(bandwidth);
 
-        config.setRecordAudio(getAudioRecordSwitch().isSelected());
+        Integer talkgroup = mTalkgroupTextFormatter.getValue();
 
+        if(talkgroup == null)
+        {
+            talkgroup = 1;
+        }
+
+        config.setTalkgroup(talkgroup);
+        config.setSquelchThreshold(mSquelchTextFormatter.getValue());
         getItem().setDecodeConfiguration(config);
     }
 

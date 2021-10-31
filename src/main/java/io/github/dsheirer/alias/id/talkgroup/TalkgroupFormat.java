@@ -46,6 +46,8 @@ public enum TalkgroupFormat
         "MDC-1200 valid value range is 1-65,535"),
     MPT1327("###-####", 1, 0x7FFFFF, "000-0001 to 127-8192",
         "<html>MPT-1327 valid ranges are 0-127(prefix)<br>and 1-8192(ident) (ie. 000-0001 to 127-8192)"),
+    NBFM("*****", 1, 0xFFFF, "1 to 65,535",
+            "NBFM valid value range is 1-65,535"),
     PASSPORT("*****", 1, 0xFFFF, "1 to 65,535",
         "Passport valid value range is 1-65,535"),
     UNKNOWN("********", 1, 0xFFFFFF, "1 to 16,777,215",
@@ -131,6 +133,8 @@ public enum TalkgroupFormat
                 return MDC1200;
             case MPT1327:
                 return MPT1327;
+            case NBFM:
+                return NBFM;
             case PASSPORT:
                 return PASSPORT;
             default:

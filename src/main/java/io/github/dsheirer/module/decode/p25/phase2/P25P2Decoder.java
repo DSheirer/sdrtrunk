@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -32,12 +33,13 @@ import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 
 /**
  * Base P25 Phase 2 Decoder
  */
-public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEventListener,
+public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEventListener, ISourceEventProvider,
     IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableByteBufferProvider
 {
     private double mSampleRate;
@@ -45,6 +47,7 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
     private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
     private P25P2MessageProcessor mMessageProcessor;
     private double mSymbolRate;
+    protected PowerMonitor mPowerMonitor = new PowerMonitor();
 
     public P25P2Decoder(double symbolRate)
     {
@@ -52,6 +55,18 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
         mMessageProcessor = new P25P2MessageProcessor();
         mMessageProcessor.setMessageListener(getMessageListener());
         getDibitBroadcaster().addListener(mByteBufferAssembler);
+    }
+
+    @Override
+    public void setSourceEventListener(Listener<SourceEvent> listener )
+    {
+        mPowerMonitor.setSourceEventListener(listener);
+    }
+
+    @Override
+    public void removeSourceEventListener()
+    {
+        mPowerMonitor.setSourceEventListener(null);
     }
 
     /**
@@ -113,6 +128,7 @@ public abstract class P25P2Decoder extends FeedbackDecoder implements ISourceEve
                 getSymbolRate() + " symbol rate)");
         }
 
+        mPowerMonitor.setSampleRate((int)sampleRate);
         mSampleRate = sampleRate;
     }
 
