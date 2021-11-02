@@ -33,7 +33,7 @@ Once unzipped, open a command prompt to where you unzipped the release.  Change 
 * **Windows** sdr-trunk.bat
 * **Linux/OSX** ./sdr-trunk
 
-## Optional - P25 Audio
+## Optional - P25/DMR Audio
 If you're using sdrtrunk with a P25 or DMR radio system, you'll need to compile and include the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) digital audio library.
 
 In Version 0.5.0 and higher, the SDRTrunk application has support for building the JMBE library.  On the menu, choose **View >> User Preferences** and then click the **Decoder >> JMBE Audio Library** tab.
