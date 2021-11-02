@@ -46,7 +46,15 @@ If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://git
 If you're interested in modifying and/or compiling the source code, please follow these instructions to use gradle to compile the code. 
 
 ## Build the project
-sdrtrunk uses the gradle build system. This requires OpenJDK 11 or higher installed on your local compuber.  Use the gradle wrapper to build the source code:
+sdrtrunk uses the gradle build system. This requires **OpenJDK 17** or higher installed on your local compuber.  
+
+### OpenJDK
+There are many vendors producing OpenJDK distributions.  A few that I use are:
+* [Azul Zulu OpenJDK](https://www.azul.com/downloads/?package=jdk)
+* [Bellsoft Liberica OpenJDK](https://www.azul.com/downloads/?package=jdk)
+* [SDKMAN](https://sdkman.io/) - Linux Only
+
+Use the gradle wrapper to build the source code:
 
 ### Linux
 ```
