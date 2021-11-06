@@ -71,6 +71,18 @@ gradlew.bat clean build
 
 The **/build/distributions** folder will contain the zip file of the compiled program.  Unzip it and launch the program from the scripts in the **/bin** directory.
 
+## Run the Application (from Gradle)
+
+### Linux
+```
+./gradlew clean run
+```
+### Windows
+```
+gradlew.bat clean run
+```
+
+
 ## Development
 All dependencies/versions are controlled from build.gradle.
 To change the new release version tag of artifact - change property:
