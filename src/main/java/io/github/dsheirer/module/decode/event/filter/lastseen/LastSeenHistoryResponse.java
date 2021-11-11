@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ *  Copyright (C) 2014-2020 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,27 +17,31 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.event.filter;
+package io.github.dsheirer.module.decode.event.filter.lastseen;
 
-import io.github.dsheirer.module.decode.event.DecodeEventType;
-import java.util.Arrays;
+import io.github.dsheirer.module.ModuleEventBusMessage;
 
-public class DecodedCommandEventFilter extends EventFilter
+/**
+ * Response to decode event history request from a processing chain for the specified channel.
+ */
+public class LastSeenHistoryResponse extends ModuleEventBusMessage
 {
-    public DecodedCommandEventFilter()
+    private LastSeenHistory mLastSeenHistory;
+
+    /**
+     * Constructs an instance
+     * @param history that has a decode event history
+     */
+    public LastSeenHistoryResponse(LastSeenHistory history)
     {
-        super("Commands", Arrays.asList(
-                DecodeEventType.ANNOUNCEMENT,
-                DecodeEventType.STATION_ID,
-                DecodeEventType.ACKNOWLEDGE,
-                DecodeEventType.PAGE,
-                DecodeEventType.QUERY,
-                DecodeEventType.RADIO_CHECK,
-                DecodeEventType.STATUS,
-                DecodeEventType.COMMAND,
-                DecodeEventType.EMERGENCY,
-                DecodeEventType.NOTIFICATION,
-                DecodeEventType.FUNCTION
-        ));
+        mLastSeenHistory = history;
+    }
+
+    /**
+     * Decode event history module
+     */
+    public LastSeenHistory getDecodeEventHistory()
+    {
+        return mLastSeenHistory;
     }
 }

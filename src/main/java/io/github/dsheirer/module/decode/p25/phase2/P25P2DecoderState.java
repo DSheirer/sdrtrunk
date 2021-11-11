@@ -471,36 +471,19 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof QueuedResponse)
         {
             QueuedResponse qr = (QueuedResponse)mac;
-
-            MutableIdentifierCollection icQueuedResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icQueuedResponse.remove(IdentifierClass.USER);
-            icQueuedResponse.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.RESPONSE.toString())
-                .details("QUEUED - " + qr.getQueuedResponseServiceType() +
-                    " REASON:" + qr.getQueuedResponseReason() + " ADDL:" + qr.getAdditionalInfo())
-                .identifiers(icQueuedResponse)
-                .build());
+            broadcast(message, mac, DecodeEventType.RESPONSE,
+                    "QUEUED - " + qr.getQueuedResponseServiceType() +
+                    " REASON:" + qr.getQueuedResponseReason() + " ADDL:" + qr.getAdditionalInfo());
         }
     }
+
 
     private void processEFCA(MacMessage message, MacStructure mac) {
         if(mac instanceof ExtendedFunctionCommand)
         {
             ExtendedFunctionCommand efc = (ExtendedFunctionCommand)mac;
-
-            MutableIdentifierCollection icExtendedFunction = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icExtendedFunction.remove(IdentifierClass.USER);
-            icExtendedFunction.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details("EXTENDED FUNCTION: " + efc.getExtendedFunction() + " ARGUMENTS:" + efc.getArguments())
-                .identifiers(icExtendedFunction)
-                .build());
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                    "EXTENDED FUNCTION: " + efc.getExtendedFunction() + " ARGUMENTS:" + efc.getArguments());
         }
     }
 
@@ -508,16 +491,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof DenyResponse)
         {
             DenyResponse dr = (DenyResponse)mac;
-            MutableIdentifierCollection icDenyResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icDenyResponse.remove(IdentifierClass.USER);
-            icDenyResponse.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.RESPONSE.toString())
-                .details("DENY: " + dr.getDeniedServiceType() + " REASON:" + dr.getDenyReason() + " ADDL:" + dr.getAdditionalInfo())
-                .identifiers(icDenyResponse)
-                .build());
+            broadcast(message, mac, DecodeEventType.RESPONSE,
+                "DENY: " + dr.getDeniedServiceType() + " REASON:" + dr.getDenyReason() + " ADDL:" + dr.getAdditionalInfo());
         }
     }
 
@@ -525,17 +500,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof RadioUnitMonitorCommandExtended)
         {
             RadioUnitMonitorCommandExtended rumce = (RadioUnitMonitorCommandExtended)mac;
-            MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icRequest.remove(IdentifierClass.USER);
-            icRequest.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details("RADIO UNIT MONITOR" + (rumce.isSilentMonitor() ? " (STEALTH)" : "") +
-                    " TIME:" + rumce.getTransmitTime() + "MULTIPLIER:" + rumce.getTransmitMultiplier())
-                .identifiers(icRequest)
-                .build());
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                "RADIO UNIT MONITOR" + (rumce.isSilentMonitor() ? " (STEALTH)" : "") +
+                    " TIME:" + rumce.getTransmitTime() + "MULTIPLIER:" + rumce.getTransmitMultiplier());
         }
     }
 
@@ -543,16 +510,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof StatusUpdateExtended)
         {
             StatusUpdateExtended sue = (StatusUpdateExtended)mac;
-            MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icStatusUpdate.remove(IdentifierClass.USER);
-            icStatusUpdate.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.STATUS.toString())
-                .details("STATUS UPDATE - UNIT:" + sue.getUnitStatus() + " USER:" + sue.getUserStatus())
-                .identifiers(icStatusUpdate)
-                .build());
+            broadcast(message, mac, DecodeEventType.STATUS,
+                "STATUS UPDATE - UNIT:" + sue.getUnitStatus() + " USER:" + sue.getUserStatus());
         }
     }
 
@@ -560,48 +519,23 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof ExtendedFunctionCommandExtended)
         {
             ExtendedFunctionCommandExtended efce = (ExtendedFunctionCommandExtended)mac;
-
-            MutableIdentifierCollection icExtendedFunction = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icExtendedFunction.remove(IdentifierClass.USER);
-            icExtendedFunction.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details("EXTENDED FUNCTION: " + efce.getExtendedFunction() + " ARGUMENTS:" + efce.getArguments())
-                .identifiers(icExtendedFunction)
-                .build());
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                "EXTENDED FUNCTION: " + efce.getExtendedFunction() + " ARGUMENTS:" + efce.getArguments());
         }
     }
 
     private void processCallAlert(MacMessage message, MacStructure mac) {
-        MutableIdentifierCollection icCallAlert = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-        icCallAlert.remove(IdentifierClass.USER);
-        icCallAlert.update(mac.getIdentifiers());
-
-        broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.CALL_ALERT.toString())
-                .identifiers(icCallAlert)
-                .build());
+        broadcast(message, mac, DecodeEventType.CALL_ALERT, null);
     }
 
     private void processRUMCE(MacMessage message, MacStructure mac) {
         if(mac instanceof RadioUnitMonitorCommandEnhanced)
         {
             RadioUnitMonitorCommandEnhanced rumc = (RadioUnitMonitorCommandEnhanced)mac;
-            MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icRequest.remove(IdentifierClass.USER);
-            icRequest.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details("RADIO UNIT MONITOR" + (rumc.isStealthMode() ? " (STEALTH)" : "") +
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                "RADIO UNIT MONITOR" + (rumc.isStealthMode() ? " (STEALTH)" : "") +
                     " ENCRYPTION:" + rumc.getEncryption() +
-                    " TIME:" + rumc.getTransmitTime())
-                .identifiers(icRequest)
-                .build());
+                    " TIME:" + rumc.getTransmitTime());
         }
     }
 
@@ -609,16 +543,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof StatusUpdateAbbreviated)
         {
             StatusUpdateAbbreviated sua = (StatusUpdateAbbreviated)mac;
-            MutableIdentifierCollection icStatusUpdate = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icStatusUpdate.remove(IdentifierClass.USER);
-            icStatusUpdate.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.STATUS.toString())
-                .details("STATUS UPDATE - UNIT:" + sua.getUnitStatus() + " USER:" + sua.getUserStatus())
-                .identifiers(icStatusUpdate)
-                .build());
+            broadcast(message, mac, DecodeEventType.STATUS,
+                "STATUS UPDATE - UNIT:" + sua.getUnitStatus() + " USER:" + sua.getUserStatus());
         }
     }
 
@@ -626,16 +552,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof SNDCPDataChannelGrant)
         {
             SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)mac;
-            MutableIdentifierCollection icGrant = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icGrant.remove(IdentifierClass.USER);
-            icGrant.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(sdcg.getChannel())
-                .eventDescription(sdcg.getServiceOptions().isEncrypted() ? DecodeEventType.DATA_CALL_ENCRYPTED.toString() : DecodeEventType.DATA_CALL.toString())
-                .details("SNDCP CHANNEL GRANT " + sdcg.getServiceOptions())
-                .identifiers(icGrant)
-                .build());
+            broadcast(message, mac,
+                sdcg.getServiceOptions().isEncrypted() ? DecodeEventType.DATA_CALL_ENCRYPTED : DecodeEventType.DATA_CALL,
+                "SNDCP CHANNEL GRANT " + sdcg.getServiceOptions());
         }
     }
 
@@ -643,17 +562,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof RadioUnitMonitorCommand)
         {
             RadioUnitMonitorCommand rumc = (RadioUnitMonitorCommand)mac;
-            MutableIdentifierCollection icRequest = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icRequest.remove(IdentifierClass.USER);
-            icRequest.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details("RADIO UNIT MONITOR" + (rumc.isSilentMonitor() ? " (STEALTH)" : "") +
-                    " TIME:" + rumc.getTransmitTime() + " MULTIPLIER:" + rumc.getTransmitMultiplier())
-                .identifiers(icRequest)
-                .build());
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                "RADIO UNIT MONITOR" + (rumc.isSilentMonitor() ? " (STEALTH)" : "") +
+                " TIME:" + rumc.getTransmitTime() + " MULTIPLIER:" + rumc.getTransmitMultiplier());
         }
     }
 
@@ -661,19 +572,9 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof MacRelease)
         {
             MacRelease mr = (MacRelease)mac;
-
-            MutableIdentifierCollection icMacRelease = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icMacRelease.remove(IdentifierClass.USER);
-            icMacRelease.update(mac.getIdentifiers());
-
             closeCurrentCallEvent(message.getTimestamp(), true, message.getMacPduType());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details((mr.isForcedPreemption() ? "FORCED " : "") + "CALL PREEMPTION" + (mr.isTalkerPreemption() ? " BY USER" : ""))
-                .identifiers(icMacRelease)
-                .build());
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                (mr.isForcedPreemption() ? "FORCED " : "") + "CALL PREEMPTION" + (mr.isTalkerPreemption() ? " BY USER" : ""));
         }
     }
 
@@ -681,17 +582,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof PowerControlSignalQuality)
         {
             PowerControlSignalQuality pcsq = (PowerControlSignalQuality)mac;
-
-            MutableIdentifierCollection icPowerControl = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icPowerControl.remove(IdentifierClass.USER);
-            icPowerControl.update(mac.getIdentifiers());
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.COMMAND.toString())
-                .details("ADJUST TRANSMIT POWER - RF:" + pcsq.getRFLevel() + " BER:" + pcsq.getBitErrorRate())
-                .identifiers(icPowerControl)
-                .build());
+            broadcast(message, mac, DecodeEventType.COMMAND,
+                "ADJUST TRANSMIT POWER - RF:" + pcsq.getRFLevel() + " BER:" + pcsq.getBitErrorRate());
         }
     }
 
@@ -699,32 +591,42 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         if(mac instanceof IndividualPagingMessage)
         {
             IndividualPagingMessage ipm = (IndividualPagingMessage)mac;
-            MutableIdentifierCollection icIndividualPaging = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-            icIndividualPaging.remove(IdentifierClass.USER);
-            icIndividualPaging.update(mac.getIdentifiers());
             boolean priority = ipm.isTalkgroupPriority1() || ipm.isTalkgroupPriority2() ||
                 ipm.isTalkgroupPriority3() || ipm.isTalkgroupPriority4();
-
-            broadcast(P25DecodeEvent.builder(message.getTimestamp())
-                .channel(getCurrentChannel())
-                .eventDescription(DecodeEventType.PAGE.toString())
-                .details((priority ? "PRIORITY " : "") + "USER PAGE")
-                .identifiers(icIndividualPaging)
-                .build());
+            broadcast(message, mac, DecodeEventType.PAGE,
+                (priority ? "PRIORITY " : "") + "USER PAGE");
         }
     }
 
-    private void broadcast(MacMessage message, MacStructure mac, IChannelDescriptor currentChannel, DecodeEventType page, String s) {
-        MutableIdentifierCollection collection = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-        collection.remove(IdentifierClass.USER);
-        collection.update(mac.getIdentifiers());
+    private void broadcast(MacMessage message, MacStructure mac, IChannelDescriptor currentChannel, DecodeEventType eventType, String details) {
+        MutableIdentifierCollection collection = getUpdatedMutableIdentifierCollection(mac);
 
         broadcast(P25DecodeEvent.builder(message.getTimestamp())
                 .channel(currentChannel)
-                .eventDescription(page.toString())
-                .details(s)
+                .eventType(eventType)
+                .eventDescription(eventType.toString())
+                .details(details)
                 .identifiers(collection)
                 .build());
+    }
+
+    private void broadcast(MacMessage message, MacStructure structure, DecodeEventType eventType, String details) {
+        MutableIdentifierCollection icQueuedResponse = getUpdatedMutableIdentifierCollection(structure);
+
+        broadcast(P25DecodeEvent.builder(message.getTimestamp())
+                .channel(getCurrentChannel())
+                .eventType(eventType)
+                .eventDescription(eventType.toString())
+                .details(details)
+                .identifiers(icQueuedResponse)
+                .build());
+    }
+
+    private MutableIdentifierCollection getUpdatedMutableIdentifierCollection(MacStructure mac) {
+        MutableIdentifierCollection icQueuedResponse = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        icQueuedResponse.remove(IdentifierClass.USER);
+        icQueuedResponse.update(mac.getIdentifiers());
+        return icQueuedResponse;
     }
 
     private void processUTUVCGUExtended(MacStructure mac) {

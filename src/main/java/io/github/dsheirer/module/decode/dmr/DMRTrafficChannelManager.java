@@ -325,12 +325,14 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         int lsn = channel.getLogicalSlotNumber();
 
         DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
+        DecodeEventType decodeEventType = getEventType(opcode, identifierCollection, encrypted);
 
         if(isStale(event, timestamp, identifierCollection)) //Create new event
         {
             event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
                 .channel(channel)
-                .eventDescription(getEventType(opcode, identifierCollection, encrypted).toString())
+                .eventType(decodeEventType)
+                .eventDescription(decodeEventType.toString())
                 .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -351,7 +353,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
                     event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
                         .channel(channel)
-                        .eventDescription(getEventType(opcode, identifierCollection, encrypted).toString() + " - Continue")
+                        .eventType(decodeEventType)
+                        .eventDescription(decodeEventType.toString() + " - Continue")
                         .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                         .identifiers(identifierCollection)
                         .build();
@@ -391,7 +394,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
             {
                 if(event.getEventDescription() == null)
                 {
-                    event.setEventDescription(getEventType(opcode, identifierCollection, encrypted) + IGNORED);
+                    event.setEventDescription(decodeEventType + IGNORED);
                 }
                 else if(!event.getEventDescription().endsWith(IGNORED))
                 {

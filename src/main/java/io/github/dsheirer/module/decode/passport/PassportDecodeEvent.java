@@ -18,21 +18,21 @@
  * *****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.p25;
+package io.github.dsheirer.module.decode.passport;
 
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.protocol.Protocol;
 
-public class P25DecodeEvent extends DecodeEvent
+public class PassportDecodeEvent extends DecodeEvent
 {
     /**
-     * Constructs a P25 decode event
+     * Constructs a Passport decode event
      * @param start
      */
-    public P25DecodeEvent(long start)
+    public PassportDecodeEvent(long start)
     {
         super(start);
-        setProtocol(Protocol.APCO25);
+        setProtocol(Protocol.PASSPORT);
     }
 
     /**
@@ -43,7 +43,7 @@ public class P25DecodeEvent extends DecodeEvent
     public static DecodeEventBuilder builder(long timeStart)
     {
         DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(timeStart);
-        decodeEventBuilder.protocol(Protocol.APCO25);
+        decodeEventBuilder.protocol(Protocol.PASSPORT);
         return decodeEventBuilder;
     }
 }

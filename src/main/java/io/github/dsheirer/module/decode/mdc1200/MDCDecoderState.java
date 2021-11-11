@@ -29,7 +29,7 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.mdc1200.identifier.MDC1200Identifier;
 
 import java.util.Iterator;
@@ -114,7 +114,8 @@ public class MDCDecoderState extends DecoderState
             ic.remove(IdentifierClass.USER);
             ic.update(message.getIdentifiers());
 
-            broadcast(DecodeEvent.builder(mdc.getTimestamp())
+            broadcast(MDCDecodeEvent.builder(mdc.getTimestamp())
+                .eventType(getDecodeEventType(type))
                 .eventDescription(type.getLabel())
                 .details(mdc.toString())
                 .identifiers(ic)
@@ -193,6 +194,24 @@ public class MDCDecoderState extends DecoderState
                 break;
             default:
                 break;
+        }
+    }
+
+    private DecodeEventType getDecodeEventType(MDCMessageType messageType) {
+        switch(messageType)
+        {
+            case ANI:
+                return DecodeEventType.ID_ANI;
+            case ACKNOWLEDGE:
+                return DecodeEventType.RESPONSE;
+            case EMERGENCY:
+                return DecodeEventType.EMERGENCY;
+            case PAGING:
+                return DecodeEventType.PAGE;
+            case STATUS:
+                return DecodeEventType.STATUS;
+            default:
+                return DecodeEventType.UNKNOWN;
         }
     }
 }

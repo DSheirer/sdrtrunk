@@ -38,6 +38,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.ltrnet.channel.LtrNetChannel;
 import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetRadioIdentifier;
 import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
@@ -168,8 +169,7 @@ public class LTRNetDecoderState extends DecoderState
             {
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 getIdentifierCollection().update(talkgroup);
-                mCurrentCallEvent = DecodeEvent.builder(timestamp)
-                    .protocol(Protocol.LTR_NET)
+                mCurrentCallEvent = LTRNetDecodeEvent.builder(timestamp)
                     .channel(getCurrentChannel())
                     .identifiers(getIdentifierCollection().copyOf())
                     .build();
@@ -181,16 +181,19 @@ public class LTRNetDecoderState extends DecoderState
 
             if(talkgroup.getTalkgroup() == 253)
             {
+                mCurrentCallEvent.setEventType(DecodeEventType.REGISTER);
                 mCurrentCallEvent.setEventDescription("Register");
                 broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
             }
             else if(talkgroup.getTalkgroup() == 254)
             {
+                mCurrentCallEvent.setEventType(DecodeEventType.STATION_ID);
                 mCurrentCallEvent.setEventDescription("FCC CWID");
                 broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
             }
             else
             {
+                mCurrentCallEvent.setEventType(DecodeEventType.CALL);
                 mCurrentCallEvent.setEventDescription("Call");
                 broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
             }
@@ -203,16 +206,7 @@ public class LTRNetDecoderState extends DecoderState
 
             if(decodeEvent == null)
             {
-                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                ic.remove(IdentifierClass.USER);
-                ic.update(talkgroup);
-
-                decodeEvent = DecodeEvent.builder(timestamp)
-                    .eventDescription("Call Detect")
-                    .channel(mChannelMap.get(channel))
-                    .protocol(Protocol.LTR_NET)
-                    .identifiers(ic)
-                    .build();
+                decodeEvent = getDecodeEvent(talkgroup, channel, timestamp, DecodeEventType.CALL_DETECT);
                 mCallDetectMap.put(channel, decodeEvent);
             }
             else
@@ -223,16 +217,7 @@ public class LTRNetDecoderState extends DecoderState
                 if(eventTalkgroup == null || !eventTalkgroup.equals(talkgroup) ||
                     (timestamp - decodeEvent.getTimeStart() - decodeEvent.getDuration() > 2000))
                 {
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.remove(IdentifierClass.USER);
-                    ic.update(talkgroup);
-
-                    decodeEvent = DecodeEvent.builder(timestamp)
-                        .eventDescription("Call Detect")
-                        .channel(mChannelMap.get(channel))
-                        .protocol(Protocol.LTR_NET)
-                        .identifiers(ic)
-                        .build();
+                    decodeEvent = getDecodeEvent(talkgroup, channel, timestamp, DecodeEventType.CALL_DETECT);
                     mCallDetectMap.put(channel, decodeEvent);
                 }
             }
@@ -334,13 +319,9 @@ public class LTRNetDecoderState extends DecoderState
                             mESNIdentifiers.add(registrationRequestEsn.getESN());
                         }
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .eventDescription("Registration Request")
-                            .details(registrationRequestEsn.toString())
-                            .identifiers(getIdentifierCollection().copyOf())
-                            .channel(getCurrentChannel())
-                            .protocol(Protocol.LTR_NET)
-                            .build());
+                        broadcast(getDecodeEvent(
+                                message, DecodeEventType.REQUEST,
+                                "Registration Request", registrationRequestEsn.toString()));
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
@@ -356,13 +337,9 @@ public class LTRNetDecoderState extends DecoderState
                             mESNIdentifiers.add(registrationRequestEsn.getESN());
                         }
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .eventDescription("Registration Request")
-                            .details(registrationRequestEsn.toString())
-                            .identifiers(getIdentifierCollection().copyOf())
-                            .channel(getCurrentChannel())
-                            .protocol(Protocol.LTR_NET)
-                            .build());
+                        broadcast(getDecodeEvent(
+                                message, DecodeEventType.REQUEST,
+                                "Registration Request", registrationRequestEsn.toString()));
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
@@ -375,13 +352,9 @@ public class LTRNetDecoderState extends DecoderState
                         getIdentifierCollection().update(requestAccess.getTalkgroup());
                         mTalkgroups.add(requestAccess.getTalkgroup());
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .eventDescription("Access Request")
-                            .details(requestAccess.toString())
-                            .identifiers(getIdentifierCollection().copyOf())
-                            .channel(getCurrentChannel())
-                            .protocol(Protocol.LTR_NET)
-                            .build());
+                        broadcast(getDecodeEvent(
+                                message, DecodeEventType.REQUEST,
+                                "Access Request", requestAccess.toString()));
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
@@ -470,13 +443,8 @@ public class LTRNetDecoderState extends DecoderState
                         ic.remove(IdentifierClass.USER);
                         ic.update(message.getIdentifiers());
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .protocol(Protocol.LTR_NET)
-                            .channel(getCurrentChannel())
-                            .identifiers(ic)
-                            .eventDescription("Registration Accept")
-                            .details(registrationAccept.toString())
-                            .build());
+                        broadcast(getDecodeEvent(message, DecodeEventType.RESPONSE,
+                                "Registration Accept", registrationAccept.toString()));
                     }
                     break;
                 case OSW_SITE_ID:
@@ -507,6 +475,29 @@ public class LTRNetDecoderState extends DecoderState
                     break;
             }
         }
+    }
+
+    private DecodeEvent getDecodeEvent(IMessage message, DecodeEventType decodeEventType, String description, String details) {
+        return LTRNetDecodeEvent.builder(message.getTimestamp())
+                .eventType(decodeEventType)
+                .eventDescription(description)
+                .details(details)
+                .identifiers(getIdentifierCollection().copyOf())
+                .channel(getCurrentChannel())
+                .build();
+    }
+
+    private DecodeEvent getDecodeEvent(LTRTalkgroup talkgroup, int channel, long timestamp, DecodeEventType decodeEventType) {
+        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        ic.remove(IdentifierClass.USER);
+        ic.update(talkgroup);
+
+        return LTRNetDecodeEvent.builder(timestamp)
+                .eventType(decodeEventType)
+                .eventDescription(decodeEventType.toString())
+                .channel(mChannelMap.get(channel))
+                .identifiers(ic)
+                .build();
     }
 
     @Override
