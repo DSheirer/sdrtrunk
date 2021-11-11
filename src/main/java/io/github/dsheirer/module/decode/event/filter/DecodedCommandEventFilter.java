@@ -10,6 +10,7 @@ public class DecodedCommandEventFilter extends EventFilter
     {
         super("Commands", Arrays.asList(
                 DecodeEventType.ANNOUNCEMENT,
+                DecodeEventType.ACKNOWLEDGE,
                 DecodeEventType.PAGE,
                 DecodeEventType.QUERY,
                 DecodeEventType.RADIO_CHECK,

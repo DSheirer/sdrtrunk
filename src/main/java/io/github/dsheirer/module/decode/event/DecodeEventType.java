@@ -24,6 +24,7 @@ public enum DecodeEventType
 {
     AFFILIATE("Affiliate"),
     ANNOUNCEMENT("Announcement"),
+    ACKNOWLEDGE("Acknowledge"),
     AUTOMATIC_REGISTRATION_SERVICE("Motorola ARS"),
     CALL("Call"),
     CALL_ENCRYPTED("Encrypted Call"),
@@ -33,6 +34,7 @@ public enum DecodeEventType
     CALL_PATCH_GROUP_ENCRYPTED("Encrypted Patch Call"),
     CALL_ALERT("Call Alert"),
     CALL_DETECT("Call Detect"),
+    CALL_IN_PROGRESS("Call In Progress"),
     CALL_DO_NOT_MONITOR("Call-Do Not Monitor"),
     CALL_END("Call End"),
     CALL_INTERCONNECT("Telephone Call"),
