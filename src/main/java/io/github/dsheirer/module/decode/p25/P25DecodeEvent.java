@@ -26,7 +26,7 @@ import io.github.dsheirer.protocol.Protocol;
 public class P25DecodeEvent extends DecodeEvent
 {
     /**
-     * Constucts a P25 decode event
+     * Constructs a P25 decode event
      * @param start
      */
     public P25DecodeEvent(long start)
