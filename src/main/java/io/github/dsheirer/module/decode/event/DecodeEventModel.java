@@ -24,7 +24,10 @@ package io.github.dsheirer.module.decode.event;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.module.decode.event.filter.DecodeEventFilterSet;
+import io.github.dsheirer.module.decode.event.filter.EventFilterProvider;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
@@ -35,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class DecodeEventModel extends AbstractTableModel implements Listener<IDecodeEvent>
+public class DecodeEventModel extends AbstractTableModel implements Listener<IDecodeEvent>, EventFilterProvider<IDecodeEvent>
 {
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(DecodeEventModel.class);
@@ -54,6 +57,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     protected int mMaxMessages = 500;
 
     protected List<IDecodeEvent> mEvents = new ArrayList<>();
+    protected FilterSet<IDecodeEvent> mEventFilterSet = new DecodeEventFilterSet();
 
     protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Details"};
 
@@ -139,17 +143,30 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
      */
     public void receive(final IDecodeEvent event)
     {
-        if(!mEvents.contains(event))
-        {
-            mEvents.add(0, event);
-            fireTableRowsInserted(0, 0);
-            prune();
-        }
-        else
-        {
-            int row = mEvents.indexOf(event);
-            fireTableRowsUpdated(row, row);
-        }
+//        EventQueue.invokeLater(new Runnable()
+//        {
+//            @Override
+//            public void run()
+//            {
+
+                if (!mEventFilterSet.passes(event))
+                {
+                    return;
+                }
+                if(!mEvents.contains(event))
+                {
+                    mEvents.add(0, event);
+                    fireTableRowsInserted(0, 0);
+                    prune();
+                }
+                else
+                {
+                    int row = mEvents.indexOf(event);
+                    fireTableRowsUpdated(row, row);
+                }
+
+//            }
+//        });
     }
 
     private void prune()
@@ -160,6 +177,16 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
             mEvents.remove(index);
             fireTableRowsDeleted(index, index);
         }
+    }
+
+    @Override
+    public FilterSet<IDecodeEvent> getFilterSet() {
+        return mEventFilterSet;
+    }
+
+    @Override
+    public void setFilterSet(FilterSet<IDecodeEvent> filterSet) {
+        this.mEventFilterSet = filterSet;
     }
 
     @Override
