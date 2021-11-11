@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.mpt1327;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.protocol.Protocol;
 
@@ -49,6 +50,7 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
         protected long mTimeStart;
         protected long mDuration;
         protected String mEventDescription;
+        protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
@@ -94,6 +96,15 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
         }
 
         /**
+         * Sets the Decode Event type for this event.
+         * @param eventType
+         */
+        public MPT1327ChannelGrantDecodeEventBuilder eventType(DecodeEventType eventType) {
+            mDecodeEventType = eventType;
+            return this;
+        }
+
+        /**
          * Sets the event description text
          * @param description of the event
          */
@@ -134,6 +145,7 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             return decodeEvent;
