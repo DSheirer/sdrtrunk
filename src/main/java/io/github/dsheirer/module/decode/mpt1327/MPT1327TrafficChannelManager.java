@@ -31,6 +31,7 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.mpt1327.channel.MPT1327Channel;
@@ -107,6 +108,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
 
             MPT1327ChannelGrantEvent channelGrantEvent = MPT1327ChannelGrantEvent.mpt1327Builder(mpt1327Message.getTimestamp())
                 .channel(mpt1327Channel)
+                .eventType(DecodeEventType.CALL)
                 .eventDescription("Call")
                 .details("Traffic Channel Grant")
                 .identifiers(identifierCollection)
