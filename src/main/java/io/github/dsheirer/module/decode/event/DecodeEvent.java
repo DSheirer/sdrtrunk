@@ -316,6 +316,10 @@ public class DecodeEvent implements IDecodeEvent
             return this;
         }
 
+        /**
+         * Sets the Decode Event type for this event.
+         * @param eventType
+         */
         public DecodeEventBuilder eventType(DecodeEventType eventType) {
             mDecodeEventType = eventType;
             return this;
@@ -377,6 +381,7 @@ public class DecodeEvent implements IDecodeEvent
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
