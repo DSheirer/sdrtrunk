@@ -26,7 +26,7 @@ import io.github.dsheirer.protocol.Protocol;
 public class LTRStandardDecodeEvent extends DecodeEvent
 {
     /**
-     * Constucts a P25 decode event
+     * Constructs an LTR Standard decode event
      * @param start
      */
     public LTRStandardDecodeEvent(long start)
