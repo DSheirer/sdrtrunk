@@ -46,13 +46,14 @@ public class FilterSet<T> implements IFilter<T>
 		{
 			for( IFilter<T> filter: mFilters )
 			{
-				if( filter.canProcess( t ) )
+				// Make sure to loop through all filters.
+				// Only return if true or all filters have been evaluated.
+				if( filter.canProcess( t ) && filter.passes( t ))
 				{
-					return filter.passes( t );
+					return true;
 				}
 			}
 		}
-		
 		return false;
     }
 

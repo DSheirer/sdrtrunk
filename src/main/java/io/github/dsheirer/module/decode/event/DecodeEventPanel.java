@@ -28,12 +28,18 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.filter.AllPassFilter;
+import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.event.filter.EventClearButton;
+import io.github.dsheirer.module.decode.event.filter.EventClearHandler;
+import io.github.dsheirer.module.decode.event.filter.EventFilterButton;
+import io.github.dsheirer.module.decode.event.filter.EventFilterProvider;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
@@ -42,15 +48,9 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.EventQueue;
+import java.awt.*;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -72,6 +72,7 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
     private TimestampCellRenderer mTimestampCellRenderer;
+    private EventManagementPanel mEventManagementPanel;
 
     /**
      * View for call event table
@@ -89,8 +90,11 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         mTable = new JTable(mEventModel);
         mTable.setAutoCreateRowSorter(true);
         mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        mEventManagementPanel = new EventManagementPanel();
         mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
         updateCellRenderers();
+
+        add(mEventManagementPanel, "span,growx");
 
         mEmptyScroller = new JScrollPane(mTable);
         add(mEmptyScroller);
@@ -148,13 +152,74 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                 mCurrentEventHistory = processingChain.getDecodeEventHistory();
                 mEventModel.clearAndSet(mCurrentEventHistory.getItems());
                 processingChain.getDecodeEventHistory().addListener(mEventModel);
+                mEventManagementPanel.enableButtons();
             }
             else
             {
                 mCurrentEventHistory = null;
                 mEventModel.clearAndSet(Collections.emptyList());
+                mEventManagementPanel.disableButtons();
             }
         });
+    }
+
+    public class EventManagementPanel extends JPanel
+    {
+        private static final long serialVersionUID = 1L;
+
+        private EventFilterButton<IDecodeEvent> mFilterButton;
+        private EventClearButton mEventClearButton;
+
+        public EventManagementPanel()
+        {
+            setLayout(new MigLayout("insets 2 2 5 5", "[]5[left,grow]", ""));
+
+            initializeFilterButton();
+            initializeClearButton();
+            disableButtons();
+
+            add(mFilterButton);
+            add(mEventClearButton);
+        }
+
+        public void enableButtons()
+        {
+            mFilterButton.setEnabled(true);
+            mEventClearButton.setEnabled(true);
+        }
+
+        public void disableButtons()
+        {
+            mFilterButton.setEnabled(false);
+            mEventClearButton.setEnabled(false);
+        }
+
+        private void initializeFilterButton()
+        {
+            EventFilterProvider<IDecodeEvent> filterProvider = (EventFilterProvider<IDecodeEvent>) mTable.getModel();
+            FilterSet<IDecodeEvent> filterSet = new FilterSet<>(new AllPassFilter<>());
+            if (filterProvider != null) {
+                filterSet = filterProvider.getFilterSet();
+            }
+            mFilterButton = new EventFilterButton<>("Message Filter Editor", filterSet);
+        }
+
+        private void initializeClearButton() {
+            mEventClearButton = new EventClearButton(
+                    ((DecodeEventModel) mTable.getModel()).getMaxMessageCount()
+            );
+            mEventClearButton.setEventClearHandler(new EventClearHandler() {
+                @Override
+                public void onHistoryLimitChanged(int newHistoryLimit) {
+                    ((DecodeEventModel) mTable.getModel()).setMaxMessageCount(newHistoryLimit);
+                }
+
+                @Override
+                public void onClearHistoryClicked() {
+                    ((DecodeEventModel) mTable.getModel()).clear();
+                }
+            });
+        }
     }
 
     /**
