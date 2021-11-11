@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.dmr.event;
 
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 
 /**
  * DMR Channel Grant Event.
@@ -74,6 +75,7 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
     {
         protected long mTimeStart;
         protected long mDuration;
+        protected DecodeEventType mDecodeEventType;
         protected String mEventDescription;
         protected IdentifierCollection mIdentifierCollection;
         protected DMRChannel mChannel;
@@ -121,11 +123,20 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
 
         /**
          * Sets the channel descriptor for this event
-         * @param channelDescriptor
+         * @param channel
          */
         public DMRChannelGrantDecodeEventBuilder channel(DMRChannel channel)
         {
             mChannel = channel;
+            return this;
+        }
+
+        /**
+         * Sets the Decode Event type for this event.
+         * @param eventType
+         */
+        public DMRChannelGrantDecodeEventBuilder eventType(DecodeEventType eventType) {
+            mDecodeEventType = eventType;
             return this;
         }
 
@@ -170,6 +181,7 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
             decodeEvent.setTimeslot(mChannel.getTimeslot());
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             return decodeEvent;
