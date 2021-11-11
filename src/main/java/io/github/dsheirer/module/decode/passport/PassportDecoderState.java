@@ -34,6 +34,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.passport.identifier.PassportRadioId;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.protocol.Protocol;
@@ -158,7 +159,8 @@ public class PassportDecoderState extends DecoderState
                                 }
                             }
 
-                            mCurrentDecodeEvent = DecodeEvent.builder(passport.getTimestamp())
+                            mCurrentDecodeEvent = PassportDecodeEvent.builder(passport.getTimestamp())
+                                .eventType(passport.getMessageType() == MessageType.CA_STRT ? DecodeEventType.CALL : DecodeEventType.DATA_CALL)
                                 .eventDescription(passport.getMessageType() == MessageType.CA_STRT ? "Call" : "Data")
                                 .identifiers(getIdentifierCollection().copyOf())
                                 .details(passport.toString())
@@ -177,7 +179,8 @@ public class PassportDecoderState extends DecoderState
                                 !isSameTalkgroup(to, getToIdentifier(callDetect.getIdentifierCollection())) ||
                                 callDetect.getTimeStart() < (passport.getTimestamp() - 45000))
                             {
-                                callDetect = DecodeEvent.builder(passport.getTimestamp())
+                                callDetect = PassportDecodeEvent.builder(passport.getTimestamp())
+                                    .eventType(DecodeEventType.CALL_DETECT)
                                     .eventDescription("Call Detect")
                                     .identifiers(new IdentifierCollection(passport.getIdentifiers()))
 //                                    .channel(...)
@@ -218,7 +221,8 @@ public class PassportDecoderState extends DecoderState
                         }
                         break;
                     case RA_REGI:
-                        broadcast(DecodeEvent.builder(passport.getTimestamp())
+                        broadcast(PassportDecodeEvent.builder(passport.getTimestamp())
+                            .eventType(DecodeEventType.REGISTER)
                             .eventDescription("Register")
                             .identifiers(new IdentifierCollection(passport.getIdentifiers()))
                             .build());
