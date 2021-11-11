@@ -103,6 +103,7 @@ public class PlottableDecodeEvent extends DecodeEvent
         private long mTimeStart;
         private long mDuration;
         private String mEventDescription;
+        private DecodeEventType mDecodeEventType;
         private IdentifierCollection mIdentifierCollection;
         private IChannelDescriptor mChannelDescriptor;
         private String mDetails;
@@ -191,6 +192,15 @@ public class PlottableDecodeEvent extends DecodeEvent
         }
 
         /**
+         * Sets the Decode Event type for this event.
+         * @param eventType
+         */
+        public PlottableDecodeEventBuilder eventType(DecodeEventType eventType) {
+            mDecodeEventType = eventType;
+            return this;
+        }
+
+        /**
          * Sets the location for the plottable event
          */
         public PlottableDecodeEventBuilder location(GeoPosition geoPosition)
@@ -226,6 +236,7 @@ public class PlottableDecodeEvent extends DecodeEvent
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
