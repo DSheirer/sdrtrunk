@@ -149,30 +149,21 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
      */
     public void receive(final IDecodeEvent event)
     {
-//        EventQueue.invokeLater(new Runnable()
-//        {
-//            @Override
-//            public void run()
-//            {
-
-                if (!mEventFilterSet.passes(event))
-                {
-                    return;
-                }
-                if(!mEvents.contains(event))
-                {
-                    mEvents.add(0, event);
-                    fireTableRowsInserted(0, 0);
-                    prune();
-                }
-                else
-                {
-                    int row = mEvents.indexOf(event);
-                    fireTableRowsUpdated(row, row);
-                }
-
-//            }
-//        });
+        if (!mEventFilterSet.passes(event))
+        {
+            return;
+        }
+        if(!mEvents.contains(event))
+        {
+            mEvents.add(0, event);
+            fireTableRowsInserted(0, 0);
+            prune();
+        }
+        else
+        {
+            int row = mEvents.indexOf(event);
+            fireTableRowsUpdated(row, row);
+        }
     }
 
     private void prune()
