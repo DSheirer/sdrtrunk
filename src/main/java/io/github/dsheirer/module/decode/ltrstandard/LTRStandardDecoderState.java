@@ -35,6 +35,7 @@ import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.ltrstandard.channel.LtrChannel;
 import io.github.dsheirer.module.decode.ltrstandard.message.Call;
 import io.github.dsheirer.module.decode.ltrstandard.message.CallEnd;
@@ -97,10 +98,10 @@ public class LTRStandardDecoderState extends DecoderState
                                 mCurrentTalkgroup = start.getTalkgroup();
                                 getIdentifierCollection().remove(IdentifierClass.USER);
                                 getIdentifierCollection().update(start.getTalkgroup());
-                                mCurrentCallEvent = DecodeEvent.builder(start.getTimestamp())
-                                    .protocol(Protocol.LTR)
+                                mCurrentCallEvent = LTRStandardDecodeEvent.builder(start.getTimestamp())
                                     .identifiers(getIdentifierCollection().copyOf())
                                     .channel(getCurrentChannel())
+                                    .eventType(DecodeEventType.CALL)
                                     .eventDescription("Call")
                                     .build();
                             }
