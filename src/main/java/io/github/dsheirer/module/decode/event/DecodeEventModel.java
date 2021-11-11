@@ -109,6 +109,12 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
         }
     }
 
+    public void clear()
+    {
+        mEvents.clear();
+        fireTableDataChanged();
+    }
+
     /**
      * Clears all events from this model and loads the events argument
      */

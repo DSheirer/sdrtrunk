@@ -36,6 +36,8 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.event.filter.EventClearButton;
+import io.github.dsheirer.module.decode.event.filter.EventClearHandler;
 import io.github.dsheirer.module.decode.event.filter.EventFilterButton;
 import io.github.dsheirer.module.decode.event.filter.EventFilterProvider;
 import io.github.dsheirer.preference.PreferenceType;
@@ -166,25 +168,30 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
         private static final long serialVersionUID = 1L;
 
         private EventFilterButton<IDecodeEvent> mFilterButton;
+        private EventClearButton mEventClearButton;
 
         public EventManagementPanel()
         {
             setLayout(new MigLayout("insets 2 2 5 5", "[]5[left,grow]", ""));
 
             initializeFilterButton();
+            initializeClearButton();
             disableButtons();
 
             add(mFilterButton);
+            add(mEventClearButton);
         }
 
         public void enableButtons()
         {
             mFilterButton.setEnabled(true);
+            mEventClearButton.setEnabled(true);
         }
 
         public void disableButtons()
         {
             mFilterButton.setEnabled(false);
+            mEventClearButton.setEnabled(false);
         }
 
         private void initializeFilterButton()
@@ -195,6 +202,23 @@ public class DecodeEventPanel extends JPanel implements Listener<ProcessingChain
                 filterSet = filterProvider.getFilterSet();
             }
             mFilterButton = new EventFilterButton<>("Message Filter Editor", filterSet);
+        }
+
+        private void initializeClearButton() {
+            mEventClearButton = new EventClearButton(
+                    ((DecodeEventModel) mTable.getModel()).getMaxMessageCount()
+            );
+            mEventClearButton.setEventClearHandler(new EventClearHandler() {
+                @Override
+                public void onHistoryLimitChanged(int newHistoryLimit) {
+                    ((DecodeEventModel) mTable.getModel()).setMaxMessageCount(newHistoryLimit);
+                }
+
+                @Override
+                public void onClearHistoryClicked() {
+                    ((DecodeEventModel) mTable.getModel()).clear();
+                }
+            });
         }
     }
 
