@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.protocol.Protocol;
 
@@ -76,6 +77,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
         protected long mTimeStart;
         protected long mDuration;
         protected String mEventDescription;
+        protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
@@ -133,6 +135,16 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
         }
 
         /**
+         * Sets the {@link DecodeEventType}
+         * @param decodeEventType of the event
+         */
+        public P25ChannelGrantDecodeEventBuilder eventType(DecodeEventType decodeEventType)
+        {
+            mDecodeEventType = decodeEventType;
+            return this;
+        }
+
+        /**
          * Sets the identifier collection.
          * @param identifierCollection containing optional identifiers like TO, FROM, frequency and
          * alias list configuration name.
@@ -163,6 +175,7 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setServiceOptions(mServiceOptions);
