@@ -144,7 +144,7 @@ public class Fleetsync2DecoderState extends DecoderState
             case LONE_WORKER_EMERGENCY:
                 return DecodeEventType.EMERGENCY;
             case ACKNOWLEDGE:
-                return DecodeEventType.RESPONSE;
+                return DecodeEventType.ACKNOWLEDGE;
             case PAGING:
                 return DecodeEventType.PAGE;
             case STATUS:
