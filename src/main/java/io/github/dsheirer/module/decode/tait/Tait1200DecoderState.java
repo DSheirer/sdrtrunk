@@ -30,14 +30,17 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.tait.identifier.TaitIdentifier;
+import io.github.dsheirer.protocol.Protocol;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import java.util.TreeSet;
 
 public class Tait1200DecoderState extends DecoderState
 {
+    public static final Protocol PROTOCOL_TAIT_1200 = Protocol.TAIT1200;
     private TreeSet<TaitIdentifier> mIdents = new TreeSet<>();
 
     public Tait1200DecoderState()
@@ -95,6 +98,8 @@ public class Tait1200DecoderState extends DecoderState
                 ic.update(message.getIdentifiers());
 
                 PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(gps.getTimestamp())
+                    .protocol(PROTOCOL_TAIT_1200)
+                    .eventType(DecodeEventType.GPS)
                     .eventDescription("GPS")
                     .identifiers(ic)
                     .location(position)
@@ -117,6 +122,8 @@ public class Tait1200DecoderState extends DecoderState
             ic.update(message.getIdentifiers());
 
             broadcast(DecodeEvent.builder(ani.getTimestamp())
+                .protocol(PROTOCOL_TAIT_1200)
+                .eventType(DecodeEventType.ID_ANI)
                 .eventDescription("ANI")
                 .identifiers(ic)
                 .details("Automatic Number Identification")
