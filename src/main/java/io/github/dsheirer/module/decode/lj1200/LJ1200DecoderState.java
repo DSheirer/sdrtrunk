@@ -30,6 +30,7 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +75,7 @@ public class LJ1200DecoderState extends DecoderState
 
                 DecodeEvent event = DecodeEvent.builder(System.currentTimeMillis())
                     .identifiers(ic)
+                    .eventType(DecodeEventType.DATA_PACKET)
                     .channel(getCurrentChannel())
                     .details("LOJACK")
                     .eventDescription(lj.toString())
@@ -93,6 +95,7 @@ public class LJ1200DecoderState extends DecoderState
 
             DecodeEvent transponderEvent = DecodeEvent.builder(System.currentTimeMillis())
                 .identifiers(ic)
+                .eventType(DecodeEventType.GPS)
                 .channel(getCurrentChannel())
                 .details("LOJACK TRANSPONDER")
                 .eventDescription(transponder.toString())
