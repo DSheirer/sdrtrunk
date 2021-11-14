@@ -33,8 +33,12 @@ Once unzipped, open a command prompt to where you unzipped the release.  Change 
 * **Windows** sdr-trunk.bat
 * **Linux/OSX** ./sdr-trunk
 
-## Optional - P25 Audio
-If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) wiki page contains instructions for downloading the JMBE audio library source code and compiling the JMBE library.  Once you have compiled the library, launch the sdrtrunk application.  From the menu bar, choose **View >> Preferences**.  In the **JMBE Audio Codec** section, update the path to where your compiled JMBE library is located.  Any channels that are started after you set the path will be able to produce P25 audio.
+## Optional - P25/DMR Audio
+If you're using sdrtrunk with a P25 or DMR radio system, you'll need to compile and include the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) digital audio library.
+
+In Version 0.5.0 and higher, the SDRTrunk application has support for building the JMBE library.  On the menu, choose **View >> User Preferences** and then click the **Decoder >> JMBE Audio Library** tab.
+
+For versions prior to Version 0.5.0, the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) wiki page contains instructions for downloading the JMBE audio library source code and compiling the JMBE library.  Once you have compiled the library, launch the sdrtrunk application.  From the menu bar, choose **View >> Preferences**.  In the **JMBE Audio Codec** section, update the path to where your compiled JMBE library is located.  Any channels that are started after you set the path will be able to produce P25 audio.
 
 ## Minimum System Requirements
 * **Operating System:** Windows (~~32 or~~ 64-bit), Linux (~~32 or~~ 64-bit) or Mac/Linux (64-bit, 10.14 or higher)
@@ -46,7 +50,15 @@ If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://git
 If you're interested in modifying and/or compiling the source code, please follow these instructions to use gradle to compile the code. 
 
 ## Build the project
-sdrtrunk uses the gradle build system. This requires OpenJDK 11 or higher installed on your local compuber.  Use the gradle wrapper to build the source code:
+sdrtrunk uses the gradle build system. This requires **OpenJDK 17** or higher installed on your local computer.  
+
+### OpenJDK
+There are many vendors producing OpenJDK distributions.  A few that I use are:
+* [Azul Zulu OpenJDK](https://www.azul.com/downloads/?package=jdk)
+* [Bellsoft Liberica OpenJDK](https://www.azul.com/downloads/?package=jdk)
+* [SDKMAN](https://sdkman.io/) - Linux Only
+
+Use the gradle wrapper to build the source code:
 
 ### Linux
 ```
@@ -58,6 +70,18 @@ gradlew.bat clean build
 ```
 
 The **/build/distributions** folder will contain the zip file of the compiled program.  Unzip it and launch the program from the scripts in the **/bin** directory.
+
+## Run the Application (from Gradle)
+
+### Linux
+```
+./gradlew clean run
+```
+### Windows
+```
+gradlew.bat clean run
+```
+
 
 ## Development
 All dependencies/versions are controlled from build.gradle.

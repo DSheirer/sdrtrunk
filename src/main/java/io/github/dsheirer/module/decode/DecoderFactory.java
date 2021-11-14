@@ -69,6 +69,7 @@ import io.github.dsheirer.module.decode.mpt1327.MPT1327TrafficChannelManager;
 import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
+import io.github.dsheirer.module.decode.nbfm.NBFMDecoderState;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.audio.P25P2AudioModule;
@@ -303,21 +304,19 @@ public class DecoderFactory
         }
     }
 
-    private static void processNBFM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
-        modules.add(new NBFMDecoder(decodeConfig));
-        modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-        AudioModule audioModuleFM = new AudioModule(aliasList);
+    private static void processNBFM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
+    {
+        if(!(decodeConfig instanceof DecodeConfigNBFM))
+        {
+            throw new IllegalArgumentException("Can't create NBFM decoder - unrecognized decode config type: " +
+                    (decodeConfig != null ? decodeConfig.getClass() : "null/empty"));
+        }
 
-        //Check if the user wants all audio recorded ..
-        if(((DecodeConfigNBFM)decodeConfig).getRecordAudio())
-        {
-            audioModuleFM.setRecordAudio(true);
-        }
-        modules.add(audioModuleFM);
-        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-        {
-            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-        }
+        DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
+
+        modules.add(new NBFMDecoder(decodeConfigNBFM));
+        modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
+        modules.add(new AudioModule(aliasList));
     }
 
     private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
@@ -571,7 +570,6 @@ public class DecoderFactory
                 case NBFM:
                     DecodeConfigNBFM origNBFM = (DecodeConfigNBFM)config;
                     DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
-                    copyNBFM.setRecordAudio(origNBFM.getRecordAudio());
                     copyNBFM.setBandwidth(origNBFM.getBandwidth());
                     return copyNBFM;
                 case P25_PHASE1:

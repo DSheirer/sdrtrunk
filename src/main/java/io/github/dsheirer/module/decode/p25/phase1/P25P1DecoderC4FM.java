@@ -31,6 +31,7 @@ import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
+import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
@@ -67,7 +68,6 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     public void setSampleRate(double sampleRate)
     {
         super.setSampleRate(sampleRate);
-
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
@@ -102,6 +102,9 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     {
         //User accounting of the incoming buffer is handled by the filter
         ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+
+        //Process the buffer for power meter measurements (before gain is applied)
+        mPowerMonitor.process(basebandFiltered);
 
         //User accounting of the incoming buffer is handled by the gain filter
         ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);

@@ -152,6 +152,7 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
             case DMR:
             case MDC1200:
+            case NBFM:
             case PASSPORT:
             case UNKNOWN:
             default:
@@ -171,6 +172,7 @@ public class TalkgroupFormatPreference extends Preference
             case APCO25:
             case DMR:
             case MDC1200:
+            case NBFM:
             case PASSPORT:
             case UNKNOWN:
             default:
@@ -191,6 +193,7 @@ public class TalkgroupFormatPreference extends Preference
             case LTR:
             case LTR_NET:
             case MPT1327:
+            case NBFM:
             case UNKNOWN:
             default:
                 return true;

@@ -23,18 +23,23 @@ plugins {
     id 'application'
     id 'java'
     id 'idea'
-    id 'org.openjfx.javafxplugin' version '0.0.8'
-    id 'org.beryx.runtime' version '1.11.4'
+    id 'org.openjfx.javafxplugin' version '0.0.10'
+    id 'org.beryx.runtime' version '1.12.7'
 }
 
 repositories {
-    jcenter()
     mavenCentral()
     maven { url "https://jitpack.io" }
 }
 
-version = '0.5.0-alpha6'
-sourceCompatibility = '13'
+version = '0.5.0-alpha7'
+sourceCompatibility = '17'
+
+javafx {
+    version = "17.0.1"
+    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
+    configuration = "implementation"
+}
 
 sourceSets {
     main.java.srcDirs 'src/main'
@@ -45,6 +50,12 @@ test {
     useJUnitPlatform()
 }
 
+configurations {
+    javafx_libs_linux
+    javafx_libs_osx
+    javafx_libs_win
+}
+
 dependencies {
 
     // JUnit Tests
@@ -52,16 +63,17 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.8.0'
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.0")
     testImplementation 'org.mockito:mockito-core:3.+'
+
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     //Jitpack imports
-    implementation 'com.github.nwaldispuehl:java-lame:v3.98.4'
     implementation 'com.github.dnault:libresample4j:master'
     implementation 'com.github.DSheirer.jmbe:jmbe-api:1.0.0'
+    implementation 'com.github.nwaldispuehl:java-lame:v3.98.4'
 
     //mavenCentral/jcenter imports
-    implementation 'ch.qos.logback:logback-core:1.2.3'
     implementation 'ch.qos.logback:logback-classic:1.2.3'
+    implementation 'ch.qos.logback:logback-core:1.2.3'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.8'
     implementation 'com.fazecast:jSerialComm:2.5.0'
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
@@ -73,55 +85,71 @@ dependencies {
     implementation 'com.jidesoft:jide-oss:3.6.18'
     implementation 'com.miglayout:miglayout-swing:5.2'
     implementation 'com.mpatric:mp3agic:0.9.1'
+    implementation 'commons-io:commons-io:2.7'
     implementation 'eu.hansolo:charts:1.0.5'
     implementation 'io.github.dsheirer:radio-reference-api:15.1.8'
     implementation 'javax.usb:usb-api:1.0.2'
     implementation 'net.coderazzi:tablefilter-swing:5.4.0'
     implementation 'org.apache.commons:commons-compress:1.20'
-    implementation 'commons-io:commons-io:2.7'
     implementation 'org.apache.commons:commons-lang3:3.8.1'
     implementation 'org.apache.commons:commons-math3:3.6.1'
     implementation 'org.apache.commons:commons-csv:1.9.0'
     implementation 'org.apache.mina:mina-core:2.1.3'
     implementation 'org.apache.mina:mina-http:2.1.3'
-    implementation 'org.controlsfx:controlsfx:11.0.2'
+    implementation 'org.controlsfx:controlsfx:11.1.0'
     implementation 'org.rauschig:jarchivelib:1.0.0'
-
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation 'org.usb4java:libusb4java:1.3.0'
     implementation 'org.usb4java:usb4java:1.3.0'
     implementation 'org.usb4java:usb4java-javax:1.3.0'
     implementation 'pl.edu.icm:JLargeArrays:1.6'
 
-    //These must remain as compile options to ensure they are included in the build to produce multi-OS images
-    compile "org.openjfx:javafx-base:15:win"
-    compile "org.openjfx:javafx-base:15:linux"
-    compile "org.openjfx:javafx-base:15:mac"
-    compile "org.openjfx:javafx-controls:15:win"
-    compile "org.openjfx:javafx-controls:15:linux"
-    compile "org.openjfx:javafx-controls:15:mac"
-    compile "org.openjfx:javafx-graphics:15:win"
-    compile "org.openjfx:javafx-graphics:15:linux"
-    compile "org.openjfx:javafx-graphics:15:mac"
-    compile "org.openjfx:javafx-swing:15:win"
-    compile "org.openjfx:javafx-swing:15:linux"
-    compile "org.openjfx:javafx-swing:15:mac"
+    //JavaFX libraries for Linux
+    javafx_libs_linux "org.openjfx:javafx-base:$javafx.version:linux"
+    javafx_libs_linux "org.openjfx:javafx-controls:$javafx.version:linux"
+    javafx_libs_linux "org.openjfx:javafx-graphics:$javafx.version:linux"
+    javafx_libs_linux "org.openjfx:javafx-swing:$javafx.version:linux"
+
+    //JavaFX libraries for OSX
+    javafx_libs_osx "org.openjfx:javafx-base:$javafx.version:mac"
+    javafx_libs_osx "org.openjfx:javafx-controls:$javafx.version:mac"
+    javafx_libs_osx "org.openjfx:javafx-graphics:$javafx.version:mac"
+    javafx_libs_osx "org.openjfx:javafx-swing:$javafx.version:mac"
+
+    //JavaFX libraries for Windows
+    javafx_libs_win "org.openjfx:javafx-base:$javafx.version:win"
+    javafx_libs_win "org.openjfx:javafx-controls:$javafx.version:win"
+    javafx_libs_win "org.openjfx:javafx-graphics:$javafx.version:win"
+    javafx_libs_win "org.openjfx:javafx-swing:$javafx.version:win"
 }
 
 application {
     mainClassName = "io.github.dsheirer.gui.SDRTrunk"
+
+    //Note: jide-oss.jar requires access to hidden windows look & feel
+    //Note: controlsfx.jar requires access to hidden javaFX classes
+    applicationDefaultJvmArgs = ['--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED',
+        '--add-exports=javafx.base/com.sun.javafx.event=org.controlsfx.controls']
 }
 
-idea {
-    module {
-        downloadJavadoc = true
-        downloadSources = true
+/**
+ * Runtime JVM arguments.  JDK 17 has hidden a number of classes that are no longer exported from the
+ * modules.  Some legacy support libraries still require access to these classes, so we explicitly
+ * add them to be exported from those modules here.
+ */
+import org.gradle.internal.os.OperatingSystem;
+
+run {
+    if(OperatingSystem.current().isWindows()) {
+        //Note: jide-oss.jar requires access to hidden windows look & feel
+        //Note: controlsfx.jar requires access to hidden javaFX classes
+        jvmArgs = ['--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED',
+                   '--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED']
     }
-}
-
-javafx {
-    version = "15"
-    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
+    else {
+        //Note: controlsfx.jar requires access to hidden javaFX classes
+        jvmArgs = ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED']
+    }
 }
 
 jar {
@@ -137,31 +165,38 @@ jar {
     }
 }
 
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
 /**
- * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the 'bin'
- * directory within a JDK for each of the specified architectures.  These JDKs are used by the runtime and runtimeZip
- * tasks to produce platform-specific builds.  If none of these paths exists, then an image will be created for the
- * host OS using the installed JDK.
+ * Java Development Kit (JDK) locations.  In order to build OS-specific images, these paths must point to the parent
+ * directory containing the 'bin' directory within a JDK for each of the specified architectures.  These JDKs are used
+ * by the runtime and runtimeZip tasks to produce platform-specific builds.  If none of these paths exists, then an
+ * image will be created for the host OS using the installed JDK.
  */
-def jdk_base = '/media/denny/WD250GB/java/bellsoft/'
+def jdk_base = '/home/denny/java_jdks/'
 
-def jdk_linux_arm64 = jdk_base + 'linux-arm64/jdk-15'
-def jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-15'
-def jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-15.jdk'
-def jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-15'
+def jdk_linux_arm64 = jdk_base + 'linux-arm64/jdk-17.0.1-full'
+def jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-17.0.1-full'
+def jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-17.0.1-full.jdk'
+def jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-17.0.1-full'
 
-def file_jdk_linux_arm64 = new File(jdk_linux_arm64)
-def file_jdk_linux_x86_64 = new File(jdk_linux_x86_64)
-def file_jdk_osx_x86_64 = new File(jdk_osx_x86_64)
-def file_jdk_windows_x86_64 = new File(jdk_windows_x86_64)
+def hasTargetJdk = file(jdk_linux_x86_64).exists() ||
+        file(jdk_linux_arm64) ||
+        file(jdk_osx_x86_64).exists() ||
+        file(jdk_windows_x86_64).exists()
 
-def hasTargetJdk = file_jdk_linux_x86_64.exists() ||
-        file_jdk_linux_arm64 ||
-        file_jdk_osx_x86_64.exists() ||
-        file_jdk_windows_x86_64.exists()
-
+/**
+ * Beryx Runtime plugin - adds operating system specific runtime build targets when the OS-specific JDK is
+ * found on the local file system.  The runtime plugin enables you to optionally download these files,
+ * however I normally have them installed locally and use those versions.
+ */
 runtime {
-    if(file_jdk_linux_arm64.exists())
+    if(file(jdk_linux_arm64).exists())
     {
         targetPlatform('linux-arm64-v' + version, jdk_linux_arm64)
     }
@@ -170,7 +205,7 @@ runtime {
         println("Skipping OS Image - Linux ARM 64-bit JDK was not found at " + jdk_linux_arm64)
     }
 
-    if(file_jdk_linux_x86_64.exists())
+    if(file(jdk_linux_x86_64).exists())
     {
         targetPlatform('linux-x86_64-v' + version, jdk_linux_x86_64)
     }
@@ -179,7 +214,7 @@ runtime {
         println("Skipping OS Image - Linux x86 64-bit JDK was not found at " + jdk_linux_x86_64)
     }
 
-    if(file_jdk_osx_x86_64.exists())
+    if(file(jdk_osx_x86_64).exists())
     {
         targetPlatform('osx-x86_64-v' + version, jdk_osx_x86_64)
     }
@@ -188,7 +223,7 @@ runtime {
         println("Skipping OS Image - OSX x86 64-bit JDK was not found at " + jdk_osx_x86_64);
     }
 
-    if(file_jdk_windows_x86_64.exists())
+    if(file(jdk_windows_x86_64).exists())
     {
         targetPlatform('windows-x86_64-v' + version, jdk_windows_x86_64)
     }
@@ -203,19 +238,61 @@ runtime {
     imageZip = hasTargetJdk ? file("$buildDir/image/sdr-trunk.zip") : file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
 
+def image_lib_linux_arm64 = file("$buildDir/image/sdr-trunk-linux-arm64-v" + version + "/lib")
+def image_lib_linux_x86_64 = file("$buildDir/image/sdr-trunk-linux-x86_64-v" + version + "/lib")
+def image_lib_osx_x86_64 = file("$buildDir/image/sdr-trunk-osx-x86_64-v" + version + "/lib")
+def image_lib_win_x86_64 = file("$buildDir/image/sdr-trunk-windows-x86_64-v" + version + "/lib")
+
 /**
- * Copy JavaFX OS-specific libraries from each JDK to each platform target directory
+ * Copy JavaFX OS-specific libraries for each JDK to each platform target directory
  */
 tasks.runtime.doLast
 {
-    delete(fileTree('build/image/sdr-trunk-linux-arm64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-linux-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|mac)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(win|linux)\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx.*-(linux|mac)\.jar/ })
+    if(file(jdk_linux_arm64).exists())
+    {
+        //Delete any host system OS-specific JavaFX JDK modules that were inserted as part of default build
+        delete(fileTree(image_lib_linux_arm64).include { it.name ==~ /javafx.*-(win|mac|linux)\.jar/ })
 
-    //JavaFX web and media modules are transitive dependencies of ControlsFX but are not required for this application
-    delete(fileTree('build/image/sdr-trunk-linux-arm64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-linux-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-osx-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
-    delete(fileTree('build/image/sdr-trunk-windows-x86_64-v' + version + '/lib').include { it.name ==~ /javafx-(web|media)-.*\.jar/ })
+        //Copy OS-specific JavaFX libraries
+        copy {
+            from configurations.javafx_libs_linux
+            into image_lib_linux_arm64
+        }
+    }
+
+    if(file(jdk_linux_x86_64).exists())
+    {
+        //Delete any host system OS-specific JavaFX JDK modules that were inserted as part of default build
+        delete(fileTree(image_lib_linux_x86_64).include { it.name ==~ /javafx.*-(win|mac|linux)\.jar/ })
+
+        //Copy OS-specific JavaFX libraries
+        copy {
+            from configurations.javafx_libs_linux
+            into image_lib_linux_x86_64
+        }
+    }
+
+    if(file(jdk_osx_x86_64).exists())
+    {
+        //Delete any host system OS-specific JavaFX JDK modules that were inserted as part of default build
+        delete(fileTree(image_lib_osx_x86_64).include { it.name ==~ /javafx.*-(win|mac|linux)\.jar/ })
+
+        //Copy OS-specific JavaFX libraries
+        copy {
+            from configurations.javafx_libs_osx
+            into image_lib_osx_x86_64
+        }
+    }
+
+    if(file(jdk_windows_x86_64).exists())
+    {
+        //Delete any host system OS-specific JavaFX JDK modules that were inserted as part of default build
+        delete(fileTree(image_lib_win_x86_64).include { it.name ==~ /javafx.*-(win|mac|linux)\.jar/ })
+
+        //Copy OS-specific JavaFX libraries
+        copy {
+            from configurations.javafx_libs_win
+            into image_lib_win_x86_64
+        }
+    }
 }
