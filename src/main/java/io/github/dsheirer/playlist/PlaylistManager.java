@@ -545,7 +545,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * Schedules a playlist save task.  Subsequent calls to this method will be ignored until the save event occurs,
      * thus limiting repetitive playlist saving to a minimum.
      */
-    private void schedulePlaylistSave()
+    public void schedulePlaylistSave()
     {
         if(!mPlaylistLoading)
         {

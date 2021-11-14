@@ -50,7 +50,7 @@ public class IntegerFormatter extends TextFormatter<Integer>
      */
     public static class IntegerFilter implements UnaryOperator<Change>
     {
-        private String DECIMAL_REGEX = "[0-9].*";
+        private String DECIMAL_REGEX = "\\-?[0-9].*";
         private int mMinimum;
         private int mMaximum;
 

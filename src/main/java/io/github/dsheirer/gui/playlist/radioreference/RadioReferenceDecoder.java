@@ -413,15 +413,18 @@ public class RadioReferenceDecoder
             case "DMR":
                 return Protocol.DMR;
             case "LTR":
-                if(flavor.getName().contentEquals("Standard") || flavor.getName().contentEquals("Net"))
+                if(flavor != null)
                 {
-                    return Protocol.LTR;
+                    if(flavor.getName().contentEquals("Standard") || flavor.getName().contentEquals("Net"))
+                    {
+                        return Protocol.LTR;
+                    }
+                    else if(flavor.getName().contentEquals("Passport"))
+                    {
+                        return Protocol.PASSPORT;
+                    }
                 }
-                else if(flavor.getName().contentEquals("Passport"))
-                {
-                    return Protocol.PASSPORT;
-                }
-                break;
+                return Protocol.LTR;
             case "MPT-1327":
                 return Protocol.MPT1327;
             case "Project 25":
