@@ -19,11 +19,19 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import java.util.List;
+
+import org.controlsfx.control.ToggleSwitch;
+
 import com.google.common.collect.Ordering;
+
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -41,9 +49,6 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.util.Callback;
-import org.controlsfx.control.ToggleSwitch;
-
-import java.util.List;
 
 /**
  * Editor for multiple selected aliases providing limited options for changing attributes of multiple aliases
@@ -60,6 +65,9 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     private ToggleSwitch mMonitorAudioToggleSwitch;
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private Button mApplyMonitorButton;
+    
+    private BooleanProperty mChangeInProgressProperty;
+    private ReadOnlyBooleanProperty mChangeInProgressROProperty;
 
     /**
      * Constructs an instance
@@ -68,6 +76,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     public AliasBulkEditor(PlaylistManager playlistManager)
     {
         mPlaylistManager = playlistManager;
+        
+        mChangeInProgressProperty = new SimpleBooleanProperty();
 
         GridPane gridPane = new GridPane();
         gridPane.setPadding(new Insets(10,10,10,10));
@@ -160,6 +170,29 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     {
         //no-op
     }
+    
+    /**
+     * Property indicating whether a bulk change is in progress.  Bulk changes may cause drastic
+     * slow downs in some UI components.  
+     * @return changeInProgressProperty
+     */
+    public ReadOnlyBooleanProperty changeInProgressProperty()
+    {
+    	if(mChangeInProgressROProperty == null)
+    		mChangeInProgressROProperty = BooleanProperty.readOnlyBooleanProperty(mChangeInProgressProperty);
+    	
+    	return mChangeInProgressROProperty;
+    }
+    
+    private void startChange()
+    {
+    	mChangeInProgressProperty.set(true);
+    }
+    
+    private void endChange()
+    {
+    	mChangeInProgressProperty.set(false);
+    }
 
     private Label getEditingLabel()
     {
@@ -189,12 +222,16 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         {
             mApplyColorButton = new Button("Apply");
             mApplyColorButton.setOnAction(event -> {
+            	startChange();
+            	
                 int colorValue = ColorUtil.toInteger(getColorPicker().getValue());
 
                 for(Alias alias: getItem())
                 {
                     alias.setColor(colorValue);
                 }
+                
+                endChange();
             });
         }
 
@@ -207,10 +244,14 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         {
             mResetColorButton = new Button("Reset Color");
             mResetColorButton.setOnAction(event -> {
+            	startChange();
+            	
                 for(Alias alias: getItem())
                 {
                     alias.setColor(0);
                 }
+                
+                endChange();
             });
         }
 
@@ -246,6 +287,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                 @Override
                 public void handle(ActionEvent event)
                 {
+                	startChange();
+                	
                     Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
 
                     if(icon != null)
@@ -255,6 +298,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                             alias.setIconName(icon.getName());
                         }
                     }
+                    
+                    endChange();
                 }
             });
         }
@@ -295,6 +340,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         return mMonitorPriorityComboBox;
     }
 
+    private static int setCount = 0;
     private Button getApplyMonitorButton()
     {
         if(mApplyMonitorButton == null)
@@ -305,6 +351,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                 @Override
                 public void handle(ActionEvent event)
                 {
+                	startChange();
+                	
                     boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
                     Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
                     if(canMonitor)
@@ -318,11 +366,15 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                     {
                         priority = io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR;
                     }
-
+                    
+                    final Integer pri = priority;
                     for(Alias alias: getItem())
                     {
-                        alias.setCallPriority(priority);
+                    	alias.setCallPriority(pri);
+                    	//System.out.println(++setCount);
                     }
+                    
+                    endChange();
                 }
             });
         }
