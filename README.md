@@ -50,7 +50,7 @@ For versions prior to Version 0.5.0, the [JMBE](https://github.com/DSheirer/sdrt
 If you're interested in modifying and/or compiling the source code, please follow these instructions to use gradle to compile the code. 
 
 ## Build the project
-sdrtrunk uses the gradle build system. This requires **OpenJDK 17** or higher installed on your local compuber.  
+sdrtrunk uses the gradle build system. This requires **OpenJDK 17** or higher installed on your local computer.  
 
 ### OpenJDK
 There are many vendors producing OpenJDK distributions.  A few that I use are:
