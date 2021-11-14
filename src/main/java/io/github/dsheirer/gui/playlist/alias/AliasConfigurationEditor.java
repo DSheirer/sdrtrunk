@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.alias;
@@ -125,8 +122,9 @@ public class AliasConfigurationEditor extends SplitPane
 
     /**
      * Request to show the specified alias in the editor.
-     *
+     * <p>
      * Note: this must be called on the FX platform thread
+     *
      * @param alias to show
      */
     public void show(Alias alias)
@@ -171,11 +169,12 @@ public class AliasConfigurationEditor extends SplitPane
             alert.setTitle("Save Changes");
             alert.setHeaderText("Alias configuration has been modified");
             alert.setContentText("Do you want to save these changes?");
-            alert.initOwner(((Node)getButtonBox()).getScene().getWindow());
+            alert.initOwner(((Node) getButtonBox()).getScene().getWindow());
 
             //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
             alert.setResizable(true);
-            alert.onShownProperty().addListener(e -> {
+            alert.onShownProperty().addListener(e ->
+            {
                 Platform.runLater(() -> alert.setResizable(false));
             });
 
@@ -251,7 +250,7 @@ public class AliasConfigurationEditor extends SplitPane
             searchBox.setAlignment(Pos.BASELINE_RIGHT);
 
             mSearchAndListSelectionBox.getChildren().addAll(listLabel, getAliasListNameComboBox(),
-                getNewAliasListButton(), searchBox);
+                    getNewAliasListButton(), searchBox);
         }
 
         return mSearchAndListSelectionBox;
@@ -293,10 +292,11 @@ public class AliasConfigurationEditor extends SplitPane
         {
             mAliasListNameComboBox = new ComboBox<>(mPlaylistManager.getAliasModel().aliasListNames());
             mAliasListNameComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) -> {
-                    getNewAliasButton().setDisable(newValue == null || newValue.contentEquals(AliasModel.NO_ALIAS_LIST));
-                    update();
-                });
+                    .addListener((ObservableValue<? extends String> observable, String oldValue, String newValue) ->
+                    {
+                        getNewAliasButton().setDisable(newValue == null || newValue.contentEquals(AliasModel.NO_ALIAS_LIST));
+                        update();
+                    });
 
             if(mAliasListNameComboBox.getItems().size() > 1)
             {
@@ -312,7 +312,7 @@ public class AliasConfigurationEditor extends SplitPane
             else if(mAliasListNameComboBox.getItems().size() == 1)
             {
                 mAliasListNameComboBox.getSelectionModel().select(0);
-           }
+            }
         }
 
         return mAliasListNameComboBox;
@@ -323,7 +323,8 @@ public class AliasConfigurationEditor extends SplitPane
         if(mNewAliasListButton == null)
         {
             mNewAliasListButton = new Button("New Alias List");
-            mNewAliasListButton.setOnAction(event -> {
+            mNewAliasListButton.setOnAction(event ->
+            {
                 TextInputDialog dialog = new TextInputDialog();
                 dialog.setTitle("Create New Alias List");
                 dialog.setHeaderText("Please enter an alias list name (max 25 chars).");
@@ -331,7 +332,8 @@ public class AliasConfigurationEditor extends SplitPane
                 dialog.getEditor().setTextFormatter(new TextFormatter<String>(new MaxLengthUnaryOperator(25)));
                 Optional<String> result = dialog.showAndWait();
 
-                result.ifPresent(s -> {
+                result.ifPresent(s ->
+                {
                     String name = result.get();
 
                     if(name != null && !name.isEmpty())
@@ -355,7 +357,7 @@ public class AliasConfigurationEditor extends SplitPane
 
             TableColumn nameColumn = new TableColumn();
             nameColumn.setText("Alias");
-            nameColumn.setCellValueFactory(new PropertyValueFactory<Alias,String>("name"));
+            nameColumn.setCellValueFactory(new PropertyValueFactory<Alias, String>("name"));
             nameColumn.setPrefWidth(140);
 
             TableColumn groupColumn = new TableColumn();
@@ -363,34 +365,35 @@ public class AliasConfigurationEditor extends SplitPane
             groupColumn.setCellValueFactory(new PropertyValueFactory<>("group"));
             groupColumn.setPrefWidth(140);
 
-            TableColumn<Alias,Integer> colorColumn = new TableColumn("Color");
+            TableColumn<Alias, Integer> colorColumn = new TableColumn("Color");
             colorColumn.setCellValueFactory(new PropertyValueFactory<>("color"));
             colorColumn.setCellFactory(new ColorizedCell());
 
-            TableColumn<Alias,String> iconColumn = new TableColumn("Icon");
+            TableColumn<Alias, String> iconColumn = new TableColumn("Icon");
             iconColumn.setCellValueFactory(new PropertyValueFactory<>("iconName"));
             iconColumn.setCellFactory(new IconTableCellFactory());
 
-            TableColumn<Alias,Integer> priorityColumn = new TableColumn("Listen");
+            TableColumn<Alias, Integer> priorityColumn = new TableColumn("Listen");
             priorityColumn.setCellFactory(new PriorityCellFactory());
             priorityColumn.setCellValueFactory(new PropertyValueFactory<>("priority"));
 
-            TableColumn<Alias,Boolean> recordColumn = new TableColumn("Record");
+            TableColumn<Alias, Boolean> recordColumn = new TableColumn("Record");
             recordColumn.setCellValueFactory(new PropertyValueFactory<>("recordable"));
             recordColumn.setCellFactory(new IconCell(FontAwesome.SQUARE, Color.RED));
 
-            TableColumn<Alias,Boolean> streamColumn = new TableColumn("Stream");
+            TableColumn<Alias, Boolean> streamColumn = new TableColumn("Stream");
             streamColumn.setCellValueFactory(new PropertyValueFactory<>("streamable"));
             streamColumn.setCellFactory(new IconCell(FontAwesome.VOLUME_UP, Color.DARKBLUE));
 
-            TableColumn<Alias,Integer> idsColumn = new TableColumn("IDs");
+            TableColumn<Alias, Integer> idsColumn = new TableColumn("IDs");
             idsColumn.setCellValueFactory(new IdentifierCountCell());
 
-            TableColumn<Alias,Boolean> errorsColumn = new TableColumn<>("Error");
+            TableColumn<Alias, Boolean> errorsColumn = new TableColumn<>("Error");
             errorsColumn.setPrefWidth(80);
             errorsColumn.setCellValueFactory(new PropertyValueFactory<>("overlap"));
-            errorsColumn.setCellFactory(param -> {
-                TableCell<Alias,Boolean> tableCell = new TableCell<>()
+            errorsColumn.setCellFactory(param ->
+            {
+                TableCell<Alias, Boolean> tableCell = new TableCell<>()
                 {
                     @Override
                     protected void updateItem(Boolean item, boolean empty)
@@ -417,12 +420,13 @@ public class AliasConfigurationEditor extends SplitPane
 
 
             mAliasTableView.getColumns().addAll(nameColumn, groupColumn, colorColumn, iconColumn, priorityColumn,
-                recordColumn, streamColumn, idsColumn, errorsColumn);
+                    recordColumn, streamColumn, idsColumn, errorsColumn);
 
             mAliasTableView.setPlaceholder(getPlaceholderLabel());
             mAliasTableView.setItems(getAliasSortedList());
             mAliasTableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            mAliasTableView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<Alias>)c -> {
+            mAliasTableView.getSelectionModel().getSelectedItems().addListener((ListChangeListener<Alias>) c ->
+            {
                 Platform.runLater(() -> setAliases(mAliasTableView.getSelectionModel().getSelectedItems()));
             });
         }
@@ -446,18 +450,19 @@ public class AliasConfigurationEditor extends SplitPane
         {
             mAliasSortedList = new SortedList<>(getAliasFilteredList());
             mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
-            
+
             //Don't re-sort while the bulk editor is still applying changes to aliases
-            getAliasBulkEditor().changeInProgressProperty().addListener((observable, oldValue, newValue) -> {
-            	if(newValue)
-            	{
-            		mAliasSortedList.comparatorProperty().unbind();
-            		mAliasSortedList.setComparator(null);
-            	}
-            	else
-            	{
-            		mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
-            	}
+            getAliasBulkEditor().changeInProgressProperty().addListener((observable, oldValue, newValue) ->
+            {
+                if(newValue)
+                {
+                    mAliasSortedList.comparatorProperty().unbind();
+                    mAliasSortedList.setComparator(null);
+                }
+                else
+                {
+                    mAliasSortedList.comparatorProperty().bind(getAliasTableView().comparatorProperty());
+                }
             });
         }
 
@@ -485,7 +490,7 @@ public class AliasConfigurationEditor extends SplitPane
             Button fillerButton = new Button();
             fillerButton.setVisible(false);
             mButtonBox.getChildren().addAll(fillerButton, getNewAliasButton(), getCloneAliasButton(),
-                getMoveToAliasButton(), getDeleteAliasButton());
+                    getMoveToAliasButton(), getDeleteAliasButton());
         }
 
         return mButtonBox;
@@ -499,13 +504,15 @@ public class AliasConfigurationEditor extends SplitPane
             mNewAliasButton.setDisable(true);
             mNewAliasButton.setAlignment(Pos.CENTER);
             mNewAliasButton.setMaxWidth(Double.MAX_VALUE);
-            mNewAliasButton.setOnAction(event -> {
+            mNewAliasButton.setOnAction(event ->
+            {
                 Alias alias = new Alias("New Alias");
                 alias.setAliasListName(getAliasListNameComboBox().getSelectionModel().getSelectedItem());
                 mPlaylistManager.getAliasModel().addAlias(alias);
 
                 //Queue a select alias action to allow table to update filter predicate and display the alias
-                Platform.runLater(() -> {
+                Platform.runLater(() ->
+                {
                     getAliasTableView().getSelectionModel().clearSelection();
                     getAliasTableView().getSelectionModel().select(alias);
                     getAliasTableView().scrollTo(alias);
@@ -523,16 +530,17 @@ public class AliasConfigurationEditor extends SplitPane
             mDeleteAliasButton = new Button("Delete");
             mDeleteAliasButton.setDisable(true);
             mDeleteAliasButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteAliasButton.setOnAction(event -> {
+            mDeleteAliasButton.setOnAction(event ->
+            {
 
                 boolean multiple = getAliasTableView().getSelectionModel().getSelectedItems().size() > 1;
 
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                    "Do you want to delete the selected alias" + (multiple ? "es?" : "?"),
-                    ButtonType.NO, ButtonType.YES);
+                        "Do you want to delete the selected alias" + (multiple ? "es?" : "?"),
+                        ButtonType.NO, ButtonType.YES);
                 alert.setTitle("Delete Alias");
                 alert.setHeaderText("Are you sure?");
-                alert.initOwner(((Node)getDeleteAliasButton()).getScene().getWindow());
+                alert.initOwner(((Node) getDeleteAliasButton()).getScene().getWindow());
 
                 Optional<ButtonType> result = alert.showAndWait();
 
@@ -540,7 +548,7 @@ public class AliasConfigurationEditor extends SplitPane
                 {
                     List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
 
-                    for(Alias selected: selectedAliases)
+                    for(Alias selected : selectedAliases)
                     {
                         mPlaylistManager.getAliasModel().removeAlias(selected);
                     }
@@ -558,7 +566,8 @@ public class AliasConfigurationEditor extends SplitPane
             mCloneAliasButton = new Button("Clone");
             mCloneAliasButton.setDisable(true);
             mCloneAliasButton.setMaxWidth(Double.MAX_VALUE);
-            mCloneAliasButton.setOnAction(event -> {
+            mCloneAliasButton.setOnAction(event ->
+            {
                 Alias original = getAliasTableView().getSelectionModel().getSelectedItem();
                 Alias copy = AliasFactory.shallowCopyOf(original);
                 mPlaylistManager.getAliasModel().addAlias(copy);
@@ -577,7 +586,8 @@ public class AliasConfigurationEditor extends SplitPane
         {
             mMoveToAliasButton = new MenuButton("Move To");
             mMoveToAliasButton.setDisable(true);
-            mMoveToAliasButton.setOnShowing(event -> {
+            mMoveToAliasButton.setOnShowing(event ->
+            {
                 mMoveToAliasButton.getItems().clear();
 
                 MenuItem emptyItem = new MenuItem("Alias Lists");
@@ -586,10 +596,10 @@ public class AliasConfigurationEditor extends SplitPane
 
                 List<String> aliasLists = mPlaylistManager.getAliasModel().getListNames();
 
-                for(String aliasList: aliasLists)
+                for(String aliasList : aliasLists)
                 {
                     if(!aliasList.contentEquals(AliasModel.NO_ALIAS_LIST) &&
-                       !aliasList.contentEquals(getAliasListNameComboBox().getSelectionModel().getSelectedItem()))
+                            !aliasList.contentEquals(getAliasListNameComboBox().getSelectionModel().getSelectedItem()))
                     {
                         mMoveToAliasButton.getItems().add(new MoveToAliasListItem(aliasList));
                     }
@@ -606,9 +616,10 @@ public class AliasConfigurationEditor extends SplitPane
         {
             super(aliasList);
 
-            setOnAction(event -> {
+            setOnAction(event ->
+            {
                 List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
-                for(Alias selected: selectedAliases)
+                for(Alias selected : selectedAliases)
                 {
                     AliasList existing = mPlaylistManager.getAliasModel().getAliasList(selected.getAliasListName());
                     existing.removeAlias(selected);
@@ -621,16 +632,16 @@ public class AliasConfigurationEditor extends SplitPane
         }
     }
 
-    public class ColorizedCell implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
+    public class ColorizedCell implements Callback<TableColumn<Alias, Integer>, TableCell<Alias, Integer>>
     {
         @Override
-        public TableCell<Alias,Integer> call(TableColumn<Alias,Integer> param)
+        public TableCell<Alias, Integer> call(TableColumn<Alias, Integer> param)
         {
-            final Rectangle rectangle = new Rectangle(20,20);
+            final Rectangle rectangle = new Rectangle(20, 20);
             rectangle.setArcHeight(10);
             rectangle.setArcWidth(10);
 
-            TableCell<Alias,Integer> tableCell = new TableCell<>()
+            TableCell<Alias, Integer> tableCell = new TableCell<>()
             {
                 @Override
                 protected void updateItem(Integer item, boolean empty)
@@ -667,7 +678,7 @@ public class AliasConfigurationEditor extends SplitPane
     /**
      * Boolean table cell with an icon visibility bound to the boolean value
      */
-    public class IconCell implements Callback<TableColumn<Alias,Boolean>,TableCell<Alias,Boolean>>
+    public class IconCell implements Callback<TableColumn<Alias, Boolean>, TableCell<Alias, Boolean>>
     {
         private IconCode mIconCode;
         private Color mColor;
@@ -679,13 +690,13 @@ public class AliasConfigurationEditor extends SplitPane
         }
 
         @Override
-        public TableCell<Alias,Boolean> call(TableColumn<Alias,Boolean> param)
+        public TableCell<Alias, Boolean> call(TableColumn<Alias, Boolean> param)
         {
             final IconNode iconNode = new IconNode(mIconCode);
             iconNode.setIconSize(20);
             iconNode.setFill(mColor);
 
-            TableCell<Alias,Boolean> tableCell = new TableCell<>()
+            TableCell<Alias, Boolean> tableCell = new TableCell<>()
             {
                 @Override
                 protected void updateItem(Boolean item, boolean empty)
@@ -708,10 +719,10 @@ public class AliasConfigurationEditor extends SplitPane
         }
     }
 
-    public class IdentifierCountCell implements Callback<TableColumn.CellDataFeatures<Alias,Integer>,ObservableValue<Integer>>
+    public class IdentifierCountCell implements Callback<TableColumn.CellDataFeatures<Alias, Integer>, ObservableValue<Integer>>
     {
         @Override
-        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias,Integer> param)
+        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias, Integer> param)
         {
             if(param.getValue() != null)
             {
@@ -722,10 +733,10 @@ public class AliasConfigurationEditor extends SplitPane
         }
     }
 
-    public class ActionCountCell implements Callback<TableColumn.CellDataFeatures<Alias,Integer>,ObservableValue<Integer>>
+    public class ActionCountCell implements Callback<TableColumn.CellDataFeatures<Alias, Integer>, ObservableValue<Integer>>
     {
         @Override
-        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias,Integer> param)
+        public ObservableValue<Integer> call(TableColumn.CellDataFeatures<Alias, Integer> param)
         {
             Integer count = null;
 
@@ -738,16 +749,16 @@ public class AliasConfigurationEditor extends SplitPane
         }
     }
 
-    public class CenteredCountCellFactory implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
+    public class CenteredCountCellFactory implements Callback<TableColumn<Alias, Integer>, TableCell<Alias, Integer>>
     {
         @Override
-        public TableCell<Alias,Integer> call(TableColumn<Alias,Integer> param)
+        public TableCell<Alias, Integer> call(TableColumn<Alias, Integer> param)
         {
             return new CenteredCountCell();
         }
     }
 
-    public class CenteredCountCell extends TableCell<Alias,Integer>
+    public class CenteredCountCell extends TableCell<Alias, Integer>
     {
         public CenteredCountCell()
         {
@@ -760,7 +771,7 @@ public class AliasConfigurationEditor extends SplitPane
         @Override
         public TableCell<Alias, Integer> call(TableColumn<Alias, Integer> param)
         {
-            TableCell tableCell = new TableCell<Alias,Integer>()
+            TableCell tableCell = new TableCell<Alias, Integer>()
             {
                 @Override
                 protected void updateItem(Integer item, boolean empty)
@@ -806,7 +817,7 @@ public class AliasConfigurationEditor extends SplitPane
         @Override
         public TableCell<Alias, String> call(TableColumn<Alias, String> param)
         {
-            TableCell<Alias,String> tableCell = new TableCell<>()
+            TableCell<Alias, String> tableCell = new TableCell<>()
             {
                 @Override
                 protected void updateItem(String item, boolean empty)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,22 +65,23 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     private ToggleSwitch mMonitorAudioToggleSwitch;
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private Button mApplyMonitorButton;
-    
+
     private BooleanProperty mChangeInProgressProperty;
     private ReadOnlyBooleanProperty mChangeInProgressROProperty;
 
     /**
      * Constructs an instance
+     *
      * @param playlistManager for accessing icon manager
      */
     public AliasBulkEditor(PlaylistManager playlistManager)
     {
         mPlaylistManager = playlistManager;
-        
+
         mChangeInProgressProperty = new SimpleBooleanProperty();
 
         GridPane gridPane = new GridPane();
-        gridPane.setPadding(new Insets(10,10,10,10));
+        gridPane.setPadding(new Insets(10, 10, 10, 10));
         gridPane.setHgap(10);
         gridPane.setVgap(10);
 
@@ -170,33 +171,36 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     {
         //no-op
     }
-    
+
     /**
      * Property indicating whether a bulk change is in progress.  Bulk changes may cause drastic
-     * slow downs in some UI components.  
+     * slow downs in some UI components.
+     *
      * @return changeInProgressProperty
      */
     public ReadOnlyBooleanProperty changeInProgressProperty()
     {
-    	if(mChangeInProgressROProperty == null)
-    		mChangeInProgressROProperty = BooleanProperty.readOnlyBooleanProperty(mChangeInProgressProperty);
-    	
-    	return mChangeInProgressROProperty;
+        if(mChangeInProgressROProperty == null)
+        {
+            mChangeInProgressROProperty = BooleanProperty.readOnlyBooleanProperty(mChangeInProgressProperty);
+        }
+
+        return mChangeInProgressROProperty;
     }
-    
+
     private void startChange()
     {
-    	mChangeInProgressProperty.set(true);
+        mChangeInProgressProperty.set(true);
     }
-    
+
     private void endChange()
     {
-    	mChangeInProgressProperty.set(false);
+        mChangeInProgressProperty.set(false);
     }
 
     private Label getEditingLabel()
     {
-        if(mEditingLabel== null)
+        if(mEditingLabel == null)
         {
             mEditingLabel = new Label("Editing 0 Aliases");
         }
@@ -221,16 +225,17 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mApplyColorButton == null)
         {
             mApplyColorButton = new Button("Apply");
-            mApplyColorButton.setOnAction(event -> {
-            	startChange();
-            	
+            mApplyColorButton.setOnAction(event ->
+            {
+                startChange();
+
                 int colorValue = ColorUtil.toInteger(getColorPicker().getValue());
 
-                for(Alias alias: getItem())
+                for(Alias alias : getItem())
                 {
                     alias.setColor(colorValue);
                 }
-                
+
                 endChange();
             });
         }
@@ -243,14 +248,15 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mResetColorButton == null)
         {
             mResetColorButton = new Button("Reset Color");
-            mResetColorButton.setOnAction(event -> {
-            	startChange();
-            	
-                for(Alias alias: getItem())
+            mResetColorButton.setOnAction(event ->
+            {
+                startChange();
+
+                for(Alias alias : getItem())
                 {
                     alias.setColor(0);
                 }
-                
+
                 endChange();
             });
         }
@@ -267,10 +273,10 @@ public class AliasBulkEditor extends Editor<List<Alias>>
             mIconNodeComboBox.setItems(new SortedList(mPlaylistManager.getIconModel().iconsProperty(), Ordering.natural()));
             mIconNodeComboBox.setCellFactory(new IconCellFactory());
             mIconNodeComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) ->
-                {
-                    getApplyIconButton().setDisable(newValue == null);
-                });
+                    .addListener((observable, oldValue, newValue) ->
+                    {
+                        getApplyIconButton().setDisable(newValue == null);
+                    });
         }
 
         return mIconNodeComboBox;
@@ -287,18 +293,18 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                 @Override
                 public void handle(ActionEvent event)
                 {
-                	startChange();
-                	
+                    startChange();
+
                     Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
 
                     if(icon != null)
                     {
-                        for(Alias alias: getItem())
+                        for(Alias alias : getItem())
                         {
                             alias.setIconName(icon.getName());
                         }
                     }
-                    
+
                     endChange();
                 }
             });
@@ -314,7 +320,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
             mMonitorAudioToggleSwitch = new ToggleSwitch();
             mMonitorAudioToggleSwitch.setSelected(true);
             mMonitorAudioToggleSwitch.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mMonitorAudioToggleSwitch;
@@ -334,13 +340,14 @@ public class AliasBulkEditor extends Editor<List<Alias>>
 
             mMonitorPriorityComboBox.disableProperty().bind(getMonitorAudioToggleSwitch().selectedProperty().not());
             mMonitorPriorityComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mMonitorPriorityComboBox;
     }
 
     private static int setCount = 0;
+
     private Button getApplyMonitorButton()
     {
         if(mApplyMonitorButton == null)
@@ -351,8 +358,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                 @Override
                 public void handle(ActionEvent event)
                 {
-                	startChange();
-                	
+                    startChange();
+
                     boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
                     Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
                     if(canMonitor)
@@ -366,14 +373,14 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                     {
                         priority = io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR;
                     }
-                    
+
                     final Integer pri = priority;
-                    for(Alias alias: getItem())
+                    for(Alias alias : getItem())
                     {
-                    	alias.setCallPriority(pri);
-                    	//System.out.println(++setCount);
+                        alias.setCallPriority(pri);
+                        //System.out.println(++setCount);
                     }
-                    
+
                     endChange();
                 }
             });
@@ -397,7 +404,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
             GridPane.setHalignment(iconLabel, HPos.RIGHT);
             gridPane.getColumnConstraints().add(new ColumnConstraints(50));
             gridPane.add(iconLabel, 0, 0);
-            gridPane.add(textLabel,1,0);
+            gridPane.add(textLabel, 1, 0);
 
             ListCell<Icon> cell = new ListCell<>()
             {
