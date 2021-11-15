@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.tait.identifier;
@@ -25,11 +24,12 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.string.StringIdentifier;
 import io.github.dsheirer.protocol.Protocol;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Tait-1200 String (ASCII) Identifier
  */
-public class TaitIdentifier extends StringIdentifier
+public class TaitIdentifier extends StringIdentifier implements Comparable<TaitIdentifier>
 {
     /**
      * Constructs an identifier with the specified role
@@ -59,5 +59,11 @@ public class TaitIdentifier extends StringIdentifier
     public static TaitIdentifier createTo(String value)
     {
         return new TaitIdentifier(value, Role.TO);
+    }
+
+    @Override
+    public int compareTo(TaitIdentifier other)
+    {
+        return StringUtils.compare(getValue(), other != null ? other.getValue() : null);
     }
 }
