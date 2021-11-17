@@ -21,14 +21,20 @@ package io.github.dsheirer.module.decode.nbfm;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import io.github.dsheirer.dsp.squelch.ISquelchConfiguration;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
-public class DecodeConfigNBFM extends DecodeConfiguration
+/**
+ * Decoder configuration for an NBFM channel
+ */
+public class DecodeConfigNBFM extends DecodeConfiguration implements ISquelchConfiguration
 {
     private Bandwidth mBandwidth = Bandwidth.BW_12_5;
-    private boolean mRecordAudio = false;
+    private Boolean mRecordAudio;
+    private int mTalkgroup = 1;
+    private int mSquelchThreshold = -60;
 
     public DecodeConfigNBFM()
     {
@@ -71,33 +77,85 @@ public class DecodeConfigNBFM extends DecodeConfiguration
         mBandwidth = bandwidth;
     }
 
-    @JacksonXmlProperty(isAttribute =  true, localName = "recordAudio")
-    public boolean getRecordAudio()
+//    @Deprecated //No longer used: 20211107
+//    @JacksonXmlProperty(isAttribute =  true, localName = "recordAudio")
+//    public boolean getRecordAudio()
+//    {
+//        return false;
+//    }
+//
+//    @Deprecated //No longer used: 20211107
+//    public void setRecordAudio(boolean recordAudio)
+//    {
+//    }
+//
+    /**
+     * Talkgroup to associate with audio produced by the NBFM decoder
+     */
+    @JacksonXmlProperty(isAttribute =  true, localName = "talkgroup")
+    public int getTalkgroup()
     {
-        return mRecordAudio;
+        return mTalkgroup;
     }
 
-    public void setRecordAudio(boolean recordAudio)
+    /**
+     * Sets the talkgroup identifier to attach to any demodulated audio streams
+     * @param talkgroup (1-65,535)
+     */
+    public void setTalkgroup(int talkgroup)
     {
-        mRecordAudio = recordAudio;
+        if(talkgroup < 1 || talkgroup > 65535)
+        {
+            throw new IllegalArgumentException("Valid talkgroup range is 1 - 65,535");
+        }
+
+        mTalkgroup = talkgroup;
+    }
+
+    /**
+     * Sets squelch threshold
+     * @param threshold (dB)
+     */
+    @JacksonXmlProperty(isAttribute =  true, localName = "squelch")
+    @Override
+    public void setSquelchThreshold(int threshold)
+    {
+        mSquelchThreshold = threshold;
+    }
+
+    /**
+     * Squelch threshold
+     * @return threshold (dB)
+     */
+    @Override
+    public int getSquelchThreshold()
+    {
+        return mSquelchThreshold;
     }
 
     public enum Bandwidth
     {
-        BW_12_5("12.5 kHz"),
-        BW_25_0("25.0 kHz");
+        BW_12_5("12.5 kHz", 12500.0),
+        BW_25_0("25.0 kHz", 25000.0);
 
         private String mLabel;
+        private double mValue;
 
-        Bandwidth(String label)
+        Bandwidth(String label, double value)
         {
             mLabel = label;
+            mValue = value;
         }
 
         @Override
         public String toString()
         {
             return mLabel;
+        }
+
+        public double getValue()
+        {
+            return mValue;
         }
     }
 }

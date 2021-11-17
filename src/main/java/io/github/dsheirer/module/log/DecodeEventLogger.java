@@ -33,10 +33,13 @@ import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventListener;
 import io.github.dsheirer.preference.TimestampFormat;
 import io.github.dsheirer.sample.Listener;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.QuoteMode;
 
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -46,6 +49,16 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
     private DecimalFormat mFrequencyFormat = new DecimalFormat("0.000000");
     private AliasList mAliasList;
     private AliasModel mAliasModel;
+
+    /**
+     * The CSV format that SDR Trunk will use to write decode event logs
+     * <p>
+     * It uses the standard, default CSV format (RFC 4180 and permitting empty lines) but *always* quoting cells since
+     * that's what SDR Trunk has done previously when hand-crafting CSV rows.
+     */
+    private final CSVFormat mCsvFormat = CSVFormat.Builder.create(CSVFormat.DEFAULT)
+            .setQuoteMode(QuoteMode.ALL)
+            .build();
 
     public DecodeEventLogger(AliasModel aliasModel, Path logDirectory, String fileNameSuffix, long frequency)
     {
@@ -83,25 +96,23 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
 
     private String toCSV(IDecodeEvent event)
     {
+        List<Object> cells = new ArrayList<>();
 
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("\"").append(mTimestampFormat.format(new Date(event.getTimeStart()))).append("\"");
-        sb.append(",\"").append(event.getDuration() > 0 ? event.getDuration() : "").append("\"");
-        sb.append(",\"").append(event.getProtocol()).append("\"");
+        cells.add(mTimestampFormat.format(new Date(event.getTimeStart())));
+        cells.add(event.getDuration() > 0 ? event.getDuration() : "");
+        cells.add(event.getProtocol());
 
         String description = event.getEventDescription();
-
-        sb.append(",\"").append(description != null ? description : "").append("\"");
+        cells.add(description != null ? description : "");
 
         List<Identifier> fromIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.FROM);
         if(fromIdentifiers != null && !fromIdentifiers.isEmpty())
         {
-            sb.append(",\"").append(fromIdentifiers.get(0)).append("\"");
+            cells.add(fromIdentifiers.get(0));
         }
         else
         {
-            sb.append(",\"\"");
+            cells.add("");
         }
 
         List<Identifier> toIdentifiers = event.getIdentifierCollection().getIdentifiers(Role.TO);
@@ -116,48 +127,47 @@ public class DecodeEventLogger extends EventLogger implements IDecodeEventListen
             {
                 String mystring = (!mAliasList.getAliases(toIdentifiers.get(0)).isEmpty()) ?
                     mAliasList.getAliases(toIdentifiers.get(0)).get(0).toString() : "";
-                sb.append(",\"").append(mystring).append(" (").append(toIdentifiers.get(0)).append(")\"");
+                cells.add(mystring + " (" + toIdentifiers.get(0) + ")");
             }
             else
             {
-                sb.append(",\"\"");
+                cells.add("");
             }
         }
         else
         {
-            sb.append(",\"\"");
+            cells.add("");
         }
 
         IChannelDescriptor descriptor = event.getChannelDescriptor();
-
-        sb.append(",\"").append(descriptor != null ? descriptor : "").append("\"");
+        cells.add(descriptor != null ? descriptor : "");
 
         Identifier frequency = event.getIdentifierCollection()
             .getIdentifier(IdentifierClass.CONFIGURATION, Form.CHANNEL_FREQUENCY, Role.ANY);
 
         if(frequency instanceof FrequencyConfigurationIdentifier)
         {
-            sb.append(",\"").append(mFrequencyFormat
-                .format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d)).append("\"");
+            cells.add(mFrequencyFormat
+                    .format(((FrequencyConfigurationIdentifier)frequency).getValue() / 1e6d));
+
         }
         else
         {
-            sb.append(",\"\"");
+            cells.add("");
         }
 
         if(event.hasTimeslot())
         {
-            sb.append(",\"TS:").append(event.getTimeslot());
+            cells.add("TS:" + event.getTimeslot());
         }
         else
         {
-            sb.append(",\"\"");
+            cells.add("");
         }
 
         String details = event.getDetails();
+        cells.add(details != null ? details : "");
 
-        sb.append(",\"").append(details != null ? details : "").append("\"");
-
-        return sb.toString();
+        return mCsvFormat.format(cells.toArray());
     }
 }

@@ -710,6 +710,9 @@ public class AliasItemEditor extends Editor<Alias>
             mptMenu.getItems().add(new AddTalkgroupItem(Protocol.MPT1327));
             mptMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.MPT1327));
 
+            Menu nbfmMenu = new ProtocolMenu(Protocol.NBFM);
+            nbfmMenu.getItems().add(new AddTalkgroupItem(Protocol.NBFM));
+
             Menu passportMenu = new ProtocolMenu(Protocol.PASSPORT);
             passportMenu.getItems().add(new AddTalkgroupItem(Protocol.PASSPORT));
             passportMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.PASSPORT));
@@ -723,7 +726,7 @@ public class AliasItemEditor extends Editor<Alias>
             lojackMenu.getItems().add(new AddLojackItem());
 
             mAddIdentifierButton.getItems().addAll(p25Menu, dmrMenu, fleetsyncMenu, ltrMenu, mdcMenu, mptMenu,
-                passportMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
+                nbfmMenu, passportMenu, taitMenu, new SeparatorMenuItem(), lojackMenu);
         }
 
         return mAddIdentifierButton;

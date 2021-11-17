@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,19 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
+import java.util.List;
+
+import org.controlsfx.control.ToggleSwitch;
+
 import com.google.common.collect.Ordering;
+
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyBooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -41,9 +49,6 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.util.Callback;
-import org.controlsfx.control.ToggleSwitch;
-
-import java.util.List;
 
 /**
  * Editor for multiple selected aliases providing limited options for changing attributes of multiple aliases
@@ -61,16 +66,22 @@ public class AliasBulkEditor extends Editor<List<Alias>>
     private ComboBox<Integer> mMonitorPriorityComboBox;
     private Button mApplyMonitorButton;
 
+    private BooleanProperty mChangeInProgressProperty;
+    private ReadOnlyBooleanProperty mChangeInProgressROProperty;
+
     /**
      * Constructs an instance
+     *
      * @param playlistManager for accessing icon manager
      */
     public AliasBulkEditor(PlaylistManager playlistManager)
     {
         mPlaylistManager = playlistManager;
 
+        mChangeInProgressProperty = new SimpleBooleanProperty();
+
         GridPane gridPane = new GridPane();
-        gridPane.setPadding(new Insets(10,10,10,10));
+        gridPane.setPadding(new Insets(10, 10, 10, 10));
         gridPane.setHgap(10);
         gridPane.setVgap(10);
 
@@ -161,9 +172,35 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         //no-op
     }
 
+    /**
+     * Property indicating whether a bulk change is in progress.  Bulk changes may cause drastic
+     * slow downs in some UI components.
+     *
+     * @return changeInProgressProperty
+     */
+    public ReadOnlyBooleanProperty changeInProgressProperty()
+    {
+        if(mChangeInProgressROProperty == null)
+        {
+            mChangeInProgressROProperty = BooleanProperty.readOnlyBooleanProperty(mChangeInProgressProperty);
+        }
+
+        return mChangeInProgressROProperty;
+    }
+
+    private void startChange()
+    {
+        mChangeInProgressProperty.set(true);
+    }
+
+    private void endChange()
+    {
+        mChangeInProgressProperty.set(false);
+    }
+
     private Label getEditingLabel()
     {
-        if(mEditingLabel== null)
+        if(mEditingLabel == null)
         {
             mEditingLabel = new Label("Editing 0 Aliases");
         }
@@ -188,13 +225,18 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mApplyColorButton == null)
         {
             mApplyColorButton = new Button("Apply");
-            mApplyColorButton.setOnAction(event -> {
+            mApplyColorButton.setOnAction(event ->
+            {
+                startChange();
+
                 int colorValue = ColorUtil.toInteger(getColorPicker().getValue());
 
-                for(Alias alias: getItem())
+                for(Alias alias : getItem())
                 {
                     alias.setColor(colorValue);
                 }
+
+                endChange();
             });
         }
 
@@ -206,11 +248,16 @@ public class AliasBulkEditor extends Editor<List<Alias>>
         if(mResetColorButton == null)
         {
             mResetColorButton = new Button("Reset Color");
-            mResetColorButton.setOnAction(event -> {
-                for(Alias alias: getItem())
+            mResetColorButton.setOnAction(event ->
+            {
+                startChange();
+
+                for(Alias alias : getItem())
                 {
                     alias.setColor(0);
                 }
+
+                endChange();
             });
         }
 
@@ -226,10 +273,10 @@ public class AliasBulkEditor extends Editor<List<Alias>>
             mIconNodeComboBox.setItems(new SortedList(mPlaylistManager.getIconModel().iconsProperty(), Ordering.natural()));
             mIconNodeComboBox.setCellFactory(new IconCellFactory());
             mIconNodeComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) ->
-                {
-                    getApplyIconButton().setDisable(newValue == null);
-                });
+                    .addListener((observable, oldValue, newValue) ->
+                    {
+                        getApplyIconButton().setDisable(newValue == null);
+                    });
         }
 
         return mIconNodeComboBox;
@@ -246,15 +293,19 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                 @Override
                 public void handle(ActionEvent event)
                 {
+                    startChange();
+
                     Icon icon = getIconNodeComboBox().getSelectionModel().getSelectedItem();
 
                     if(icon != null)
                     {
-                        for(Alias alias: getItem())
+                        for(Alias alias : getItem())
                         {
                             alias.setIconName(icon.getName());
                         }
                     }
+
+                    endChange();
                 }
             });
         }
@@ -269,7 +320,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
             mMonitorAudioToggleSwitch = new ToggleSwitch();
             mMonitorAudioToggleSwitch.setSelected(true);
             mMonitorAudioToggleSwitch.selectedProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mMonitorAudioToggleSwitch;
@@ -289,11 +340,13 @@ public class AliasBulkEditor extends Editor<List<Alias>>
 
             mMonitorPriorityComboBox.disableProperty().bind(getMonitorAudioToggleSwitch().selectedProperty().not());
             mMonitorPriorityComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mMonitorPriorityComboBox;
     }
+
+    private static int setCount = 0;
 
     private Button getApplyMonitorButton()
     {
@@ -305,6 +358,8 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                 @Override
                 public void handle(ActionEvent event)
                 {
+                    startChange();
+
                     boolean canMonitor = getMonitorAudioToggleSwitch().isSelected();
                     Integer priority = getMonitorPriorityComboBox().getSelectionModel().getSelectedItem();
                     if(canMonitor)
@@ -319,10 +374,14 @@ public class AliasBulkEditor extends Editor<List<Alias>>
                         priority = io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR;
                     }
 
-                    for(Alias alias: getItem())
+                    final Integer pri = priority;
+                    for(Alias alias : getItem())
                     {
-                        alias.setCallPriority(priority);
+                        alias.setCallPriority(pri);
+                        //System.out.println(++setCount);
                     }
+
+                    endChange();
                 }
             });
         }
@@ -345,7 +404,7 @@ public class AliasBulkEditor extends Editor<List<Alias>>
             GridPane.setHalignment(iconLabel, HPos.RIGHT);
             gridPane.getColumnConstraints().add(new ColumnConstraints(50));
             gridPane.add(iconLabel, 0, 0);
-            gridPane.add(textLabel,1,0);
+            gridPane.add(textLabel, 1, 0);
 
             ListCell<Icon> cell = new ListCell<>()
             {

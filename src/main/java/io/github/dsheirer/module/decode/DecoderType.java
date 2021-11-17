@@ -36,7 +36,7 @@ public enum DecoderType
     LTR("LTR", "LTR", Protocol.LTR),
     LTR_NET("LTR-Net", "LTR-Net", Protocol.LTR_NET),
     MPT1327("MPT1327", "MPT1327", Protocol.MPT1327),
-    NBFM("NBFM", "NBFM", Protocol.UNKNOWN),
+    NBFM("NBFM", "NBFM", Protocol.NBFM),
     PASSPORT("Passport", "Passport", Protocol.PASSPORT),
     P25_PHASE1("P25 Phase 1", "P25-1", Protocol.APCO25),
     P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),

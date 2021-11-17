@@ -22,6 +22,7 @@ package io.github.dsheirer.channel.metadata;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
+import io.github.dsheirer.gui.power.ChannelPowerPanel;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
@@ -42,6 +43,7 @@ public class NowPlayingPanel extends JPanel
     private LastSeenPanel mLastSeenPanel;
     private LastHeardPanel mLastHeardPanel;
     private MessageActivityPanel mMessageActivityPanel;
+    private ChannelPowerPanel mChannelPowerPanel;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
@@ -55,6 +57,7 @@ public class NowPlayingPanel extends JPanel
         mLastHeardPanel = new LastHeardPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
         mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
+        mChannelPowerPanel = new ChannelPowerPanel(playlistManager);
 
         init();
     }
@@ -69,6 +72,7 @@ public class NowPlayingPanel extends JPanel
         tabbedPane.addTab("Last Seen", mLastSeenPanel);
         tabbedPane.addTab("Last Heard", mLastHeardPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
+        tabbedPane.addTab("Channel", mChannelPowerPanel);
         tabbedPane.setFont(this.getFont());
         tabbedPane.setForeground(Color.BLACK);
 
@@ -83,5 +87,6 @@ public class NowPlayingPanel extends JPanel
         mChannelMetadataPanel.addProcessingChainSelectionListener(mLastSeenPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mLastHeardPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelPowerPanel);
     }
 }

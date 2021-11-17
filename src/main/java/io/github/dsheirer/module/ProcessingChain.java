@@ -343,6 +343,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
     }
 
     /**
+     * Broadcasts the source event to the processing chain modules.
+     */
+    public void broadcast(SourceEvent sourceEvent)
+    {
+        mSourceEventBroadcaster.broadcast(sourceEvent);
+    }
+
+    /**
      * Registers the module as a listener to each of the broadcasters that
      * provide the data interface(s) supported by the module.
      */
@@ -828,6 +836,14 @@ public class ProcessingChain implements Listener<ChannelEvent>
     public void addSourceEventListener(Listener<SourceEvent> listener)
     {
         mSourceEventBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving source events from this processing chain.
+     */
+    public void removeSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mSourceEventBroadcaster.removeListener(listener);
     }
 
     /**

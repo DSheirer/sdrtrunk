@@ -39,6 +39,7 @@ public enum Protocol
     LRRP("LRRP", "LRRP", 0),
     LTR("LTR", "LTR", 300),
     LTR_NET("LTR-Net", "LTRNET", 300),
+    NBFM("NBFM", "NBFM", 0),
     MDC1200("MDC-1200", "MDC1200", 1200),
     MPT1327("MPT-1327", "MPT1327", 1200),
     PASSPORT("Passport", "PASSPORT", 300),
@@ -59,7 +60,7 @@ public enum Protocol
     }
 
     public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, DMR, FLEETSYNC, LTR, LTR_NET, MDC1200,
-        MPT1327, PASSPORT);
+        MPT1327, NBFM, PASSPORT);
 
     public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25, DMR, PASSPORT);
 

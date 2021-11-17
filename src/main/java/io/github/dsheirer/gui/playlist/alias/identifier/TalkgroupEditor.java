@@ -253,10 +253,14 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
             "Format: 0 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.MPT1327, IntegerFormat.FORMATTED,
             new PrefixIdentFormatter(0,0xFFFFF), "Format: PPP-IIII = Prefix (0-127), Ident (0-8191)"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),
+            "Format: 1 - 65535"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
+            "Format: 1 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
-            "Format: 0 - 65535"));
+                "Format: 0 - 65535"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
-            "Format: 0 - FFFF"));
+                "Format: 0 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.DECIMAL, new IntegerFormatter(0,16777215),
             "Format: 0 - FFFFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.FORMATTED, new IntegerFormatter(0,16777215),
@@ -265,7 +269,7 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
             "Format: 0 - FFFFFF"));
     }
 
-    public class TalkgroupDetail
+    public static class TalkgroupDetail
     {
         private Protocol mProtocol;
         private IntegerFormat mIntegerFormat;
