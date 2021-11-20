@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,8 +32,8 @@ import io.github.dsheirer.sample.Listener;
 public class PacketSequenceAssembler
 {
     private Listener<IMessage> mMessageListener;
-    private PacketSequence mTimeslot0Sequence;
     private PacketSequence mTimeslot1Sequence;
+    private PacketSequence mTimeslot2Sequence;
 
     /**
      * Constructs an instance
@@ -49,23 +49,23 @@ public class PacketSequenceAssembler
      */
     private PacketSequence getPacketSequence(int timeslot)
     {
-        if(timeslot == 0)
-        {
-            if(mTimeslot0Sequence == null)
-            {
-                mTimeslot0Sequence = new PacketSequence(1);
-            }
-
-            return mTimeslot0Sequence;
-        }
-        else
+        if(timeslot == 1)
         {
             if(mTimeslot1Sequence == null)
             {
-                mTimeslot1Sequence = new PacketSequence(2);
+                mTimeslot1Sequence = new PacketSequence(1);
             }
 
             return mTimeslot1Sequence;
+        }
+        else
+        {
+            if(mTimeslot2Sequence == null)
+            {
+                mTimeslot2Sequence = new PacketSequence(2);
+            }
+
+            return mTimeslot2Sequence;
         }
     }
 
@@ -84,7 +84,7 @@ public class PacketSequenceAssembler
      */
     private void dispatchPacketSequence(int timeslot)
     {
-        PacketSequence packetSequence = (timeslot == 0 ? mTimeslot0Sequence : mTimeslot1Sequence);
+        PacketSequence packetSequence = (timeslot == 1 ? mTimeslot1Sequence : mTimeslot2Sequence);
 
         if(mMessageListener != null && packetSequence != null && packetSequence.isComplete())
         {
@@ -96,13 +96,13 @@ public class PacketSequenceAssembler
             }
         }
 
-        if(timeslot == 0)
+        if(timeslot == 1)
         {
-            mTimeslot0Sequence = null;
+            mTimeslot1Sequence = null;
         }
         else
         {
-            mTimeslot1Sequence = null;
+            mTimeslot2Sequence = null;
         }
     }
 
