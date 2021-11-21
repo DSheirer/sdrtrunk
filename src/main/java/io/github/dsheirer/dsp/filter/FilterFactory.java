@@ -1,25 +1,21 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- *	   Root Raised Cosine filter designer:
- *	   Copyright 2002,2007,2008,2012,2013 Free Software Foundation, Inc.
- *	   http://gnuradio.org/redmine/projects/gnuradio/repository/changes/gr-filter
- *	   /lib/firdes.cc?rev=435b1d166f0c7092bbd5e1f788e75dbb6ade3a4b
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter;
 
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
@@ -31,7 +27,7 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.text.DecimalFormat;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -1002,6 +998,44 @@ public class FilterFactory
     }
 
     /**
+     * Creates a symmetrical half-band filter where all odd-indexed coefficients except center are zero
+     * valued.
+     * @param length N is odd where m is an integer multiple in the formula: N = 4m + 3 (e.g. 7, 11, 15, etc.)
+     * @param windowType to apply to the filter.
+     * @return coefficients
+     */
+    public static double[] getHalfBand(int length, Window.WindowType windowType)
+    {
+        if((length - 3) % 4 != 0)
+        {
+            throw new IllegalArgumentException("Half Band filter length (N) must be an odd length where m must be an " +
+                    "integer multiple in (N=4m+3), e.g. 7, 11, 15, etc");
+        }
+
+        double[] window = Window.getWindow(windowType, length);
+        double[] taps = new double[length];
+
+        int halfLength = length / 2;
+
+        for(int x = 0; x < length; x++)
+        {
+            int offset = x - halfLength;
+
+            if(offset == 0)
+            {
+                taps[x] = 0.5f; //No window here - window coefficient should be 1.0 anyway
+            }
+            else if((x % 2) == 0)
+            {
+                //Only calculate the even-index taps, leaving odd-index taps at default value of zero
+                taps[x] = (float)((Math.sin(offset * Math.PI / 2) / (offset * Math.PI)) * window[x]);
+            }
+        }
+
+        return taps;
+    }
+
+    /**
      * Compares two doubles for equals and avoids any rounding error that are present.
      *
      * @param a value to compare
@@ -1015,17 +1049,17 @@ public class FilterFactory
 
     public static void main(String[] args)
     {
-        float[] taps = null;
+        DecimalFormat df = new DecimalFormat("0.000000");
 
-        try
+        int length = 15;
+
+        double [] taps = FilterFactory.getHalfBand(length, Window.WindowType.HAMMING);
+
+        for(int x = 0; x < length; x++)
         {
-            taps = FilterFactory.getSincM2Channelizer(12500.0, 800, 9, true);
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Error", fde);
+            mLog.debug("Tap: " + x + " Value: " + df.format(taps[x]));
         }
 
-        mLog.debug("Done: " + Arrays.toString(taps));
+        mLog.debug("Done!");
     }
 }
