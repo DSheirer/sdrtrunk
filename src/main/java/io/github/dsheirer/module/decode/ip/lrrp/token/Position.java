@@ -38,6 +38,7 @@ public class Position extends Token
     private static final double LONGITUDE_MULTIPLIER = 360.0 / 4294967295.0d;
 
     private LRRPPosition mPosition;
+    private double Latitude;
 
     /**
      * Constructs an instance of a heading token.
@@ -74,7 +75,14 @@ public class Position extends Token
      */
     public double getLatitude()
     {
-        return getMessage().getInt(LATITUDE, getOffset()) * LATITUDE_MULTIPLIER;
+        Latitude = (getMessage().getInt(LATITUDE, getOffset()) * LATITUDE_MULTIPLIER);
+    	if (Latitude < 0)
+    	{
+        	return -90 - (Latitude);
+        } else
+        {
+        	return Latitude;
+        }
     }
 
     /**
