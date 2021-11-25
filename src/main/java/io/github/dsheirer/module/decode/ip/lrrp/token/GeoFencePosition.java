@@ -22,13 +22,12 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LRRP 3D Position with latitude, longitude and altitude
+ * LRRP Geo-Fence Position with latitude, longitude and radius
  */
-public class Position3D extends Position
+public class GeoFencePosition extends Position
 {
-    //Note: these may not be correct ... there may be 3 bytes available for altitude
-    private static final int[] ALTITUDE_WHOLE = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
-    private static final int[] ALTITUDE_FRACTIONAL = new int[]{80, 81, 82, 83, 84, 85, 86, 87};
+    private static final int[] RADIUS_WHOLE = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
+    private static final int[] RADIUS_FRACTIONAL = new int[]{80, 81, 82, 83, 84, 85, 86, 87};
 
     /**
      * Constructs an instance of an approximate position token.
@@ -36,7 +35,7 @@ public class Position3D extends Position
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public Position3D(CorrectedBinaryMessage message, int offset)
+    public GeoFencePosition(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -44,23 +43,23 @@ public class Position3D extends Position
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.POSITION_3D;
+        return TokenType.POSITION_GEO_FENCE;
     }
 
     /**
-     * Altitude
+     * Radius of position
      *
-     * @return altitude in meters
+     * @return radius in meters
      */
-    public float getAltitude()
+    public float getRadius()
     {
-        return getFloat(ALTITUDE_WHOLE, ALTITUDE_FRACTIONAL);
+        return getFloat(RADIUS_WHOLE, RADIUS_FRACTIONAL);
     }
 
     @Override
     public String toString()
     {
         CorrectedBinaryMessage sub = getMessage().getSubMessage(getOffset(), getOffset() + 87);
-        return "POSITION:" + getPosition() + " ALTITUDE:" + getAltitude() + " MTRS";
+        return "GEO-FENCE POSITION:" + getPosition() + " RADIUS:" + getRadius() + " KM";
     }
 }

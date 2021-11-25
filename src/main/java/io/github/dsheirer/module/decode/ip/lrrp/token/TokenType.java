@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,13 +30,18 @@ import java.util.Map;
  */
 public enum TokenType
 {
-    POSITION("66", 8),
-    POSITION_3D("51", 10),
-    HEADING("56", 1),
-    SPEED("6C", 2),
-    TIMESTAMP("34", 5),
     IDENTITY("22", -1),
     UNKNOWN_23("23", 1),
+    TIMESTAMP("34", 5),
+    VERSION("36", 1),
+    RESPONSE("37", -1),
+//    SUCCESS_RESPONSE_CODE( "38", 0), //Maybe: https://github.com/pboyd04/Moto.Net/blob/master/Moto.Net/Mototrbo/LRRP/TriggeredLocationStartResponsePacket.cs
+    POSITION_GEO_FENCE("51", 10),
+    POSITION_GEO_FENCE_3D("55", 15),
+    HEADING("56", 1),
+    POSITION("66", 8),
+    POSITION_3D("69", 11),
+    SPEED("6C", 2),
     UNKNOWN("0",0);
 
     private String mValue;

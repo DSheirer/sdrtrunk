@@ -22,21 +22,22 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LRRP 3D Position with latitude, longitude and altitude
+ * LRRP 3D Position with latitude, longitude, altitude and radius
  */
-public class Position3D extends Position
+public class GeoFencePosition3D extends GeoFencePosition
 {
-    //Note: these may not be correct ... there may be 3 bytes available for altitude
-    private static final int[] ALTITUDE_WHOLE = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
-    private static final int[] ALTITUDE_FRACTIONAL = new int[]{80, 81, 82, 83, 84, 85, 86, 87};
+    private static final int[] ALTITUDE_WHOLE = new int[]{88, 89, 90, 91, 92, 93, 94, 95};
+    private static final int[] ALTITUDE_FRACTIONAL = new int[]{96, 97, 98, 99, 100, 101, 102, 103};
+    private static final int[] ALTITUDE_ACCURACY_WHOLE = new int[]{104, 105, 106, 107, 108, 109, 110, 111};
+    private static final int[] ALTITUDE_ACCURACY_FRACTIONAL = new int[]{112, 113, 114, 115, 116, 117, 118, 119};
 
     /**
-     * Constructs an instance of an approximate position token.
+     * Constructs an instance of a 3D position token.
      *
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public Position3D(CorrectedBinaryMessage message, int offset)
+    public GeoFencePosition3D(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -44,7 +45,7 @@ public class Position3D extends Position
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.POSITION_3D;
+        return TokenType.POSITION_GEO_FENCE_3D;
     }
 
     /**
@@ -57,10 +58,24 @@ public class Position3D extends Position
         return getFloat(ALTITUDE_WHOLE, ALTITUDE_FRACTIONAL);
     }
 
+    /**
+     * Altitude accuracy
+     * @return accuracy in meters
+     */
+    public float getAltitudeAccuracy()
+    {
+        return getFloat(ALTITUDE_ACCURACY_WHOLE, ALTITUDE_ACCURACY_FRACTIONAL);
+    }
+
+
     @Override
     public String toString()
     {
-        CorrectedBinaryMessage sub = getMessage().getSubMessage(getOffset(), getOffset() + 87);
-        return "POSITION:" + getPosition() + " ALTITUDE:" + getAltitude() + " MTRS";
+        StringBuilder sb = new StringBuilder();
+        sb.append("GEO-FENCE POSITION:").append(getPosition());
+        sb.append(" RADIUS:").append(getRadius());
+        sb.append("KM ALTITUDE:").append(getAltitude());
+        sb.append(" ALT ACCURACY:").append(getAltitudeAccuracy());
+        return sb.toString();
     }
 }

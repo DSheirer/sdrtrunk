@@ -22,21 +22,19 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LRRP 3D Position with latitude, longitude and altitude
+ * LRRP Version Token
  */
-public class Position3D extends Position
+public class Version extends Token
 {
-    //Note: these may not be correct ... there may be 3 bytes available for altitude
-    private static final int[] ALTITUDE_WHOLE = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
-    private static final int[] ALTITUDE_FRACTIONAL = new int[]{80, 81, 82, 83, 84, 85, 86, 87};
+    private static final int[] VERSION = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
 
     /**
-     * Constructs an instance of an approximate position token.
+     * Constructs an instance of a heading token.
      *
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public Position3D(CorrectedBinaryMessage message, int offset)
+    public Version(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -44,23 +42,20 @@ public class Position3D extends Position
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.POSITION_3D;
+        return TokenType.VERSION;
     }
 
     /**
-     * Altitude
-     *
-     * @return altitude in meters
+     * LRRP Version
      */
-    public float getAltitude()
+    public int getVersion()
     {
-        return getFloat(ALTITUDE_WHOLE, ALTITUDE_FRACTIONAL);
+        return getMessage().getInt(VERSION, getOffset());
     }
 
     @Override
     public String toString()
     {
-        CorrectedBinaryMessage sub = getMessage().getSubMessage(getOffset(), getOffset() + 87);
-        return "POSITION:" + getPosition() + " ALTITUDE:" + getAltitude() + " MTRS";
+        return "VERSION:" + getVersion();
     }
 }

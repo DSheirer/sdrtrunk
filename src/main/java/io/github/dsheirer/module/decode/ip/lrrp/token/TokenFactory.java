@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,16 +34,24 @@ public class TokenFactory
         {
             case HEADING:
                 return new Heading(message, offset);
+            case IDENTITY:
+                return new Identity(message, offset);
             case POSITION:
                 return new Position(message, offset);
+            case POSITION_GEO_FENCE:
+                return new GeoFencePosition(message, offset);
             case POSITION_3D:
                 return new Position3D(message, offset);
+            case POSITION_GEO_FENCE_3D:
+                return new GeoFencePosition3D(message, offset);
+            case RESPONSE:
+                return new Response(message, offset);
             case SPEED:
                 return new Speed(message, offset);
             case TIMESTAMP:
                 return new Timestamp(message, offset);
-            case IDENTITY:
-                return new Identity(message, offset);
+            case VERSION:
+                return new Version(message, offset);
             case UNKNOWN_23:
                 return new Unknown23(message, offset);
             case UNKNOWN:

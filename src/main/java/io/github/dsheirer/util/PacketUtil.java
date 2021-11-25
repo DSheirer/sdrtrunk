@@ -1,19 +1,51 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.lrrp.token.GeoFencePosition;
 import io.github.dsheirer.module.decode.ip.lrrp.token.Position;
 import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
-public class PacketUtil {
-    public static GeoPosition extractGeoPosition(IPacket packet) {
-        if (packet instanceof IPV4Packet) {
+/**
+ * Packet utility methods.
+ */
+public class PacketUtil
+{
+    /**
+     * Extracts a plottable position from a packet.
+     * @param packet to inspect and process
+     * @return geo position
+     */
+    public static GeoPosition extractGeoPosition(IPacket packet)
+    {
+        if(packet instanceof IPV4Packet)
+        {
             IPV4Packet ipPacket = (IPV4Packet) packet;
 
-            if (ipPacket.getPayload() instanceof UDPPacket) {
+            if(ipPacket.getPayload() instanceof UDPPacket)
+            {
                 UDPPacket udpPacket = (UDPPacket) ipPacket.getPayload();
                 return extractGeoPosition(udpPacket);
             }
@@ -21,10 +53,12 @@ public class PacketUtil {
             return null;
         }
 
-        if (packet instanceof UDPPacket) {
+        if(packet instanceof UDPPacket)
+        {
             UDPPacket udpPacket = (UDPPacket) packet;
 
-            if (udpPacket.getPayload() instanceof LRRPPacket) {
+            if(udpPacket.getPayload() instanceof LRRPPacket)
+            {
                 LRRPPacket lrrpPacket = (LRRPPacket) udpPacket.getPayload();
                 return extractGeoPosition(lrrpPacket);
             }
@@ -32,12 +66,14 @@ public class PacketUtil {
             return null;
         }
 
-        if (packet instanceof LRRPPacket) {
+        if(packet instanceof LRRPPacket)
+        {
             LRRPPacket lrrpPacket = (LRRPPacket) packet;
 
-            for (Token token: lrrpPacket.getTokens())
+            for(Token token : lrrpPacket.getTokens())
             {
-                if (token instanceof Position) {
+                if(token instanceof Position)
+                {
                     Position position = (Position) token;
                     return new GeoPosition(position.getLatitude(), position.getLongitude());
                 }
