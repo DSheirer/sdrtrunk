@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,16 @@ public class LRRPPacket extends Packet
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("LRRP");
+        LRRPPacketType type = getHeader().getLRRPPacketType();
+
+        if(type == LRRPPacketType.UNKNOWN)
+        {
+            sb.append("LRRP TYPE:UNKNOWN [").append(getHeader().getLrrpPacketTypeValue()).append("]");
+        }
+        else
+        {
+            sb.append("LRRP ").append(type);
+        }
 
         for(Token token: getTokens())
         {
@@ -100,7 +109,6 @@ public class LRRPPacket extends Packet
                 String tokenId = getTokenIdentifier(offset);
                 Token token = TokenFactory.createToken(tokenId, getMessage(), offset, characterCount);
                 mTokens.add(token);
-                int length = token.getByteLength();
                 characterCount -= token.getByteLength();
                 offset += (8 * token.getByteLength());
             }
