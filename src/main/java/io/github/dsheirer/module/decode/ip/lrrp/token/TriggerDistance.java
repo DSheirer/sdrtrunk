@@ -21,21 +21,24 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
+import java.text.DecimalFormat;
+
 /**
- * LRRP Geo-Fence Position with latitude, longitude and radius
+ * LRRP Trigger Distance Token
+ *
+ * Total Length: 2 bytes
  */
-public class GeoFencePosition extends Position
+public class TriggerDistance extends Token
 {
-    private static final int[] RADIUS_WHOLE = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
-    private static final int[] RADIUS_FRACTIONAL = new int[]{80, 81, 82, 83, 84, 85, 86, 87};
+    private static final int[] DISTANCE = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
 
     /**
-     * Constructs an instance of an approximate position token.
+     * Constructs an instance of a heading token.
      *
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public GeoFencePosition(CorrectedBinaryMessage message, int offset)
+    public TriggerDistance(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -43,23 +46,20 @@ public class GeoFencePosition extends Position
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.POSITION_GEO_FENCE;
+        return TokenType.TRIGGER_DISTANCE;
     }
 
     /**
-     * Radius of position
-     *
-     * @return radius in meters
+     * Distance for trigger
      */
-    public float getRadius()
+    public int getDistance()
     {
-        return getFloat(RADIUS_WHOLE, RADIUS_FRACTIONAL);
+        return getMessage().getInt(DISTANCE, getOffset());
     }
 
     @Override
     public String toString()
     {
-        CorrectedBinaryMessage sub = getMessage().getSubMessage(getOffset(), getOffset() + 87);
-        return "GEO-FENCE POSITION:" + getPosition() + " RADIUS:" + getRadius() + " KM";
+        return "TRIGGER DISTANCE:" + getDistance();
     }
 }

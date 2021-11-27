@@ -24,25 +24,27 @@ package io.github.dsheirer.module.decode.ip.lrrp;
  */
 public enum LRRPPacketType
 {
-    IMMEDIATE_LOCATION_REQUEST(0x05, "IMMEDIATE LOCATION REQUEST"),
-    IMMEDIATE_LOCATION_RESPONSE(0x07, "IMMEDIATE LOCATION RESPONSE"),
-    TRIGGERED_LOCATION_START_REQUEST(0x09, "TRIGGERED LOCATION START REQUEST"),
-    TRIGGERED_LOCATION_START_RESPONSE(0x0B, "TRIGGERED LOCATION START RESPONSE"),
-    TRIGGERED_LOCATION(0x0D, "TRIGGERED LOCATION"),
-    TRIGGERED_LOCATION_STOP_REQUEST(0x0F, "TRIGGERED LOCATION STOP REQUEST"),
-    TRIGGERED_LOCATION_STOP_RESPONSE(0x11, "TRIGGERED LOCATION STOP RESPONSE"),
-    PROTOCOL_VERSION_REQUEST(0x14, "PROTOCOL VERSION REQUEST"),
-    PROTOCOL_VERSION_RESPONSE(0x15, "PROTOCOL VERSION RESPONSE"),
+    IMMEDIATE_LOCATION_REQUEST(0x05, "IMMEDIATE LOCATION REQUEST", false),
+    IMMEDIATE_LOCATION_RESPONSE(0x07, "IMMEDIATE LOCATION RESPONSE", true),
+    TRIGGERED_LOCATION_START_REQUEST(0x09, "TRIGGERED LOCATION START REQUEST", false),
+    TRIGGERED_LOCATION_START_RESPONSE(0x0B, "TRIGGERED LOCATION START RESPONSE", true),
+    TRIGGERED_LOCATION(0x0D, "TRIGGERED LOCATION", true),
+    TRIGGERED_LOCATION_STOP_REQUEST(0x0F, "TRIGGERED LOCATION STOP REQUEST", false),
+    TRIGGERED_LOCATION_STOP_RESPONSE(0x11, "TRIGGERED LOCATION STOP RESPONSE", true),
+    PROTOCOL_VERSION_REQUEST(0x14, "PROTOCOL VERSION REQUEST", false),
+    PROTOCOL_VERSION_RESPONSE(0x15, "PROTOCOL VERSION RESPONSE", true),
 
-    UNKNOWN(-1, "UNKNOWN");
+    UNKNOWN(-1, "UNKNOWN", false);
 
     private int mValue;
     private String mLabel;
+    private boolean mIsResponse;
 
-    LRRPPacketType(int value, String label)
+    LRRPPacketType(int value, String label, boolean isResponse)
     {
         mValue = value;
         mLabel = label;
+        mIsResponse = isResponse;
     }
 
     /**
@@ -57,6 +59,14 @@ public enum LRRPPacketType
     public String toString()
     {
         return mLabel;
+    }
+
+    /**
+     * Indicates if this is a response type
+     */
+    public boolean isResponse()
+    {
+        return mIsResponse;
     }
 
     /**

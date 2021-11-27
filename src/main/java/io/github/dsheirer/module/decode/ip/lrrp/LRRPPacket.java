@@ -23,8 +23,10 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.Packet;
+import io.github.dsheirer.module.decode.ip.lrrp.token.RequestedTokens;
 import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
 import io.github.dsheirer.module.decode.ip.lrrp.token.TokenFactory;
+import io.github.dsheirer.module.decode.ip.lrrp.token.TokenType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -95,6 +97,11 @@ public class LRRPPacket extends Packet
         return mTokens;
     }
 
+    private boolean isResponsePacket()
+    {
+        return getHeader().getLRRPPacketType().isResponse();
+    }
+
     private void parseTokens()
     {
         if(mTokens == null)
@@ -104,13 +111,55 @@ public class LRRPPacket extends Packet
             int characterCount = getHeader().getPayloadLength();
             int offset = getOffset() + TOKEN_START;
 
-            while(characterCount > 0 && offset < getMessage().size())
+            if(isResponsePacket())
             {
-                String tokenId = getTokenIdentifier(offset);
-                Token token = TokenFactory.createToken(tokenId, getMessage(), offset, characterCount);
-                mTokens.add(token);
-                characterCount -= token.getByteLength();
-                offset += (8 * token.getByteLength());
+                while(characterCount > 0 && offset < getMessage().size())
+                {
+                    String tokenId = getTokenIdentifier(offset);
+                    Token token = TokenFactory.createToken(tokenId, getMessage(), offset, characterCount);
+                    mTokens.add(token);
+                    characterCount -= token.getByteLength();
+                    offset += (8 * token.getByteLength());
+                }
+            }
+            else
+            {
+                String message = getMessage().getSubMessage(getOffset(), getOffset() + ((characterCount + 2) * 8)).toHexString();
+                int x = 0;
+
+                RequestedTokens requestedTokens = new RequestedTokens();
+
+                while(characterCount > 0 && offset < getMessage().size())
+                {
+                    String tokenId = getTokenIdentifier(offset);
+                    TokenType tokenType = TokenType.fromValue(tokenId);
+
+                    if(tokenType.isRequestParameterToken())
+                    {
+                        Token token = TokenFactory.createToken(tokenId, getMessage(), offset, characterCount);
+                        mTokens.add(token);
+                        characterCount -= token.getByteLength();
+                        offset += (8 * token.getByteLength());
+                    }
+                    else
+                    {
+                        if(tokenType != TokenType.UNKNOWN)
+                        {
+                            requestedTokens.add(tokenType);
+                        }
+                        else
+                        {
+                            requestedTokens.add(tokenId);
+                        }
+                        characterCount -= 1;
+                        offset += (8);
+                    }
+                }
+
+                if(requestedTokens.hasRequestedTokens())
+                {
+                    mTokens.add(requestedTokens);
+                }
             }
 
             Collections.sort(mTokens, (o1, o2) -> o1.getTokenType().compareTo(o2.getTokenType()));

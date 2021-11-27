@@ -29,9 +29,9 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
  */
 public class Response extends Token
 {
-    private static final int CODE_LENGTH_FLAG = 16;
-    private static final int[] ONE_BYTE_CODE = new int[]{17, 18, 19, 20, 21, 22, 23};
-    private static final int[] TWO_BYTE_CODE = new int[]{17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31};
+    private static final int CODE_LENGTH_FLAG = 8;
+    private static final int[] ONE_BYTE_CODE = new int[]{9, 10, 11, 12, 13, 14, 15};
+    private static final int[] TWO_BYTE_CODE = new int[]{9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
 
     /**
      * Constructs an instance of a response code token.
@@ -65,11 +65,11 @@ public class Response extends Token
     {
         if(isExtendedCode())
         {
-            return getMessage().getInt(TWO_BYTE_CODE);
+            return getMessage().getInt(TWO_BYTE_CODE, getOffset());
         }
         else
         {
-            return getMessage().getInt(ONE_BYTE_CODE);
+            return getMessage().getInt(ONE_BYTE_CODE, getOffset());
         }
     }
 
@@ -94,9 +94,9 @@ public class Response extends Token
 
         if(responseCode == ResponseCode.UNKNOWN)
         {
-            return "RESPONSE CODE: UNKNOWN[" + getCodeValue() + "]";
+            return "RESPONSE: UNKNOWN[" + getCodeValue() + "]";
         }
 
-        return "RESPONSE CODE:" + responseCode;
+        return "RESPONSE:" + responseCode;
     }
 }

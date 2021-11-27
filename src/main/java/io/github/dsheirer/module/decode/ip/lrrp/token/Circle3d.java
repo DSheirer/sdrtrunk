@@ -21,15 +21,16 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
+import java.text.DecimalFormat;
+
 /**
  * LRRP 3D Position with latitude, longitude, altitude and radius
  */
-public class GeoFencePosition3D extends GeoFencePosition
+public class Circle3d extends Circle2d
 {
-    private static final int[] ALTITUDE_WHOLE = new int[]{88, 89, 90, 91, 92, 93, 94, 95};
-    private static final int[] ALTITUDE_FRACTIONAL = new int[]{96, 97, 98, 99, 100, 101, 102, 103};
-    private static final int[] ALTITUDE_ACCURACY_WHOLE = new int[]{104, 105, 106, 107, 108, 109, 110, 111};
-    private static final int[] ALTITUDE_ACCURACY_FRACTIONAL = new int[]{112, 113, 114, 115, 116, 117, 118, 119};
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+    private static final int[] ALTITUDE = new int[]{88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103};
+    private static final int[] ALTITUDE_ACCURACY = new int[]{104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119};
 
     /**
      * Constructs an instance of a 3D position token.
@@ -37,7 +38,7 @@ public class GeoFencePosition3D extends GeoFencePosition
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public GeoFencePosition3D(CorrectedBinaryMessage message, int offset)
+    public Circle3d(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -45,7 +46,7 @@ public class GeoFencePosition3D extends GeoFencePosition
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.POSITION_GEO_FENCE_3D;
+        return TokenType.CIRCLE_3D;
     }
 
     /**
@@ -55,7 +56,7 @@ public class GeoFencePosition3D extends GeoFencePosition
      */
     public float getAltitude()
     {
-        return getFloat(ALTITUDE_WHOLE, ALTITUDE_FRACTIONAL);
+        return getMessage().getInt(ALTITUDE, getOffset()) * HUNDREDTHS_MULTIPLIER;
     }
 
     /**
@@ -64,7 +65,7 @@ public class GeoFencePosition3D extends GeoFencePosition
      */
     public float getAltitudeAccuracy()
     {
-        return getFloat(ALTITUDE_ACCURACY_WHOLE, ALTITUDE_ACCURACY_FRACTIONAL);
+        return getMessage().getInt(ALTITUDE_ACCURACY, getOffset()) * HUNDREDTHS_MULTIPLIER;
     }
 
 
@@ -72,10 +73,10 @@ public class GeoFencePosition3D extends GeoFencePosition
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("GEO-FENCE POSITION:").append(getPosition());
-        sb.append(" RADIUS:").append(getRadius());
-        sb.append("KM ALTITUDE:").append(getAltitude());
-        sb.append(" ALT ACCURACY:").append(getAltitudeAccuracy());
+        sb.append("CIRCLE 3D POSITION:").append(getPosition());
+        sb.append(" RADIUS:").append(DECIMAL_FORMAT.format(getRadius()));
+        sb.append("MTRS ALTITUDE:").append(DECIMAL_FORMAT.format(getAltitude()));
+        sb.append(" ALT ACCURACY:").append(DECIMAL_FORMAT.format(getAltitudeAccuracy()));
         return sb.toString();
     }
 }

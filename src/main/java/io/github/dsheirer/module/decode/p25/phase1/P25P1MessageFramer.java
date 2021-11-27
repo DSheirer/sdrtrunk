@@ -36,11 +36,16 @@ import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.ip.IPacket;
+import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
+import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.preference.UserPreferences;
@@ -58,6 +63,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 
 /**
@@ -446,7 +452,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
-        Path directory = Paths.get("/home/denny/SDRTrunk/recordings/LRRP P25");
+        Path directory = Paths.get("/home/denny/Documents/TMR/APCO25/GPS/bkmzk007");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
         UserPreferences userPreferences = new UserPreferences();
@@ -467,6 +473,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         processingChain.addModule(messageProviderModule);
 
         mLog.info("Processing Directory: " + directory.toString());
+
 
         try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
         {
@@ -504,6 +511,22 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                                                    {
                                                        logOutput.write(message.toString().getBytes());
                                                        logOutput.write("\n".getBytes());
+
+                                                       if(message instanceof PacketMessage packet)
+                                                       {
+                                                           if(packet.getPacket() instanceof IPV4Packet ipv4)
+                                                           {
+                                                               if(ipv4.getPayload() instanceof UDPPacket udp)
+                                                               {
+                                                                   if(udp.getPayload() instanceof LRRPPacket lrrp)
+                                                                   {
+                                                                       logOutput.write("\n".getBytes());
+                                                                       logOutput.write(lrrp.getMessage().toHexString().getBytes());
+                                                                       logOutput.write("\n\n".getBytes());
+                                                                   }
+                                                               }
+                                                           }
+                                                       }
                                                    }
                                                    catch(IOException ioe)
                                                    {
