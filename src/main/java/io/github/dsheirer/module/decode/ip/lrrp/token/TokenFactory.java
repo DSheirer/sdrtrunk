@@ -36,24 +36,38 @@ public class TokenFactory
                 return new Heading(message, offset);
             case IDENTITY:
                 return new Identity(message, offset);
-            case POSITION:
-                return new Position(message, offset);
-            case POSITION_GEO_FENCE:
-                return new GeoFencePosition(message, offset);
-            case POSITION_3D:
-                return new Position3D(message, offset);
-            case POSITION_GEO_FENCE_3D:
-                return new GeoFencePosition3D(message, offset);
+            case POINT_2D:
+                return new Point2d(message, offset);
+            case CIRCLE_2D:
+                return new Circle2d(message, offset);
+            case POINT_3D:
+                return new Point3d(message, offset);
+            case CIRCLE_3D:
+                return new Circle3d(message, offset);
             case RESPONSE:
                 return new Response(message, offset);
             case SPEED:
                 return new Speed(message, offset);
+            case SUCCESS:
+                return new Success(message, offset);
             case TIMESTAMP:
                 return new Timestamp(message, offset);
+            case TRIGGER_DISTANCE:
+                return new TriggerDistance(message, offset);
+            case TRIGGER_GPIO:
+                return new TriggerGpio(message, offset);
+            case TRIGGER_ON_MOVE:
+                return new TriggerOnMove(message, offset);
+            case TRIGGER_PERIODIC:
+                return new TriggerPeriodic(message, offset);
             case VERSION:
                 return new Version(message, offset);
             case UNKNOWN_23:
                 return new Unknown23(message, offset);
+            case REQUEST_61:
+                return new Request61(message, offset);
+            case REQUEST_73:
+                return new Request73(message, offset);
             case UNKNOWN:
             default:
                 return new UnknownToken(message, offset, remainingCharacterCount);

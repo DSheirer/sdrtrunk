@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,10 @@ import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
+import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
+import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.lrrp.token.Identity;
+import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
@@ -40,6 +44,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -257,11 +266,20 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             if(message instanceof DMRBurst && ((DMRBurst)message).hasCACH())
             {
                 CACH cach = ((DMRBurst)message).getCACH();
-                mLog.info(cach.toString() + " TS:" + message.getTimeslot() + " " + message.toString());
+//                mLog.info(cach.toString() + " TS:" + message.getTimeslot() + " " + message.toString());
             }
             else
             {
-                mLog.info("     TS:" + message.getTimeslot() + " " + message.toString());
+//                mLog.info("     TS:" + message.getTimeslot() + " " + message.toString());
+            }
+
+            if(message instanceof DMRPacketMessage dpm)
+            {
+                if(dpm.getPacket() instanceof LRRPPacket lrrp)
+                {
+                    mLog.info("LRRP: " + lrrp.toString());
+                    mLog.info("MESSAGE: " + lrrp.getMessage().toHexString());
+                }
             }
 
 //            if(message instanceof UDTHeader)
@@ -283,6 +301,80 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         public void reset()
         {
             mHasDMRData = true;
+        }
+    }
+
+    public static class LrrpProcessor implements Listener<IMessage>
+    {
+        private Map<Integer, List<LRRPPacket>> mLrrpMap = new HashMap<>();
+
+        public LrrpProcessor()
+        {
+
+        }
+
+        @Override
+        public void receive(IMessage message)
+        {
+            if(message instanceof DMRPacketMessage dpm)
+            {
+                if(dpm.getPacket() instanceof LRRPPacket lrrp)
+                {
+                    process(lrrp);
+                }
+            }
+        }
+
+        public void process(LRRPPacket lrrpPacket)
+        {
+            Identity identity = getIdentity(lrrpPacket);
+
+            if(identity != null)
+            {
+                List<LRRPPacket> packets = mLrrpMap.get(identity.getID());
+
+                if(packets == null)
+                {
+                    packets = new ArrayList<>();
+                }
+
+                packets.add(lrrpPacket);
+
+                mLrrpMap.put(identity.getID(), packets);
+            }
+        }
+
+        public void log()
+        {
+            mLog.info("*************** DUMPING LRRP PACKETS****************************");
+            List<Integer> ids = new ArrayList(mLrrpMap.keySet());
+            Collections.sort(ids);
+
+            for(Integer id: ids)
+            {
+                mLog.info("");
+                mLog.info("###################### ID: " + id + " ###################################");
+                List<LRRPPacket> packets = mLrrpMap.get(id);
+
+                for(LRRPPacket lrrp: packets)
+                {
+                    mLog.info("PACKET: " + lrrp.toString());
+                    mLog.info("MESSAGE: " + lrrp.getMessage().toHexString());
+                }
+            }
+        }
+
+        private static Identity getIdentity(LRRPPacket packet)
+        {
+            for(Token token: packet.getTokens())
+            {
+                if(token instanceof Identity)
+                {
+                    return (Identity)token;
+                }
+            }
+
+            return null;
         }
     }
 
@@ -334,16 +426,15 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //        String file = path + "20200730_090634_9600BPS_DMR_Otsego_County_Road_Commission_Alpine_Center_Road_Commission.bits";
 
         //Cap+ BP Scrambling
-//        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
+        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
 
-        String file = "/home/denny/SDRTrunk/recordings/20200927_054837_9600BPS_DMR_Blair_Communications_(Capacity_Plus)_Dallas_Control_9.bits";
-
-
+//        String file = "/home/denny/SDRTrunk/recordings/20200927_054837_9600BPS_DMR_Blair_Communications_(Capacity_Plus)_Dallas_Control_9.bits";
 
         MessageListener listener = new MessageListener();
         DecodeConfigDMR config = new DecodeConfigDMR();
+        LrrpProcessor lrrpProcessor = new LrrpProcessor();
 
-        boolean multi = false;
+        boolean multi = true;
 
         if(multi)
         {
@@ -360,7 +451,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                         DMRMessageFramer messageFramer = new DMRMessageFramer(null);
                         DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
                         messageFramer.setListener(messageProcessor);
-                        messageProcessor.setMessageListener(listener);
+//                        messageProcessor.setMessageListener(listener);
+                        messageProcessor.setMessageListener(lrrpProcessor);
+
 
                         try(BinaryReader reader = new BinaryReader(path, 200))
                         {
@@ -400,6 +493,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             {
                 ioe.printStackTrace();
             }
+
+            System.out.println("Logging LRRP Packets ...");
+            lrrpProcessor.log();
         }
         else
         {

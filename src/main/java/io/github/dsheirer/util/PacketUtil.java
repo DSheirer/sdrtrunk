@@ -22,8 +22,7 @@ package io.github.dsheirer.util;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
-import io.github.dsheirer.module.decode.ip.lrrp.token.GeoFencePosition;
-import io.github.dsheirer.module.decode.ip.lrrp.token.Position;
+import io.github.dsheirer.module.decode.ip.lrrp.token.Point2d;
 import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
@@ -72,10 +71,10 @@ public class PacketUtil
 
             for(Token token : lrrpPacket.getTokens())
             {
-                if(token instanceof Position)
+                if(token instanceof Point2d)
                 {
-                    Position position = (Position) token;
-                    return new GeoPosition(position.getLatitude(), position.getLongitude());
+                    Point2d point2d = (Point2d) token;
+                    return new GeoPosition(point2d.getLatitude(), point2d.getLongitude());
                 }
             }
         }

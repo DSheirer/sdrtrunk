@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
@@ -171,7 +168,7 @@ public enum Opcode
     MOTOROLA_OSP_PATCH_GROUP_DELETE(1, "PATCH GROUP DELE", "MOTOROLA PATCH GROUP DELETE"),
     MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT(2, "PTCH GRP VCHN GR", "MOTOROLA PATCH GROUP CHANNEL GRANT"),
     MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE(3, "PTCH GRP VCH UPD", "MOTOROLA PATCH GROUP CHANNEL GRANT UPDATE"),
-    MOTOROLA_OSP_TRAFFIC_CHANNEL_ID(5, "TRAFFIC CHANNEL", "TRAFFIC CHANNEL"),
+    MOTOROLA_OSP_TRAFFIC_CHANNEL_ID(5, "TRAFFIC CHANNEL", "MOTOROLA TRAFFIC CHANNEL"),
     MOTOROLA_OSP_DENY_RESPONSE(7, "DENY RESPONSE", "MOTOROLA DENY RESPONSE"),
     MOTOROLA_OSP_SYSTEM_LOADING(9, "SYSTEM LOADING", "SYSTEM LOADING"),
     MOTOROLA_OSP_BASE_STATION_ID(11, "CCH BASE STAT ID", "CONTROL CHANNEL BASE STATION ID"),
