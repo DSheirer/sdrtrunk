@@ -24,6 +24,7 @@ import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.SyncLossMessage;
+import io.github.dsheirer.module.decode.dmr.audio.DMRCallSequenceRecorder;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
@@ -32,8 +33,10 @@ import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage
 import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
 import io.github.dsheirer.module.decode.ip.lrrp.token.Identity;
 import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
@@ -266,11 +269,11 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             if(message instanceof DMRBurst && ((DMRBurst)message).hasCACH())
             {
                 CACH cach = ((DMRBurst)message).getCACH();
-//                mLog.info(cach.toString() + " TS:" + message.getTimeslot() + " " + message.toString());
+                mLog.info(cach.toString() + " TS:" + message.getTimeslot() + " " + message.toString());
             }
             else
             {
-//                mLog.info("     TS:" + message.getTimeslot() + " " + message.toString());
+                mLog.info("     TS:" + message.getTimeslot() + " " + message.toString());
             }
 
             if(message instanceof DMRPacketMessage dpm)
@@ -388,7 +391,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //        String file = path + "20200514_063507_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //GPS Window Grant 2579
 //        String file = path + "20200514_064224_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //GPS Window Grant 5056035
 //        String file = path + "20200514_131623_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //GPS Grant: 5074193
-//        String file = path + "20200514_133947_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits"; //<<<<<<<------ Basic Encryption
+        String file = path + "20200514_133947_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits"; //<<<<<<<------ Basic Encryption
 //        String file = path + "20200514_142249_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits";
 //        String file = path + "20200514_144534_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //Con+ Control w/GPS Window Announce
 
@@ -426,15 +429,24 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //        String file = path + "20200730_090634_9600BPS_DMR_Otsego_County_Road_Commission_Alpine_Center_Road_Commission.bits";
 
         //Cap+ BP Scrambling
-        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
+//        String file = path + "20200829_065610_9600BPS_DMR_Albany_Medical_Center_Albany_LCN_3.bits";
 
 //        String file = "/home/denny/SDRTrunk/recordings/20200927_054837_9600BPS_DMR_Blair_Communications_(Capacity_Plus)_Dallas_Control_9.bits";
 
-        MessageListener listener = new MessageListener();
         DecodeConfigDMR config = new DecodeConfigDMR();
-        LrrpProcessor lrrpProcessor = new LrrpProcessor();
 
-        boolean multi = true;
+        Broadcaster<IMessage> messageBroadcaster = new Broadcaster<>();
+        MessageListener messageListener = new MessageListener();
+        messageBroadcaster.addListener(messageListener);
+
+        LrrpProcessor lrrpProcessor = new LrrpProcessor();
+        messageBroadcaster.addListener(lrrpProcessor);
+
+        DMRCallSequenceRecorder ambeRecorder = new DMRCallSequenceRecorder(new UserPreferences(), 123456789l,
+                "Denny System", "Denny Site");
+        messageBroadcaster.addListener(ambeRecorder);
+
+        boolean multi = false;
 
         if(multi)
         {
@@ -451,9 +463,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                         DMRMessageFramer messageFramer = new DMRMessageFramer(null);
                         DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
                         messageFramer.setListener(messageProcessor);
-//                        messageProcessor.setMessageListener(listener);
-                        messageProcessor.setMessageListener(lrrpProcessor);
-
+                        messageProcessor.setMessageListener(messageBroadcaster);
 
                         try(BinaryReader reader = new BinaryReader(path, 200))
                         {
@@ -468,7 +478,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                             ioe.printStackTrace();
                         }
 
-                        if(!listener.hasData())
+                        if(!messageListener.hasData())
                         {
 //                            mLog.info("Has Data: " + listener.hasData() + " File:" + path.toString());
 //                            try
@@ -481,11 +491,11 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //                            }
                         }
 
-                        listener.reset();
+                        messageListener.reset();
 
-                        System.out.println("TS0 VOICE:" + listener.mTS0Count + " TS1 VOICE:" + listener.mTS1Count);
-                        listener.mTS0Count = 0;
-                        listener.mTS1Count = 0;
+                        System.out.println("TS0 VOICE:" + messageListener.mTS0Count + " TS1 VOICE:" + messageListener.mTS1Count);
+                        messageListener.mTS0Count = 0;
+                        messageListener.mTS1Count = 0;
                     }
                 });
             }
@@ -494,7 +504,6 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                 ioe.printStackTrace();
             }
 
-            System.out.println("Logging LRRP Packets ...");
             lrrpProcessor.log();
         }
         else
@@ -502,7 +511,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             DMRMessageFramer messageFramer = new DMRMessageFramer(null);
             DMRMessageProcessor messageProcessor = new DMRMessageProcessor(config);
             messageFramer.setListener(messageProcessor);
-            messageProcessor.setMessageListener(listener);
+            messageProcessor.setMessageListener(messageBroadcaster);
 
             try(BinaryReader reader = new BinaryReader(Path.of(file), 200))
             {
@@ -517,9 +526,9 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                 ioe.printStackTrace();
             }
 
-            System.out.println("TS0 VOICE:" + listener.mTS0Count + " TS1 VOICE:" + listener.mTS1Count);
-            listener.mTS0Count = 0;
-            listener.mTS1Count = 0;
+            System.out.println("TS0 VOICE:" + messageListener.mTS0Count + " TS1 VOICE:" + messageListener.mTS1Count);
+            messageListener.mTS0Count = 0;
+            messageListener.mTS1Count = 0;
         }
     }
 }
