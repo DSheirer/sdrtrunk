@@ -31,7 +31,8 @@ import java.text.DecimalFormat;
  */
 public class Point2d extends Token
 {
-    private static final int[] LATITUDE = new int[]{8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+    private static final int LATITUDE_HEMISPHERE_FLAG = 8;
+    private static final int[] LATITUDE = new int[]{9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] LONGITUDE = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
         57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
@@ -74,30 +75,32 @@ public class Point2d extends Token
 
     /**
      * Latitude in degrees decimal
+     *
+     * Note: latitude field is parsed as a leading hemisphere indicator followed by a positive 31-bit integer.
      */
     public double getLatitude()
     {
-        return getMessage().getInt(LATITUDE, getOffset()) * LATITUDE_MULTIPLIER;// * (getMessage().get(LATITUDE_HEMISPHERE_FLAG) ? -1 : 1);
+        return getMessage().getInt(LATITUDE, getOffset()) * LATITUDE_MULTIPLIER *
+                (getMessage().get(getOffset() + LATITUDE_HEMISPHERE_FLAG) ? -1 : 1);
     }
 
     /**
      * Longitude in degrees decimal
+     *
+     * Note: longitude field is parsed as a two's complement 32-bit integer.
      */
     public double getLongitude()
     {
-        return getMessage().getInt(LONGITUDE, getOffset()) * LONGITUDE_MULTIPLIER;// * (getMessage().get(LONGITUDE_HEMISPHERE_FLAG) ? -1 : 1);
-    }
+        //Note: in testing against US data (positive lat, negative long), parsing the lat and long values as
+        // two's complement values produced correct results.  However, testing against AUS data (negative lat,
+        // positive long), the latitude hemisphere is incorrect.  So, I updated the code to treat latitude as a 31-bit
+        // positive integer with a leading hemisphere flag bit and left the longitude parsing as two's complement.
+        //
+        // This same formula can't be applied against the longitude values, or they will be incorrect for US locations.
+        // This may be a radio system configuration item that we have to expose in the future as a switch.  Will wait
+        // until users report incorrect latitude parsing before we make any more changes.
 
-    /**
-     * Calculates the floating point value specified by the message index arrays.
-     * @param whole units indexes
-     * @param fractional one-hundredth units indexes
-     * @return full value
-     */
-    protected float getFloat(int[] whole, int[] fractional)
-    {
-        return getMessage().getInt(whole, getOffset()) +
-                (getMessage().getInt(fractional, getOffset()) * HUNDREDTHS_MULTIPLIER);
+        return getMessage().getInt(LONGITUDE, getOffset()) * LONGITUDE_MULTIPLIER;
     }
 
     @Override
