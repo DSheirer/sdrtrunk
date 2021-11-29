@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -39,11 +36,16 @@ import io.github.dsheirer.message.StuffBitsMessage;
 import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.ip.IPacket;
+import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
+import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.audio.P25P1AudioModule;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25Message;
 import io.github.dsheirer.module.decode.p25.phase1.message.P25MessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUSequence;
+import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.TSBKMessageFactory;
 import io.github.dsheirer.preference.UserPreferences;
@@ -61,6 +63,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 
 /**
@@ -449,7 +452,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
 
     public static void main(String[] args)
     {
-        Path directory = Paths.get("/media/denny/500G1EXT4/RadioRecordings/APCO25/Ken Noffsinger");
+        Path directory = Paths.get("/home/denny/Documents/TMR/APCO25/GPS/bkmzk007");
 //        Path directory = Paths.get("/media/denny/500G1EXT4/PBITRecordings");
 
         UserPreferences userPreferences = new UserPreferences();
@@ -470,6 +473,7 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
         processingChain.addModule(messageProviderModule);
 
         mLog.info("Processing Directory: " + directory.toString());
+
 
         try(OutputStream logOutput = Files.newOutputStream(directory.resolve("log.txt")))
         {
@@ -507,6 +511,22 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                                                    {
                                                        logOutput.write(message.toString().getBytes());
                                                        logOutput.write("\n".getBytes());
+
+                                                       if(message instanceof PacketMessage packet)
+                                                       {
+                                                           if(packet.getPacket() instanceof IPV4Packet ipv4)
+                                                           {
+                                                               if(ipv4.getPayload() instanceof UDPPacket udp)
+                                                               {
+                                                                   if(udp.getPayload() instanceof LRRPPacket lrrp)
+                                                                   {
+                                                                       logOutput.write("\n".getBytes());
+                                                                       logOutput.write(lrrp.getMessage().toHexString().getBytes());
+                                                                       logOutput.write("\n\n".getBytes());
+                                                                   }
+                                                               }
+                                                           }
+                                                       }
                                                    }
                                                    catch(IOException ioe)
                                                    {

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,6 +51,22 @@ public class LRRPHeader extends Header
     private void checkValid()
     {
         setValid(getMessage().size() >= (getOffset() + getLength() + getPayloadLength()));
+    }
+
+    /**
+     * Integer value of the LRRP Packet type
+     */
+    public int getLrrpPacketTypeValue()
+    {
+        return getMessage().getInt(TYPE, getOffset());
+    }
+
+    /**
+     * LRRP Packet Type
+     */
+    public LRRPPacketType getLRRPPacketType()
+    {
+        return LRRPPacketType.fromValue(getLrrpPacketTypeValue());
     }
 
     /**

@@ -21,19 +21,14 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
-import java.text.DecimalFormat;
-
 /**
- * LRRP Speed Token
- * <p>
- * Start Token: 0x6C
- * Total Length: 3 bytes
+ * LRRP Unknown Request Type 73
+ *
+ * Total Length: 2 bytes
  */
-public class Speed extends Token
+public class Request73 extends Token
 {
-    private static final int[] SPEED = new int[]{8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    private static final double SPEED_MULTIPLIER = 0.01; //Units of 1/100 mph
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+    private static final int[] VALUE = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
 
     /**
      * Constructs an instance of a heading token.
@@ -41,7 +36,7 @@ public class Speed extends Token
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public Speed(CorrectedBinaryMessage message, int offset)
+    public Request73(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -49,20 +44,17 @@ public class Speed extends Token
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.SPEED;
+        return TokenType.REQUEST_73;
     }
 
-    /**
-     * Speed in kilometers per hour (kph)
-     */
-    public double getSpeed()
+    public int getValue()
     {
-        return getMessage().getInt(SPEED, getOffset()) * SPEED_MULTIPLIER;
+        return getMessage().getInt(VALUE, getOffset());
     }
 
     @Override
     public String toString()
     {
-        return "SPEED:" + DECIMAL_FORMAT.format(getSpeed()) + " MPH";
+        return "REQUEST-73:" + getValue();
     }
 }

@@ -24,24 +24,21 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import java.text.DecimalFormat;
 
 /**
- * LRRP Speed Token
- * <p>
- * Start Token: 0x6C
- * Total Length: 3 bytes
+ * LRRP 3D Position with latitude, longitude, altitude and radius
  */
-public class Speed extends Token
+public class Circle3d extends Circle2d
 {
-    private static final int[] SPEED = new int[]{8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23};
-    private static final double SPEED_MULTIPLIER = 0.01; //Units of 1/100 mph
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00");
+    private static final int[] ALTITUDE = new int[]{88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103};
+    private static final int[] ALTITUDE_ACCURACY = new int[]{104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119};
 
     /**
-     * Constructs an instance of a heading token.
+     * Constructs an instance of a 3D position token.
      *
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public Speed(CorrectedBinaryMessage message, int offset)
+    public Circle3d(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -49,20 +46,37 @@ public class Speed extends Token
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.SPEED;
+        return TokenType.CIRCLE_3D;
     }
 
     /**
-     * Speed in kilometers per hour (kph)
+     * Altitude
+     *
+     * @return altitude in meters
      */
-    public double getSpeed()
+    public float getAltitude()
     {
-        return getMessage().getInt(SPEED, getOffset()) * SPEED_MULTIPLIER;
+        return getMessage().getInt(ALTITUDE, getOffset()) * HUNDREDTHS_MULTIPLIER;
     }
+
+    /**
+     * Altitude accuracy
+     * @return accuracy in meters
+     */
+    public float getAltitudeAccuracy()
+    {
+        return getMessage().getInt(ALTITUDE_ACCURACY, getOffset()) * HUNDREDTHS_MULTIPLIER;
+    }
+
 
     @Override
     public String toString()
     {
-        return "SPEED:" + DECIMAL_FORMAT.format(getSpeed()) + " MPH";
+        StringBuilder sb = new StringBuilder();
+        sb.append("CIRCLE 3D POSITION:").append(getPosition());
+        sb.append(" RADIUS:").append(DECIMAL_FORMAT.format(getRadius()));
+        sb.append("MTRS ALTITUDE:").append(DECIMAL_FORMAT.format(getAltitude()));
+        sb.append(" ALT ACCURACY:").append(DECIMAL_FORMAT.format(getAltitudeAccuracy()));
+        return sb.toString();
     }
 }

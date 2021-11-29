@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
+import java.text.DecimalFormat;
+
 /**
  * LRRP Heading Token
  *
@@ -29,7 +31,9 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
  */
 public class Heading extends Token
 {
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("000.0");
     private static final int[] HEADING = new int[]{8, 9, 10, 11, 12, 13, 14, 15};
+    private static final float HEADING_MULTIPLIER = 2.0f;
 
     /**
      * Constructs an instance of a heading token.
@@ -51,14 +55,14 @@ public class Heading extends Token
     /**
      * Heading degrees relative to true North
      */
-    public long getHeading()
+    public float getHeading()
     {
-        return getMessage().getInt(HEADING, getOffset());
+        return getMessage().getInt(HEADING, getOffset()) * HEADING_MULTIPLIER;
     }
 
     @Override
     public String toString()
     {
-        return "HEADING:" + getHeading();
+        return "HEADING:" + DECIMAL_FORMAT.format(getHeading());
     }
 }

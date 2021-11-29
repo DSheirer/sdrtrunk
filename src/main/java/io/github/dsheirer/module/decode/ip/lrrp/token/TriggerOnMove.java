@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,19 +22,19 @@ package io.github.dsheirer.module.decode.ip.lrrp.token;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 
 /**
- * LRRP 3-D Position with latitude, longitude and altitude
+ * LRRP Trigger on Move Token
+ *
+ * Total Length: 1 byte
  */
-public class Position3D extends Position
+public class TriggerOnMove extends Token
 {
-    private static final int[] ALTITUDE = new int[]{72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87};
-
     /**
      * Constructs an instance of a heading token.
      *
      * @param message containing the heading
      * @param offset to the start of the token
      */
-    public Position3D(CorrectedBinaryMessage message, int offset)
+    public TriggerOnMove(CorrectedBinaryMessage message, int offset)
     {
         super(message, offset);
     }
@@ -42,23 +42,12 @@ public class Position3D extends Position
     @Override
     public TokenType getTokenType()
     {
-        return TokenType.POSITION_3D;
+        return TokenType.TRIGGER_ON_MOVE;
     }
-
-    /**
-     * Altitude
-     *
-     * @return altitude in meters
-     */
-    public int getAltitude()
-    {
-        return getMessage().getInt(ALTITUDE, getOffset());
-    }
-
 
     @Override
     public String toString()
     {
-        return "POSITION:" + getPosition() + " ALT:" + getAltitude() + " MTRS";
+        return "TRIGGER ON MOVE";
     }
 }

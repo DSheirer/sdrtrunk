@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,7 @@ import io.github.dsheirer.module.decode.dmr.DMRDecoder;
 import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
-import io.github.dsheirer.module.decode.dmr.message.voice.DMRAudioModule;
+import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
 import io.github.dsheirer.module.decode.fleetsync2.FleetsyncMessageFilter;

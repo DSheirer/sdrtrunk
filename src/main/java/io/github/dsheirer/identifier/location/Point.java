@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,15 @@
 
 package io.github.dsheirer.identifier.location;
 
+import java.text.DecimalFormat;
+
 /**
  * Geospatial point (location)
  */
 public class Point
 {
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.00000");
+
     private double mLatitude;
     private double mLongitude;
 
@@ -52,8 +56,8 @@ public class Point
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(Math.abs(mLatitude)).append(mLatitude >= 0 ? "N " : "S ");
-        sb.append(Math.abs(mLongitude)).append(mLongitude >= 0 ? "E" : "W");
+        sb.append(DECIMAL_FORMAT.format(Math.abs(mLatitude))).append(mLatitude >= 0 ? "N " : "S ");
+        sb.append(DECIMAL_FORMAT.format(Math.abs(mLongitude))).append(mLongitude >= 0 ? "E" : "W");
         return sb.toString();
     }
 }

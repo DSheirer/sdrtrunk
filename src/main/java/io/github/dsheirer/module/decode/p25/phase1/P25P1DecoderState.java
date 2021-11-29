@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -41,10 +38,12 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
+import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.cellocator.MCGPPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
+import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.module.decode.p25.P25TrafficChannelManager;
@@ -134,7 +133,10 @@ import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.Uni
 import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.standard.osp.UnitToUnitVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.util.PacketUtil;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -916,6 +918,35 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                                 .build();
 
                         broadcast(cellocatorEvent);
+                    }
+                    else if(udpPayload instanceof LRRPPacket lrrpPacket)
+                    {
+                        MutableIdentifierCollection ic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+                        DecodeEvent lrrpEvent = P25DecodeEvent.builder(message.getTimestamp())
+                                .channel(getCurrentChannel())
+                                .details(lrrpPacket + " " + ipv4)
+                                .eventDescription("LRRP")
+                                .identifiers(ic)
+                                .protocol(Protocol.LRRP)
+                                .build();
+
+                        broadcast(lrrpEvent);
+
+                        GeoPosition geoPosition = PacketUtil.extractGeoPosition(lrrpPacket);
+
+                        if (geoPosition != null)
+                        {
+                            PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(message.getTimestamp())
+                                    .channel(getCurrentChannel())
+                                    .eventDescription(DecodeEventType.GPS.toString())
+                                    .identifiers(ic)
+                                    .protocol(Protocol.LRRP)
+                                    .location(geoPosition)
+                                    .build();
+
+                            broadcast(plottableDecodeEvent);
+                        }
                     }
                     else
                     {

@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.audio.codec.mbe;
@@ -27,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.annotation.JsonRootName;
+import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.encryption.EncryptionKey;
 import io.github.dsheirer.module.decode.p25.audio.VoiceFrame;
 
@@ -133,6 +131,18 @@ public class MBECallSequence
     }
 
     /**
+     * Sets the from radio identifier
+     * @param identifier for from entity
+     */
+    public void setFromIdentifier(Identifier identifier)
+    {
+        if(identifier != null)
+        {
+            setFromIdentifier(identifier.toString());
+        }
+    }
+
+    /**
      * Radio identifier that originated the call
      *
      * @return from id
@@ -153,6 +163,18 @@ public class MBECallSequence
         if(to != null && !to.isEmpty() && !to.contentEquals("0"))
         {
             mToIdentifier = to;
+        }
+    }
+
+    /**
+     * Sets the TO identifier
+     * @param identifier for the TO entity
+     */
+    public void setToIdentifier(Identifier identifier)
+    {
+        if(identifier != null)
+        {
+            setToIdentifier(identifier.toString());
         }
     }
 
