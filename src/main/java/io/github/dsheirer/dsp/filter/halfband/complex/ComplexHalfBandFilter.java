@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2021 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter.halfband.complex;
 
 import io.github.dsheirer.dsp.filter.Filters;
@@ -36,10 +39,10 @@ public class ComplexHalfBandFilter
     private float[] mFilteredSamples;
     private int mFilteredSamplesPointer;
 
-    public ComplexHalfBandFilter(float[] coefficients, float gain)
+    public ComplexHalfBandFilter(float[] coefficients)
     {
-        mIFilter = new HalfBandFilter2(coefficients, gain);
-        mQFilter = new HalfBandFilter2(coefficients, gain);
+        mIFilter = new HalfBandFilter2(coefficients);
+        mQFilter = new HalfBandFilter2(coefficients);
     }
 
     public ReusableComplexBuffer filter(ReusableComplexBuffer originalBuffer)
@@ -63,7 +66,7 @@ public class ComplexHalfBandFilter
         while(mSamplesPointer + 3 < mSamples.length)
         {
             mFilteredSamples[mFilteredSamplesPointer++] = mIFilter.filter(mSamples[mSamplesPointer], mSamples[mSamplesPointer + 2]);
-            mFilteredSamples[mFilteredSamplesPointer++] = mIFilter.filter(mSamples[mSamplesPointer + 1], mSamples[mSamplesPointer + 3]);
+            mFilteredSamples[mFilteredSamplesPointer++] = mQFilter.filter(mSamples[mSamplesPointer + 1], mSamples[mSamplesPointer + 3]);
             mSamplesPointer += 4;
         }
 
@@ -81,7 +84,7 @@ public class ComplexHalfBandFilter
     public static void main(String[] args)
     {
         Oscillator oscillator = new Oscillator(1, 16);
-        ComplexHalfBandFilter filter = new ComplexHalfBandFilter(Filters.HALF_BAND_FILTER_27T.getCoefficients(), 1.0f);
+        ComplexHalfBandFilter filter = new ComplexHalfBandFilter(Filters.HALF_BAND_FILTER_27T.getCoefficients());
 
         ReusableComplexBufferQueue bufferQueue = new ReusableComplexBufferQueue("Test");
 

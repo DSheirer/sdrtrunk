@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 
 /**
  * Window factory and corresponding utility methods.
@@ -484,11 +485,16 @@ public class Window
             mLabel = label;
         }
 
+
         public String toString()
         {
             return mLabel;
         }
     }
+
+    public static final EnumSet<WindowType> NO_PARAMETER_WINDOWS = EnumSet.of(WindowType.BLACKMAN, WindowType.BLACKMAN_HARRIS_4,
+            WindowType.BLACKMAN_HARRIS_7, WindowType.BLACKMAN_NUTALL, WindowType.COSINE, WindowType.FLAT_TOP,
+            WindowType.HAMMING, WindowType.HANN, WindowType.NUTALL);
 
     public static void main(String[] args)
     {
