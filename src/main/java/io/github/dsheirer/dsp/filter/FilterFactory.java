@@ -1004,7 +1004,7 @@ public class FilterFactory
      * @param windowType to apply to the filter.
      * @return coefficients
      */
-    public static double[] getHalfBand(int length, Window.WindowType windowType)
+    public static float[] getHalfBand(int length, Window.WindowType windowType)
     {
         if((length - 3) % 4 != 0)
         {
@@ -1013,7 +1013,7 @@ public class FilterFactory
         }
 
         double[] window = Window.getWindow(windowType, length);
-        double[] taps = new double[length];
+        float[] taps = new float[length];
 
         int halfLength = length / 2;
 
@@ -1053,7 +1053,7 @@ public class FilterFactory
 
         int length = 15;
 
-        double [] taps = FilterFactory.getHalfBand(length, Window.WindowType.HAMMING);
+        float [] taps = FilterFactory.getHalfBand(length, Window.WindowType.HAMMING);
 
         for(int x = 0; x < length; x++)
         {
