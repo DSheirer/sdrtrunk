@@ -1,3 +1,22 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
@@ -42,7 +61,6 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
     private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
     private DMRMessageProcessor mMessageProcessor;
-    private Listener<SourceEvent> mSourceEventListener;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
@@ -283,7 +301,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     @Override
     public void setSourceEventListener(Listener<SourceEvent> listener)
     {
-        mSourceEventListener = listener;
+        super.setSourceEventListener(listener);
         mPowerMonitor.setSourceEventListener(listener);
     }
 
@@ -293,7 +311,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     @Override
     public void removeSourceEventListener()
     {
-        mSourceEventListener = null;
+        super.removeSourceEventListener();
         mPowerMonitor.setSourceEventListener(null);
     }
 
@@ -308,19 +326,6 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
                 process(sourceEvent);
             }
         };
-    }
-
-    /**
-     * Broadcasts the source event to an optional registered listener.  This method should primarily be used to
-     * issue frequency correction requests to the channel source.
-     * @param sourceEvent to broadcast
-     */
-    public void broadcast(SourceEvent sourceEvent)
-    {
-        if(mSourceEventListener != null)
-        {
-            mSourceEventListener.receive(sourceEvent);
-        }
     }
 
     /**
