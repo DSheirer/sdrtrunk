@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ package io.github.dsheirer.dsp.filter.decimate;
  */
 public class DecimationFilterFactory
 {
-    private static final int[] SUPPORTED_RATES = new int[]{2,4,8,16,32,64,128,256,512,1024};
+    private static final int[] SUPPORTED_RATES = new int[]{0,2,4,8,16,32,64,128,256,512,1024};
 
     /**
      * Creates a real-valued decimation filter for float array sample buffers providing greater than 100 dB of
@@ -37,6 +37,8 @@ public class DecimationFilterFactory
     {
         switch(decimationRate)
         {
+            case 0:
+                return new RealDecimateX0Filter();
             case 2:
                 return new RealDecimateX2Filter();
             case 4:
@@ -74,6 +76,8 @@ public class DecimationFilterFactory
     {
         switch(decimationRate)
         {
+            case 0:
+                return new ComplexDecimateX0Filter();
             case 2:
                 return new ComplexDecimateX2Filter();
             case 4:

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 package io.github.dsheirer.dsp.filter.halfband.complex;
 
 import io.github.dsheirer.dsp.filter.decimate.IComplexDecimationFilter;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 
 /**
  * Complex half-band filter that processes samples on a per-array basis, versus a per-sample basis.
@@ -35,6 +37,7 @@ public class ComplexHalfBandDecimationFilter implements IComplexDecimationFilter
     private int mCoefficientsLengthMinus2;
     private int mBufferPointer;
     private int mHalf;
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("half-band decimation filter");
 
     /**
      * Constructs a complex sample half-band decimate x2 filter using the specified filter coefficients.
@@ -117,5 +120,18 @@ public class ComplexHalfBandDecimationFilter implements IComplexDecimationFilter
         }
 
         return filtered;
+    }
+
+    /**
+     * Decimates the complex samples and returns a buffer of decimated samples.
+     * @param buffer to decimate
+     * @return decimated buffer.
+     */
+    @Override
+    public ReusableComplexBuffer decimate(ReusableComplexBuffer buffer)
+    {
+        float[] decimated = decimateComplex(buffer.getSamples());
+        buffer.decrementUserCount();
+        return mReusableComplexBufferQueue.getBuffer(decimated, buffer.getTimestamp());
     }
 }

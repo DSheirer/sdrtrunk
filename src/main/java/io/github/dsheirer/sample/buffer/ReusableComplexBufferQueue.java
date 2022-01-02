@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.sample.buffer;
 
 import org.slf4j.Logger;
@@ -57,6 +60,33 @@ public class ReusableComplexBufferQueue extends AbstractReusableBufferQueue<Reus
         }
 
         buffer.resize(size);
+        buffer.incrementUserCount();
+
+        return buffer;
+    }
+
+    /**
+     * Returns a buffer loaded with the samples.
+     * @param samples to load
+     * @param timestamp to apply
+     * @return buffer
+     */
+    public ReusableComplexBuffer getBuffer(float[] samples, long timestamp)
+    {
+        ReusableComplexBuffer buffer = getRecycledBuffer();
+
+        if(buffer == null)
+        {
+            buffer = new ReusableComplexBuffer(this, samples);
+            buffer.setTimestamp(timestamp);
+            buffer.setDebugName("Owner:" + getDebugName());
+            incrementBufferCount();
+        }
+        else
+        {
+            buffer.reloadFrom(samples, timestamp);
+        }
+
         buffer.incrementUserCount();
 
         return buffer;

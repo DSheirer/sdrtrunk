@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.dsp.filter.channelizer;
 
@@ -40,6 +39,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
 {
 //    private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
+    private static final int PROCESSED_BUFFER_SAMPLE_SIZE = 2048;
     private ReusableComplexBufferAssembler mReusableComplexBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private IPolyphaseChannelOutputProcessor mReplacementPolyphaseChannelOutputProcessor;
@@ -71,7 +71,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
-        mReusableComplexBufferAssembler = new ReusableComplexBufferAssembler(2500, mChannelSampleRate);
+        mReusableComplexBufferAssembler = new ReusableComplexBufferAssembler(PROCESSED_BUFFER_SAMPLE_SIZE, mChannelSampleRate);
 
         float[] filterCoefficients = getLowPassFilter(channelSampleRate, channelSpecification.getPassFrequency(),
             channelSpecification.getStopFrequency());
