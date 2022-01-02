@@ -19,24 +19,14 @@
 
 package io.github.dsheirer.dsp.filter.decimate;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-
 /**
- * Interface for a decimation filter for float array sample buffers
+ * No decimation filter.
  */
-public interface IComplexDecimationFilter
+public class RealDecimateX0Filter implements IRealDecimationFilter
 {
-    /**
-     * Decimates an array of float complex samples
-     * @param samples to decimate
-     * @return decimated samples
-     */
-    float[] decimateComplex(float[] samples);
-
-    /**
-     * Decimates an buffer of float complex samples
-     * @param buffer to decimate
-     * @return decimated samples
-     */
-    ReusableComplexBuffer decimate(ReusableComplexBuffer buffer);
+    @Override
+    public float[] decimateReal(float[] samples)
+    {
+        return samples;
+    }
 }
