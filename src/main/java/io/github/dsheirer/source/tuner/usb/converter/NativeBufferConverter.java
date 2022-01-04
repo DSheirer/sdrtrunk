@@ -1,30 +1,30 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.usb.converter;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 public abstract class NativeBufferConverter
 {
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("NativeBufferConverter");
-
     /**
      * Converts native byte buffers into complex float samples and produces reusable complex sample buffers.  Tracks
      * each reusable buffer until the downstream consumer(s) are finished with the buffer and then reuses the buffer.
@@ -34,23 +34,20 @@ public abstract class NativeBufferConverter
     }
 
     /**
-     * Converts the native byte buffer to complex float samples and returns the samples in a reusable buffer.  Internally
-     * tracks each reusable buffer until all consumers indicate they are finished processing the buffer and then reuses
-     * the buffer.
+     * Converts the native byte buffer to complex float samples.
      *
      * @param byteBuffer containing native memory byte samples
-     * @return native buffer samples converted to complex floats loaded into a reusable buffer
+     * @return native buffer samples converted to interleaved complex floats
      */
-    public ReusableComplexBuffer convert(ByteBuffer byteBuffer, int length)
+    public InterleavedComplexSamples convert(ByteBuffer byteBuffer, int length)
     {
         FloatBuffer floatBuffer = convertSamples(byteBuffer, length);
 
-        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(floatBuffer.capacity());
+        float[] samples = new float[floatBuffer.capacity()];
+        floatBuffer.rewind();
+        floatBuffer.get(samples);
 
-        //The reusable buffer will rewind the float buffer to the beginning
-        reusableComplexBuffer.reloadFrom(floatBuffer, System.currentTimeMillis());
-
-        return reusableComplexBuffer;
+        return new InterleavedComplexSamples(samples, System.currentTimeMillis());
     }
 
     /**

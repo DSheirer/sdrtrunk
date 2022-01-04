@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,16 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.edac.trellis;
 
 import org.apache.commons.math3.util.FastMath;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class ViterbiDecoder
 {
@@ -129,9 +124,8 @@ public abstract class ViterbiDecoder
      */
     public Path decode(int[] transmittedOutputValues)
     {
-        Collection<Path> survivingPaths = new ArrayList<>();
-
-        survivingPaths.add(new Path(createStartingNode()));
+        Path[] survivingPaths = new Path[getInputValueCount()];
+        survivingPaths[0] = new Path(createStartingNode());
 
         //Add all but the last transmitted value to the starting path, creating a set of survivors at each iteration.
         for(int x = 0; x < transmittedOutputValues.length - 1; x++)
@@ -149,7 +143,7 @@ public abstract class ViterbiDecoder
      * returned that represents each path that terminates at a distinct input/state value that has the least error
      * value.
      *
-     * @param survivingPaths from the previous time instant to evaluate for the next time instant in the trellis
+     * @param previousPaths from the previous time instant to evaluate for the next time instant in the trellis
      * using the transmitted output value.
      *
      * @param transmittedOutputValue that will be decoded for this time instant.
@@ -158,9 +152,9 @@ public abstract class ViterbiDecoder
      * output value
      *
      */
-    public Collection<Path> add(Collection<Path> survivingPaths, int transmittedOutputValue)
+    public Path[] add(Path[] previousPaths, int transmittedOutputValue)
     {
-        Map<Integer,Path> survivingPathMap = new HashMap<>();
+        Path[] survivorPaths = new Path[getInputValueCount()];
 
         for(int x = 0; x < getInputValueCount(); x++)
         {
@@ -168,31 +162,34 @@ public abstract class ViterbiDecoder
             Node node = createNode(x, transmittedOutputValue);
 
             //Evaluate each surviving path by creating a copy and adding the node to it and see if it survives
-            for(Path path: survivingPaths)
+            for(Path path: previousPaths)
             {
-                Path pathToEvaluate = path.copyOf();
-
-                pathToEvaluate.add(node);
-
-                if(survivingPathMap.containsKey(node.getInputValue()))
+                if(path != null)
                 {
-                    Path survivingPath = survivingPathMap.get(node.getInputValue());
+                    Path pathToEvaluate = path.copyOf();
 
-                    //Replace the current survivor path if this evaluate path has a lower error value
-                    if(pathToEvaluate.getError() < survivingPath.getError())
+                    pathToEvaluate.add(node);
+
+                    if(survivorPaths[node.getInputValue()] != null)
                     {
-                        survivingPathMap.put(node.getInputValue(), pathToEvaluate);
+                        Path survivingPath = survivorPaths[node.getInputValue()];
+
+                        //Replace the current survivor path if this evaluate path has a lower error value
+                        if(pathToEvaluate.getError() < survivingPath.getError())
+                        {
+                            survivorPaths[node.getInputValue()] = pathToEvaluate;
+                        }
                     }
-                }
-                else
-                {
-                    //No survivor yet -- set this evaluate path as the first survivor
-                    survivingPathMap.put(node.getInputValue(), pathToEvaluate);
+                    else
+                    {
+                        //No survivor yet -- set this evaluate path as the first survivor
+                        survivorPaths[node.getInputValue()] = pathToEvaluate;
+                    }
                 }
             }
         }
 
-        return survivingPathMap.values();
+        return survivorPaths;
     }
 
     /**
@@ -207,7 +204,7 @@ public abstract class ViterbiDecoder
      * @return the single survivor path that remains after adding the flushing node to each of the candidate argument
      * survivor paths.
      */
-    public Path flush(Collection<Path> survivingPaths, int transmittedOutputValue)
+    public Path flush(Path[] survivingPaths, int transmittedOutputValue)
     {
         Node flushingNode = createFlushingNode(transmittedOutputValue);
 
@@ -215,11 +212,14 @@ public abstract class ViterbiDecoder
 
         for(Path survivingPath: survivingPaths)
         {
-            survivingPath.add(flushingNode);
-
-            if(bestPath == null || (survivingPath.getError() < bestPath.getError()))
+            if(survivingPath != null)
             {
-                bestPath = survivingPath;
+                survivingPath.add(flushingNode);
+
+                if(bestPath == null || (survivingPath.getError() < bestPath.getError()))
+                {
+                    bestPath = survivingPath;
+                }
             }
         }
 

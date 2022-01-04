@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,12 +38,12 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -190,20 +190,15 @@ public class P25P2MessageFramer implements Listener<Dibit>
      *
      * @param buffer to process into a stream of dibits for processing.
      */
-    public void receive(ReusableByteBuffer buffer)
+    public void receive(ByteBuffer buffer)
     {
-        //TODO: set timestamp in super frame detector
-        setCurrentTime(buffer.getTimestamp());
-
-        for(byte value : buffer.getBytes())
+        for(byte value : buffer.array())
         {
             for(int x = 0; x <= 3; x++)
             {
                 receive(Dibit.parse(value, x));
             }
         }
-
-        buffer.decrementUserCount();
     }
 
     public static void main(String[] args)
@@ -298,7 +293,7 @@ public class P25P2MessageFramer implements Listener<Dibit>
                                        {
                                            while(reader.hasNext())
                                            {
-                                               ReusableByteBuffer buffer = reader.next();
+                                               ByteBuffer buffer = reader.next();
                                                messageFramer.receive(buffer);
                                            }
                                        }

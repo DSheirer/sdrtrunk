@@ -22,26 +22,21 @@
 package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
-import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
+import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
+import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.protocol.Protocol;
-import io.github.dsheirer.record.binary.BinaryRecorder;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,8 +47,9 @@ public class P25P1DecoderLSM extends P25P1Decoder
     protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
 
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    private ComplexFIRFilter2 mBasebandFilter;
-    private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
+    protected IRealFilter mIBasebandFilter;
+    protected IRealFilter mQBasebandFilter;
+    protected IComplexGainControl mAGC = ComplexGainFactory.getComplexGainControl();
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected P25P1MessageFramer mMessageFramer;
     protected CostasLoop mCostasLoop;
@@ -79,7 +75,8 @@ public class P25P1DecoderLSM extends P25P1Decoder
     {
         super.setSampleRate(sampleRate);
 
-        mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
+        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
+        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_200);
@@ -108,37 +105,19 @@ public class P25P1DecoderLSM extends P25P1Decoder
      * Primary method for receiving incoming channel samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexSamples samples)
     {
+        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+
         //The filter will decrement the user count when finished
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        float[] i = mIBasebandFilter.filter(samples.i());
+        float[] q = mQBasebandFilter.filter(samples.q());
 
         //Process the buffer for power measurements
-        mPowerMonitor.process(basebandFiltered);
+        mPowerMonitor.process(i, q);
 
-        //AGC will decrement the user count when finished
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
-
-        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
-
-        //Decoder will decrement the user count when finished
-        mQPSKDemodulator.receive(gainApplied);
-    }
-
-    /**
-     * Filters the complex buffer and returns a new reusable complex buffer with the filtered contents.
-     *
-     * @param reusableComplexBuffer to filter
-     * @return filtered complex buffer
-     */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
-    {
-        //No additional filtering of the channel is currently needed, since the polyphase channelizer
-        //provides the filtering.
-        return reusableComplexBuffer;
-
-        //User accounting of the incoming buffer is handled by the filter
-//        return mBasebandFilter.filter(reusableComplexBuffer);
+        ComplexSamples amplified = mAGC.process(i, q);
+        mQPSKDemodulator.receive(amplified);
     }
 
     /**
@@ -194,44 +173,4 @@ public class P25P1DecoderLSM extends P25P1Decoder
 
         return filter;
     }
-
-    public static void main(String[] args)
-    {
-        String path = "/media/denny/500G1EXT4/RadioRecordings/";
-//        String input = "DFWAirport_Site_857_3875_baseband_20181213_223236.wav";
-//        String output = "DFWAirport_Site_857_3875_baseband_20181213_223236";
-
-        String input = "P25P2_HCPM_Metrocrest_Dallas_857_7625_phase_2_not_motorola_baseband_20181213_224616_control_channel.wav";
-        String output = "P25P2_HCPM_Metrocrest_Dallas_857_7625_phase_2_not_motorola_baseband_20181213_224616_control_channel";
-
-
-        P25P1DecoderLSM decoder = new P25P1DecoderLSM();
-        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25);
-        decoder.setBufferListener(recorder.getReusableByteBufferListener());
-        recorder.start();
-
-        File file = new File(path + input);
-
-        boolean running = true;
-
-        try(ComplexWaveSource source = new ComplexWaveSource(file))
-        {
-            decoder.setSampleRate(50000.0);
-            source.setListener(decoder);
-            source.start();
-
-            while(running)
-            {
-                source.next(200, true);
-            }
-        }
-        catch(IOException e)
-        {
-            mLog.error("Error", e);
-            running = false;
-        }
-
-        recorder.stop();
-    }
-
 }

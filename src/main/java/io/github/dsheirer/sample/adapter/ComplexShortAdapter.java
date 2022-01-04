@@ -1,21 +1,25 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.buffer.FloatNativeBuffer;
+import io.github.dsheirer.buffer.INativeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +29,7 @@ import java.nio.ByteOrder;
 /**
  * Converts 16-bit/2-byte little endian byte data into a reusable buffer of complex float sample data
  */
-public class ComplexShortAdapter extends ComplexSampleAdapter
+public class ComplexShortAdapter implements ISampleAdapter<INativeBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexShortAdapter.class);
     private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
@@ -33,19 +37,15 @@ public class ComplexShortAdapter extends ComplexSampleAdapter
 
     /**
      * Constructs a real sample adapter
-     *
-     * @param debugName to use for debug logging
      */
-    public ComplexShortAdapter(String debugName)
+    public ComplexShortAdapter()
     {
-        super(debugName);
     }
 
     @Override
-    public ReusableComplexBuffer convert(byte[] samples)
+    public INativeBuffer convert(byte[] samples)
     {
-        ReusableComplexBuffer reusableBuffer = getBuffer(samples.length / 2);
-        float[] convertedSamples = reusableBuffer.getSamples();
+        float[] convertedSamples = new float[samples.length / 2];
 
         int pointer = 0;
 
@@ -60,7 +60,9 @@ public class ComplexShortAdapter extends ComplexSampleAdapter
             pointer++;
         }
 
-        return reusableBuffer;
+        long now = System.currentTimeMillis();
+
+        return new FloatNativeBuffer(convertedSamples, now);
     }
 
     /**

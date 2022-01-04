@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.audio.convert.thumbdv;
@@ -36,8 +33,6 @@ import io.github.dsheirer.audio.convert.thumbdv.message.response.DecodeSpeechRes
 import io.github.dsheirer.audio.convert.thumbdv.message.response.ReadyResponse;
 import io.github.dsheirer.audio.convert.thumbdv.message.response.SetVocoderParameterResponse;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,11 +77,10 @@ public class ThumbDv implements AutoCloseable
     private ScheduledFuture mAudioDecodeProcessorHandle;
     private LinkedTransferQueue<DecodeSpeechRequest> mDecodeSpeechRequests = new LinkedTransferQueue<>();
     private AudioProtocol mAudioProtocol;
-    private Listener<ReusableFloatBuffer> mAudioBufferListener;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("ThumbDv");
+    private Listener<float[]> mAudioBufferListener;
     private boolean mStarted;
 
-    public ThumbDv(AudioProtocol audioProtocol, Listener<ReusableFloatBuffer> listener)
+    public ThumbDv(AudioProtocol audioProtocol, Listener<float[]> listener)
     {
         mAudioProtocol = audioProtocol;
         mAudioBufferListener = listener;
@@ -209,8 +203,7 @@ public class ThumbDv implements AutoCloseable
         if(message instanceof DecodeSpeechResponse && mAudioBufferListener != null)
         {
             float[] samples = ((DecodeSpeechResponse)message).getSamples();
-            ReusableFloatBuffer audioBuffer = mReusableBufferQueue.getBuffer(samples, System.currentTimeMillis());
-            mAudioBufferListener.receive(audioBuffer);
+            mAudioBufferListener.receive(samples);
         }
         else if(message instanceof ReadyResponse && mAudioDecodeProcessorHandle == null)
         {
@@ -456,9 +449,8 @@ public class ThumbDv implements AutoCloseable
 
         mLog.debug("Starting thumb dv thread(s)");
 
-        final Listener<ReusableFloatBuffer> listener = reusableAudioPacket -> {
+        final Listener<float[]> listener = packet -> {
             mLog.info("Got an audio packet!");
-            reusableAudioPacket.decrementUserCount();
         };
 
         try(ThumbDv thumbDv = new ThumbDv(AudioProtocol.P25_PHASE2, listener))

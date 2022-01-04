@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
 import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.duplicate.DuplicateCallPreferenceEditor;
@@ -53,6 +54,8 @@ public class PreferenceEditorFactory
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:
                 return new TalkgroupFormatPreferenceEditor(userPreferences);
+            case VECTOR_CALIBRATION:
+                return new VectorCalibrationPreferenceEditor(userPreferences);
         }
 
         return null;

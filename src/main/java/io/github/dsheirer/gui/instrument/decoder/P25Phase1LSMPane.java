@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.gui.instrument.decoder;
 
@@ -30,12 +27,15 @@ import io.github.dsheirer.gui.instrument.chart.SymbolChart;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSMInstrumented;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
 
 public class P25Phase1LSMPane extends ComplexDecoderPane
 {
@@ -49,7 +49,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     private PhaseLineChart mPLLPhaseErrorLineChart;
     private DoubleLineChart mPLLFrequencyLineChart;
     private SamplesPerSymbolChart mSamplesPerSymbolLineChart;
-    private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
+    private Broadcaster<ComplexSamples> mFilteredBufferBroadcaster = new Broadcaster();
     private P25P1DecoderLSMInstrumented mDecoder = new P25P1DecoderLSMInstrumented();
 
     public P25Phase1LSMPane()
@@ -60,7 +60,15 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
 
     private void init()
     {
-        addListener(getDecoder());
+        addListener(nativeBuffer ->
+        {
+            Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
+
+            while(iterator.hasNext())
+            {
+                getDecoder().receive(iterator.next());
+            }
+        });
 
         getDecoder().setFilteredBufferListener(mFilteredBufferBroadcaster);
         getDecoder().setComplexSymbolListener(getSymbolConstellationChart());

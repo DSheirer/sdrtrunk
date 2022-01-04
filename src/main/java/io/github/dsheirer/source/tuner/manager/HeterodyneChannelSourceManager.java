@@ -1,34 +1,31 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.manager;
 
+import io.github.dsheirer.buffer.NativeSampleDelayBuffer;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexDelayBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
-import io.github.dsheirer.source.tuner.channel.CICTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
+import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
@@ -48,11 +45,12 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
     private final static int DELAY_BUFFER_DURATION_MILLISECONDS = 2000;
 
-    private List<CICTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
+//    private List<CICTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
+    private List<HalfBandTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private SortedSet<TunerChannel> mTunerChannels = new TreeSet<>();
     private TunerController mTunerController;
     private ChannelSourceEventProcessor mChannelSourceEventProcessor = new ChannelSourceEventProcessor();
-    private ReusableComplexDelayBuffer mSampleDelayBuffer;
+    private NativeSampleDelayBuffer mSampleDelayBuffer;
 
     public HeterodyneChannelSourceManager(TunerController tunerController)
     {
@@ -80,8 +78,11 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
             try
             {
                 //Attempt to create the channel source first, in case we get a filter design exception
-                CICTunerChannelSource tunerChannelSource = new CICTunerChannelSource(mChannelSourceEventProcessor,
-                    tunerChannel, mTunerController.getSampleRate(), channelSpecification);
+//                CICTunerChannelSource tunerChannelSource = new CICTunerChannelSource(mChannelSourceEventProcessor,
+//                    tunerChannel, mTunerController.getSampleRate(), channelSpecification);
+
+                HalfBandTunerChannelSource tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
+                        tunerChannel, mTunerController.getSampleRate(), channelSpecification);
 
                 //Add to the list of channel sources so that it will receive the tuner frequency change
                 mChannelSources.add(tunerChannelSource);
@@ -181,7 +182,8 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void broadcastToChannels(SourceEvent sourceEvent)
     {
-        for(CICTunerChannelSource channelSource : mChannelSources)
+//        for(CICTunerChannelSource channelSource : mChannelSources)
+        for(HalfBandTunerChannelSource channelSource : mChannelSources)
         {
             try
             {
@@ -201,7 +203,8 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
      */
     private void updateTunerFrequency(long tunerFrequency)
     {
-        for(CICTunerChannelSource channelSource : mChannelSources)
+//        for(CICTunerChannelSource channelSource : mChannelSources)
+        for(HalfBandTunerChannelSource channelSource : mChannelSources)
         {
             channelSource.setFrequency(tunerFrequency);
         }
@@ -216,19 +219,13 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
         if(mSampleDelayBuffer == null)
         {
             int delayBufferSize = (int)(DELAY_BUFFER_DURATION_MILLISECONDS / mTunerController.getBufferDuration());
-            mSampleDelayBuffer = new ReusableComplexDelayBuffer(delayBufferSize, mTunerController.getBufferDuration());
-
-            mLog.debug("Created/registered complex sample delay buffer of size [" + delayBufferSize +
-                "] buffers and delay duration [" + DELAY_BUFFER_DURATION_MILLISECONDS +
-                "ms] for tuner controller [" + mTunerController.getClass().getName() +
-                "] with buffer duration [" + mTunerController.getBufferDuration() + "]");
-
+            mSampleDelayBuffer = new NativeSampleDelayBuffer(delayBufferSize, mTunerController.getBufferDuration());
             mTunerController.addBufferListener(mSampleDelayBuffer);
         }
     }
 
     /**
-     * Deregisters the complex sample delay buffer and disposes of any queued reusable buffers.
+     * De-registers the complex sample delay buffer and disposes of any queued reusable buffers.
      */
     private void stopDelayBuffer()
     {
@@ -251,28 +248,32 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
             switch(sourceEvent.getEvent())
             {
                 case REQUEST_START_SAMPLE_STREAM:
-                    if(sourceEvent.getSource() instanceof CICTunerChannelSource)
+                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
                     {
                         startDelayBuffer();
 
                         //The start sample stream request contains a start timestamp and the delay buffer
                         //will preload the channel with delayed sample buffers that either contain the
                         //timestamp or occur later/newer than the timestamp.
-                        mSampleDelayBuffer.addListener((CICTunerChannelSource)sourceEvent.getSource(),
-                            sourceEvent.getValue().longValue());
+//                        mSampleDelayBuffer.addListener((CICTunerChannelSource)sourceEvent.getSource(),
+//                                sourceEvent.getValue().longValue());
+                        mSampleDelayBuffer.addListener((HalfBandTunerChannelSource)sourceEvent.getSource(),
+                                sourceEvent.getValue().longValue());
                     }
                     break;
                 case REQUEST_STOP_SAMPLE_STREAM:
-                    if(sourceEvent.getSource() instanceof CICTunerChannelSource)
+                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
                     {
-                        mSampleDelayBuffer.removeListener((CICTunerChannelSource)sourceEvent.getSource());
+//                        mSampleDelayBuffer.removeListener((CICTunerChannelSource)sourceEvent.getSource());
+                        mSampleDelayBuffer.removeListener((HalfBandTunerChannelSource)sourceEvent.getSource());
                         stopDelayBuffer();
                     }
                     break;
                 case REQUEST_SOURCE_DISPOSE:
-                    if(sourceEvent.getSource() instanceof CICTunerChannelSource)
+                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
                     {
-                        CICTunerChannelSource channelSource = (CICTunerChannelSource)sourceEvent.getSource();
+//                        CICTunerChannelSource channelSource = (CICTunerChannelSource)sourceEvent.getSource();
+                        HalfBandTunerChannelSource channelSource = (HalfBandTunerChannelSource) sourceEvent.getSource();
                         mChannelSources.remove(channelSource);
                         mTunerChannels.remove(channelSource.getTunerChannel());
                         channelSource.dispose();

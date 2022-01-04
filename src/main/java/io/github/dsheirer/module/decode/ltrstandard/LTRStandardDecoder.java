@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.module.decode.ltrstandard;
 
 import io.github.dsheirer.alias.AliasList;
@@ -23,10 +26,9 @@ import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.real.IRealBufferListener;
 
-public class LTRStandardDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableFloatBuffer>
+public class LTRStandardDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
     public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
 
@@ -65,15 +67,15 @@ public class LTRStandardDecoder extends Decoder implements IReusableBufferListen
     }
 
     @Override
-    public Listener<ReusableFloatBuffer> getReusableBufferListener()
+    public Listener<float[]> getBufferListener()
     {
         return mLTRDecoder;
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(float[] realBuffer)
     {
-        mLTRDecoder.receive(reusableFloatBuffer);
+        mLTRDecoder.receive(realBuffer);
     }
 
     @Override

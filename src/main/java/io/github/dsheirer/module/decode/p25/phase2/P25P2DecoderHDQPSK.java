@@ -24,32 +24,25 @@ package io.github.dsheirer.module.decode.p25.phase2;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
-import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
+import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
-import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
-import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.SyncLossMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase2.enumeration.ScrambleParameters;
-import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
-import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -64,9 +57,10 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected P25P2MessageFramer mMessageFramer;
-    private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
+    protected IComplexGainControl mAGC = ComplexGainFactory.getComplexGainControl();
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    private ComplexFIRFilter2 mBasebandFilter;
+    protected IRealFilter mIBasebandFilter;
+    protected IRealFilter mQBasebandFilter;
     private DecodeConfigP25Phase2 mDecodeConfigP25Phase2;
     private FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
 
@@ -81,7 +75,8 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     {
         super.setSampleRate(sampleRate);
 
-        mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
+        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
+        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
 
@@ -113,35 +108,21 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
 
     /**
      * Primary method for processing incoming complex sample buffers
-     * @param reusableComplexBuffer containing channelized complex samples
+     * @param samples containing channelized complex samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexSamples samples)
     {
-        //User accounting of the incoming buffer is handled by the filter
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+
+        float[] i = mIBasebandFilter.filter(samples.i());
+        float[] q = mQBasebandFilter.filter(samples.q());
 
         //Process the buffer for power measurements
-        mPowerMonitor.process(basebandFiltered);
+        mPowerMonitor.process(i, q);
 
-        //User accounting of the incoming buffer is handled by the gain filter
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
-
-        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
-
-        //User accounting of the filtered buffer is handled by the demodulator
-        mQPSKDemodulator.receive(gainApplied);
-    }
-
-    /**
-     * Filters the complex buffer and returns a new reusable complex buffer with the filtered contents.
-     * @param reusableComplexBuffer to filter
-     * @return filtered complex buffer
-     */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
-    {
-        //User accounting of the incoming buffer is handled by the filter
-        return mBasebandFilter.filter(reusableComplexBuffer);
+        ComplexSamples amplified = mAGC.process(i, q);
+        mQPSKDemodulator.receive(amplified);
     }
 
     /**
@@ -222,83 +203,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
         {
             mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
         }
-    }
-
-    public static class MessageErrorListener implements Listener<IMessage>
-    {
-        private int mMessageCount = 0;
-        private int mBitErrorCount = 0;
-
-        @Override
-        public void receive(IMessage iMessage)
-        {
-            if(!(iMessage instanceof SyncLossMessage) && !(iMessage instanceof EncryptionSynchronizationSequence))
-            {
-                mMessageCount++;
-            }
-
-            if(iMessage instanceof MacMessage)
-            {
-                mBitErrorCount += ((MacMessage)iMessage).getBitErrorCount();
-            }
-
-            mLog.debug("[" + mMessageCount + " | " + mBitErrorCount + "] " + iMessage.toString());
-        }
-    }
-
-    public static void main(String[] args)
-    {
-//        String path = "/media/denny/500G1EXT4/RadioRecordings/APCO25P2/CNYICC/";
-//        String input = "CNYICC_Rome_CNYICC_154_250_baseband_20190322_180331_good.wav";
-//        String output = "CNYICC_ROME_154_250_8";
-
-        String path = "/home/denny/SDRTrunk/recordings/";
-        String input = "CNYICC_Site_P25P2_151.37_baseband_20200221_110306.wav";
-        String output = "P25P2_test";
-
-        ScrambleParameters scrambleParameters = new ScrambleParameters(781824, 686, 677); //CNYICC
-        DecodeConfigP25Phase2 decodeConfigP25Phase2 = new DecodeConfigP25Phase2();
-        decodeConfigP25Phase2.setScrambleParameters(scrambleParameters);
-
-        P25P2DecoderHDQPSK decoder = new P25P2DecoderHDQPSK(decodeConfigP25Phase2);
-        decoder.setMessageListener(new MessageErrorListener());
-
-//        decoder.setMessageListener(new Listener<IMessage>()
-//        {
-//            @Override
-//            public void receive(IMessage iMessage)
-//            {
-//                mLog.debug(iMessage.toString());
-//            }
-//        });
-        decoder.start();
-
-//        BinaryRecorder recorder = new BinaryRecorder(Path.of(path), output, Protocol.APCO25_PHASE2);
-//        decoder.setBufferListener(recorder.getReusableByteBufferListener());
-//        recorder.start();
-
-        File file = new File(path + input);
-
-        boolean running = true;
-
-        try(ComplexWaveSource source = new ComplexWaveSource(file))
-        {
-            decoder.setSampleRate(50000.0);
-            source.setListener(decoder);
-            source.start();
-
-            while(running)
-            {
-                source.next(200, true);
-            }
-        }
-        catch(IOException e)
-        {
-            mLog.error("Error", e);
-            running = false;
-        }
-
-//        recorder.stop();
     }
 
     @Override

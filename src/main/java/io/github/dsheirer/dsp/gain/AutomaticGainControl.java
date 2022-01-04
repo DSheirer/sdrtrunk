@@ -1,64 +1,28 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.DoubleCircularBuffer;
 import io.github.dsheirer.buffer.RealCircularBuffer;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.apache.commons.math3.util.FastMath;
 
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 - 2018 Dennis Sheirer
- *     Copyright (C) 2011 Alex Csete
- *     Copyright (C) 2010 Moe Wheatley
- *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- *     ---------------------------------------------------
- *     Ported from Alex Csete's gqrx source code at:
- *     https://github.com/csete/gqrx/blob/74ba2742c89b0dfb66854fc9f72d19e5c6e355b6/dsp/agc_impl.cpp
- *
- * 	   This Software is released under the "Simplified BSD License"  + + +
- *     Copyright 2010 Moe Wheatley. All rights reserved.
- *
- *     Redistribution and use in source and binary forms, with or without
- *     modification, are permitted provided that the following conditions are 
- *     met:
- *
- *     1. Redistributions of source code must retain the above copyright notice,
- *     this list of conditions and the following disclaimer.
- *
- *     2. Redistributions in binary form must reproduce the above copyright 
- *     notice, this list of conditions and the following disclaimer in the 
- *     documentation and/or other materials provided with the distribution.
- *
- *     THIS SOFTWARE IS PROVIDED BY Moe Wheatley ``AS IS'' AND ANY EXPRESS OR 
- *     IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
- *     OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
- *     IN NO EVENT SHALL Moe Wheatley OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
- *     INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
- *     (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- *     SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
- *     HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, 
- *     STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN 
- *     ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE 
- *     POSSIBILITY OF SUCH DAMAGE.
- *
- *     The views and conclusions contained in the software and documentation are 
- *     those of the authors and should not be interpreted as representing 
- *     official policies, either expressed or implied, of Moe Wheatley.
- ******************************************************************************/
 public class AutomaticGainControl
 {
     private static final double SAMPLE_RATE = 48000;
@@ -135,8 +99,6 @@ public class AutomaticGainControl
     private RealCircularBuffer mDelayBuffer = new RealCircularBuffer((int)(SAMPLE_RATE * DELAY_TIME_CONSTANT));
     private DoubleCircularBuffer mMagnitudeBuffer = new DoubleCircularBuffer((int)(SAMPLE_RATE * WINDOW_TIME_CONSTANT));
 
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("AutomaticGainControl");
-
     public AutomaticGainControl()
     {
     }
@@ -148,19 +110,14 @@ public class AutomaticGainControl
      * @param input samples to process
      * @return output samples with gain applied
      */
-    public ReusableFloatBuffer process(ReusableFloatBuffer input)
+    public float[] process(float[] input)
     {
-        ReusableFloatBuffer output = mReusableBufferQueue.getBuffer(input.getSampleCount());
+        float[] output = new float[input.length];
 
-        float[] inputSamples = input.getSamples();
-        float[] outputSamples = output.getSamples();
-
-        for(int x = 0; x < inputSamples.length; x++)
+        for(int x = 0; x < input.length; x++)
         {
-            outputSamples[x] = process(inputSamples[x]);
+            output[x] = process(input[x]);
         }
-
-        input.decrementUserCount();
 
         return output;
     }

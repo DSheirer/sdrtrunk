@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,23 +20,29 @@
 package io.github.dsheirer.dsp.filter.decimate;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
-import io.github.dsheirer.dsp.filter.halfband.real.RealHalfBandDecimationFilter;
+import io.github.dsheirer.dsp.window.WindowType;
 
 /**
  * Constructs the decimation filter.
  */
-public class RealDecimateX2Filter extends RealHalfBandDecimationFilter
+public class RealDecimateX2Filter implements IRealDecimationFilter
 {
     private static final int DECIMATE_BY_2_FILTER_LENGTH = 63;
-    private static final Window.WindowType DECIMATE_BY_2_WINDOW_TYPE = Window.WindowType.HAMMING;
+    private static final WindowType DECIMATE_BY_2_WINDOW_TYPE = WindowType.HAMMING;
+    private IRealDecimationFilter mFilter;
 
     /**
      * Creates a half band filter with inherent decimation by two.
      */
     public RealDecimateX2Filter()
     {
-        super(FilterFactory.getHalfBand(DECIMATE_BY_2_FILTER_LENGTH, DECIMATE_BY_2_WINDOW_TYPE));
+        mFilter = FilterFactory.getRealDecimationFilter(DECIMATE_BY_2_FILTER_LENGTH,
+                DECIMATE_BY_2_WINDOW_TYPE);
+    }
+
+    @Override public float[] decimateReal(float[] samples)
+    {
+        return mFilter.decimateReal(samples);
     }
 
     /**

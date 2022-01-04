@@ -20,7 +20,7 @@
 package io.github.dsheirer.dsp.filter.design;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
+import io.github.dsheirer.dsp.window.WindowType;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 
@@ -35,7 +35,7 @@ public class HalfBandDecimationFilterAnalysis
     private static FloatFFT_1D FFT = new FloatFFT_1D(FFT_SIZE);
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
 
-    private static final Window.WindowType WINDOW_TYPE = Window.WindowType.BLACKMAN;
+    private static final WindowType WINDOW_TYPE = WindowType.BLACKMAN;
     private static final int[] TAP_LENGTHS = new int[]{7,11,15,19,23,27,31,35,39,43,47,51,55,59,63,67,71,75,79,83,87,91,95,99,103,107};
     private static final int BY_2 = (int)(FFT_SIZE / 2 * (1.0 / 2.0));
     private static final int BY_2_25 = (int)(FFT_SIZE / 2 * (1.0 / 2.25));
@@ -58,7 +58,7 @@ public class HalfBandDecimationFilterAnalysis
 
     public static void analyze()
     {
-        for(Window.WindowType windowType: Window.NO_PARAMETER_WINDOWS)
+        for(WindowType windowType: WindowType.NO_PARAMETER_WINDOWS)
         {
             StringBuilder sb = new StringBuilder();
             sb.append("Window: " + windowType).append("\n");
@@ -133,7 +133,7 @@ public class HalfBandDecimationFilterAnalysis
      * @param windowType to apply to the taps during filter creation
      * @return filter
      */
-    private static float[] getTaps(int filterLength, Window.WindowType windowType)
+    private static float[] getTaps(int filterLength, WindowType windowType)
     {
         return FilterFactory.getHalfBand(filterLength, windowType);
     }

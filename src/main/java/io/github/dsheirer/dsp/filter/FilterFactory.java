@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,44 @@
  */
 package io.github.dsheirer.dsp.filter;
 
+import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
+import io.github.dsheirer.dsp.filter.fir.real.VectorRealFIRFilter128Bit;
+import io.github.dsheirer.dsp.filter.fir.real.VectorRealFIRFilter256Bit;
+import io.github.dsheirer.dsp.filter.fir.real.VectorRealFIRFilter512Bit;
+import io.github.dsheirer.dsp.filter.fir.real.VectorRealFIRFilter64Bit;
+import io.github.dsheirer.dsp.filter.fir.real.VectorRealFIRFilterDefaultBit;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
+import io.github.dsheirer.dsp.filter.halfband.RealHalfBandDecimationFilter;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter11Tap128Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter11Tap256Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter11Tap512Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter11Tap64Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter128Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter15Tap128Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter15Tap256Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter15Tap512Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter15Tap64Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter23Tap128Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter23Tap256Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter23Tap512Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter23Tap64Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter256Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter512Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter63Tap128Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter63Tap256Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter63Tap512Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter63Tap64Bit;
+import io.github.dsheirer.dsp.filter.halfband.VectorRealHalfBandDecimationFilter64Bit;
+import io.github.dsheirer.dsp.window.WindowFactory;
+import io.github.dsheirer.dsp.window.WindowType;
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import io.github.dsheirer.vector.calibrate.CalibrationType;
+import io.github.dsheirer.vector.calibrate.Implementation;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -47,9 +81,9 @@ public class FilterFactory
      * @param frequency - cutoff in hertz
      * @param length - filter length
      * @param window - to apply against the coefficients
-     * @return
+     * @return coefficients
      */
-    public static float[] getSinc(double sampleRate, long frequency, int length, Window.WindowType window)
+    public static float[] getSinc(double sampleRate, long frequency, int length, WindowType window)
     {
         int evenLength = length % 2 == 0 ? length : length + 1;
 
@@ -90,7 +124,7 @@ public class FilterFactory
         }
 
         //Apply the window against the coefficients
-        coefficients = Window.apply(window, coefficients);
+        coefficients = WindowFactory.apply(window, coefficients);
 
         return coefficients;
     }
@@ -223,7 +257,7 @@ public class FilterFactory
      * @param windowType - window to apply against the generated coefficients
      * @return
      */
-    public static float[] getLowPass(double sampleRate, long cutoff, int filterLength, Window.WindowType windowType)
+    public static float[] getLowPass(double sampleRate, long cutoff, int filterLength, WindowType windowType)
     {
         return getSinc(sampleRate, cutoff, filterLength, windowType);
     }
@@ -243,7 +277,7 @@ public class FilterFactory
      * - stopFrequency <= sampleRate/2
      */
     public static float[] getLowPass(double sampleRate, int passFrequency, int stopFrequency, int attenuation,
-                                     Window.WindowType windowType, boolean forceOddLength)
+                                     WindowType windowType, boolean forceOddLength)
     {
         if(stopFrequency < passFrequency || stopFrequency > (sampleRate / 2))
         {
@@ -276,7 +310,7 @@ public class FilterFactory
      * @param windowType - window to apply against the generated coefficients
      * @return
      */
-    public static float[] getHighPass(int sampleRate, long cutoff, int filterLength, Window.WindowType windowType)
+    public static float[] getHighPass(int sampleRate, long cutoff, int filterLength, WindowType windowType)
     {
         //Convert the high frequency cutoff to its low frequency cutoff
         //equivalent, so that when we generate the low pass filter, prior to
@@ -287,7 +321,7 @@ public class FilterFactory
     }
 
     public static float[] getHighPass(int sampleRate, long stopFrequency, long passFrequency, int attenuation,
-                                      Window.WindowType windowType, boolean forceOddLength)
+                                      WindowType windowType, boolean forceOddLength)
     {
         /* reverse the stop and pass frequency to get the low pass variant */
         int tapCount = getTapCount(sampleRate, stopFrequency, passFrequency, attenuation);
@@ -508,7 +542,7 @@ public class FilterFactory
      * @param outputSampleRate
      * @return
      */
-    public static float[] getCICCleanupFilter(int outputSampleRate, int passFrequency, int attenuation, Window.WindowType window)
+    public static float[] getCICCleanupFilter(int outputSampleRate, int passFrequency, int attenuation, WindowType window)
     {
         int taps = getTapCount(outputSampleRate, passFrequency, passFrequency + 1500,
             attenuation);
@@ -760,7 +794,7 @@ public class FilterFactory
         double cutoff = (channelBandwidth * 1.10) / (channelSampleRate * (double)channels);
 
         //Design the prototype synthesizer with 105% of the channel bandwidth produced by the channelizer.
-        float[] taps = FilterFactory.getKaiserSinc(filterLength, cutoff, 80.0);
+        float[] taps = FilterFactory.getKaiserSinc(filterLength, cutoff, 80.0f);
 
         //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
         float[] extendedTaps = new float[taps.length + 1];
@@ -819,7 +853,7 @@ public class FilterFactory
         //Get an initial filter and band edge frequency response using the channel bandwidth as a cutoff
         float[] taps = null;
 
-        taps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency, 80.0);
+        taps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency, 80.0f);
         double response = FilterFactory.evaluate(taps, bandEdge);
 
         //Set cutoff adjustment threshold - we'll test cutoff frequencies to around 1 hertz resolution
@@ -832,7 +866,7 @@ public class FilterFactory
             if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE, MARGIN_OF_ERROR) &&
                 (cutoffFrequency + increment <= bandEdge))
             {
-                float[] higherCutoffTaps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency + increment, 80.0);
+                float[] higherCutoffTaps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency + increment, 80.0f);
                 double higherCutoffResponse = FilterFactory.evaluate(higherCutoffTaps, bandEdge);
 
                 if(matchesObjective(higherCutoffResponse, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE, MARGIN_OF_ERROR))
@@ -878,7 +912,7 @@ public class FilterFactory
                     increment = cutoffFrequency * 0.1;
                 }
 
-                taps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency, 80.0);
+                taps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency, 80.0f);
                 response = FilterFactory.evaluate(taps, bandEdge);
             }
         }
@@ -900,7 +934,7 @@ public class FilterFactory
             mLog.debug("Input Sample Rate: " + sampleRate);
             mLog.debug("Channel Bandwidth: " + channelBandwidth);
             mLog.debug("Channels: " + channels);
-            mLog.debug("Window Type: " + Window.WindowType.KAISER.name());
+            mLog.debug("Window Type: " + WindowType.KAISER.name());
             mLog.debug("Taps Per Channel - Requested:" + tapsPerChannel + " Actual:" + ((double)extendedTaps.length / (double)channels));
             mLog.debug("Filter Length: " + (extendedTaps.length));
             mLog.debug("Requested Cutoff Frequency:  " + (sampleRate * bandEdge));
@@ -928,7 +962,7 @@ public class FilterFactory
      * @return filter coefficients.
      * @throws FilterDesignException if the requested length is not odd
      */
-    public static float[] getSinc(double cutoff, int length, Window.WindowType windowType) throws FilterDesignException
+    public static float[] getSinc(double cutoff, int length, WindowType windowType) throws FilterDesignException
     {
         if(length % 2 == 0)
         {
@@ -938,7 +972,7 @@ public class FilterFactory
         float[] coefficients = new float[length];
         int half = length / 2;
 
-        double[] window = Window.getWindow(windowType, length);
+        float[] window = WindowFactory.getWindow(windowType, length);
 
         double scalor = 2.0 * cutoff;
         double piScalor = FastMath.PI * scalor;
@@ -967,7 +1001,7 @@ public class FilterFactory
      * @return filter coefficients.
      * @throws FilterDesignException if the requested length is not odd
      */
-    public static float[] getKaiserSinc(int length, double cutoff, double attenuation) throws FilterDesignException
+    public static float[] getKaiserSinc(int length, double cutoff, float attenuation) throws FilterDesignException
     {
         if(length % 2 == 0)
         {
@@ -977,7 +1011,7 @@ public class FilterFactory
         float[] coefficients = new float[length];
         int half = length / 2;
 
-        double[] window = Window.getKaiser(length, attenuation);
+        float[] window = WindowFactory.getKaiser(length, attenuation);
 
         double scalor = 2.0 * cutoff;
         double piScalor = FastMath.PI * scalor;
@@ -1004,7 +1038,7 @@ public class FilterFactory
      * @param windowType to apply to the filter.
      * @return coefficients
      */
-    public static float[] getHalfBand(int length, Window.WindowType windowType)
+    public static float[] getHalfBand(int length, WindowType windowType)
     {
         if((length - 3) % 4 != 0)
         {
@@ -1012,7 +1046,7 @@ public class FilterFactory
                     "integer multiple in (N=4m+3), e.g. 7, 11, 15, etc");
         }
 
-        double[] window = Window.getWindow(windowType, length);
+        float[] window = WindowFactory.getWindow(windowType, length);
         float[] taps = new float[length];
 
         int halfLength = length / 2;
@@ -1036,6 +1070,131 @@ public class FilterFactory
     }
 
     /**
+     * Creates the optimal FIR filter implementation using calibration data to select
+     * from among the scalar and vector implementations.
+     * @param coefficients for the filter
+     * @return fir filter implementation
+     */
+    public static IRealFilter getRealFilter(float[] coefficients)
+    {
+        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_FIR);
+
+        switch(implementation)
+        {
+            case VECTOR_SIMD_PREFERRED:
+                return new VectorRealFIRFilterDefaultBit(coefficients);
+            case VECTOR_SIMD_64:
+                return new VectorRealFIRFilter64Bit(coefficients);
+            case VECTOR_SIMD_128:
+                return new VectorRealFIRFilter128Bit(coefficients);
+            case VECTOR_SIMD_256:
+                return new VectorRealFIRFilter256Bit(coefficients);
+            case VECTOR_SIMD_512:
+                return new VectorRealFIRFilter512Bit(coefficients);
+            case UNCALIBRATED:
+            case SCALAR:
+            default:
+                return new RealFIRFilter(coefficients);
+        }
+    }
+
+    /**
+     * Constructs the optimal decimation filter implementation for filter length and window type
+     * using calibration data to select among scalar and vector implementation options.
+     * @param length of decimation filter
+     * @param windowType for designing the filter
+     * @return filter implementation
+     */
+    public static IRealDecimationFilter getRealDecimationFilter(int length, WindowType windowType)
+    {
+        float[] coefficients = getHalfBand(length, windowType);
+
+        switch(length)
+        {
+            case 11:
+                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_11_TAP))
+                {
+                    case VECTOR_SIMD_64:
+                        return new VectorRealHalfBandDecimationFilter11Tap64Bit(coefficients);
+                    case VECTOR_SIMD_128:
+                        return new VectorRealHalfBandDecimationFilter11Tap128Bit(coefficients);
+                    case VECTOR_SIMD_256:
+                        return new VectorRealHalfBandDecimationFilter11Tap256Bit(coefficients);
+                    case VECTOR_SIMD_512:
+                        return new VectorRealHalfBandDecimationFilter11Tap512Bit(coefficients);
+                    case SCALAR:
+                    case UNCALIBRATED:
+                    default:
+                        return new RealHalfBandDecimationFilter(coefficients);
+                }
+            case 15:
+                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_15_TAP))
+                {
+                    case VECTOR_SIMD_64:
+                        return new VectorRealHalfBandDecimationFilter15Tap64Bit(coefficients);
+                    case VECTOR_SIMD_128:
+                        return new VectorRealHalfBandDecimationFilter15Tap128Bit(coefficients);
+                    case VECTOR_SIMD_256:
+                        return new VectorRealHalfBandDecimationFilter15Tap256Bit(coefficients);
+                    case VECTOR_SIMD_512:
+                        return new VectorRealHalfBandDecimationFilter15Tap512Bit(coefficients);
+                    case SCALAR:
+                    case UNCALIBRATED:
+                    default:
+                        return new RealHalfBandDecimationFilter(coefficients);
+                }
+            case 23:
+                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_23_TAP))
+                {
+                    case VECTOR_SIMD_64:
+                        return new VectorRealHalfBandDecimationFilter23Tap64Bit(coefficients);
+                    case VECTOR_SIMD_128:
+                        return new VectorRealHalfBandDecimationFilter23Tap128Bit(coefficients);
+                    case VECTOR_SIMD_256:
+                        return new VectorRealHalfBandDecimationFilter23Tap256Bit(coefficients);
+                    case VECTOR_SIMD_512:
+                        return new VectorRealHalfBandDecimationFilter23Tap512Bit(coefficients);
+                    case SCALAR:
+                    case UNCALIBRATED:
+                    default:
+                        return new RealHalfBandDecimationFilter(coefficients);
+                }
+            case 63:
+                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_63_TAP))
+                {
+                    case VECTOR_SIMD_64:
+                        return new VectorRealHalfBandDecimationFilter63Tap64Bit(coefficients);
+                    case VECTOR_SIMD_128:
+                        return new VectorRealHalfBandDecimationFilter63Tap128Bit(coefficients);
+                    case VECTOR_SIMD_256:
+                        return new VectorRealHalfBandDecimationFilter63Tap256Bit(coefficients);
+                    case VECTOR_SIMD_512:
+                        return new VectorRealHalfBandDecimationFilter63Tap512Bit(coefficients);
+                    case SCALAR:
+                    case UNCALIBRATED:
+                    default:
+                        return new RealHalfBandDecimationFilter(coefficients);
+                }
+            default:
+                switch(CalibrationManager.getInstance().getImplementation(CalibrationType.FILTER_HALF_BAND_REAL_DEFAULT))
+                {
+                    case VECTOR_SIMD_64:
+                        return new VectorRealHalfBandDecimationFilter64Bit(coefficients);
+                    case VECTOR_SIMD_128:
+                        return new VectorRealHalfBandDecimationFilter128Bit(coefficients);
+                    case VECTOR_SIMD_256:
+                        return new VectorRealHalfBandDecimationFilter256Bit(coefficients);
+                    case VECTOR_SIMD_512:
+                        return new VectorRealHalfBandDecimationFilter512Bit(coefficients);
+                    case SCALAR:
+                    case UNCALIBRATED:
+                    default:
+                        return new RealHalfBandDecimationFilter(coefficients);
+                }
+        }
+    }
+
+    /**
      * Compares two doubles for equals and avoids any rounding error that are present.
      *
      * @param a value to compare
@@ -1053,7 +1212,7 @@ public class FilterFactory
 
         int length = 15;
 
-        float [] taps = FilterFactory.getHalfBand(length, Window.WindowType.HAMMING);
+        float [] taps = FilterFactory.getHalfBand(length, WindowType.HAMMING);
 
         for(int x = 0; x < length; x++)
         {

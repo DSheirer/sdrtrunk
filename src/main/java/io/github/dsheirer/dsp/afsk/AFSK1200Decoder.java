@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.dsp.afsk;
 
 import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.buffer.FloatAveragingBuffer;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
-import io.github.dsheirer.dsp.mixer.IOscillator;
-import io.github.dsheirer.dsp.mixer.Oscillator;
+import io.github.dsheirer.dsp.oscillator.IRealOscillator;
+import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * Provides normal or inverted decoded output.
  */
-public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
+public class AFSK1200Decoder implements Listener<float[]>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AFSK1200Decoder.class);
 
@@ -71,7 +69,7 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
     private boolean mSampleDecision;
 
     //Resample to an integral of the baud rate 1200 baud * 6 samples per symbol = 7200.0 Hertz
-    private RealResampler mResampler = new RealResampler(8000.0, SAMPLE_RATE, 2000, 1);
+    private RealResampler mResampler = new RealResampler(8000.0, SAMPLE_RATE, 8192, 512);
 
     /**
      * Constructs a decoder using the provided arguments.
@@ -115,7 +113,7 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
      * @param buffer containing 8.0 kHz unfiltered FM demodulated audio samples with sub-audible LTR signalling.
      */
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(float[] buffer)
     {
         mResampler.resample(buffer);
     }
@@ -147,16 +145,14 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
     }
 
 
-    public class Decoder implements Listener<ReusableFloatBuffer>
+    public class Decoder implements Listener<float[]>
     {
         @Override
-        public void receive(ReusableFloatBuffer buffer)
+        public void receive(float[] buffer)
         {
             //Calculate correlation values against each 1200/1800 reference signal
             mCorrelationValuesMark = mCorrelatorMark.process(buffer);
             mCorrelationValuesSpace = mCorrelatorSpace.process(buffer);
-
-            buffer.decrementUserCount();
 
             for(int x = 0; x < mCorrelationValuesMark.length; x++)
             {
@@ -207,8 +203,8 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
         {
             mAveragingBuffer = new FloatAveragingBuffer(averagingPeriod);
 
-            IOscillator referenceSignalGenerator = new Oscillator(frequency, sampleRate);
-            mReferenceSamples = referenceSignalGenerator.generateReal(correlationPeriod);
+            IRealOscillator referenceSignalGenerator = OscillatorFactory.getRealOscillator(frequency, sampleRate);
+            mReferenceSamples = referenceSignalGenerator.generate(correlationPeriod);
 
             mDemodulatedSamples = new float[correlationPeriod];
         }
@@ -217,17 +213,15 @@ public class AFSK1200Decoder implements Listener<ReusableFloatBuffer>
          * Processes each sample in the incoming sample buffer against a generated reference sample set for one symbol
          * period to derive a correlation value that is in-turn averaged over one symbol period.
          *
-         * @param reusableFloatBuffer containing FM demodulated samples
+         * @param samples containing FM demodulated samples
          * @return a reusable array of correlation values for each sample
          */
-        public float[] process(ReusableFloatBuffer reusableFloatBuffer)
+        public float[] process(float[] samples)
         {
-            if(mCorrelationValues == null || mCorrelationValues.length != reusableFloatBuffer.getSampleCount())
+            if(mCorrelationValues == null || mCorrelationValues.length != samples.length)
             {
-                mCorrelationValues = new float[reusableFloatBuffer.getSampleCount()];
+                mCorrelationValues = new float[samples.length];
             }
-
-            float[] samples = reusableFloatBuffer.getSamples();
 
             int y;
 

@@ -1,41 +1,42 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.symbol;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
-import io.github.dsheirer.sample.buffer.ReusableByteBufferQueue;
+import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
 
 /**
  * Assembles reusable byte buffers from an incoming stream of Dibits.
  */
-public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByteBufferProvider
+public class DibitToByteBufferAssembler implements Listener<Dibit>, IByteBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DibitToByteBufferAssembler.class);
 
-    private ReusableByteBufferQueue mBufferQueue = new ReusableByteBufferQueue("DibitToByteBufferAssembler");
-    private ReusableByteBuffer mCurrentBuffer;
-    private int mBufferPointer;
+    private ByteBuffer mCurrentBuffer;
     private int mBufferSize;
     private byte mCurrentByte;
     private int mDibitCount;
-    private Listener<ReusableByteBuffer> mBufferListener;
+    private Listener<ByteBuffer> mBufferListener;
 
     /**
      * Constructs an assembler to produce reusable byte buffers of the specified size
@@ -59,8 +60,7 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
             mBufferListener.receive(mCurrentBuffer);
         }
 
-        mCurrentBuffer = mBufferQueue.getBuffer(mBufferSize);
-        mBufferPointer = 0;
+        mCurrentBuffer = ByteBuffer.allocate(mBufferSize);
     }
 
     @Override
@@ -88,11 +88,11 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
 
         if(mDibitCount >= 4)
         {
-            mCurrentBuffer.getBytes()[mBufferPointer++] = mCurrentByte;
+            mCurrentBuffer.put(mCurrentByte);
             mCurrentByte = 0x00;
             mDibitCount = 0;
 
-            if(mBufferPointer >= mBufferSize)
+            if(!mCurrentBuffer.hasRemaining())
             {
                 getNextBuffer();
             }
@@ -103,7 +103,7 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
      * Registers the listener to receive fully assembled byte buffers from this assembler.
      */
     @Override
-    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    public void setBufferListener(Listener<ByteBuffer> listener)
     {
         mBufferListener = listener;
     }
@@ -112,7 +112,7 @@ public class DibitToByteBufferAssembler implements Listener<Dibit>, IReusableByt
      * Removes the listener from receiving buffers from this assembler
      */
     @Override
-    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    public void removeBufferListener(Listener<ByteBuffer> listener)
     {
         mBufferListener = null;
     }

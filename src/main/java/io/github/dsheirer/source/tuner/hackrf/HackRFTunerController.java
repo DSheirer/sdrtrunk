@@ -1,32 +1,28 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.hackrf;
 
+import io.github.dsheirer.buffer.SignedByteNativeBufferFactory;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
-import io.github.dsheirer.source.tuner.usb.converter.SignedByteSampleConverter;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +57,7 @@ public class HackRFTunerController extends USBTunerController
     public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
-    private NativeBufferConverter mNativeBufferConverter = new SignedByteSampleConverter();
+    private SignedByteNativeBufferFactory mNativeBufferFactory = new SignedByteNativeBufferFactory();
     private USBTransferProcessor mUSBTransferProcessor;
 
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE_5_0;
@@ -131,7 +127,7 @@ public class HackRFTunerController extends USBTunerController
             name = "HackRF - Unidentified Serial";
         }
 
-        mUSBTransferProcessor = new USBTransferProcessor(name, mDeviceHandle, mNativeBufferConverter,
+        mUSBTransferProcessor = new USBTransferProcessor(name, mDeviceHandle, mNativeBufferFactory,
             USB_TRANSFER_BUFFER_SIZE, this);
     }
 

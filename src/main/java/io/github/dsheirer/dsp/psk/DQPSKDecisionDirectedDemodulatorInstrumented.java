@@ -1,31 +1,28 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import org.apache.commons.math3.util.FastMath;
 
 public class DQPSKDecisionDirectedDemodulatorInstrumented extends DQPSKDecisionDirectedDemodulator
@@ -35,7 +32,7 @@ public class DQPSKDecisionDirectedDemodulatorInstrumented extends DQPSKDecisionD
     private Listener<Complex> mComplexSymbolListener;
     private Listener<Double> mPLLErrorListener;
     private Listener<Double> mPLLFrequencyListener;
-    private Listener<ReusableComplexBuffer> mFilteredGainAppliedComplexBufferListener;
+    private Listener<ComplexSamples> mFilteredGainAppliedComplexBufferListener;
     private double mSampleRate;
 
     /**
@@ -58,15 +55,14 @@ public class DQPSKDecisionDirectedDemodulatorInstrumented extends DQPSKDecisionD
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexSamples complexSamples)
     {
         if(mFilteredGainAppliedComplexBufferListener != null)
         {
-            reusableComplexBuffer.incrementUserCount();
-            mFilteredGainAppliedComplexBufferListener.receive(reusableComplexBuffer);
+            mFilteredGainAppliedComplexBufferListener.receive(complexSamples);
         }
 
-        super.receive(reusableComplexBuffer);
+        super.receive(complexSamples);
     }
 
     /**
@@ -147,13 +143,5 @@ public class DQPSKDecisionDirectedDemodulatorInstrumented extends DQPSKDecisionD
     public void setPLLFrequencyListener(Listener<Double> listener)
     {
         mPLLFrequencyListener = listener;
-    }
-
-    /**
-     * Regsiters the listener to receive complex sample buffers that have been filtered with automatic gain control applied
-     */
-    public void setFilteredGainAppliedComplexBufferListener(Listener<ReusableComplexBuffer> listener)
-    {
-        mFilteredGainAppliedComplexBufferListener = listener;
     }
 }

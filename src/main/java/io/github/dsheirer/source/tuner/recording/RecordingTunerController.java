@@ -1,28 +1,25 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.recording;
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -73,15 +70,7 @@ public class RecordingTunerController extends TunerController
         }
 
         mComplexWaveSource = new ComplexWaveSource(new File(recordingPath), true);
-        mComplexWaveSource.setListener(new Listener<ReusableComplexBuffer>()
-        {
-            @Override
-            public void receive(ReusableComplexBuffer reusableComplexBuffer)
-            {
-                //Send to parent class to broadcast to listeners
-                broadcast(reusableComplexBuffer);
-            }
-        });
+        mComplexWaveSource.setListener(complexSamples -> broadcast(complexSamples));
 
         try
         {
@@ -135,7 +124,7 @@ public class RecordingTunerController extends TunerController
     }
 
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
         super.addBufferListener(listener);
 
@@ -150,13 +139,13 @@ public class RecordingTunerController extends TunerController
     }
 
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
         super.removeBufferListener(listener);
 
-        if(!mReusableBufferBroadcaster.hasListeners() && mComplexWaveSource != null)
+        if(!mNativeBufferBroadcaster.hasListeners() && mComplexWaveSource != null)
         {
-            mComplexWaveSource.setListener((Listener<ReusableComplexBuffer>)null);
+            mComplexWaveSource.setListener((Listener<INativeBuffer>)null);
             mComplexWaveSource.stop();
             mRunning = false;
         }
