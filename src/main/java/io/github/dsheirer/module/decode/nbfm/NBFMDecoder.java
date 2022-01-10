@@ -277,11 +277,11 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 				int decimationRate = 0;
 				double decimatedSampleRate = sampleRate;
 
-				if(sampleRate / 2 > mChannelBandwidth)
+				if(sampleRate / 2 >= (mChannelBandwidth * 2))
 				{
 					decimationRate = 2;
 
-					while(sampleRate / decimationRate / 2 > mChannelBandwidth)
+					while(sampleRate / decimationRate / 2 >= (mChannelBandwidth * 2))
 					{
 						decimationRate *= 2;
 					}
