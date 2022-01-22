@@ -29,14 +29,19 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
+import org.apache.mina.filter.ssl.SslFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.nio.channels.UnresolvedAddressException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -108,6 +113,17 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 //                loggingFilter.setMessageSentLogLevel(LogLevel.NONE);
 //                mSocketConnector.getFilterChain().addLast("logger", loggingFilter);
 
+                if(getConfiguration().isTlsEnabled()){
+                    try {
+                        SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+                        sslContext.init(null, null, new SecureRandom());
+                        SslFilter sslFilter = new SslFilter(sslContext);
+                        mSocketConnector.getFilterChain().addFirst("sslFilter", sslFilter);
+                    } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                        mLog.error("Unable to build TLS Filter TLS", e);
+                    }
+                }
+
                 mSocketConnector.getFilterChain().addLast("codec",
                     new ProtocolCodecFilter(new IcecastCodecFactory()));
                 mSocketConnector.setHandler(new IcecastTCPIOHandler());
@@ -115,59 +131,54 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 
             mStreamingSession = null;
 
-            Runnable runnable = new Runnable()
-            {
-                @Override
-                public void run()
+            Runnable runnable = () -> {
+                setBroadcastState(BroadcastState.CONNECTING);
+
+                try
                 {
-                    setBroadcastState(BroadcastState.CONNECTING);
+                    ConnectFuture future = mSocketConnector
+                        .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
+                            getBroadcastConfiguration().getPort()));
 
-                    try
+                    boolean connected = future.await(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+
+                    if(connected)
                     {
-                        ConnectFuture future = mSocketConnector
-                            .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
-                                getBroadcastConfiguration().getPort()));
-
-                        boolean connected = future.await(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-
-                        if(connected)
-                        {
-                            mStreamingSession = future.getSession();
-                            mConnecting.set(false);
-                            return;
-                        }
+                        mStreamingSession = future.getSession();
+                        mConnecting.set(false);
+                        return;
                     }
-                    catch(RuntimeIoException rioe)
-                    {
-                        if(rioe.getCause() instanceof SocketException)
-                        {
-                            setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
-                            mConnecting.set(false);
-                            return;
-                        }
-                    }
-                    catch(UnresolvedAddressException uae)
+                }
+                catch(RuntimeIoException rioe)
+                {
+                    if(rioe.getCause() instanceof SocketException)
                     {
                         setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
                         mConnecting.set(false);
                         return;
                     }
-                    catch(Exception e)
-                    {
-                        mLog.error("Error", e);
-                        //Disregard ... we'll disconnect and try again
-                    }
-                    catch(Throwable t)
-                    {
-                        mLog.error("Throwable error caught", t);
-                    }
-
-                    disconnect();
-                    mConnecting.set(false);
                 }
+                catch(UnresolvedAddressException uae)
+                {
+                    setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
+                    mConnecting.set(false);
+                    return;
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error", e);
+                    //Disregard ... we'll disconnect and try again
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Throwable error caught", t);
+                }
+
+                disconnect();
+                mConnecting.set(false);
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.SCHEDULED.schedule(runnable, 0L, TimeUnit.SECONDS);
         }
 
         return connected();
@@ -199,7 +210,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
          * Sends stream configuration and user credentials upon connecting to remote server
          */
         @Override
-        public void sessionOpened(IoSession session) throws Exception
+        public void sessionOpened(IoSession session)
         {
             StringBuilder sb = new StringBuilder();
             sb.append("SOURCE ").append(getConfiguration().getMountPoint());
@@ -259,7 +270,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         }
 
         @Override
-        public void exceptionCaught(IoSession session, Throwable cause) throws Exception
+        public void exceptionCaught(IoSession session, Throwable cause)
         {
             if(!(cause instanceof IOException))
             {
@@ -270,13 +281,13 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         }
 
         @Override
-        public void messageReceived(IoSession session, Object object) throws Exception
+        public void messageReceived(IoSession session, Object object)
         {
             if(object instanceof String)
             {
                 String message = (String) object;
 
-                if(message != null && !message.trim().isEmpty())
+                if(!message.trim().isEmpty())
                 {
                     if(message.startsWith("HTTP/1.0 200 OK"))
                     {
@@ -308,8 +319,8 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             }
             else
             {
-                mLog.error("[" + getStreamName() + "]Icecast TCP broadcaster - unrecognized message [ " + object.getClass() +
-                    "] received:" + object.toString());
+                mLog.error("[{}]Icecast TCP broadcaster - unrecognized message [{}] received. {}",
+                        getStreamName(), object.getClass(), object.toString());
             }
         }
     }

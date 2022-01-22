@@ -31,6 +31,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     private boolean mPublic;
     private int mChannels = 1;
     private int mBitRate = 16;
+    private boolean mIsTlsStatus;
 
     //No-arg JAXB constructor
     public ShoutcastV1Configuration()
@@ -56,6 +57,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
         copy.setPassword(getPassword());
         copy.setDelay(getDelay());
         copy.setEnabled(false);
+        copy.setTLSEnabled(isTlsEnabled());
 
         //Icecast Configuration Parameters
         copy.setGenre(getGenre());
@@ -164,4 +166,15 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     {
         mBitRate = bitRate;
     }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "tls_enabled")
+    public boolean isTlsEnabled()
+    {
+        return mIsTlsStatus;
+    }
+
+    public void setTlsStatus(boolean tlsStatus){
+        this.mIsTlsStatus = tlsStatus;
+    }
+
 }

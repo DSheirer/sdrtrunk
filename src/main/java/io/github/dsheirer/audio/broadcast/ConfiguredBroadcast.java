@@ -69,6 +69,15 @@ public class ConfiguredBroadcast
     }
 
     /**
+     * Enabled state of the tls configuration
+     */
+    public BooleanProperty tlsProperty()
+    {
+        return mBroadcastConfiguration.tlsProperty();
+    }
+
+
+    /**
      * Name of the broadcast configuration
      */
     public StringProperty nameProperty()
@@ -147,7 +156,7 @@ public class ConfiguredBroadcast
      */
     public static Callback<ConfiguredBroadcast, Observable[]> extractor()
     {
-        return (ConfiguredBroadcast b) -> new Observable[] {b.nameProperty(), b.enabledProperty(),
+        return (ConfiguredBroadcast b) -> new Observable[] {b.nameProperty(), b.enabledProperty(), b.tlsProperty(),
             b.broadcastStateProperty(), b.getBroadcastConfiguration().validProperty()};
     }
 }

@@ -45,7 +45,7 @@ public enum ShoutcastMetadata
 
     private String mTag;
 
-    private ShoutcastMetadata(String tag)
+    ShoutcastMetadata(String tag)
     {
         mTag = tag;
     }
@@ -89,7 +89,7 @@ public enum ShoutcastMetadata
     public String encode(int value)
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(mTag).append(String.valueOf(value)).append(COMMAND_TERMINATOR);
+        sb.append(mTag).append(value).append(COMMAND_TERMINATOR);
         return sb.toString();
     }
 }

@@ -38,7 +38,7 @@ public enum IcecastHeader
 
     private String mValue;
 
-    private IcecastHeader(String value)
+    IcecastHeader(String value)
     {
         mValue = value;
     }

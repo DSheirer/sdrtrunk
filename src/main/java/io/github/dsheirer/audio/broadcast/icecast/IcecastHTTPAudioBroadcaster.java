@@ -32,6 +32,7 @@ import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolDecoderException;
+import org.apache.mina.filter.ssl.SslFilter;
 import org.apache.mina.http.HttpClientCodec;
 import org.apache.mina.http.HttpRequestImpl;
 import org.apache.mina.http.api.DefaultHttpResponse;
@@ -41,8 +42,12 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -117,54 +122,60 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 //                mSocketConnector.getFilterChain().addLast("logger",
 //                    new LoggingFilter(IcecastHTTPAudioBroadcaster.class));
 
+                if(getConfiguration().isTlsEnabled()){
+                    try {
+                        SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+                        sslContext.init(null, null, new SecureRandom());
+                        SslFilter sslFilter = new SslFilter(sslContext);
+                        mSocketConnector.getFilterChain().addFirst("sslFilter", sslFilter);
+                    } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                        mLog.error("Unable to build TLS Filter TLS", e);
+                    }
+                }
+
                 mSocketConnector.getFilterChain().addLast("codec", new HttpClientCodec());
                 mSocketConnector.setHandler(new IcecastHTTPIOHandler());
             }
 
             mStreamingSession = null;
 
-            Runnable runnable = new Runnable()
-            {
-                @Override
-                public void run()
+            Runnable runnable = () -> {
+                setBroadcastState(BroadcastState.CONNECTING);
+
+                try
                 {
-                    setBroadcastState(BroadcastState.CONNECTING);
-
-                    try
-                    {
-                        ConnectFuture future = mSocketConnector
-                            .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
-                                getBroadcastConfiguration().getPort()));
-                        future.awaitUninterruptibly();
-                        mStreamingSession = future.getSession();
-                    }
-                    catch(RuntimeIoException rie)
-                    {
-                        Throwable throwableCause = rie.getCause();
-
-                        if(throwableCause instanceof ConnectException)
-                        {
-                            setBroadcastState(BroadcastState.NO_SERVER);
-                        }
-                        else if(throwableCause != null)
-                        {
-                            setBroadcastState(BroadcastState.DISCONNECTED);
-                            mLog.debug("Failed to connect", rie);
-                        }
-                        else
-                        {
-                            setBroadcastState(BroadcastState.DISCONNECTED);
-                            mLog.debug("Failed to connect - no exception is available");
-                        }
-
-                        disconnect();
-                    }
-
-                    mConnecting.set(false);
+                    ConnectFuture future = mSocketConnector
+                        .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
+                            getBroadcastConfiguration().getPort()));
+                    future.awaitUninterruptibly();
+                    mStreamingSession = future.getSession();
                 }
+                catch(RuntimeIoException rie)
+                {
+                    Throwable throwableCause = rie.getCause();
+
+                    if(throwableCause instanceof ConnectException)
+                    {
+                        setBroadcastState(BroadcastState.NO_SERVER);
+                    }
+                    else if(throwableCause != null)
+                    {
+                        setBroadcastState(BroadcastState.DISCONNECTED);
+                        mLog.debug("Failed to connect", rie);
+                    }
+                    else
+                    {
+                        setBroadcastState(BroadcastState.DISCONNECTED);
+                        mLog.debug("Failed to connect - no exception is available");
+                    }
+
+                    disconnect();
+                }
+
+                mConnecting.set(false);
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.SCHEDULED.schedule(runnable, 0L, TimeUnit.SECONDS);
 
         }
 
@@ -189,7 +200,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
     public class IcecastHTTPIOHandler extends IoHandlerAdapter
     {
         @Override
-        public void sessionOpened(IoSession session) throws Exception
+        public void sessionOpened(IoSession session)
         {
             //Send stream configuration and user credentials upon connecting to remote server
             HttpRequestImpl request = new HttpRequestImpl(HttpVersion.HTTP_1_1, HttpMethod.PUT,
@@ -264,7 +275,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         }
 
         @Override
-        public void exceptionCaught(IoSession session, Throwable throwable) throws Exception
+        public void exceptionCaught(IoSession session, Throwable throwable)
         {
             if(throwable instanceof ProtocolDecoderException)
             {
@@ -299,7 +310,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         }
 
         @Override
-        public void messageReceived(IoSession session, Object object) throws Exception
+        public void messageReceived(IoSession session, Object object)
         {
             if(object instanceof DefaultHttpResponse)
             {

@@ -69,6 +69,7 @@ public abstract class BroadcastConfiguration
     protected LongProperty mMaximumRecordingAge = new SimpleLongProperty(10 * 60 * 1000); //10 minutes default
     protected BooleanProperty mEnabled = new SimpleBooleanProperty(false);
     protected BooleanProperty mValid = new SimpleBooleanProperty();
+    protected BooleanProperty mTlsEnabled = new SimpleBooleanProperty();
     private int mId = ++UNIQUE_ID;
 
     public BroadcastConfiguration()
@@ -160,6 +161,14 @@ public abstract class BroadcastConfiguration
     public BooleanProperty validProperty()
     {
         return mValid;
+    }
+
+    /**
+     * Configuration TLS property
+     */
+    public BooleanProperty tlsProperty()
+    {
+        return mTlsEnabled;
     }
 
     /**
@@ -352,6 +361,20 @@ public abstract class BroadcastConfiguration
     public void setEnabled(boolean enabled)
     {
         mEnabled.set(enabled);
+    }
+
+    /**
+     * Indicates if this broadcaster is using TLS in its protocol.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "tlsEnabled")
+    public boolean isTlsEnabled()
+    {
+        return mTlsEnabled.get();
+    }
+
+    public void setTLSEnabled(boolean tlsEnabled)
+    {
+        mTlsEnabled.set(tlsEnabled);
     }
 
     @Override

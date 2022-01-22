@@ -58,6 +58,7 @@ public class IcecastHTTPConfiguration extends IcecastConfiguration
         copy.setPassword(getPassword());
         copy.setDelay(getDelay());
         copy.setEnabled(false);
+        copy.setTlsStatus(isTlsEnabled());
 
         //Icecast Configuration Parameters
         copy.setUserName(getUserName());

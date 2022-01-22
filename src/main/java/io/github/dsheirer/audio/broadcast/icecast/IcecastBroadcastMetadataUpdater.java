@@ -21,6 +21,7 @@
  */
 package io.github.dsheirer.audio.broadcast.icecast;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
@@ -37,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -48,7 +48,6 @@ import java.util.List;
 public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdater
 {
     private final static Logger mLog = LoggerFactory.getLogger(IcecastBroadcastMetadataUpdater.class);
-    private final static String UTF8 = "UTF-8";
     private HttpClient mHttpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build();
     private IcecastConfiguration mIcecastConfiguration;
     private AliasModel mAliasModel;
@@ -77,87 +76,69 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     public void update(IdentifierCollection identifierCollection)
     {
         StringBuilder sb = new StringBuilder();
+        sb.append("http://");
+        sb.append(mIcecastConfiguration.getHost());
+        sb.append(":");
+        sb.append(mIcecastConfiguration.getPort());
+        sb.append("/admin/metadata?mode=updinfo&mount=");
+        sb.append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), Charsets.UTF_8));
+        sb.append("&charset=UTF%2d8");
+        sb.append("&song=").append(URLEncoder.encode(getSong(identifierCollection), Charsets.UTF_8));
 
-        try
-        {
-            sb.append("http://");
-            sb.append(mIcecastConfiguration.getHost());
-            sb.append(":");
-            sb.append(mIcecastConfiguration.getPort());
-            sb.append("/admin/metadata?mode=updinfo&mount=");
-            sb.append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
-            sb.append("&charset=UTF%2d8");
-            sb.append("&song=").append(URLEncoder.encode(getSong(identifierCollection), UTF8));
-        }
-        catch(UnsupportedEncodingException uee)
-        {
-            mLog.error("Error encoding metadata information to UTF-8", uee);
-            sb = null;
-        }
+        final String metadataUpdateURL = sb.toString();
+        URI uri = URI.create(metadataUpdateURL);
 
-        if(sb != null)
-        {
-            final String metadataUpdateURL = sb.toString();
-            URI uri = URI.create(metadataUpdateURL);
-
-            ThreadPool.SCHEDULED.submit(new Runnable()
+        ThreadPool.SCHEDULED.submit(() -> {
+            try
             {
-                @Override
-                public void run()
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(uri)
+                        .header(IcecastHeader.AUTHORIZATION.getValue(), mIcecastConfiguration.getBase64EncodedCredentials())
+                        .header(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName())
+                        .GET()
+                        .build();
+
+                HttpResponse<String> response = null;
+
+                try
                 {
-                    try
+                    response = mHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                }
+                catch(IOException ioe)
+                {
+                    if(!mConnectionLoggingSuppressed)
                     {
-                        HttpRequest request = HttpRequest.newBuilder()
-                            .uri(uri)
-                            .header(IcecastHeader.AUTHORIZATION.getValue(), mIcecastConfiguration.getBase64EncodedCredentials())
-                            .header(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName())
-                            .GET()
-                            .build();
-
-                        HttpResponse<String> response = null;
-
-                        try
-                        {
-                            response = mHttpClient.send(request, HttpResponse.BodyHandlers.ofString());
-                        }
-                        catch(IOException ioe)
-                        {
-                            if(!mConnectionLoggingSuppressed)
-                            {
-                                mLog.error("IO Error submitting Icecast metadata update [" +
-                                    (metadataUpdateURL != null ? metadataUpdateURL : "no url"), ioe);
-                                mConnectionLoggingSuppressed = true;
-                            }
-                        }
-                        catch(InterruptedException ie)
-                        {
-                            mLog.error("Interrupted Exception Error", ie);
-                        }
-
-                        if(response != null)
-                        {
-                            if(response.statusCode() == 200)
-                            {
-                                mConnectionLoggingSuppressed = false;
-                            }
-                            else
-                            {
-                                if(!mConnectionLoggingSuppressed)
-                                {
-                                    mLog.info("Error submitting Icecast 2 Metadata update to URL [" + metadataUpdateURL +
-                                        "] HTTP Response Code [" + response.statusCode() + "] Body [" + response.body() + "]");
-                                    mConnectionLoggingSuppressed = true;
-                                }
-                            }
-                        }
-                    }
-                    catch(Throwable t)
-                    {
-                        mLog.error("There was an error submitting an Icecast metadata update", t);
+                        mLog.error("IO Error submitting Icecast metadata update [{}] ", metadataUpdateURL, ioe);
+                        mConnectionLoggingSuppressed = true;
                     }
                 }
-            });
-        }
+                catch(InterruptedException ie)
+                {
+                    mLog.error("Interrupted Exception Error", ie);
+                }
+
+                if(response != null)
+                {
+                    if(response.statusCode() == 200)
+                    {
+                        mConnectionLoggingSuppressed = false;
+                    }
+                    else
+                    {
+                        if(!mConnectionLoggingSuppressed)
+                        {
+                            mLog.info("Error submitting Icecast 2 Metadata update to URL [" + metadataUpdateURL +
+                                    "] HTTP Response Code [" + response.statusCode() + "] Body [" + response.body() + "]");
+                            mConnectionLoggingSuppressed = true;
+                        }
+                    }
+                }
+            }
+            catch(Throwable t)
+            {
+                mLog.error("There was an error submitting an Icecast metadata update", t);
+            }
+        });
     }
 
     /**

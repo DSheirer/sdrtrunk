@@ -87,6 +87,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
             getItem().setDescription(getDescriptionTextField().getText());
             getItem().setGenre(getGenreTextField().getText());
             getItem().setURL(getURLTextField().getText());
+            getItem().setTlsStatus(getTLSSwitch().isSelected());
         }
 
         super.save();
@@ -141,6 +142,14 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
 
             GridPane.setConstraints(getPortTextField(), 3, 2);
             mEditorPane.getChildren().add(getPortTextField());
+
+            Label tlsLabel = new Label("SSL/TLS");
+            GridPane.setHalignment(tlsLabel, HPos.RIGHT);
+            GridPane.setConstraints(tlsLabel, 4, 2);
+            mEditorPane.getChildren().add(tlsLabel);
+
+            GridPane.setConstraints(getTLSSwitch(), 5, 2);
+            mEditorPane.getChildren().add(getTLSSwitch());
 
             Label mountPointLabel = new Label("Mount Point");
             GridPane.setHalignment(mountPointLabel, HPos.RIGHT);

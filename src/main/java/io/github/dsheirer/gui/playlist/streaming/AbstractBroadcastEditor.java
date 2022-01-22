@@ -28,7 +28,6 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -51,6 +50,7 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
     private TextField mFormatField;
     private TextField mNameTextField;
     private ToggleSwitch mEnabledSwitch;
+    private ToggleSwitch mTLSSwitch;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
 
     /**
@@ -89,16 +89,19 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
 
         getNameTextField().setDisable(item == null);
         getEnabledSwitch().setDisable(item == null);
+        getTLSSwitch().setDisable(item == null);
 
         if(item != null)
         {
             getNameTextField().setText(item.getName());
             getEnabledSwitch().selectedProperty().set(item.isEnabled());
+            getTLSSwitch().selectedProperty().set(item.isTlsEnabled());
         }
         else
         {
             getNameTextField().setText(null);
             getEnabledSwitch().selectedProperty().set(false);
+            getTLSSwitch().selectedProperty().set(false);
         }
     }
 
@@ -109,6 +112,7 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
         if(configuration != null)
         {
             configuration.setEnabled(getEnabledSwitch().isSelected());
+            configuration.setTLSEnabled(getTLSSwitch().isSelected());
 
             //Detect stream name change so that we can update any aliases that might be using the previous name
             String previousName = configuration.getName();
@@ -125,13 +129,11 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
                     alert.setTitle("Update Aliases");
                     alert.setHeaderText("Rename requires updating aliases for this stream");
                     alert.setContentText("Do you want to update aliases to new stream name?");
-                    alert.initOwner(((Node)getSaveButton()).getScene().getWindow());
+                    alert.initOwner((getSaveButton()).getScene().getWindow());
 
                     //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
                     alert.setResizable(true);
-                    alert.onShownProperty().addListener(e -> {
-                        Platform.runLater(() -> alert.setResizable(false));
-                    });
+                    alert.onShownProperty().addListener(e -> Platform.runLater(() -> alert.setResizable(false)));
 
                     alert.showAndWait().ifPresent(buttonType -> {
                         if(buttonType == ButtonType.YES)
@@ -212,6 +214,19 @@ public abstract class AbstractBroadcastEditor<T extends BroadcastConfiguration> 
         }
 
         return mEnabledSwitch;
+    }
+
+    protected ToggleSwitch getTLSSwitch()
+    {
+        if(mTLSSwitch == null)
+        {
+            mTLSSwitch = new ToggleSwitch();
+            mTLSSwitch.setDisable(true);
+            mTLSSwitch.selectedProperty()
+                    .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mTLSSwitch;
     }
 
     /**
