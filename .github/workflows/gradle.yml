@@ -15,8 +15,8 @@ on:
 
 jobs:
   build:
-    matrix: [ubuntu-latest, macos-latest, windows-latest]
-      os: 
+    matrix: 
+          os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
