@@ -15,7 +15,8 @@ on:
 
 jobs:
   build:
-    matrix: 
+    stradegy:
+      matrix: 
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
