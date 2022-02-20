@@ -22,8 +22,6 @@
 package io.github.dsheirer.channel.metadata;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.gui.SDRTrunk;
-
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -76,16 +74,13 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     {
         if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
-            if (!SDRTrunk.mHeadlessMode) {
-
-                EventQueue.invokeLater(() -> {
-                    for(int row = 0; row < mChannelMetadata.size(); row++)
-                    {
-                        fireTableCellUpdated(row, COLUMN_USER_FROM);
-                        fireTableCellUpdated(row, COLUMN_USER_TO);
-                    }
-                });
-            }
+            EventQueue.invokeLater(() -> {
+                for(int row = 0; row < mChannelMetadata.size(); row++)
+                {
+                    fireTableCellUpdated(row, COLUMN_USER_FROM);
+                    fireTableCellUpdated(row, COLUMN_USER_TO);
+                }
+            });
         }
     }
 
@@ -119,24 +114,21 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     public void add(ChannelAndMetadata channelAndMetadata)
     {
         //Execute on the swing thread to avoid threading issues
-        if (!SDRTrunk.mHeadlessMode) {
+        EventQueue.invokeLater(() -> {
+            for(ChannelMetadata channelMetadata: channelAndMetadata.getChannelMetadata())
+            {
+                mChannelMetadata.add(channelMetadata);
+                mMetadataChannelMap.put(channelMetadata, channelAndMetadata.getChannel());
+                int index = mChannelMetadata.indexOf(channelMetadata);
+                fireTableRowsInserted(index, index);
+                channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
+            }
 
-            EventQueue.invokeLater(() -> {
-                for(ChannelMetadata channelMetadata: channelAndMetadata.getChannelMetadata())
-                {
-                    mChannelMetadata.add(channelMetadata);
-                    mMetadataChannelMap.put(channelMetadata, channelAndMetadata.getChannel());
-                    int index = mChannelMetadata.indexOf(channelMetadata);
-                    fireTableRowsInserted(index, index);
-                    channelMetadata.setUpdateEventListener(ChannelMetadataModel.this);
-                }
-    
-                if(mChannelAddListener != null)
-                {
-                    mChannelAddListener.receive(channelAndMetadata);
-                }
-            });
-        }
+            if(mChannelAddListener != null)
+            {
+                mChannelAddListener.receive(channelAndMetadata);
+            }
+        });
     }
 
     /**
@@ -155,20 +147,17 @@ public class ChannelMetadataModel extends AbstractTableModel implements IChannel
     public void remove(ChannelMetadata channelMetadata)
     {
         //Execute on the swing thread to avoid threading issues
-        if (!SDRTrunk.mHeadlessMode) {
+        EventQueue.invokeLater(() -> {
+            channelMetadata.removeUpdateEventListener();
+            int index = mChannelMetadata.indexOf(channelMetadata);
+            mChannelMetadata.remove(channelMetadata);
+            mMetadataChannelMap.remove(channelMetadata);
 
-            EventQueue.invokeLater(() -> {
-                channelMetadata.removeUpdateEventListener();
-                int index = mChannelMetadata.indexOf(channelMetadata);
-                mChannelMetadata.remove(channelMetadata);
-                mMetadataChannelMap.remove(channelMetadata);
-    
-                if(index >= 0)
-                {
-                    fireTableRowsDeleted(index, index);
-                }
-            });
-        }
+            if(index >= 0)
+            {
+                fireTableRowsDeleted(index, index);
+            }
+        });
     }
 
     /**

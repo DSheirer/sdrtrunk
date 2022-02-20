@@ -50,7 +50,6 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import io.github.dsheirer.gui.SDRTrunk;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -312,11 +311,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         if(source == null)
         {
             //This has to be done on the FX event thread when the playlist editor is constructed
-            if (!SDRTrunk.mHeadlessMode) {
-                Platform.runLater(() -> channel.setProcessing(false));
-            } else {
-                channel.setProcessing(false);
-            }
+            Platform.runLater(() -> channel.setProcessing(false));
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
@@ -471,11 +466,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         processingChain.start();
 
         //This has to be done on the FX event thread when the playlist editor is constructed
-        if (!SDRTrunk.mHeadlessMode) {
-            Platform.runLater(() -> channel.setProcessing(true));
-        } else {
-            channel.setProcessing(true);
-        }
+        Platform.runLater(() -> channel.setProcessing(true));
 
         getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
 
@@ -490,9 +481,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private void stopProcessing(Channel channel) throws ChannelException
     {
         //This has to be done on the FX event thread when the playlist editor is constructed
-        if (!SDRTrunk.mHeadlessMode) {
-            Platform.runLater(() -> channel.setProcessing(false));
-        }
+        Platform.runLater(() -> channel.setProcessing(false));
 
         if(mProcessingChains.containsKey(channel))
         {

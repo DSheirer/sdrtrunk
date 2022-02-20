@@ -31,7 +31,6 @@ import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
 import java.text.SimpleDateFormat;
 import java.util.LinkedList;
-import io.github.dsheirer.gui.SDRTrunk;
 import java.util.List;
 
 public class MessageActivityModel extends AbstractTableModel implements Listener<IMessage>
@@ -68,12 +67,10 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
      */
     public void clear()
     {
-        if (!SDRTrunk.mHeadlessMode) {
         EventQueue.invokeLater(() -> {
             mMessageItems.clear();
             fireTableDataChanged();
         });
-    }
     }
 
     /**
@@ -81,7 +78,6 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
      */
     public void clearAndSet(List<IMessage> messages)
     {
-        if (!SDRTrunk.mHeadlessMode) {
         EventQueue.invokeLater(() -> {
             mMessageItems.clear();
             fireTableDataChanged();
@@ -90,7 +86,6 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
                 receive(message);
             }
         });
-    }
     }
 
     public FilterSet<IMessage> getMessageFilterSet()
@@ -142,20 +137,18 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
         {
             final MessageItem messageItem = new MessageItem(message);
 
-            if (!SDRTrunk.mHeadlessMode) {
-                EventQueue.invokeLater(new Runnable()
+            EventQueue.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        mMessageItems.addFirst(messageItem);
-    
-                        MessageActivityModel.this.fireTableRowsInserted(0, 0);
-    
-                        prune();
-                    }
-                });
-            }
+                    mMessageItems.addFirst(messageItem);
+
+                    MessageActivityModel.this.fireTableRowsInserted(0, 0);
+
+                    prune();
+                }
+            });
         }
     }
 
