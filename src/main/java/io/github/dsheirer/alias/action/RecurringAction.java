@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.alias.action;
@@ -26,8 +25,8 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.util.ThreadPool;
 
-import javax.swing.JOptionPane;
-import java.awt.EventQueue;
+import javax.swing.*;
+import java.awt.*;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -92,7 +91,7 @@ public abstract class RecurringAction extends AliasAction
      */
     private void performThreadedAction(final Alias alias, final IMessage message)
     {
-        ThreadPool.SCHEDULED.schedule(() -> performAction(alias, message), 0, TimeUnit.SECONDS);
+        ThreadPool.CACHED.execute(() -> performAction(alias, message));
     }
 
     @Override

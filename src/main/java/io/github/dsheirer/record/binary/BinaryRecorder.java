@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,16 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.record.binary;
 
-import io.github.dsheirer.dsp.filter.channelizer.ContinuousReusableBufferProcessor;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
+import io.github.dsheirer.sample.buffer.IByteBufferListener;
+import io.github.dsheirer.util.Dispatcher;
 import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -37,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -48,14 +45,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The contents of the file are the raw bytes as demodulated by the decoder with
  * no header or timestamps, other than the timestamp included in the filename.
  */
-public class BinaryRecorder extends Module implements IReusableByteBufferListener
+public class BinaryRecorder extends Module implements IByteBufferListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(BinaryRecorder.class);
     private static final int MAX_RECORDING_BYTE_SIZE = 524288;  //500 kB
 
-    private ContinuousReusableBufferProcessor<ReusableByteBuffer> mBufferProcessor =
-        new ContinuousReusableBufferProcessor<>(500, 50);
-
+    private Dispatcher<ByteBuffer> mBufferProcessor = new Dispatcher<>(500,
+            "sdrtrunk binary recorder", ByteBuffer.allocate(0));
     private AtomicBoolean mRunning = new AtomicBoolean();
     private Path mBaseRecordingPath;
     private String mRecordingIdentifier;
@@ -135,7 +131,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     }
 
     @Override
-    public Listener<ReusableByteBuffer> getReusableByteBufferListener()
+    public Listener<ByteBuffer> getByteBufferListener()
     {
         return mBufferProcessor;
     }
@@ -148,7 +144,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     /**
      * Binary writer implementation for reusable byte buffers delivered from buffer processor
      */
-    public class BinaryWriter implements Listener<List<ReusableByteBuffer>>
+    public class BinaryWriter implements Listener<ByteBuffer>
     {
         private Path mCurrentPath;
         private WritableByteChannel mWritableByteChannel;
@@ -160,7 +156,6 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
                 mCurrentPath = path;
                 mWritableByteChannel = Files.newByteChannel(path,
                     EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
-//                mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
             }
         }
 
@@ -209,42 +204,36 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
 
         /**
          * Primary receive method for incoming byte buffers
-         * @param reusableComplexBuffers to record
+         * @param byteBuffer to record
          */
         @Override
-        public void receive(List<ReusableByteBuffer> reusableComplexBuffers)
+        public void receive(ByteBuffer byteBuffer)
         {
-            for(ReusableByteBuffer buffer: reusableComplexBuffers)
+            if(mWritableByteChannel != null)
             {
-                if(mWritableByteChannel != null)
+                try
                 {
-                    try
-                    {
-                        ByteBuffer byteBuffer = ByteBuffer.wrap(buffer.getSamplesCopy());
-                        mBytesRecordedCounter += mWritableByteChannel.write(byteBuffer);
+                    mBytesRecordedCounter += mWritableByteChannel.write(byteBuffer);
 
-                        if(mBytesRecordedCounter > MAX_RECORDING_BYTE_SIZE)
-                        {
-                            cycleRecording();
-                        }
-                    }
-                    catch(IOException ioe)
+                    if(mBytesRecordedCounter > MAX_RECORDING_BYTE_SIZE)
                     {
-                        mLog.error("Error recording demodulated bits to file [" +
-                            (mCurrentPath != null ? mCurrentPath.toString() : "no file") + "] - stopping recorder");
-
-                        try
-                        {
-                            stop();
-                        }
-                        catch(IOException ioe2)
-                        {
-                            mLog.error("Error stopping recorder after write error", ioe2.getLocalizedMessage());
-                        }
+                        cycleRecording();
                     }
                 }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error recording demodulated bits to file [" +
+                            (mCurrentPath != null ? mCurrentPath.toString() : "no file") + "] - stopping recorder");
 
-                buffer.decrementUserCount();
+                    try
+                    {
+                        stop();
+                    }
+                    catch(IOException ioe2)
+                    {
+                        mLog.error("Error stopping recorder after write error", ioe2.getLocalizedMessage());
+                    }
+                }
             }
         }
     }

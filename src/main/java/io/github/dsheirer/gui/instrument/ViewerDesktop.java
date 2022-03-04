@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.gui.instrument;
 
 import io.github.dsheirer.gui.instrument.decoder.AbstractDecoderPane;
 import io.github.dsheirer.gui.instrument.decoder.DecoderPaneFactory;
+import io.github.dsheirer.gui.instrument.decoder.RealDecoderPane;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1Decoder;
 import javafx.scene.layout.BorderPane;
@@ -56,11 +56,26 @@ public class ViewerDesktop extends BorderPane
 
     private void setDecoderPane(AbstractDecoderPane decoderPane)
     {
-        getPlaybackController().removeListener(getDecoderPane());
+        if(getDecoderPane() instanceof RealDecoderPane)
+        {
+            getPlaybackController().removeRealListener(getDecoderPane());
+        }
+        else
+        {
+            getPlaybackController().removeComplexListener(getDecoderPane());
+        }
         getChildren().remove(getDecoderPane());
         mDecoderPane = decoderPane;
         setCenter(getDecoderPane());
-        getPlaybackController().addListener(getDecoderPane());
+
+        if(getDecoderPane() instanceof RealDecoderPane)
+        {
+            getPlaybackController().addRealListener(getDecoderPane());
+        }
+        else
+        {
+            getPlaybackController().addComplexListener(getDecoderPane());
+        }
         getPlaybackController().setSampleRateListener(getDecoderPane());
     }
 

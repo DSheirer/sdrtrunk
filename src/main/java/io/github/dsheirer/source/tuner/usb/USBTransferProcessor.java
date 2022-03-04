@@ -1,31 +1,28 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.usb;
 
+import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.buffer.INativeBufferFactory;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerManager;
-import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,13 +56,13 @@ public class USBTransferProcessor implements TransferCallback
     private List<Transfer> mTransfersToDispose = new ArrayList<>();
     private List<Transfer> mTransfersToSubmit = new ArrayList<>();
 
-    //Tuner format-specific byte buffer to IQ float sample converter
-    private NativeBufferConverter mNativeBufferConverter;
+    //Tuner specific native buffer factory for processing/conversion of raw samples
+    private INativeBufferFactory mNativeBufferFactory;
 
     //Byte array transfer buffers size in bytes
     private int mBufferSize;
 
-    private Listener<ReusableComplexBuffer> mComplexBufferListener;
+    private Listener<INativeBuffer> mNativeBufferListener;
 
     //Handle to the USB bulk transfer device
     private DeviceHandle mUsbBulkTransferDeviceHandle;
@@ -84,16 +81,16 @@ public class USBTransferProcessor implements TransferCallback
      *
      * @param deviceName to use when logging information or errors
      * @param usbBulkTransferDeviceHandle to the USB bulk transfer device
-     * @param nativeBufferConverter specific to the tuner's byte buffer format for converting to floating point I/Q samples
+     * @param nativeBufferFactory specific to the tuner's byte buffer format for converting to floating point I/Q samples
      * @param bufferSize in bytes.  Should be a multiple of two: 65536, 131072 or 262144.
      */
     public USBTransferProcessor(String deviceName, DeviceHandle usbBulkTransferDeviceHandle,
-                                NativeBufferConverter nativeBufferConverter, int bufferSize,
+                                INativeBufferFactory nativeBufferFactory, int bufferSize,
                                 ITunerErrorListener tunerErrorListener)
     {
         mDeviceName = deviceName;
         mUsbBulkTransferDeviceHandle = usbBulkTransferDeviceHandle;
-        mNativeBufferConverter = nativeBufferConverter;
+        mNativeBufferFactory = nativeBufferFactory;
         mBufferSize = bufferSize;
         mITunerErrorListener = tunerErrorListener;
     }
@@ -358,11 +355,11 @@ public class USBTransferProcessor implements TransferCallback
     /**
      * Sets the listener and auto-starts the buffer processor
      */
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<INativeBuffer> listener)
     {
-        if(mComplexBufferListener == null || !mComplexBufferListener.equals(listener))
+        if(mNativeBufferListener == null || !mNativeBufferListener.equals(listener))
         {
-            mComplexBufferListener = listener;
+            mNativeBufferListener = listener;
 
             boolean success = start();
 
@@ -378,10 +375,10 @@ public class USBTransferProcessor implements TransferCallback
      */
     public void removeListener()
     {
-        if(mComplexBufferListener != null)
+        if(mNativeBufferListener != null)
         {
             stop();
-            mComplexBufferListener = null;
+            mNativeBufferListener = null;
         }
     }
 
@@ -555,14 +552,13 @@ public class USBTransferProcessor implements TransferCallback
                 {
                     if(mRunning.get())
                     {
-                        ByteBuffer nativeBuffer = transfer.buffer();
-
-                        ReusableComplexBuffer reusableComplexBuffer =
-                            mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
-
-                        if(mComplexBufferListener != null)
+                        if(mNativeBufferListener != null)
                         {
-                            mComplexBufferListener.receive(reusableComplexBuffer);
+                            //Pass the transfer's byte buffer so the native buffer factory can make a copy of the
+                            //byte array contents and package it as a native buffer.
+                            INativeBuffer nativeBuffer = mNativeBufferFactory.getBuffer(transfer.buffer(),
+                                    System.currentTimeMillis());
+                            mNativeBufferListener.receive(nativeBuffer);
                         }
                     }
 
@@ -577,7 +573,7 @@ public class USBTransferProcessor implements TransferCallback
                     }
                     else
                     {
-                        ThreadPool.SCHEDULED.submit(() -> restart());
+                        ThreadPool.CACHED.submit(() -> restart());
                         transfer = null;
                     }
                 }

@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.usb;
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.tuner.TunerController;
 
 public abstract class USBTunerController extends TunerController
@@ -44,7 +44,7 @@ public abstract class USBTunerController extends TunerController
      * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
      */
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
         boolean hasExistingListeners = hasBufferListeners();
 
@@ -60,7 +60,7 @@ public abstract class USBTunerController extends TunerController
      * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
      */
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
         super.removeBufferListener(listener);
 

@@ -1,27 +1,28 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.invert;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.FloatFIRFilter;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.mixer.IOscillator;
-import io.github.dsheirer.dsp.mixer.Oscillator;
+import io.github.dsheirer.dsp.oscillator.IRealOscillator;
+import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
+import io.github.dsheirer.dsp.window.WindowType;
 
 /**
  * Based on the AudioType applied, produces normal, muted, or audio invert
@@ -30,7 +31,7 @@ import io.github.dsheirer.dsp.mixer.Oscillator;
 public class AudioAdapter
 {
 	private static int mGain = 5;
-	private IOscillator mSineWaveGenerator;
+	private IRealOscillator mSineWaveGenerator;
 	private FloatFIRFilter mPostInversionFilter;
 	private FloatFIRFilter mAudioHighPassFilter;
 	private AudioType mAudioType = AudioType.NORMAL;
@@ -39,7 +40,7 @@ public class AudioAdapter
 	public AudioAdapter( int sampleRate )
 	{
 		mSampleRate = sampleRate;
-		mSineWaveGenerator = new Oscillator( 3000, mSampleRate );
+		mSineWaveGenerator = OscillatorFactory.getRealOscillator(3000, mSampleRate );
 		mAudioHighPassFilter = new FloatFIRFilter( 
 				FilterFactory.getHighPass( mSampleRate, 200, 1600, 48, 
 						WindowType.HAMMING, true ), mGain );
@@ -58,7 +59,7 @@ public class AudioAdapter
 			
 			if( inversionFrequency != 0 )
 			{
-				mSineWaveGenerator.setFrequency( inversionFrequency );;
+				mSineWaveGenerator.setFrequency( inversionFrequency );
 			}
 		}
 	}
@@ -89,9 +90,7 @@ public class AudioAdapter
 			default:
 				retVal = (float)( mPostInversionFilter.get( 
 						mAudioHighPassFilter.get( sample ) * 
-						mSineWaveGenerator.inphase() ) );
-				
-				mSineWaveGenerator.rotate();
+						mSineWaveGenerator.generate(1)[0] ) );
 				break;
 		}
 		

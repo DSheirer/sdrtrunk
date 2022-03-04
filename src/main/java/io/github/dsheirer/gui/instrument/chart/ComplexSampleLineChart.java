@@ -1,31 +1,28 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
@@ -38,7 +35,7 @@ import javafx.scene.chart.XYChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ComplexSampleLineChart extends LineChart implements Listener<ReusableComplexBuffer>, ComplexSampleListener
+public class ComplexSampleLineChart extends LineChart implements Listener<ComplexSamples>, ComplexSampleListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSampleLineChart.class);
 
@@ -97,16 +94,12 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Reusab
     }
 
     @Override
-    public void receive(ReusableComplexBuffer complexBuffer)
+    public void receive(ComplexSamples samples)
     {
-        float[] samples = complexBuffer.getSamples();
-
-        for(int x = 0; x < samples.length; x += 2)
+        for(int x = 0; x < samples.i().length; x++)
         {
-            receive(samples[x], samples[x + 1]);
+            receive(samples.i()[x], samples.q()[x]);
         }
-
-        complexBuffer.decrementUserCount();
     }
 
     @Override

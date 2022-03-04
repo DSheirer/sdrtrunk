@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBufferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -31,10 +29,9 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public abstract class AbstractComplexPolyphaseChannelizer implements Listener<ReusableComplexBuffer>, ISourceEventListener
+public abstract class AbstractComplexPolyphaseChannelizer implements Listener<InterleavedComplexSamples>, ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractComplexPolyphaseChannelizer.class);
-    private ReusableChannelResultsBufferQueue mBufferQueue = new ReusableChannelResultsBufferQueue("AbstractComplexPolyphaseChannelizer");
     private Broadcaster<SourceEvent> mSourceChangeBroadcaster = new Broadcaster();
     private List<PolyphaseChannelSource> mChannels = new CopyOnWriteArrayList<>();
     private double mSampleRate;
@@ -103,17 +100,14 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
     /**
      * Dispatches the processed channel samples to any registered polyphase channel outputs.
      *
-     * @param channelResultsBuffer containing an array of an array of I/Q samples per channel
+     * @param channelResultsList a list of arrays of I/Q samples per channel
      */
-    protected void dispatch(ReusableChannelResultsBuffer channelResultsBuffer)
+    protected void dispatch(List<float[]> channelResultsList)
     {
         for(PolyphaseChannelSource channel : mChannels)
         {
-            channelResultsBuffer.incrementUserCount();
-            channel.receiveChannelResults(channelResultsBuffer);
+            channel.receiveChannelResults(channelResultsList);
         }
-
-        channelResultsBuffer.decrementUserCount();
     }
 
     /**
@@ -150,16 +144,6 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
     public int getRegisteredChannelCount()
     {
         return mChannels.size();
-    }
-
-    /**
-     * Creates or reuses a channel results buffer for subclass implementations to use for temporary
-     * storage of channel results through distribution and consumption of channel results by
-     * channel output processors.
-     */
-    protected ReusableChannelResultsBuffer getChannelResultsBuffer()
-    {
-        return mBufferQueue.getBuffer();
     }
 
     @Override

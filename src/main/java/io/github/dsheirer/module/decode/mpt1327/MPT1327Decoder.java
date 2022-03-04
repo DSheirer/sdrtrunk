@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.mpt1327;
 
@@ -26,15 +25,16 @@ import io.github.dsheirer.dsp.symbol.BinaryToByteBufferAssembler;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.afsk.AbstractAFSKDecoder;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
+import io.github.dsheirer.sample.buffer.IByteBufferProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
 
 /**
  * Instrumented version of the MPT1327 decoder.  Exposes properties for instrumented manual decoding of a signal.
  */
-public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbolProcessor, IReusableByteBufferProvider
+public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbolProcessor, IByteBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327Decoder.class);
 
@@ -114,13 +114,13 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
     }
 
     @Override
-    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    public void setBufferListener(Listener<ByteBuffer> listener)
     {
         mBinaryToByteBufferAssembler.setBufferListener(listener);
     }
 
     @Override
-    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    public void removeBufferListener(Listener<ByteBuffer> listener)
     {
         mBinaryToByteBufferAssembler.removeBufferListener(listener);
     }

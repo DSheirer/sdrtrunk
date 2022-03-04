@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,13 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.fcd;
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ComplexShortAdapter;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.ComplexMixer;
 import io.github.dsheirer.source.tuner.MixerTunerType;
@@ -90,11 +90,11 @@ public abstract class FCDTunerController extends TunerController
         }
 
         mComplexMixer = new ComplexMixer( mixerTDL, tunerType.getAudioFormat(), tunerType.getDisplayString(),
-            new ComplexShortAdapter(tunerType.getDisplayString()));
+            new ComplexShortAdapter());
 
         mComplexMixer.setBufferSize(tunerType.getAudioFormat().getFrameSize() * getBufferSampleCount());
 
-        mComplexMixer.setBufferListener(mReusableBufferBroadcaster);
+        mComplexMixer.setBufferListener(mNativeBufferBroadcaster);
     }
 
     @Override
@@ -107,7 +107,7 @@ public abstract class FCDTunerController extends TunerController
      * Overrides the super class functionality to auto-start the complex mixer and provide samples to listeners
      */
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
         boolean hasExistingListeners = hasBufferListeners();
 
@@ -124,7 +124,7 @@ public abstract class FCDTunerController extends TunerController
      * more registered listeners
      */
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
         super.removeBufferListener(listener);
 

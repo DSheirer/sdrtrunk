@@ -20,8 +20,7 @@
 package io.github.dsheirer.dsp.filter.decimate;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
-import io.github.dsheirer.dsp.filter.halfband.real.RealHalfBandDecimationFilter;
+import io.github.dsheirer.dsp.window.WindowType;
 
 /**
  * Decimate by 8 filter for real valued sample buffers.
@@ -30,16 +29,16 @@ public class RealDecimateX8Filter extends RealDecimateX4Filter
 {
     private static final int VALIDATION_LENGTH = 8;
     private static final int DECIMATE_BY_8_FILTER_LENGTH = 15;
-    private static final Window.WindowType DECIMATE_BY_8_WINDOW_TYPE = Window.WindowType.BLACKMAN;
-    private RealHalfBandDecimationFilter mFilter;
+    private static final WindowType DECIMATE_BY_8_WINDOW_TYPE = WindowType.BLACKMAN;
+    private IRealDecimationFilter mFilter;
 
     /**
      * Constructs the decimation filter.
      */
     public RealDecimateX8Filter()
     {
-        mFilter = new RealHalfBandDecimationFilter(FilterFactory.getHalfBand(DECIMATE_BY_8_FILTER_LENGTH,
-                DECIMATE_BY_8_WINDOW_TYPE));
+        mFilter = FilterFactory.getRealDecimationFilter(DECIMATE_BY_8_FILTER_LENGTH,
+                DECIMATE_BY_8_WINDOW_TYPE);
     }
 
     @Override

@@ -1,30 +1,27 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.gui.instrument;
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.gui.instrument.decoder.AbstractDecoderPane;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
@@ -65,7 +62,8 @@ public class PlaybackController extends HBox implements IFrameLocationListener
     private AbstractDecoderPane mSampleRateListener;
 
     private IControllableFileSource mControllableFileSource;
-    private ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
+    private Broadcaster<float[]> mRealBufferBroadcaster = new Broadcaster<>();
+    private Broadcaster<INativeBuffer> mNativeBufferBroadcaster = new Broadcaster<>();
 
     public PlaybackController()
     {
@@ -96,7 +94,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener
                 {
                     mControllableFileSource = new ComplexWaveSource(file);
                     mControllableFileSource.setListener(this);
-                    ((ComplexWaveSource)mControllableFileSource).setListener(mReusableBufferBroadcaster);
+                    ((ComplexWaveSource)mControllableFileSource).setListener(mNativeBufferBroadcaster);
                     mControllableFileSource.open();
 
                     if(mSampleRateListener != null)
@@ -130,7 +128,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener
                 {
                     mControllableFileSource = new RealWaveSource(file);
                     mControllableFileSource.setListener(this);
-                    ((RealWaveSource)mControllableFileSource).setListener(mReusableBufferBroadcaster);
+                    ((RealWaveSource)mControllableFileSource).setListener(mRealBufferBroadcaster);
                     mControllableFileSource.open();
 
                     if(mSampleRateListener != null)
@@ -181,19 +179,35 @@ public class PlaybackController extends HBox implements IFrameLocationListener
     }
 
     /**
-     * Adds listener to receive complex buffers from this playback
+     * Adds listener to receive real buffers from this playback
      */
-    public void addListener(Listener<ReusableFloatBuffer> listener)
+    public void addRealListener(Listener<float[]> listener)
     {
-        mReusableBufferBroadcaster.addListener(listener);
+        mRealBufferBroadcaster.addListener(listener);
     }
 
     /**
-     * Removes the listener from receiving complex buffers from this playback
+     * Removes the listener from receiving real buffers from this playback
      */
-    public void removeListener(Listener<ReusableFloatBuffer> listener)
+    public void removeRealListener(Listener<float[]> listener)
     {
-        mReusableBufferBroadcaster.removeListener(listener);
+        mRealBufferBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Adds listener to receive complex buffers from this playback
+     */
+    public void addComplexListener(Listener<INativeBuffer> listener)
+    {
+        mNativeBufferBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving compex buffers from this playback
+     */
+    public void removeComplexListener(Listener<INativeBuffer> listener)
+    {
+        mNativeBufferBroadcaster.removeListener(listener);
     }
 
     /**

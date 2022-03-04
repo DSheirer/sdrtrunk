@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,12 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.test;
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -32,7 +32,7 @@ public class TestTunerController extends TunerController
 
     public static final long MINIMUM_FREQUENCY = 1l;
     public static final long MAXIMUM_FREQUENCY = 1000000000l;
-    public static final int SAMPLE_RATE = 10000000;
+    public static final int SAMPLE_RATE = 2_400_000;
     public static final int DC_NOISE_BANDWIDTH = 0;
     public static final double USABLE_BANDWIDTH_PERCENTAGE = 1.00;
 
@@ -50,9 +50,9 @@ public class TestTunerController extends TunerController
         super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
 
         int sweepRate = 0;  //Hz per interval
-        long initialToneFrequency = SAMPLE_RATE / 2 + 100;
-        mSampleGenerator = new SampleGenerator(SAMPLE_RATE, initialToneFrequency, SAMPLE_GENERATION_INTERVAL,
-            sweepRate);
+//        long initialToneFrequency = SAMPLE_RATE / 2 + 100;
+        long initialToneFrequency = 50000;
+        mSampleGenerator = new SampleGenerator(SAMPLE_RATE, initialToneFrequency, sweepRate);
 
         try
         {
@@ -78,13 +78,13 @@ public class TestTunerController extends TunerController
     }
 
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
         mSampleGenerator.addListener(listener);
     }
 
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
         mSampleGenerator.removeListener(listener);
     }

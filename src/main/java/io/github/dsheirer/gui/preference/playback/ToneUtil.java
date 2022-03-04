@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,8 @@
 
 package io.github.dsheirer.gui.preference.playback;
 
-import io.github.dsheirer.dsp.mixer.Oscillator;
+import io.github.dsheirer.dsp.oscillator.IRealOscillator;
+import io.github.dsheirer.dsp.oscillator.ScalarRealOscillator;
 
 /**
  * Utility for generating tones for audio clips
@@ -38,9 +39,9 @@ public class ToneUtil
      */
     public static float[] getTone(ToneFrequency toneFrequency, ToneVolume toneVolume, int sampleCount)
     {
-        Oscillator oscillator = new Oscillator(toneFrequency.getValue(), 8000.0);
+        IRealOscillator oscillator = new ScalarRealOscillator(toneFrequency.getValue(), 8000.0);
 
-        float[] samples = oscillator.generateReal(sampleCount);
+        float[] samples = oscillator.generate(sampleCount);
 
         double gain = MAX_TONE_VOLUME * ((double)toneVolume.getValue() / 10.0);
 

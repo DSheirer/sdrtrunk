@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -276,7 +276,7 @@ public class SystemEditor extends VBox
             mUserPreferences.getRadioReferencePreference().setPreferredSystemId(system.getSystemId(), mLevel);
 
             //Retrieve the radio reference data on a separate thread and then load the editors on the FX thread
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.CACHED.execute(() -> {
                 try
                 {
                     if(mRadioReferenceDecoder == null)

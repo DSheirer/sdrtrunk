@@ -1,25 +1,28 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 
 public abstract class PSKDemodulator<T> implements ComplexSampleListener
 {
@@ -77,19 +80,18 @@ public abstract class PSKDemodulator<T> implements ComplexSampleListener
     }
 
     /**
-     * Processes a (filtered) buffer containing complex samples for decoding
-     * @param reusableComplexBuffer with complex samples
+     * Processes a complex sample buffer
+     * @param samples
      */
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexSamples samples)
     {
-        float[] samples = reusableComplexBuffer.getSamples();
+        float[] i = samples.i();
+        float[] q = samples.q();
 
-        for(int x = 0; x < samples.length; x += 2)
+        for(int x = 0; x < i.length; x++)
         {
-            receive(samples[x], samples[x + 1]);
+            receive(i[x], q[x]);
         }
-
-        reusableComplexBuffer.decrementUserCount();
     }
 
     /**

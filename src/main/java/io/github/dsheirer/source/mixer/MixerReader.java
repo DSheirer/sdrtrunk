@@ -1,23 +1,25 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.adapter.AbstractSampleAdapter;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.ThreadPool;
@@ -37,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * the samples to an array of floats using the specified adapter.  Dispatches float arrays to the registered
  * buffer listener.
  */
-public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
+public class MixerReader<T> implements Runnable
 {
     private final static Logger mLog = LoggerFactory.getLogger(MixerReader.class);
 
@@ -48,14 +50,14 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     private AtomicBoolean mRunning = new AtomicBoolean();
     private ScheduledFuture mScheduledFuture;
     private int mBytesRead;
-    private AbstractSampleAdapter<T> mSampleAdapter;
-    private Listener<T> mReusableBufferListener;
+    private ISampleAdapter<T> mSampleAdapter;
+    private Listener<T> mListener;
     private Listener<SourceEvent> mSourceEventListener;
     private AudioFormat mAudioFormat;
     private HeartbeatManager mHeartbeatManager;
 
     public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine,
-                       AbstractSampleAdapter<T> abstractSampleAdapter, HeartbeatManager heartbeatManager)
+                       ISampleAdapter<T> abstractSampleAdapter, HeartbeatManager heartbeatManager)
     {
         mTargetDataLine = targetDataLine;
         mAudioFormat = audioFormat;
@@ -66,7 +68,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
         mBufferSize = (int)(mAudioFormat.getSampleRate() * 0.1) * mAudioFormat.getFrameSize();
     }
 
-    public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine, AbstractSampleAdapter<T> abstractSampleAdapter)
+    public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine, ISampleAdapter<T> abstractSampleAdapter)
     {
         this(audioFormat, targetDataLine, abstractSampleAdapter, new HeartbeatManager());
     }
@@ -210,9 +212,9 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
                     //Sample adapter automatically sets initial listener count to one.
                     T reusableBuffer = mSampleAdapter.convert(mBuffer);
 
-                    if(reusableBuffer != null && mReusableBufferListener != null)
+                    if(reusableBuffer != null && mListener != null)
                     {
-                        mReusableBufferListener.receive(reusableBuffer);
+                        mListener.receive(reusableBuffer);
                     }
                 }
                 else if(mBytesRead > 0)
@@ -220,9 +222,9 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
                     //Sample adapter automatically sets initial listener count to one.
                     T reusableBuffer = mSampleAdapter.convert(Arrays.copyOf(mBuffer, mBytesRead));
 
-                    if(reusableBuffer != null && mReusableBufferListener != null)
+                    if(reusableBuffer != null && mListener != null)
                     {
-                        mReusableBufferListener.receive(reusableBuffer);
+                        mListener.receive(reusableBuffer);
                     }
                 }
             }
@@ -247,7 +249,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
      */
     public void setBufferListener(Listener<T> listener)
     {
-        mReusableBufferListener = listener;
+        mListener = listener;
     }
 
     /**
@@ -255,7 +257,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
      */
     public void removeBufferListener()
     {
-        mReusableBufferListener = null;
+        mListener = null;
     }
 
     /**
@@ -296,7 +298,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     {
         stop();
         mHeartbeatManager = null;
-        mReusableBufferListener = null;
+        mListener = null;
         mSourceEventListener = null;
     }
 }

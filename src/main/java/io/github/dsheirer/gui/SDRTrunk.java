@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,10 @@ import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
+import io.github.dsheirer.gui.preference.CalibrateRequest;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
@@ -55,6 +58,9 @@ import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import javafx.application.Platform;
+import javafx.scene.control.ButtonType;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
@@ -62,24 +68,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JSeparator;
-import javax.swing.KeyStroke;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.plaf.metal.MetalLookAndFeel;
-import java.awt.AWTException;
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.Point;
-import java.awt.Robot;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -92,6 +85,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class SDRTrunk implements Listener<TunerEvent>
 {
@@ -170,6 +164,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
         mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+
+        CalibrationManager calibrationManager = CalibrationManager.getInstance(mUserPreferences);
+        final boolean calibrating = !calibrationManager.isCalibrated() &&
+            !mUserPreferences.getVectorCalibrationPreference().isHideCalibrationDialog();
+
         new ChannelSelectionManager(mPlaylistManager.getChannelModel());
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mUserPreferences);
@@ -215,7 +214,29 @@ public class SDRTrunk implements Listener<TunerEvent>
             try
             {
                 mMainGui.setVisible(true);
-                autoStartChannels();
+
+                if(calibrating)
+                {
+                    Platform.runLater(() ->
+                    {
+                        CalibrationDialog calibrationDialog = mJavaFxWindowManager.getCalibrationDialog(mUserPreferences);
+                        Optional<ButtonType> calibrate = calibrationDialog.showAndWait();
+                        if(calibrate.isPresent() && calibrate.get().getText().equals("Calibrate"))
+                        {
+                            //Request focus and execute calibration
+                            MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.VECTOR_CALIBRATION));
+                            MyEventBus.getGlobalEventBus().post(new CalibrateRequest());
+                        }
+                        else
+                        {
+                            autoStartChannels();
+                        }
+                    });
+                }
+                else
+                {
+                    autoStartChannels();
+                }
             }
             catch(Exception e)
             {

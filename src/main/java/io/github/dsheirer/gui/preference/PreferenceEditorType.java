@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ public enum PreferenceEditorType
     AUDIO_DUPLICATE_CALL_DETECTION("Duplicate Calls"),
     SOURCE_TUNER_CHANNELIZER("Tuner Channelizer"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
+    VECTOR_CALIBRATION("Vector Calibration"),
     DEFAULT("Default");
 
     private String mLabel;

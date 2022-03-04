@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,11 +38,11 @@ import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -173,20 +173,15 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
      *
      * @param buffer to process into a stream of dibits for processing.
      */
-    public void receive(ReusableByteBuffer buffer)
+    public void receive(ByteBuffer buffer)
     {
-        //Updates current timestamp to the timestamp from the incoming buffer
-        setCurrentTime(buffer.getTimestamp());
-
-        for(byte value : buffer.getBytes())
+        for(byte value : buffer.array())
         {
             for(int x = 0; x <= 3; x++)
             {
                 receive(Dibit.parse(value, x));
             }
         }
-
-        buffer.decrementUserCount();
     }
 
     /**
@@ -469,7 +464,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
                         {
                             while(reader.hasNext())
                             {
-                                ReusableByteBuffer buffer = reader.next();
+                                ByteBuffer buffer = reader.next();
                                 messageFramer.receive(buffer);
                             }
                         }
@@ -517,7 +512,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
             {
                 while(reader.hasNext())
                 {
-                    ReusableByteBuffer buffer = reader.next();
+                    ByteBuffer buffer = reader.next();
                     messageFramer.receive(buffer);
                 }
             }
