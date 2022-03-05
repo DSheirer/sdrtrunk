@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -33,7 +34,9 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
+import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -229,7 +232,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         resetState();
     }
 
-/**
+    /**
      * Resets any temporal state details
      */
     protected void resetState()
@@ -241,6 +244,22 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             mCurrentCallEvent.end(System.currentTimeMillis());
             broadcast(mCurrentCallEvent);
             mCurrentCallEvent = null;
+        }
+    }
+
+    /**
+     * Processes an identifier collection to harvest Patch Groups to preload when this channel is first starting up.
+     * @param preLoadDataContent containing an identifier collection with optional patch group identifier(s).
+     */
+    @Subscribe
+    public void process(PatchGroupPreLoadDataContent preLoadDataContent)
+    {
+        for(Identifier identifier: preLoadDataContent.getData().getIdentifiers(Role.TO))
+        {
+            if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
+            {
+                mPatchGroupManager.addPatchGroup(patchGroupIdentifier);
+            }
         }
     }
 
@@ -2161,6 +2180,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void start()
     {
+        mPatchGroupManager.clear();
+
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannelType == ChannelType.TRAFFIC)
         {
@@ -2176,5 +2197,6 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     @Override
     public void stop()
     {
+        mPatchGroupManager.clear();
     }
 }

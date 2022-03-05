@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -417,36 +417,46 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     {
         List<Identifier> toIdentifiers = audioRecording.getIdentifierCollection().getIdentifiers(Role.TO);
 
-        if(toIdentifiers.size() >= 1)
+        //Format a patch group first, if there are multiples
+        for(Identifier identifier: toIdentifiers)
         {
-            Identifier to = toIdentifiers.get(0);
-
-            if(to instanceof TalkgroupIdentifier)
+            if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
             {
-                TalkgroupIdentifier talkgroupIdentifier = (TalkgroupIdentifier)to;
+                return format(patchGroupIdentifier);
+            }
+        }
+
+        for(Identifier identifier: toIdentifiers)
+        {
+            if(identifier instanceof TalkgroupIdentifier talkgroupIdentifier)
+            {
                 return String.valueOf(RadioReferenceDecoder.convertToRadioReferenceTalkgroup(talkgroupIdentifier.getValue(),
-                    talkgroupIdentifier.getProtocol()));
+                        talkgroupIdentifier.getProtocol()));
             }
-            else if(to instanceof PatchGroupIdentifier)
+            else if(identifier instanceof RadioIdentifier radioIdentifier)
             {
-                PatchGroup patchGroup = ((PatchGroupIdentifier)to).getValue();
-
-                StringBuilder sb = new StringBuilder();
-                sb.append(patchGroup.getPatchGroup().getValue().toString());
-                for(TalkgroupIdentifier patched: patchGroup.getPatchedGroupIdentifiers())
-                {
-                    sb.append(",").append(patched.getValue());
-                }
-
-                return sb.toString();
-            }
-            else if(to instanceof RadioIdentifier)
-            {
-                return ((RadioIdentifier)to).getValue().toString();
+                return radioIdentifier.getValue().toString();
             }
         }
 
         return "0";
+    }
+
+    /**
+     * Formats a patch group
+     */
+    public static String format(PatchGroupIdentifier patchGroupIdentifier)
+    {
+        PatchGroup patchGroup = patchGroupIdentifier.getValue();
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(patchGroup.getPatchGroup().getValue().toString());
+        for(TalkgroupIdentifier patched: patchGroup.getPatchedGroupIdentifiers())
+        {
+            sb.append(",").append(patched.getValue());
+        }
+
+        return sb.toString();
     }
 
     /**
