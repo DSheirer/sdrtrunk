@@ -96,10 +96,6 @@ public class Dispatcher<E> implements Listener<E>
                 }
             }
         }
-        else
-        {
-            mLog.error("Dispatcher [" + mThreadName + "] received an element when not in a running state - element:" + e.getClass());
-        }
     }
 
     /**
