@@ -184,6 +184,10 @@ runtime {
         println("Skipping OS Image - Windows x86 64-bit JDK was not found at " + jdk_windows_x86_64)
     }
 
+    //jdk.crypto.ec is needed for HTTPS connections (broadcastify calls & map tile server)
+    modules = ['jdk.crypto.ec']
+    additive = true
+
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     imageZip = hasTargetJdk ? file("$buildDir/image/sdr-trunk.zip") : file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
