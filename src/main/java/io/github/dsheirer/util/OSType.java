@@ -73,15 +73,15 @@ public enum OSType
 
         if(os.contains("win"))
         {
-            if(arch.contains("x86") && arch.contains("64"))
+            if(arch.contains("amd64"))
             {
                 return OSType.WINDOWS_X86_64;
             }
-            else if(arch.contains("x86") && arch.contains("32"))
+            else if(arch.contains("x86"))
             {
                 return OSType.WINDOWS_X86_32;
             }
-            else if(arch.contains("aarch") && arch.contains("64"))
+            else if(arch.contains("aarch64"))
             {
                 return OSType.WINDOWS_AARCH_64;
             }
@@ -89,11 +89,11 @@ public enum OSType
 
         if(os.contains("mac") || os.contains("darwin") || os.contains("osx"))
         {
-            if(arch.contains("x86") && arch.contains("64"))
+            if(arch.contains("amd64"))
             {
                 return OSType.OSX_X86_64;
             }
-            else if(arch.contains("aarch") && arch.contains("64"))
+            else if(arch.contains("aarch64"))
             {
                 return OSType.OSX_AARCH_64;
             }
@@ -101,15 +101,15 @@ public enum OSType
 
         if(os.contains("nux") || os.contains("nix") || os.contains("aix"))
         {
-            if(arch.contains("x86") && arch.contains("64"))
+            if(arch.contains("amd64"))
             {
                 return OSType.LINUX_X86_64;
             }
-            else if(arch.contains("x86") && arch.contains("32"))
+            else if(arch.contains("x86"))
             {
                 return OSType.LINUX_X86_32;
             }
-            else if(arch.contains("aarch") && arch.contains("64"))
+            else if(arch.contains("aarch64"))
             {
                 return OSType.LINUX_AARCH_64;
             }
@@ -121,5 +121,4 @@ public enum OSType
 
         return OSType.UNKNOWN;
     }
-    
 }
