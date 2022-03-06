@@ -282,18 +282,25 @@ public class JmbeCreator
 
             switch(osType)
             {
-                case LINUX_32:
+                case LINUX_AARCH_64:
+                    return name.contains("linux") && name.contains("aarch64");
+                case LINUX_ARM_32:
+                    return name.contains("linux") && name.contains("arm32");
+                case LINUX_X86_32:
                     return name.contains("linux") && name.contains("_32");
-                case LINUX_64:
+                case LINUX_X86_64:
                     return name.contains("linux") && name.contains("_64");
-                case OSX_64:
+                case OSX_AARCH_64:
+                    return name.contains("osx") && name.contains("aarch64");
+                case OSX_X86_64:
                     return name.contains("osx") && name.contains("_64");
-                case WINDOWS_32:
+                case WINDOWS_AARCH_64:
+                    return name.contains("windows") && name.contains("aarch64");
+                case WINDOWS_X86_32:
                     return name.contains("windows") && name.contains("_32");
-                case WINDOWS_64:
+                case WINDOWS_X86_64:
                     return name.contains("windows") && name.contains("_64");
                 case UNKNOWN:
-                case OSX_32:
                 default:
                     return false;
             }
