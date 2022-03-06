@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,15 +14,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.convert;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MP3SilenceGenerator implements ISilenceGenerator
@@ -31,47 +30,42 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     public static final int MP3_BIT_RATE = 16;
     public static final boolean CONSTANT_BIT_RATE = false;
 
-    private MP3AudioConverter mGenerator = new MP3AudioConverter(MP3_BIT_RATE, CONSTANT_BIT_RATE);
+    private MP3AudioConverter mMP3AudioConverter;
+    private AudioSampleRate mAudioSampleRate;
     private byte[] mPreviousPartialFrameData;
 
     /**
      * Generates MP3 audio silence frames
      */
-    public MP3SilenceGenerator()
+    public MP3SilenceGenerator(AudioSampleRate audioSampleRate, MP3Setting setting)
     {
+        mAudioSampleRate = audioSampleRate;
+        mMP3AudioConverter = new MP3AudioConverter(audioSampleRate, setting);
     }
 
-    public byte[] generate(long duration)
+    /**
+     * Generates silence frames
+     * @param duration_ms in milliseconds
+     * @return
+     */
+    public List<byte[]> generate(long duration_ms)
     {
-        int length = (int)(duration * 8);   //8000 Hz sample rate
+        double duration_secs = (double)duration_ms / 1000.0;
+
+        //We generate silence at 8000 kHz, because it gets resampled by the silence generator to the target rate
+        int length = (int)(duration_secs * AudioSampleRate.SR_8000.getSampleRate());
 
         List<float[]> silenceBuffers = new ArrayList<>();
-        silenceBuffers.add(new float[length]);
-        byte[] frameData = mGenerator.convert(silenceBuffers);
 
-        frameData = merge(mPreviousPartialFrameData, frameData);
-
-        if(frameData != null && frameData.length > 0)
+        int added = 0;
+        while(added < length)
         {
-            if(frameData.length < 144)
-            {
-                mPreviousPartialFrameData = frameData;
-                return null;
-            }
-            else if((frameData.length % 144) == 0)
-            {
-                mPreviousPartialFrameData = null;
-                return frameData;
-            }
-            else
-            {
-                int integralFrameLength = (int)(frameData.length / 144) * 144;
-                mPreviousPartialFrameData = Arrays.copyOfRange(frameData, integralFrameLength, frameData.length);
-                return Arrays.copyOf(frameData, integralFrameLength);
-            }
+            int chunk = Math.min(length - added, 256);
+            silenceBuffers.add(new float[chunk]);
+            added += chunk;
         }
 
-        return null;
+        return mMP3AudioConverter.convert(silenceBuffers);
     }
 
     private static byte[] merge(byte[] a, byte[] b)
@@ -100,18 +94,23 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     {
         mLog.debug("Starting ...");
 
-        for(long x = 243; x < 500; x ++)
+        MP3SilenceGenerator generator = new MP3SilenceGenerator(AudioSampleRate.SR_44100, MP3Setting.VBR_7);
+
+        int x = 100;
+
+//        for(; x < 1000; x += 10)
+//        {
+        List<byte[]> silenceFrames = generator.generate(x);
+
+        mLog.debug("Generated [" + silenceFrames.size() + "] silence frames");
+
+        for(byte[] silence: silenceFrames)
         {
-            MP3SilenceGenerator generator = new MP3SilenceGenerator();
-
-            byte[] silence = generator.generate(x);
-
-            if(silence != null && silence.length > 0)
-            {
-                mLog.debug("Silence:" + x + " Length:" + silence.length);
-                MP3FrameInspector.inspect(silence);
-            }
+            mLog.debug("Silence:" + x + " Length:" + silence.length);
         }
+
+        MP3FrameInspector.inspect(silenceFrames);
+//        }
 
         mLog.debug("Finished");
     }

@@ -27,6 +27,7 @@ import io.github.dsheirer.preference.duplicate.DuplicateCallDetectionPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.javafx.JavaFxPreferences;
+import io.github.dsheirer.preference.mp3.MP3Preference;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
@@ -60,6 +61,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private DirectoryPreference mDirectoryPreference;
     private DuplicateCallDetectionPreference mDuplicateCallDetectionPreference;
     private JmbeLibraryPreference mJmbeLibraryPreference;
+    private MP3Preference mMP3Preference;
     private PlaybackPreference mPlaybackPreference;
     private PlaylistPreference mPlaylistPreference;
     private RadioReferencePreference mRadioReferencePreference;
@@ -156,6 +158,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * MP3 preferences
+     */
+    public MP3Preference getMP3Preference()
+    {
+        return mMP3Preference;
+    }
+
+    /**
      * Identifier preferences
      */
     public TalkgroupFormatPreference getTalkgroupFormatPreference()
@@ -199,6 +209,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mDirectoryPreference = new DirectoryPreference(this::receive);
         mDuplicateCallDetectionPreference = new DuplicateCallDetectionPreference(this::receive);
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
+        mMP3Preference = new MP3Preference(this::receive);
         mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);

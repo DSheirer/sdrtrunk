@@ -17,24 +17,46 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.audio.convert;
 
 /**
- * Types of preferences
+ * MP3 Channel Mode
+ *
+ * see: http://www.mp3-tech.org/programmer/frame_header.html
  */
-public enum PreferenceType
+public enum ChannelMode
 {
-    CALIBRATION,
-    DECODE_EVENT,
-    DIRECTORY,
-    DUPLICATE_CALL_DETECTION,
-    JMBE_LIBRARY,
-    MP3,
-    MULTI_FREQUENCY,
-    PLAYLIST,
-    PLAYBACK,
-    RADIO_REFERENCE,
-    RECORD,
-    TALKGROUP_FORMAT,
-    TUNER;
+    STEREO("STEREO"),
+    JOINT_STEREO("JOINT STEREO"),
+    DUAL_CHANNEL("DUAL CHANNEL"),
+    MONO("MONO");
+
+    private String mLabel;
+
+    ChannelMode(String label)
+    {
+        mLabel = label;
+    }
+
+    public static ChannelMode fromValue(int value)
+    {
+        switch(value)
+        {
+            case 0:
+                return STEREO;
+            case 1:
+                return JOINT_STEREO;
+            case 2:
+                return DUAL_CHANNEL;
+            case 3:
+            default:
+                return MONO;
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
+    }
 }

@@ -40,6 +40,8 @@ import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageF
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageType;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMetadata;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxProtocolFactory;
+import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -91,9 +93,10 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
      *
      * @param configuration for the Shoutcast V2 stream
      */
-    public ShoutcastV2AudioStreamingBroadcaster(ShoutcastV2Configuration configuration, AliasModel aliasModel)
+    public ShoutcastV2AudioStreamingBroadcaster(ShoutcastV2Configuration configuration, AudioSampleRate audioSampleRate,
+                                                MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration);
+        super(configuration, audioSampleRate, mp3Setting);
         mAliasModel = aliasModel;
     }
 

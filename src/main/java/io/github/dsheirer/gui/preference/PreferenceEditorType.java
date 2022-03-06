@@ -27,6 +27,7 @@ public enum PreferenceEditorType
     CHANNEL_EVENT("Channel Events"),
     DIRECTORY("Directories"),
     JMBE_LIBRARY("JMBE Audio Library"),
+    AUDIO_MP3("MP3"),
     AUDIO_RECORD("Record"),
     AUDIO_OUTPUT("Output/Tones"),
     AUDIO_DUPLICATE_CALL_DETECTION("Duplicate Calls"),

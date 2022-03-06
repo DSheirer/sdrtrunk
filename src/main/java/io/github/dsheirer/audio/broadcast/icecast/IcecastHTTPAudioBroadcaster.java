@@ -20,7 +20,9 @@ package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.audio.convert.AudioSampleRate;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
+import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
@@ -68,9 +70,10 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
      *
      * @param configuration for the Icecast stream
      */
-    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration, AliasModel aliasModel)
+    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration, AudioSampleRate audioSampleRate,
+                                       MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration, aliasModel);
+        super(configuration, audioSampleRate, mp3Setting, aliasModel);
     }
 
     /**

@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,73 +14,53 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.convert;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class MP3FrameInspector
 {
     private final static Logger mLog = LoggerFactory.getLogger(MP3FrameInspector.class);
 
-    public static void inspect(byte[] frames)
+    public static void inspect(List<byte[]> frames)
     {
-        if(frames == null || frames.length == 0)
+        if(frames.isEmpty())
         {
+            mLog.info("No Frame Data!");
             return;
         }
 
-        if(frames.length % 144 != 0)
+        for(byte[] frame: frames)
         {
-            log("Frame byte array not multiple of 144 byte frame size - length:" + frames.length, frames);
-            return;
-        }
+            StringBuilder sb = new StringBuilder();
+            int frameCounter = 0;
 
-        //Check for erroneous frame sync
-        for(int x = 0; x < frames.length - 1; x++)
-        {
-            if(frames[x] == (byte)0xFF && (frames[x + 1] & 0xE0) == 0xE0 && (x % 144) != 0)
+            for(int x = 0; x < frame.length; x++)
             {
-                log("Bad frame sync detected at byte " + x + " in frame " + (x / 144), frames);
-                return;
-            }
-        }
+                if(MP3Header.isValid(frame, x))
+                {
+                    sb.append("\n").append(++frameCounter).append(": ");
+                    sb.append(MP3Header.inspect(frame, x)).append(" - ");
+                }
 
-        //Check MP3 headers
-
-//        log("Frames ...", frames);
-    }
-
-    private static void log(String message, byte[] frames)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append(message).append("\n");
-
-        int frameCounter = 0;
-        sb.append(frameCounter++).append(" ");
-
-        for(int x = 0; x < frames.length; x++)
-        {
-            if(x > 0 && x % 144 == 0)
-            {
-                sb.append("\n");
-                sb.append(frameCounter++).append(" ");
+                sb.append(String.format("%02X ", frame[x]));
             }
 
-            sb.append(String.format("%02X ", frames[x]));
+            mLog.info(sb.toString());
         }
-
-        mLog.info(sb.toString());
     }
 
     public static void main(String[] args)
     {
         mLog.info("Starting ...");
-        MP3SilenceGenerator gen = new MP3SilenceGenerator();
+        MP3SilenceGenerator gen = new MP3SilenceGenerator(AudioSampleRate.SR_8000, MP3Setting.getDefault());
 
-        byte[] audio = gen.generate(173);
+        List<byte[]> audio = gen.generate(173);
 
         inspect(audio);
 
