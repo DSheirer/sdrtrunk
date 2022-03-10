@@ -26,6 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Real sample buffer resampler
@@ -55,13 +57,58 @@ public class RealResampler
     }
 
     /**
+     * Resample factor (output rate / input rate)
+     */
+    public double getResampleFactor()
+    {
+        return mResampleFactor;
+    }
+
+    /**
+     * Resamples all of the audio packets
+     * @param audioPackets to resample
+     * @return resampled audio packets
+     */
+    public List<float[]> resample(List<float[]> audioPackets)
+    {
+        List<float[]> resampled = new ArrayList<>();
+
+        mResampledListener = resampledAudio -> resampled.add(resampledAudio);
+
+        for(int x = 0; x < audioPackets.size(); x++)
+        {
+            if(x == audioPackets.size() - 1)
+            {
+                resample(audioPackets.get(x), true);
+            }
+            else
+            {
+                resample(audioPackets.get(x));
+            }
+        }
+
+        mResampledListener = null;
+        return resampled;
+    }
+
+    /**
      * Primary input method to the resampler
      * @param samples to resample
      */
     public void resample(float[] samples)
     {
+        resample(samples, false);
+    }
+
+    /**
+     * Primary input method to the resampler
+     * @param samples to resample
+     * @param lastBatch set to true if this is the last set of samples
+     */
+    public void resample(float[] samples, boolean lastBatch)
+    {
         mBufferManager.load(samples);
-        mResampler.process(mResampleFactor, mBufferManager, false);
+        mResampler.process(mResampleFactor, mBufferManager, lastBatch);
     }
 
     /**

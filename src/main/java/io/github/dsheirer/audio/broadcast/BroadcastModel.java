@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast;
 
@@ -34,7 +31,7 @@ import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.ImageIcon;
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -80,6 +77,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
     private BroadcastEventListener mBroadcastEventListener = new BroadcastEventListener();
+    private UserPreferences mUserPreferences;
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
@@ -88,6 +86,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     {
         mAliasModel = aliasModel;
         mIconModel = iconModel;
+        mUserPreferences = userPreferences;
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
@@ -346,7 +345,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 deleteBroadcaster(configuredBroadcast);
             }
 
-            AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration, mAliasModel);
+            AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration,
+                    mAliasModel, mUserPreferences);
 
             if(audioBroadcaster != null)
             {

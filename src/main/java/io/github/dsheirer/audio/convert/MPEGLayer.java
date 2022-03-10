@@ -17,24 +17,46 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.preference;
+package io.github.dsheirer.audio.convert;
 
 /**
- * Types of preferences
+ * MPEG Layer
+ *
+ * see: http://www.mp3-tech.org/programmer/frame_header.html
  */
-public enum PreferenceType
+public enum MPEGLayer
 {
-    CALIBRATION,
-    DECODE_EVENT,
-    DIRECTORY,
-    DUPLICATE_CALL_DETECTION,
-    JMBE_LIBRARY,
-    MP3,
-    MULTI_FREQUENCY,
-    PLAYLIST,
-    PLAYBACK,
-    RADIO_REFERENCE,
-    RECORD,
-    TALKGROUP_FORMAT,
-    TUNER;
+    RESERVED("LAYER-RESERVED"),
+    LAYER3("LAYER-3"),
+    LAYER2("LAYER-2"),
+    LAYER1("LAYER-1");
+
+    private String mLabel;
+
+    MPEGLayer(String label)
+    {
+        mLabel = label;
+    }
+
+    public static MPEGLayer fromValue(int value)
+    {
+        switch(value)
+        {
+            case 1:
+                return LAYER3;
+            case 2:
+                return LAYER2;
+            case 3:
+                return LAYER1;
+            default:
+            case 0:
+                return RESERVED;
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return mLabel;
+    }
 }

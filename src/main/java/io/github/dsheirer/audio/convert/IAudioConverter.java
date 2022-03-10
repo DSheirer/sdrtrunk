@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.convert;
 
 import java.util.List;
@@ -25,11 +25,11 @@ public interface IAudioConverter
     /**
      * Converts the PCM audio packets to converted audio format.  May produce partial audio frame data.
      */
-    public byte[] convert(List<float[]> audioBuffers);
+    List<byte[]> convert(List<float[]> audioBuffers);
 
     /**
      * Finalizes audio conversion by fully converting any partial frames left in the buffer and returning the
      * remaining bytes to produce a full frame.
      */
-    public byte[] flush();
+    List<byte[]> flush();
 }
