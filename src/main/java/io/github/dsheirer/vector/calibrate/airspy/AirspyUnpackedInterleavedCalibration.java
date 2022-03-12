@@ -58,6 +58,8 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
         short[] residualQ = getShortSamples(AirspyBufferIterator.Q_OVERLAP);
 
         //Warm-Up Phase ....
+        mLog.info("AIRSPY UNPACKED INTERLEAVED - VECTOR SIMD LANES PREFERRED: " + FloatVector.SPECIES_PREFERRED.length());
+
         Mean scalarMean = new Mean();
 
         for(int x = 0; x < WARMUP_ITERATIONS; x++)
@@ -225,7 +227,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             AirspyInterleavedBufferIteratorScalar iterator = new AirspyInterleavedBufferIteratorScalar(samples, residualI,
                     residualQ, 0.0f, System.currentTimeMillis());
 
-            while(iterator.hasNext())
+            while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
             {
                 accumulator += iterator.next().samples()[2];
                 count++;
@@ -246,7 +248,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             AirspyInterleavedBufferIteratorVector64Bits iterator = new AirspyInterleavedBufferIteratorVector64Bits(samples, residualI,
                     residualQ, 0.0f, System.currentTimeMillis());
 
-            while(iterator.hasNext())
+            while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
             {
                 accumulator += iterator.next().samples()[2];
                 count++;
@@ -267,7 +269,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             AirspyInterleavedBufferIteratorVector128Bits iterator = new AirspyInterleavedBufferIteratorVector128Bits(samples, residualI,
                     residualQ, 0.0f, System.currentTimeMillis());
 
-            while(iterator.hasNext())
+            while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
             {
                 accumulator += iterator.next().samples()[2];
                 count++;
@@ -288,7 +290,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             AirspyInterleavedBufferIteratorVector256Bits iterator =
                     new AirspyInterleavedBufferIteratorVector256Bits(samples, residualI, residualQ, 0.0f, System.currentTimeMillis());
 
-            while(iterator.hasNext())
+            while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
             {
                 accumulator += iterator.next().samples()[2];
                 count++;
@@ -309,7 +311,7 @@ public class AirspyUnpackedInterleavedCalibration extends Calibration
             AirspyInterleavedBufferIteratorVector512Bits iterator =
                     new AirspyInterleavedBufferIteratorVector512Bits(samples, residualI, residualQ, 0.0f, System.currentTimeMillis());
 
-            while(iterator.hasNext())
+            while(iterator.hasNext() && ((System.currentTimeMillis() - start) < ITERATION_DURATION_MS))
             {
                 accumulator += iterator.next().samples()[2];
                 count++;
