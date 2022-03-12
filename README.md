@@ -55,7 +55,7 @@ sdrtrunk uses the gradle build system. This requires **OpenJDK 17** or higher in
 ### OpenJDK
 There are many vendors producing OpenJDK distributions.  A few that I use are:
 * [Azul Zulu OpenJDK](https://www.azul.com/downloads/?package=jdk)
-* [Bellsoft Liberica OpenJDK](https://www.azul.com/downloads/?package=jdk)
+* [Bellsoft Liberica OpenJDK](https://bell-sw.com/pages/downloads/#/java-17-lts%20/%20current)
 * [SDKMAN](https://sdkman.io/) - Linux Only
 
 Use the gradle wrapper to build the source code:
