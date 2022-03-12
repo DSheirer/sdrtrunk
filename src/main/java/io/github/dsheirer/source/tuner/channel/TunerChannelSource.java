@@ -97,12 +97,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public abstract void setListener(Listener<ComplexSamples> complexSamplesListener);
 
     /**
-     * Commands sub-class to process queued samples and distribute them to the consumer.  This method will be invoked
-     * by an interval timer.
-     */
-//    protected abstract void processSamples();
-
-    /**
      * Tuner channel for this tuner channel source
      */
     public TunerChannel getTunerChannel()
