@@ -525,6 +525,8 @@ public class TunerManager
             default:
                 reason = "SDRTRunk doesn't currently support RTL2832 Dongle with [" + tunerType.toString() +
                     "] tuner for tuner class[" + tunerClass.toString() + "]";
+
+                mLog.info(reason);
                 break;
         }
 
