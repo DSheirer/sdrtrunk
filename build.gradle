@@ -94,7 +94,7 @@ dependencies {
  * This is needed for the JDK17 vector API ... until it moves out of incubation
  */
 tasks.withType(JavaCompile) {
-    options.compilerArgs.add("--add-modules=jdk.incubator.vector")
+    options.compilerArgs.add("--add-modules=jdk.incubator.vector") //Needed while Panama Vector API remains in incubator
 }
 
 application {
@@ -126,83 +126,101 @@ idea {
 }
 
 /**
- * Java Development Kit (JDK) for each target platform can either be used from a local copy, or downloaded from a
- * JDK vendor.  These locations are relative to the author's development workstation.
+ * Runtime target OS and CPU image names.  We append version here so that version details are at end of zip filename.
  */
-def jdk_base = '/home/denny/java_jdks/'
-def jdk_linux_aarch64 = file(jdk_base + 'linux-arm64/jdk-17.0.2-full')
-def jdk_linux_x86_64 = file(jdk_base + 'linux-x64/jdk-17.0.2-full')
-def jdk_osx_x86_64 = file(jdk_base + 'osx-x64/jdk-17.0.2-full.jdk')
-def jdk_osx_aarch64 = file(jdk_base + 'osx-arm64/jdk-17.0.2-full.jdk')
-def jdk_windows_x86_64 = file(jdk_base + 'windows-x64/jdk-17.0.2-full')
-def hasTargetJdk = jdk_linux_x86_64.exists() || jdk_linux_aarch64.exists() || jdk_osx_x86_64.exists() ||
-        jdk_osx_aarch64.exists() || jdk_windows_x86_64.exists()
+String targetLinuxAarch64 = 'linux-aarch64-v' + version
+String targetLinuxX86_64 = 'linux-x86_64-v' + version
+String targetOsxAarch64 = 'osx-aarch64-v' + version
+String targetOsxX86_64 = 'osx-x86_64-v' + version
+String targetWindowsX86_64 = 'windows-x86_64-v' + version
 
 /**
- * Beryx Runtime plugin - adds operating system specific runtime build targets using either an OS-specific JDK
- * found on the local file system or it downloads the JDK from the specified URLs.
+ * Optional pre-downloaded Java Development Kit (JDK) for each target OS and CPU.  These locations are hard-coded to the
+ * author's development environment, but can be changed to your environment if you want to use this build pattern.
+ */
+String jdk_base = '/home/denny/java_jdks/'
+String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-17.0.2-full'
+String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-17.0.2-full'
+String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-17.0.2-full.jdk'
+String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-17.0.2-full.jdk'
+String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-17.0.2-full'
+
+boolean hasTargetJdks = file(jdk_linux_x86_64).exists() || file(jdk_linux_aarch64).exists() ||
+        file(jdk_osx_x86_64).exists() || file(jdk_osx_aarch64).exists() || file(jdk_windows_x86_64).exists()
+
+/**
+ * Auto-download target JDKs.  Defaults to false, or the user can override via the gradle command line by
+ * including this option: '-PdownloadJdks=true'
+ */
+boolean downloadJdks = project.hasProperty('downloadJdks') ? project.getProperty('downloadJdks') : false
+
+/**
+ * Beryx Runtime plugin for creating OS and CPU targeted build(s) of the software.
  *
- * usage: gradle runtimeZip
+ * Option 1: Create a single target build using the locally installed JDK, or optionally create target builds for
+ * all OS and CPU targets when pre-downloaded target JDKs are available (see 'jdk_*' properties above).
+ *
+ *    >: gradle runtimeZip
+ *
+ * Option 2: Create all OS and CPU target builds by automatically downloading all JDKs needed to build the target images
+ *
+ *    >: gradle runtimeZip -PdownloadJdks=true
  */
 runtime {
-    targetPlatform('linux-aarch64-v' + version) {
-        if(jdk_linux_aarch64.exists())
-        {
-            jdkHome = jdk_linux_aarch64
-        }
-        else
-        {
+    //Build by automatically downloading JDKs for the OS and CPU targets
+    if(downloadJdks) {
+        println("Building all runtime images")
+        println("The [ > jre: ] build phase downloads several target JDKs and this may take a while ... please wait")
+        targetPlatform(targetLinuxAarch64) {
             jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-linux-aarch64-full.tar.gz")
         }
-    }
-
-    targetPlatform('linux-x86_64-v' + version) {
-        if(file(jdk_linux_x86_64).exists())
-        {
-            jdkHome = jdk_linux_x86_64
-        }
-        else
-        {
+        targetPlatform(targetLinuxX86_64) {
             jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-linux-amd64-full.tar.gz")
         }
-    }
-
-    targetPlatform('osx-x86_64-v' + version) {
-        if(file(jdk_osx_x86_64).exists())
-        {
-            jdkHome = jdk_osx_x86_64
-        }
-        else
-        {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-macos-amd64-full.tar.gz")
-        }
-    }
-
-    targetPlatform('osx-aarch64-v' + version) {
-        if(file(jdk_osx_aarch64).exists())
-        {
-            jdkHome = jdk_osx_aarch64
-        }
-        else
-        {
+        targetPlatform(targetOsxAarch64) {
             jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-macos-aarch64-full.tar.gz")
         }
-    }
-
-    targetPlatform('windows-x86_64-v' + version) {
-        if(file(jdk_windows_x86_64).exists())
-        {
-            jdkHome = jdk_windows_x86_64
+        targetPlatform(targetOsxX86_64) {
+            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-macos-amd64-full.tar.gz")
         }
-        else
-        {
+        targetPlatform(targetWindowsX86_64) {
             jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-windows-amd64-full.zip")
         }
     }
+    //Build using pre-downloaded JDKs
+    else if(hasTargetJdks) {
+        println("Building all runtime images using pre-downloaded JDKs")
+        if(file(jdk_linux_aarch64).exists()) {
+            targetPlatform(targetLinuxAarch64, jdk_linux_aarch64)
+        }
+        if(file(jdk_linux_x86_64).exists()) {
+            targetPlatform(targetLinuxX86_64, jdk_linux_x86_64)
+        }
+        if(file(jdk_osx_aarch64).exists()) {
+            targetPlatform(targetOsxAarch64, jdk_osx_aarch64)
+        }
+        if(file(jdk_osx_x86_64).exists()) {
+            targetPlatform(targetOsxX86_64, jdk_osx_x86_64)
+        }
+        if(file(jdk_windows_x86_64).exists()) {
+            targetPlatform(targetWindowsX86_64, jdk_windows_x86_64)
+        }
+    }
+    //Build using locally installed JDK only
+    else {
+        println("Building a single runtime image using locally installed JDK")
+    }
 
-    //jdk.crypto.ec is needed for HTTPS connections (broadcastify calls & map tile server)
-    modules = ['jdk.crypto.ec']
+    //Additional modules to include with auto-detected modules.
+    modules = ['jdk.crypto.ec'] //jdk.crypto.ec needed for HTTPS connections (broadcastify calls & map tile server)
+
+    //Use auto-detected modules and 'add' any specified modules.
     additive = true
+
+    //Recommended options for reducing/shrinking runtime target image size
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
-    imageZip = hasTargetJdk ? file("$buildDir/image/sdr-trunk.zip") : file("$buildDir/image/sdr-trunk-" + version + ".zip")
+
+    //Runtime images have auto appended version in image zip name.  Override to include version in single target image.
+    imageZip = (hasTargetJdks | downloadJdks) ? file("$buildDir/image/sdr-trunk.zip") :
+            file("$buildDir/image/sdr-trunk-" + version + ".zip")
 }
