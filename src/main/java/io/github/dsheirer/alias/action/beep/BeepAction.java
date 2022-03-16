@@ -71,7 +71,7 @@ public class BeepAction extends RecurringAction
 	@Override
 	public void performAction(Alias alias, IMessage message )
 	{
-		DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO);
+		DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
 		if(!AudioSystem.isLineSupported(info))
 		{
@@ -82,7 +82,7 @@ public class BeepAction extends RecurringAction
 		try
 		{
 			Clip clip = (Clip)AudioSystem.getLine(info);
-			clip.open(AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO, mToneBytes, 0, mToneBytes.length);
+			clip.open(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, mToneBytes, 0, mToneBytes.length);
 			clip.start();
 		}
 		catch(Exception e)

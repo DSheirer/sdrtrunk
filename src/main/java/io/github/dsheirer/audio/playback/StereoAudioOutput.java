@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.playback;
 
 import io.github.dsheirer.audio.AudioFormats;
@@ -36,7 +36,7 @@ public class StereoAudioOutput extends AudioOutput
 
     public StereoAudioOutput(Mixer mixer, MixerChannel channel, UserPreferences userPreferences)
     {
-        super(mixer, channel, AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO, AudioFormats.STEREO_SOURCE_DATALINE_INFO,
+        super(mixer, channel, AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO, AudioFormats.STEREO_SOURCE_DATALINE_INFO,
             BUFFER_SIZE, userPreferences);
     }
 

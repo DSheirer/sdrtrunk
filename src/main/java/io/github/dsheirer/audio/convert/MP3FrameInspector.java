@@ -58,7 +58,7 @@ public class MP3FrameInspector
     public static void main(String[] args)
     {
         mLog.info("Starting ...");
-        MP3SilenceGenerator gen = new MP3SilenceGenerator(AudioSampleRate.SR_8000, MP3Setting.getDefault());
+        MP3SilenceGenerator gen = new MP3SilenceGenerator(InputAudioFormat.SR_8000, MP3Setting.getDefault());
 
         List<byte[]> audio = gen.generate(173);
 

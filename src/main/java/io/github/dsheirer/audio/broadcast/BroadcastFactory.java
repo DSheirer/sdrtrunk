@@ -30,9 +30,9 @@ import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcast
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
-import io.github.dsheirer.audio.convert.AudioSampleRate;
 import io.github.dsheirer.audio.convert.IAudioConverter;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.audio.convert.MP3SilenceGenerator;
@@ -55,29 +55,29 @@ public class BroadcastFactory
     {
         if(configuration != null)
         {
-            AudioSampleRate audioSampleRate = userPreferences.getMP3Preference().getAudioSampleRate();
+            InputAudioFormat inputAudioFormat = userPreferences.getMP3Preference().getAudioSampleRate();
             MP3Setting mp3Setting = userPreferences.getMP3Preference().getMP3Setting();
 
             switch(configuration.getBroadcastServerType())
             {
                 case BROADCASTIFY_CALL:
                     return new BroadcastifyCallBroadcaster((BroadcastifyCallConfiguration)configuration,
-                            audioSampleRate, mp3Setting, aliasModel);
+                            inputAudioFormat, mp3Setting, aliasModel);
                 case BROADCASTIFY:
                     return new IcecastTCPAudioBroadcaster((BroadcastifyFeedConfiguration) configuration,
-                            audioSampleRate, mp3Setting, aliasModel);
+                            inputAudioFormat, mp3Setting, aliasModel);
                 case ICECAST_TCP:
-                    return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration, audioSampleRate,
+                    return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration, inputAudioFormat,
                             mp3Setting, aliasModel);
                 case ICECAST_HTTP:
-                    return new IcecastHTTPAudioBroadcaster((IcecastHTTPConfiguration) configuration, audioSampleRate,
+                    return new IcecastHTTPAudioBroadcaster((IcecastHTTPConfiguration) configuration, inputAudioFormat,
                             mp3Setting, aliasModel);
                 case SHOUTCAST_V1:
-                    return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration, audioSampleRate,
+                    return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration, inputAudioFormat,
                             mp3Setting, aliasModel);
                 case SHOUTCAST_V2:
                     return new ShoutcastV2AudioStreamingBroadcaster((ShoutcastV2Configuration) configuration,
-                            audioSampleRate, mp3Setting, aliasModel);
+                            inputAudioFormat, mp3Setting, aliasModel);
                 case UNKNOWN:
                 default:
                     mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
@@ -94,13 +94,13 @@ public class BroadcastFactory
      * @param configuration containing the requested output audio format
      * @return audio convert or null
      */
-    public static IAudioConverter getAudioConverter(BroadcastConfiguration configuration, AudioSampleRate audioSampleRate,
+    public static IAudioConverter getAudioConverter(BroadcastConfiguration configuration, InputAudioFormat inputAudioFormat,
                                                     MP3Setting mp3Setting)
     {
         switch(configuration.getBroadcastFormat())
         {
             case MP3:
-                return new MP3AudioConverter(audioSampleRate, mp3Setting);
+                return new MP3AudioConverter(inputAudioFormat, mp3Setting);
             default:
                 mLog.info("Unrecognized broadcastAudio format: " + configuration.getBroadcastFormat().name());
         }
@@ -140,12 +140,12 @@ public class BroadcastFactory
         return null;
     }
 
-    public static ISilenceGenerator getSilenceGenerator(BroadcastFormat format, AudioSampleRate audioSampleRate, MP3Setting mp3Setting)
+    public static ISilenceGenerator getSilenceGenerator(BroadcastFormat format, InputAudioFormat inputAudioFormat, MP3Setting mp3Setting)
     {
         switch(format)
         {
             case MP3:
-                return new MP3SilenceGenerator(audioSampleRate, mp3Setting);
+                return new MP3SilenceGenerator(inputAudioFormat, mp3Setting);
             default:
                 throw new IllegalArgumentException("Unrecognized broadcast format [" + format +
                     "] can't create silence generator");

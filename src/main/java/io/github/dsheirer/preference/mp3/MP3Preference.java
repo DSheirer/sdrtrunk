@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.preference.mp3;
 
-import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
@@ -38,7 +38,7 @@ public class MP3Preference extends Preference
     private static final String PREFERENCE_KEY_AUDIO_MP3_SAMPLE_RATE = "audio.mp3.sample.rate";
     private final static Logger mLog = LoggerFactory.getLogger(MP3Preference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(MP3Preference.class);
-    private AudioSampleRate mAudioSampleRate;
+    private InputAudioFormat mInputAudioFormat;
     private MP3Setting mMP3Setting;
 
     /**
@@ -96,36 +96,36 @@ public class MP3Preference extends Preference
     /**
      * Preferred audio sample rate for input to the LAME MP3 encoder
      */
-    public AudioSampleRate getAudioSampleRate()
+    public InputAudioFormat getAudioSampleRate()
     {
-        if(mAudioSampleRate == null)
+        if(mInputAudioFormat == null)
         {
             try
             {
-                String rate = mPreferences.get(PREFERENCE_KEY_AUDIO_MP3_SAMPLE_RATE, AudioSampleRate.getDefault().name());
-                mAudioSampleRate = AudioSampleRate.valueOf(rate);
+                String rate = mPreferences.get(PREFERENCE_KEY_AUDIO_MP3_SAMPLE_RATE, InputAudioFormat.getDefault().name());
+                mInputAudioFormat = InputAudioFormat.valueOf(rate);
             }
             catch(Exception e)
             {
                 mLog.error("Error parsing mp3 setting preference", e);
             }
 
-            if(mAudioSampleRate == null)
+            if(mInputAudioFormat == null)
             {
-                mAudioSampleRate = AudioSampleRate.getDefault();
+                mInputAudioFormat = InputAudioFormat.getDefault();
             }
         }
 
-        return mAudioSampleRate;
+        return mInputAudioFormat;
     }
 
     /**
      * Sets the input Audio Sample Rate preference
      */
-    public void setAudioSampleRate(AudioSampleRate audioSampleRate)
+    public void setAudioSampleRate(InputAudioFormat inputAudioFormat)
     {
-        mAudioSampleRate = audioSampleRate;
-        mPreferences.put(PREFERENCE_KEY_AUDIO_MP3_SAMPLE_RATE, mAudioSampleRate.name());
+        mInputAudioFormat = inputAudioFormat;
+        mPreferences.put(PREFERENCE_KEY_AUDIO_MP3_SAMPLE_RATE, mInputAudioFormat.name());
         notifyPreferenceUpdated();
     }
 }

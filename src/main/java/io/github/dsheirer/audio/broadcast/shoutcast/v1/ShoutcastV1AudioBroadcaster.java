@@ -22,7 +22,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
-import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
@@ -63,10 +63,10 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
      *
      * @param configuration for the Shoutcast stream
      */
-    public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration, AudioSampleRate audioSampleRate,
+    public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration, InputAudioFormat inputAudioFormat,
                                        MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration, audioSampleRate, mp3Setting);
+        super(configuration, inputAudioFormat, mp3Setting);
         mAliasModel = aliasModel;
     }
 

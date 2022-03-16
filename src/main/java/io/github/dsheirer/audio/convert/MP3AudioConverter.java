@@ -32,6 +32,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Converts PCM audio packets to Mono, MP3 encoded audio
+ */
 public class MP3AudioConverter implements IAudioConverter
 {
     private final static Logger mLog = LoggerFactory.getLogger( MP3AudioConverter.class );
@@ -40,25 +43,33 @@ public class MP3AudioConverter implements IAudioConverter
     private RealResampler mResampler;
     private ByteArrayOutputStream mMP3EncodedFramesStream = new ByteArrayOutputStream();
     private byte[] mOutputFramesBuffer;
+    private InputAudioFormat mInputAudioFormat;
 
     /**
-     * Converts PCM 16-bit Little Endian audio packets to Mono, MP3 compressed audio.
+     * Constructs an instance.
      *
-     * @param audioSampleRate for the desired input sample rate (resampled from default 8 kHz as needed)
+     * @param inputAudioFormat for the desired input sample rate and bit size (resampled from default 8 kHz as needed)
      * @param setting to configure the LAME encoder
      */
-    public MP3AudioConverter(AudioSampleRate audioSampleRate, MP3Setting setting)
+    public MP3AudioConverter(InputAudioFormat inputAudioFormat, MP3Setting setting)
     {
-        mEncoder = LameFactory.getLameEncoder(audioSampleRate, setting);
+        mInputAudioFormat = inputAudioFormat;
+        mEncoder = LameFactory.getLameEncoder(inputAudioFormat, setting);
 
-        if(audioSampleRate != AudioSampleRate.SR_8000)
+        //Resampling is only required if desired input sample rate is not system default of 8kHz
+        if(inputAudioFormat != InputAudioFormat.SR_8000 && inputAudioFormat != InputAudioFormat.SR_32_8000)
         {
-            mResampler = LameFactory.getResampler(audioSampleRate);
+            mResampler = LameFactory.getResampler(inputAudioFormat);
         }
 
         mOutputFramesBuffer = new byte[mEncoder.getPCMBufferSize()];
     }
 
+    /**
+     * Converts the list of PCM audio packets to MP3 encoded.
+     * @param audioPackets of PCM audio sampled at 8 kHz
+     * @return encoded MP3 audio
+     */
     public List<byte[]> convert(List<float[]> audioPackets)
     {
         List<byte[]> converted = new ArrayList<>();
@@ -70,7 +81,17 @@ public class MP3AudioConverter implements IAudioConverter
 
         for(int x = 0; x < audioPackets.size(); x++)
         {
-            byte[] bytesToEncode = ConversionUtils.convertToSigned16BitSamples(audioPackets.get(x)).array();
+            byte[] bytesToEncode = null;
+
+            if(mInputAudioFormat.getAudioFormat().getSampleSizeInBits() == 16)
+            {
+                bytesToEncode = ConversionUtils.convertToSigned16BitSamples(audioPackets.get(x)).array();
+            }
+            else
+            {
+                bytesToEncode = ConversionUtils.convertToSigned32BitSamples(audioPackets.get(x)).array();
+            }
+
             int bytesToEncodePointer = 0;
 
             int inputChunkSize = FastMath.min(mOutputFramesBuffer.length, bytesToEncode.length);

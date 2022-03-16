@@ -36,7 +36,7 @@ public class MonoAudioOutput extends AudioOutput
 
     public MonoAudioOutput(Mixer mixer, UserPreferences userPreferences)
     {
-        super(mixer, MixerChannel.MONO, AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO,
+        super(mixer, MixerChannel.MONO, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO,
             AudioFormats.MONO_SOURCE_DATALINE_INFO, BUFFER_SIZE, userPreferences);
     }
 

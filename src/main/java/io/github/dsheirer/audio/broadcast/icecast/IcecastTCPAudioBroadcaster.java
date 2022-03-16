@@ -21,7 +21,7 @@ package io.github.dsheirer.audio.broadcast.icecast;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.icecast.codec.IcecastCodecFactory;
-import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.properties.SystemProperties;
@@ -68,10 +68,10 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
      *
      * @param configuration for the Icecast stream
      */
-    public IcecastTCPAudioBroadcaster(IcecastTCPConfiguration configuration, AudioSampleRate audioSampleRate,
+    public IcecastTCPAudioBroadcaster(IcecastTCPConfiguration configuration, InputAudioFormat inputAudioFormat,
                                       MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration, audioSampleRate, mp3Setting, aliasModel);
+        super(configuration, inputAudioFormat, mp3Setting, aliasModel);
     }
 
     /**

@@ -22,7 +22,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
-import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 
 public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
@@ -30,10 +30,10 @@ public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
     private IBroadcastMetadataUpdater mMetadataUpdater;
     private AliasModel mAliasModel;
 
-    public IcecastAudioBroadcaster(BroadcastConfiguration broadcastConfiguration, AudioSampleRate audioSampleRate,
+    public IcecastAudioBroadcaster(BroadcastConfiguration broadcastConfiguration, InputAudioFormat inputAudioFormat,
                                    MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(broadcastConfiguration, audioSampleRate, mp3Setting);
+        super(broadcastConfiguration, inputAudioFormat, mp3Setting);
         mAliasModel = aliasModel;
     }
 

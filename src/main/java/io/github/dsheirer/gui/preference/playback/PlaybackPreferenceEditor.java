@@ -407,7 +407,7 @@ public class PlaybackPreferenceEditor extends HBox
 
             byte[] bytes = buffer.array();
 
-            DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO);
+            DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
             if(!AudioSystem.isLineSupported(info))
             {
@@ -418,7 +418,7 @@ public class PlaybackPreferenceEditor extends HBox
             try
             {
                 Clip clip = (Clip)AudioSystem.getLine(info);
-                clip.open(AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO, bytes, 0, bytes.length);
+                clip.open(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, bytes, 0, bytes.length);
                 clip.start();
             }
             catch(Exception e)
