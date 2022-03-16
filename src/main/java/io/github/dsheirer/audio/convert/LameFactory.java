@@ -34,7 +34,7 @@ public class LameFactory
      * @param setting to apply to the encoder
      * @return lame encoder
      */
-    public static LameEncoder getLameEncoder(AudioSampleRate input, MP3Setting setting)
+    public static LameEncoder getLameEncoder(InputAudioFormat input, MP3Setting setting)
     {
         return switch(setting)
         {
@@ -52,13 +52,13 @@ public class LameFactory
      * @param sampleRate to resample to
      * @return resampler.
      */
-    public static RealResampler getResampler(AudioSampleRate sampleRate)
+    public static RealResampler getResampler(InputAudioFormat sampleRate)
     {
         return switch(sampleRate)
         {
-            case SR_16000 -> new RealResampler(8000, 16000, 4096, 512);
-            case SR_22050 -> new RealResampler(8000, 22050, 4096, 512);
-            case SR_44100 -> new RealResampler(8000, 44100, 4096, 512);
+            case SR_16000, SR_32_16000 -> new RealResampler(8000, 16000, 4096, 512);
+            case SR_22050, SR_32_22050 -> new RealResampler(8000, 22050, 4096, 512);
+            case SR_44100, SR_32_44100 -> new RealResampler(8000, 44100, 4096, 512);
             default -> throw new IllegalArgumentException("Unrecognized sample rate for resampling: " + sampleRate);
         };
     }

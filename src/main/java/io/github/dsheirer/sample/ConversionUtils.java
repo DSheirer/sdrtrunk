@@ -66,7 +66,48 @@ public class ConversionUtils
 
         for(float sample : samples)
         {
-            converted.putShort((short)(sample * Short.MAX_VALUE));
+            if(sample > 1.0f)
+            {
+                converted.putShort(Short.MAX_VALUE);
+            }
+            else if(sample < -1.0f)
+            {
+                converted.putShort((short)-Short.MAX_VALUE);
+            }
+            else
+            {
+                converted.putShort((short)(sample * Short.MAX_VALUE));
+            }
+        }
+
+        return converted;
+    }
+
+    /**
+     * Converts the float samples into a little-endian 32-bit sample byte buffer.
+     *
+     * @param samples - float array of sample data
+     * @return - little-endian 32-bit sample byte buffer
+     */
+    public static ByteBuffer convertToSigned32BitSamples(float[] samples)
+    {
+        ByteBuffer converted = ByteBuffer.allocate(samples.length * 4);
+        converted.order(ByteOrder.LITTLE_ENDIAN);
+
+        for(float sample : samples)
+        {
+            if(sample > 1.0f)
+            {
+                converted.putInt(Integer.MAX_VALUE);
+            }
+            else if(sample < -1.0f)
+            {
+                converted.putInt(-Integer.MAX_VALUE);
+            }
+            else
+            {
+                converted.putInt((int)(sample * Integer.MAX_VALUE));
+            }
         }
 
         return converted;

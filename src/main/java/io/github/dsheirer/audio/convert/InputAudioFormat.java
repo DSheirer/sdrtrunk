@@ -24,14 +24,19 @@ import io.github.dsheirer.audio.AudioFormats;
 import javax.sound.sampled.AudioFormat;
 
 /**
- * Enumeration of (input) audio sample rates for mono audio.
+ * Enumeration of MP3 input audio formats for mono audio.
  */
-public enum AudioSampleRate
+public enum InputAudioFormat
 {
-    SR_8000(AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO, "8000 Hz (no resample / default)"),
-    SR_16000(AudioFormats.PCM_SIGNED_16_KHZ_16BITS_MONO, "16000 Hz"),
-    SR_22050(AudioFormats.PCM_SIGNED_22050_HZ_16BITS_MONO, "22050 Hz"),
-    SR_44100(AudioFormats.PCM_SIGNED_44100_HZ_16BITS_MONO, "44100 Hz");
+    SR_8000(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, "16-Bit 8000 Hz (no resample)"),
+    SR_16000(AudioFormats.PCM_SIGNED_16000_HZ_16_BIT_MONO, "16-Bit 16000 Hz"),
+    SR_22050(AudioFormats.PCM_SIGNED_22050_HZ_16_BIT_MONO, "16-Bit 22050 Hz (default)"),
+    SR_44100(AudioFormats.PCM_SIGNED_44100_HZ_16_BIT_MONO, "16-Bit 44100 Hz"),
+
+    SR_32_8000(AudioFormats.PCM_SIGNED_8000_HZ_32_BIT_MONO, "32-Bit 8000 Hz (no resample)"),
+    SR_32_16000(AudioFormats.PCM_SIGNED_16000_HZ_32_BIT_MONO, "32-Bit 16000 Hz"),
+    SR_32_22050(AudioFormats.PCM_SIGNED_22050_HZ_32_BIT_MONO, "32-Bit 22050 Hz"),
+    SR_32_44100(AudioFormats.PCM_SIGNED_44100_HZ_32_BIT_MONO, "32-Bit 44100 Hz");
 
     private AudioFormat mAudioFormat;
     private String mLabel;
@@ -40,7 +45,7 @@ public enum AudioSampleRate
      * Constructs an instance
      * @param audioFormat for the specified sample rate
      */
-    AudioSampleRate(AudioFormat audioFormat, String label)
+    InputAudioFormat(AudioFormat audioFormat, String label)
     {
         mAudioFormat = audioFormat;
         mLabel = label;
@@ -49,9 +54,9 @@ public enum AudioSampleRate
     /**
      * Default sample rate
      */
-    public static AudioSampleRate getDefault()
+    public static InputAudioFormat getDefault()
     {
-        return SR_8000;
+        return SR_22050;
     }
 
     /**

@@ -21,7 +21,7 @@ package io.github.dsheirer.record;
 
 import io.github.dsheirer.audio.AudioFormats;
 import io.github.dsheirer.audio.AudioSegment;
-import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.preference.UserPreferences;
@@ -93,10 +93,10 @@ public class AudioSegmentRecorder
             outputStream.write(id3Bytes);
 
             //Convert audio to MP3 and write to file
-            AudioSampleRate audioSampleRate = userPreferences.getMP3Preference().getAudioSampleRate();
+            InputAudioFormat inputAudioFormat = userPreferences.getMP3Preference().getAudioSampleRate();
             MP3Setting mp3Setting = userPreferences.getMP3Preference().getMP3Setting();
 
-            MP3AudioConverter converter = new MP3AudioConverter(audioSampleRate, mp3Setting);
+            MP3AudioConverter converter = new MP3AudioConverter(inputAudioFormat, mp3Setting);
             List<byte[]> mp3Frames = converter.convert(audioSegment.getAudioBuffers());
             for(byte[] mp3Frame: mp3Frames)
             {
@@ -128,7 +128,7 @@ public class AudioSegmentRecorder
     {
         if(audioSegment.hasAudio())
         {
-            WaveWriter writer = new WaveWriter(AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO, path);
+            WaveWriter writer = new WaveWriter(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, path);
 
             for(float[] audioBuffer: audioSegment.getAudioBuffers())
             {

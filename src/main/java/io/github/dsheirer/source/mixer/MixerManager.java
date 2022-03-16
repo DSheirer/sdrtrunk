@@ -76,7 +76,7 @@ public class MixerManager
                         if(channel == MixerChannel.MONO)
                         {
                             DataLine.Info info = new DataLine.Info(TargetDataLine.class,
-                                AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO);
+                                AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
                             TargetDataLine dataLine;
 
@@ -86,7 +86,7 @@ public class MixerManager
 
                                 if(dataLine != null)
                                 {
-                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO,
+                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO,
                                         new RealShortAdapter());
                                 }
                             }
@@ -100,7 +100,7 @@ public class MixerManager
                         else //STEREO
                         {
                             DataLine.Info info = new DataLine.Info(TargetDataLine.class,
-                                    AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
+                                    AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO);
 
                             TargetDataLine dataLine;
 
@@ -110,7 +110,7 @@ public class MixerManager
 
                                 if(dataLine != null)
                                 {
-                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO,
+                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO,
                                         new RealChannelShortAdapter(mixerConfig.getChannel()));
                                 }
                             }
@@ -302,12 +302,12 @@ public class MixerManager
     private static EnumSet<MixerChannel> getSupportedTargetChannels(Mixer mixer)
     {
         DataLine.Info stereoInfo = new DataLine.Info(TargetDataLine.class,
-                AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
+                AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO);
 
         boolean stereoSupported = mixer.isLineSupported(stereoInfo);
 
         DataLine.Info monoInfo = new DataLine.Info(TargetDataLine.class,
-                AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO);
+                AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
         boolean monoSupported = mixer.isLineSupported(monoInfo);
 
@@ -337,11 +337,11 @@ public class MixerManager
         List<MixerChannel> channels = new ArrayList<>();
 
         DataLine.Info stereoInfo = new DataLine.Info(SourceDataLine.class,
-                AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
+                AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO);
 
         boolean stereoSupported = mixer.isLineSupported(stereoInfo);
 
-        DataLine.Info monoInfo = new DataLine.Info(SourceDataLine.class, AudioFormats.PCM_SIGNED_8_KHZ_16BITS_MONO);
+        DataLine.Info monoInfo = new DataLine.Info(SourceDataLine.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
         boolean monoSupported = mixer.isLineSupported(monoInfo);
 

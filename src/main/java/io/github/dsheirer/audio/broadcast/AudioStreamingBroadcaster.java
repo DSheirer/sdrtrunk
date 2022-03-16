@@ -18,8 +18,8 @@
  */
 package io.github.dsheirer.audio.broadcast;
 
-import io.github.dsheirer.audio.convert.AudioSampleRate;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.util.ThreadPool;
@@ -73,13 +73,13 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
      * The last audio packet's metadata is automatically attached to the closed audio recording when it is enqueued for
      * broadcast.  That metadata will be updated on the remote server once the audio recording is opened for streaming.
      */
-    public AudioStreamingBroadcaster(T broadcastConfiguration, AudioSampleRate audioSampleRate, MP3Setting mp3Setting)
+    public AudioStreamingBroadcaster(T broadcastConfiguration, InputAudioFormat inputAudioFormat, MP3Setting mp3Setting)
     {
         super(broadcastConfiguration);
         mDelay = getBroadcastConfiguration().getDelay();
         mMaximumRecordingAge = getBroadcastConfiguration().getMaximumRecordingAge();
         mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat(),
-                audioSampleRate, mp3Setting);
+                inputAudioFormat, mp3Setting);
     }
 
     public void dispose()

@@ -31,16 +31,16 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     public static final boolean CONSTANT_BIT_RATE = false;
 
     private MP3AudioConverter mMP3AudioConverter;
-    private AudioSampleRate mAudioSampleRate;
+    private InputAudioFormat mInputAudioFormat;
     private byte[] mPreviousPartialFrameData;
 
     /**
      * Generates MP3 audio silence frames
      */
-    public MP3SilenceGenerator(AudioSampleRate audioSampleRate, MP3Setting setting)
+    public MP3SilenceGenerator(InputAudioFormat inputAudioFormat, MP3Setting setting)
     {
-        mAudioSampleRate = audioSampleRate;
-        mMP3AudioConverter = new MP3AudioConverter(audioSampleRate, setting);
+        mInputAudioFormat = inputAudioFormat;
+        mMP3AudioConverter = new MP3AudioConverter(inputAudioFormat, setting);
     }
 
     /**
@@ -53,7 +53,7 @@ public class MP3SilenceGenerator implements ISilenceGenerator
         double duration_secs = (double)duration_ms / 1000.0;
 
         //We generate silence at 8000 kHz, because it gets resampled by the silence generator to the target rate
-        int length = (int)(duration_secs * AudioSampleRate.SR_8000.getSampleRate());
+        int length = (int)(duration_secs * InputAudioFormat.SR_8000.getSampleRate());
 
         List<float[]> silenceBuffers = new ArrayList<>();
 
@@ -94,7 +94,7 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     {
         mLog.debug("Starting ...");
 
-        MP3SilenceGenerator generator = new MP3SilenceGenerator(AudioSampleRate.SR_44100, MP3Setting.VBR_7);
+        MP3SilenceGenerator generator = new MP3SilenceGenerator(InputAudioFormat.SR_44100, MP3Setting.VBR_7);
 
         int x = 100;
 

@@ -19,7 +19,7 @@
 
 package io.github.dsheirer.gui.preference.mp3;
 
-import io.github.dsheirer.audio.convert.AudioSampleRate;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.mp3.MP3Preference;
@@ -43,7 +43,7 @@ public class MP3PreferenceEditor extends HBox
     private MP3Preference mMP3Preference;
     private GridPane mEditorPane;
     private ComboBox<MP3Setting> mMP3SettingComboBox;
-    private ComboBox<AudioSampleRate> mAudioSampleRateComboBox;
+    private ComboBox<InputAudioFormat> mAudioSampleRateComboBox;
 
     public MP3PreferenceEditor(UserPreferences userPreferences)
     {
@@ -96,12 +96,12 @@ public class MP3PreferenceEditor extends HBox
         return mMP3SettingComboBox;
     }
 
-    private ComboBox<AudioSampleRate> getAudioSampleRateComboBox()
+    private ComboBox<InputAudioFormat> getAudioSampleRateComboBox()
     {
         if(mAudioSampleRateComboBox == null)
         {
             mAudioSampleRateComboBox = new ComboBox<>();
-            mAudioSampleRateComboBox.getItems().addAll(AudioSampleRate.values());
+            mAudioSampleRateComboBox.getItems().addAll(InputAudioFormat.values());
             mAudioSampleRateComboBox.getSelectionModel().select(mMP3Preference.getAudioSampleRate());
             mAudioSampleRateComboBox.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) -> mMP3Preference.setAudioSampleRate(newValue));
