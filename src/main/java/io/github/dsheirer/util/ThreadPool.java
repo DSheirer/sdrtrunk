@@ -30,7 +30,7 @@ public class ThreadPool
 {
     private final static Logger mLog = LoggerFactory.getLogger(ThreadPool.class);
     public static ScheduledExecutorService SCHEDULED =
-            Executors.newScheduledThreadPool(2, new NamingThreadFactory("sdrtrunk scheduled"));
+            Executors.newScheduledThreadPool(4, new NamingThreadFactory("sdrtrunk scheduled"));
     public static ExecutorService CACHED =
             Executors.newCachedThreadPool(new NamingThreadFactory("sdrtrunk cached"));
 
