@@ -25,17 +25,17 @@ import java.nio.ByteBuffer;
 public interface IByteBufferProvider
 {
     /**
-     * Adds the listener to receive complex buffer samples
+     * Adds the listener to receive byte buffer samples
      */
     void setBufferListener(Listener<ByteBuffer> listener);
 
     /**
-     * Removes the listener from receiving complex buffer samples
+     * Removes the listener from receiving byte buffer samples
      */
     void removeBufferListener(Listener<ByteBuffer> listener);
 
     /**
-     * Indicates if there are any complex buffer listeners registered
+     * Indicates if there are any byte buffer listeners registered
      */
     boolean hasBufferListeners();
 }

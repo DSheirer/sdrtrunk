@@ -105,7 +105,7 @@ public class WaveWriter implements AutoCloseable
      */
     public WaveWriter(AudioFormat format, Path file) throws IOException
     {
-        this(format, file, Integer.MAX_VALUE * 2);
+        this(format, file, 0);
     }
 
     /**
