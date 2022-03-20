@@ -21,6 +21,7 @@ plugins {
     id 'java'
     id 'idea'
     id 'org.beryx.runtime' version '1.12.7'
+    id 'org.openjfx.javafxplugin' version '0.0.12'
 }
 
 repositories {
@@ -103,6 +104,12 @@ application {
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-modules=jdk.incubator.vector',   //Needed while Panama Vector API remains in incubator
          '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED'] //Windows Swing - jide-oss library
+}
+
+
+javafx {
+    version = '17'
+    modules = ['javafx.base', 'javafx.controls', 'javafx.graphics', 'javafx.swing']
 }
 
 jar {
