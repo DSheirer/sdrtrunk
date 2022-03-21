@@ -55,6 +55,7 @@ import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -466,7 +467,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         processingChain.start();
 
         //This has to be done on the FX event thread when the playlist editor is constructed
-        Platform.runLater(() -> channel.setProcessing(true));
+        if (!GraphicsEnvironment.isHeadless())
+            Platform.runLater(() -> channel.setProcessing(true));
 
         getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
 
@@ -481,7 +483,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private void stopProcessing(Channel channel) throws ChannelException
     {
         //This has to be done on the FX event thread when the playlist editor is constructed
-        Platform.runLater(() -> channel.setProcessing(false));
+        if (!GraphicsEnvironment.isHeadless())
+            Platform.runLater(() -> channel.setProcessing(false));
 
         if(mProcessingChains.containsKey(channel))
         {
