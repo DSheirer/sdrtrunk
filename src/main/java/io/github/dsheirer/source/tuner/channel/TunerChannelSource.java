@@ -31,12 +31,11 @@ import org.slf4j.LoggerFactory;
 public abstract class TunerChannelSource extends ComplexSource implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
-    private static final long BUFFER_PROCESSOR_RUN_INTERVAL_MILLISECONDS = 50;
+    protected static final long HEARTBEAT_INTERVAL_MS = 100;
     private SourceEventListenerToProcessorAdapter mConsumerSourceEventListenerAdapter;
     protected TunerChannel mTunerChannel;
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
-//    private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -245,95 +244,4 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         mConsumerSourceEventListener = null;
     }
-
-//    /**
-//     * Processor to periodically invoke buffer sample processing on an interval timer.  At each interval this processor
-//     * sends a heartbeat to the registered consumer and then commands the sub-class implementation to process any
-//     * queued buffers and distribute complex buffer sample(s) to the registered consumer.
-//     */
-//    public class ScheduledIntervalProcessor implements Runnable
-//    {
-//        private ScheduledFuture<?> mScheduledFuture;
-//        private boolean mStopped = false;
-//
-//        /**
-//         * Commands this processor to do a shutdown at the end of this or the next iteration.  Once successfully
-//         * shutdown, it will invoke the performDisposal() method to cleanup this instance.
-//         */
-//        public void stop()
-//        {
-//            mStopped = true;
-//        }
-//
-//        /**
-//         * Starts buffer processing on a fixed interval using a scheduled thread pool
-//         */
-//        public void start()
-//        {
-//            if(mScheduledFuture == null)
-//            {
-//                mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this, 0,
-//                    BUFFER_PROCESSOR_RUN_INTERVAL_MILLISECONDS, TimeUnit.MILLISECONDS);
-//            }
-//        }
-//
-//        /**
-//         * Implementation of the Runnable interface to periodically send a heartbeat and then process buffer samples.
-//         */
-//        @Override
-//        public void run()
-//        {
-//            try
-//            {
-//                if(!mStopped)
-//                {
-//                    try
-//                    {
-//                        getHeartbeatManager().broadcast();
-//                    }
-//                    catch(Throwable t)
-//                    {
-//                        mLog.error("Error while sending heartbeat", t);
-//                    }
-//                }
-//
-//                if(!mStopped)
-//                {
-//                    try
-//                    {
-//                        processSamples();
-//                    }
-//                    catch(Throwable t)
-//                    {
-//                        mLog.error("Error while processing samples", t);
-//                    }
-//                }
-//
-//                if(mStopped)
-//                {
-//                    if(mScheduledFuture != null)
-//                    {
-//                        //Set may-interrupt to false so that we can complete this iteration
-//                        mScheduledFuture.cancel(false);
-//                    }
-//
-//                    mScheduledFuture = null;
-//
-//                    try
-//                    {
-//                        getHeartbeatManager().broadcast();
-//                        performDisposal();
-//                    }
-//                    catch(Throwable t)
-//                    {
-//                        mLog.error("Error during final shutdown processing of samples", t);
-//                    }
-//                }
-//            }
-//            catch(Throwable t)
-//            {
-//                mLog.error("Error during heartbeat processing", t);
-//            }
-//        }
-//    }
 }

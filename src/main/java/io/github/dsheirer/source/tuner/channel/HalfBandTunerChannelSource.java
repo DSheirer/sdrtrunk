@@ -54,6 +54,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     private long mChannelFrequencyCorrection = 0;
     private long mTunerFrequency;
     private Listener<ComplexSamples> mListener;
+    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
 
     /**
      * Constructs a frequency translating and CIC decimating channel source.
@@ -69,6 +70,8 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
                                       double sampleRate, ChannelSpecification channelSpecification) throws FilterDesignException
     {
         super(producerSourceEventListener, tunerChannel);
+
+        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
 
         int desiredDecimation = (int)(sampleRate / channelSpecification.getMinimumSampleRate());
         int decimation = DecimationFilterFactory.getDecimationRate(desiredDecimation);
@@ -91,6 +94,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     public void start()
     {
         super.start();
+        mStreamHeartbeatProcessor.start();
         mBufferDispatcher.start();
     }
 
@@ -99,6 +103,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     {
         super.stop();
         mBufferDispatcher.stop();
+        mStreamHeartbeatProcessor.stop();
     }
 
     @Override
@@ -200,13 +205,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     @Override
     public void setListener(Listener<ComplexSamples> listener)
     {
-        if(listener == null)
-        {
-            //Wait for the native buffer processor thread to die before we nullify the listener
-            stop();
-        }
-
-        mListener = listener;
+        mStreamHeartbeatProcessor.setListener(listener);
     }
 
     @Override
@@ -223,21 +222,14 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
         @Override
         public void receive(T nativeBuffer)
         {
-            getHeartbeatManager().broadcast();
+            Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
 
-            Listener<ComplexSamples> listener = mListener;
-
-            if(listener != null)
+            while(iterator.hasNext())
             {
-                Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
-
-                while(iterator.hasNext())
-                {
-                    ComplexSamples basebanded = mFrequencyCorrectionMixer.mix(iterator.next());
-                    float[] i = mIDecimationFilter.decimateReal(basebanded.i());
-                    float[] q = mQDecimationFilter.decimateReal(basebanded.q());
-                    listener.receive(new ComplexSamples(i, q));
-                }
+                ComplexSamples basebanded = mFrequencyCorrectionMixer.mix(iterator.next());
+                float[] i = mIDecimationFilter.decimateReal(basebanded.i());
+                float[] q = mQDecimationFilter.decimateReal(basebanded.q());
+                mStreamHeartbeatProcessor.receive(new ComplexSamples(i, q));
             }
         }
     }
