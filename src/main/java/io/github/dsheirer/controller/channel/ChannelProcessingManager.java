@@ -312,7 +312,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         if(source == null)
         {
             //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(false));
+            if (GraphicsEnvironment.isHeadless()) {
+                channel.setProcessing(false);
+            } else {
+                Platform.runLater(() -> channel.setProcessing(false));
+            }
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel,
                 ChannelEvent.Event.NOTIFICATION_PROCESSING_START_REJECTED, TUNER_UNAVAILABLE_DESCRIPTION));
@@ -467,8 +471,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         processingChain.start();
 
         //This has to be done on the FX event thread when the playlist editor is constructed
-        if (!GraphicsEnvironment.isHeadless())
+        if (GraphicsEnvironment.isHeadless()) {
+            channel.setProcessing(true);
+        } else {
             Platform.runLater(() -> channel.setProcessing(true));
+        }
 
         getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
 
@@ -483,8 +490,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private void stopProcessing(Channel channel) throws ChannelException
     {
         //This has to be done on the FX event thread when the playlist editor is constructed
-        if (!GraphicsEnvironment.isHeadless())
+        if (GraphicsEnvironment.isHeadless()) {
+            channel.setProcessing(false);
+        } else {
             Platform.runLater(() -> channel.setProcessing(false));
+        }
 
         if(mProcessingChains.containsKey(channel))
         {
@@ -562,10 +572,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.removeTrafficChannelManager();
 
             //Update processing flag for each configuration.
-            Platform.runLater(() -> {
+            if (GraphicsEnvironment.isHeadless()) {
                 request.getCurrentChannel().setProcessing(false);
                 request.getTrafficChannel().setProcessing(true);
-            });
+            } else {
+                Platform.runLater(() -> {
+                    request.getCurrentChannel().setProcessing(false);
+                    request.getTrafficChannel().setProcessing(true);
+                });
+            }
 
             mProcessingChains.put(request.getTrafficChannel(), processingChain);
             mChannelMetadataModel.updateChannelMetadataToChannelMap(processingChain.getChannelState().getChannelMetadata(),
