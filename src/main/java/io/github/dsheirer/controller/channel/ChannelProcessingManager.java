@@ -526,13 +526,13 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     private void stopProcessing(Channel channel) throws ChannelException
     {
-        //This has to be done on the FX event thread when the playlist editor is constructed
-        Platform.runLater(() -> channel.setProcessing(false));
-
         ProcessingChain processingChain = removeProcessingChain(channel);
 
         if(processingChain != null)
         {
+            //This has to be done on the FX event thread when the playlist editor is constructed
+            Platform.runLater(() -> channel.setProcessing(false));
+
             //Since the processing chain's source will block on stop(), throw it to the thread pool to run
             ThreadPool.CACHED.submit(() -> {
                 try
@@ -557,10 +557,6 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     mLog.error("Error during shutdown of processing chain for channel [" + channel.getName() + "}", e);
                 }
             });
-        }
-        else
-        {
-            throw new ChannelException("Channel is not currently playing");
         }
     }
 
