@@ -42,7 +42,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     private final static Logger mLog = LoggerFactory.getLogger(PassThroughChannelSource.class);
     private TunerController mTunerController;
     private Dispatcher<INativeBuffer> mBufferDispatcher;
-    private Listener<ComplexSamples> mComplexSamplesListener;
+    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
 
     /**
      * Constructs an instance
@@ -59,12 +59,14 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
         mBufferDispatcher = new Dispatcher<>(500, "sdrtrunk pass-through channel " +
                 tunerChannel.getFrequency(), new NativeBufferPoisonPill());
         mBufferDispatcher.setListener(new BufferProcessor());
+        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
     }
 
     @Override
     public void start()
     {
         super.start();
+        mStreamHeartbeatProcessor.stop();
         mBufferDispatcher.start();
     }
 
@@ -73,6 +75,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     {
         super.stop();
         mBufferDispatcher.stop();
+        mStreamHeartbeatProcessor.stop();
     }
 
     @Override
@@ -100,9 +103,9 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     }
 
     @Override
-    public void setListener(Listener<ComplexSamples> complexSamplesListener)
+    public void setListener(Listener<ComplexSamples> listener)
     {
-        mComplexSamplesListener = complexSamplesListener;
+        mStreamHeartbeatProcessor.setListener(listener);
     }
 
     @Override
@@ -122,16 +125,11 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
         @Override
         public void receive(INativeBuffer nativeBuffer)
         {
-            getHeartbeatManager().broadcast();
+            Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
 
-            if(mComplexSamplesListener != null)
+            while(iterator.hasNext())
             {
-                Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
-
-                while(iterator.hasNext())
-                {
-                    mComplexSamplesListener.receive(iterator.next());
-                }
+                mStreamHeartbeatProcessor.receive(iterator.next());
             }
         }
     }

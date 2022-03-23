@@ -23,25 +23,29 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.StreamProcessorWithHeartbeat;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 
 import java.util.List;
 
+/**
+ * Polyphase Channelizer's Tuner Channel Source implementation.  Wraps a ChannelOutputProcessor instance and
+ * provides tuner channel source functionality.  Supports dynamic swapout of the underlying channel output processor
+ * as the upstream polyphase channelizer reconfigures during tuned center frequency changes.
+ */
 public class PolyphaseChannelSource extends TunerChannelSource implements Listener<ComplexSamples>
 {
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private IPolyphaseChannelOutputProcessor mReplacementPolyphaseChannelOutputProcessor;
+    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
     private long mReplacementFrequency;
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
     private long mChannelFrequencyCorrection;
-    private Listener<ComplexSamples> mComplexSamplesListener;
 
     /**
-     * Polyphase channelizer tuner channel source implementation.  Adapts the channel array output samples from the
-     * polyphase channelizer into a single channel, or a channel synthesized from two adjacent channels that is
-     * frequency translated and decimated to a single channel.
+     * Constructs an instance
      *
      * @param tunerChannel describing the desired channel frequency and bandwidth/minimum sample rate
      * @param outputProcessor - to process polyphase channelizer channel results into a channel stream
@@ -58,7 +62,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mPolyphaseChannelOutputProcessor.setListener(this);
         mChannelSampleRate = channelSampleRate;
-
+        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
         setFrequency(centerFrequency);
     }
 
@@ -66,6 +70,8 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     public void start()
     {
         super.start();
+
+        mStreamHeartbeatProcessor.start();
 
         if(mPolyphaseChannelOutputProcessor != null)
         {
@@ -82,6 +88,8 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
         {
             mPolyphaseChannelOutputProcessor.stop();
         }
+
+        mStreamHeartbeatProcessor.stop();
     }
 
     /**
@@ -90,19 +98,14 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     @Override
     public void setListener(final Listener<ComplexSamples> listener)
     {
-        mComplexSamplesListener = listener;
+        mStreamHeartbeatProcessor.setListener(listener);
         mPolyphaseChannelOutputProcessor.setListener(this);
     }
 
     @Override
     public void receive(ComplexSamples complexSamples)
     {
-        getHeartbeatManager().broadcast();
-
-        if(mComplexSamplesListener != null)
-        {
-            mComplexSamplesListener.receive(complexSamples);
-        }
+        mStreamHeartbeatProcessor.receive(complexSamples);
     }
 
     /**
