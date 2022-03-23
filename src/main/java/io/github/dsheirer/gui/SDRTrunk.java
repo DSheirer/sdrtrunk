@@ -117,9 +117,11 @@ public class SDRTrunk implements Listener<TunerEvent>
 
     private String mTitle;
 
-    public SDRTrunk(boolean bNoGUI)
+    public SDRTrunk()
     {
-        if (!bNoGUI) mMainGui = new JFrame();
+        if (!GraphicsEnvironment.isHeadless()) {
+            mMainGui = new JFrame();
+        }
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
 
@@ -166,7 +168,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
         mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
-       if (!bNoGUI) mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+       if (!GraphicsEnvironment.isHeadless()) {
+           mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+       }
 
         CalibrationManager calibrationManager = CalibrationManager.getInstance(mUserPreferences);
         final boolean calibrating = !calibrationManager.isCalibrated() &&
@@ -193,7 +197,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         MapService mapService = new MapService(mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
-        if (!bNoGUI) {
+        if (!GraphicsEnvironment.isHeadless()) {
             mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
                     mSettingsManager, mSourceManager, mUserPreferences);
         }
@@ -207,7 +211,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         mPlaylistManager.init();
 
         //Initialize the GUI
-        if (bNoGUI) {
+        if (GraphicsEnvironment.isHeadless()) {
             mLog.info("starting main application headless");
         } else {
             mLog.info("starting main application gui");
@@ -220,9 +224,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventQueue.invokeLater(() -> {
             try
             {
-                if (!bNoGUI) mMainGui.setVisible(true);
+                if (!GraphicsEnvironment.isHeadless()) {
+                    mMainGui.setVisible(true);
+                }
 
-                if(calibrating && !bNoGUI)
+                if(calibrating && !GraphicsEnvironment.isHeadless())
                 {
                     Platform.runLater(() ->
                     {
@@ -236,13 +242,13 @@ public class SDRTrunk implements Listener<TunerEvent>
                         }
                         else
                         {
-                            autoStartChannels(bNoGUI);
+                            autoStartChannels();
                         }
                     });
                 }
                 else
                 {
-                    autoStartChannels(bNoGUI);
+                    autoStartChannels();
                 }
             }
             catch(Exception e)
@@ -256,15 +262,14 @@ public class SDRTrunk implements Listener<TunerEvent>
      * Shows a dialog that lists the channels that have been designated for auto-start, sorted by auto-start order and
      * allows the user to start now, cancel, or allow the timer to expire and then start the channels.  The dialog will
      * only show if there are one ore more channels designated for auto-start.
-     * @param bNoGUI
      */
-    private void autoStartChannels(boolean bNoGUI)
+    private void autoStartChannels()
     {
         List<Channel> channels = mPlaylistManager.getChannelModel().getAutoStartChannels();
 
         if(channels.size() > 0)
         {
-            if (bNoGUI) {
+            if (GraphicsEnvironment.isHeadless()) {
                 for(Channel channel: channels)
                 {
                     try
@@ -665,6 +670,6 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     public static void main(String[] args)
     {
-        new SDRTrunk(GraphicsEnvironment.isHeadless());
+        new SDRTrunk();
     }
 }

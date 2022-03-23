@@ -445,7 +445,12 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.start();
 
             //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(true));
+            if (GraphicsEnvironment.isHeadless()) {
+                channel.setProcessing(true);
+            } else {
+                Platform.runLater(() -> channel.setProcessing(true));
+            }
+
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
         }
@@ -552,7 +557,11 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         if(processingChain != null)
         {
             //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(false));
+            if (GraphicsEnvironment.isHeadless()) {
+                channel.setProcessing(false);
+            } else {
+                Platform.runLater(() -> channel.setProcessing(false));
+            }
 
             //Since the processing chain's source will block on stop(), throw it to the thread pool to run
             ThreadPool.CACHED.submit(() -> {
