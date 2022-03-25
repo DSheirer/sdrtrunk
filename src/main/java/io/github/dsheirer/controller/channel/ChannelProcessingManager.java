@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
@@ -55,6 +52,7 @@ import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -439,8 +437,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
         {
             processingChain.start();
 
-            //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(true));
+            if(GraphicsEnvironment.isHeadless())
+            {
+                channel.setProcessing(true);
+            }
+            else
+            {
+                //This has to be done on the FX event thread when the playlist editor is constructed
+                Platform.runLater(() -> channel.setProcessing(true));
+            }
 
             mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
         }
@@ -530,8 +535,15 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         if(processingChain != null)
         {
-            //This has to be done on the FX event thread when the playlist editor is constructed
-            Platform.runLater(() -> channel.setProcessing(false));
+            if(GraphicsEnvironment.isHeadless())
+            {
+                channel.setProcessing(false);
+            }
+            else
+            {
+                //This has to be done on the FX event thread when the playlist editor is constructed
+                Platform.runLater(() -> channel.setProcessing(false));
+            }
 
             //Since the processing chain's source will block on stop(), throw it to the thread pool to run
             ThreadPool.CACHED.submit(() -> {
