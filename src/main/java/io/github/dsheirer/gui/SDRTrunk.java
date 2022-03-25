@@ -29,6 +29,7 @@ import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.controller.ControllerPanel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
+import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
@@ -107,7 +108,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
-    private JFrame mMainGui = new JFrame();
+    private JFrame mMainGui;
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
@@ -117,6 +118,11 @@ public class SDRTrunk implements Listener<TunerEvent>
 
     public SDRTrunk()
     {
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            mMainGui = new JFrame();
+        }
+
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
 
@@ -163,7 +169,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
         mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        }
 
         CalibrationManager calibrationManager = CalibrationManager.getInstance(mUserPreferences);
         final boolean calibrating = !calibrationManager.isCalibrated() &&
@@ -190,8 +200,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         MapService mapService = new MapService(mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
-        mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
-            mSettingsManager, mSourceManager, mUserPreferences);
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
+                    mSettingsManager, mSourceManager, mUserPreferences);
+        }
 
         mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, tunerModel);
 
@@ -202,10 +215,17 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mPlaylistManager.init();
 
-        mLog.info("starting main application gui");
+        if(GraphicsEnvironment.isHeadless())
+        {
+            mLog.info("starting main application headless");
+        }
+        else
+        {
+            mLog.info("starting main application gui");
 
-        //Initialize the GUI
-        initGUI();
+            //Initialize the GUI
+            initGUI();
+        }
 
         tunerModel.requestFirstTunerDisplay();
 
@@ -213,9 +233,12 @@ public class SDRTrunk implements Listener<TunerEvent>
         EventQueue.invokeLater(() -> {
             try
             {
-                mMainGui.setVisible(true);
+                if(!GraphicsEnvironment.isHeadless())
+                {
+                    mMainGui.setVisible(true);
+                }
 
-                if(calibrating)
+                if(calibrating && !GraphicsEnvironment.isHeadless())
                 {
                     Platform.runLater(() ->
                     {
@@ -256,8 +279,25 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         if(channels.size() > 0)
         {
-            ChannelAutoStartFrame autoStartFrame = new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(),
-                channels);
+            if(GraphicsEnvironment.isHeadless())
+            {
+                for(Channel channel: channels)
+                {
+                    try
+                    {
+                        mLog.info("Auto-starting channel " + channel.getName());
+                        mPlaylistManager.getChannelProcessingManager().start(channel);
+                    }
+                    catch(ChannelException ce)
+                    {
+                        mLog.error("Channel: " + channel.getName() + " auto-start failed: " + ce.getMessage());
+                    }
+                }
+            }
+            else
+            {
+                new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(), channels);
+            }
         }
     }
 
