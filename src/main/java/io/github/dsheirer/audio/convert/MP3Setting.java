@@ -34,8 +34,8 @@ public enum MP3Setting
     CBR_16(false, 16, "CBR - Constant Bit Rate 16 kbps (default)"),
     CBR_32(false, 32, "CBR - Constant Bit Rate 32 kbps"),
     ABR_56(true, 56, "ABR - Average Bit Rate 56 kbps"),
-    VBR_5(true, Lame.QUALITY_MIDDLE, "VBR - Middle Quality (5)"),
-    VBR_7(true, Lame.QUALITY_LOW, "VBR - Low Quality (7)");
+    VBR_5(true, Lame.QUALITY_MIDDLE, "VBR - Variable Bit Rate - Better Quality"),
+    VBR_7(true, Lame.QUALITY_LOW, "VBR - Variable Bit Rate - Good Quality");
 
     private boolean mVariableBitRate;
     private int mSetting;
