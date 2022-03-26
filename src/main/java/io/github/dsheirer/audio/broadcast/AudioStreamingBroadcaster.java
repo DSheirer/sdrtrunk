@@ -42,7 +42,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     private final static Logger mLog = LoggerFactory.getLogger(AudioStreamingBroadcaster.class);
 
     public static final int PROCESSOR_RUN_INTERVAL_MS = 1000;
-    private ScheduledFuture mRecordingQueueProcessorFuture;
+    private ScheduledFuture<?> mRecordingQueueProcessorFuture;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
@@ -205,7 +205,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
             super.setBroadcastState(state);
 
-            if(mBroadcastState.get() instanceof BroadcastState && ((BroadcastState)mBroadcastState.get()).isErrorState())
+            if(mBroadcastState.get() != null && mBroadcastState.get().isErrorState())
             {
                 stop();
             }
@@ -266,8 +266,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
         private AtomicBoolean mProcessing = new AtomicBoolean();
         private ByteArrayInputStream mInputStream;
         private long mFinalSilencePadding = 0;
-        private int mBytesStreamedActual = 0;
-        private int mBytesStreamedRequired = 0;
+        private int mBytesToStreamPerInterval = 0;
 
         @Override
         public void run()
@@ -278,7 +277,27 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                 {
                     if(mInputStream == null || mInputStream.available() <= 0)
                     {
-                        if(mFinalSilencePadding > 0)
+                        nextRecording();
+                    }
+
+                    if(mInputStream != null)
+                    {
+                        int length = FastMath.min(mBytesToStreamPerInterval, mInputStream.available());
+
+                        byte[] audio = new byte[length];
+
+                        try
+                        {
+                            int read = mInputStream.read(audio);
+                            broadcastAudio(audio);
+                        }
+                        catch(IOException ioe)
+                        {
+                            mLog.error("Error reading from in-memory audio recording input stream", ioe);
+                        }
+
+                        //If this is the final frame fragment then append silence padding to fill the final interval segment
+                        if(length < mBytesToStreamPerInterval && mFinalSilencePadding > 0)
                         {
                             List<byte[]> finalSilence = mSilenceGenerator.generate(mFinalSilencePadding);
 
@@ -288,33 +307,6 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                             }
 
                             mFinalSilencePadding = 0;
-                        }
-
-                        nextRecording();
-                    }
-
-                    if(mInputStream != null)
-                    {
-                        //We need to stream at 13.888 fps (144 byte frame) to achieve 2000 Bps or 16 kbps
-                        mBytesStreamedRequired += 2000;  //2000 bytes per second for 16 kbps data rate
-                        int bytesToStream = mBytesStreamedRequired - mBytesStreamedActual;
-
-                        //Trim length to whole-frame intervals (144 byte frame)
-                        bytesToStream -= (bytesToStream % 144);
-
-                        int length = FastMath.min(bytesToStream, mInputStream.available());
-
-                        byte[] audio = new byte[length];
-
-                        try
-                        {
-                            mBytesStreamedActual += mInputStream.read(audio);
-
-                            broadcastAudio(audio);
-                        }
-                        catch(IOException ioe)
-                        {
-                            mLog.error("Error reading from in-memory audio recording input stream", ioe);
                         }
                     }
                     else
@@ -340,9 +332,6 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
          */
         private void nextRecording()
         {
-            mBytesStreamedActual = 0;
-            mBytesStreamedRequired = 0;
-
             boolean metadataUpdateRequired = false;
 
             if(mInputStream != null)
@@ -381,8 +370,12 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                     {
                         byte[] audio = Files.readAllBytes(nextRecording.getPath());
 
-                        if(audio != null && audio.length > 0)
+                        if(audio.length > 0)
                         {
+                            //Calculate how many bytes we'll send with each processor run interval
+                            double intervals = (double)nextRecording.getRecordingLength() / (double)PROCESSOR_RUN_INTERVAL_MS;
+                            mBytesToStreamPerInterval = (int)((double)audio.length / intervals);
+
                             mInputStream = new ByteArrayInputStream(audio);
 
                             mFinalSilencePadding = PROCESSOR_RUN_INTERVAL_MS -
