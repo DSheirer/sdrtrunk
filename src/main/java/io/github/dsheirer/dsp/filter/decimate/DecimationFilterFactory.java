@@ -76,7 +76,7 @@ public class DecimationFilterFactory
      */
     public static int getDecimationRate(int requestedRate)
     {
-        if(requestedRate < 2)
+        if(requestedRate < 0)
         {
             throw new IllegalArgumentException("Requested decimation rate must be greater than 2");
         }

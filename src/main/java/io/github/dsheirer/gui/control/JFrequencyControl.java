@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.gui.control;
 
 import io.github.dsheirer.source.ISourceEventProcessor;
@@ -69,12 +70,6 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         init();
     }
 
-    public JFrequencyControl(long value)
-    {
-        this();
-        mFrequency = value;
-    }
-
     private void init()
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[]0[]", ""));
@@ -91,8 +86,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             }
             catch(ParseException e)
             {
-                mLog.error("JFrequencyControl - parse exception "
-                    + "constructing a digit - " + e);
+                mLog.error("JFrequencyControl - parse exception constructing a digit - " + e);
             }
 
             if(digit != null)
@@ -105,14 +99,10 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
 
                 if(x == 6)
                 {
-                    JLabel period = new JLabel(".");
-
-                    add(period);
+                    add(new JLabel(". "));
                 }
             }
         }
-
-        add(new JLabel(" MHz"));
 
         /**
          * Create a blank cursor to use when the mouse is over the digits
@@ -123,11 +113,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         //Create image for cursor using empty array
         Image cursorImage = Toolkit.getDefaultToolkit().createImage(imageByte);
 
-        mBlankCursor = Toolkit.getDefaultToolkit()
-            .createCustomCursor(cursorImage, new Point(0, 0), "cursor");
-
-        setTooltip(false);
-
+        mBlankCursor = Toolkit.getDefaultToolkit().createCustomCursor(cursorImage, new Point(0, 0), "cursor");
         revalidate();
     }
 
@@ -142,26 +128,6 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         }
     }
 
-    private void setTooltip(boolean locked)
-    {
-        String tooltip = null;
-
-        if(locked)
-        {
-            tooltip = "Frequency control is locked.  Disable decoding channels to unlock.";
-        }
-        else
-        {
-            tooltip = "Click on a frequency digit and type a frequency value, or click the upper/lower digits to " +
-                "change the value";
-        }
-
-        for(Digit digit: mDigits.values())
-        {
-            digit.setToolTipText(tooltip);
-        }
-    }
-
     /**
      * Receives a frequency change event invoked by another control.  We don't
      * rebroadcast this event, just set the control to indicate the new frequency.
@@ -172,36 +138,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         switch(event.getEvent())
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        setFrequency(event.getValue().longValue(), false);
-                    }
-                });
-                break;
-            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        setEnabled(false);
-                        setTooltip(true);
-                    }
-                });
-                break;
-            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        setEnabled(true);
-                        setTooltip(false);
-                    }
-                });
+                EventQueue.invokeLater(() -> setFrequency(event.getValue().longValue(), false));
                 break;
         }
     }
@@ -251,11 +188,27 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         }
     }
 
+    /**
+     * Adds the source event listener
+     * @param processor
+     */
     public void addListener(ISourceEventProcessor processor)
     {
         mProcessors.add(processor);
     }
 
+    /**
+     * Remove all source event processors
+     */
+    public void clearListeners()
+    {
+        mProcessors.clear();
+    }
+
+    /**
+     * Removes the source event processor
+     * @param processor
+     */
     public void removeListener(ISourceEventProcessor processor)
     {
         mProcessors.remove(processor);
@@ -272,12 +225,55 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             super("0");
 
             mPower = position;
-
+            setToolTipText(getTooltip(mPower));
             Listener listener = new Listener();
 
             this.addKeyListener(listener);
             this.addMouseListener(listener);
             this.addMouseWheelListener(listener);
+        }
+
+        private static String getTooltip(int power)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Center frequency ");
+            switch(power)
+            {
+                case 0:
+                    sb.append("1 Hertz");
+                    break;
+                case 1:
+                    sb.append("10 Hertz");
+                    break;
+                case 2:
+                    sb.append("100 Hertz");
+                    break;
+                case 3:
+                    sb.append("1 Kilohertz");
+                    break;
+                case 4:
+                    sb.append("10 Kilohertz");
+                    break;
+                case 5:
+                    sb.append("100 Kilohertz");
+                    break;
+                case 6:
+                    sb.append("1 Megahertz");
+                    break;
+                case 7:
+                    sb.append("10 Megahertz");
+                    break;
+                case 8:
+                    sb.append("100 Megahertz");
+                    break;
+                case 9:
+                    sb.append("1 Gigahertz");
+                    break;
+            }
+
+            sb.append(" units.  Type a number, use up/down arrows, or click the upper/lower digit control to adjust");
+
+            return sb.toString();
         }
 
         /**

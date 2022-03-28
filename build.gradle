@@ -58,7 +58,7 @@ dependencies {
     //mavenCentral/jcenter imports
     implementation 'ch.qos.logback:logback-classic:1.2.3'
     implementation 'ch.qos.logback:logback-core:1.2.3'
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.8'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.13.2'
     implementation 'com.fazecast:jSerialComm:2.5.0'
     implementation 'com.github.jiconfont:jiconfont-font_awesome:4.7.0.1'
     implementation 'com.github.jiconfont:jiconfont-javafx:1.0.0'

@@ -32,6 +32,7 @@ import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import javafx.application.Platform;
@@ -65,6 +66,7 @@ public class PlaylistEditor extends BorderPane
     private static final Logger mLog = LoggerFactory.getLogger(PlaylistEditor.class);
 
     private PlaylistManager mPlaylistManager;
+    private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private MenuBar mMenuBar;
     private TabPane mTabPane;
@@ -79,11 +81,13 @@ public class PlaylistEditor extends BorderPane
     /**
      * Constructs an instance
      * @param playlistManager for alias and channel models
+     * @param tunerManager for tuners
      * @param userPreferences for settings
      */
-    public PlaylistEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public PlaylistEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
 
         //Throw a new runnable back onto the FX thread to lazy load the editor content after the editor has been
@@ -240,7 +244,7 @@ public class PlaylistEditor extends BorderPane
     {
         if(mChannelEditor == null)
         {
-            mChannelEditor = new ChannelEditor(mPlaylistManager, mUserPreferences);
+            mChannelEditor = new ChannelEditor(mPlaylistManager, mTunerManager, mUserPreferences);
         }
 
         return mChannelEditor;

@@ -26,8 +26,8 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
-import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.channel.rotation.FrequencyLockChangeRequest;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(MultiFrequencyTunerChannelSource.class);
 
-    private TunerModel mTunerModel;
+    private TunerManager mTunerManager;
     private TunerChannelSource mTunerChannelSource;
     private List<Long> mFrequencies;
     private List<Long> mLockedFrequencies = new ArrayList<>();
@@ -59,12 +59,12 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     private boolean mStarted;
     private ConsumerSourceEventAdapter mConsumerSourceEventAdapter = new ConsumerSourceEventAdapter();
 
-    public MultiFrequencyTunerChannelSource(TunerModel tunerModel, TunerChannelSource tunerChannelSource,
+    public MultiFrequencyTunerChannelSource(TunerManager tunerManager, TunerChannelSource tunerChannelSource,
                                             List<Long> frequencies, ChannelSpecification channelSpecification,
                                             String preferredTuner)
     {
         super(null, tunerChannelSource.getTunerChannel());
-        mTunerModel = tunerModel;
+        mTunerManager = tunerManager;
         mTunerChannelSource = tunerChannelSource;
         mTunerChannelSource.setSourceEventListener(mConsumerSourceEventAdapter);
         mFrequencies = frequencies;
@@ -115,7 +115,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     {
         if(mStarted)
         {
-            Source source = mTunerModel.getSource(nextChannel, mChannelSpecification, mPreferredTuner);
+            Source source = mTunerManager.getSource(nextChannel, mChannelSpecification, mPreferredTuner);
 
             if(source instanceof TunerChannelSource)
             {

@@ -1,3 +1,22 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.source.recording;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -7,6 +26,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import java.io.File;
 
 @JacksonXmlRootElement(localName = "recording_configuration")
+@Deprecated //No longer used -- retained for backward compatibility with existing user configuration files.
 public class RecordingConfiguration
 {
     private File mRecording;
@@ -24,24 +44,6 @@ public class RecordingConfiguration
         mFilePath = filePath;
         mAlias = alias;
         mCenterFrequency = centerFrequency;
-
-        updateFile();
-    }
-
-    private void updateFile()
-    {
-        if(mFilePath != null)
-        {
-            try
-            {
-                mRecording = new File(mFilePath);
-            }
-            catch(Exception e)
-            {
-                throw new IllegalArgumentException("There was an error while "
-                    + "accessing the recording source [" + mFilePath + "]", e);
-            }
-        }
     }
 
     @JsonIgnore
@@ -59,8 +61,6 @@ public class RecordingConfiguration
     public void setFilePath(String filePath)
     {
         mFilePath = filePath;
-
-        updateFile();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "alias")

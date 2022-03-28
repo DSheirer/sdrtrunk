@@ -1,105 +1,66 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *     Java port of librtlsdr <https://github.com/steve-m/librtlsdr>
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     Copyright (C) 2013 Mauro Carvalho Chehab <mchehab@redhat.com>
- *     Copyright (C) 2013 Steve Markgraf <steve@steve-m.de>
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.rtl.r820t;
 
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.FrequencyErrorCorrectionManager;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
+import io.github.dsheirer.source.tuner.rtl.EmbeddedTuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 
-public class R820TTunerController extends RTL2832TunerController
+public class R820TEmbeddedTuner extends EmbeddedTuner
 {
-    private final static Logger mLog = LoggerFactory.getLogger(R820TTunerController.class);
-
-    public static final long MIN_FREQUENCY = 3180000;
-    public static final long MAX_FREQUENCY = 1782030000;
-    public static final double USABLE_BANDWIDTH_PERCENT = 0.98;
-    public static final int DC_SPIKE_AVOID_BUFFER = 5000;
-
-    public static final int R820T_IF_FREQUENCY = 3570000;
-    public static final byte VERSION = (byte) 49;
-
-    public static final byte[] BIT_REV_LOOKUP_TABLE =
-        {(byte) 0x0, (byte) 0x8, (byte) 0x4, (byte) 0xC,
-            (byte) 0x2, (byte) 0xA, (byte) 0x6, (byte) 0xE,
-            (byte) 0x1, (byte) 0x9, (byte) 0x5, (byte) 0xD,
-            (byte) 0x3, (byte) 0xB, (byte) 0x7, (byte) 0xF};
-
-    /* R820T I2C address */
-    private byte mI2CAddress = (byte) 0x34;
-
-    /* Shadow register is used to keep a cached (in-memory) copy of all
-     * registers, so that we don't have to read a full byte from a register in
-     * order to apply a masked value and then re-write the full byte.  With the
-     * shadow register, we can apply the masked value to the cached value, and
-     * then just write the masked byte, skipping the need to read the byte
-     * first. */
-    private int[] mShadowRegister =
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x83, 0x32, 0x75,
-            0xC0, 0x40, 0xD6, 0x6C, 0xF5, 0x63, 0x75, 0x68,
-            0x6C, 0x83, 0x80, 0x00, 0x0F, 0x00, 0xC0, 0x30,
-            0x48, 0xCC, 0x60, 0x00, 0x54, 0xAE, 0x4A, 0xC0};
-
-    public FrequencyErrorCorrectionManager mFrequencyErrorCorrectionManager;
-
-    public R820TTunerController(Device device, DeviceDescriptor deviceDescriptor) throws SourceException
-    {
-        super(device, deviceDescriptor, MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER,
-            USABLE_BANDWIDTH_PERCENT);
-
-        mFrequencyErrorCorrectionManager = new FrequencyErrorCorrectionManager(this);
-    }
+    private final static Logger mLog = LoggerFactory.getLogger(R820TEmbeddedTuner.class);
+    private static final long MINIMUM_SUPPORTED_FREQUENCY = 3180000;
+    private static final long MAXIMUM_SUPPORTED_FREQUENCY = 1782030000;
+    private static final double USABLE_BANDWIDTH_PERCENT = 0.98;
+    private static final int DC_SPIKE_AVOID_BUFFER = 5000;
+    private static final int R820T_IF_FREQUENCY = 3570000;
+    private static final byte VERSION = (byte) 49;
+    private static final byte I2C_ADDRESS = (byte) 0x34;
+    public static final byte[] BIT_REV_LOOKUP_TABLE = {(byte) 0x0, (byte) 0x8, (byte) 0x4, (byte) 0xC, (byte) 0x2,
+            (byte) 0xA, (byte) 0x6, (byte) 0xE, (byte) 0x1, (byte) 0x9, (byte) 0x5, (byte) 0xD, (byte) 0x3, (byte) 0xB,
+            (byte) 0x7, (byte) 0xF};
 
     /**
-     * Manager for applying automatic frequency error PPM adjustments to the tuner controller based on
-     * frequency error measurements received from certain downstream decoders (e.g. P25).
-     * @return manager
+     * Shadow register is used to keep a cached (in-memory) copy of all registers, so that we don't have to read a
+     * full byte from a register in order to apply a masked value and then re-write the full byte.  With the shadow
+     * register, we can apply the masked value to the cached value, and then just write the masked byte, skipping the
+     * need to read the byte first.
      */
-    public FrequencyErrorCorrectionManager getFrequencyErrorCorrectionManager()
-    {
-        return mFrequencyErrorCorrectionManager;
-    }
+    private int[] mShadowRegister = {0x00, 0x00, 0x00, 0x00, 0x00, 0x83, 0x32, 0x75, 0xC0, 0x40, 0xD6, 0x6C, 0xF5, 0x63,
+            0x75, 0x68, 0x6C, 0x83, 0x80, 0x00, 0x0F, 0x00, 0xC0, 0x30, 0x48, 0xCC, 0x60, 0x00, 0x54, 0xAE, 0x4A, 0xC0};
+
 
     /**
-     * Overrides updates for measured frequency error so that the updates can also be applied to the
-     * frequency error correction manager for automatic PPM updating.
-     * @param measuredFrequencyError in hertz averaged over a 5 second interval.
+     * Constructs an instance
+     * @param adapter for accessing RTL2832USBController interfaces
      */
-    @Override
-    public void setMeasuredFrequencyError(int measuredFrequencyError)
+    public R820TEmbeddedTuner(RTL2832TunerController.ControllerAdapter adapter)
     {
-        super.setMeasuredFrequencyError(measuredFrequencyError);
-        getFrequencyErrorCorrectionManager().updatePPM(getPPMFrequencyError());
+        super(adapter);
     }
 
     @Override
@@ -109,68 +70,64 @@ public class R820TTunerController extends RTL2832TunerController
     }
 
     @Override
-    public void setSampleRateFilters(int sampleRate) throws LibUsbException
+    public long getMinimumFrequencySupported()
     {
-        //TODO: why is this being forced as an abstract method on sub classes?
+        return MINIMUM_SUPPORTED_FREQUENCY;
     }
 
     @Override
+    public long getMaximumFrequencySupported()
+    {
+        return MAXIMUM_SUPPORTED_FREQUENCY;
+    }
+
+    @Override
+    public int getDcSpikeHalfBandwidth()
+    {
+        return DC_SPIKE_AVOID_BUFFER;
+    }
+
+    @Override
+    public double getUsableBandwidthPercent()
+    {
+        return USABLE_BANDWIDTH_PERCENT;
+    }
+
+    @Override
+    public void setSampleRateFilters(int sampleRate) throws SourceException
+    {
+        //No-op
+    }
+
+    /**
+     * Applies the tuner configuration values to this embedded tuner
+     * @param tunerConfig containing settings to apply
+     * @throws SourceException if there is an error
+     */
+    @Override
     public void apply(TunerConfiguration tunerConfig) throws SourceException
     {
-        if(tunerConfig != null &&
-            tunerConfig instanceof R820TTunerConfiguration)
-        {
-            R820TTunerConfiguration config = (R820TTunerConfiguration) tunerConfig;
+        //Invoke super for frequency, frequency correction and autoPPM
 
+        if(tunerConfig instanceof R820TTunerConfiguration config)
+        {
             try
             {
-                SampleRate sampleRate = config.getSampleRate();
-                setSampleRate(sampleRate);
-
-                double correction = config.getFrequencyCorrection();
-                setFrequencyCorrection(correction);
-
-                getFrequencyErrorCorrectionManager().setEnabled(config.getAutoPPMCorrectionEnabled());
-
                 R820TGain masterGain = config.getMasterGain();
                 setGain(masterGain, true);
 
                 if(masterGain == R820TGain.MANUAL)
                 {
-                    R820TMixerGain mixerGain = config.getMixerGain();
-                    setMixerGain(mixerGain, true);
-
-                    R820TLNAGain lnaGain = config.getLNAGain();
-                    setLNAGain(lnaGain, true);
-
-                    R820TVGAGain vgaGain = config.getVGAGain();
-                    setVGAGain(vgaGain, true);
-                }
-
-                try
-                {
-                    setFrequency(config.getFrequency());
-                }
-                catch(SourceException se)
-                {
-                    //Do nothing, we couldn't set the frequency
+                    setLNAGain(config.getLNAGain(), true);
+                    setMixerGain(config.getMixerGain(), true);
+                    setVGAGain(config.getVGAGain(), true);
                 }
             }
             catch(UsbException e)
             {
-                throw new SourceException("R820TTunerController - usb error "
-                    + "while applying tuner config", e);
+                throw new SourceException("R820TTunerController - usb error while applying tuner config", e);
             }
         }
-    }
-
-    /**
-     * Not implemented.
-     */
-    @Override
-    public long getTunedFrequency() throws SourceException
-    {
-        return 0;
     }
 
     /**
@@ -178,33 +135,27 @@ public class R820TTunerController extends RTL2832TunerController
      * of setting the multiplexer and then setting the Oscillator (PLL).
      */
     @Override
-    public void setTunedFrequency(long frequency) throws SourceException
+    public synchronized void setTunedFrequency(long frequency) throws SourceException
     {
-        mLock.lock();
+        getAdapter().getLock().lock();
 
         try
         {
-            enableI2CRepeater(mDeviceHandle, true);
-
+            getAdapter().enableI2CRepeater();
             boolean controlI2C = false;
-
             long offsetFrequency = frequency + R820T_IF_FREQUENCY;
-
             setMux(offsetFrequency, controlI2C);
-
             setPLL(offsetFrequency, controlI2C);
-
-            enableI2CRepeater(mDeviceHandle, false);
+            getAdapter().disableI2CRepeater();
         }
         catch(UsbException e)
         {
-            throw new SourceException("R820TTunerController - exception "
-                + "while setting frequency [" + frequency + "] - " +
-                e.getLocalizedMessage());
+            throw new SourceException("R820TTunerController - exception while setting frequency [" + frequency + "] - " +
+                    e.getLocalizedMessage());
         }
         finally
         {
-            mLock.unlock();
+            getAdapter().getLock().unlock();
         }
     }
 
@@ -212,31 +163,18 @@ public class R820TTunerController extends RTL2832TunerController
      * Overrides the same method from the RTL2832 tuner controller to apply
      * settings specific to the R820T tuner.
      */
-    public void setSamplingMode(SampleMode mode) throws LibUsbException
+    public void setSamplingMode(RTL2832TunerController.SampleMode mode) throws LibUsbException
     {
-        switch(mode)
+        if(mode == RTL2832TunerController.SampleMode.QUADRATURE)
         {
-            case QUADRATURE:
-                /* Set intermediate frequency to R820T IF frequency */
-                setIFFrequency(R820T_IF_FREQUENCY);
+            /* Set intermediate frequency to R820T IF frequency */
+            getAdapter().setIFFrequency(R820T_IF_FREQUENCY);
 
-                /* Enable spectrum inversion */
-                writeDemodRegister(mDeviceHandle,
-                    Page.ONE,
-                    (short) 0x15,
-                    (short) 0x01,
-                    1);
+            /* Enable spectrum inversion */
+            getAdapter().writeDemodRegister(RTL2832TunerController.Page.ONE, (short) 0x15, (short) 0x01, 1);
 
-                /* Set default i/q path */
-                writeDemodRegister(mDeviceHandle,
-                    Page.ZERO,
-                    (short) 0x06,
-                    (short) 0x80,
-                    1);
-                break;
-            default:
-                break;
-
+            /* Set default i/q path */
+            getAdapter().writeDemodRegister(RTL2832TunerController.Page.ZERO, (short) 0x06, (short) 0x80, 1);
         }
     }
 
@@ -257,8 +195,7 @@ public class R820TTunerController extends RTL2832TunerController
         writeR820TRegister(Register.TF_BAND, range.getTFC(), controlI2C);
 
         /* XTAL CAP & Drive */
-        writeR820TRegister(Register.PLL_XTAL_CAPACITOR_AND_DRIVE,
-            range.getXTALHighCap0P(), controlI2C);
+        writeR820TRegister(Register.PLL_XTAL_CAPACITOR_AND_DRIVE, range.getXTALHighCap0P(), controlI2C);
 
         /* Register 8 - what is it? */
         writeR820TRegister(Register.UNKNOWN_REGISTER_8, (byte) 0x00, controlI2C);
@@ -268,85 +205,24 @@ public class R820TTunerController extends RTL2832TunerController
     }
 
     /**
-     * Initializes the tuner for use.
-     */
-    public void init() throws SourceException
-    {
-        /* Initialize the super class to open and claim the usb interface*/
-        super.init();
-
-        try
-        {
-            initBaseband(mDeviceHandle);
-
-            enableI2CRepeater(mDeviceHandle, true);
-
-            boolean i2CRepeaterControl = false;
-
-            initTuner(i2CRepeaterControl);
-
-            enableI2CRepeater(mDeviceHandle, false);
-        }
-        catch(UsbException e)
-        {
-            throw new SourceException("error during init()", e);
-        }
-    }
-
-    @Override
-    public void dispose()
-    {
-        mLog.info("Releasing R820T Tuner");
-
-        if(mDeviceHandle != null)
-        {
-            try
-            {
-                LibUsb.close(mDeviceHandle);
-            }
-            catch(Exception e)
-            {
-                mLog.error("error while closing device handle", e);
-            }
-
-            mDeviceHandle = null;
-        }
-    }
-
-    /**
      * Initializes the tuner section.
      */
-    public void initTuner(boolean controlI2C) throws UsbException
+    protected void initTuner() throws UsbException
     {
         /* Disable zero IF mode */
-        writeDemodRegister(mDeviceHandle,
-            Page.ONE,
-            (short) 0xB1,
-            (short) 0x1A,
-            1);
+        getAdapter().writeDemodRegister(RTL2832TunerController.Page.ONE, (short) 0xB1, (short) 0x1A, 1);
 
         /* Only enable in-phase ADC input */
-        writeDemodRegister(mDeviceHandle,
-            Page.ZERO,
-            (short) 0x08,
-            (short) 0x4D,
-            1);
+        getAdapter().writeDemodRegister(RTL2832TunerController.Page.ZERO, (short) 0x08, (short) 0x4D, 1);
 
         /* Set intermediate frequency to R820T IF frequency (3.57 MHz) */
-        setIFFrequency(R820T_IF_FREQUENCY);
+        getAdapter().setIFFrequency(R820T_IF_FREQUENCY);
 
         /* Enable spectrum inversion */
-        writeDemodRegister(mDeviceHandle,
-            Page.ONE,
-            (short) 0x15,
-            (short) 0x01,
-            1);
-
-        initializeRegisters(controlI2C);
-
-        setTVStandard(controlI2C);
-
-        systemFrequencySelect(0, controlI2C);
+        getAdapter().writeDemodRegister(RTL2832TunerController.Page.ONE, (short) 0x15, (short) 0x01, 1);
+        initializeRegisters(false);
+        setTVStandard(false);
+        systemFrequencySelect(0, false);
     }
 
     /**
@@ -392,8 +268,7 @@ public class R820TTunerController extends RTL2832TunerController
 
             if(!calibrationSuccessful(calibrationCode))
             {
-                mLog.error("Calibration NOT successful - code: " +
-                    calibrationCode);
+                mLog.error("Calibration NOT successful - code: " + calibrationCode);
             }
         }
 
@@ -453,8 +328,7 @@ public class R820TTunerController extends RTL2832TunerController
     /**
      * Sets the system IF frequency
      */
-    private void systemFrequencySelect(long frequency, boolean controlI2C)
-        throws UsbException
+    private void systemFrequencySelect(long frequency, boolean controlI2C) throws UsbException
     {
         /* LNA top? */
         writeR820TRegister(Register.LNA_TOP2, (byte) 0xE5, controlI2C);
@@ -463,9 +337,7 @@ public class R820TTunerController extends RTL2832TunerController
         byte cp_cur;
         byte div_buf_cur;
 
-        if(frequency == 506000000 ||
-            frequency == 666000000 ||
-            frequency == 818000000)
+        if(frequency == 506000000 || frequency == 666000000 || frequency == 818000000)
         {
             mixer_top = (byte) 0x14;
             cp_cur = (byte) 0x28;
@@ -479,46 +351,29 @@ public class R820TTunerController extends RTL2832TunerController
         }
 
         writeR820TRegister(Register.MIXER_TOP, mixer_top, controlI2C);
-
         writeR820TRegister(Register.LNA_VTH_L, (byte) 0x53, controlI2C);
-
         writeR820TRegister(Register.MIXER_VTH_L, (byte) 0x75, controlI2C);
-
         /* Air-In only for Astrometa */
         writeR820TRegister(Register.AIR_CABLE1_INPUT_SELECTOR, (byte) 0x00, controlI2C);
-
         writeR820TRegister(Register.CABLE2_INPUT_SELECTOR, (byte) 0x00, controlI2C);
-
         writeR820TRegister(Register.CP_CUR, cp_cur, controlI2C);
-
         writeR820TRegister(Register.DIVIDER_BUFFER_CURRENT, div_buf_cur, controlI2C);
-
         writeR820TRegister(Register.FILTER_CURRENT, (byte) 0x40, controlI2C);
-
         /* if( type != TUNER_ANALOG_TV ) ... */
-
         writeR820TRegister(Register.LNA_TOP, (byte) 0x00, controlI2C);
-
         writeR820TRegister(Register.MIXER_TOP2, (byte) 0x00, controlI2C);
-
         writeR820TRegister(Register.PRE_DETECT, (byte) 0x00, controlI2C);
-
         writeR820TRegister(Register.AGC_CLOCK, (byte) 0x30, controlI2C);
-
         writeR820TRegister(Register.LNA_TOP, (byte) 0x18, controlI2C);
-
         writeR820TRegister(Register.MIXER_TOP2, mixer_top, controlI2C);
-
         /* LNA discharge current */
         writeR820TRegister(Register.LNA_DISCHARGE_CURRENT, (byte) 0x14, controlI2C);
-
         /* AGC clock 1 khz, external det1 cap 1u */
         writeR820TRegister(Register.AGC_CLOCK, (byte) 0x20, controlI2C);
     }
 
     /**
-     * Sets the tuner's Phase-Locked-Loop (PLL) oscillator used for frequency
-     * (tuning) control
+     * Sets the tuner's Phase-Locked-Loop (PLL) oscillator used for frequency (tuning) control
      *
      * @param frequency - desired center frequency
      * @param controlI2C - control the I2C repeater locally
@@ -528,49 +383,32 @@ public class R820TTunerController extends RTL2832TunerController
     {
         /* Set reference divider to 0 */
         writeR820TRegister(Register.REFERENCE_DIVIDER_2, (byte) 0x00, controlI2C);
-
         /* Set PLL autotune to 128kHz */
         writeR820TRegister(Register.PLL_AUTOTUNE, (byte) 0x00, controlI2C);
-
         /* Set VCO current to 100 */
         writeR820TRegister(Register.VCO_CURRENT, (byte) 0x80, controlI2C);
-
         /* Set the frequency divider - adjust for vco_fine_tune status */
         FrequencyDivider divider = FrequencyDivider.fromFrequency(frequency);
-
         int statusRegister4 = getStatusRegister(4, controlI2C);
-
         int vco_fine_tune = (statusRegister4 & 0x30) >> 4;
-
         int div_num = divider.getDividerNumber(vco_fine_tune);
-
         writeR820TRegister(Register.DIVIDER, (byte) (div_num << 5), controlI2C);
-
         /* Get the integral number for this divider and frequency */
         Integral integral = divider.getIntegral(frequency);
-
         writeR820TRegister(Register.PLL, integral.getRegisterValue(), controlI2C);
-
         /* Calculate the sigma-delta modulator fractional setting.  If it's
          * non-zero, power up the sdm and apply the fractional setting,
          * otherwise turn it off */
         int sdm = divider.getSDM(integral, frequency);
-
         if(sdm != 0)
         {
-            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_POWER,
-                (byte) 0x00, controlI2C);
-
-            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_MSB,
-                (byte) ((sdm >> 8) & 0xFF), controlI2C);
-
-            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_LSB,
-                (byte) (sdm & 0xFF), controlI2C);
+            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_POWER, (byte) 0x00, controlI2C);
+            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_MSB, (byte) ((sdm >> 8) & 0xFF), controlI2C);
+            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_LSB, (byte) (sdm & 0xFF), controlI2C);
         }
         else
         {
-            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_POWER,
-                (byte) 0x08, controlI2C);
+            writeR820TRegister(Register.SIGMA_DELTA_MODULATOR_POWER, (byte) 0x08, controlI2C);
         }
 
         /* Check to see if the PLL locked with these divider, integral and sdm
@@ -582,8 +420,7 @@ public class R820TTunerController extends RTL2832TunerController
 
             if(!isPLLLocked(controlI2C))
             {
-                throw new UsbException("R820T Tuner Controller - couldn't "
-                    + "achieve PLL lock on frequency [" + frequency + "]");
+                throw new UsbException("R820T Tuner Controller - couldn't achieve PLL lock on frequency [" + frequency + "]");
             }
         }
 
@@ -599,7 +436,6 @@ public class R820TTunerController extends RTL2832TunerController
     private boolean isPLLLocked(boolean controlI2C) throws UsbException
     {
         int register = getStatusRegister(2, controlI2C);
-
         return (register & 0x40) == 0x40;
     }
 
@@ -614,11 +450,7 @@ public class R820TTunerController extends RTL2832TunerController
     {
         for(int x = 5; x < mShadowRegister.length; x++)
         {
-            writeI2CRegister(mDeviceHandle,
-                mI2CAddress,
-                (byte) x,
-                (byte) mShadowRegister[x],
-                controlI2C);
+            getAdapter().writeI2CRegister(I2C_ADDRESS, (byte) x, (byte) mShadowRegister[x], controlI2C);
         }
     }
 
@@ -628,9 +460,7 @@ public class R820TTunerController extends RTL2832TunerController
     private int getStatusRegister(int register, boolean controlI2C) throws UsbException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(5);
-
-        read(mDeviceHandle, mI2CAddress, Block.I2C, buffer);
-
+        getAdapter().read(I2C_ADDRESS, RTL2832TunerController.Block.I2C, buffer);
         return bitReverse(buffer.get(register) & 0xFF);
     }
 
@@ -639,48 +469,31 @@ public class R820TTunerController extends RTL2832TunerController
      */
     private static int bitReverse(int value)
     {
-        return BIT_REV_LOOKUP_TABLE[value & 0x0F] << 4 |
-            BIT_REV_LOOKUP_TABLE[(value & 0xF0) >> 4];
+        return BIT_REV_LOOKUP_TABLE[value & 0x0F] << 4 | BIT_REV_LOOKUP_TABLE[(value & 0xF0) >> 4];
     }
 
     /**
      * Writes the byte value to the specified register, optionally controlling
      * the I2C repeater as needed.
      */
-    public void writeR820TRegister(Register register,
-                                   byte value,
-                                   boolean controlI2C) throws UsbException
+    public synchronized void writeR820TRegister(Register register, byte value, boolean controlI2C) throws UsbException
     {
         if(register.isMasked())
         {
             int current = mShadowRegister[register.getRegister()];
-
-            value = (byte) ((current & ~register.getMask()) |
-                (value & register.getMask()));
+            value = (byte) ((current & ~register.getMask()) | (value & register.getMask()));
         }
 
-        writeI2CRegister(mDeviceHandle, mI2CAddress,
-            (byte) register.getRegister(), value, controlI2C);
-
+        getAdapter().writeI2CRegister(I2C_ADDRESS, (byte) register.getRegister(), value, controlI2C);
         mShadowRegister[register.getRegister()] = value;
-
-//        Log.info( "R820T writing register " +
-//        		String.format( "%02X", register.getRegister() ) + " value " +
-//        		String.format( "%02X", value ) );
     }
 
     /**
      * Reads the specified register, optionally controlling the I2C repeater
      */
-    public int readR820TRegister(Register register, boolean controlI2C)
-        throws UsbException
+    public int readR820TRegister(Register register, boolean controlI2C) throws UsbException
     {
-        int value = readI2CRegister(mDeviceHandle,
-            mI2CAddress,
-            (byte) register.getRegister(),
-            controlI2C);
-
-        return value;
+        return getAdapter().readI2CRegister(I2C_ADDRESS, (byte) register.getRegister(), controlI2C);
     }
 
     /**
@@ -699,7 +512,7 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void setLNAGain(R820TLNAGain gain, boolean controlI2C) throws UsbException
     {
-        mLock.lock();
+        getAdapter().getLock().lock();
 
         try
         {
@@ -707,7 +520,7 @@ public class R820TTunerController extends RTL2832TunerController
         }
         finally
         {
-            mLock.unlock();
+            getAdapter().getLock().unlock();
         }
     }
 
@@ -716,7 +529,7 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void setMixerGain(R820TMixerGain gain, boolean controlI2C) throws UsbException
     {
-        mLock.lock();
+        getAdapter().getLock().lock();
 
         try
         {
@@ -724,7 +537,7 @@ public class R820TTunerController extends RTL2832TunerController
         }
         finally
         {
-            mLock.unlock();
+            getAdapter().getLock().unlock();
         }
     }
 
@@ -733,7 +546,7 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void setVGAGain(R820TVGAGain gain, boolean controlI2C) throws UsbException
     {
-        mLock.lock();
+        getAdapter().getLock().lock();
 
         try
         {
@@ -741,7 +554,7 @@ public class R820TTunerController extends RTL2832TunerController
         }
         finally
         {
-            mLock.unlock();
+            getAdapter().getLock().unlock();
         }
     }
 
@@ -770,7 +583,7 @@ public class R820TTunerController extends RTL2832TunerController
         private String mLabel;
         private int mSetting;
 
-        private R820TVGAGain(String label, int setting)
+        R820TVGAGain(String label, int setting)
         {
             mLabel = label;
             mSetting = setting;
@@ -813,7 +626,7 @@ public class R820TTunerController extends RTL2832TunerController
         private String mLabel;
         private int mSetting;
 
-        private R820TLNAGain(String label, int setting)
+        R820TLNAGain(String label, int setting)
         {
             mLabel = label;
             mSetting = setting;
@@ -859,7 +672,7 @@ public class R820TTunerController extends RTL2832TunerController
         private String mLabel;
         private int mSetting;
 
-        private R820TMixerGain(String label, int setting)
+        R820TMixerGain(String label, int setting)
         {
             mLabel = label;
             mSetting = setting;
@@ -919,7 +732,7 @@ public class R820TTunerController extends RTL2832TunerController
         private R820TLNAGain mLNAGain;
         private R820TMixerGain mMixerGain;
 
-        private R820TGain(String label, R820TVGAGain vga, R820TLNAGain lna, R820TMixerGain mixer)
+        R820TGain(String label, R820TVGAGain vga, R820TLNAGain lna, R820TMixerGain mixer)
         {
             mLabel = label;
             mVGAGain = vga;
@@ -1006,7 +819,7 @@ public class R820TTunerController extends RTL2832TunerController
         private int mRegister;
         private int mMask;
 
-        private Register(int register, int mask)
+        Register(int register, int mask)
         {
             mRegister = register;
             mMask = mask;
@@ -1061,13 +874,8 @@ public class R820TTunerController extends RTL2832TunerController
         private int mXtalCap20p;
         private int mXtalCap10p;
 
-        private FrequencyRange(long minFrequency,
-                               long maxFrequency,
-                               int openDrain,
-                               int rfMuxPloy,
-                               int tf_c,
-                               int xtalCap20p,
-                               int xtalCap10p)
+        FrequencyRange(long minFrequency, long maxFrequency, int openDrain, int rfMuxPloy, int tf_c, int xtalCap20p,
+                       int xtalCap10p)
         {
             mMinFrequency = minFrequency;
             mMaxFrequency = maxFrequency;
@@ -1078,11 +886,19 @@ public class R820TTunerController extends RTL2832TunerController
             mXtalCap10p = xtalCap10p;
         }
 
+        /**
+         * Indicates if the frequency is contained by the frequency range of this band
+         */
         public boolean contains(long frequency)
         {
             return mMinFrequency <= frequency && frequency <= mMaxFrequency;
         }
 
+        /**
+         * Finds the correct frequency range that contains the frequency
+         * @param frequency to lookup
+         * @return frequency range
+         */
         public static FrequencyRange getRangeForFrequency(long frequency)
         {
             for(FrequencyRange range : values())
@@ -1175,12 +991,8 @@ public class R820TTunerController extends RTL2832TunerController
         private int mIntegralValue;
         private static final int mVCOPowerReference = 2;
 
-        private FrequencyDivider(int dividerNumber,
-                                 int mixerDivider,
-                                 long minimumFrequency,
-                                 long maximumFrequency,
-                                 int registerSetting,
-                                 int integralValue)
+        FrequencyDivider(int dividerNumber, int mixerDivider, long minimumFrequency, long maximumFrequency,
+                         int registerSetting, int integralValue)
         {
             mDividerNumber = dividerNumber;
             mMixerDivider = mixerDivider;
@@ -1230,8 +1042,7 @@ public class R820TTunerController extends RTL2832TunerController
 
         public boolean contains(long frequency)
         {
-            return mMinimumFrequency <= frequency &&
-                frequency <= mMaximumFrequency;
+            return mMinimumFrequency <= frequency && frequency <= mMaximumFrequency;
         }
 
         /**
@@ -1269,27 +1080,22 @@ public class R820TTunerController extends RTL2832TunerController
                 return Integral.fromValue(integral);
             }
 
-            throw new IllegalArgumentException("PLL frequency [" + frequency +
-                "] is not valid for this frequency divider " + this.toString());
+            throw new IllegalArgumentException("PLL frequency [" + frequency + "] is not valid for this frequency " +
+                    "divider " + this);
         }
 
         /**
-         * Calculates the 16-bit value of the sigma-delta modulator setting
-         * which represents the fractional portion of the requested frequency
-         * that is left over after subtracting the divider minimum frequency
-         * and the integral frequency units.  That residual value is divided
-         * by the integral unit value to derive a 16-bit fractional value,
-         * returned as an integer
+         * Calculates the 16-bit value of the sigma-delta modulator setting which represents the fractional portion of
+         * the requested frequency that is left over after subtracting the divider minimum frequency and the integral
+         * frequency units.  That residual value is divided by the integral unit value to derive a 16-bit fractional
+         * value, returned as an integer
          */
         public int getSDM(Integral integral, long frequency)
         {
             if(contains(frequency))
             {
-                int delta = (int) (frequency - mMinimumFrequency -
-                    (integral.getNumber() * mIntegralValue));
-
+                int delta = (int) (frequency - mMinimumFrequency - (integral.getNumber() * mIntegralValue));
                 double fractional = (double) delta / (double) mIntegralValue;
-
                 //Left shift the double value 16 bits and truncate to an integer
                 return (int) (fractional * 0x10000) & 0xFFFF;
             }
@@ -1348,7 +1154,7 @@ public class R820TTunerController extends RTL2832TunerController
         private int mNumber;
         private int mRegister;
 
-        private Integral(int number, int register)
+        Integral(int number, int register)
         {
             mNumber = number;
             mRegister = register;
@@ -1371,8 +1177,7 @@ public class R820TTunerController extends RTL2832TunerController
                 return Integral.values()[value];
             }
 
-            throw new IllegalArgumentException("PLL integral value [" + value +
-                "] must be in the range 0 - 31");
+            throw new IllegalArgumentException("PLL integral value [" + value + "] must be in the range 0 - 31");
         }
     }
 }

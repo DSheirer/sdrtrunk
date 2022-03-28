@@ -20,17 +20,16 @@ package io.github.dsheirer.gui.channelizer;
 
 import io.github.dsheirer.buffer.FloatNativeBuffer;
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.LoggingTunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import io.github.dsheirer.source.tuner.test.TestTuner;
 import io.github.dsheirer.spectrum.ComplexDftProcessor;
 import io.github.dsheirer.spectrum.DFTSize;
@@ -40,10 +39,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JToggleButton;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -57,7 +62,7 @@ public class ChannelizerViewer extends JFrame
     private static final int CHANNEL_BANDWIDTH = 12500;
     private static final int CHANNEL_FFT_FRAME_RATE = 20;
 
-    private SettingsManager mSettingsManager = new SettingsManager(new TunerConfigurationModel());
+    private SettingsManager mSettingsManager = new SettingsManager();
     private JPanel mPrimaryPanel;
     private JPanel mControlPanel;
     private JLabel mToneFrequencyLabel;
@@ -78,7 +83,7 @@ public class ChannelizerViewer extends JFrame
      */
     public ChannelizerViewer(int channelsPerRow)
     {
-        mTestTuner = new TestTuner(new UserPreferences());
+        mTestTuner = new TestTuner(new LoggingTunerErrorListener());
         mChannelCount = (int)(mTestTuner.getTunerController().getBandwidth() / CHANNEL_BANDWIDTH);
         mChannelsPerRow = channelsPerRow;
 
@@ -518,7 +523,7 @@ public class ChannelizerViewer extends JFrame
         }
         else
         {
-            TestTuner tuner = new TestTuner(new UserPreferences());
+            TestTuner tuner = new TestTuner(new LoggingTunerErrorListener());
 
             List<TunerChannel> tunerChannels = getTunerChannels(tuner);
 

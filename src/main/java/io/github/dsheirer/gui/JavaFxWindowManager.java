@@ -41,10 +41,7 @@ import io.github.dsheirer.jmbe.JmbeEditorRequest;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.TunerModel;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
@@ -79,6 +76,7 @@ public class JavaFxWindowManager extends Application
     private JmbeEditor mJmbeEditor;
     private PlaylistEditor mPlaylistEditor;
     private PlaylistManager mPlaylistManager;
+    private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private UserPreferencesEditor mUserPreferencesEditor;
 
@@ -91,9 +89,10 @@ public class JavaFxWindowManager extends Application
     /**
      * Constructs an instance.  Note: this constructor is used for Swing applications.
      */
-    public JavaFxWindowManager(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public JavaFxWindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
     {
         mUserPreferences = userPreferences;
+        mTunerManager = tunerManager;
         mPlaylistManager = playlistManager;
 
         setup();
@@ -106,12 +105,10 @@ public class JavaFxWindowManager extends Application
     {
         mUserPreferences = new UserPreferences();
         AliasModel aliasModel = new AliasModel();
-        TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
-        TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
-        SourceManager sourceManager = new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel),
-            mUserPreferences);
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconModel());
+        mTunerManager = new TunerManager(mUserPreferences);
+        mTunerManager.start();
+        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
         mPlaylistManager.init();
         setup();
     }
@@ -274,7 +271,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mPlaylistEditor == null)
         {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mUserPreferences);
+            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
         }
 
         return mPlaylistEditor;

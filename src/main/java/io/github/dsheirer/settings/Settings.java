@@ -1,18 +1,20 @@
 /*
- * *********************************************************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- * *********************************************************************************************************************
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.settings;
 
@@ -26,6 +28,7 @@ import io.github.dsheirer.source.recording.RecordingConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @JacksonXmlRootElement(localName = "SDRTrunk_settings")
@@ -35,6 +38,7 @@ public class Settings
 
     private List<TunerConfiguration> mTunerConfiguration = new ArrayList<TunerConfiguration>();
 
+    //No longer used
     private List<RecordingConfiguration> mRecordingConfigurations = new ArrayList<RecordingConfiguration>();
 
     public Settings()
@@ -44,22 +48,11 @@ public class Settings
     @JacksonXmlProperty(isAttribute = false, localName = "recording_configuration")
     public List<RecordingConfiguration> getRecordingConfigurations()
     {
-        return mRecordingConfigurations;
+        return Collections.emptyList();
     }
 
-    public void setRecordingConfigurations(ArrayList<RecordingConfiguration> configs)
+    public void setRecordingConfigurations(List<RecordingConfiguration> configs)
     {
-        mRecordingConfigurations = configs;
-    }
-
-    public void addRecordingConfiguration(RecordingConfiguration config)
-    {
-        mRecordingConfigurations.add(config);
-    }
-
-    public void removeRecordingConfiguration(RecordingConfiguration config)
-    {
-        mRecordingConfigurations.remove(config);
     }
 
     @JacksonXmlProperty(isAttribute = false, localName = "tuner_configuration")

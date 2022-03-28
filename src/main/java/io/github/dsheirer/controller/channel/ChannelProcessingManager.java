@@ -44,15 +44,15 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.*;
+import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +84,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private ChannelMapModel mChannelMapModel;
     private ChannelMetadataModel mChannelMetadataModel;
     private EventLogManager mEventLogManager;
-    private SourceManager mSourceManager;
+    private TunerManager mTunerManager;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
     private List<Long> mLoggedFrequencies = new ArrayList<>();
@@ -95,16 +95,16 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      *
      * @param channelMapModel containing channel maps defined by the user
      * @param eventLogManager for adding event loggers to channels
-     * @param sourceManager for obtaining a tuner channel source for the channel
+     * @param tunerManager for obtaining a tuner channel source for the channel
      * @param aliasModel for aliasing of identifiers produced by the channel
      * @param userPreferences for user defined behavior and settings
      */
     public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    SourceManager sourceManager, AliasModel aliasModel, UserPreferences userPreferences)
+                                    TunerManager tunerManager, AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
-        mSourceManager = sourceManager;
+        mTunerManager = tunerManager;
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
         mChannelMetadataModel = new ChannelMetadataModel();
@@ -301,7 +301,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
-            source = mSourceManager.getSource(channel.getSourceConfiguration(),
+            source = mTunerManager.getSource(channel.getSourceConfiguration(),
                 channel.getDecodeConfiguration().getChannelSpecification());
         }
         catch(SourceException se)
@@ -720,7 +720,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     {
         @Override public void receive(SourceEvent sourceEvent)
         {
-            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
+            if((sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE ||
+                sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_TUNER_SHUTDOWN) &&
+                    sourceEvent.getSource() != null)
             {
                 Channel toShutdown = null;
 
@@ -744,7 +746,18 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
                 if(toShutdown != null)
                 {
-                    mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
+                    if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE)
+                    {
+                        mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
+                    }
+                    else if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_TUNER_SHUTDOWN)
+                    {
+                        mLog.warn("Tuner removal detected - stopping channel [" + toShutdown.getName() + "]");
+                    }
+                    else
+                    {
+                        mLog.warn("Source event error - stopping channel [" + toShutdown.getName() + "]");
+                    }
 
                     try
                     {
