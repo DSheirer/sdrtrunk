@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.playlist;
 
@@ -41,8 +38,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.service.radioreference.RadioReference;
-import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.TunerModel;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.collections.ListChangeListener;
 import org.slf4j.Logger;
@@ -75,7 +71,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private SourceManager mSourceManager;
+    private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private RadioReference mRadioReference;
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
@@ -89,14 +85,16 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * Monitors playlist changes to automatically save configuration changes after they occur.
      *
      * @param userPreferences for user settings
-     * @param sourceManager for access to tuner model
+     * @param tunerManager for access to tuner model
+     * @param aliasModel for aliases
      * @param eventLogManager for event logging
+     * @param iconModel for icons
      */
-    public PlaylistManager(UserPreferences userPreferences, SourceManager sourceManager, AliasModel aliasModel,
+    public PlaylistManager(UserPreferences userPreferences, TunerManager tunerManager, AliasModel aliasModel,
                            EventLogManager eventLogManager, IconModel iconModel)
     {
         mUserPreferences = userPreferences;
-        mSourceManager = sourceManager;
+        mTunerManager = tunerManager;
         mAliasModel = aliasModel;
         mIconModel = iconModel;
 
@@ -104,7 +102,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         mRadioReference = new RadioReference(mUserPreferences);
 
         mChannelModel = new ChannelModel(mAliasModel);
-        mChannelProcessingManager = new ChannelProcessingManager(mChannelMapModel, eventLogManager, mSourceManager,
+        mChannelProcessingManager = new ChannelProcessingManager(mChannelMapModel, eventLogManager, mTunerManager,
             mAliasModel, mUserPreferences);
         mChannelModel.addListener(mChannelProcessingManager);
         mChannelProcessingManager.addChannelEventListener(mChannelModel);
@@ -186,14 +184,6 @@ public class PlaylistManager implements Listener<ChannelEvent>
     public ChannelMapModel getChannelMapModel()
     {
         return mChannelMapModel;
-    }
-
-    /**
-     * Tuner model for this playlist manager
-     */
-    public TunerModel getTunerModel()
-    {
-        return mSourceManager.getTunerModel();
     }
 
     /**

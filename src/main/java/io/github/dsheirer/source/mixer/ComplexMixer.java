@@ -61,9 +61,9 @@ public class ComplexMixer
      * Sets the buffer size in bytes per buffer for each read interval.
      * @param bufferSize in bytes
      */
-    public void setBufferSize(int bufferSize)
+    public void setBufferSampleCount(int bufferSize)
     {
-        mMixerReader.setBufferSize(bufferSize);
+        mMixerReader.setBufferSampleSize(bufferSize);
     }
 
     public void start()

@@ -31,6 +31,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -45,17 +46,37 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
     private final static int DELAY_BUFFER_DURATION_MILLISECONDS = 2000;
 
-//    private List<CICTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private List<HalfBandTunerChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private SortedSet<TunerChannel> mTunerChannels = new TreeSet<>();
     private TunerController mTunerController;
     private ChannelSourceEventProcessor mChannelSourceEventProcessor = new ChannelSourceEventProcessor();
     private NativeSampleDelayBuffer mSampleDelayBuffer;
+    private boolean mRunning = true;
 
     public HeterodyneChannelSourceManager(TunerController tunerController)
     {
         mTunerController = tunerController;
         mTunerController.addListener(this);
+    }
+
+    @Override
+    public void stopAllChannels()
+    {
+        mRunning = false;
+
+        List<TunerChannelSource> toStop = new ArrayList<>(mChannelSources);
+
+        for(TunerChannelSource tunerChannelSource: toStop)
+        {
+            try
+            {
+                tunerChannelSource.process(SourceEvent.tunerShutdown(tunerChannelSource));
+            }
+            catch(SourceException se)
+            {
+                mLog.error("Error stopping tuner channel source for tuner shutdown");
+            }
+        }
     }
 
     @Override
@@ -73,14 +94,16 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     @Override
     public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
+        if(!mRunning)
+        {
+            return null;
+        }
+
         if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, mTunerChannels))
         {
             try
             {
                 //Attempt to create the channel source first, in case we get a filter design exception
-//                CICTunerChannelSource tunerChannelSource = new CICTunerChannelSource(mChannelSourceEventProcessor,
-//                    tunerChannel, mTunerController.getSampleRate(), channelSpecification);
-
                 HalfBandTunerChannelSource tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
                         tunerChannel, mTunerController.getSampleRate(), channelSpecification);
 

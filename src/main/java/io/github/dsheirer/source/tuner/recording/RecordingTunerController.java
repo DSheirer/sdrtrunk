@@ -22,7 +22,9 @@ import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
+import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
 import org.slf4j.Logger;
@@ -44,10 +46,33 @@ public class RecordingTunerController extends TunerController
 
     /**
      * Tuner controller testing implementation.
+     * @param tunerErrorListener to receive errors from this controller
       */
-    public RecordingTunerController()
+    public RecordingTunerController(ITunerErrorListener tunerErrorListener)
     {
-        super(1000000l, 3000000000l, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
+        super(tunerErrorListener);
+        setMinimumFrequency(1000000l);
+        setMaximumFrequency(3000000000l);
+        setMiddleUnusableHalfBandwidth(DC_NOISE_BANDWIDTH);
+        setUsableBandwidthPercentage(USABLE_BANDWIDTH_PERCENTAGE);
+    }
+
+    @Override
+    public void start() throws SourceException
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public TunerType getTunerType()
+    {
+        return TunerType.RECORDING;
     }
 
     /**
@@ -115,14 +140,6 @@ public class RecordingTunerController extends TunerController
         return 0;
     }
 
-
-
-    @Override
-    public void dispose()
-    {
-        //no-op
-    }
-
     @Override
     public void addBufferListener(Listener<INativeBuffer> listener)
     {
@@ -154,10 +171,11 @@ public class RecordingTunerController extends TunerController
     @Override
     public void apply(TunerConfiguration config) throws SourceException
     {
-        if(config instanceof RecordingTunerConfiguration)
-        {
-            RecordingTunerConfiguration rtc = (RecordingTunerConfiguration)config;
+        //Invoke super for frequency, frequency correction and autoPPM
+        super.apply(config);
 
+        if(config instanceof RecordingTunerConfiguration rtc)
+        {
             mCenterFrequency = rtc.getFrequency();
 
             try

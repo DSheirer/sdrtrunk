@@ -31,6 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.SortedSet;
 
+/**
+ * PolyphaseChannelSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
+ * polyphase tuner channel sources (ie DDCs).  This class is responsible for determining IF a requested channel can
+ * be provided and then adjusting the center frequency and provisioning a DDC Polyphase Tuner channel source.
+ */
 public class PolyphaseChannelSourceManager extends ChannelSourceManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSourceManager.class);
@@ -38,10 +43,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     private TunerController mTunerController;
 
     /**
-     * PolyphaseChannelSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
-     * polyphase tuner channel sources (ie DDCs).  This class is responsible for determining IF a requested channel can
-     * be provided and then adjusting the center frequency and provisioning a DDC Polyphase Tuner channel source.
-     *
+     * Constructs an instance
      * @param tunerController with a center tuned frequency that will be managed by this instance
      */
     public PolyphaseChannelSourceManager(TunerController tunerController)
@@ -52,6 +54,12 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         //Register to receive channel count change notifications for rebroadcasting
         mPolyphaseChannelManager.addSourceEventListener(this::process);
         mTunerController.addListener(mPolyphaseChannelManager);
+    }
+
+    @Override
+    public void stopAllChannels()
+    {
+        mPolyphaseChannelManager.stopAllChannels();
     }
 
     /**

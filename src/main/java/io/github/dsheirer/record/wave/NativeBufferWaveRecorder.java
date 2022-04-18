@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -44,20 +45,26 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class NativeBufferWaveRecorder extends Module implements Listener<INativeBuffer>, ISourceEventListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
-
+    private static final Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
+    private static final long STATUS_UPDATE_BYTE_INTERVAL = 1_048_576;
+    private static final long MAX_RECORDING_SIZE = (long)Integer.MAX_VALUE * 2l;
     private Dispatcher<INativeBuffer> mBufferProcessor = new Dispatcher<>(500,
-            "sdrtrunk-native buffer wave recorder", new NativeBufferPoisonPill());
+            "sdrtrunk native buffer wave recorder", new NativeBufferPoisonPill());
 
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private INativeBufferWaveWriter mWriter;
+    private NativeBufferWaveWriter mWriter;
     private String mFilePrefix;
-    private Path mFile;
     private AudioFormat mAudioFormat;
+    private IRecordingStatusListener mStatusListener;
+    private String mFilePath;
+    private long mCurrentSize = 0;
+    private long mLastReportedSize = 0;
+    private int mRecordingCount = 0;
 
-    public NativeBufferWaveRecorder(float sampleRate, String filePrefix)
+    public NativeBufferWaveRecorder(float sampleRate, String filePrefix, IRecordingStatusListener statusListener)
     {
         mFilePrefix = filePrefix;
+        mStatusListener = statusListener;
         setSampleRate(sampleRate);
     }
 
@@ -75,32 +82,70 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
         }
     }
 
-    public Path getFile()
+    private String getFileName()
     {
-        return mFile;
+        StringBuilder sb = new StringBuilder();
+        sb.append(mFilePrefix);
+        sb.append("_");
+        sb.append(TimeStamp.getTimeStamp("_"));
+        sb.append(".wav");
+        return sb.toString();
     }
 
     public void start()
     {
         if(mRunning.compareAndSet(false, true))
         {
+            mRecordingCount = 1;
+            mCurrentSize = 0;
+            mLastReportedSize = 0;
+
             try
             {
-                StringBuilder sb = new StringBuilder();
-                sb.append(mFilePrefix);
-                sb.append("_");
-                sb.append(TimeStamp.getTimeStamp("_"));
-                sb.append(".wav");
-                mFile = Paths.get(sb.toString());
-
-                mWriter = new INativeBufferWaveWriter(mAudioFormat, mFile);
-
+                mFilePath = getFileName();
+                mWriter = new NativeBufferWaveWriter(mAudioFormat, Paths.get(mFilePath));
                 mBufferProcessor.setListener(mWriter);
+                mStatusListener.update(mRecordingCount, mFilePath, 0);
                 mBufferProcessor.start();
             }
             catch(IOException io)
             {
                 mLog.error("Error starting complex baseband recorder", io);
+            }
+        }
+    }
+
+    /**
+     * Rollover the recording once the current recording file size is full
+     */
+    private void rollRecording()
+    {
+        if(mWriter != null)
+        {
+            try
+            {
+                mWriter.close();
+                mWriter = null;
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error closing recording during file rollover");
+            }
+
+            mCurrentSize = 0;
+            mLastReportedSize = 0;
+
+            try
+            {
+                mFilePath = getFileName();
+                mWriter = new NativeBufferWaveWriter(mAudioFormat, Paths.get(mFilePath));
+                mBufferProcessor.setListener(mWriter);
+                mStatusListener.update(++mRecordingCount, mFilePath, 0);
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error creating new recording during file rollover");
+                stop();
             }
         }
     }
@@ -119,19 +164,15 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
             {
                 //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
                 //close method will also rename the file and this can sometimes take a few seconds.
-                ThreadPool.CACHED.submit(new Runnable()
+                ThreadPool.CACHED.submit(() ->
                 {
-                    @Override
-                    public void run()
+                    try
                     {
-                        try
-                        {
-                            mWriter.close();
-                        }
-                        catch(IOException ioe)
-                        {
-                            mLog.error("Error closing baseband I/Q recorder", ioe);
-                        }
+                        mWriter.close();
+                    }
+                    catch(IOException ioe)
+                    {
+                        mLog.error("Error closing baseband I/Q recorder", ioe);
                     }
                 });
             }
@@ -141,8 +182,11 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     @Override
     public void receive(INativeBuffer nativeBuffer)
     {
-        //Queue the buffer with the buffer processor so that recording occurs on the buffer processor thread
-        mBufferProcessor.receive(nativeBuffer);
+        if(mRunning.get())
+        {
+            //Queue the buffer with the buffer processor so that recording occurs on the buffer processor thread
+            mBufferProcessor.receive(nativeBuffer);
+        }
     }
 
     public Listener<INativeBuffer> getReusableComplexBufferListener()
@@ -158,17 +202,13 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {
-        return new Listener<SourceEvent>()
+        return sourceEvent ->
         {
-            @Override
-            public void receive(SourceEvent sourceEvent)
+            switch(sourceEvent.getEvent())
             {
-                switch(sourceEvent.getEvent())
-                {
-                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                        setSampleRate(sourceEvent.getValue().floatValue());
-                        break;
-                }
+                case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                    setSampleRate(sourceEvent.getValue().floatValue());
+                    break;
             }
         };
     }
@@ -176,9 +216,9 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     /**
      * Wave writer implementation for complex samples delivered from buffer processor
      */
-    public class INativeBufferWaveWriter extends WaveWriter implements Listener<INativeBuffer>
+    public class NativeBufferWaveWriter extends WaveWriter implements Listener<INativeBuffer>
     {
-        public INativeBufferWaveWriter(AudioFormat format, Path file) throws IOException
+        public NativeBufferWaveWriter(AudioFormat format, Path file) throws IOException
         {
             super(format, file);
         }
@@ -194,11 +234,25 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
             {
                 try
                 {
-                    mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(iterator.next()));
+                    ByteBuffer data = ConversionUtils.convertToSigned16BitSamples(iterator.next());
+
+                    if((mCurrentSize + data.array().length) > MAX_RECORDING_SIZE)
+                    {
+                        rollRecording();
+                    }
+
+                    mWriter.writeData(data);
+
+                    mCurrentSize += data.array().length;
+                    if(mCurrentSize > (mLastReportedSize + STATUS_UPDATE_BYTE_INTERVAL))
+                    {
+                        mStatusListener.update(mRecordingCount, mFilePath, mCurrentSize);
+                        mLastReportedSize = mCurrentSize;
+                    }
                 }
                 catch(IOException ioe)
                 {
-                    mLog.error("IOException while writing I/Q buffers to wave recorder - stopping recorder", ioe);
+                    mLog.error("I/O exception while writing I/Q buffers to wave recorder - stopping recorder", ioe);
                     error = true;
                     stop();
                 }

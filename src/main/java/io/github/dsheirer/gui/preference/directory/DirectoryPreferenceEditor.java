@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.preference.directory;
@@ -62,6 +61,11 @@ public class DirectoryPreferenceEditor extends HBox
     private Button mChangeApplicationLogsButton;
     private Button mResetApplicationLogsButton;
     private Label mApplicationLogsPathLabel;
+
+    private Label mConfigurationLabel;
+    private Button mChangeConfigurationButton;
+    private Button mResetConfigurationButton;
+    private Label mConfigurationPathLabel;
 
     private Label mEventLogsLabel;
     private Button mChangeEventLogsButton;
@@ -152,6 +156,19 @@ public class DirectoryPreferenceEditor extends HBox
 
             GridPane.setMargin(getResetApplicationLogsButton(), new Insets(2, 0, 2, 0));
             mEditorPane.add(getResetApplicationLogsButton(), 3, row++);
+
+
+            GridPane.setMargin(getConfigurationLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getConfigurationLabel(), 0, row);
+
+            GridPane.setMargin(getConfigurationPathLabel(), new Insets(0, 10, 0, 0));
+            mEditorPane.add(getConfigurationPathLabel(), 1, row);
+
+            GridPane.setMargin(getChangeConfigurationButton(), new Insets(2, 10, 2, 0));
+            mEditorPane.add(getChangeConfigurationButton(), 2, row);
+
+            GridPane.setMargin(getResetConfigurationButton(), new Insets(2, 0, 2, 0));
+            mEditorPane.add(getResetConfigurationButton(), 3, row++);
 
 
             GridPane.setMargin(getEventLogsLabel(), new Insets(0, 10, 0, 0));
@@ -363,6 +380,71 @@ public class DirectoryPreferenceEditor extends HBox
         }
 
         return mApplicationLogsPathLabel;
+    }
+
+    private Label getConfigurationLabel()
+    {
+        if(mConfigurationLabel == null)
+        {
+            mConfigurationLabel = new Label("Configuration");
+        }
+
+        return mConfigurationLabel;
+    }
+
+    private Button getChangeConfigurationButton()
+    {
+        if(mChangeConfigurationButton == null)
+        {
+            mChangeConfigurationButton = new Button("Change...");
+            mChangeConfigurationButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    DirectoryChooser directoryChooser = new DirectoryChooser();
+                    directoryChooser.setTitle("Select Configuration Folder");
+                    directoryChooser.setInitialDirectory(mDirectoryPreference.getDirectoryConfiguration().toFile());
+                    Stage stage = (Stage)getChangeConfigurationButton().getScene().getWindow();
+                    File selected = directoryChooser.showDialog(stage);
+
+                    if(selected != null)
+                    {
+                        mDirectoryPreference.setDirectoryConfiguration(selected.toPath());
+                    }
+                }
+            });
+        }
+
+        return mChangeConfigurationButton;
+    }
+
+    private Button getResetConfigurationButton()
+    {
+        if(mResetConfigurationButton == null)
+        {
+            mResetConfigurationButton = new Button("Reset");
+            mResetConfigurationButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    mDirectoryPreference.resetDirectoryConfiguration();
+                }
+            });
+        }
+
+        return mResetConfigurationButton;
+    }
+
+    private Label getConfigurationPathLabel()
+    {
+        if(mConfigurationPathLabel == null)
+        {
+            mConfigurationPathLabel = new Label(mDirectoryPreference.getDirectoryConfiguration().toString());
+        }
+
+        return mConfigurationPathLabel;
     }
 
     private Label getEventLogsLabel()

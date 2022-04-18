@@ -17,35 +17,21 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.source.tuner.usb.converter;
+package io.github.dsheirer.source.tuner;
 
-import io.github.dsheirer.sample.complex.ComplexSamples;
-import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
-
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Base class for native samples byte buffer.  This class holds a copy of the byte array of samples
- * that was copied from a native byte buffer into the JVM heap space.
- *
- * Consumers of this sample buffer must make a copy of the contents in either interleaved or non-interleaved
- * sample array buffers.
+ * Tuner error listener that logs any received tuner error messages
  */
-public abstract class NativeSampleBuffer
+public class LoggingTunerErrorListener implements ITunerErrorListener
 {
-    private byte[] mSamples;
+    private Logger mLog = LoggerFactory.getLogger(LoggingTunerErrorListener.class);
 
-    public NativeSampleBuffer(byte[] samples)
+    @Override
+    public void setErrorMessage(String errorMessage)
     {
-        mSamples = samples;
+        mLog.error("Tuner Error: " + errorMessage);
     }
-
-    protected byte[] getSamples()
-    {
-        return mSamples;
-    }
-
-    public abstract List<ComplexSamples> convert();
-
-    public abstract List<InterleavedComplexSamples> convertInterleaved();
 }

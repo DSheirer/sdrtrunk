@@ -36,7 +36,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.TunerModel;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -80,6 +80,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private final static Logger mLog = LoggerFactory.getLogger(ChannelConfigurationEditor.class);
 
     private PlaylistManager mPlaylistManager;
+    protected TunerManager mTunerManager;
     protected UserPreferences mUserPreferences;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private Button mPlayButton;
@@ -100,9 +101,17 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private IconNode mStopGraphicNode;
     private ChannelProcessingMonitor mChannelProcessingMonitor = new ChannelProcessingMonitor();
 
-    public ChannelConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    /**
+     * Constructs an instance
+     * @param playlistManager for playlists
+     * @param tunerManager for tuners
+     * @param userPreferences for preferences
+     */
+    public ChannelConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
+                                      UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
 
         setMaxWidth(Double.MAX_VALUE);
@@ -234,11 +243,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         }
 
         modifiedProperty().setValue(false);
-    }
-
-    protected TunerModel getTunerModel()
-    {
-        return mPlaylistManager.getTunerModel();
     }
 
     @Override

@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.source;
@@ -25,8 +22,8 @@ package io.github.dsheirer.gui.playlist.source;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -59,7 +56,7 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
 {
     private final static Logger mLog = LoggerFactory.getLogger(FrequencyEditor.class);
     private static final String NONE = "(none)           ";
-    private TunerModel mTunerModel;
+    private TunerManager mTunerManager;
     private FrequencyBox mPrimaryFrequencyBox;
     private ObservableList<FrequencyBox> mFrequencyBoxes = FXCollections.observableArrayList();
     private ComboBox<String> mPreferredTunerComboBox;
@@ -75,13 +72,13 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
      * define constraints for the channel rotation delay monitor, how long the monitor dwells on each frequency in a
      * multi-frequency configuration.
      *
-     * @param tunerModel for accessing list of tuners to select a preferred tuner
+     * @param tunerManager for accessing list of tuners to select a preferred tuner
      * @param minRotationDelay in milliseconds for channel/frequency dwell
      * @param maxRotationDelay in milliseconds for channel/frequency dwell
      */
-    public FrequencyEditor(TunerModel tunerModel, int minRotationDelay, int maxRotationDelay, int defaultRotationDelay)
+    public FrequencyEditor(TunerManager tunerManager, int minRotationDelay, int maxRotationDelay, int defaultRotationDelay)
     {
-        mTunerModel = tunerModel;
+        mTunerManager = tunerManager;
         mAllowMultipleFrequencies = true;
         mFrequencyRotationMinimum = minRotationDelay;
         mFrequencyRotationMaximum = maxRotationDelay;
@@ -91,11 +88,11 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
 
     /**
      * Constructs an instance with a default behavior of single frequency support only.
-     * @param tunerModel for accessing list of tuners to select a preferred tuner
+     * @param tunerManager for accessing list of tuners to select a preferred tuner
      */
-    public FrequencyEditor(TunerModel tunerModel)
+    public FrequencyEditor(TunerManager tunerManager)
     {
-        mTunerModel = tunerModel;
+        mTunerManager = tunerManager;
         init();
     }
 
@@ -333,9 +330,9 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
         getPreferredTunerComboBox().getItems().clear();
         getPreferredTunerComboBox().getItems().add(NONE);
 
-        if(mTunerModel != null)
+        if(mTunerManager != null)
         {
-            getPreferredTunerComboBox().getItems().addAll(mTunerModel.getTunerNames());
+            getPreferredTunerComboBox().getItems().addAll(mTunerManager.getPreferredTunerNames());
         }
     }
 

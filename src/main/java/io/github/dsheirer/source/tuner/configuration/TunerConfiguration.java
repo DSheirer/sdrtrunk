@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.configuration;
 
@@ -36,56 +33,50 @@ import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
 
 /**
- * Abstract class to hold a named configuration for a specific type of tuner
+ * Abstract class to hold a configuration for a specific type of tuner
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.PROPERTY, property="type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value=AirspyTunerConfiguration.class, name="airspyTunerConfiguration"),
-    @JsonSubTypes.Type(value=E4KTunerConfiguration.class, name="e4KTunerConfiguration"),
-    @JsonSubTypes.Type(value=FCD1TunerConfiguration.class, name="fcd1TunerConfiguration"),
-    @JsonSubTypes.Type(value=FCD2TunerConfiguration.class, name="fcd2TunerConfiguration"),
-    @JsonSubTypes.Type(value=HackRFTunerConfiguration.class, name="hackRFTunerConfiguration"),
-    @JsonSubTypes.Type(value= RecordingTunerConfiguration.class, name="recordingTunerConfiguration"),
-    @JsonSubTypes.Type(value=R820TTunerConfiguration.class, name="r820TTunerConfiguration"),
+        @JsonSubTypes.Type(value = AirspyTunerConfiguration.class, name = "airspyTunerConfiguration"),
+        @JsonSubTypes.Type(value = E4KTunerConfiguration.class, name = "e4KTunerConfiguration"),
+        @JsonSubTypes.Type(value = FCD1TunerConfiguration.class, name = "fcd1TunerConfiguration"),
+        @JsonSubTypes.Type(value = FCD2TunerConfiguration.class, name = "fcd2TunerConfiguration"),
+        @JsonSubTypes.Type(value = HackRFTunerConfiguration.class, name = "hackRFTunerConfiguration"),
+        @JsonSubTypes.Type(value = RecordingTunerConfiguration.class, name = "recordingTunerConfiguration"),
+        @JsonSubTypes.Type(value = R820TTunerConfiguration.class, name = "r820TTunerConfiguration"),
 })
-@JacksonXmlRootElement( localName = "tuner_configuration" )
+@JacksonXmlRootElement(localName = "tuner_configuration")
 public abstract class TunerConfiguration
 {
-    protected String mName;
-    protected String mUniqueID;
-    protected boolean mAssigned;
-    protected long mFrequency;
+    private String mUniqueID;
+    private long mFrequency = 101100000;
+    private double mFrequencyCorrection = 0.0d;
+    private boolean mAutoPPMCorrection = true;
 
     /**
-     * Default constructor to support JAXB
+     * Default constructor to support Jackson
      */
     public TunerConfiguration()
     {
     }
 
     /**
+     * Identifies the tuner type for this configuration
+     */
+    @JsonIgnore
+    public abstract TunerType getTunerType();
+
+    /**
      * Normal constructor
      */
-    public TunerConfiguration(String uniqueID, String name)
+    public TunerConfiguration(String uniqueID)
     {
         mUniqueID = uniqueID;
-        mName = name;
     }
 
     public String toString()
     {
-        return mName;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "name")
-    public String getName()
-    {
-        return mName;
-    }
-
-    public void setName(String name)
-    {
-        mName = name;
+        return getTunerType() + " " + getUniqueID();
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "unique_id")
@@ -97,18 +88,6 @@ public abstract class TunerConfiguration
     public void setUniqueID(String id)
     {
         mUniqueID = id;
-        ;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "assigned")
-    public boolean isAssigned()
-    {
-        return mAssigned;
-    }
-
-    public void setAssigned(boolean assigned)
-    {
-        mAssigned = assigned;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "frequency")
@@ -122,12 +101,35 @@ public abstract class TunerConfiguration
         mFrequency = frequency;
     }
 
-    @JsonIgnore
-    public abstract TunerType getTunerType();
+    @JacksonXmlProperty(isAttribute = true, localName = "frequency_correction")
+    public double getFrequencyCorrection()
+    {
+        return mFrequencyCorrection;
+    }
 
-    //Below is maintained for compatibility with javax.xml.bind serialization of the settings file.
-    //This can be removed if/once there is a new version of the settings.
-    @JacksonXmlProperty(isAttribute = true, localName = "tuner_type")
-    public String getLegacyAttribute(){ return null; }
-    public void setLegacyAttribute(String bonkers) { }
+    public void setFrequencyCorrection(double value)
+    {
+        mFrequencyCorrection = value;
+    }
+
+    /**
+     * Indicates if automatic correction of PPM from measured frequency error is enabled/disabled.
+     *
+     * @return true if auto-correction is enabled.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "auto_ppm_correction_enabled")
+    public boolean getAutoPPMCorrectionEnabled()
+    {
+        return mAutoPPMCorrection;
+    }
+
+    /**
+     * Sets the enabled state for auto-correction of PPM from measured frequency error values.
+     *
+     * @param enabled
+     */
+    public void setAutoPPMCorrectionEnabled(boolean enabled)
+    {
+        mAutoPPMCorrection = enabled;
+    }
 }

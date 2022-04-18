@@ -21,7 +21,9 @@ package io.github.dsheirer.source.tuner.test;
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.LoggingTunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
+import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +49,12 @@ public class TestTunerController extends TunerController
       */
     public TestTunerController()
     {
-        super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
+        super(new LoggingTunerErrorListener());
+
+        setMinimumFrequency(MINIMUM_FREQUENCY);
+        setMaximumFrequency(MAXIMUM_FREQUENCY);
+        setMiddleUnusableHalfBandwidth(DC_NOISE_BANDWIDTH);
+        setUsableBandwidthPercentage(USABLE_BANDWIDTH_PERCENTAGE);
 
         int sweepRate = 0;  //Hz per interval
 //        long initialToneFrequency = SAMPLE_RATE / 2 + 100;
@@ -72,9 +79,21 @@ public class TestTunerController extends TunerController
     }
 
     @Override
-    public void dispose()
+    public void start() throws SourceException
     {
-        //no-op
+        //No-op
+    }
+
+    @Override
+    public void stop()
+    {
+        //No-op
+    }
+
+    @Override
+    public TunerType getTunerType()
+    {
+        return TunerType.TEST;
     }
 
     @Override

@@ -29,7 +29,6 @@ import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import io.github.dsheirer.spectrum.ComplexDftProcessor;
 import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.SpectrumPanel;
@@ -39,10 +38,15 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.util.concurrent.TimeUnit;
 
 public class SynthesizerViewer extends JFrame
@@ -54,7 +58,7 @@ public class SynthesizerViewer extends JFrame
     private static final int CHANNEL_FFT_FRAME_RATE = 20; //frames per second
     private static final int DATA_GENERATOR_FRAME_RATE = 50; //frames per second
 
-    private SettingsManager mSettingsManager = new SettingsManager(new TunerConfigurationModel());
+    private SettingsManager mSettingsManager = new SettingsManager();
     private JPanel mPrimaryPanel;
     private PrimarySpectrumPanel mPrimarySpectrumPanel;
     private ChannelPanel mChannel1Panel;

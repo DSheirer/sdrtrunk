@@ -172,6 +172,10 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
                 sourceEvent.setSource(this);
                 broadcastProducerSourceEvent(sourceEvent);
                 break;
+            case NOTIFICATION_TUNER_SHUTDOWN:
+                //Rebroadcast this event so the channel processing manager receives it and shuts down the channel
+                broadcastConsumerSourceEvent(sourceEvent);
+                break;
             //Request events from the consumer
             case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
                 setChannelFrequencyCorrection(sourceEvent.getValue().longValue());
