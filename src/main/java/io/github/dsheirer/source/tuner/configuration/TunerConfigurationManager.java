@@ -23,6 +23,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
@@ -152,12 +153,10 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
     {
         if(current == TunerStatus.DISABLED)
         {
-            mLog.info("Setting Tuner to Disabled: " + discoveredTuner.getId());
             addDisabledTuner(discoveredTuner);
         }
         else if(current == TunerStatus.ENABLED)
         {
-            mLog.info("Setting Tuner to Enabled: " + discoveredTuner.getId());
             removeDisabledTuner(discoveredTuner);
         }
     }
@@ -287,7 +286,7 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
             return optional.get();
         }
 
-        TunerConfiguration config = TunerConfigurationFactory.getTunerConfiguration(type, uniqueID);
+        TunerConfiguration config = TunerFactory.getTunerConfiguration(type, uniqueID);
         addTunerConfiguration(config);
         return config;
     }

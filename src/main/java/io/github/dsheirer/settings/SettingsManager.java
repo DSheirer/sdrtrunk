@@ -18,6 +18,7 @@
  */
 package io.github.dsheirer.settings;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
@@ -272,7 +273,8 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 
             JacksonXmlModule xmlModule = new JacksonXmlModule();
             xmlModule.setDefaultUseWrapper(false);
-            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule)
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             try(InputStream in = Files.newInputStream(settingsPath))
             {
