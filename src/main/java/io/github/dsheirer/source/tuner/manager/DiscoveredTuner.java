@@ -83,6 +83,8 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
         //If there was a change in state
         if(mEnabled ^ enabled)
         {
+            mErrorMessage = null;
+
             mEnabled = enabled;
 
             if(mEnabled)

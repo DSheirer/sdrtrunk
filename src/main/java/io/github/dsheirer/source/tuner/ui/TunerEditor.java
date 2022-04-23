@@ -62,7 +62,6 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     private Logger mLog = LoggerFactory.getLogger(TunerEditor.class);
     private static final String BUTTON_STATUS_ENABLE = "Enable";
     private static final String BUTTON_STATUS_DISABLE = "Disable";
-    private static final String BUTTON_STATUS_RESET = "Reset Error";
     private static final long serialVersionUID = 1L;
     private UserPreferences mUserPreferences;
     private TunerManager mTunerManager;
@@ -71,9 +70,10 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     private FrequencyAndCorrectionChangeListener mFrequencyAndCorrectionChangeListener = new FrequencyAndCorrectionChangeListener();
     private JFrequencyControl mFrequencyControl;
     private JSpinner mFrequencyCorrectionSpinner;
-    private JButton mChangeStatusButton;
+    private JButton mEnabledButton;
     private JButton mViewSpectrumButton;
     private JButton mNewSpectrumButton;
+    private JButton mRestartTunerButton;
     private JToggleButton mRecordButton;
     private ButtonPanel mButtonsPanel;
     private FrequencyPanel mFrequencyPanel;
@@ -107,6 +107,11 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
             if(mDiscoveredTuner.hasTuner())
             {
                 mDiscoveredTuner.getTuner().addTunerEventListener(this);
+
+                if(!mDiscoveredTuner.hasTunerConfiguration())
+                {
+                    mLog.warn("Tuner does not have a tuner configuration ....");
+                }
             }
         }
     }
@@ -327,15 +332,15 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     /**
      * Button to change enable, disable, or error restart status.
      */
-    protected JButton getChangeStatusButton()
+    protected JButton getEnabledButton()
     {
-        if(mChangeStatusButton == null)
+        if(mEnabledButton == null)
         {
-            mChangeStatusButton = new JButton(BUTTON_STATUS_ENABLE);
-            mChangeStatusButton.setToolTipText("Enable or disable the tuner for use by sdrtrunk, or attempt to reset a tuner error");
-            mChangeStatusButton.addActionListener(e ->
+            mEnabledButton = new JButton(BUTTON_STATUS_ENABLE);
+            mEnabledButton.setToolTipText("Enable or disable the tuner for use by sdrtrunk, or attempt to reset a tuner error");
+            mEnabledButton.addActionListener(e ->
             {
-                switch(getChangeStatusButton().getText())
+                switch(getEnabledButton().getText())
                 {
                     case BUTTON_STATUS_DISABLE:
                         mLog.info("Disabling " + getDiscoveredTuner().getTunerClass() + " tuner");
@@ -345,17 +350,37 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                         mLog.info("Enabling " + getDiscoveredTuner().getTunerClass() + " tuner");
                         getDiscoveredTuner().setEnabled(true);
                         break;
-                    case BUTTON_STATUS_RESET:
-                        mLog.info("Resetting " + getDiscoveredTuner().getTunerClass() + " tuner");
-                        getDiscoveredTuner().reset();
-                        break;
                     default:
                         mLog.info("None matched");
                 }
             });
         }
 
-        return mChangeStatusButton;
+        return mEnabledButton;
+    }
+
+    protected JButton getRestartTunerButton()
+    {
+        if(mRestartTunerButton == null)
+        {
+            mRestartTunerButton = new JButton("Restart Tuner");
+            mRestartTunerButton.setVisible(false);
+            mRestartTunerButton.setToolTipText("Attempt to restart this tuner to recover from error condition");
+            mRestartTunerButton.addActionListener(e ->
+            {
+                if(!hasTuner() && getDiscoveredTuner().getTunerStatus() == TunerStatus.ERROR)
+                {
+                    mLog.info("Resetting " + getDiscoveredTuner().getTunerClass() + " tuner");
+                    getDiscoveredTuner().reset();
+                    if(getDiscoveredTuner().isEnabled())
+                    {
+                        getDiscoveredTuner().start();
+                    }
+                }
+            });
+        }
+
+        return mRestartTunerButton;
     }
 
     /**
@@ -532,12 +557,12 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
          */
         public ButtonPanel()
         {
-            setLayout(new MigLayout("insets 0,fill", "[][][][][grow,fill]", ""));
-            add(getChangeStatusButton());
+            setLayout(new MigLayout("insets 0,fill", "[][][][][][grow,fill]", ""));
+            add(getEnabledButton());
             add(getRecordButton());
             add(getViewSpectrumButton());
-            add(getNewSpectrumButton(), "wrap");
-//            add(new JLabel(""), "wrap"); //Spacer to allow recording status label to grow and not affect buttons
+            add(getNewSpectrumButton());
+            add(getRestartTunerButton(), "wrap");
             add(getRecordingStatusLabel(), "span");
         }
 
@@ -552,18 +577,15 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
             getRecordingStatusLabel().setText(" ");
             getViewSpectrumButton().setEnabled(tunerStatus.isAvailable() && getDiscoveredTuner().hasTuner());
             getNewSpectrumButton().setEnabled(tunerStatus.isAvailable() && getDiscoveredTuner().hasTuner());
+            getRestartTunerButton().setVisible(tunerStatus == TunerStatus.ERROR);
 
-            switch(tunerStatus)
+            if(getDiscoveredTuner().isEnabled())
             {
-                case ENABLED:
-                    getChangeStatusButton().setText(BUTTON_STATUS_DISABLE);
-                    break;
-                case DISABLED:
-                    getChangeStatusButton().setText(BUTTON_STATUS_ENABLE);
-                    break;
-                case ERROR:
-                    getChangeStatusButton().setText(BUTTON_STATUS_RESET);
-                    break;
+                getEnabledButton().setText(BUTTON_STATUS_DISABLE);
+            }
+            else
+            {
+                getEnabledButton().setText(BUTTON_STATUS_ENABLE);
             }
         }
     }

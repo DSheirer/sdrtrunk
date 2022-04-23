@@ -329,6 +329,8 @@ public abstract class USBTunerController extends TunerController
      */
     private Device findDevice() throws SourceException
     {
+        Device foundDevice = null;
+
         DeviceList deviceList = new DeviceList();
         int count = LibUsb.getDeviceList(mDeviceContext, deviceList);
 
@@ -341,9 +343,21 @@ public abstract class USBTunerController extends TunerController
 
                 if(mBus == bus && mPort == port)
                 {
-                    return device;
+                    foundDevice = device;
+                }
+                else
+                {
+                    LibUsb.unrefDevice(device);
                 }
             }
+        }
+
+        //Free the device list but don't auto-unref all the devices ... we already did that during iteration
+        LibUsb.freeDeviceList(deviceList, false);
+
+        if(foundDevice != null)
+        {
+            return foundDevice;
         }
 
         throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPort +
@@ -529,6 +543,7 @@ public abstract class USBTunerController extends TunerController
             else
             {
                 mLog.error("Error submitting USB transfer - " + LibUsb.errorName(status));
+                setErrorMessage("Usb I/O Error - Can't submit buffers to tuner - stopping tuner");
             }
         }
 
