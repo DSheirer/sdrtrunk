@@ -110,10 +110,17 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
         if(getChannelSourceManager() != null)
         {
             getChannelSourceManager().stopAllChannels();
+            getChannelSourceManager().dispose();
+            mChannelSourceManager = null;
         }
 
         broadcast(new TunerEvent(this, Event.NOTIFICATION_SHUTTING_DOWN));
         getTunerController().stop();
+        getTunerController().dispose();
+
+        mTunerEventBroadcaster.clear();
+        mTunerFrequencyErrorMonitor = null;
+        mTunerErrorListener = null;
     }
 
     /**

@@ -37,6 +37,14 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
 
     /**
+     * Prepare for disposal
+     */
+    public void dispose()
+    {
+        mSourceEventBroadcaster.clear();
+    }
+
+    /**
      * Sorted set of tuner channels being sourced by this source manager.  Set is ordered by frequency lowest to highest
      */
     public abstract SortedSet<TunerChannel> getTunerChannels();

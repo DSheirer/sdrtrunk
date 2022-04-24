@@ -25,8 +25,9 @@ import io.github.dsheirer.source.SourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class FrequencyController
 {
@@ -40,8 +41,8 @@ public class FrequencyController
     private double mFrequencyCorrection = 0.0d;
     private double mSampleRate = 0.0d;
     private boolean mLocked = false;
-
-    private List<ISourceEventProcessor> mProcessors = new CopyOnWriteArrayList<>();
+    private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
+    private ReentrantLock mLock = new ReentrantLock();
 
     /**
      * Constructs an instance
@@ -50,6 +51,15 @@ public class FrequencyController
     public FrequencyController(Tunable tunable)
     {
         mTunable = tunable;
+    }
+
+    /**
+     * Prepare for disposal of this instance.
+     */
+    public void dispose()
+    {
+        mProcessors.clear();
+        mTunable = null;
     }
 
     /**
@@ -276,9 +286,18 @@ public class FrequencyController
      */
     public void addListener(ISourceEventProcessor processor)
     {
-        if(!mProcessors.contains(processor))
+        mLock.lock();
+
+        try
         {
-            mProcessors.add(processor);
+            if(!mProcessors.contains(processor))
+            {
+                mProcessors.add(processor);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 
@@ -287,7 +306,16 @@ public class FrequencyController
      */
     public void removeFrequencyChangeProcessor(ISourceEventProcessor processor)
     {
-        mProcessors.remove(processor);
+        mLock.lock();
+
+        try
+        {
+            mProcessors.remove(processor);
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
 
@@ -318,9 +346,18 @@ public class FrequencyController
 
     public void broadcast(SourceEvent event) throws SourceException
     {
-        for(ISourceEventProcessor processor : mProcessors)
+        mLock.lock();
+
+        try
         {
-            processor.process(event);
+            for(ISourceEventProcessor processor : mProcessors)
+            {
+                processor.process(event);
+            }
+        }
+        finally
+        {
+            mLock.unlock();
         }
     }
 

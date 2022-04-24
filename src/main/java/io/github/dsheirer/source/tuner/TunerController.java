@@ -49,13 +49,13 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     protected Broadcaster<INativeBuffer> mNativeBufferBroadcaster = new Broadcaster();
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
-    private double mUsableBandwidthPercentage;
-    private Listener<SourceEvent> mSourceEventListener;
     private int mMeasuredFrequencyError;
+    private double mUsableBandwidthPercentage;
+    private SourceEventListenerToProcessorAdapter mSourceEventListener;
     private NativeBufferWaveRecorder mRecorder;
     private ITunerErrorListener mTunerErrorListener;
-    public FrequencyErrorCorrectionManager mFrequencyErrorCorrectionManager;
     private DecimalFormat mFrequencyErrorPPMFormat = new DecimalFormat("0.0");
+    private FrequencyErrorCorrectionManager mFrequencyErrorCorrectionManager;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -76,6 +76,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     public FrequencyErrorCorrectionManager getFrequencyErrorCorrectionManager()
     {
         return mFrequencyErrorCorrectionManager;
+    }
+
+    protected void dispose()
+    {
+        getFrequencyErrorCorrectionManager().dispose();
+        mNativeBufferBroadcaster.clear();
+        mFrequencyController.dispose();
+        mSourceEventListener.dispose();
+        mTunerErrorListener = null;
     }
 
     /**
@@ -141,7 +150,6 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         setFrequency(config.getFrequency());
         setFrequencyCorrection(config.getFrequencyCorrection());
         getFrequencyErrorCorrectionManager().setEnabled(config.getAutoPPMCorrectionEnabled());
-
     }
 
     /**

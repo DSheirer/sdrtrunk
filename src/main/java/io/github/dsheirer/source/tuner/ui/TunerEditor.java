@@ -116,7 +116,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         }
     }
 
-    /**
+    /**r
      * Indicates if the controls are currently being loaded with values.
      */
     protected boolean isLoading()
@@ -337,7 +337,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         if(mEnabledButton == null)
         {
             mEnabledButton = new JButton(BUTTON_STATUS_ENABLE);
-            mEnabledButton.setToolTipText("Enable or disable the tuner for use by sdrtrunk, or attempt to reset a tuner error");
+            mEnabledButton.setToolTipText("Enable or disable the tuner for use by sdrtrunk");
             mEnabledButton.addActionListener(e ->
             {
                 switch(getEnabledButton().getText())
@@ -493,6 +493,11 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
      */
     public void dispose()
     {
+        turnOffRecorder();
+
+        getFrequencyControl().clearListeners();
+        getFrequencyCorrectionSpinner().removeChangeListener(mFrequencyAndCorrectionChangeListener);
+
         if(mDiscoveredTuner != null)
         {
             mDiscoveredTuner.removeTunerStatusListener(this);
@@ -501,9 +506,12 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
             {
                 mDiscoveredTuner.getTuner().removeTunerEventListener(this);
             }
+
+            mDiscoveredTuner = null;
         }
 
-        turnOffRecorder();
+        mUserPreferences = null;
+        mTunerManager = null;
     }
 
     /**

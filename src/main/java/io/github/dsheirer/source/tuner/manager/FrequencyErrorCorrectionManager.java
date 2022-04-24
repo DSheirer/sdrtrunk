@@ -50,6 +50,15 @@ public class FrequencyErrorCorrectionManager
     }
 
     /**
+     * Dispose of this manager instance and nullify references.
+     */
+    public void dispose()
+    {
+        setEnabled(false);
+        mTunerController = null;
+    }
+
+    /**
      * Enables or disables automatic frequency PPM correction.
      * @param enabled to true to turn on automatic PPM adjustments.
      */
@@ -80,7 +89,7 @@ public class FrequencyErrorCorrectionManager
      */
     private void applyCorrection()
     {
-        if(mEnabled && mTunerController.hasMeasuredFrequencyError())
+        if(mEnabled && mTunerController != null && mTunerController.hasMeasuredFrequencyError())
         {
             double frequencyCorrection = mTunerController.getFrequencyCorrection();
             frequencyCorrection -= mTunerController.getPPMFrequencyError();
