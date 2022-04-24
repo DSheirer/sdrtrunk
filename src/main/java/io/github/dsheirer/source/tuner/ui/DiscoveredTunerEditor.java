@@ -99,6 +99,8 @@ public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements ID
 
         super.setItem(tuner);
 
+        mEditorScroller.remove(mEditor);
+
         if(hasItem())
         {
             mEditor = TunerFactory.getEditor(mUserPreferences, getItem(), mTunerManager);

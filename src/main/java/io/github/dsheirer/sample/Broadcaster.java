@@ -22,8 +22,10 @@ package io.github.dsheirer.sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Broadcasts an item to multiple listeners
@@ -32,8 +34,8 @@ public class Broadcaster<T> implements Listener<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Broadcaster.class);
     private boolean mDebug;
-
-    protected List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
+    private ReentrantLock mLock = new ReentrantLock();
+    private List<Listener<T>> mListeners = new ArrayList<>();
 
     public Broadcaster()
     {
@@ -64,7 +66,16 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void dispose()
     {
-        mListeners.clear();
+        mLock.lock();
+
+        try
+        {
+            mListeners.clear();
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -73,14 +84,6 @@ public class Broadcaster<T> implements Listener<T>
     public boolean hasListeners()
     {
         return !mListeners.isEmpty();
-    }
-
-    /**
-     * Indicates if the listener is currently registered with this broadcaster
-     */
-    public boolean hasListener(Listener<T> listener)
-    {
-        return listener != null && mListeners.contains(listener);
     }
 
     /**
@@ -96,7 +99,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public List<Listener<T>> getListeners()
     {
-        return mListeners;
+        return Collections.unmodifiableList(mListeners);
     }
 
     /**
@@ -106,9 +109,21 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void addListener(Listener<T> listener)
     {
-        if(listener != null && !mListeners.contains(listener))
+        if(listener != null)
         {
-            mListeners.add(listener);
+            mLock.lock();
+
+            try
+            {
+                if(!mListeners.contains(listener))
+                {
+                    mListeners.add(listener);
+                }
+            }
+            finally
+            {
+                mLock.unlock();
+            }
         }
     }
 
@@ -119,7 +134,16 @@ public class Broadcaster<T> implements Listener<T>
     {
         if(listener != null)
         {
-            mListeners.remove(listener);
+            mLock.lock();
+
+            try
+            {
+                mListeners.remove(listener);
+            }
+            finally
+            {
+                mLock.unlock();
+            }
         }
     }
 
@@ -128,7 +152,16 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void clear()
     {
-        mListeners.clear();
+        mLock.lock();
+
+        try
+        {
+            mListeners.clear();
+        }
+        finally
+        {
+            mLock.unlock();
+        }
     }
 
     /**
@@ -136,21 +169,30 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        if(mDebug)
+        mLock.lock();
+
+        try
         {
-            for(Listener<T> listener : mListeners)
+            if(mDebug)
             {
-                mLog.debug("Sending [" + t + "] to listener [" + listener.getClass() + "]");
-                listener.receive(t);
-                mLog.debug("Finished sending to listener [" + listener.getClass() + "]");
+                for(Listener<T> listener : mListeners)
+                {
+                    mLog.debug("Sending [" + t + "] to listener [" + listener.getClass() + "]");
+                    listener.receive(t);
+                    mLog.debug("Finished sending to listener [" + listener.getClass() + "]");
+                }
+            }
+            else
+            {
+                for(Listener<T> listener : mListeners)
+                {
+                    listener.receive(t);
+                }
             }
         }
-        else
+        finally
         {
-            for(Listener<T> listener : mListeners)
-            {
-                listener.receive(t);
-            }
+            mLock.unlock();
         }
     }
 }

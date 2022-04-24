@@ -194,7 +194,10 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
      */
     public void addListener(ISourceEventProcessor processor)
     {
-        mProcessors.add(processor);
+        if(!mProcessors.contains(processor))
+        {
+            mProcessors.add(processor);
+        }
     }
 
     /**

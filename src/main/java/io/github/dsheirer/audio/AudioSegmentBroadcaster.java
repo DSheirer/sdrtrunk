@@ -39,7 +39,7 @@ public class AudioSegmentBroadcaster<T extends AudioSegment> extends Broadcaster
     @Override
     public void broadcast(T audioSegment)
     {
-        for(Listener<T> listener : mListeners)
+        for(Listener<T> listener : getListeners())
         {
             audioSegment.incrementConsumerCount();
             listener.receive(audioSegment);

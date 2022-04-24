@@ -26,7 +26,6 @@ import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.manager.FrequencyErrorCorrectionManager;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,16 +300,6 @@ public class RTL2832TunerController extends USBTunerController
     }
 
     /**
-     * Manager for applying automatic frequency error PPM adjustments to the tuner controller based on
-     * frequency error measurements received from certain downstream decoders (e.g. P25).
-     * @return manager
-     */
-    public FrequencyErrorCorrectionManager getFrequencyErrorCorrectionManager()
-    {
-        return mFrequencyErrorCorrectionManager;
-    }
-
-    /**
      * Overrides updates for measured frequency error so that the updates can also be applied to the
      * frequency error correction manager for automatic PPM updating.
      * @param measuredFrequencyError in hertz averaged over a 5 second interval.
@@ -348,11 +337,11 @@ public class RTL2832TunerController extends USBTunerController
         {
             if(hasEmbeddedTuner())
             {
-                return TunerClass.RTL2832.toString() + "/" + getTunerType().getLabel() + " " + mDescriptor.getSerial();
+                return TunerClass.RTL2832 + "/" + getTunerType().getLabel() + " " + mDescriptor.getSerial();
             }
             else
             {
-                return TunerClass.RTL2832.toString() + " " + mDescriptor.getSerial();
+                return TunerClass.RTL2832 + " " + mDescriptor.getSerial();
             }
         }
         else
