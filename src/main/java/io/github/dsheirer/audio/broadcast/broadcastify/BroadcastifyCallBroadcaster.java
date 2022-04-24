@@ -68,6 +68,8 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     private static final String MULTIPART_TYPE = "multipart";
     private static final String DEFAULT_SUBTYPE = "form-data";
     private static final String MULTIPART_FORM_DATA = MULTIPART_TYPE + "/" + DEFAULT_SUBTYPE;
+    private static final long BROADCASTIFY_TEST_INTERVAL = 15l; // minutes
+    private ScheduledFuture<?> mBroadcastifyTestFuture;
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
     private ScheduledFuture<?> mAudioRecordingProcessorFuture;
     private HttpClient mHttpClient = HttpClient.newBuilder()
@@ -102,6 +104,9 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         if(response != null && response.toLowerCase().startsWith("ok"))
         {
             setBroadcastState(BroadcastState.CONNECTED);
+
+            // Test periodically so we don't get marked offline due to radio inactivity
+            mBroadcastifyTestFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BroadcastifyCallTest(), BROADCASTIFY_TEST_INTERVAL, BROADCASTIFY_TEST_INTERVAL, TimeUnit.MINUTES);
         }
         else
         {
@@ -124,10 +129,25 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     {
         if(mAudioRecordingProcessorFuture != null)
         {
+            mBroadcastifyTestFuture.cancel(true);
+            mBroadcastifyTestFuture = null;
             mAudioRecordingProcessorFuture.cancel(true);
             mAudioRecordingProcessorFuture = null;
             dispose();
             setBroadcastState(BroadcastState.DISCONNECTED);
+        }
+    }
+
+    public class BroadcastifyCallTest implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            String response = testConnection(getBroadcastConfiguration());
+            if(response != null && !response.toLowerCase().startsWith("ok"))
+            {
+                mLog.info("Broadcastify Calls test failure");
+            }
         }
     }
 
