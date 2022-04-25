@@ -33,6 +33,7 @@ public enum IcecastHeader
     PUBLIC("ice-public"),
     URL("ice-url"),
     USER_AGENT("User-Agent"),
+    METAINT("icy-metaint"),
 
     UNKNOWN("unknown");
 

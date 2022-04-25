@@ -63,6 +63,7 @@ public class IcecastTCPConfiguration extends IcecastConfiguration
         copy.setName(getName());
         copy.setHost(getHost());
         copy.setPort(getPort());
+        copy.setInline(getInline());
         copy.setPassword(getPassword());
         copy.setDelay(getDelay());
         copy.setEnabled(false);
