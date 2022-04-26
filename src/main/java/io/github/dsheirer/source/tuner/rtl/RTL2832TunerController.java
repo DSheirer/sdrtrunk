@@ -251,7 +251,7 @@ public class RTL2832TunerController extends USBTunerController
         }
         catch(UsbException ue)
         {
-            throw new SourceException("Unable to initialize " + getEmbeddedTuner().getTunerType(), ue);
+            throw new SourceException("Unable to initialize " + tunerType, ue);
         }
 
         setMinimumFrequency(mEmbeddedTuner.getMinimumFrequencySupported());
@@ -366,7 +366,12 @@ public class RTL2832TunerController extends USBTunerController
      */
     public TunerType getTunerType()
     {
-        return getEmbeddedTuner().getTunerType();
+        if(getEmbeddedTuner() != null)
+        {
+            return getEmbeddedTuner().getTunerType();
+        }
+
+        return TunerType.UNKNOWN;
     }
 
     /**

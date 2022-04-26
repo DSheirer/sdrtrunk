@@ -33,6 +33,7 @@ import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.util.SwingUtils;
+import io.github.dsheirer.util.ThreadPool;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -370,11 +371,11 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
             {
                 if(!hasTuner() && getDiscoveredTuner().getTunerStatus() == TunerStatus.ERROR)
                 {
-                    mLog.info("Resetting " + getDiscoveredTuner().getTunerClass() + " tuner");
+                    mLog.info("Restarting " + getDiscoveredTuner().getTunerClass() + " tuner");
                     getDiscoveredTuner().reset();
                     if(getDiscoveredTuner().isEnabled())
                     {
-                        getDiscoveredTuner().start();
+                        ThreadPool.CACHED.submit(() -> getDiscoveredTuner().start());
                     }
                 }
             });
