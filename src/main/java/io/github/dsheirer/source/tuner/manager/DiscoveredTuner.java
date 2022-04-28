@@ -60,11 +60,28 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
      * Sets the status of the discovered tuner and notifies registered listeners of the status change.
      * @param tunerStatus to set
      */
-    protected void setTunerStatus(TunerStatus tunerStatus)
+    private void setTunerStatus(TunerStatus tunerStatus)
     {
-        TunerStatus previous = mTunerStatus;
-        mTunerStatus = tunerStatus;
-        broadcast(this, previous, mTunerStatus);
+        setTunerStatus(tunerStatus, true);
+    }
+
+    /**
+     * Sets the status of the discovered tuner and optionally notifies registered listeners of the status change.
+     * @param tunerStatus to set
+     * @param notifyListeners true to notify and false to not notify
+     */
+    private void setTunerStatus(TunerStatus tunerStatus, boolean notifyListeners)
+    {
+        if(mTunerStatus != tunerStatus)
+        {
+            TunerStatus previous = mTunerStatus;
+            mTunerStatus = tunerStatus;
+
+            if(notifyListeners)
+            {
+                broadcast(this, previous, mTunerStatus);
+            }
+        }
     }
 
     /**
@@ -215,8 +232,9 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
     public void setErrorMessage(String errorMessage)
     {
         mErrorMessage = errorMessage;
-        setTunerStatus(TunerStatus.ERROR);
+        mLog.info("Tuner Error - Stopping - " + getId() + " Error: " + errorMessage);
         stop();
+        setTunerStatus(TunerStatus.ERROR);
     }
 
     /**
@@ -246,7 +264,7 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
     /**
      * Attempts to restart a tuner that's currently in an error state
      */
-    public void reset()
+    public void restart()
     {
         if(getTunerStatus() == TunerStatus.ERROR)
         {
@@ -254,7 +272,9 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
 
             if(isEnabled())
             {
+                //Change status to enabled so that we can attempt to start, but don't notify listeners yet.
                 setTunerStatus(TunerStatus.ENABLED);
+                start();
             }
             else
             {

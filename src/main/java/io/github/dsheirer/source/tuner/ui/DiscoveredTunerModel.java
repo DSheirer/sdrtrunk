@@ -246,8 +246,10 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
      * @param bus usb
      * @param port usb
      */
-    public void removeUsbTuner(int bus, int port)
+    public DiscoveredTuner removeUsbTuner(int bus, int port)
     {
+        DiscoveredTuner removed = null;
+
         mLock.lock();
 
         try
@@ -259,12 +261,15 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
             if(discoveredTuner != null)
             {
                 removeDiscoveredTuner(discoveredTuner);
+                removed = discoveredTuner;
             }
         }
         finally
         {
             mLock.unlock();
         }
+
+        return removed;
     }
 
     /**

@@ -241,9 +241,9 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      * @param bus usb for the tuner
      * @param port usb for the tuner
      */
-    private void removeUsbTuner(int bus, int port)
+    private DiscoveredTuner removeUsbTuner(int bus, int port)
     {
-        mDiscoveredTunerModel.removeUsbTuner(bus, port);
+        return mDiscoveredTunerModel.removeUsbTuner(bus, port);
     }
 
     /**
@@ -489,12 +489,26 @@ public class TunerManager implements IDiscoveredTunerStatusListener
 
                         if(tunerClass.isSupportedUsbTuner())
                         {
-                            addUsbTuner(bus, port, tunerClass);
+                            if(tunerClass.isFuncubeTuner())
+                            {
+                                //Funcube tuners take a few momements to setup the sound card interface.  Delay adding
+                                //the tuner so that it can be started correctly.
+                                ThreadPool.SCHEDULED.schedule(() -> addUsbTuner(bus, port, tunerClass), 2, TimeUnit.SECONDS);
+                            }
+                            else
+                            {
+                                addUsbTuner(bus, port, tunerClass);
+                            }
                         }
                     }
                     break;
                 case LibUsb.HOTPLUG_EVENT_DEVICE_LEFT:
-                    removeUsbTuner(bus, port);
+                    DiscoveredTuner removed = removeUsbTuner(bus, port);
+
+                    if(removed != null)
+                    {
+                        mLog.info("Tuner Unplugged: " + removed.getId());
+                    }
                     break;
             }
 

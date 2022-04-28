@@ -104,7 +104,7 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         getFrequencyPanel().updateControls();
         getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLocked());
         getTunerInfoButton().setEnabled(hasTuner());
-        updateGainComponents(hasTuner() ? getConfiguration().getGain() : null);
+        updateGainComponents((hasTuner() && hasConfiguration()) ? getConfiguration().getGain() : null);
 
         if(hasTuner())
         {

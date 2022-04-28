@@ -33,7 +33,6 @@ import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.util.SwingUtils;
-import io.github.dsheirer.util.ThreadPool;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -372,11 +371,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                 if(!hasTuner() && getDiscoveredTuner().getTunerStatus() == TunerStatus.ERROR)
                 {
                     mLog.info("Restarting " + getDiscoveredTuner().getTunerClass() + " tuner");
-                    getDiscoveredTuner().reset();
-                    if(getDiscoveredTuner().isEnabled())
-                    {
-                        ThreadPool.CACHED.submit(() -> getDiscoveredTuner().start());
-                    }
+                    getDiscoveredTuner().restart();
                 }
             });
         }
@@ -469,15 +464,18 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     @Override
     public void tunerStatusUpdated(DiscoveredTuner discoveredTuner, TunerStatus previous, TunerStatus current)
     {
-        SwingUtils.run(() -> tunerStatusUpdated());
-
-        if(current == TunerStatus.ENABLED)
+        SwingUtils.run(() ->
         {
-            if(hasTuner())
+            tunerStatusUpdated();
+
+            if(current == TunerStatus.ENABLED)
             {
-                getTuner().addTunerEventListener(this);
+                if(hasTuner())
+                {
+                    getTuner().addTunerEventListener(this);
+                }
             }
-        }
+        });
     }
 
     @Override
@@ -507,12 +505,7 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
             {
                 mDiscoveredTuner.getTuner().removeTunerEventListener(this);
             }
-
-            mDiscoveredTuner = null;
         }
-
-        mUserPreferences = null;
-        mTunerManager = null;
     }
 
     /**
