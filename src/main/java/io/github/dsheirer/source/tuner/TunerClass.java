@@ -54,12 +54,22 @@ public enum TunerClass
 	public static final EnumSet<TunerClass> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY, HACKRF, RTL2832,
 			FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
 
+	public static final EnumSet<TunerClass> FUNCUBE_TUNERS = EnumSet.of(FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
+
 	/**
 	 * Indicates if this tuner class entry is a supported USB tuner class.
 	 */
 	public boolean isSupportedUsbTuner()
 	{
 		return SUPPORTED_USB_TUNERS.contains(this);
+	}
+
+	/**
+	 * Indicates if the tuner class is a funcube dongle with a matching sound card interface
+	 */
+	public boolean isFuncubeTuner()
+	{
+		return FUNCUBE_TUNERS.contains(this);
 	}
 
 	/**
