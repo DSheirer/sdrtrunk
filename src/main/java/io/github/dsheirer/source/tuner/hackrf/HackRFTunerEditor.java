@@ -121,16 +121,21 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         getButtonPanel().updateControls();
         getFrequencyPanel().updateControls();
         getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLocked());
-        getSampleRateCombo().setSelectedItem(getConfiguration().getSampleRate());
         updateSampleRateToolTip();
         getTunerInfoButton().setEnabled(hasTuner());
 
         getAmplifierToggle().setEnabled(hasTuner());
-        getAmplifierToggle().setSelected(getConfiguration().getAmplifierEnabled());
         getLnaGainCombo().setEnabled(hasTuner());
-        getLnaGainCombo().setSelectedItem(getConfiguration().getLNAGain());
         getVgaGainCombo().setEnabled(hasTuner());
-        getVgaGainCombo().setSelectedItem(getConfiguration().getVGAGain());
+
+        if(hasConfiguration())
+        {
+            getSampleRateCombo().setSelectedItem(getConfiguration().getSampleRate());
+            getAmplifierToggle().setSelected(getConfiguration().getAmplifierEnabled());
+            getLnaGainCombo().setSelectedItem(getConfiguration().getLNAGain());
+            getVgaGainCombo().setSelectedItem(getConfiguration().getVGAGain());
+        }
+
         setLoading(false);
     }
 

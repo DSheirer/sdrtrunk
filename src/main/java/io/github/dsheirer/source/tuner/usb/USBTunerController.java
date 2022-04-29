@@ -156,6 +156,12 @@ public abstract class USBTunerController extends TunerController
         }
 
         mDevice = findDevice();
+
+        if(mDevice == null)
+        {
+            throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPort + "]");
+        }
+
         mDeviceDescriptor = new DeviceDescriptor();
         status = LibUsb.getDeviceDescriptor(mDevice, mDeviceDescriptor);
 
@@ -167,6 +173,10 @@ public abstract class USBTunerController extends TunerController
 
         mDeviceHandle = new DeviceHandle();
         status = LibUsb.open(mDevice, mDeviceHandle);
+
+        //Now that we have opened the device and added an additional reference, remove the original reference placed on
+        // the device during the findDevice() operation
+        LibUsb.unrefDevice(mDevice);
 
         if(status == LibUsb.ERROR_ACCESS)
         {

@@ -110,8 +110,12 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         {
             List<AirspySampleRate> rates = getTuner().getController().getSampleRates();
             getSampleRateCombo().setModel(new DefaultComboBoxModel<>(rates.toArray(new AirspySampleRate[rates.size()])));
-            AirspySampleRate sampleRate = getSampleRate(getConfiguration().getSampleRate());
-            getSampleRateCombo().setSelectedItem(sampleRate);
+
+            if(hasConfiguration())
+            {
+                AirspySampleRate sampleRate = getSampleRate(getConfiguration().getSampleRate());
+                getSampleRateCombo().setSelectedItem(sampleRate);
+            }
         }
         else
         {
@@ -508,9 +512,9 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
      */
     private void updateGainComponents(Gain gain)
     {
-        if(hasTuner())
+        if(hasTuner() && gain != null)
         {
-            boolean isCustom = gain == Gain.CUSTOM;
+            boolean isCustom = gain.equals(Gain.CUSTOM);
 
             getGainModeCombo().setEnabled(true);
             getGainModeCombo().setSelectedItem(gain.getGainMode());
