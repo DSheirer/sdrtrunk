@@ -78,6 +78,11 @@ public interface IDecodeEvent
     Protocol getProtocol();
 
     /**
+     * {@link DecodeEventType} for the event produced
+     */
+    DecodeEventType getEventType();
+
+    /**
      * Timeslot for the event.
      * @return timeslot or default of 0
      */

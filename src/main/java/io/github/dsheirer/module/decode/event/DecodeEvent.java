@@ -33,6 +33,7 @@ public class DecodeEvent implements IDecodeEvent
     private long mTimeStart;
     private long mTimeEnd;
     private String mEventDescription;
+    private DecodeEventType mDecodeEventType;
     private IdentifierCollection mIdentifierCollection;
     private IChannelDescriptor mChannelDescriptor;
     private String mDetails;
@@ -129,6 +130,21 @@ public class DecodeEvent implements IDecodeEvent
     public void setEventDescription(String description)
     {
         mEventDescription = description;
+    }
+
+    /**
+     * {@link DecodeEventType}
+     */
+    @Override
+    public DecodeEventType getEventType() {
+        return mDecodeEventType;
+    }
+
+    /**
+     * Sets the {@link DecodeEventType}
+     */
+    public void setEventType(DecodeEventType eventType) {
+        this.mDecodeEventType = eventType;
     }
 
     /**
@@ -252,6 +268,7 @@ public class DecodeEvent implements IDecodeEvent
         protected long mTimeStart;
         protected long mDuration;
         protected String mEventDescription;
+        protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
@@ -293,6 +310,11 @@ public class DecodeEvent implements IDecodeEvent
         public DecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
+            return this;
+        }
+
+        public DecodeEventBuilder eventType(DecodeEventType eventType) {
+            mDecodeEventType = eventType;
             return this;
         }
 
