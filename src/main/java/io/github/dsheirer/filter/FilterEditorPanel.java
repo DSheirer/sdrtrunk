@@ -75,7 +75,7 @@ public class FilterEditorPanel<T> extends JPanel
         List<IFilter<T>> filters = filterSet.getFilters();
 
         /* sort the filters in alphabetical order by name */
-        filters.sort((Comparator<IFilter<?>>) (first, second) -> first.getName().compareTo(second.getName()));
+        filters.sort(Comparator.comparing(IFilter::getName));
 
         for(IFilter<T> filter : filters)
         {
@@ -98,7 +98,7 @@ public class FilterEditorPanel<T> extends JPanel
     {
         List<FilterElement<?>> elements = filter.getFilterElements();
 
-        elements.sort(Comparator.comparing(FilterElement::toString));
+        elements.sort(Comparator.comparing(FilterElement::getName));
 
         for(FilterElement<?> element : elements)
         {

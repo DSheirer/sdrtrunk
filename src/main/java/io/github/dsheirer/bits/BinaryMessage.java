@@ -35,7 +35,7 @@ public class BinaryMessage extends BitSet
      * Logical (ie constructed) size of this bitset, despite the actual size of
      * the super bitset that this class is based on
      */
-    private int mSize = 0;
+    private int mSize;
 
     /**
      * Pointer to the next fill index location, when adding bits to this bitset
@@ -44,20 +44,20 @@ public class BinaryMessage extends BitSet
     private int mPointer = 0;
 
     /**
-     * Bitset that buffers bits added one at a time, up to the size of the this
-     * bitset. 
-     *
-     * Note: the super class bitset behind this class may have a size larger 
-     * that the size parameter specified.
-     * @param size
-     */
-
-    /**
      * Used for temporary storage of CRC check results when we're passing this
      * message to an EDAC function.
      */
     private CRC mCRC;
 
+    /**
+     * Constructs a bitset that buffers bits added one at a time, up to the size
+     * of the this bitset.
+     * <p>
+     * Note: the super class bitset behind this class may have a size larger
+     * that the size parameter specified.
+     *
+     * @param size of constructed bitset
+     */
     public BinaryMessage(int size)
     {
         super(size);
@@ -214,9 +214,7 @@ public class BinaryMessage extends BitSet
     }
 
     /**
-     * Returns a (new) copy of this bitsetbuffer
-     *
-     * @return
+     * @return a (new) copy of this binary message
      */
     public BinaryMessage copy()
     {

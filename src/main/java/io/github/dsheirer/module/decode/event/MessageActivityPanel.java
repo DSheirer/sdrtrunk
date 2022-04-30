@@ -26,6 +26,7 @@ import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageHistory;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
@@ -91,6 +92,7 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
         if(processingChain != null)
         {
             mCurrentMessageHistory = processingChain.getMessageHistory();
+            mMessageModel.setFilters(DecoderFactory.getMessageFilters(processingChain.getModules()));
             mMessageModel.clearAndSet(mCurrentMessageHistory.getItems());
             mCurrentMessageHistory.addListener(mMessageModel);
             mManagementPanel.enableButtons();
@@ -98,6 +100,7 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
         else
         {
             mCurrentMessageHistory = null;
+            mMessageModel.clearFilters();
             mMessageModel.clear();
             mManagementPanel.disableButtons();
         }
