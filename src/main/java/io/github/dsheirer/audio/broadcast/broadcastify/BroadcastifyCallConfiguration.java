@@ -24,7 +24,9 @@ import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -42,6 +44,8 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
 
     private IntegerProperty mSystemID = new SimpleIntegerProperty();
     private StringProperty mApiKey = new SimpleStringProperty();
+    private BooleanProperty mTestEnabled= new SimpleBooleanProperty(false);
+    private IntegerProperty mTestInterval = new SimpleIntegerProperty(15);
 
     /**
      * Constructor for faster jackson
@@ -126,6 +130,34 @@ public class BroadcastifyCallConfiguration extends BroadcastConfiguration
     public BroadcastServerType getBroadcastServerType()
     {
         return BroadcastServerType.BROADCASTIFY_CALL;
+    }
+
+    /**
+     * Indicates if this instance should schedule tests after connecting
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "test_enabled")
+    public boolean isTestEnabled()
+    {
+        return mTestEnabled.get();
+    }
+
+    public void setTestEnabled(boolean enabled)
+    {
+        mTestEnabled.set(enabled);
+    }
+
+    /**
+     * Indicates the interval at which tests should be performed while enabled
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "test_interval")
+    public int getTestInterval()
+    {
+        return mTestInterval.get();
+    }
+
+    public void setTestInterval(int interval)
+    {
+        mTestInterval.set(interval);
     }
 
     @Override

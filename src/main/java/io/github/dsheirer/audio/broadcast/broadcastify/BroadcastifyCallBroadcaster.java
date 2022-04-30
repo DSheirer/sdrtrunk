@@ -68,7 +68,6 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     private static final String MULTIPART_TYPE = "multipart";
     private static final String DEFAULT_SUBTYPE = "form-data";
     private static final String MULTIPART_FORM_DATA = MULTIPART_TYPE + "/" + DEFAULT_SUBTYPE;
-    private static final long BROADCASTIFY_TEST_INTERVAL = 15l; // minutes
     private ScheduledFuture<?> mBroadcastifyTestFuture;
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
     private ScheduledFuture<?> mAudioRecordingProcessorFuture;
@@ -104,14 +103,17 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         if(response != null && response.toLowerCase().startsWith("ok"))
         {
             setBroadcastState(BroadcastState.CONNECTED);
-
-            // Test periodically so we don't get marked offline due to radio inactivity
-            mBroadcastifyTestFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BroadcastifyCallTest(), BROADCASTIFY_TEST_INTERVAL, BROADCASTIFY_TEST_INTERVAL, TimeUnit.MINUTES);
         }
         else
         {
             mLog.error("Error connecting to Broadcastify calls server on startup [" + response + "]");
             setBroadcastState(BroadcastState.ERROR);
+        }
+
+        if(mBroadcastifyTestFuture == null && getBroadcastConfiguration().isTestEnabled())
+        {
+            // Test periodically so we don't get marked offline due to radio inactivity
+            mBroadcastifyTestFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BroadcastifyCallTest(), getBroadcastConfiguration().getTestInterval(), getBroadcastConfiguration().getTestInterval(), TimeUnit.MINUTES);
         }
 
         if(mAudioRecordingProcessorFuture == null)
@@ -127,10 +129,13 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
     @Override
     public void stop()
     {
-        if(mAudioRecordingProcessorFuture != null)
+        if(mBroadcastifyTestFuture != null)
         {
             mBroadcastifyTestFuture.cancel(true);
             mBroadcastifyTestFuture = null;
+        }
+        if(mAudioRecordingProcessorFuture != null)
+        {
             mAudioRecordingProcessorFuture.cancel(true);
             mAudioRecordingProcessorFuture = null;
             dispose();
@@ -144,9 +149,13 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
         public void run()
         {
             String response = testConnection(getBroadcastConfiguration());
-            if(response != null && !response.toLowerCase().startsWith("ok"))
+            if(response != null && response.toLowerCase().startsWith("ok"))
             {
-                mLog.info("Broadcastify Calls test failure");
+                mLog.info("Broadcastify Calls keep-alive success");
+            }
+            else
+            {
+                mLog.info("Broadcastify Calls keep-alive failure");
             }
         }
     }

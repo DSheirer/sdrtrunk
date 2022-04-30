@@ -34,6 +34,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.controlsfx.control.ToggleSwitch;
 
 /**
  * Broadcastify calls API configuration editor
@@ -47,6 +48,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
     private TextField mApiKeyTextField;
     private TextField mHostTextField;
     private GridPane mEditorPane;
+    private ToggleSwitch mTestEnabledToggleSwitch;
+    private IntegerTextField mTestIntervalTextField;
 
     /**
      * Constructs an instance
@@ -66,6 +69,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         getApiKeyTextField().setDisable(item == null);
         getHostTextField().setDisable(item == null);
         getMaxAgeTextField().setDisable(item == null);
+        getTestEnabledToggleSwitch().setDisable(item == null);
+        getTestIntervalTextField().setDisable(item == null);
 
         if(item != null)
         {
@@ -73,6 +78,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getApiKeyTextField().setText(item.getApiKey());
             getHostTextField().setText(item.getHost());
             getMaxAgeTextField().set((int)(item.getMaximumRecordingAge() / 1000));
+            getTestEnabledToggleSwitch().setSelected(item.isTestEnabled());
+            getTestIntervalTextField().set(item.getTestInterval());
         }
         else
         {
@@ -80,6 +87,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getApiKeyTextField().setText(null);
             getHostTextField().setText(null);
             getMaxAgeTextField().set(0);
+            getTestEnabledToggleSwitch().setSelected(false);
+            getTestIntervalTextField().set(15);
         }
 
         modifiedProperty().set(false);
@@ -100,6 +109,8 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             getItem().setHost(getHostTextField().getText());
             getItem().setApiKey(getApiKeyTextField().getText());
             getItem().setMaximumRecordingAge(getMaxAgeTextField().get() * 1000);
+            getItem().setTestEnabled(getTestEnabledToggleSwitch().isSelected());
+            getItem().setTestInterval(getTestIntervalTextField().get());
         }
 
         super.save();
@@ -177,6 +188,22 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
             GridPane.setConstraints(getMaxAgeTextField(), 1, row);
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
+            Label testEnabledLabel = new Label("Send Periodic Keep-Alive");
+            GridPane.setHalignment(testEnabledLabel, HPos.RIGHT);
+            GridPane.setConstraints(testEnabledLabel, 0, ++row);
+            mEditorPane.getChildren().add(testEnabledLabel);
+
+            GridPane.setConstraints(getTestEnabledToggleSwitch(), 1, row);
+            mEditorPane.getChildren().add(getTestEnabledToggleSwitch());
+
+            Label testIntervalLabel = new Label("Ping Interval (minutes)");
+            GridPane.setHalignment(testIntervalLabel, HPos.RIGHT);
+            GridPane.setConstraints(testIntervalLabel, 3, row);
+            mEditorPane.getChildren().add(testIntervalLabel);
+
+            GridPane.setConstraints(getTestIntervalTextField(), 4, row);
+            mEditorPane.getChildren().add(getTestIntervalTextField());
+
             GridPane.setConstraints(getTestButton(), 1, ++row);
             mEditorPane.getChildren().add(getTestButton());
         }
@@ -230,6 +257,31 @@ public class BroadcastifyCallEditor extends AbstractBroadcastEditor<Broadcastify
         }
 
         return mSystemIdTextField;
+    }
+
+    private ToggleSwitch getTestEnabledToggleSwitch()
+    {
+        if(mTestEnabledToggleSwitch == null)
+        {
+            mTestEnabledToggleSwitch = new ToggleSwitch();
+            mTestEnabledToggleSwitch.setDisable(true);
+            mTestEnabledToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mTestEnabledToggleSwitch;
+    }
+
+    private IntegerTextField getTestIntervalTextField()
+    {
+        if(mTestIntervalTextField == null)
+        {
+            mTestIntervalTextField = new IntegerTextField();
+            mTestIntervalTextField.setDisable(true);
+            mTestIntervalTextField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mTestIntervalTextField;
     }
 
     private Button getTestButton()
