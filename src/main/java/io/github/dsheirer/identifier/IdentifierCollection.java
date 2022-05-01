@@ -278,29 +278,43 @@ public class IdentifierCollection
      */
     public Identifier getFromIdentifier()
     {
-        List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
+        Identifier from = getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
 
-        if(!fromIdentifiers.isEmpty())
+        if(from == null)
         {
-            return fromIdentifiers.get(0);
+            List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
+
+            if(!fromIdentifiers.isEmpty())
+            {
+                from = fromIdentifiers.get(0);
+            }
         }
 
-        return null;
+        return from;
     }
 
     /**
-     * Returns the first identifier in this collection that is assigned a FROM role
+     * Returns the first identifier in this collection that is assigned a TO role
      */
     public Identifier getToIdentifier()
     {
-        List<Identifier> toIdentifiers = getIdentifiers(Role.TO);
+        Identifier to = getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
 
-        if(!toIdentifiers.isEmpty())
+        if(to == null)
         {
-            return toIdentifiers.get(0);
+            to = getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
         }
 
-        return null;
+        if(to == null)
+        {
+            List<Identifier> toIdentifiers = getIdentifiers(Role.TO);
+            if(!toIdentifiers.isEmpty())
+            {
+                to = toIdentifiers.get(0);
+            }
+        }
+
+        return to;
     }
 
     @Override
