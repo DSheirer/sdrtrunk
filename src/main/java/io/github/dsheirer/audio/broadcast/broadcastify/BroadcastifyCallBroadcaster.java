@@ -447,28 +447,20 @@ public class BroadcastifyCallBroadcaster extends AbstractAudioBroadcaster<Broadc
      */
     private static String getTo(AudioRecording audioRecording)
     {
-        List<Identifier> toIdentifiers = audioRecording.getIdentifierCollection().getIdentifiers(Role.TO);
+        Identifier identifier = audioRecording.getIdentifierCollection().getToIdentifier();
 
-        //Format a patch group first, if there are multiples
-        for(Identifier identifier: toIdentifiers)
+        if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
         {
-            if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
-            {
-                return format(patchGroupIdentifier);
-            }
+            return format(patchGroupIdentifier);
         }
-
-        for(Identifier identifier: toIdentifiers)
+        else if(identifier instanceof TalkgroupIdentifier talkgroupIdentifier)
         {
-            if(identifier instanceof TalkgroupIdentifier talkgroupIdentifier)
-            {
-                return String.valueOf(RadioReferenceDecoder.convertToRadioReferenceTalkgroup(talkgroupIdentifier.getValue(),
-                        talkgroupIdentifier.getProtocol()));
-            }
-            else if(identifier instanceof RadioIdentifier radioIdentifier)
-            {
-                return radioIdentifier.getValue().toString();
-            }
+            return String.valueOf(RadioReferenceDecoder.convertToRadioReferenceTalkgroup(talkgroupIdentifier.getValue(),
+                    talkgroupIdentifier.getProtocol()));
+        }
+        else if(identifier instanceof RadioIdentifier radioIdentifier)
+        {
+            return radioIdentifier.getValue().toString();
         }
 
         return "0";
