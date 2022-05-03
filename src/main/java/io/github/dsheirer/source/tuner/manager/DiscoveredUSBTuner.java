@@ -35,32 +35,32 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
     private Logger mLog = LoggerFactory.getLogger(DiscoveredUSBTuner.class);
     private TunerClass mTunerClass;
     private int mBus;
-    private int mPort;
+    private String mPortAddress;
     private ChannelizerType mChannelizerType;
 
     /**
      * Constructs an instance
      * @param bus (USB) number
-     * @param port (USB) number
+     * @param portAddress (USB)
      * @param channelizerType to use with the tuner
      */
-    public DiscoveredUSBTuner(TunerClass tunerClass, int bus, int port, ChannelizerType channelizerType)
+    public DiscoveredUSBTuner(TunerClass tunerClass, int bus, String portAddress, ChannelizerType channelizerType)
     {
         mTunerClass = tunerClass;
         mBus = bus;
-        mPort = port;
+        mPortAddress = portAddress;
         mChannelizerType = channelizerType;
     }
 
     /**
      * Indicates if this USB tuner is plugged into the specified bus and port.
      * @param bus number
-     * @param port number
+     * @param port address
      * @return true if there is a match
      */
-    public boolean isAt(int bus, int port)
+    public boolean isAt(int bus, String port)
     {
-        return mBus == bus && mPort == port;
+        return mBus == bus && port != null && port.equalsIgnoreCase(mPortAddress);
     }
 
     /**
@@ -82,9 +82,9 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
     /**
      * USB port number
      */
-    public int getPort()
+    public String getPortAddress()
     {
-        return mPort;
+        return mPortAddress;
     }
 
     @Override
@@ -93,7 +93,7 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
         StringBuilder sb = new StringBuilder();
         sb.append(getTunerClass());
         sb.append(" USB Bus:").append(getBus());
-        sb.append(" Port:").append(getPort());
+        sb.append(" Port:").append(getPortAddress());
         return sb.toString();
     }
 
@@ -104,7 +104,7 @@ public class DiscoveredUSBTuner extends DiscoveredTuner
         {
             try
             {
-                mTuner = TunerFactory.getUsbTuner(getTunerClass(), getPort(), getBus(), this, mChannelizerType);
+                mTuner = TunerFactory.getUsbTuner(getTunerClass(), getPortAddress(), getBus(), this, mChannelizerType);
                 mTuner.start();
             }
             catch(SourceException se)

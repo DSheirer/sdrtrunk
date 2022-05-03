@@ -69,25 +69,25 @@ public class TunerFactory
     /**
      * Create a USB tuner
      * @param tunerClass to instantiate
-     * @param port usb
+     * @param portAddress usb
      * @param bus usb
      * @param tunerErrorListener to listen for errors from the tuner
      * @param channelizerType for the tuner
      * @return instantiated tuner
      * @throws SourceException if the tuner class is unrecognized
      */
-    public static Tuner getUsbTuner(TunerClass tunerClass, int port, int bus, ITunerErrorListener tunerErrorListener,
+    public static Tuner getUsbTuner(TunerClass tunerClass, String portAddress, int bus, ITunerErrorListener tunerErrorListener,
                                     ChannelizerType channelizerType) throws SourceException
     {
         switch(tunerClass)
         {
             case AIRSPY:
-                return new AirspyTuner(new AirspyTunerController(bus, port, tunerErrorListener), tunerErrorListener, channelizerType);
+                return new AirspyTuner(new AirspyTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case FUNCUBE_DONGLE_PRO:
                 TargetDataLine tdl1 = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO);
                 if(tdl1 != null)
                 {
-                    FCD1TunerController controller = new FCD1TunerController(tdl1, bus, port, tunerErrorListener);
+                    FCD1TunerController controller = new FCD1TunerController(tdl1, bus, portAddress, tunerErrorListener);
                     return new FCDTuner(controller, tunerErrorListener);
                 }
                 throw new SourceException("Unable to find matching tuner sound card mixer");
@@ -95,14 +95,14 @@ public class TunerFactory
                 TargetDataLine tdl2 = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS);
                 if(tdl2 != null)
                 {
-                    FCD2TunerController controller = new FCD2TunerController(tdl2, bus, port, tunerErrorListener);
+                    FCD2TunerController controller = new FCD2TunerController(tdl2, bus, portAddress, tunerErrorListener);
                     return new FCDTuner(controller, tunerErrorListener);
                 }
                 throw new SourceException("Unable to find matching tuner sound card mixer");
             case HACKRF:
-                return new HackRFTuner(new HackRFTunerController(bus, port, tunerErrorListener), tunerErrorListener, channelizerType);
+                return new HackRFTuner(new HackRFTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case RTL2832:
-                return new RTL2832Tuner(new RTL2832TunerController(bus, port, tunerErrorListener), tunerErrorListener, channelizerType);
+                return new RTL2832Tuner(new RTL2832TunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             default:
                 throw new SourceException("Unrecognized tuner class [" + tunerClass + "]");
         }

@@ -218,10 +218,10 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     /**
      * Indicates if this model currently has the discovered tuner that is plugged into the specified bus and port.
      * @param bus number
-     * @param port number
+     * @param portAddress number
      * @return true if it already has the discovered device
      */
-    public boolean hasUsbTuner(int bus, int port)
+    public boolean hasUsbTuner(int bus, String portAddress)
     {
         boolean hasDevice;
         mLock.lock();
@@ -229,7 +229,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         try
         {
             hasDevice = mDiscoveredTuners.stream()
-                    .filter(tuner -> tuner instanceof DiscoveredUSBTuner usbTuner && usbTuner.isAt(bus, port))
+                    .filter(tuner -> tuner instanceof DiscoveredUSBTuner usbTuner && usbTuner.isAt(bus, portAddress))
                     .findFirst()
                     .isPresent();
         }
@@ -244,9 +244,9 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     /**
      * Removes the USB tuner at bus and port number
      * @param bus usb
-     * @param port usb
+     * @param portAddress usb
      */
-    public DiscoveredTuner removeUsbTuner(int bus, int port)
+    public DiscoveredTuner removeUsbTuner(int bus, String portAddress)
     {
         DiscoveredTuner removed = null;
 
@@ -256,7 +256,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         {
             DiscoveredTuner discoveredTuner = mDiscoveredTuners.stream()
                     .filter(tuner -> tuner instanceof DiscoveredUSBTuner usbTuner &&
-                            usbTuner.isAt(bus, port)).findFirst().get();
+                            usbTuner.isAt(bus, portAddress)).findFirst().get();
 
             if(discoveredTuner != null)
             {

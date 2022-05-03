@@ -48,12 +48,12 @@ public class FCD2TunerController extends FCDTunerController
      * Constructs an instance
      * @param mixerTDL for the sample stream
      * @param bus usb
-     * @param port usb
+     * @param portAddress usb
      * @param tunerErrorListener to receive errors from this tuner
      */
-    public FCD2TunerController(TargetDataLine mixerTDL, int bus, int port, ITunerErrorListener tunerErrorListener)
+    public FCD2TunerController(TargetDataLine mixerTDL, int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, bus, port, MINIMUM_TUNABLE_FREQUENCY,
+        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, bus, portAddress, MINIMUM_TUNABLE_FREQUENCY,
                 MAXIMUM_TUNABLE_FREQUENCY, tunerErrorListener);
     }
 

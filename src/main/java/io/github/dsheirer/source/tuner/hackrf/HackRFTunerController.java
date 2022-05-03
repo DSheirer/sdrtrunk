@@ -60,11 +60,11 @@ public class HackRFTunerController extends USBTunerController
     /**
      * Constructs an instance
      * @param bus usb
-     * @param port usb
+     * @param portAddress usb
      */
-    public HackRFTunerController(int bus, int port, ITunerErrorListener tunerErrorListener)
+    public HackRFTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, port, MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, DC_HALF_BANDWIDTH, USABLE_BANDWIDTH,
+        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, DC_HALF_BANDWIDTH, USABLE_BANDWIDTH,
                 tunerErrorListener);
     }
 

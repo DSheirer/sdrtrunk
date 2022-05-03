@@ -28,6 +28,7 @@ import io.github.dsheirer.source.tuner.MixerTunerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -56,7 +57,7 @@ public abstract class FCDTunerController extends TunerController
     private final static byte FCD_ENDPOINT_OUT = (byte) 0x2;
 
     private int mBus;
-    private int mPort;
+    private String mPortAddress;
     private Context mDeviceContext = new Context();
     private Device mDevice;
     private DeviceDescriptor mDeviceDescriptor = new DeviceDescriptor();
@@ -73,17 +74,17 @@ public abstract class FCDTunerController extends TunerController
      * @param tunerType of FCD
      * @param mixerTDL for the sound card mixer interface
      * @param bus usb
-     * @param port usb
+     * @param portAddress usb
      * @param minTunableFrequency of the tuner
      * @param maxTunableFrequency of the tuner
      * @param tunerErrorListener to receive errors from this tuner
      */
-    public FCDTunerController(MixerTunerType tunerType, TargetDataLine mixerTDL, int bus, int port,
+    public FCDTunerController(MixerTunerType tunerType, TargetDataLine mixerTDL, int bus, String portAddress,
                               int minTunableFrequency, int maxTunableFrequency, ITunerErrorListener tunerErrorListener)
     {
         super(tunerErrorListener);
         mBus = bus;
-        mPort = port;
+        mPortAddress = portAddress;
         setMinimumFrequency(minTunableFrequency);
         setMaximumFrequency(maxTunableFrequency);
         setMiddleUnusableHalfBandwidth(DC_SPIKE_AVOID_HALF_BANDWIDTH);
@@ -177,6 +178,8 @@ public abstract class FCDTunerController extends TunerController
      */
     private Device findDevice() throws SourceException
     {
+        Device foundDevice = null;
+
         DeviceList deviceList = new DeviceList();
         int count = LibUsb.getDeviceList(mDeviceContext, deviceList);
 
@@ -187,15 +190,37 @@ public abstract class FCDTunerController extends TunerController
                 int bus = LibUsb.getBusNumber(device);
                 int port = LibUsb.getPortNumber(device);
 
-                if(mBus == bus && mPort == port)
+                if(port > 0)
                 {
-                    return device;
+                    String portAddress = TunerManager.getPortAddress(device);
+
+                    if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
+                    {
+                        foundDevice = device;
+                    }
+                    else
+                    {
+                        LibUsb.unrefDevice(device);
+                    }
+                }
+                else
+                {
+                    LibUsb.unrefDevice(device);
                 }
             }
         }
+        else
+        {
+            throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPortAddress +
+                    "] from device list" + (count < 0 ? " - error: " + LibUsb.errorName(count) : ""));
+        }
 
-        throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPort +
-                "] from device list" + (count < 0 ? " - error: " + LibUsb.errorName(count) : ""));
+        if(foundDevice == null)
+        {
+            throw new SourceException("LibUsb couldn't find the matching USB device");
+        }
+
+        return foundDevice;
     }
 
     /**
@@ -249,7 +274,7 @@ public abstract class FCDTunerController extends TunerController
 
             if(status != LibUsb.SUCCESS)
             {
-                mLog.error("Unable to detach kernel driver for USB tuner device - bus:" + mBus + " port:" + mPort);
+                mLog.error("Unable to detach kernel driver for USB tuner device - bus:" + mBus + " port:" + mPortAddress);
                 mDeviceHandle = null;
                 mDeviceDescriptor = null;
                 throw new SourceException("Can't detach kernel driver");

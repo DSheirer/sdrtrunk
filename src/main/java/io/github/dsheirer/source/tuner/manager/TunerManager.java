@@ -47,6 +47,7 @@ import org.usb4java.HotplugCallback;
 import org.usb4java.HotplugCallbackHandle;
 import org.usb4java.LibUsb;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -166,25 +167,33 @@ public class TunerManager implements IDiscoveredTunerStatusListener
                         int bus = LibUsb.getBusNumber(device);
                         int port = LibUsb.getPortNumber(device);
 
-                        DeviceDescriptor deviceDescriptor = new DeviceDescriptor();
-                        int status = LibUsb.getDeviceDescriptor(device, deviceDescriptor);
-
-                        if(status == LibUsb.SUCCESS)
+                        if(port > 0)
                         {
-                            TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(), deviceDescriptor.idProduct());
+                            DeviceDescriptor deviceDescriptor = new DeviceDescriptor();
+                            int status = LibUsb.getDeviceDescriptor(device, deviceDescriptor);
 
-                            if(tunerClass.isSupportedUsbTuner())
+                            if(status == LibUsb.SUCCESS)
                             {
-                                mLog.info("Discovered tuner at USB Bus [" + bus + "] Port [" + port + "] Tuner Class [" + tunerClass + "]");
-                                ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
-                                DiscoveredUSBTuner discoveredUSBTuner = new DiscoveredUSBTuner(tunerClass, bus, port, channelizerType);
-                                discoveredUSBTuners.add(discoveredUSBTuner);
+                                TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(),
+                                        deviceDescriptor.idProduct());
+
+                                String portAddress = getPortAddress(device);
+
+                                if(tunerClass.isSupportedUsbTuner())
+                                {
+                                    mLog.info("Discovered tuner at USB Bus [" + bus + "] Port [" + portAddress +
+                                            "] Tuner Class [" + tunerClass + "]");
+                                    ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+                                    DiscoveredUSBTuner discoveredUSBTuner = new DiscoveredUSBTuner(tunerClass, bus,
+                                            portAddress, channelizerType);
+                                    discoveredUSBTuners.add(discoveredUSBTuner);
+                                }
                             }
-                        }
-                        else
-                        {
-                            mLog.error("LibUsb - unable to get device descriptor for device on bus [" + bus +
-                                    "] port [" + port + "] - status [" + status + "] - " + LibUsb.errorName(status));
+                            else
+                            {
+                                mLog.error("LibUsb - unable to get device descriptor for device on bus [" + bus +
+                                        "] port [" + port + "] - status [" + status + "] - " + LibUsb.errorName(status));
+                            }
                         }
 
                         //Unref the device - it will be rediscovered under the device context when it is started
@@ -212,7 +221,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     private void addUsbTuner(DiscoveredUSBTuner discoveredUSBTuner)
     {
-        if(!mDiscoveredTunerModel.hasUsbTuner(discoveredUSBTuner.getBus(), discoveredUSBTuner.getPort()))
+        if(!mDiscoveredTunerModel.hasUsbTuner(discoveredUSBTuner.getBus(), discoveredUSBTuner.getPortAddress()))
         {
             discoveredUSBTuner.addTunerStatusListener(this);
 
@@ -251,11 +260,11 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     /**
      * Stops and removes the USB tuner if it is currently discovered.
      * @param bus usb for the tuner
-     * @param port usb for the tuner
+     * @param portAddress usb for the tuner
      */
-    private DiscoveredTuner removeUsbTuner(int bus, int port)
+    private DiscoveredTuner removeUsbTuner(int bus, String portAddress)
     {
-        return mDiscoveredTunerModel.removeUsbTuner(bus, port);
+        return mDiscoveredTunerModel.removeUsbTuner(bus, portAddress);
     }
 
     /**
@@ -465,6 +474,33 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     }
 
     /**
+     * Creates a dotted-notation string representing the port numbers for the device from the root hub through any
+     * intermediate hubs.
+     * @param device to inspect
+     * @return formatted address
+     */
+    public static String getPortAddress(Device device)
+    {
+        ByteBuffer portNumberArray = ByteBuffer.allocateDirect(7);  //7 ports maximum.
+        int portCount = LibUsb.getPortNumbers(device, portNumberArray);
+        portNumberArray.rewind();
+
+        StringBuilder sb = new StringBuilder();
+
+        for(int x = 0; x < portCount; x++)
+        {
+            if(x > 0)
+            {
+                sb.append(".");
+            }
+
+            sb.append(portNumberArray.get());
+        }
+
+        return sb.toString();
+    }
+
+    /**
      * USB hotplug event listener to register, unregister and detect when USB devices are added or removed.
      *
      * Note: hotplug is not supported on all platforms.
@@ -489,47 +525,53 @@ public class TunerManager implements IDiscoveredTunerStatusListener
             int bus = LibUsb.getBusNumber(device);
             int port = LibUsb.getPortNumber(device);
 
-            switch(event)
+            if(port > 0)
             {
-                case LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED:
-                    DeviceDescriptor deviceDescriptor = new DeviceDescriptor();
-                    int status = LibUsb.getDeviceDescriptor(device, deviceDescriptor);
+                String portAddress = getPortAddress(device);
 
-                    if(status == LibUsb.SUCCESS)
-                    {
-                        TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(), deviceDescriptor.idProduct());
+                switch(event)
+                {
+                    case LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED:
+                        DeviceDescriptor deviceDescriptor = new DeviceDescriptor();
+                        int status = LibUsb.getDeviceDescriptor(device, deviceDescriptor);
 
-                        if(tunerClass.isSupportedUsbTuner())
+                        if(status == LibUsb.SUCCESS)
                         {
-                            mLog.info("Tuner plug-in detected at USB Bus [" + bus + "] Port [" + port +
-                                    "] Tuner Class [" + tunerClass + "]");
-                            ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
-                            DiscoveredUSBTuner discoveredUSBTuner = new DiscoveredUSBTuner(tunerClass, bus, port, channelizerType);
+                            TunerClass tunerClass = TunerClass.lookup(deviceDescriptor.idVendor(), deviceDescriptor.idProduct());
 
-                            if(tunerClass.isFuncubeTuner())
+                            if(tunerClass.isSupportedUsbTuner())
                             {
-                                //Funcube tuners take a few moments to init the sound card interface.  Delay adding
-                                //the tuner so that it can be started correctly.
-                                ThreadPool.SCHEDULED.schedule(() ->
+                                mLog.info("Tuner plug-in detected at USB Bus [" + bus + "] Port [" + port +
+                                        "] Tuner Class [" + tunerClass + "]");
+                                ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+                                DiscoveredUSBTuner discoveredUSBTuner = new DiscoveredUSBTuner(tunerClass, bus,
+                                        portAddress, channelizerType);
+
+                                if(tunerClass.isFuncubeTuner())
+                                {
+                                    //Funcube tuners take a few moments to init the sound card interface.  Delay adding
+                                    //the tuner so that it can be started correctly.
+                                    ThreadPool.SCHEDULED.schedule(() ->
+                                    {
+                                        addUsbTuner(discoveredUSBTuner);
+                                    }, 2, TimeUnit.SECONDS);
+                                }
+                                else
                                 {
                                     addUsbTuner(discoveredUSBTuner);
-                                }, 2, TimeUnit.SECONDS);
-                            }
-                            else
-                            {
-                                addUsbTuner(discoveredUSBTuner);
+                                }
                             }
                         }
-                    }
-                    break;
-                case LibUsb.HOTPLUG_EVENT_DEVICE_LEFT:
-                    DiscoveredTuner removed = removeUsbTuner(bus, port);
+                        break;
+                    case LibUsb.HOTPLUG_EVENT_DEVICE_LEFT:
+                        DiscoveredTuner removed = removeUsbTuner(bus, portAddress);
 
-                    if(removed != null)
-                    {
-                        mLog.info("Tuner Unplugged: " + removed.getId());
-                    }
-                    break;
+                        if(removed != null)
+                        {
+                            mLog.info("Tuner Unplugged: " + removed.getId());
+                        }
+                        break;
+                }
             }
 
             return HOTPLUG_CONTINUE_EVENT_SUPPORT;

@@ -77,12 +77,12 @@ public class AirspyTunerController extends USBTunerController
     /**
      * Constructs an instance
      * @param bus usb
-     * @param port usb
+     * @param portAddress usb
      * @param tunerErrorListener to receive error notifications from this controller
      */
-    public AirspyTunerController(int bus, int port, ITunerErrorListener tunerErrorListener)
+    public AirspyTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, port, FREQUENCY_MIN, FREQUENCY_MAX, 0, USABLE_BANDWIDTH_PERCENT, tunerErrorListener);
+        super(bus, portAddress, FREQUENCY_MIN, FREQUENCY_MAX, 0, USABLE_BANDWIDTH_PERCENT, tunerErrorListener);
     }
 
     @Override
