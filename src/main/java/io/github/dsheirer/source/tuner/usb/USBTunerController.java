@@ -25,6 +25,7 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -57,7 +58,7 @@ public abstract class USBTunerController extends TunerController
     private static final long USB_BULK_TRANSFER_TIMEOUT_MS = 2000l;
 
     private int mBus;
-    private int mPort;
+    private String mPortAddress;
     private Context mDeviceContext = new Context();
     private Device mDevice;
     private DeviceHandle mDeviceHandle;
@@ -73,30 +74,30 @@ public abstract class USBTunerController extends TunerController
      * or removed from this tuner controller.
      *
      * @param bus number USB
-     * @param port number USB
+     * @param portAddress address USB
      * @param tunerErrorListener to receive errors from this tuner controller
      */
-    public USBTunerController(int bus, int port, ITunerErrorListener tunerErrorListener)
+    public USBTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
         super(tunerErrorListener);
         mBus = bus;
-        mPort = port;
+        mPortAddress = portAddress;
     }
 
     /**
      * Constructs an instance
      * @param bus usb
-     * @param port usb
+     * @param portAddress usb
      * @param minimum tunable frequency in Hertz
      * @param maximum tunable frequency in Hertz
      * @param halfBandwidth that is unusable for DC spike avoidance
      * @param usablePercent bandwith in Hertz
      * @param tunerErrorListener to receive errors from this tuner controller
      */
-    public USBTunerController(int bus, int port, long minimum, long maximum, int halfBandwidth, double usablePercent,
+    public USBTunerController(int bus, String portAddress, long minimum, long maximum, int halfBandwidth, double usablePercent,
                               ITunerErrorListener tunerErrorListener)
     {
-        this(bus, port, tunerErrorListener);
+        this(bus, portAddress, tunerErrorListener);
         setMinimumFrequency(minimum);
         setMaximumFrequency(maximum);
         setMiddleUnusableHalfBandwidth(halfBandwidth);
@@ -159,7 +160,7 @@ public abstract class USBTunerController extends TunerController
 
         if(mDevice == null)
         {
-            throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPort + "]");
+            throw new SourceException("Couldn't find USB device at bus [" + mBus + "] port [" + mPortAddress + "]");
         }
 
         mDeviceDescriptor = new DeviceDescriptor();
@@ -204,7 +205,7 @@ public abstract class USBTunerController extends TunerController
 
             if(status != LibUsb.SUCCESS)
             {
-                mLog.error("Unable to detach kernel driver for USB tuner device - bus:" + mBus + " port:" + mPort);
+                mLog.error("Unable to detach kernel driver for USB tuner device - bus:" + mBus + " port:" + mPortAddress);
                 mDeviceHandle = null;
                 mDeviceDescriptor = null;
                 throw new SourceException("Can't detach kernel driver");
@@ -351,9 +352,18 @@ public abstract class USBTunerController extends TunerController
                 int bus = LibUsb.getBusNumber(device);
                 int port = LibUsb.getPortNumber(device);
 
-                if(mBus == bus && mPort == port)
+                if(port > 0)
                 {
-                    foundDevice = device;
+                    String portAddress = TunerManager.getPortAddress(device);
+
+                    if(mBus == bus && mPortAddress != null && mPortAddress.equals(portAddress))
+                    {
+                        foundDevice = device;
+                    }
+                    else
+                    {
+                        LibUsb.unrefDevice(device);
+                    }
                 }
                 else
                 {
@@ -370,7 +380,7 @@ public abstract class USBTunerController extends TunerController
             return foundDevice;
         }
 
-        throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPort +
+        throw new SourceException("LibUsb couldn't discover USB device [" + mBus + ":" + mPortAddress +
                 "] from device list" + (count < 0 ? " - error: " + LibUsb.errorName(count) : ""));
     }
 
@@ -653,7 +663,7 @@ public abstract class USBTunerController extends TunerController
             {
                 mProcessing = true;
                 mThread = new Thread(this);
-                mThread.setName("sdrtrunk USB tuner - bus [" + mBus + "] port [" + mPort + "]");
+                mThread.setName("sdrtrunk USB tuner - bus [" + mBus + "] port [" + mPortAddress + "]");
                 mThread.setPriority(Thread.MAX_PRIORITY);
                 mThread.start();
             }

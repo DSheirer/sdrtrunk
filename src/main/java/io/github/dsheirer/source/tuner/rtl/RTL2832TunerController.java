@@ -73,9 +73,9 @@ public class RTL2832TunerController extends USBTunerController
      * to determine the tuner type, and construct the corresponding child
      * tuner controller class for that tuner type.
      */
-    public RTL2832TunerController(int bus, int port, ITunerErrorListener tunerErrorListener)
+    public RTL2832TunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(bus, port, tunerErrorListener);
+        super(bus, portAddress, tunerErrorListener);
     }
 
     /**
