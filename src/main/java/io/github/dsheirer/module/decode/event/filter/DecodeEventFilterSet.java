@@ -8,7 +8,6 @@ public class DecodeEventFilterSet extends FilterSet<IDecodeEvent> {
         super ("All Messages");
 
         addFilter(new DecodedCallEventFilter());
-        addFilter(new DecodedCallEncryptedEventFilter());
         addFilter(new DecodedDataEventFilter());
         addFilter(new DecodedCommandEventFilter());
         addFilter(new DecodedRegistrationEventFilter());

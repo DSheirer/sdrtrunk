@@ -16,7 +16,8 @@ public class DecodedRegistrationEventFilter extends EventFilter
                 DecodeEventType.DEREGISTER,
                 DecodeEventType.REQUEST,
                 DecodeEventType.RESPONSE,
-                DecodeEventType.RESPONSE_PACKET
+                DecodeEventType.RESPONSE_PACKET,
+                DecodeEventType.STATION_ID
         ));
     }
 }
