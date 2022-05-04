@@ -28,7 +28,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.5.0-beta2'
+version = '0.5.0-beta3'
 sourceCompatibility = '17'
 
 sourceSets {
@@ -139,11 +139,11 @@ String targetWindowsX86_64 = 'windows-x86_64-v' + version
  * author's development environment, but can be changed to your environment if you want to use this build pattern.
  */
 String jdk_base = '/home/denny/java_jdks/'
-String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-17.0.2-full'
-String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-17.0.2-full'
-String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-17.0.2-full.jdk'
-String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-17.0.2-full.jdk'
-String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-17.0.2-full'
+String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-18.0.1-full'
+String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-18.0.1-full'
+String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-18.0.1-full.jdk'
+String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-18.0.1-full.jdk'
+String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-18.0.1-full'
 
 boolean hasTargetJdks = file(jdk_linux_x86_64).exists() || file(jdk_linux_aarch64).exists() ||
         file(jdk_osx_x86_64).exists() || file(jdk_osx_aarch64).exists() || file(jdk_windows_x86_64).exists()
@@ -172,19 +172,19 @@ runtime {
         println("Building all runtime images")
         println("The [ > jre: ] build phase downloads several target JDKs and this may take a while ... please wait")
         targetPlatform(targetLinuxAarch64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-linux-aarch64-full.tar.gz")
+            jdkHome = jdkDownload("https://download.bell-sw.com/java/18.0.1+12/bellsoft-jdk18.0.1+12-linux-aarch64-full.tar.gz")
         }
         targetPlatform(targetLinuxX86_64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-linux-amd64-full.tar.gz")
+            jdkHome = jdkDownload("https://download.bell-sw.com/java/18.0.1+12/bellsoft-jdk18.0.1+12-linux-amd64-full.tar.gz")
         }
         targetPlatform(targetOsxAarch64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-macos-aarch64-full.tar.gz")
+            jdkHome = jdkDownload("https://download.bell-sw.com/java/18.0.1+12/bellsoft-jdk18.0.1+12-macos-aarch64-full.tar.gz")
         }
         targetPlatform(targetOsxX86_64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-macos-amd64-full.tar.gz")
+            jdkHome = jdkDownload("https://download.bell-sw.com/java/18.0.1+12/bellsoft-jdk18.0.1+12-macos-amd64-full.tar.gz")
         }
         targetPlatform(targetWindowsX86_64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/17.0.2+9/bellsoft-jdk17.0.2+9-windows-amd64-full.zip")
+            jdkHome = jdkDownload("https://download.bell-sw.com/java/18.0.1+12/bellsoft-jdk18.0.1+12-windows-amd64-full.zip")
         }
     }
     //Build using pre-downloaded JDKs
