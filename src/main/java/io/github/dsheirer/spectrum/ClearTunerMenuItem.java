@@ -36,9 +36,9 @@ public class ClearTunerMenuItem extends JMenuItem
             @Override
             public void actionPerformed(ActionEvent e)
             {
-                mSpectralDisplayPanel.clearTuner();
                 SystemProperties properties = SystemProperties.getInstance();
                 properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, false);
+                mSpectralDisplayPanel.clearTuner();
             }
         });
     }

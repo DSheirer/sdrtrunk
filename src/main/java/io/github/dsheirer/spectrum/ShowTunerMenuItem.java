@@ -49,9 +49,9 @@ public class ShowTunerMenuItem extends JMenuItem
                     @Override
                     public void run()
                     {
-                        mDiscoveredTunerModel.broadcast(new TunerEvent(mTuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
                         SystemProperties properties = SystemProperties.getInstance();
                         properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
+                        mDiscoveredTunerModel.broadcast(new TunerEvent(mTuner, TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
                     }
                 });
             }
