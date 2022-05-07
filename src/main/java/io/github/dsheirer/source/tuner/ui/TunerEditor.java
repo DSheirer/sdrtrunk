@@ -20,6 +20,7 @@ package io.github.dsheirer.source.tuner.ui;
 
 import io.github.dsheirer.gui.control.JFrequencyControl;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProcessor;
@@ -32,7 +33,12 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.SwingUtils;
+import java.awt.EventQueue;
+import java.text.CharacterIterator;
+import java.text.DecimalFormat;
+import java.text.StringCharacterIterator;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,10 +54,6 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.EventQueue;
-import java.text.CharacterIterator;
-import java.text.DecimalFormat;
-import java.text.StringCharacterIterator;
 
 /**
  * Base tuner configuration editor.
@@ -320,6 +322,8 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
 
                 if(tuner != null)
                 {
+                    SystemProperties.getInstance().set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
+
                     mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
                             TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
                 }
