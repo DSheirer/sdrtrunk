@@ -18,11 +18,10 @@
  */
 package io.github.dsheirer.audio.convert;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MP3SilenceGenerator implements ISilenceGenerator
 {
@@ -40,7 +39,7 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     public MP3SilenceGenerator(InputAudioFormat inputAudioFormat, MP3Setting setting)
     {
         mInputAudioFormat = inputAudioFormat;
-        mMP3AudioConverter = new MP3AudioConverter(inputAudioFormat, setting);
+        mMP3AudioConverter = new MP3AudioConverter(inputAudioFormat, setting, false);
     }
 
     /**

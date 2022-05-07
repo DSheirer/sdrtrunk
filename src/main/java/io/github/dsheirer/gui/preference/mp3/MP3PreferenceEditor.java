@@ -25,6 +25,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.mp3.MP3Preference;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.GridPane;
@@ -44,7 +45,12 @@ public class MP3PreferenceEditor extends HBox
     private GridPane mEditorPane;
     private ComboBox<MP3Setting> mMP3SettingComboBox;
     private ComboBox<InputAudioFormat> mAudioSampleRateComboBox;
+    private CheckBox mNormalizeAudioCheckBox;
 
+    /**
+     * Constructs an instance
+     * @param userPreferences
+     */
     public MP3PreferenceEditor(UserPreferences userPreferences)
     {
         mMP3Preference = userPreferences.getMP3Preference();
@@ -65,6 +71,9 @@ public class MP3PreferenceEditor extends HBox
             Label topLabel = new Label("MP3 Encoder Preferences");
             mEditorPane.add(topLabel, 0, row++, 2, 1);
 
+
+            mEditorPane.add(getNormalizeAudioCheckBox(), 1, row++);
+
             Label label = new Label("(LAME) Encoder Setting:");
             GridPane.setHalignment(label, HPos.RIGHT);
             mEditorPane.add(label, 0, row);
@@ -76,7 +85,7 @@ public class MP3PreferenceEditor extends HBox
             mEditorPane.add(getAudioSampleRateComboBox(), 1, row++);
 
             Label notice = new Label("Note: sdrtrunk default 8 kHz audio rate is resampled to input sample rate before MP3 encoding");
-            mEditorPane.add(notice, 0, row, 2, 1);
+            mEditorPane.add(notice, 0, row++, 2, 1);
         }
 
         return mEditorPane;
@@ -108,5 +117,18 @@ public class MP3PreferenceEditor extends HBox
         }
 
         return mAudioSampleRateComboBox;
+    }
+
+    private CheckBox getNormalizeAudioCheckBox()
+    {
+        if(mNormalizeAudioCheckBox == null)
+        {
+            mNormalizeAudioCheckBox = new CheckBox("Normalize Audio Before Encoding");
+            mNormalizeAudioCheckBox.setSelected(mMP3Preference.isNormalizeAudioBeforeEncode());
+            mNormalizeAudioCheckBox.onActionProperty().set(event ->
+                    mMP3Preference.setNormalizeAudioBeforeEncode(getNormalizeAudioCheckBox().isSelected()));
+        }
+
+        return mNormalizeAudioCheckBox;
     }
 }
