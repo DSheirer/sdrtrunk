@@ -423,6 +423,11 @@ public class SpectralDisplayPanel extends JPanel
     public void showTuner(Tuner tuner)
     {
         clearTuner();
+        if(!SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
+        {
+            //Spectral display is disabled, stop
+            return;
+        }
 
         mComplexDftProcessor.clearBuffer();
 
