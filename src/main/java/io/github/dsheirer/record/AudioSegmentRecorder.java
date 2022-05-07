@@ -29,9 +29,6 @@ import io.github.dsheirer.record.wave.AudioMetadata;
 import io.github.dsheirer.record.wave.AudioMetadataUtils;
 import io.github.dsheirer.record.wave.WaveWriter;
 import io.github.dsheirer.sample.ConversionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -39,6 +36,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Recording utility for audio segments
@@ -96,7 +95,9 @@ public class AudioSegmentRecorder
             InputAudioFormat inputAudioFormat = userPreferences.getMP3Preference().getAudioSampleRate();
             MP3Setting mp3Setting = userPreferences.getMP3Preference().getMP3Setting();
 
-            MP3AudioConverter converter = new MP3AudioConverter(inputAudioFormat, mp3Setting);
+            boolean normalizeAudio = userPreferences.getMP3Preference().isNormalizeAudioBeforeEncode();
+
+            MP3AudioConverter converter = new MP3AudioConverter(inputAudioFormat, mp3Setting, normalizeAudio);
             List<byte[]> mp3Frames = converter.convert(audioSegment.getAudioBuffers());
             for(byte[] mp3Frame: mp3Frames)
             {

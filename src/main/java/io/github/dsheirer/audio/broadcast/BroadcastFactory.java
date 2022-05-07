@@ -30,10 +30,8 @@ import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcast
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
-import io.github.dsheirer.audio.convert.IAudioConverter;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
-import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.audio.convert.MP3SilenceGenerator;
 import io.github.dsheirer.preference.UserPreferences;
@@ -83,26 +81,6 @@ public class BroadcastFactory
                     mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
                     break;
             }
-        }
-
-        return null;
-    }
-
-    /**
-     * Creates an audio convert to convert from 8 kHz PCM audio to the specified format
-     *
-     * @param configuration containing the requested output audio format
-     * @return audio convert or null
-     */
-    public static IAudioConverter getAudioConverter(BroadcastConfiguration configuration, InputAudioFormat inputAudioFormat,
-                                                    MP3Setting mp3Setting)
-    {
-        switch(configuration.getBroadcastFormat())
-        {
-            case MP3:
-                return new MP3AudioConverter(inputAudioFormat, mp3Setting);
-            default:
-                mLog.info("Unrecognized broadcastAudio format: " + configuration.getBroadcastFormat().name());
         }
 
         return null;
