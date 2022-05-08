@@ -19,6 +19,10 @@
 
 package io.github.dsheirer.audio.convert;
 
+import io.github.dsheirer.audio.convert.MPEGLayer;
+import io.github.dsheirer.audio.convert.MPEGVersion;
+import org.apache.commons.math3.util.FastMath;
+
 /**
  * Utility class for inspecting/parsing MP3 frames
  */
@@ -86,6 +90,71 @@ public class MP3Header
     public static ChannelMode getChannelMode(byte[] frame, int offset)
     {
         return ChannelMode.fromValue((frame[offset + 3] & 0xC0) >> 6);
+    }
+
+    /**
+     * Indicates if the frame has padding
+     * @param frame
+     * @param offset
+     * @return boolean
+     */
+    public static boolean isPadded(byte[] frame, int offset)
+    {
+        return (frame[offset + 2] & 0x01) == 1;
+    }
+
+    /**
+     * Get the number of bytes in the frame
+     * @param frame
+     * @param offset
+     * @return frame length in bytes
+     */
+    public static int getFrameLength(byte[] frame, int offset)
+    {
+        return (getFrameSamples(frame, offset) / 8) * (getBitRate(frame, offset) * 1000) / getSampleRate(frame, offset) + (isPadded(frame, offset) ? 1 : 0);
+    }
+
+    /**
+     * Get the number of samples in the frame
+     * @param frame
+     * @param offset
+     * @return length of frame in samples
+     */
+    public static int getFrameSamples(byte[] frame, int offset)
+    {
+        switch(getMPEGVersion(frame, offset))
+        {
+            case V_1:
+                switch(getMPEGLayer(frame, offset))
+                {
+                    case LAYER1: return 384;
+                    case LAYER2: return 1152;
+                    case LAYER3: return 1152;
+                    default:
+                }
+            case V_2:
+            case V_2_5:
+                switch(getMPEGLayer(frame, offset))
+                {
+                    case LAYER1: return 384;
+                    case LAYER2: return 1152;
+                    case LAYER3: return 576;
+                    default:
+                }
+            default:
+        }
+        return 0;
+    }
+
+    /**
+     * Get the frame duration in milliseconds
+     * @param frame
+     * @param offset
+     * @return duration in milliseconds
+     */
+    public static int getFrameDuration(byte[] frame, int offset)
+    {
+        return (int)FastMath.round((double)getFrameSamples(frame, offset) / (double)getSampleRate(frame, offset) * 1000);
     }
 
     /**
