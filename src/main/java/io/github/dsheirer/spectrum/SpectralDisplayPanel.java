@@ -47,6 +47,17 @@ import io.github.dsheirer.spectrum.menu.FFTWindowTypeItem;
 import io.github.dsheirer.spectrum.menu.FrameRateItem;
 import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.util.ArrayList;
+import java.util.Hashtable;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
@@ -68,17 +79,6 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.MouseInputAdapter;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.util.ArrayList;
-import java.util.Hashtable;
 
 public class SpectralDisplayPanel extends JPanel
         implements Listener<INativeBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
@@ -423,11 +423,6 @@ public class SpectralDisplayPanel extends JPanel
     public void showTuner(Tuner tuner)
     {
         clearTuner();
-        if(!SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
-        {
-            //Spectral display is disabled, stop
-            return;
-        }
 
         mComplexDftProcessor.clearBuffer();
 

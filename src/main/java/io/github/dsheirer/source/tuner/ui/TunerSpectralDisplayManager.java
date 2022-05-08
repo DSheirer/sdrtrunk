@@ -19,6 +19,7 @@
 package io.github.dsheirer.source.tuner.ui;
 
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.Tuner;
@@ -28,7 +29,6 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.spectrum.SpectrumFrame;
 import io.github.dsheirer.util.SwingUtils;
 import io.github.dsheirer.util.ThreadPool;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +53,12 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
      */
     public Tuner showFirstTuner()
     {
+        if(!SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
+        {
+            //Spectral display is disabled, stop
+            return null;
+        }
+
         List<DiscoveredTuner> availableTuners = mDiscoveredTunerModel.getAvailableTuners();
 
         for(DiscoveredTuner discoveredTuner: availableTuners)
@@ -76,7 +82,10 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
                 SwingUtils.run(() -> mSpectralDisplayPanel.clearTuner());
                 break;
             case REQUEST_MAIN_SPECTRAL_DISPLAY:
-                SwingUtils.run(() -> mSpectralDisplayPanel.showTuner(event.getTuner()));
+                if(SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
+                {
+                    SwingUtils.run(() -> mSpectralDisplayPanel.showTuner(event.getTuner()));
+                }
                 break;
             case REQUEST_NEW_SPECTRAL_DISPLAY:
                 final SpectrumFrame frame = new SpectrumFrame(mPlaylistManager, mSettingsManager, mDiscoveredTunerModel, event.getTuner());
