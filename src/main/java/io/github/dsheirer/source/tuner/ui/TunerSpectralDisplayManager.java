@@ -31,14 +31,28 @@ import io.github.dsheirer.util.SwingUtils;
 import io.github.dsheirer.util.ThreadPool;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * Spectral display manager for displaying tuner spectral content.
+ */
 public class TunerSpectralDisplayManager implements Listener<TunerEvent>
 {
+    private Logger mLog = LoggerFactory.getLogger(TunerSpectralDisplayManager.class);
+
     private SpectralDisplayPanel mSpectralDisplayPanel;
     private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
     private DiscoveredTunerModel mDiscoveredTunerModel;
 
+    /**
+     * Constructs an instance
+     * @param panel to manage
+     * @param playlistManager for channel updates
+     * @param settingsManager for settings
+     * @param discoveredTunerModel to access tuners
+     */
     public TunerSpectralDisplayManager(SpectralDisplayPanel panel, PlaylistManager playlistManager,
                                        SettingsManager settingsManager, DiscoveredTunerModel discoveredTunerModel)
     {

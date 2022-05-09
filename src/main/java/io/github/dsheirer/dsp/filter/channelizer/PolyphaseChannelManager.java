@@ -21,11 +21,13 @@ package io.github.dsheirer.dsp.filter.channelizer;
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.buffer.INativeBufferProvider;
 import io.github.dsheirer.buffer.NativeBufferPoisonPill;
+import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.OneChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
@@ -37,10 +39,6 @@ import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.util.Dispatcher;
-import org.apache.commons.math3.util.FastMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -51,6 +49,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Polyphase Channel Manager is a DDC channel manager and complex buffer queue/processor for a tuner.  This class
@@ -136,14 +137,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         for(TunerChannelSource tunerChannelSource: toStop)
         {
-            try
-            {
-                tunerChannelSource.process(SourceEvent.tunerShutdown(tunerChannelSource));
-            }
-            catch(SourceException se)
-            {
-                mLog.error("Error stopping tuner channel source for tuner shutdown");
-            }
+            MyEventBus.getGlobalEventBus().post(new ChannelStopProcessingRequest(tunerChannelSource));
         }
     }
 

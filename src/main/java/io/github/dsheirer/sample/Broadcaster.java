@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.sample;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Broadcasts an item to multiple listeners
@@ -33,20 +31,11 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Broadcaster<T> implements Listener<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Broadcaster.class);
-    private boolean mDebug;
     private ReentrantLock mLock = new ReentrantLock();
     private List<Listener<T>> mListeners = new ArrayList<>();
 
     public Broadcaster()
     {
-    }
-
-    /**
-     * Turns on/off debugging to troubleshoot and log which listeners are receiving an item.
-     */
-    public void setDebug(boolean debug)
-    {
-        mDebug = debug;
     }
 
     /**
@@ -66,16 +55,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void dispose()
     {
-        mLock.lock();
-
-        try
-        {
-            mListeners.clear();
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        clear();
     }
 
     /**
@@ -152,16 +132,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void clear()
     {
-        mLock.lock();
-
-        try
-        {
-            mListeners.clear();
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        mListeners.clear();
     }
 
     /**
@@ -173,21 +144,11 @@ public class Broadcaster<T> implements Listener<T>
 
         try
         {
-            if(mDebug)
+            List<Listener<T>> listeners = new ArrayList<>(mListeners);
+
+            for(Listener listener: listeners)
             {
-                for(Listener<T> listener : mListeners)
-                {
-                    mLog.debug("Sending [" + t + "] to listener [" + listener.getClass() + "]");
-                    listener.receive(t);
-                    mLog.debug("Finished sending to listener [" + listener.getClass() + "]");
-                }
-            }
-            else
-            {
-                for(Listener<T> listener : mListeners)
-                {
-                    listener.receive(t);
-                }
+                listener.receive(t);
             }
         }
         finally

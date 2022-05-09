@@ -19,7 +19,9 @@
 package io.github.dsheirer.source.tuner.manager;
 
 import io.github.dsheirer.buffer.NativeSampleDelayBuffer;
+import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
@@ -28,14 +30,13 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.HalfBandTunerChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel provider for heterodyne and decimate method of channel provisioning.
@@ -68,14 +69,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
 
         for(TunerChannelSource tunerChannelSource: toStop)
         {
-            try
-            {
-                tunerChannelSource.process(SourceEvent.tunerShutdown(tunerChannelSource));
-            }
-            catch(SourceException se)
-            {
-                mLog.error("Error stopping tuner channel source for tuner shutdown");
-            }
+            MyEventBus.getGlobalEventBus().post(new ChannelStopProcessingRequest(tunerChannelSource));
         }
     }
 
@@ -278,8 +272,6 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                         //The start sample stream request contains a start timestamp and the delay buffer
                         //will preload the channel with delayed sample buffers that either contain the
                         //timestamp or occur later/newer than the timestamp.
-//                        mSampleDelayBuffer.addListener((CICTunerChannelSource)sourceEvent.getSource(),
-//                                sourceEvent.getValue().longValue());
                         mSampleDelayBuffer.addListener((HalfBandTunerChannelSource)sourceEvent.getSource(),
                                 sourceEvent.getValue().longValue());
                     }
@@ -287,7 +279,6 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 case REQUEST_STOP_SAMPLE_STREAM:
                     if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
                     {
-//                        mSampleDelayBuffer.removeListener((CICTunerChannelSource)sourceEvent.getSource());
                         mSampleDelayBuffer.removeListener((HalfBandTunerChannelSource)sourceEvent.getSource());
                         stopDelayBuffer();
                     }
@@ -295,7 +286,6 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                 case REQUEST_SOURCE_DISPOSE:
                     if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
                     {
-//                        CICTunerChannelSource channelSource = (CICTunerChannelSource)sourceEvent.getSource();
                         HalfBandTunerChannelSource channelSource = (HalfBandTunerChannelSource) sourceEvent.getSource();
                         mChannelSources.remove(channelSource);
                         mTunerChannels.remove(channelSource.getTunerChannel());

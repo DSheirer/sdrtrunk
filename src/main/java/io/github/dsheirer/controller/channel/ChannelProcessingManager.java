@@ -25,6 +25,7 @@ import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.controller.channel.event.PreloadDataContent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.identifier.Form;
@@ -46,12 +47,9 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
-import javafx.application.Platform;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +60,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import javafx.application.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel processing manager handles all starting and stopping of channel decoding.  A processing chain is created
@@ -124,7 +125,20 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     private boolean isProcessing(Channel channel)
     {
-        return mProcessingChains.containsKey(channel) && mProcessingChains.get(channel).isProcessing();
+        boolean isProcessing = false;
+
+        mLock.lock();
+
+        try
+        {
+            isProcessing = mProcessingChains.containsKey(channel) && mProcessingChains.get(channel).isProcessing();
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return isProcessing;
     }
 
     /**
@@ -153,18 +167,60 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public Channel getChannel(ProcessingChain processingChain)
     {
+        Channel channel = null;
+
         if(processingChain != null)
         {
-            for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
+            mLock.lock();
+
+            try
             {
-                if(entry.getValue() == processingChain)
+                for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
                 {
-                    return entry.getKey();
+                    if(entry.getValue() == processingChain)
+                    {
+                        channel = entry.getKey();
+                        break;
+                    }
                 }
+            }
+            finally
+            {
+                mLock.unlock();
             }
         }
 
-        return null;
+        return channel;
+    }
+
+    /**
+     * Retrieves the channel associated with the processing chain that is consuming from the tuner channel source
+     * @param tunerChannelSource to find the channel
+     * @return channel
+     */
+    private Channel getChannel(TunerChannelSource tunerChannelSource)
+    {
+        Channel channel = null;
+
+        mLock.lock();
+
+        try
+        {
+            for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
+            {
+                if(entry.getValue().hasSource(tunerChannelSource))
+                {
+                    channel = entry.getKey();
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return channel;
     }
 
     /**
@@ -269,6 +325,28 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                         .schedule(new DelayedChannelStartTask(request), 500, TimeUnit.MILLISECONDS);
                     mDelayedChannelStartTasks.add(future);
                 }
+            }
+        }
+    }
+
+    /**
+     * Request to stop a channel that is currently processing
+     * @param request with the tuner channel source feeding the channel to be stopped.
+     */
+    @Subscribe
+    public void stopChannelRequest(ChannelStopProcessingRequest request)
+    {
+        Channel channel = getChannel(request.getTunerChannelSource());
+
+        if(channel != null)
+        {
+            try
+            {
+                stop(channel);
+            }
+            catch(ChannelException ce)
+            {
+                mLog.error("Error stopping channel [" + channel + "]", ce);
             }
         }
     }
@@ -720,9 +798,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     {
         @Override public void receive(SourceEvent sourceEvent)
         {
-            if((sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE ||
-                sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_TUNER_SHUTDOWN) &&
-                    sourceEvent.getSource() != null)
+            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
             {
                 Channel toShutdown = null;
 
@@ -749,10 +825,6 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE)
                     {
                         mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
-                    }
-                    else if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_TUNER_SHUTDOWN)
-                    {
-                        mLog.warn("Tuner removal detected - stopping channel [" + toShutdown.getName() + "]");
                     }
                     else
                     {
