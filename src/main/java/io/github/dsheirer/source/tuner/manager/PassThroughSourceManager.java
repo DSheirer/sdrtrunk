@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.source.tuner.manager;
 
+import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
+import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
@@ -27,14 +29,13 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.PassThroughChannelSource;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Pass through source manager for relatively small bandwidth complex streams that don't warrant the overhead of
@@ -62,14 +63,7 @@ public class PassThroughSourceManager extends ChannelSourceManager
 
         for(TunerChannelSource tunerChannelSource: toStop)
         {
-            try
-            {
-                tunerChannelSource.process(SourceEvent.tunerShutdown(tunerChannelSource));
-            }
-            catch(SourceException se)
-            {
-                mLog.error("Error stopping tuner channel source for tuner shutdown");
-            }
+            MyEventBus.getGlobalEventBus().post(new ChannelStopProcessingRequest(tunerChannelSource));
         }
     }
 

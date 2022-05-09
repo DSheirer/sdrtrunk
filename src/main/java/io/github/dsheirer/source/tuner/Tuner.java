@@ -28,6 +28,7 @@ import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.HeterodyneChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.PolyphaseChannelSourceManager;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,7 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
     private TunerController mTunerController;
     private TunerFrequencyErrorMonitor mTunerFrequencyErrorMonitor;
     private ITunerErrorListener mTunerErrorListener;
+    private AtomicBoolean mRunning = new AtomicBoolean();
 
     public Tuner(TunerController tunerController, ITunerErrorListener tunerErrorListener)
     {
@@ -85,20 +87,25 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
      */
     public void start() throws SourceException
     {
-        try
+        if(mRunning.compareAndSet(false, true))
         {
-            getTunerController().start();
-        }
-        catch(SourceException se)
-        {
-            //Rethrow the source exception
-            throw se;
-        }
-        catch(Exception e)
-        {
-            //Wrap any other exceptions in a new source exception
-            mLog.error("Error starting " + getTunerClass() + " tuner", e);
-            throw new SourceException("Unable to start " + getTunerClass() + " tuner", e);
+            try
+            {
+                getTunerController().start();
+            }
+            catch(SourceException se)
+            {
+                mRunning.set(false);
+                //Rethrow the source exception
+                throw se;
+            }
+            catch(Exception e)
+            {
+                mRunning.set(false);
+                //Wrap any other exceptions in a new source exception
+                mLog.error("Error starting " + getTunerClass() + " tuner", e);
+                throw new SourceException("Unable to start " + getTunerClass() + " tuner", e);
+            }
         }
     }
 
@@ -107,20 +114,24 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
      */
     public void stop()
     {
-        if(getChannelSourceManager() != null)
+        if(mRunning.compareAndSet(true, false))
         {
-            getChannelSourceManager().stopAllChannels();
-            getChannelSourceManager().dispose();
-            mChannelSourceManager = null;
+            broadcast(new TunerEvent(this, Event.NOTIFICATION_SHUTTING_DOWN));
+
+            if(getChannelSourceManager() != null)
+            {
+                getChannelSourceManager().stopAllChannels();
+                getChannelSourceManager().dispose();
+                mChannelSourceManager = null;
+            }
+
+            getTunerController().stop();
+            getTunerController().dispose();
+
+            mTunerEventBroadcaster.clear();
+            mTunerFrequencyErrorMonitor = null;
+            mTunerErrorListener = null;
         }
-
-        broadcast(new TunerEvent(this, Event.NOTIFICATION_SHUTTING_DOWN));
-        getTunerController().stop();
-        getTunerController().dispose();
-
-        mTunerEventBroadcaster.clear();
-        mTunerFrequencyErrorMonitor = null;
-        mTunerErrorListener = null;
     }
 
     /**
