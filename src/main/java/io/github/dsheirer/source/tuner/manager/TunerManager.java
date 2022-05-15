@@ -37,6 +37,13 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -46,14 +53,6 @@ import org.usb4java.DeviceList;
 import org.usb4java.HotplugCallback;
 import org.usb4java.HotplugCallbackHandle;
 import org.usb4java.LibUsb;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tuner manager provides access to tuners using USB, recording, sound-card and system-daemon accessible devices. This
@@ -101,13 +100,24 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         mLog.info("LibUsb API Version: " + ((api >> 24) & 0xFF) + "." + ((api >> 16) & 0xFF) + "." + (api & 0xFFFF));
         mLog.info("LibUsb Version: " + LibUsb.getVersion());
 
-        int status = LibUsb.init(mLibUsbApplicationContext);
-
-        if(status == LibUsb.SUCCESS)
+        try
         {
-            mLibUsbInitialized = true;
+            int status = LibUsb.init(mLibUsbApplicationContext);
+
+            if(status == LibUsb.SUCCESS)
+            {
+                mLibUsbInitialized = true;
 //            LibUsb.setOption(mLibUsbApplicationContext, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_DEBUG);
-            discoverUSBTuners();
+                discoverUSBTuners();
+            }
+        }
+        catch(Exception e)
+        {
+            if(System.getProperty("os.name").toLowerCase().contains("mac"))
+            {
+                mLog.warn("Mac operating system - unable to initialize LibUsb library.  Ensure libusb is installed via homebrew.");
+            }
+            mLog.error("Error initializing LibUsb and usb4java library", e);
         }
 
         if(mLibUsbInitialized)
