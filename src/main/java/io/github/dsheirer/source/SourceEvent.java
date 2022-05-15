@@ -18,10 +18,9 @@
  */
 package io.github.dsheirer.source;
 
+import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.EnumSet;
 
 public class SourceEvent
 {
@@ -193,15 +192,6 @@ public class SourceEvent
     public static SourceEvent errorState(Source source, String errorDescription)
     {
         return new SourceEvent(Event.NOTIFICATION_ERROR_STATE, source, errorDescription);
-    }
-
-    /**
-     * Notification that a tuner is shutting down and the source is therefore shutting down.
-     * @param source that is shutting down
-     */
-    public static SourceEvent tunerShutdown(Source source)
-    {
-        return new SourceEvent(Event.NOTIFICATION_TUNER_SHUTDOWN, source);
     }
 
     /**

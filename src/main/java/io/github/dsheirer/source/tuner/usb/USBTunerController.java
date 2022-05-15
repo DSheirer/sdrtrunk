@@ -26,6 +26,12 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -36,13 +42,6 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Tuner controller implementation for USB tuners.  Manages general USB operations and incorporates threaded USB
@@ -544,7 +543,7 @@ public abstract class USBTunerController extends TunerController
         {
             for(Transfer transfer: transfers)
             {
-                submitTransfer(transfer);
+                submitTransfer(transfer, LibUsb.SUCCESS, 0);
             }
         }
 
@@ -552,7 +551,7 @@ public abstract class USBTunerController extends TunerController
          * (Re)Submits the transfer for stream processing
          * @param transfer to (re)submit
          */
-        private void submitTransfer(Transfer transfer)
+        private void submitTransfer(Transfer transfer, int previousStatus, int previousBytesTransferred)
         {
             int status = LibUsb.submitTransfer(transfer);
 
@@ -562,7 +561,8 @@ public abstract class USBTunerController extends TunerController
             }
             else
             {
-                mLog.error("Error submitting USB transfer - " + LibUsb.errorName(status));
+                mLog.error("Error submitting USB transfer - status [" + status + "] " + LibUsb.errorName(status) +
+                    " - previous status [" + previousStatus + "] and transferred [" + previousBytesTransferred + "]");
                 setErrorMessage("Usb I/O Error - Can't submit buffers to tuner - stopping tuner");
             }
         }
@@ -593,7 +593,9 @@ public abstract class USBTunerController extends TunerController
                 case LibUsb.TRANSFER_STALL:
                 case LibUsb.TRANSFER_TIMED_OUT:
                 case LibUsb.TRANSFER_ERROR:
-                    if(transfer.actualLength() > 0)
+                    int transferLength = transfer.actualLength();
+
+                    if(transferLength > 0)
                     {
                         dispatchTransfer(transfer);
                     }
@@ -602,33 +604,20 @@ public abstract class USBTunerController extends TunerController
 
                     if(mAutoResubmitTransfers)
                     {
-                        submitTransfer(transfer);
+                        submitTransfer(transfer, transfer.status(), transferLength);
                     }
                     break;
                 case LibUsb.TRANSFER_CANCELLED:
-                    //Reset the transfer but don't do anything else
+                    //Reset the transfer but don't do anything else since we're shutting down
                     transfer.buffer().rewind();
                     break;
                 default:
                     //Unexpected transfer error - need to reset the bulk transfer interface
                     transfer.buffer().rewind();
-                    //TODO: usually the device is in a bad state at this point ... need to raise the error flag
+                    setErrorMessage("LibUsb Transfer Error - stopping device - status [" + transfer.status() + "] - " +
+                            LibUsb.errorName(transfer.status()));
                     return;
             }
-        }
-
-        /**
-         * Disposes of the transfer and dereferences the native byte buffer so that it can be garbage collected.
-         */
-        private void disposeTransfers()
-        {
-            for(Transfer transfer: mAvailableTransfers)
-            {
-                transfer.setBuffer(null);
-            }
-
-            mAvailableTransfers.clear();
-            mAvailableTransfers = null;
         }
 
         /**
