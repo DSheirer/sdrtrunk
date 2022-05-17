@@ -68,6 +68,9 @@ public abstract class USBTunerController extends TunerController
     private ReentrantLock mListenerLock = new ReentrantLock();
     private boolean mRunning = false;
 
+    //Troubleshooting libusb bug: https://github.com/DSheirer/sdrtrunk/issues/1253
+    private int mAnomalousTransfersDetected = 0;
+
     /**
      * USB tuner controller class. Provides auto-start and auto-stop function when complex buffer listeners are added
      * or removed from this tuner controller.
@@ -559,6 +562,33 @@ public abstract class USBTunerController extends TunerController
             {
                 mInProgressTransfers.add(transfer);
             }
+            else if(status == LibUsb.ERROR_BUSY)
+            {
+                mInProgressTransfers.add(transfer);
+
+                //Weird issue/bug with libusb on Windows where libusb tells us the transfer is complete and then tells
+                //us that the transfer is already submitted when we attempt to re-submit the transfer.  We track the
+                //number of times this occurs and log when the anomaly count exceeds the number of transfer buffers
+                //in case the application gets to a state where all transfers are no longer usable ... so that we
+                //know post-mortem what happened to the application.
+                mAnomalousTransfersDetected++;
+
+                if(mAnomalousTransfersDetected < USB_BULK_TRANSFER_BUFFER_POOL_SIZE)
+                {
+                    mLog.error("USB transfer anomaly detected - continuing - previous status [" + previousStatus +
+                            " ] transferred [" + previousBytesTransferred + "] this has happened [" +
+                            mAnomalousTransfersDetected + "] times");
+                }
+
+                //This should only log once, when the anomaly count matches the transfer count
+                if(mAnomalousTransfersDetected == USB_BULK_TRANSFER_BUFFER_POOL_SIZE)
+                {
+                    mLog.warn("USB transfer anomaly detection count exceeded the total number [8] of available " +
+                            "tranfers - sdrtrunk may no longer be streaming data from this tuner and may appear to " +
+                            "be locked up.  If so, restart the application to resolve the issue and please send the " +
+                            "application log to the developer");
+                }
+            }
             else
             {
                 mLog.error("Error submitting USB transfer - status [" + status + "] " + LibUsb.errorName(status) +
@@ -598,9 +628,8 @@ public abstract class USBTunerController extends TunerController
                     if(transferLength > 0)
                     {
                         dispatchTransfer(transfer);
+                        transfer.buffer().rewind();
                     }
-
-                    transfer.buffer().rewind();
 
                     if(mAutoResubmitTransfers)
                     {
