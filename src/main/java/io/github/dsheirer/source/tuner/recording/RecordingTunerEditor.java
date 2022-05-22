@@ -19,7 +19,6 @@
 package io.github.dsheirer.source.tuner.recording;
 
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
@@ -28,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JLabel;
+import javax.swing.JSeparator;
 
 /**
  * Recording tuner configuration editor
@@ -37,9 +37,6 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(RecordingTunerEditor.class);
     private JLabel mRecordingPath;
-    private boolean mLoading;
-
-    private RecordingTunerController mController;
 
     /**
      * Constructs an instance
@@ -50,8 +47,8 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
     public RecordingTunerEditor(UserPreferences userPreferences, TunerManager tunerManager, DiscoveredTuner discoveredTuner)
     {
         super(userPreferences, tunerManager, discoveredTuner);
-//        mController = discoveredTuner.getTunerController();
-//        init();
+        init();
+        tunerStatusUpdated();
     }
 
     @Override
@@ -63,63 +60,71 @@ public class RecordingTunerEditor extends TunerEditor<RecordingTuner,RecordingTu
     @Override
     protected void tunerStatusUpdated()
     {
+        setLoading(true);
 
+        if(hasTuner())
+        {
+            getTunerIdLabel().setText(getTuner().getPreferredName());
+        }
+        else
+        {
+            getTunerIdLabel().setText(null);
+        }
+
+        String status = getDiscoveredTuner().getTunerStatus().toString();
+        if(getDiscoveredTuner().hasErrorMessage())
+        {
+            status += " - " + getDiscoveredTuner().getErrorMessage();
+        }
+        getTunerStatusLabel().setText(status);
+        getButtonPanel().updateControls();
+        getFrequencyPanel().updateControls();
+
+        if(hasConfiguration())
+        {
+            getRecordingPath().setText(getConfiguration().getPath());
+        }
+        setLoading(false);
     }
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill]",
-            "[][][grow]"));
-        add(new JLabel("Recording Tuner Configuration"), "span,align center");
+        setLayout(new MigLayout("fill,wrap 3", "[right][grow,fill]",
+            "[][][][][][][][grow]"));
+
+        add(new JLabel("Tuner:"));
+        add(getTunerIdLabel(), "wrap");
+
+        add(new JLabel("Status:"));
+        add(getTunerStatusLabel(), "wrap");
+
         add(new JLabel("File:"));
-        mRecordingPath = new JLabel();
-        add(mRecordingPath);
+        add(getRecordingPath(), "wrap");
+
+        add(getButtonPanel(), "span,align left");
+        add(new JSeparator(), "span,growx,push");
+
+        add(new JLabel("Frequency (MHz):"));
+        add(getFrequencyPanel(), "wrap");
     }
 
-//    @Override
-//    public void setItem(TunerConfiguration tunerConfiguration)
-//    {
-//        super.setItem(tunerConfiguration);
-//
-//        //Toggle loading so that we don't fire a change event and schedule a settings file save
-//        mLoading = true;
-//
-//        if(hasItem())
-//        {
-//            RecordingTunerConfiguration config = getConfiguration();
-//
-//            mRecordingPath.setText(config.getPath());
-//        }
-//        else
-//        {
-//            mRecordingPath.setText("");
-//        }
-//
-//        mLoading = false;
-//    }
+    private JLabel getRecordingPath()
+    {
+        if(mRecordingPath == null)
+        {
+            mRecordingPath = new JLabel();
+        }
+
+        return mRecordingPath;
+    }
 
     @Override
     public void save()
     {
-        if(hasConfiguration() && !mLoading)
+        if(hasConfiguration() && !isLoading())
         {
             RecordingTunerConfiguration config = getConfiguration();
-            String path = mRecordingPath.getText();
-
-            if(path != null && !path.isEmpty())
-            {
-                config.setPath(path);
-
-                try
-                {
-                    mController.apply(config);
-                }
-                catch(SourceException se)
-                {
-                    mLog.error("Error while applying recording tuner configuration", se);
-                }
-            }
-
+            config.setFrequency(getFrequencyControl().getFrequency());
             saveConfiguration();
         }
     }

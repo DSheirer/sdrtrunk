@@ -22,14 +22,23 @@ package io.github.dsheirer.source.tuner.ui;
 import com.jidesoft.swing.JideSplitPane;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
+import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
+import io.github.dsheirer.source.tuner.manager.DiscoveredRecordingTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import io.github.dsheirer.source.tuner.recording.AddRecordingTunerDialog;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JLabel;
+import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -40,11 +49,6 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableRowSorter;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Panel containing a discovered tuners table and a tuner editor for a selected tuner.
@@ -55,13 +59,16 @@ public class TunerViewPanel extends JPanel
     private final static Logger mLog = LoggerFactory.getLogger(TunerViewPanel.class);
     private static final String TABLE_PREFERENCE_KEY = "tuner.view.panel";
 
+    private UserPreferences mUserPreferences;
     private DiscoveredTunerModel mDiscoveredTunerModel;
+    private DiscoveredTunerEditor mDiscoveredTunerEditor;
+    private TunerConfigurationManager mTunerConfigurationManager;
     private JTable mTunerTable;
     private JTableColumnWidthMonitor mColumnWidthMonitor;
     private TableRowSorter<DiscoveredTunerModel> mRowSorter;
     private JideSplitPane mSplitPane;
-    private DiscoveredTunerEditor mDiscoveredTunerEditor;
-    private UserPreferences mUserPreferences;
+    private JButton mAddRecordingButton;
+    private JButton mRemoveRecordingButton;
 
     /**
      * Constructs an instance
@@ -72,6 +79,7 @@ public class TunerViewPanel extends JPanel
     {
         mDiscoveredTunerModel = tunerManager.getDiscoveredTunerModel();
         mDiscoveredTunerEditor = new DiscoveredTunerEditor(userPreferences, tunerManager);
+        mTunerConfigurationManager = tunerManager.getTunerConfigurationManager();
         mUserPreferences = userPreferences;
         init();
     }
@@ -90,6 +98,8 @@ public class TunerViewPanel extends JPanel
         mTunerTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mTunerTable.getSelectionModel().addListSelectionListener(event ->
         {
+            getRemoveRecordingButton().setEnabled(false);
+
             if(!event.getValueIsAdjusting())
             {
                 int row = mTunerTable.getSelectedRow();
@@ -97,7 +107,10 @@ public class TunerViewPanel extends JPanel
                 if(row >= 0)
                 {
                     int modelRow = mTunerTable.convertRowIndexToModel(row);
-                    mDiscoveredTunerEditor.setItem(mDiscoveredTunerModel.getDiscoveredTuner(modelRow));
+
+                    DiscoveredTuner selected = mDiscoveredTunerModel.getDiscoveredTuner(modelRow);
+                    mDiscoveredTunerEditor.setItem(selected);
+                    getRemoveRecordingButton().setEnabled(selected instanceof DiscoveredRecordingTuner);
                 }
             }
         });
@@ -138,7 +151,6 @@ public class TunerViewPanel extends JPanel
             }
         });
 
-
         TableCellRenderer errorCellRenderer = new TunerStatusCellRenderer();
         mTunerTable.getColumnModel().getColumn(DiscoveredTunerModel.COLUMN_TUNER_STATUS).setCellRenderer(errorCellRenderer);
 
@@ -146,20 +158,14 @@ public class TunerViewPanel extends JPanel
         JScrollPane tunerTableScroller = new JScrollPane(mTunerTable);
 
         JPanel tunerTablePanel = new JPanel();
-        tunerTablePanel.setLayout(new MigLayout("insets 0 0 0 0", "[fill,grow][]", "[fill,grow][]"));
+        tunerTablePanel.setLayout(new MigLayout("insets 0", "[fill,grow,align center]", "[fill,grow][]"));
         tunerTablePanel.add(tunerTableScroller, "span");
 
-        tunerTablePanel.add(new JLabel("")); //Empty spacer
-
-//        JButton addRecordingTunerButton = new JButton("Add Recording Tuner");
-//        addRecordingTunerButton.addActionListener(e ->
-//        {
-//            AddRecordingTunerDialog dialog = new AddRecordingTunerDialog(mUserPreferences, mDiscoveredTunerModel);
-//            dialog.setLocationRelativeTo(TunerViewPanel.this);
-//            EventQueue.invokeLater(() -> dialog.setVisible(true));
-//        });
-//
-//        tunerTablePanel.add(addRecordingTunerButton);
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new MigLayout("insets 0 1 3 0", "", ""));
+        buttonPanel.add(getAddRecordingButton());
+        buttonPanel.add(getRemoveRecordingButton());
+        tunerTablePanel.add(buttonPanel);
 
         tunerTablePanel.setPreferredSize(new Dimension(200,200));
         JScrollPane editorScroller = new JScrollPane(mDiscoveredTunerEditor);
@@ -169,8 +175,56 @@ public class TunerViewPanel extends JPanel
         mSplitPane.setOrientation(JideSplitPane.HORIZONTAL_SPLIT);
         mSplitPane.add(tunerTablePanel);
         mSplitPane.add(editorScroller);
+        mSplitPane.setProportionalLayout(true);
+        mSplitPane.setProportions(new double[]{0.5});
 
         add(mSplitPane);
+    }
+
+    private JButton getAddRecordingButton()
+    {
+        if(mAddRecordingButton == null)
+        {
+            mAddRecordingButton = new JButton("Add Recording Tuner");
+            mAddRecordingButton.addActionListener(e ->
+            {
+                AddRecordingTunerDialog dialog = new AddRecordingTunerDialog(mUserPreferences, mDiscoveredTunerModel,
+                        mTunerConfigurationManager);
+                dialog.setLocationRelativeTo(TunerViewPanel.this);
+                EventQueue.invokeLater(() -> dialog.setVisible(true));
+            });
+        }
+
+        return mAddRecordingButton;
+    }
+
+    private JButton getRemoveRecordingButton()
+    {
+        if(mRemoveRecordingButton == null)
+        {
+            mRemoveRecordingButton = new JButton("Remove Recording Tuner");
+            mRemoveRecordingButton.setEnabled(false);
+            mRemoveRecordingButton.addActionListener(e -> {
+                int[] indexes = mTunerTable.getSelectionModel().getSelectedIndices();
+
+                //With single selection mode this should always be length one
+                if(indexes.length == 1)
+                {
+                    int modelIndex = mTunerTable.convertRowIndexToModel(indexes[0]);
+                    DiscoveredTuner selected = mDiscoveredTunerModel.getDiscoveredTuner(modelIndex);
+
+                    if(selected instanceof DiscoveredRecordingTuner discoveredRecordingTuner)
+                    {
+                        mLog.info("Removing Tuner: " + discoveredRecordingTuner);
+                        discoveredRecordingTuner.stop();
+                        mTunerConfigurationManager.removeTunerConfiguration(discoveredRecordingTuner.getTunerConfiguration());
+                        EventQueue.invokeLater(() -> mDiscoveredTunerModel.removeDiscoveredTuner(discoveredRecordingTuner));
+                    }
+                }
+            });
+        }
+
+        return mRemoveRecordingButton;
     }
 
     /**

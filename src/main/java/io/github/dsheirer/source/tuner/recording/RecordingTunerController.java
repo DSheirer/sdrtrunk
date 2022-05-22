@@ -18,22 +18,22 @@
  */
 package io.github.dsheirer.source.tuner.recording;
 
-import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
-import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
+import java.io.File;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
 
+/**
+ * Tuner controller for playback of baseband complex recording files.
+ */
 public class RecordingTunerController extends TunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(RecordingTunerController.class);
@@ -41,16 +41,24 @@ public class RecordingTunerController extends TunerController
     public static final int DC_NOISE_BANDWIDTH = 0;
     public static final double USABLE_BANDWIDTH_PERCENTAGE = 1.00;
     private ComplexWaveSource mComplexWaveSource;
+    private String mPath;
     private long mCenterFrequency;
     private boolean mRunning;
 
     /**
-     * Tuner controller testing implementation.
+     * Constructs an instance
      * @param tunerErrorListener to receive errors from this controller
       */
-    public RecordingTunerController(ITunerErrorListener tunerErrorListener)
+    public RecordingTunerController(ITunerErrorListener tunerErrorListener, String path, long centerFrequency)
     {
         super(tunerErrorListener);
+        mPath = path;
+        mCenterFrequency = centerFrequency;
+        if(mCenterFrequency == 0)
+        {
+            mCenterFrequency = 100000000;
+        }
+
         setMinimumFrequency(1000000l);
         setMaximumFrequency(3000000000l);
         setMiddleUnusableHalfBandwidth(DC_NOISE_BANDWIDTH);
@@ -60,73 +68,71 @@ public class RecordingTunerController extends TunerController
     @Override
     public void start() throws SourceException
     {
+        if(mComplexWaveSource == null)
+        {
+            try
+            {
+                mComplexWaveSource = new ComplexWaveSource(new File(mPath), true);
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error", ioe);
+                setErrorMessage(ioe.getMessage() + " File:" + mPath);
+                return;
+            }
 
+            mComplexWaveSource.setListener(complexSamples -> broadcast(complexSamples));
+
+            try
+            {
+                mComplexWaveSource.open();
+                mComplexWaveSource.start();
+                mLog.info("Tuner Recording Loaded: " + mPath);
+            }
+            catch(IOException | UnsupportedAudioFileException e)
+            {
+                mLog.error("Error", e);
+                setErrorMessage(e.getMessage() + " File:" + mPath);
+                return;
+            }
+
+            try
+            {
+                mFrequencyController.setFrequency(mCenterFrequency);
+                mFrequencyController.setSampleRate((int)mComplexWaveSource.getSampleRate());
+                mFrequencyController.broadcast(SourceEvent.recordingFileLoaded());
+            }
+            catch(SourceException e)
+            {
+                mLog.error("Error", e);
+                setErrorMessage(e.getMessage());
+            }
+        }
     }
 
     @Override
     public void stop()
     {
+        if(mComplexWaveSource != null)
+        {
+            try
+            {
+                mComplexWaveSource.stop();
+                mComplexWaveSource.close();
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Ignoring - error stopping baseband recording playback - " + ioe.getLocalizedMessage());
+            }
 
+            mComplexWaveSource = null;
+        }
     }
 
     @Override
     public TunerType getTunerType()
     {
         return TunerType.RECORDING;
-    }
-
-    /**
-     * Sets the recording file and center frequency for this controller
-     * @param recordingPath to play
-     * @param centerFrequency of the recording
-     * @throws IOException if there are any errors
-     */
-    private void setRecording(String recordingPath, long centerFrequency) throws IOException
-    {
-        if(mComplexWaveSource != null)
-        {
-            mComplexWaveSource.close();
-            mComplexWaveSource = null;
-        }
-
-        if(recordingPath == null)
-        {
-            return;
-        }
-
-        mComplexWaveSource = new ComplexWaveSource(new File(recordingPath), true);
-        mComplexWaveSource.setListener(complexSamples -> broadcast(complexSamples));
-
-        try
-        {
-            mComplexWaveSource.open();
-            mLog.info("Tuner Recording Loaded: " + recordingPath);
-        }
-        catch(UnsupportedAudioFileException e)
-        {
-            mLog.error("Unsupported audio format", e);
-        }
-
-
-        mCenterFrequency = centerFrequency;
-
-        mLog.debug("Set recording center frequency to: " + mCenterFrequency);
-
-        if(mCenterFrequency == 0)
-        {
-            mCenterFrequency = 100000000;
-        }
-
-        try
-        {
-            mFrequencyController.setFrequency(mCenterFrequency);
-            mFrequencyController.setSampleRate((int)mComplexWaveSource.getSampleRate());
-            mFrequencyController.broadcast(SourceEvent.recordingFileLoaded());
-        }
-        catch(SourceException e)
-        {
-            throw new IOException("Can't set frequency or sample rate", e);
-        }
     }
 
     @Override
@@ -138,55 +144,6 @@ public class RecordingTunerController extends TunerController
         }
 
         return 0;
-    }
-
-    @Override
-    public void addBufferListener(Listener<INativeBuffer> listener)
-    {
-        super.addBufferListener(listener);
-
-        if(mComplexWaveSource != null)
-        {
-            if(!mRunning)
-            {
-                mComplexWaveSource.start();
-                mRunning = true;
-            }
-        }
-    }
-
-    @Override
-    public void removeBufferListener(Listener<INativeBuffer> listener)
-    {
-        super.removeBufferListener(listener);
-
-        if(!mNativeBufferBroadcaster.hasListeners() && mComplexWaveSource != null)
-        {
-            mComplexWaveSource.setListener((Listener<INativeBuffer>)null);
-            mComplexWaveSource.stop();
-            mRunning = false;
-        }
-    }
-
-    @Override
-    public void apply(TunerConfiguration config) throws SourceException
-    {
-        //Invoke super for frequency, frequency correction and autoPPM
-        super.apply(config);
-
-        if(config instanceof RecordingTunerConfiguration rtc)
-        {
-            mCenterFrequency = rtc.getFrequency();
-
-            try
-            {
-                setRecording(rtc.getPath(), rtc.getFrequency());
-            }
-            catch(IOException ioe)
-            {
-                mLog.debug("Error loading recording tuner baseband recording [" + rtc.getPath() + "] Error: " + ioe.getLocalizedMessage());
-            }
-        }
     }
 
     @Override
