@@ -23,17 +23,31 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Recording tuner configuration for using baseband I/Q recordings as a tuner source
  */
 public class RecordingTunerConfiguration extends TunerConfiguration
 {
+    private static final Logger mLog = LoggerFactory.getLogger(RecordingTunerConfiguration.class);
     private String mPath;
 
+    /**
+     * Jackson constructor
+     */
     public RecordingTunerConfiguration()
     {
-        //Empty jackson constructor
+    }
+
+    /**
+     * Constructs an instance
+     * @param uniqueId to use for this configuration
+     */
+    public RecordingTunerConfiguration(String uniqueId)
+    {
+        setUniqueID(uniqueId);
     }
 
     @JsonIgnore
@@ -41,11 +55,6 @@ public class RecordingTunerConfiguration extends TunerConfiguration
     public TunerType getTunerType()
     {
         return TunerType.RECORDING;
-    }
-
-    public RecordingTunerConfiguration(String uniqueId)
-    {
-        super(uniqueId);
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "path")
@@ -57,5 +66,10 @@ public class RecordingTunerConfiguration extends TunerConfiguration
     public void setPath(String path)
     {
         mPath = path;
+    }
+
+    public static RecordingTunerConfiguration create()
+    {
+        return new RecordingTunerConfiguration("Recording " + System.currentTimeMillis());
     }
 }

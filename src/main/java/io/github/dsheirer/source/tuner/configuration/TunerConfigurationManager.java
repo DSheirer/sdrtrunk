@@ -29,9 +29,6 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +39,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages settings and configurations for all tuner types.
@@ -252,7 +251,6 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
      */
     public void addTunerConfiguration(TunerConfiguration tunerConfiguration)
     {
-        mLog.info("Adding tuner config: " + tunerConfiguration);
         if(!mTunerConfigurations.stream().filter(config -> config.getTunerType().equals(tunerConfiguration.getTunerType()) &&
                 config.getUniqueID().equalsIgnoreCase(tunerConfiguration.getUniqueID())).findFirst().isPresent())
         {
@@ -289,6 +287,17 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
         TunerConfiguration config = TunerFactory.getTunerConfiguration(type, uniqueID);
         addTunerConfiguration(config);
         return config;
+    }
+
+    /**
+     * Get all tuner configurations that match the specified tuner type.
+     * @param tunerType to match
+     * @return list of all configurations.
+     */
+    public List<TunerConfiguration> getTunerConfigurations(TunerType tunerType)
+    {
+        return mTunerConfigurations.stream().filter(tunerConfiguration -> tunerConfiguration.getTunerType()
+                .equals(tunerType)).toList();
     }
 
     /**

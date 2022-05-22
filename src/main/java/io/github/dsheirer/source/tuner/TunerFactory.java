@@ -147,7 +147,7 @@ public class TunerFactory
             case RAFAELMICRO_R820T:
                 return new R820TTunerConfiguration(uniqueID);
             case RECORDING:
-                return new RecordingTunerConfiguration(uniqueID);
+                return RecordingTunerConfiguration.create();
             default:
                 throw new IllegalArgumentException("Unrecognized tuner type [" + type.name() + "]");
         }

@@ -35,6 +35,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
+import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
 import java.nio.ByteBuffer;
@@ -87,6 +88,14 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     public DiscoveredTunerModel getDiscoveredTunerModel()
     {
         return mDiscoveredTunerModel;
+    }
+
+    /**
+     * Tuner configuration manager
+     */
+    public TunerConfigurationManager getTunerConfigurationManager()
+    {
+        return mTunerConfigurationManager;
     }
 
     /**
@@ -290,7 +299,26 @@ public class TunerManager implements IDiscoveredTunerStatusListener
      */
     private void discoverRecordingTuners()
     {
-        //placeholder
+        List<TunerConfiguration> tunerConfigurations = getTunerConfigurationManager().getTunerConfigurations(TunerType.RECORDING);
+
+        if(tunerConfigurations.size() > 0)
+        {
+            mLog.info("Discovered [" + tunerConfigurations.size() + "] recording tuners");
+        }
+
+        for(TunerConfiguration tunerConfiguration: tunerConfigurations)
+        {
+            if(tunerConfiguration instanceof RecordingTunerConfiguration recordingTunerConfiguration)
+            {
+                DiscoveredRecordingTuner discoveredRecordingTuner =
+                        new DiscoveredRecordingTuner(mUserPreferences, recordingTunerConfiguration);
+
+                discoveredRecordingTuner.addTunerStatusListener(this);
+                discoveredRecordingTuner.setEnabled(false);
+                mLog.info("Tuner Added: " + discoveredRecordingTuner);
+                mDiscoveredTunerModel.addDiscoveredTuner(discoveredRecordingTuner);
+            }
+        }
     }
 
     /**
@@ -315,13 +343,17 @@ public class TunerManager implements IDiscoveredTunerStatusListener
             {
                 TunerType tunerType = discoveredTuner.getTuner().getTunerType();
 
-                TunerConfiguration tunerConfiguration = mTunerConfigurationManager
-                        .getTunerConfiguration(tunerType, discoveredTuner.getId());
-
-                if(tunerConfiguration != null)
+                //Don't fetch or create a configuration for recording tuners
+                if(tunerType != TunerType.RECORDING)
                 {
-                    discoveredTuner.setTunerConfiguration(tunerConfiguration);
-                    mTunerConfigurationManager.saveConfigurations();
+                    TunerConfiguration tunerConfiguration = mTunerConfigurationManager
+                            .getTunerConfiguration(tunerType, discoveredTuner.getId());
+
+                    if(tunerConfiguration != null)
+                    {
+                        discoveredTuner.setTunerConfiguration(tunerConfiguration);
+                        mTunerConfigurationManager.saveConfigurations();
+                    }
                 }
             }
         }
