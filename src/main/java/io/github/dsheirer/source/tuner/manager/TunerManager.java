@@ -122,10 +122,6 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
         catch(Exception e)
         {
-            if(System.getProperty("os.name").toLowerCase().contains("mac"))
-            {
-                mLog.warn("Mac operating system - unable to initialize LibUsb library.  Ensure libusb is installed via homebrew.");
-            }
             mLog.error("Error initializing LibUsb and usb4java library", e);
         }
 
