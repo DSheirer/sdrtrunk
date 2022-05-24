@@ -25,6 +25,12 @@ import io.github.dsheirer.jmbe.github.Release;
 import io.github.dsheirer.util.FileUtil;
 import io.github.dsheirer.util.OSType;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -36,13 +42,6 @@ import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Creates the JMBE library by downloading the JMBE Creator CLI application from GitHub and executing it.
@@ -147,7 +146,7 @@ public class JmbeCreator
 
                         OSType osType = OSType.getCurrentOSType();
 
-                        if(osType.isLinux())
+                        if(osType.isLinux() || osType.isOsx())
                         {
                             script = FileUtil.findFile(unzipped, CREATOR_SCRIPT_LINUX);
                         }
@@ -155,6 +154,7 @@ public class JmbeCreator
                         {
                             script = FileUtil.findFile(unzipped, CREATOR_SCRIPT_WINDOWS);
                         }
+
 
                         if(script != null)
                         {
