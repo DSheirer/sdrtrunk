@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,24 @@ public class TunerEvent
         return mTuner != null;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Tuner Event [").append(getEvent().name()).append("] for tuner [");
+        if(hasTuner())
+        {
+            sb.append(getTuner());
+        }
+        else
+        {
+            sb.append("No Tuner");
+        }
+
+        sb.append("]");
+        return sb.toString();
+    }
+
     /**
      * Event type
      */
@@ -75,6 +93,7 @@ public class TunerEvent
         NOTIFICATION_SHUTTING_DOWN,
 
         REQUEST_CLEAR_MAIN_SPECTRAL_DISPLAY,
+        REQUEST_ENABLE_RSP_SLAVE_DEVICE,
         REQUEST_MAIN_SPECTRAL_DISPLAY,
         REQUEST_NEW_SPECTRAL_DISPLAY;
     }

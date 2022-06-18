@@ -30,6 +30,7 @@ public enum TunerClass
 	FUNCUBE_DONGLE_PRO_PLUS("Funcube Dongle Pro+" ),
 	HACKRF("HackRF" ),
 	RTL2832("RTL-2832"),
+	RSP("RSP"),
 	TEST_TUNER("Test"),
 	RECORDING_TUNER("Recording"),
 	UNKNOWN("Unknown" );

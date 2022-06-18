@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 /*
  * *****************************************************************************
  * Copyright (C) 2014-2022 Dennis Sheirer
@@ -29,7 +31,13 @@ repositories {
 }
 
 version = '0.6.0-alpha1'
-sourceCompatibility = '17'
+
+//Java 19 is required for this version of the Project Panama preview/incubator feature
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
 
 sourceSets {
     main.java.srcDirs 'src/main'
@@ -41,6 +49,9 @@ test {
 }
 
 dependencies {
+
+    implementation project('sdrplay-api')
+    implementation project('jsdrplay')
 
     // JUnit Tests
     testImplementation 'junit:junit:4.13.2'
@@ -91,10 +102,11 @@ dependencies {
 }
 
 /**
- * This is needed for the JDK17 vector API ... until it moves out of incubation
+ * This is needed for the JDK19 panama and vector API ... until it moves out of incubation or preview
  */
 tasks.withType(JavaCompile) {
     options.compilerArgs.add("--add-modules=jdk.incubator.vector") //Needed while Panama Vector API remains in incubator
+    options.compilerArgs.add("--enable-preview") //Panama Foreign Function/Memory is preview in JDK 19
 }
 
 application {
@@ -102,7 +114,21 @@ application {
     applicationDefaultJvmArgs =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-modules=jdk.incubator.vector',   //Needed while Panama Vector API remains in incubator
-         '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED'] //Windows Swing - jide-oss library
+         '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED', //Windows Swing - jide-oss library
+         '--enable-preview',
+         '--enable-native-access=ALL-UNNAMED'] //Panama Foreign Function access
+}
+
+//Adds the SDRPlay native API library to the java system path for runtime
+run {
+    OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem;
+
+    if(os.isWindows()) {
+        systemProperty "java.library.path", "c:\\Program Files\\SDRplay\\API\\x64"
+    }
+    else {
+        systemProperty "java.library.path", "/usr/local/lib"
+    }
 }
 
 jar {
@@ -111,7 +137,7 @@ jar {
                 'Implementation-Title'  : 'sdrtrunk project',
                 'Implementation-Version' : archiveVersion,
                 'Created-By'            : "Gradle ${gradle.gradleVersion}",
-                'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+                'Build-Timestamp'       : new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
                 'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
                 'Build-OS'              : "${System.properties['os.name']} (${System.properties['os.arch']} ${System.properties['os.version']}"
         )

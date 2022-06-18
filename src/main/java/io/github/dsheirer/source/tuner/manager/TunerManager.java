@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,10 @@
 
 package io.github.dsheirer.source.tuner.manager;
 
+import com.github.dsheirer.sdrplay.SDRPlayException;
+import com.github.dsheirer.sdrplay.SDRplay;
+import com.github.dsheirer.sdrplay.device.DeviceInfo;
+import io.github.dsheirer.gui.preference.tuner.RspDuoSelectionMode;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.source.ChannelizerType;
 import io.github.dsheirer.source.Source;
@@ -28,6 +32,7 @@ import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.mixer.MixerManager;
 import io.github.dsheirer.source.tuner.TunerClass;
+import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.MultiFrequencyTunerChannelSource;
@@ -36,6 +41,8 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationManager;
 import io.github.dsheirer.source.tuner.recording.RecordingTunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.DiscoveredRspTuner;
+import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
 import java.nio.ByteBuffer;
@@ -63,14 +70,13 @@ import org.usb4java.LibUsb;
 public class TunerManager implements IDiscoveredTunerStatusListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(TunerManager.class);
-    private static final int MAXIMUM_USB_2_DATA_RATE = 480000000;
-
     private UserPreferences mUserPreferences;
     private DiscoveredTunerModel mDiscoveredTunerModel = new DiscoveredTunerModel();
     private TunerConfigurationManager mTunerConfigurationManager;
     private HotplugEventSupport mHotplugEventSupport = new HotplugEventSupport();
     private Context mLibUsbApplicationContext = new Context();
     private boolean mLibUsbInitialized = false;
+    private SDRplay mSDRplay;
 
     /**
      * Constructs an instance
@@ -141,6 +147,13 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     {
         //Stop all tuners
         mDiscoveredTunerModel.releaseDiscoveredTuners();
+
+        //Shutdown SDRplay API instance
+        if(mSDRplay != null)
+        {
+            mSDRplay.close();
+            mSDRplay = null;
+        }
 
         //Shutdown LibUsb
         if(mLibUsbInitialized)
@@ -238,37 +251,7 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     {
         if(!mDiscoveredTunerModel.hasUsbTuner(discoveredUSBTuner.getBus(), discoveredUSBTuner.getPortAddress()))
         {
-            discoveredUSBTuner.addTunerStatusListener(this);
-
-            //Set the tuner to disabled if the user has previously blacklisted the tuner
-            if(mTunerConfigurationManager.isDisabled(discoveredUSBTuner))
-            {
-                discoveredUSBTuner.setEnabled(false);
-                mLog.info("Tuner: " + discoveredUSBTuner + " - Added / Disabled");
-            }
-            else
-            {
-                mLog.info("Tuner: " + discoveredUSBTuner + " - Added / Starting ...");
-                //Attempt to start the discovered tuner and determine the tuner type
-                discoveredUSBTuner.start();
-
-                if(discoveredUSBTuner.hasTuner())
-                {
-                    TunerType tunerType = discoveredUSBTuner.getTuner().getTunerType();
-
-                    TunerConfiguration tunerConfiguration = mTunerConfigurationManager
-                            .getTunerConfiguration(tunerType, discoveredUSBTuner.getId());
-
-                    if(tunerConfiguration != null)
-                    {
-                        mLog.info("Tuner: " + discoveredUSBTuner + " - Applying Tuner Configuration");
-                        discoveredUSBTuner.setTunerConfiguration(tunerConfiguration);
-                        mTunerConfigurationManager.saveConfigurations();
-                    }
-                }
-            }
-
-            mDiscoveredTunerModel.addDiscoveredTuner(discoveredUSBTuner);
+            startAndConfigureTuner(discoveredUSBTuner);
         }
     }
 
@@ -283,11 +266,76 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     }
 
     /**
+     * Starts, configures and adds the tuner to the tuner model.
+     * @param discoveredTuner to add and configure
+     */
+    private void startAndConfigureTuner(DiscoveredTuner discoveredTuner)
+    {
+        discoveredTuner.addTunerStatusListener(this);
+
+        //Set the tuner to disabled if the user has previously blacklisted the tuner
+        if(mTunerConfigurationManager.isDisabled(discoveredTuner))
+        {
+            discoveredTuner.setEnabled(false);
+            mLog.info("Tuner: " + discoveredTuner + " - Added / Disabled");
+        }
+        else
+        {
+            mLog.info("Tuner: " + discoveredTuner + " - Added / Starting ...");
+            //Attempt to start the discovered tuner and determine the tuner type
+            tunerStatusUpdated(discoveredTuner, TunerStatus.DISABLED, TunerStatus.ENABLED);
+        }
+
+        mDiscoveredTunerModel.addDiscoveredTuner(discoveredTuner);
+    }
+
+    /**
      * Discover SDRPlay RSP tuners
      */
     private void discoverSdrPlayTuners()
     {
-        //placeholder ...
+        ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
+        RspDuoSelectionMode duoSelectionMode = mUserPreferences.getTunerPreference().getRspDuoTunerMode();
+
+        //Note: we have to keep this first API instance open while we use any RSP tuners, otherwise the additional API
+        //instance(s) used by the individual tuners become unresponsive.  Note sure why.
+        mSDRplay = new SDRplay();
+
+        if(mSDRplay.isAvailable())
+        {
+            try
+            {
+                List<DeviceInfo> deviceInfos = mSDRplay.getDeviceInfos();
+
+                mLog.info("Discovered [" + deviceInfos.size() + "] RSP devices from SDRplay API");
+
+                if(deviceInfos.isEmpty())
+                {
+                    mSDRplay.close();
+                    mSDRplay = null;
+                    return;
+                }
+
+                for(DeviceInfo deviceInfo: deviceInfos)
+                {
+                    List<DiscoveredRspTuner> tuners = TunerFactory.getRspTuners(deviceInfo, channelizerType, duoSelectionMode);
+
+                    for(DiscoveredRspTuner tuner: tuners)
+                    {
+                        startAndConfigureTuner(tuner);
+                    }
+                }
+            }
+            catch(SDRPlayException se)
+            {
+                mLog.info("Unable to get list of devices from SDRplay API");
+            }
+        }
+        else
+        {
+            mSDRplay.close();
+            mSDRplay = null;
+        }
     }
 
     /**
@@ -329,29 +377,43 @@ public class TunerManager implements IDiscoveredTunerStatusListener
     @Override
     public void tunerStatusUpdated(DiscoveredTuner discoveredTuner, TunerStatus previous, TunerStatus current)
     {
-        mTunerConfigurationManager.tunerStatusUpdated(discoveredTuner, previous, current);
-
-        if(previous != TunerStatus.ENABLED && current == TunerStatus.ENABLED)
+        if(current == TunerStatus.ENABLED)
         {
             discoveredTuner.start();
+        }
 
-            if(discoveredTuner.hasTuner())
+        //Special handling for RSPduo to auto-update enabled state for slave device when configured for master/slave operation
+        if(discoveredTuner instanceof DiscoveredRspDuoTuner1 rspDuoTuner1 && rspDuoTuner1.getDeviceInfo().getDeviceSelectionMode().isMasterMode())
+        {
+            String id = rspDuoTuner1.getId();
+            id = id.replace(DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "1", DiscoveredRspDuoTuner1.RSP_DUO_ID_PREFIX + "2");
+            DiscoveredTuner rspDuoTuner2 = getDiscoveredTunerModel().getDiscoveredTuner(id);
+
+            if(rspDuoTuner2 != null)
             {
-                TunerType tunerType = discoveredTuner.getTuner().getTunerType();
-
-                //Don't fetch or create a configuration for recording tuners
-                if(tunerType != TunerType.RECORDING)
+                if(previous == TunerStatus.ENABLED && current == TunerStatus.DISABLED)
                 {
-                    TunerConfiguration tunerConfiguration = mTunerConfigurationManager
-                            .getTunerConfiguration(tunerType, discoveredTuner.getId());
-
-                    if(tunerConfiguration != null)
-                    {
-                        discoveredTuner.setTunerConfiguration(tunerConfiguration);
-                        mTunerConfigurationManager.saveConfigurations();
-                    }
+                    rspDuoTuner2.setEnabled(false);
+                }
+                else if(previous == TunerStatus.DISABLED && current == TunerStatus.ENABLED)
+                {
+                    rspDuoTuner2.setEnabled(true);
+                    rspDuoTuner2.start();
                 }
             }
+
+            //Notify tuner configuration manager to apply tuner configurations & update disabled tuner states
+            mTunerConfigurationManager.tunerStatusUpdated(rspDuoTuner1, previous, current);
+
+            if(rspDuoTuner2 != null)
+            {
+                mTunerConfigurationManager.tunerStatusUpdated(rspDuoTuner2, previous, current);
+            }
+        }
+        else
+        {
+            //Notify tuner configuration manager to apply tuner configuration
+            mTunerConfigurationManager.tunerStatusUpdated(discoveredTuner, previous, current);
         }
     }
 

@@ -22,6 +22,8 @@ package io.github.dsheirer.gui.preference;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.preference.UserPreferences;
+import java.util.EnumMap;
+import java.util.Map;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
@@ -43,9 +45,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.EnumMap;
-import java.util.Map;
 
 /**
  * Preferences editor dialog
@@ -196,7 +195,7 @@ public class UserPreferencesEditor extends BorderPane
             storageItem.setExpanded(true);
 
             TreeItem<String> sourceItem = new TreeItem<>("Source");
-            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNER_CHANNELIZER));
+            sourceItem.getChildren().add(new TreeItem(PreferenceEditorType.SOURCE_TUNERS));
             treeRoot.getChildren().add(sourceItem);
             sourceItem.setExpanded(true);
 

@@ -1,1 +1,4 @@
 rootProject.name = 'sdr-trunk'
+
+include 'jsdrplay'
+include 'sdrplay-api'

@@ -25,10 +25,13 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredUSBTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
+import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
+import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner2;
 import java.awt.EventQueue;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -131,6 +134,35 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     }
 
     /**
+     * Find a discovered tuner by ID
+     * @param id of the tuner to search for
+     * @return discovered tuner with matching ID or null.
+     */
+    public DiscoveredTuner getDiscoveredTuner(String id)
+    {
+        DiscoveredTuner discoveredTuner = null;
+
+        mLock.lock();
+
+        try
+        {
+            Optional<DiscoveredTuner> result = mDiscoveredTuners.stream().filter(tuner -> tuner.getId().equals(id)).findFirst();
+
+            if(result.isPresent())
+            {
+                discoveredTuner = result.get();
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return discoveredTuner;
+    }
+
+
+    /**
      * Adds the Tuner to this model
      */
     public void addDiscoveredTuner(DiscoveredTuner discoveredTuner)
@@ -164,23 +196,22 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
     {
         mLock.lock();
 
+        List<DiscoveredTuner> discoveredTuners = new ArrayList<>(mDiscoveredTuners);
+
         try
         {
-            List<DiscoveredTuner> discoveredTuners = new ArrayList<>(mDiscoveredTuners);
-
-            for(DiscoveredTuner discoveredTuner: discoveredTuners)
-            {
-                if(discoveredTuner.hasTuner())
-                {
-                    discoveredTuner.getTuner().removeTunerEventListener(this);
-                }
-
-                removeDiscoveredTuner(discoveredTuner);
-            }
+            mDiscoveredTuners.clear();
+            fireTableDataChanged();
         }
         finally
         {
             mLock.unlock();
+        }
+
+        for(DiscoveredTuner discoveredTuner: discoveredTuners)
+        {
+            discoveredTuner.stop();
+            discoveredTuner.removeTunerStatusListener(this);
         }
     }
 
@@ -198,9 +229,38 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
             {
                 int index = mDiscoveredTuners.indexOf(discoveredTuner);
                 mDiscoveredTuners.remove(discoveredTuner);
-                EventQueue.invokeLater(() -> fireTableRowsDeleted(index, index));
+
+                if(EventQueue.isDispatchThread())
+                {
+                    try
+                    {
+                        fireTableRowsDeleted(index, index);
+                    }
+                    catch(Exception e)
+                    {
+                        mLog.info("Exception firing table rows deleted for index [" + index + "] on calling event dispatch thread", e);
+                    }
+                }
+                else
+                {
+                    EventQueue.invokeAndWait(() ->
+                    {
+                        try
+                        {
+                            fireTableRowsDeleted(index, index);
+                        }
+                        catch(Exception e)
+                        {
+                            mLog.info("Exception firing table rows deleted for index [" + index + "]", e);
+                        }
+                    });
+                }
                 discoveredTuner.stop();
             }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Unexpected error while shutting down discovered tuner", e);
         }
         finally
         {
@@ -297,47 +357,57 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
         }
     }
 
-    /**
-     * Requests to display the first tuner in this model.  Invoke this method
-     * after all listeners have registered and tuners have been added to this
-     * model, in order to inform the primary display to use the first tuner.
-     */
-    public void requestFirstTunerDisplay()
-    {
-//TODO: move this out of the model ... is not part of the scope of this model
-//        SystemProperties properties = SystemProperties.getInstance();
-//        boolean enabled = properties.get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
-//
-//        if(enabled && mDiscoveredTuners.size() > 0)
-//        {
-//            //Hack: the airspy tuner would lockup aperiodically and refuse to produce
-//            //transfer buffers ... delaying registering for buffers for 500 ms seems
-//            //to allow the airspy to stabilize before we start asking for samples.
-//            ThreadPool.SCHEDULED.schedule(new Runnable()
-//            {
-//                @Override
-//                public void run()
-//                {
-//                    broadcast(new TunerEvent(mDiscoveredTuners.get(0), Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
-//                }
-//            }, 500, TimeUnit.MILLISECONDS);
-//        }
-//        else
-//        {
-//            broadcast(new TunerEvent(null, Event.CLEAR_MAIN_SPECTRAL_DISPLAY));
-//        }
-    }
-
     @Override
     public void tunerStatusUpdated(DiscoveredTuner discoveredTuner, TunerStatus previous, TunerStatus current)
     {
         if(current == TunerStatus.ENABLED && discoveredTuner.hasTuner())
         {
             discoveredTuner.getTuner().addTunerEventListener(this);
+            int row = mDiscoveredTuners.indexOf(discoveredTuner);
+            EventQueue.invokeLater(() -> fireTableRowsUpdated(row, row));
+            return;
         }
 
-        int row = mDiscoveredTuners.indexOf(discoveredTuner);
-        EventQueue.invokeLater(() -> fireTableRowsUpdated(row, row));
+        if(current == TunerStatus.REMOVED)
+        {
+            mLog.info("Tuner removal detected - stopping and removing: " + discoveredTuner);
+
+            //Note: RSPduo only gets device removal indication if the device is streaming.  There may be situation where
+            //master only is streaming, or slave only is streaming.  Ensure we remove both devices when detected.
+
+            //Special handling for RSPduo Tuner 1 configured as master - remove the slave tuner also
+            if(discoveredTuner instanceof DiscoveredRspDuoTuner1 master1 &&
+               master1.getDeviceInfo().getDeviceSelectionMode().isMasterMode())
+            {
+                DiscoveredTuner slave2 = getDiscoveredTuner(master1.getSlaveId());
+
+                if(slave2 != null)
+                {
+                    removeDiscoveredTuner(slave2);
+                }
+
+                removeDiscoveredTuner(discoveredTuner);
+            }
+            //Special handling for RSPduo Tuner 2 configured as slave - remove the master tuner also
+            else if(discoveredTuner instanceof DiscoveredRspDuoTuner2 slave2 &&
+                    slave2.getDeviceInfo().getDeviceSelectionMode().isSlaveMode())
+            {
+                String masterId = slave2.getMasterId();
+
+                removeDiscoveredTuner(slave2);
+
+                DiscoveredTuner master1 = getDiscoveredTuner(masterId);
+
+                if(master1 != null)
+                {
+                    removeDiscoveredTuner(master1);
+                }
+            }
+            else
+            {
+                removeDiscoveredTuner(discoveredTuner);
+            }
+        }
     }
 
     @Override
@@ -417,25 +487,6 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
                     {
                         return "";
                     }
-//                case COLUMN_TUNER_ID:
-//                    if(discoveredTuner.hasTuner())
-//                    {
-//                        return discoveredTuner.getTuner().getUniqueID();
-//                    }
-//                    else
-//                    {
-//                        return discoveredTuner.getId();
-//                    }
-//                case COLUMN_SAMPLE_RATE:
-//                    if(discoveredTuner.hasTuner())
-//                    {
-//                        double sampleRate = discoveredTuner.getTuner().getTunerController().getSampleRate();
-//                        return mSampleRateFormat.format(sampleRate / 1E6D) + MHZ;
-//                    }
-//                    else
-//                    {
-//                        return "";
-//                    }
                 case COLUMN_FREQUENCY:
                     if(discoveredTuner.hasTuner())
                     {
@@ -456,40 +507,6 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
                     {
                         return "";
                     }
-//                case COLUMN_FREQUENCY_ERROR:
-//                    if(discoveredTuner.hasTuner())
-//                    {
-//                        double ppm = discoveredTuner.getTuner().getTunerController().getFrequencyCorrection();
-//                        return mFrequencyErrorPPMFormat.format(ppm);
-//                    }
-//                    else
-//                    {
-//                        return "";
-//                    }
-//                case COLUMN_MEASURED_FREQUENCY_ERROR:
-//                    if(discoveredTuner.hasTuner())
-//                    {
-//                        if(discoveredTuner.getTuner().getTunerController().hasMeasuredFrequencyError())
-//                        {
-//                            StringBuilder sb = new StringBuilder();
-//                            sb.append(discoveredTuner.getTuner().getTunerController().getMeasuredFrequencyError());
-//                            sb.append("Hz (");
-//                            sb.append(mFrequencyErrorPPMFormat.format(discoveredTuner.getTuner().getTunerController().getPPMFrequencyError()));
-//                            sb.append("ppm)");
-//                            return sb.toString();
-//                        }
-//                    }
-//                    return "";
-//                case COLUMN_ERROR_OR_SPECTRAL_DISPLAY_NEW:
-//                    if(discoveredTuner.hasErrorMessage())
-//                    {
-//                        return discoveredTuner.getErrorMessage();
-//                    }
-//                    else if(discoveredTuner.hasTuner())
-//                    {
-//                        return "New";
-//                    }
-//                    return "";
                 default:
                     break;
             }

@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'com.github.DSheirer'
+version '3.11.0.0'
+
+repositories {
+    mavenCentral()
+    maven { url "https://jitpack.io"  }
+}
+
+//Java 19 is required for this version of the Project Panama preview/incubator feature
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-api:1.7.32'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+}
+
+/**
+ * This is needed for the JDK19 panama until it moves out of preview
+ */
+tasks.withType(JavaCompile) {
+    options.compilerArgs.add("--enable-preview") //Panama Foreign Function/Memory is preview in JDK 19
+}
+
+
+test {
+    //Exclude all tests by default
+    exclude '**/*'
+    useJUnitPlatform()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}

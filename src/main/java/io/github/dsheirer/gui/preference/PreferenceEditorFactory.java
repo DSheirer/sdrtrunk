@@ -53,7 +53,7 @@ public class PreferenceEditorFactory
                 return new DirectoryPreferenceEditor(userPreferences);
             case JMBE_LIBRARY:
                 return new JmbeLibraryPreferenceEditor(userPreferences);
-            case SOURCE_TUNER_CHANNELIZER:
+            case SOURCE_TUNERS:
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:
                 return new TalkgroupFormatPreferenceEditor(userPreferences);

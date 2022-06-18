@@ -1,0 +1,85 @@
+import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
+
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+group 'com.github.DSheirer'
+version '3.11.0.0'
+
+repositories {
+    mavenCentral()
+    maven { url "https://jitpack.io"  }
+}
+
+//Java 19 is required for this version of the Project Panama preview/incubator feature
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
+
+/**
+ * This is needed for the JDK19 panama until it moves out of preview
+ */
+tasks.withType(JavaCompile) {
+    options.compilerArgs.add("--enable-preview") //Panama Foreign Function/Memory is preview in JDK 19
+}
+
+var incubatorArguments = ["-Djava.library.path=" + getJavaLibraryPath()]
+
+tasks.withType(JavaExec) {
+    jvmArgs += incubatorArguments
+}
+tasks.withType(Test) {
+    jvmArgs += incubatorArguments
+}
+
+dependencies {
+    implementation project(':sdrplay-api')
+    implementation 'ch.qos.logback:logback-classic:1.4.4'
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'org.slf4j:slf4j-api:2.0.3'
+
+    testImplementation 'com.github.wendykierp:JTransforms:3.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
+}
+
+test {
+    useJUnitPlatform()
+
+    //Exclude all tests by default.  Comment out this line to run tests.
+//    exclude '**/*'
+}
+
+/**
+ * Determine library path for the current operating system and architecture
+ */
+static String getJavaLibraryPath() {
+    OperatingSystem os = DefaultNativePlatform.currentOperatingSystem
+
+    if(os.isLinux() || os.isMacOsX()) {
+        return "/usr/local/lib"
+    }
+
+    if(os.isWindows()) {
+        if(System.getProperty("sun.arch.data.model").contentEquals("64")) {
+            return "c:\\Program Files\\SDRplay\\API\\x64"
+        }
+        else {
+            return "c:\\Program Files\\SDRplay\\API\\x86"
+        }
+    }
+
+    return ""
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}

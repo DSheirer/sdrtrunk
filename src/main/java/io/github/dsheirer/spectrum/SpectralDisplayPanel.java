@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -432,18 +432,22 @@ public class SpectralDisplayPanel extends JPanel
 
         if(mTuner != null)
         {
-            //Register to receive frequency change events
-            mTuner.getTunerController().addListener(this);
-
             //Register the dft processor to receive samples from the tuner
             mTuner.getTunerController().addBufferListener(mComplexDftProcessor);
 
-            mSpectrumPanel.setSampleSize(mTuner.getSampleSize());
+            //Verify that the tuner is still non-null, in case it encountered an error on starting sample stream
+            if(mTuner != null)
+            {
+                //Register to receive frequency change events
+                mTuner.getTunerController().addListener(this);
 
-            //Fire frequency and sample rate change events so that the spectrum
-            //and overlay panels can synchronize
-            process(SourceEvent.frequencyChange(null, mTuner.getTunerController().getFrequency()));
-            process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
+                mSpectrumPanel.setSampleSize(mTuner.getSampleSize());
+
+                //Fire frequency and sample rate change events so that the spectrum
+                //and overlay panels can synchronize
+                process(SourceEvent.frequencyChange(null, mTuner.getTunerController().getFrequency()));
+                process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
+            }
         }
     }
 
