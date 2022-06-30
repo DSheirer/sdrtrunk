@@ -20,6 +20,7 @@ package io.github.dsheirer.source.tuner.recording;
 
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.source.ChannelizerType;
+import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
@@ -46,6 +47,11 @@ public class RecordingTuner extends Tuner
         super(new RecordingTunerController(tunerErrorListener, config.getPath(), config.getFrequency()), tunerErrorListener);
 
         mUserPreferences = userPreferences;
+    }
+
+    @Override
+    public void start() throws SourceException {
+        super.start();
 
         if(getTunerController().getCurrentSampleRate() < 100000.0d)
         {
@@ -53,7 +59,7 @@ public class RecordingTuner extends Tuner
         }
         else
         {
-            ChannelizerType channelizerType = userPreferences.getTunerPreference().getChannelizerType();
+            ChannelizerType channelizerType = mUserPreferences.getTunerPreference().getChannelizerType();
 
             if(channelizerType == ChannelizerType.POLYPHASE)
             {
