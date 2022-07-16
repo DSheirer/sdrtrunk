@@ -46,8 +46,8 @@ public class SignedByteNativeBufferFactory implements INativeBufferFactory
      */
     private void calculateDc(byte[] samples)
     {
-        double iDcAccumulator = 0;
-        double qDcAccumulator = 0;
+        float iDcAccumulator = 0;
+        float qDcAccumulator = 0;
 
         for(int x = 0; x < samples.length; x += 2)
         {
