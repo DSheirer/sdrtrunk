@@ -21,7 +21,6 @@ package io.github.dsheirer.buffer;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
-
 import java.util.Iterator;
 
 /**
@@ -42,7 +41,7 @@ public class ByteNativeBuffer implements INativeBuffer
 
         for(int x = 0; x < 256; x++)
         {
-            LOOKUP_VALUES[x] = (float)(x - 127) / 128.0f;
+            LOOKUP_VALUES[x] = ((float)x - 127.5f) / 128.0f;
         }
     }
 

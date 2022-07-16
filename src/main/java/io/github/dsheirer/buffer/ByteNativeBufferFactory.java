@@ -45,7 +45,7 @@ public class ByteNativeBufferFactory implements INativeBufferFactory
      */
     private void calculateDc(byte[] samples)
     {
-        double dcAccumulator = 0;
+        float dcAccumulator = 0;
 
         for(byte sample: samples)
         {
@@ -53,7 +53,7 @@ public class ByteNativeBufferFactory implements INativeBufferFactory
         }
 
         dcAccumulator /= samples.length;
-        dcAccumulator -= 127.0f;
+        dcAccumulator -= 127.5f;
         dcAccumulator /= 128.0f;
         dcAccumulator -= mAverageDc;
         mAverageDc += (dcAccumulator * DC_FILTER_GAIN);
