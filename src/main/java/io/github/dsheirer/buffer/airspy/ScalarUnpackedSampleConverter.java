@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.buffer.airspy;
 
+import io.github.dsheirer.buffer.DcCorrectionManager;
 import java.nio.ByteBuffer;
 
 /**
@@ -26,34 +27,50 @@ import java.nio.ByteBuffer;
  */
 public class ScalarUnpackedSampleConverter implements IAirspySampleConverter
 {
-    private static final float DC_FILTER_GAIN = 0.007f; //Normalizes DC over period of ~142 (1 / .007) buffers
-    private float mAverageDc = 0.0f;
+    /**
+     * Manages DC calculations and processing interval
+     */
+    private DcCorrectionManager mDcCalculationManager = new DcCorrectionManager();
 
     @Override
     public short[] convert(ByteBuffer buffer)
     {
+        boolean shouldCalculateDc = mDcCalculationManager.shouldCalculateDc();
+
         int offset = 0;
-        long dcAccumulator = 0;
         short sample;
         short[] samples;
         byte b1, b2;
 
         samples = new short[buffer.capacity() / 2];
 
-        for(int x = 0; x < samples.length; x++)
+        if(shouldCalculateDc)
         {
-            b1 = buffer.get(offset++);
-            b2 = buffer.get(offset++);
-            sample = (short)(((b2 & 0x0F) << 8) | (b1 & 0xFF));
-            samples[x] = sample;
-            dcAccumulator += sample;
-        }
+            long dcAccumulator = 0;
 
-        //Calculate the average scaled DC offset so that it can be applied in the native buffer's converted samples
-        float averageDcNow = ((float)dcAccumulator / (float)samples.length) - 2048.0f;
-        averageDcNow *= AirspyBufferIterator.SCALE_SIGNED_12_BIT_TO_FLOAT;
-        averageDcNow -= mAverageDc;
-        mAverageDc += (averageDcNow * DC_FILTER_GAIN);
+            for(int x = 0; x < samples.length; x++)
+            {
+                b1 = buffer.get(offset++);
+                b2 = buffer.get(offset++);
+                sample = (short)(((b2 & 0x0F) << 8) | (b1 & 0xFF));
+                samples[x] = sample;
+                dcAccumulator += sample;
+            }
+
+            float averageDcNow = ((float)dcAccumulator / (float)samples.length) - 2048.0f;
+            averageDcNow *= AirspyBufferIterator.SCALE_SIGNED_12_BIT_TO_FLOAT;
+            mDcCalculationManager.adjust(averageDcNow);
+        }
+        else
+        {
+            for(int x = 0; x < samples.length; x++)
+            {
+                b1 = buffer.get(offset++);
+                b2 = buffer.get(offset++);
+                sample = (short)(((b2 & 0x0F) << 8) | (b1 & 0xFF));
+                samples[x] = sample;
+            }
+        }
 
         return samples;
     }
@@ -61,6 +78,6 @@ public class ScalarUnpackedSampleConverter implements IAirspySampleConverter
     @Override
     public float getAverageDc()
     {
-        return mAverageDc;
+        return mDcCalculationManager.getAverageDc();
     }
 }
