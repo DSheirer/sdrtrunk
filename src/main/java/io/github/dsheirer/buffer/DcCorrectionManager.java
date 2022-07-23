@@ -19,18 +19,20 @@
 
 package io.github.dsheirer.buffer;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Implements a factory for creating SignedByteNativeBuffer instances
+ * Provides DC offset correction value and manages calculation processing interval.
  */
-public class SignedByteNativeBufferFactory implements INativeBufferFactory
+public class DcCorrectionManager
 {
+//    private static Logger mLog = LoggerFactory.getLogger(DcCorrectionManager.class);
+//    private DecimalFormat mDecimalFormat = new DecimalFormat("0.00000");
+
     /**
-     * DC removal calculations will run once a minute
+     * Time (delay) interval for running DC removal calculations
      */
-    private static final long DC_PROCESSING_INTERVAL = TimeUnit.SECONDS.toMillis(60);
+    private static final long DC_PROCESSING_INTERVAL = TimeUnit.SECONDS.toMillis(50);
 
     /**
      * Number of buffers to process per DC calculation processing interval.
@@ -39,8 +41,8 @@ public class SignedByteNativeBufferFactory implements INativeBufferFactory
 
     /**
      * DC offset processing residual threshold for ending DC processing interval
-      */
-    private static final float TARGET_DC_OFFSET_REMAINING = 0.0002f;
+     */
+    private static final float TARGET_DC_OFFSET_REMAINING = 0.0001f;
 
     /**
      * Number of DC calculations remaining in the current interval
@@ -58,33 +60,40 @@ public class SignedByteNativeBufferFactory implements INativeBufferFactory
     private static final float DC_FILTER_GAIN = 0.05f;
 
     /**
-     * Current DC offset correction for Inphase samples
+     * Current DC offset correction value
      */
-    private float mIAverageDc = 0.0f;
+    private float mAverageDc = 0.0f;
+
+    public float getAverageDc()
+    {
+        return mAverageDc;
+    }
 
     /**
-     * Current DC offset correction for Quadrature samples
+     * Adjusts the average DC based on the current calculated DC offset present in a sample buffer.
+     * @param calculatedDc for the current sample buffer
      */
-    private float mQAverageDc = 0.0f;
-
-    @Override
-    public INativeBuffer getBuffer(ByteBuffer samples, long timestamp)
+    public void adjust(float calculatedDc)
     {
-        byte[] copy = new byte[samples.capacity()];
-        samples.get(copy);
+        //Calculate the average scaled DC offset so that it can be applied in the native buffer's converted samples
+        float residualOffsetToRemove = calculatedDc - mAverageDc;
 
-        if(shouldCalculateDc())
+        mAverageDc += (residualOffsetToRemove * DC_FILTER_GAIN);
+
+        if(Math.abs(residualOffsetToRemove) < TARGET_DC_OFFSET_REMAINING)
         {
-            calculateDc(copy);
+            mDcCalculationsRemaining--;
         }
-
-        return new SignedByteNativeBuffer(copy, timestamp, mIAverageDc, mQAverageDc);
+//
+//        mLog.info("DC: " + mDecimalFormat.format(mAverageDc) +
+//                " RES:" + mDecimalFormat.format(residualOffsetToRemove) +
+//                " REM:" + mDcCalculationsRemaining);
     }
 
     /**
      * Indicates if a DC offset calculation for a buffer should be performed.
      */
-    private boolean shouldCalculateDc()
+    public boolean shouldCalculateDc()
     {
         if(System.currentTimeMillis() > (mLastDcCalculationTimestamp + DC_PROCESSING_INTERVAL))
         {
@@ -101,37 +110,5 @@ public class SignedByteNativeBufferFactory implements INativeBufferFactory
         }
 
         return false;
-    }
-
-    /**
-     * Calculates the average DC in the sample stream so that it can be subtracted from the samples when the
-     * native buffer is used.
-     * @param samples containing DC offset
-     */
-    private void calculateDc(byte[] samples)
-    {
-        float iDcAccumulator = 0;
-        float qDcAccumulator = 0;
-
-        for(int x = 0; x < samples.length; x += 2)
-        {
-            iDcAccumulator += samples[x];
-            qDcAccumulator += samples[x + 1];
-        }
-
-        iDcAccumulator /= (samples.length / 2);
-        iDcAccumulator /= 128.0f;
-        iDcAccumulator -= mIAverageDc;
-        mIAverageDc += (iDcAccumulator * DC_FILTER_GAIN);
-
-        qDcAccumulator /= (samples.length / 2);
-        qDcAccumulator /= 128.0f;
-        qDcAccumulator -= mQAverageDc;
-        mQAverageDc += (qDcAccumulator * DC_FILTER_GAIN);
-
-        if(Math.abs(iDcAccumulator) < TARGET_DC_OFFSET_REMAINING && Math.abs(qDcAccumulator) < TARGET_DC_OFFSET_REMAINING)
-        {
-            mDcCalculationsRemaining--;
-        }
     }
 }

@@ -19,11 +19,11 @@
 
 package io.github.dsheirer.buffer.airspy;
 
+import io.github.dsheirer.buffer.DcCorrectionManager;
+import java.nio.ByteBuffer;
 import jdk.incubator.vector.ShortVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
-
-import java.nio.ByteBuffer;
 
 /**
  * Scalar implementation of airspy sample converter for un-packed samples.
@@ -31,13 +31,17 @@ import java.nio.ByteBuffer;
 public class VectorUnpackedSampleConverter implements IAirspySampleConverter
 {
     private static final VectorSpecies<Short> VECTOR_SPECIES = ShortVector.SPECIES_PREFERRED;
-    private static final float DC_FILTER_GAIN = 0.007f; //Normalizes DC over period of ~142 (1 / .007) buffers
-    private float mAverageDc = 0.0f;
+
+    /**
+     * Manages DC calculations and processing interval
+     */
+    private DcCorrectionManager mDcCalculationManager = new DcCorrectionManager();
 
     @Override
     public short[] convert(ByteBuffer buffer)
     {
-        long dcAccumulator = 0;
+        boolean shouldCalculateDc = mDcCalculationManager.shouldCalculateDc();
+
         short sample;
         short[] samples;
         byte b1, b2;
@@ -53,37 +57,66 @@ public class VectorUnpackedSampleConverter implements IAirspySampleConverter
         short[] bytes1 = new short[VECTOR_SPECIES.length()];
         short[] bytes2 = new short[VECTOR_SPECIES.length()];
 
-        for(; samplesOffset < VECTOR_SPECIES.loopBound(samples.length); samplesOffset += VECTOR_SPECIES.length())
+        if(shouldCalculateDc)
         {
-            bytesOffset = 0;
+            long dcAccumulator = 0;
 
-            while(bytesOffset < VECTOR_SPECIES.length())
+            for(; samplesOffset < VECTOR_SPECIES.loopBound(samples.length); samplesOffset += VECTOR_SPECIES.length())
             {
-                bytes1[bytesOffset] = (short)(buffer.get(rawPointer++) & 0xFF);
-                bytes2[bytesOffset++] = (short)(buffer.get(rawPointer++) & 0x0F);
+                bytesOffset = 0;
+
+                while(bytesOffset < VECTOR_SPECIES.length())
+                {
+                    bytes1[bytesOffset] = (short)(buffer.get(rawPointer++) & 0xFF);
+                    bytes2[bytesOffset++] = (short)(buffer.get(rawPointer++) & 0x0F);
+                }
+
+                vector = ShortVector.fromArray(VECTOR_SPECIES, bytes1, 0)
+                        .or(ShortVector.fromArray(VECTOR_SPECIES, bytes2, 0).lanewise(VectorOperators.LSHL, 8));
+                dcAccumulator += vector.reduceLanes(VectorOperators.ADD);
+                vector.intoArray(samples, samplesOffset);
             }
 
-            vector = ShortVector.fromArray(VECTOR_SPECIES, bytes1, 0)
-                    .or(ShortVector.fromArray(VECTOR_SPECIES, bytes2, 0).lanewise(VectorOperators.LSHL, 8));
-            dcAccumulator += vector.reduceLanes(VectorOperators.ADD);
-            vector.intoArray(samples, samplesOffset);
-        }
+            for(; samplesOffset < samples.length; samplesOffset++)
+            {
+                b1 = buffer.get(rawPointer++);
+                b2 = buffer.get(rawPointer++);
 
-        for(; samplesOffset < samples.length; samplesOffset++)
+                sample = (short)(((b2 & 0x0F) << 8) | (b1 & 0xFF));
+                samples[samplesOffset] = sample;
+                dcAccumulator += sample;
+            }
+
+            float averageDcNow = ((float)dcAccumulator / (float)samples.length) - 2048.0f;
+            averageDcNow *= AirspyBufferIterator.SCALE_SIGNED_12_BIT_TO_FLOAT;
+            mDcCalculationManager.adjust(averageDcNow);
+        }
+        else
         {
-            b1 = buffer.get(rawPointer++);
-            b2 = buffer.get(rawPointer++);
+            for(; samplesOffset < VECTOR_SPECIES.loopBound(samples.length); samplesOffset += VECTOR_SPECIES.length())
+            {
+                bytesOffset = 0;
 
-            sample = (short)(((b2 & 0x0F) << 8) | (b1 & 0xFF));
-            samples[samplesOffset] = sample;
-            dcAccumulator += sample;
+                while(bytesOffset < VECTOR_SPECIES.length())
+                {
+                    bytes1[bytesOffset] = (short)(buffer.get(rawPointer++) & 0xFF);
+                    bytes2[bytesOffset++] = (short)(buffer.get(rawPointer++) & 0x0F);
+                }
+
+                vector = ShortVector.fromArray(VECTOR_SPECIES, bytes1, 0)
+                        .or(ShortVector.fromArray(VECTOR_SPECIES, bytes2, 0).lanewise(VectorOperators.LSHL, 8));
+                vector.intoArray(samples, samplesOffset);
+            }
+
+            for(; samplesOffset < samples.length; samplesOffset++)
+            {
+                b1 = buffer.get(rawPointer++);
+                b2 = buffer.get(rawPointer++);
+
+                sample = (short)(((b2 & 0x0F) << 8) | (b1 & 0xFF));
+                samples[samplesOffset] = sample;
+            }
         }
-
-        //Calculate the average scaled DC offset so that it can be applied in the native buffer's converted samples
-        float averageDcNow = ((float)dcAccumulator / (float)samples.length) - 2048.0f;
-        averageDcNow *= AirspyBufferIterator.SCALE_SIGNED_12_BIT_TO_FLOAT;
-        averageDcNow -= mAverageDc;
-        mAverageDc += (averageDcNow * DC_FILTER_GAIN);
 
         return samples;
     }
@@ -91,6 +124,6 @@ public class VectorUnpackedSampleConverter implements IAirspySampleConverter
     @Override
     public float getAverageDc()
     {
-        return mAverageDc;
+        return mDcCalculationManager.getAverageDc();
     }
 }
