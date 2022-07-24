@@ -30,7 +30,7 @@ import io.github.dsheirer.protocol.Protocol;
  */
 public class DecodeEvent implements IDecodeEvent
 {
-    private long mTimeStart;
+    private final long mTimeStart;
     private long mTimeEnd;
     private String mEventDescription;
     private DecodeEventType mDecodeEventType;
@@ -40,7 +40,7 @@ public class DecodeEvent implements IDecodeEvent
     private Protocol mProtocol;
     private Integer mTimeslot;
 
-    public DecodeEvent(long start)
+    protected DecodeEvent(long start)
     {
         mTimeStart = start;
     }
@@ -284,26 +284,6 @@ public class DecodeEvent implements IDecodeEvent
         }
 
         /**
-         * Sets the duration value
-         * @param duration in milliseconds
-         */
-        public DecodeEventBuilder duration(long duration)
-        {
-            mDuration = duration;
-            return this;
-        }
-
-        /**
-         * Sets the duration value using the end - start timestamps
-         * @param timestamp for end of event
-         */
-        public DecodeEventBuilder end(long timestamp)
-        {
-            mDuration = timestamp - mTimeStart;
-            return this;
-        }
-
-        /**
          * Sets the channel descriptor for this event
          * @param channelDescriptor
          */
@@ -374,6 +354,7 @@ public class DecodeEvent implements IDecodeEvent
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
