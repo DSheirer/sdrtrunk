@@ -9,6 +9,7 @@ public class DecodedCallEventFilter extends EventFilter
     public DecodedCallEventFilter()
     {
         super("Voice Calls", Arrays.asList(
+                DecodeEventType.CALL,
                 DecodeEventType.CALL_GROUP,
                 DecodeEventType.CALL_PATCH_GROUP,
                 DecodeEventType.CALL_ALERT,

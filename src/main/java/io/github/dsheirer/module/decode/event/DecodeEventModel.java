@@ -21,6 +21,9 @@
  */
 package io.github.dsheirer.module.decode.event;
 
+import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -35,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -121,7 +125,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     public void clearAndSet(List<IDecodeEvent> events)
     {
         mEvents.clear();
-        mEvents.addAll(events);
+        mEvents.addAll(Collections2.filter(Lists.reverse(events), mEventFilterSet::passes));
         fireTableDataChanged();
     }
 

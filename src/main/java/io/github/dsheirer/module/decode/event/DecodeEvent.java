@@ -374,6 +374,7 @@ public class DecodeEvent implements IDecodeEvent
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
+            decodeEvent.setEventType(mDecodeEventType);
             decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
