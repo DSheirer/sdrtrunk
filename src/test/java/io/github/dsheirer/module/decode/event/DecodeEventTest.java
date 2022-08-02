@@ -9,7 +9,7 @@ public class DecodeEventTest implements CommonFixtures {
 
   @Test
   public void builderShouldHonorSetValues() {
-    //given
+    // given
     final var decodeEvent = DecodeEvent.builder(123L)
         .channel(someChannel())
         .eventType(DecodeEventType.CALL)

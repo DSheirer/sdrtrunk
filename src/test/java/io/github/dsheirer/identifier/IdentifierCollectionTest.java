@@ -9,6 +9,7 @@ public class IdentifierCollectionTest implements CommonFixtures {
 
   @Test
   public void shouldImplementHashCodeAndEquals() {
+    // expect
     assertThat(someIdentifiers()).isEqualTo(someIdentifiers());
     assertThat(someIdentifiers().hashCode()).isEqualTo(someIdentifiers().hashCode());
   }
