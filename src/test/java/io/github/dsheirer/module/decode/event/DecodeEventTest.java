@@ -9,6 +9,7 @@ public class DecodeEventTest implements CommonFixtures {
 
   @Test
   public void builderShouldHonorSetValues() {
+    //given
     final var decodeEvent = DecodeEvent.builder(123L)
         .channel(someChannel())
         .eventType(DecodeEventType.CALL)
@@ -19,6 +20,7 @@ public class DecodeEventTest implements CommonFixtures {
         .timeslot(2)
         .build();
 
+    // expect
     final var softly = new SoftAssertions();
     softly.assertThat(decodeEvent.getTimeStart()).isEqualTo(123L);
     softly.assertThat(decodeEvent.getChannelDescriptor()).isEqualTo(someChannel());
