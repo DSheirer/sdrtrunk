@@ -20,6 +20,8 @@
 package io.github.dsheirer.identifier;
 
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,6 +81,7 @@ public class IdentifierCollection
                 mAliasListConfigurationIdentifier = (AliasListConfigurationIdentifier)identifier;
             }
         }
+        mTimeslot = timeslot;
     }
 
     public int getTimeslot()
@@ -98,14 +101,6 @@ public class IdentifierCollection
     public AliasListConfigurationIdentifier getAliasListConfiguration()
     {
         return mAliasListConfigurationIdentifier;
-    }
-
-    /**
-     * Indicates if this collection has an alias list specified.
-     */
-    public boolean hasAliasListConfiguration()
-    {
-        return mAliasListConfigurationIdentifier != null;
     }
 
     /**
@@ -331,5 +326,27 @@ public class IdentifierCollection
             sb.append("\t").append(identifier.getClass()).append("\n");
         }
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        final var that = (IdentifierCollection) o;
+        return new EqualsBuilder()
+            .append(mTimeslot, that.mTimeslot)
+            .append(mIdentifiers, that.mIdentifiers)
+            .append(mAliasListConfigurationIdentifier, that.mAliasListConfigurationIdentifier)
+            .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+            .append(mIdentifiers)
+            .append(mAliasListConfigurationIdentifier)
+            .append(mTimeslot)
+            .toHashCode();
     }
 }
