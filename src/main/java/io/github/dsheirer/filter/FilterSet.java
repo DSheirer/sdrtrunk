@@ -13,7 +13,7 @@ public class FilterSet<T> implements IFilter<T>
     {
     	mName = name;
     }
-    
+
     public FilterSet()
     {
     	mName = "Message Filter";
@@ -23,22 +23,22 @@ public class FilterSet<T> implements IFilter<T>
 	{
 		addFilter(filter);
 	}
-    
+
     public String getName()
     {
     	return mName;
     }
-    
+
     public void setName( String name )
     {
     	mName = name;
     }
-    
+
     public String toString()
     {
     	return getName();
     }
-    
+
 	@Override
     public boolean passes( T t )
     {
@@ -46,11 +46,9 @@ public class FilterSet<T> implements IFilter<T>
 		{
 			for( IFilter<T> filter: mFilters )
 			{
-				// Make sure to loop through all filters.
-				// Only return if true or all filters have been evaluated.
-				if( filter.canProcess( t ) && filter.passes( t ))
+				if( filter.canProcess( t ))
 				{
-					return true;
+					return filter.passes( t );
 				}
 			}
 		}
@@ -60,8 +58,6 @@ public class FilterSet<T> implements IFilter<T>
 	@Override
     public boolean canProcess( T t )
     {
-		if( mEnabled )
-		{
 			for( IFilter<T> filter: mFilters )
 			{
 				if( filter.canProcess( t ) )
@@ -69,26 +65,25 @@ public class FilterSet<T> implements IFilter<T>
 					return true;
 				}
 			}
-		}
-		
-		return false;
+
+			return false;
     }
-	
+
 	public List<IFilter<T>> getFilters()
 	{
 		return mFilters;
 	}
-	
+
 	public void addFilters( List<IFilter<T>> filters )
 	{
 		mFilters.addAll( filters );
 	}
-	
+
 	public void addFilter( IFilter<T> filter )
 	{
 		mFilters.add( filter );
 	}
-	
+
 	public void removeFilter( IFilter<T> filter )
 	{
 		mFilters.remove( filter );

@@ -58,13 +58,52 @@ public class DecodeEventFilterSetTest {
   @Test
   public void shouldHandleDecodeEventsWithoutType() {
     // given
-    final var filters = new DecodeEventFilterSet().getFilters();
-    final var someDecodeEvent = DecodeEvent.builder(0).build();
+    final var filterSet = new DecodeEventFilterSet();
+    final var decodeEventWithoutType = DecodeEvent.builder(0).build();
 
     // expect
-    assertThat(filters)
-        .filteredOn(f -> f.canProcess(someDecodeEvent))
+    assertThat(filterSet.canProcess(decodeEventWithoutType))
         .as("Decode event without type must be handled")
-        .isNotEmpty();
+        .isTrue();
+  }
+
+  @Test
+  public void shouldPassAllDecodeEventTypesByDefault() {
+    // given
+    final var filterSet = new DecodeEventFilterSet();
+
+    // expect
+    for (final var type : DecodeEventType.values()) {
+      final var someDecodeEvent = DecodeEvent.builder(0).eventType(type).build();
+      assertThat(filterSet.passes(someDecodeEvent)).isTrue();
+    }
+  }
+
+  @Test
+  public void shouldAllowFilteringOutEverything() {
+    // given
+    final var filterSet = new DecodeEventFilterSet();
+    final var someDecodeEvent = DecodeEvent.builder(0).eventType(DecodeEventType.CALL).build();
+
+    // when
+    filterSet.setEnabled(false);
+
+    // then
+    assertThat(filterSet.passes(someDecodeEvent)).isFalse();
+  }
+
+  @Test
+  public void shouldAllowFilteringOutByDecodeEventTypeGroup() {
+    // given
+    final var filterSet = new DecodeEventFilterSet();
+    final var someDecodeEvent = DecodeEvent.builder(0).eventType(DecodeEventType.CALL).build();
+
+    // when
+    filterSet.getFilters().stream()
+        .filter(f -> f.canProcess(someDecodeEvent))
+        .forEach(f -> f.setEnabled(false));
+
+    // then
+    assertThat(filterSet.passes(someDecodeEvent)).isFalse();
   }
 }

@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public class EventFilter extends Filter<IDecodeEvent>
 {
-    private Map<DecodeEventType, FilterElement<DecodeEventType>> mElements = new EnumMap<>(DecodeEventType.class);
+    private final Map<DecodeEventType, FilterElement<DecodeEventType>> mElements = new EnumMap<>(DecodeEventType.class);
 
     public EventFilter(String name, List<DecodeEventType> eventTypes)
     {
@@ -30,22 +30,19 @@ public class EventFilter extends Filter<IDecodeEvent>
     }
 
     @Override
+    public boolean canProcess(IDecodeEvent iDecodeEvent)
+    {
+        return mElements.containsKey(iDecodeEvent.getEventType());
+    }
+
+    @Override
     public boolean passes(IDecodeEvent iDecodeEvent)
     {
         if (mEnabled && canProcess(iDecodeEvent))
         {
-            if (mElements.containsKey(iDecodeEvent.getEventType()))
-            {
-                return mElements.get(iDecodeEvent.getEventType()).isEnabled();
-            }
+            return mElements.get(iDecodeEvent.getEventType()).isEnabled();
         }
         return false;
-    }
-
-    @Override
-    public boolean canProcess(IDecodeEvent iDecodeEvent)
-    {
-        return true;
     }
 
     @Override

@@ -20,6 +20,11 @@ public class DecodeEventFilterSet extends FilterSet<IDecodeEvent> {
         // - their type is not handled by filters above
         addFilter(new EventFilter("Everything else", List.of()) {
             @Override
+            public boolean canProcess(IDecodeEvent iDecodeEvent) {
+                return true;
+            }
+
+            @Override
             public boolean passes(IDecodeEvent iDecodeEvent) {
                 return isEnabled();
             }
