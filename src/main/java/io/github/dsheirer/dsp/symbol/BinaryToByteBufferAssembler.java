@@ -84,6 +84,7 @@ public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IByt
 
             if(!mCurrentBuffer.hasRemaining())
             {
+                mCurrentBuffer.flip();
                 getNextBuffer();
             }
         }

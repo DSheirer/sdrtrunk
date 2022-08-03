@@ -157,8 +157,6 @@ public class Dispatcher<E> implements Listener<E>
         @Override
         public void run()
         {
-            mQueue.clear();
-
             E element;
 
             while(mRunning.get())
@@ -167,7 +165,7 @@ public class Dispatcher<E> implements Listener<E>
                 {
                     element = mQueue.take();
 
-                    if(mPoisonPill.equals(element))
+                    if(mPoisonPill == element)
                     {
                         mRunning.set(false);
                     }
