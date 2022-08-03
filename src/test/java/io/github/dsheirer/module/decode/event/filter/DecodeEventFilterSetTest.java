@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DecodeEventFilterSetTest {
 
   @Test
-  public void shouldContainDisjunctiveFilters() {
+  public void shouldContainDisjointFilters() {
     // given
     final var filters = new DecodeEventFilterSet().getFilters();
 
