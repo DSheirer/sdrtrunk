@@ -93,38 +93,48 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
             return null;
         }
 
-        if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, mTunerChannels))
+        TunerChannelSource source = null;
+
+        try
         {
-            try
+            mTunerController.getFrequencyControllerLock().lock();
+            if(CenterFrequencyCalculator.canTune(tunerChannel, mTunerController, mTunerChannels))
             {
-                //Attempt to create the channel source first, in case we get a filter design exception
-                HalfBandTunerChannelSource tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
-                        tunerChannel, mTunerController.getSampleRate(), channelSpecification);
+                try
+                {
+                    //Attempt to create the channel source first, in case we get a filter design exception
+                    HalfBandTunerChannelSource tunerChannelSource = new HalfBandTunerChannelSource(mChannelSourceEventProcessor,
+                            tunerChannel, mTunerController.getSampleRate(), channelSpecification);
 
-                //Add to the list of channel sources so that it will receive the tuner frequency change
-                mChannelSources.add(tunerChannelSource);
+                    //Add to the list of channel sources so that it will receive the tuner frequency change
+                    mChannelSources.add(tunerChannelSource);
 
-                //Set the current tuner frequency
-                tunerChannelSource.setFrequency(mTunerController.getFrequency());
+                    //Set the current tuner frequency
+                    tunerChannelSource.setFrequency(mTunerController.getFrequency());
 
-                //Add to the channel list and update the tuner center frequency as needed
-                mTunerChannels.add(tunerChannel);
-                updateTunerFrequency();
+                    //Add to the channel list and update the tuner center frequency as needed
+                    mTunerChannels.add(tunerChannel);
+                    updateTunerFrequency();
 
-                //Lock the tuner controller frequency and sample rate
-                mTunerController.setLocked(true);
+                    //Lock the tuner controller frequency and sample rate
+                    mTunerController.setLockedSampleRate(true);
 
-                broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
+                    broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
-                return tunerChannelSource;
-            }
-            catch(FilterDesignException fde)
-            {
-                mLog.error("Error creating CIC tuner channel source - couldn't design cleanup filter", fde);
+                    source = tunerChannelSource;
+                }
+                catch(FilterDesignException fde)
+                {
+                    mLog.error("Error creating CIC tuner channel source - couldn't design cleanup filter", fde);
+                }
             }
         }
+        finally
+        {
+            mTunerController.getFrequencyControllerLock().unlock();
+        }
 
-        return null;
+        return source;
     }
 
     @Override
@@ -294,7 +304,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                         //Unlock the tuner controller if there are no more channels
                         if(getTunerChannelCount() == 0)
                         {
-                            mTunerController.setLocked(false);
+                            mTunerController.setLockedSampleRate(false);
                         }
                         broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
                     }

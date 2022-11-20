@@ -25,10 +25,6 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.DiscoveredUSBTuner;
 import io.github.dsheirer.source.tuner.manager.IDiscoveredTunerStatusListener;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.table.AbstractTableModel;
 import java.awt.EventQueue;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -36,6 +32,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.table.AbstractTableModel;
 
 /**
  * Model for discovered tuners
@@ -449,7 +449,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
                     if(discoveredTuner.hasTuner())
                     {
                         int channelCount = discoveredTuner.getTuner().getChannelSourceManager().getTunerChannelCount();
-                        return channelCount + " (" + (discoveredTuner.getTuner().getTunerController().isLocked() ? "LOCKED)" : "UNLOCKED)");
+                        return channelCount + " (" + (discoveredTuner.getTuner().getTunerController().isLockedSampleRate() ? "LOCKED)" : "UNLOCKED)");
                     }
                     else
                     {
