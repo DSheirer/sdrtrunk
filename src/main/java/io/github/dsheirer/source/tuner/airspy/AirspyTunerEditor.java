@@ -25,6 +25,9 @@ import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +43,6 @@ import javax.swing.JSlider;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.List;
 
 /**
  * Airspy tuner editor/controller
@@ -102,7 +102,7 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
         getTunerStatusLabel().setText(status);
         getButtonPanel().updateControls();
         getFrequencyPanel().updateControls();
-        getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLocked());
+        getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
         getTunerInfoButton().setEnabled(hasTuner());
         updateGainComponents((hasTuner() && hasConfiguration()) ? getConfiguration().getGain() : null);
 
@@ -626,7 +626,7 @@ public class AirspyTunerEditor extends TunerEditor<AirspyTuner, AirspyTunerConfi
      */
     private void updateSampleRateToolTip()
     {
-        if(hasTuner() && getTuner().getController().isLocked())
+        if(hasTuner() && getTuner().getController().isLockedSampleRate())
         {
             mSampleRateCombo.setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
         }

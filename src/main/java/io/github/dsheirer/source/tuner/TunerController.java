@@ -36,11 +36,11 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController.Tunable;
 import io.github.dsheirer.source.tuner.manager.FrequencyErrorCorrectionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.text.DecimalFormat;
 import java.util.SortedSet;
+import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
         INativeBufferProvider, Listener<INativeBuffer>, ITunerErrorListener
@@ -68,6 +68,17 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         mFrequencyController = new FrequencyController(this);
         mSourceEventListener = new SourceEventListenerToProcessorAdapter(this);
         mFrequencyErrorCorrectionManager = new FrequencyErrorCorrectionManager(this);
+    }
+
+    /**
+     * Lock for the frequency controller.  This should only be used by the channel source manager to lock access to the
+     * frequency controller while creating a channel source, to block multi-threaded access to the frequency controller
+     * which might put the center tuned frequency value in an indeterminant state.
+     * @return frequency controller lock
+     */
+    public ReentrantLock getFrequencyControllerLock()
+    {
+        return mFrequencyController.getFrequencyControllerLock();
     }
 
     /**
@@ -182,29 +193,30 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
-     * Indicates if the frequency and sample rate controls are locked by another process.  User interface controls
-     * should monitor source events and check the locked state via this method to correctly render the enabled state
-     * of the frequency and sample rate controls.
+     * Indicates if the sample rate control is locked by another process.  User interface controls should monitor source
+     * events and check the locked state via this method to correctly render the enabled state of the sample rate control.
      *
      * @return true if the tuner controller is locked.
      */
-    public boolean isLocked()
+    public boolean isLockedSampleRate()
     {
-        return mFrequencyController.isLocked();
+        //Note: this access is not protected by the mFrequencyControllerLock
+        return mFrequencyController.isSampleRateLocked();
     }
 
     /**
-     * Sets the frequency and sample rate locked state to the locked argument value.  This should only be changed
-     * by a downstream consumer of samples to prevent users or other processes from modifying the center frequency
-     * and/or sample rate of the tuner while processing samples.
+     * Sets the sample rate locked state to the locked argument value.  This should only be changed by a downstream
+     * consumer of samples to prevent users or other processes from modifying the sample rate of the tuner while
+     * processing samples.
      *
      * @param locked true to indicate the tuner controller is in a locked state, otherwise false.
      */
-    public void setLocked(boolean locked)
+    public void setLockedSampleRate(boolean locked)
     {
         try
         {
-            mFrequencyController.setLocked(locked);
+            //Note: this access is not protected by the mFrequencyControllerLock
+            mFrequencyController.setSampleRateLocked(locked);
         }
         catch(SourceException se)
         {
@@ -214,6 +226,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
     public int getBandwidth()
     {
+        //Note: this access is not protected by the mFrequencyControllerLock
         return mFrequencyController.getBandwidth();
     }
 
@@ -225,7 +238,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void setFrequency(long frequency) throws SourceException
     {
-        mFrequencyController.setFrequency(frequency);
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setFrequency(frequency);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
     /**
@@ -235,28 +256,73 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public long getFrequency()
     {
-        return mFrequencyController.getFrequency();
+        long frequency;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            frequency = mFrequencyController.getFrequency();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return frequency;
     }
 
     @Override
     public boolean canTune(long frequency)
     {
-        return mFrequencyController.canTune(frequency);
+        boolean canTune;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            canTune = mFrequencyController.canTune(frequency);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return canTune;
     }
 
     public double getSampleRate()
     {
+        //Note: this access is not protected by the mFrequencyControllerLock
         return mFrequencyController.getSampleRate();
     }
 
     public double getFrequencyCorrection()
     {
-        return mFrequencyController.getFrequencyCorrection();
+        double correction;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            correction = mFrequencyController.getFrequencyCorrection();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return correction;
     }
 
     public void setFrequencyCorrection(double correction) throws SourceException
     {
-        mFrequencyController.setFrequencyCorrection(correction);
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setFrequencyCorrection(correction);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
     /**
@@ -265,7 +331,19 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public long getMinimumFrequency()
     {
-        return mFrequencyController.getMinimumFrequency();
+        long minimum;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            minimum = mFrequencyController.getMinimumFrequency();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return minimum;
     }
 
     /**
@@ -274,7 +352,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void setMinimumFrequency(long minimum)
     {
-        mFrequencyController.setMinimumFrequency(minimum);
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setMinimumFrequency(minimum);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
     /**
@@ -283,7 +369,19 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public long getMaximumFrequency()
     {
-        return mFrequencyController.getMaximumFrequency();
+        long maximum;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            maximum = mFrequencyController.getMaximumFrequency();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return maximum;
     }
 
     /**
@@ -292,17 +390,49 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void setMaximumFrequency(long maximum)
     {
-        mFrequencyController.setMaximumFrequency(maximum);
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setMaximumFrequency(maximum);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
     public long getMinTunedFrequency() throws SourceException
     {
-        return mFrequencyController.getFrequency() - (getUsableBandwidth() / 2);
+        long minTuned;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            minTuned = mFrequencyController.getFrequency() - (getUsableBandwidth() / 2);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return minTuned;
     }
 
     public long getMaxTunedFrequency() throws SourceException
     {
-        return mFrequencyController.getFrequency() + (getUsableBandwidth() / 2);
+        long maxTuned;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            maxTuned = mFrequencyController.getFrequency() + (getUsableBandwidth() / 2);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return maxTuned;
     }
 
     /**
@@ -425,7 +555,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void addListener( ISourceEventProcessor processor )
     {
-        mFrequencyController.addListener(processor);
+        mFrequencyController.addSourceEventProcessor(processor);
     }
 
     /**
@@ -433,7 +563,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void removeListener( ISourceEventProcessor processor )
     {
-        mFrequencyController.removeFrequencyChangeProcessor(processor);
+        mFrequencyController.removeSourceEventProcessor(processor);
     }
 
     /**

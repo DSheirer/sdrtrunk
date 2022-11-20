@@ -82,18 +82,30 @@ public class PassThroughSourceManager extends ChannelSourceManager
     @Override
     public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
+
         if(!mRunning)
         {
             return null;
         }
 
-        PassThroughChannelSource channelSource = new PassThroughChannelSource(new SourceEventProxy(),
-                mTunerController, tunerChannel);
+        TunerChannelSource source = null;
 
-        mTunerChannels.add(tunerChannel);
-        mTunerChannelSources.add(channelSource);
+        try
+        {
+            mTunerController.getFrequencyControllerLock().lock();
+            PassThroughChannelSource channelSource = new PassThroughChannelSource(new SourceEventProxy(),
+                    mTunerController, tunerChannel);
 
-        return channelSource;
+            mTunerChannels.add(tunerChannel);
+            mTunerChannelSources.add(channelSource);
+            source = channelSource;
+        }
+        finally
+        {
+            mTunerController.getFrequencyControllerLock().unlock();
+        }
+
+        return source;
     }
 
     @Override

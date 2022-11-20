@@ -197,7 +197,7 @@ public class SourceEvent
     /**
      * Creates a new locked state change event
      */
-    public static SourceEvent lockedState()
+    public static SourceEvent lockedSampleRateState()
     {
         return new SourceEvent(Event.NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED, 1);
     }
@@ -205,7 +205,7 @@ public class SourceEvent
     /**
      * Creates a new unlocked state change event
      */
-    public static SourceEvent unlockedState()
+    public static SourceEvent unlockedSampleRateState()
     {
         return new SourceEvent(Event.NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED, 0);
     }

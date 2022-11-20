@@ -416,7 +416,7 @@ public class R820TTunerEditor extends TunerEditor<RTL2832Tuner,R820TTunerConfigu
      */
     private void updateSampleRateToolTip()
     {
-        if(hasTuner() && getTuner().getTunerController().isLocked())
+        if(hasTuner() && getTuner().getTunerController().isLockedSampleRate())
         {
             getSampleRateCombo().setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
         }

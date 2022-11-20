@@ -120,7 +120,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
         getTunerStatusLabel().setText(status);
         getButtonPanel().updateControls();
         getFrequencyPanel().updateControls();
-        getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLocked());
+        getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
         updateSampleRateToolTip();
         getTunerInfoButton().setEnabled(hasTuner());
 
@@ -295,7 +295,7 @@ public class HackRFTunerEditor extends TunerEditor<HackRFTuner,HackRFTunerConfig
      */
     private void updateSampleRateToolTip()
     {
-        if(hasTuner() && getTuner().getController().isLocked())
+        if(hasTuner() && getTuner().getController().isLockedSampleRate())
         {
             mSampleRateCombo.setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
         }

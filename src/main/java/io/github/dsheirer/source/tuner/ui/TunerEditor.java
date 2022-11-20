@@ -619,8 +619,8 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
         {
             getFrequencyControl().clearListeners();
             getFrequencyControl().addListener(mFrequencyAndCorrectionChangeListener);
-            getFrequencyControl().setEnabled(hasTuner() && !getTuner().getTunerController().isLocked());
-            getTunerLockedStatusLabel().setVisible(hasTuner() && getTuner().getTunerController().isLocked());
+            getFrequencyControl().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
+            getTunerLockedStatusLabel().setVisible(hasTuner() && getTuner().getTunerController().isLockedSampleRate());
             getFrequencyCorrectionSpinner().setEnabled(hasTuner());
             getAutoPPMCheckBox().setEnabled(hasTuner());
 

@@ -22,12 +22,11 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FrequencyController
 {
@@ -40,8 +39,12 @@ public class FrequencyController
     private long mMaximumFrequency = 0;
     private double mFrequencyCorrection = 0.0d;
     private double mSampleRate = 0.0d;
-    private boolean mLocked = false;
+    private boolean mSampleRateLocked = false;
     private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
+
+    /**
+     * Lock protecting access to frequency control plane, source event processor subscriptions and event broadcasting
+     */
     private ReentrantLock mLock = new ReentrantLock();
 
     /**
@@ -51,6 +54,15 @@ public class FrequencyController
     public FrequencyController(Tunable tunable)
     {
         mTunable = tunable;
+    }
+
+
+    /**
+     * Lock for controlling access to frequency control plane, event processor subscriptions and source event broadcasts.
+     */
+    public ReentrantLock getFrequencyControllerLock()
+    {
+        return mLock;
     }
 
     /**
@@ -63,36 +75,36 @@ public class FrequencyController
     }
 
     /**
-     * Indicates if this frequency controller is locked by a remote process.  A locked state indicates that neither
-     * the frequency nor the sample rate should be changed.  The remote process will typically be a downstream
+     * Indicates if the sample rate for this frequency controller is locked by a remote process.  A locked state
+     * indicates that the sample rate cannot be changed.  The remote process will typically be a downstream
      * consumer of the data produced by the device being controlled (ie polyphase channelizer) that does not want
-     * the sample rate or frequency to be changed while processing is ongoing.
+     * the sample rate to be changed while processing (ie channels have been allocated) is ongoing.
      *
      * @return true if locked or false if not locked.
      */
-    public boolean isLocked()
+    public boolean isSampleRateLocked()
     {
-        return mLocked;
+        return mSampleRateLocked;
     }
 
     /**
      * Sets the lock state for this frequency controller.  Set to true when a consumer process requires that the
-     * frequency and sample rate controls be locked so that only the singular consumer process makes changes.  This
+     * sample rate control be locked so that only the single consumer process makes changes to the sample rate.  This
      * is primarily to lock down user interface controls when the polyphase channelizer is producing channels.
      *
-     * @param locked state
+     * @param sampleRateLocked state
      */
-    public void setLocked(boolean locked) throws SourceException
+    public void setSampleRateLocked(boolean sampleRateLocked) throws SourceException
     {
-        mLocked = locked;
+        mSampleRateLocked = sampleRateLocked;
 
-        if(mLocked)
+        if(mSampleRateLocked)
         {
-            broadcast(SourceEvent.lockedState());
+            broadcast(SourceEvent.lockedSampleRateState());
         }
         else
         {
-            broadcast(SourceEvent.unlockedState());
+            broadcast(SourceEvent.unlockedSampleRateState());
         }
     }
 
@@ -111,7 +123,7 @@ public class FrequencyController
     {
         if(sampleRate != mSampleRate)
         {
-            if(!mLocked)
+            if(!mSampleRateLocked)
             {
                 mSampleRate = sampleRate;
 
@@ -284,7 +296,7 @@ public class FrequencyController
     /**
      * Adds listener to receive frequency change events
      */
-    public void addListener(ISourceEventProcessor processor)
+    public void addSourceEventProcessor(ISourceEventProcessor processor)
     {
         mLock.lock();
 
@@ -304,7 +316,7 @@ public class FrequencyController
     /**
      * Removes listener from receiving frequency change events
      */
-    public void removeFrequencyChangeProcessor(ISourceEventProcessor processor)
+    public void removeSourceEventProcessor(ISourceEventProcessor processor)
     {
         mLock.lock();
 
