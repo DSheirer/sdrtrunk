@@ -21,10 +21,9 @@ package io.github.dsheirer.dsp.symbol;
 import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IByteBufferProvider;
+import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.ByteBuffer;
 
 /**
  * Assembles reusable byte buffers from an incoming stream of boolean values.
@@ -58,6 +57,7 @@ public class BinaryToByteBufferAssembler implements IBinarySymbolProcessor, IByt
     {
         if(mCurrentBuffer != null && mBufferListener != null)
         {
+            mCurrentBuffer.flip();
             mBufferListener.receive(mCurrentBuffer);
         }
 
