@@ -19,12 +19,11 @@
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Threaded processor for receiving elements from a separate producer thread and forwarding those buffers to a
@@ -167,7 +166,7 @@ public class Dispatcher<E> implements Listener<E>
                 {
                     element = mQueue.take();
 
-                    if(mPoisonPill.equals(element))
+                    if(mPoisonPill == element)
                     {
                         mRunning.set(false);
                     }
