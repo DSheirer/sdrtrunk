@@ -24,31 +24,33 @@ import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
 import io.github.dsheirer.bits.BinaryMessage;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.tone.AmbeTone;
 import io.github.dsheirer.identifier.tone.P25ToneIdentifier;
 import io.github.dsheirer.identifier.tone.Tone;
+import io.github.dsheirer.identifier.tone.ToneIdentifier;
+import io.github.dsheirer.identifier.tone.ToneIdentifierMessage;
 import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.module.decode.p25.phase2.message.EncryptionSynchronizationSequence;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.structure.PushToTalk;
 import io.github.dsheirer.module.decode.p25.phase2.timeslot.AbstractVoiceTimeslot;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
-import jmbe.iface.IAudioWithMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import jmbe.iface.IAudioWithMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdateProvider
+public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdateProvider, IMessageProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25P2AudioModule.class);
 
@@ -58,6 +60,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     private Queue<AbstractVoiceTimeslot> mQueuedAudioTimeslots = new ArrayDeque<>();
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
+    private Listener<IMessage> mMessageListener;
 
     public P25P2AudioModule(UserPreferences userPreferences, int timeslot, AliasList aliasList)
     {
@@ -116,7 +119,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 {
                     if(!mEncryptedCall)
                     {
-                        processAudio(abstractVoiceTimeslot.getVoiceFrames());
+                        processAudio(abstractVoiceTimeslot.getVoiceFrames(), message.getTimestamp());
                     }
                 }
                 else
@@ -156,7 +159,12 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
         }
     }
 
-    private void processAudio(List<BinaryMessage> voiceFrames)
+    /**
+     * Process the audio voice frames
+     * @param voiceFrames to process
+     * @param timestamp of the carrier message
+     */
+    private void processAudio(List<BinaryMessage> voiceFrames, long timestamp)
     {
         if(hasAudioCodec())
         {
@@ -168,7 +176,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
                 {
                     IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(voiceFrameBytes);
                     addAudio(audioWithMetadata.getAudio());
-                    processMetadata(audioWithMetadata);
+                    processMetadata(audioWithMetadata, timestamp);
                 }
                 catch(Exception e)
                 {
@@ -182,7 +190,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
      * Processes optional metadata that can be included with decoded audio (ie dtmf, tones, knox, etc.) so that the
      * tone metadata can be converted into a FROM identifier and included with any call segment.
      */
-    private void processMetadata(IAudioWithMetadata audioWithMetadata)
+    private void processMetadata(IAudioWithMetadata audioWithMetadata, long timestamp)
     {
         if(audioWithMetadata.hasMetadata())
         {
@@ -190,11 +198,11 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
             for(Map.Entry<String,String> entry: audioWithMetadata.getMetadata().entrySet())
             {
                 //Each metadata map entry contains a tone-type (key) and tone (value)
-                Identifier metadataIdentifier = mToneMetadataProcessor.process(entry.getKey(), entry.getValue());
+                ToneIdentifier toneIdentifier = mToneMetadataProcessor.process(entry.getKey(), entry.getValue());
 
-                if(metadataIdentifier != null)
+                if(toneIdentifier != null)
                 {
-                    broadcast(metadataIdentifier);
+                    broadcast(toneIdentifier, timestamp);
                 }
             }
         }
@@ -205,14 +213,27 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     }
 
     /**
-     * Broadcasts the identifier to a registered listener
+     * Broadcasts the identifier to a registered listener and creates a new AMBE tone identifier message when tones are
+     * present to send to the alias action manager
      */
-    private void broadcast(Identifier identifier)
+    private void broadcast(ToneIdentifier identifier, long timestamp)
     {
         if(mIdentifierUpdateNotificationListener != null)
         {
             mIdentifierUpdateNotificationListener.receive(new IdentifierUpdateNotification(identifier,
                 IdentifierUpdateNotification.Operation.ADD, getTimeslot()));
+        }
+
+        if(mMessageListener != null)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("P25.2 Timeslot ");
+            sb.append(getTimeslot());
+            sb.append("Audio Tone Sequence Decoded: ");
+            sb.append(identifier.toString());
+
+            mMessageListener.receive(new ToneIdentifierMessage(Protocol.APCO25_PHASE2, getTimeslot(), timestamp,
+                    identifier, sb.toString()));
         }
     }
 
@@ -232,6 +253,25 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
     public void removeIdentifierUpdateListener()
     {
         mIdentifierUpdateNotificationListener = null;
+    }
+
+    /**
+     * Registers a message listener to receive AMBE tone identifier messages.
+     * @param listener to register
+     */
+    @Override
+    public void setMessageListener(Listener<IMessage> listener)
+    {
+        mMessageListener = listener;
+    }
+
+    /**
+     * Removes the message listener
+     */
+    @Override
+    public void removeMessageListener()
+    {
+        mMessageListener = null;
     }
 
     /**
@@ -258,7 +298,7 @@ public class P25P2AudioModule extends AmbeAudioModule implements IdentifierUpdat
          * @param value of tone
          * @return an identifier with the accumulated tone metadata set
          */
-        public Identifier process(String type, String value)
+        public ToneIdentifier process(String type, String value)
         {
             if(type == null || value == null)
             {
