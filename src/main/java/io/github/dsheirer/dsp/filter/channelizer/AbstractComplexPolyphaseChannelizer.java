@@ -23,11 +23,10 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractComplexPolyphaseChannelizer implements Listener<InterleavedComplexSamples>, ISourceEventListener
 {
@@ -38,6 +37,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<In
     private int mChannelCount;
     private int mSubChannelCount;
     private double mChannelSampleRate;
+    protected long mCurrentSamplesTimestamp;
 
     /**
      * Complex sample polyphase channelizer
@@ -106,7 +106,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<In
     {
         for(PolyphaseChannelSource channel : mChannels)
         {
-            channel.receiveChannelResults(channelResultsList);
+            channel.receiveChannelResults(channelResultsList, mCurrentSamplesTimestamp);
         }
     }
 

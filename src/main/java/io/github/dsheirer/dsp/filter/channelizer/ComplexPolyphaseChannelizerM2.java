@@ -22,15 +22,14 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.util.Dispatcher;
-import org.apache.commons.math3.util.FastMath;
-import org.jtransforms.fft.FloatFFT_1D;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.math3.util.FastMath;
+import org.jtransforms.fft.FloatFFT_1D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input baseband complex sample
@@ -193,7 +192,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     @Override
     public void receive(InterleavedComplexSamples complexSamples)
     {
-//TODO: how do we pass the timestamp onto the sample assemblers?
+        mCurrentSamplesTimestamp = complexSamples.timestamp();
+
         float[] samples = complexSamples.samples();
 
         int samplesPointer = 0;
