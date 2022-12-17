@@ -156,40 +156,47 @@ public class Dispatcher<E> implements Listener<E>
         @Override
         public void run()
         {
-            mQueue.clear();
-
-            E element;
-
-            while(mRunning.get())
+            try
             {
-                try
-                {
-                    element = mQueue.take();
+                mQueue.clear();
 
-                    if(mPoisonPill == element)
+                E element;
+
+                while(mRunning.get())
+                {
+                    try
                     {
-                        mRunning.set(false);
-                    }
-                    else if(element != null)
-                    {
-                        if(mListener == null)
+                        element = mQueue.take();
+
+                        if(mPoisonPill == element)
                         {
-                            throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
+                            mRunning.set(false);
                         }
-                        mListener.receive(element);
+                        else if(element != null)
+                        {
+                            if(mListener == null)
+                            {
+                                throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
+                            }
+                            mListener.receive(element);
+                        }
+                    }
+                    catch(InterruptedException e)
+                    {
+                        mLog.error("Buffer processor thread was interrupted");
+                    }
+                    catch(Exception e)
+                    {
+                        mLog.error("Error while processing element", e);
                     }
                 }
-                catch(InterruptedException e)
-                {
-                    mLog.error("Buffer processor thread was interrupted");
-                }
-                catch(Exception e)
-                {
-                    mLog.error("Error while processing element", e);
-                }
-            }
 
-            mQueue.clear();
+                mQueue.clear();
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Unexpected error thrown from the Dispatcher thread", t);
+            }
         }
     }
 }

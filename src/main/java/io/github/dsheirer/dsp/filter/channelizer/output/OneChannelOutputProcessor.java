@@ -19,10 +19,9 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class OneChannelOutputProcessor extends ChannelOutputProcessor
 {
@@ -80,7 +79,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * Extract the channel from the channel results array and pass to the assembler.  The assembler will
      * apply frequency translation and gain and indicate when a buffer is fully assembled.
      *
-     * @param lists to process containing a list of a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param channelResultsList to process containing a list of a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      */
     @Override
     public void process(List<float[]> channelResultsList)
