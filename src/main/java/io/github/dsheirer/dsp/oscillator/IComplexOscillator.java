@@ -33,7 +33,8 @@ public interface IComplexOscillator extends IOscillator
     /**
      * Generates the specified number of complex samples into a complex samples object.
      * @param sampleCount number of complex samples to generate.
+     * @param timestamp for the first sample
      * @return generated samples
      */
-    ComplexSamples generateComplexSamples(int sampleCount);
+    ComplexSamples generateComplexSamples(int sampleCount, long timestamp);
 }

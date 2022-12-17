@@ -22,35 +22,24 @@ package io.github.dsheirer.buffer;
 import io.github.dsheirer.sample.SampleUtils;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
-
 import java.util.Iterator;
 
 /**
  * Simple native buffer implementation that simply wraps a single, existing, non-native sample buffer.
  */
-public class FloatNativeBuffer implements INativeBuffer
+public class FloatNativeBuffer extends AbstractNativeBuffer
 {
     private float[] mInterleavedComplexSamples;
-    private long mTimestamp;
 
     /**
      * Constructs an instance
-     * @param complexSamples to wrap
+     * @param complexSamples interleaved to wrap
      * @param timestamp for the buffer
      */
-    public FloatNativeBuffer(float[] complexSamples, long timestamp)
+    public FloatNativeBuffer(float[] complexSamples, long timestamp, float samplesPerMillisecond)
     {
+        super(timestamp, samplesPerMillisecond);
         mInterleavedComplexSamples = complexSamples;
-        mTimestamp = timestamp;
-    }
-
-    /**
-     * Constructs an instance
-     * @param complexSamples to wrap
-     */
-    public FloatNativeBuffer(float[] complexSamples)
-    {
-        this(complexSamples, System.currentTimeMillis());
     }
 
     /**
@@ -58,9 +47,9 @@ public class FloatNativeBuffer implements INativeBuffer
      * @param samples to wrap
      * @param timestamp for the buffer
      */
-    public FloatNativeBuffer(ComplexSamples samples, long timestamp)
+    public FloatNativeBuffer(ComplexSamples samples)
     {
-        this(SampleUtils.interleave(samples), timestamp);
+        this(SampleUtils.interleave(samples), samples.timestamp(), 0.0f);
     }
 
     /**
@@ -69,7 +58,7 @@ public class FloatNativeBuffer implements INativeBuffer
      */
     public FloatNativeBuffer(InterleavedComplexSamples samples)
     {
-        this(samples.samples(), samples.timestamp());
+        this(samples.samples(), samples.timestamp(), 0.0f);
     }
 
     @Override
@@ -88,12 +77,6 @@ public class FloatNativeBuffer implements INativeBuffer
     public int sampleCount()
     {
         return mInterleavedComplexSamples.length / 2;
-    }
-
-    @Override
-    public long getTimestamp()
-    {
-        return mTimestamp;
     }
 
     private class ComplexSamplesIterator implements  Iterator<ComplexSamples>
@@ -115,7 +98,7 @@ public class FloatNativeBuffer implements INativeBuffer
             }
 
             mEmpty = true;
-            return SampleUtils.deinterleave(mInterleavedComplexSamples);
+            return SampleUtils.deinterleave(mInterleavedComplexSamples, getTimestamp());
         }
     }
 
@@ -139,7 +122,7 @@ public class FloatNativeBuffer implements INativeBuffer
             }
 
             mEmpty = true;
-            return new InterleavedComplexSamples(mInterleavedComplexSamples, mTimestamp);
+            return new InterleavedComplexSamples(mInterleavedComplexSamples, getTimestamp());
         }
     }
 }

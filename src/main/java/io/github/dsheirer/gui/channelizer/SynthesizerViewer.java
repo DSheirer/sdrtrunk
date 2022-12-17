@@ -34,6 +34,9 @@ import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.SpectrumPanel;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
 import io.github.dsheirer.util.ThreadPool;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.util.concurrent.TimeUnit;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +48,6 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.util.concurrent.TimeUnit;
 
 public class SynthesizerViewer extends JFrame
 {
@@ -281,15 +281,15 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void run()
         {
-            ComplexSamples channel1Buffer = getChannel1ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle);
-            ComplexSamples channel2Buffer = getChannel2ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle);
+            ComplexSamples channel1Buffer = getChannel1ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle, 0l);
+            ComplexSamples channel2Buffer = getChannel2ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle, 0l);
 
             ComplexSamples synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
-            getChannel1Panel().receive(new FloatNativeBuffer(channel1Buffer, System.currentTimeMillis()));
+            getChannel1Panel().receive(new FloatNativeBuffer(channel1Buffer));
 
-            getChannel2Panel().receive(new FloatNativeBuffer(channel2Buffer, System.currentTimeMillis()));
+            getChannel2Panel().receive(new FloatNativeBuffer(channel2Buffer));
 
-            getSpectrumPanel().receive(new FloatNativeBuffer(synthesizedBuffer, System.currentTimeMillis()));
+            getSpectrumPanel().receive(new FloatNativeBuffer(synthesizedBuffer));
         }
     }
 

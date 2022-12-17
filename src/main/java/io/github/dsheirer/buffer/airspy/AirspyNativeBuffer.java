@@ -19,23 +19,21 @@
 
 package io.github.dsheirer.buffer.airspy;
 
-import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.buffer.AbstractNativeBuffer;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.vector.calibrate.Implementation;
-
 import java.util.Iterator;
 
 /**
  * Native buffer scalar implementation for Airspy non-packed samples.
  */
-public class AirspyNativeBuffer implements INativeBuffer
+public class AirspyNativeBuffer extends AbstractNativeBuffer
 {
     private short[] mSamples;
     private short[] mResidualI;
     private short[] mResidualQ;
     private float mAverageDc;
-    private long mTimestamp;
     private Implementation mInterleavedImplementation;
     private Implementation mNonInterleavedImplementation;
 
@@ -48,11 +46,14 @@ public class AirspyNativeBuffer implements INativeBuffer
      * @param timestamp of the buffer
      * @param interleavedImplementation optimal, scalar vs vector SIMD
      * @param nonInterleavedImplementation optimal, scalar vs vector SIMD
+     * @param samplesPerMillisecond used to calculate sub-buffer fragment timestamp offsets from the start of this buffer.
      */
     public AirspyNativeBuffer(short[] samples, short[] residualI, short[] residualQ, float averageDc,
                               long timestamp, Implementation interleavedImplementation,
-                              Implementation nonInterleavedImplementation)
+                              Implementation nonInterleavedImplementation, float samplesPerMillisecond)
     {
+        super(timestamp, samplesPerMillisecond);
+
         //Ensure we're an even multiple of the fragment size.  Typically, this will be 64k or 128k
         if(samples.length % AirspyBufferIterator.FRAGMENT_SIZE != 0)
         {
@@ -64,7 +65,6 @@ public class AirspyNativeBuffer implements INativeBuffer
         mResidualI = residualI;
         mResidualQ = residualQ;
         mAverageDc = averageDc;
-        mTimestamp = timestamp;
         mInterleavedImplementation = interleavedImplementation;
         mNonInterleavedImplementation = nonInterleavedImplementation;
     }
@@ -76,21 +76,15 @@ public class AirspyNativeBuffer implements INativeBuffer
     }
 
     @Override
-    public long getTimestamp()
-    {
-        return mTimestamp;
-    }
-
-    @Override
     public Iterator<ComplexSamples> iterator()
     {
         return switch(mInterleavedImplementation)
         {
-            case VECTOR_SIMD_512 -> new AirspyBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            case VECTOR_SIMD_256-> new AirspyBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            case VECTOR_SIMD_128-> new AirspyBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            case VECTOR_SIMD_64 ->new AirspyBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            default -> new AirspyBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
+            case VECTOR_SIMD_512 -> new AirspyBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_256-> new AirspyBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_128-> new AirspyBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_64 ->new AirspyBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            default -> new AirspyBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
         };
     }
 
@@ -99,11 +93,11 @@ public class AirspyNativeBuffer implements INativeBuffer
     {
         return switch(mInterleavedImplementation)
         {
-            case VECTOR_SIMD_512 -> new AirspyInterleavedBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            case VECTOR_SIMD_256-> new AirspyInterleavedBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            case VECTOR_SIMD_128-> new AirspyInterleavedBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            case VECTOR_SIMD_64 ->new AirspyInterleavedBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
-            default -> new AirspyInterleavedBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, mTimestamp);
+            case VECTOR_SIMD_512 -> new AirspyInterleavedBufferIteratorVector512Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_256-> new AirspyInterleavedBufferIteratorVector256Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_128-> new AirspyInterleavedBufferIteratorVector128Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            case VECTOR_SIMD_64 ->new AirspyInterleavedBufferIteratorVector64Bits(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
+            default -> new AirspyInterleavedBufferIteratorScalar(mSamples, mResidualI, mResidualQ, mAverageDc, getTimestamp(), getSamplesPerMillisecond());
         };
     }
 }

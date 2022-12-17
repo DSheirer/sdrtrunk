@@ -27,6 +27,12 @@ import io.github.dsheirer.source.tuner.TunerFactory;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.DeviceHandle;
@@ -35,12 +41,6 @@ import org.usb4java.LibUsbException;
 
 import javax.usb.UsbDisconnectedException;
 import javax.usb.UsbException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * RTL-2832 tuner controller implementation.
@@ -953,6 +953,9 @@ public class RTL2832TunerController extends USBTunerController
             setSampleRateFilters(sampleRate.getRate());
             mSampleRate = sampleRate;
             mFrequencyController.setSampleRate(sampleRate.getRate());
+
+            //Updates native buffer factory so that sample buffers can be accurately timestamped
+            getNativeBufferFactory().setSamplesPerMillisecond(sampleRate.getRate() / 1000.0f);
         }
         finally
         {

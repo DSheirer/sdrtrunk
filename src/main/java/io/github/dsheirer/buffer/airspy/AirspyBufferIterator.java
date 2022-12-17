@@ -20,7 +20,6 @@
 package io.github.dsheirer.buffer.airspy;
 
 import io.github.dsheirer.dsp.filter.hilbert.HilbertTransform;
-
 import java.util.Iterator;
 
 /**
@@ -42,8 +41,9 @@ public abstract class AirspyBufferIterator<T> implements Iterator<T>
     protected float[] mQBuffer = new float[FRAGMENT_SIZE + Q_OVERLAP];
     protected short[] mSamples;
     protected int mSamplesPointer = 0;
-    protected long mTimestamp;
     protected float mAverageDc;
+    private long mTimestamp;
+    private float mSamplesPerMillisecond;
 
     /**
      * Constructs an instance
@@ -52,8 +52,10 @@ public abstract class AirspyBufferIterator<T> implements Iterator<T>
      * @param residualQ samples from previous buffer
      * @param averageDc as measured
      * @param timestamp of the buffer
+     * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
-    public AirspyBufferIterator(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp)
+    public AirspyBufferIterator(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp,
+                                float samplesPerMillisecond)
     {
         if(residualI.length != I_OVERLAP || residualQ.length != Q_OVERLAP)
         {
@@ -73,6 +75,7 @@ public abstract class AirspyBufferIterator<T> implements Iterator<T>
         mAverageDc = averageDc;
         mSamples = samples;
         mTimestamp = timestamp;
+        mSamplesPerMillisecond = samplesPerMillisecond;
 
         //Transfer and scale the residual I & Q samples from the previous buffer
         for(int i = 0; i < residualI.length; i++)
@@ -84,6 +87,17 @@ public abstract class AirspyBufferIterator<T> implements Iterator<T>
         {
             mQBuffer[q] = scale(residualQ[q], averageDc);
         }
+    }
+
+    /**
+     * Calculates the timestamp for a samples buffer fragment based on where it is extracted from relative to the
+     * native buffer starting timestamp.
+     * @param samplesPointer for the start of the fragment.  Note: this value will be divided by 2 to account for I/Q sample pairs.
+     * @return timestamp adjusted to the fragment or sub-buffer start sample.
+     */
+    protected long getFragmentTimestamp(int samplesPointer)
+    {
+        return mTimestamp + (long)(samplesPointer / 2 / mSamplesPerMillisecond);
     }
 
     @Override

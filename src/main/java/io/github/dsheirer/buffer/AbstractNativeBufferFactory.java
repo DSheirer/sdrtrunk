@@ -17,38 +17,28 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.dsp.gain.complex;
-
-import io.github.dsheirer.sample.complex.ComplexSamples;
+package io.github.dsheirer.buffer;
 
 /**
- * Scalar implementation of complex gain
+ * Base class for native buffer factories.
  */
-public class ScalarComplexGain extends ComplexGain
+public abstract class AbstractNativeBufferFactory implements INativeBufferFactory
 {
-    /**
-     * Constructs an instance
-     * @param gain to apply to complex samples
-     */
-    public ScalarComplexGain(float gain)
+    private float mSamplesPerMillisecond = 0.0f;
+
+    @Override
+    public void setSamplesPerMillisecond(float samplesPerMillisecond)
     {
-        super(gain);
+        mSamplesPerMillisecond = samplesPerMillisecond;
     }
 
     /**
-     * Applies gain to the complex samples buffer
-     * @param i samples to amplify
-     * @param q samples to amplify
-     * @return amplified samples
+     * Quantity of I/Q sample pairs per milli-second at the current sample rate to use in calculating an accurate
+     * timestamp for sub-buffer that are generated from the native buffer.
+     * @return samples per millisecond.
      */
-    @Override public ComplexSamples apply(float[] i, float[] q, long timestamp)
+    public float getSamplesPerMillisecond()
     {
-        for(int x = 0; x < i.length; x++)
-        {
-            i[x] *= mGain;
-            q[x] *= mGain;
-        }
-
-        return new ComplexSamples(i, q, timestamp);
+        return mSamplesPerMillisecond;
     }
 }

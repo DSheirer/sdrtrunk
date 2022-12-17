@@ -52,11 +52,12 @@ public class ScalarComplexMixer extends ComplexMixer
      * Mixes the complex I & Q samples with samples generated from an oscillator.
      * @param iSamples complex samples to mix
      * @param qSamples complex samples to mix
+     * @param timestamp of the first sample
      * @return mixed samples
      */
-    @Override public ComplexSamples mix(float[] iSamples, float[] qSamples)
+    @Override public ComplexSamples mix(float[] iSamples, float[] qSamples, long timestamp)
     {
-        ComplexSamples mixer = generate(iSamples.length);
+        ComplexSamples mixer = generate(iSamples.length, timestamp);
 
         float[] iMixer = mixer.i();
         float[] qMixer = mixer.q();
@@ -82,7 +83,7 @@ public class ScalarComplexMixer extends ComplexMixer
     @Override
     public ComplexSamples mix(InterleavedComplexSamples samples)
     {
-        ComplexSamples mixer = generate(samples.samples().length / 2);
+        ComplexSamples mixer = generate(samples.samples().length / 2, samples.timestamp());
 
         float[] iMixer = mixer.i();
         float[] qMixer = mixer.q();

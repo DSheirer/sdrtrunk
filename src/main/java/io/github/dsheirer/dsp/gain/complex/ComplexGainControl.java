@@ -18,12 +18,8 @@
  */
 package io.github.dsheirer.dsp.gain.complex;
 
-import io.github.dsheirer.sample.SampleUtils;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSamples;
-
-import java.text.DecimalFormat;
-import java.util.Arrays;
 
 public class ComplexGainControl implements IComplexGainControl
 {
@@ -48,9 +44,10 @@ public class ComplexGainControl implements IComplexGainControl
      * gain for the single sample in the buffer that has the largest envelope.
      * @param i samples
      * @param q samples
+     * @param timestamp of the first sample
      * @return processed/amplified buffer
      */
-    @Override public ComplexSamples process(float[] i, float[] q)
+    @Override public ComplexSamples process(float[] i, float[] q, long timestamp)
     {
         float maxEnvelope = MINIMUM_ENVELOPE;
 
@@ -70,45 +67,6 @@ public class ComplexGainControl implements IComplexGainControl
             qProcessed[x] = q[x] * gain;
         }
 
-        return new ComplexSamples(iProcessed, qProcessed);
-    }
-
-    public static void main(String[] args)
-    {
-        int sampleSize = 2048;
-        ComplexSamples samples = SampleUtils.generateComplexRandomVectorLength(sampleSize);
-        ComplexGainControl scalar = new ComplexGainControl();
-        VectorComplexGainControl vector = new VectorComplexGainControl();
-
-        boolean validate = false;
-
-        if(validate)
-        {
-            ComplexSamples scalarSamples = scalar.process(samples.i(), samples.q());
-            ComplexSamples vectorSamples = vector.process(samples.i(), samples.q());
-
-            System.out.println("SCALAR I: " + Arrays.toString(scalarSamples.i()));
-            System.out.println("VECTOR I: " + Arrays.toString(vectorSamples.i()));
-            System.out.println("SCALAR Q: " + Arrays.toString(scalarSamples.q()));
-            System.out.println("VECTOR Q: " + Arrays.toString(vectorSamples.q()));
-        }
-        else
-        {
-            double accumulator = 0.0d;
-            int iterations = 10_000_000;
-            long start = System.currentTimeMillis();
-
-            for(int x = 0; x < iterations; x++)
-            {
-//                ComplexSamples processed = scalar.process(samples.i(), samples.q());
-                ComplexSamples processed = vector.process(samples.i(), samples.q());
-                accumulator += processed.i()[3];
-            }
-
-            double elapsed = System.currentTimeMillis() - start;
-            DecimalFormat df = new DecimalFormat("0.000");
-            System.out.println("Accumulator: " + accumulator);
-            System.out.println("Test Complete.  Elapsed Time: " + df.format(elapsed / 1000.0d) + " seconds");
-        }
+        return new ComplexSamples(iProcessed, qProcessed, timestamp);
     }
 }

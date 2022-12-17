@@ -28,7 +28,6 @@ import java.util.Iterator;
 public class ComplexSamplesNativeBufferAdapter implements INativeBuffer
 {
     private ComplexSamples mComplexSamples;
-    private long mTimestamp = System.currentTimeMillis();
 
     /**
      * Constructs an instance
@@ -60,7 +59,7 @@ public class ComplexSamplesNativeBufferAdapter implements INativeBuffer
     @Override
     public long getTimestamp()
     {
-        return mTimestamp;
+        return mComplexSamples.timestamp();
     }
 
     /**

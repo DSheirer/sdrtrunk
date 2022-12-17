@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Implements a factory for creating SignedByteNativeBuffer instances
  */
-public class SignedByteNativeBufferFactory implements INativeBufferFactory
+public class SignedByteNativeBufferFactory extends AbstractNativeBufferFactory
 {
     /**
      * DC removal calculations will run once a minute
@@ -78,7 +78,7 @@ public class SignedByteNativeBufferFactory implements INativeBufferFactory
             calculateDc(copy);
         }
 
-        return new SignedByteNativeBuffer(copy, timestamp, mIAverageDc, mQAverageDc);
+        return new SignedByteNativeBuffer(copy, timestamp, mIAverageDc, mQAverageDc, getSamplesPerMillisecond());
     }
 
     /**

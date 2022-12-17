@@ -96,7 +96,7 @@ public class ScalarComplexOscillator extends AbstractOscillator implements IComp
     }
 
     @Override
-    public ComplexSamples generateComplexSamples(int sampleCount)
+    public ComplexSamples generateComplexSamples(int sampleCount, long timestamp)
     {
         float[] iSamples = new float[sampleCount];
         float[] qSamples = new float[sampleCount];
@@ -133,6 +133,6 @@ public class ScalarComplexOscillator extends AbstractOscillator implements IComp
         mPreviousInphase = previousInphase;
         mPreviousQuadrature = previousQuadrature;
 
-        return new ComplexSamples(iSamples, qSamples);
+        return new ComplexSamples(iSamples, qSamples, timestamp);
     }
 }

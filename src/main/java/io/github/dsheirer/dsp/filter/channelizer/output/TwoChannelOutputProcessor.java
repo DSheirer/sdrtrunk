@@ -90,7 +90,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * Extract the channel from the channel results array, apply frequency translation, and deliver the
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
-     * @param lists to process containing a list of a list of an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param channelResultsList to process containing a list of a list of an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      */
     @Override
     public void process(List<float[]> channelResultsList)
@@ -102,7 +102,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 
             if(mMixerAssembler.hasBuffer())
             {
-                ComplexSamples buffer = mMixerAssembler.getBuffer();
+                ComplexSamples buffer = mMixerAssembler.getBuffer(getCurrentSampleTimestamp());
 
                 if(mComplexSamplesListener != null)
                 {

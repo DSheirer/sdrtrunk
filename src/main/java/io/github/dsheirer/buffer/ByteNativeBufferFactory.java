@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 /**
  * Implements a factory for creating ByteNativeBuffer instances
  */
-public class ByteNativeBufferFactory implements INativeBufferFactory
+public class ByteNativeBufferFactory extends AbstractNativeBufferFactory
 {
     private DcCorrectionManager mDcCorrectionManager = new DcCorrectionManager();
 
@@ -39,7 +39,7 @@ public class ByteNativeBufferFactory implements INativeBufferFactory
             calculateDc(copy);
         }
 
-        return new ByteNativeBuffer(copy, timestamp, mDcCorrectionManager.getAverageDc());
+        return new ByteNativeBuffer(copy, timestamp, mDcCorrectionManager.getAverageDc(), getSamplesPerMillisecond());
     }
 
     /**

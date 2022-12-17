@@ -33,7 +33,15 @@ public interface INativeBufferFactory
      *
      * @param samples byte array copied from native memory
      * @param timestamp of the samples
+     * @param samplesPerMillisecond to calculate timestamp offset for child buffers.
      * @return instance
      */
     INativeBuffer getBuffer(ByteBuffer samples, long timestamp);
+
+    /**
+     * Sets the samples per millisecond rate based on the current sample rate.
+     *
+     * @param samplesPerMillisecond to calculate timestamp offset for child buffers.
+     */
+    void setSamplesPerMillisecond(float samplesPerMillisecond);
 }

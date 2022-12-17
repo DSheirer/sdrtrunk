@@ -65,7 +65,8 @@ public abstract class MixerAssembler
 
     /**
      * Access the fully assembled buffer when hasBuffer() indicates that a buffer is ready.
+     * @param timestamp to use for the assembled complex samples buffer
      * @return true if a full buffer is assembled and ready.
      */
-    public abstract ComplexSamples getBuffer();
+    public abstract ComplexSamples getBuffer(long timestamp);
 }

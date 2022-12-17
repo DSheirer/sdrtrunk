@@ -25,6 +25,10 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.EnumSet;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,10 +36,6 @@ import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import javax.usb.UsbException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
-import java.util.EnumSet;
 
 public class HackRFTunerController extends USBTunerController
 {
@@ -404,6 +404,7 @@ public class HackRFTunerController extends USBTunerController
         mFrequencyController.setSampleRate(rate.getRate());
         setBasebandFilter(rate.getFilter());
         mSampleRate = rate;
+        getNativeBufferFactory().setSamplesPerMillisecond((float)getSampleRate() / 1000.0f);
     }
 
     public void setSampleRateManual(int frequency, int divider) throws UsbException

@@ -255,7 +255,7 @@ public class HilbertCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples complex = mScalar.filter(samples);
+            ComplexSamples complex = mScalar.filter(samples, start);
             accumulator += complex.i()[0];
             count++;
         }
@@ -272,7 +272,7 @@ public class HilbertCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples complex = mVectorPreferred.filter(samples);
+            ComplexSamples complex = mVectorPreferred.filter(samples, start);
             accumulator += complex.i()[0];
             count++;
         }
@@ -289,7 +289,7 @@ public class HilbertCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples complex = mVector512.filter(samples);
+            ComplexSamples complex = mVector512.filter(samples, start);
             accumulator += complex.i()[0];
             count++;
         }
@@ -306,7 +306,7 @@ public class HilbertCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples complex = mVector256.filter(samples);
+            ComplexSamples complex = mVector256.filter(samples, start);
             accumulator += complex.i()[0];
             count++;
         }
@@ -323,7 +323,7 @@ public class HilbertCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples complex = mVector128.filter(samples);
+            ComplexSamples complex = mVector128.filter(samples, start);
             accumulator += complex.i()[0];
             count++;
         }
@@ -340,7 +340,7 @@ public class HilbertCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples complex = mVector64.filter(samples);
+            ComplexSamples complex = mVector64.filter(samples, start);
             accumulator += complex.i()[0];
             count++;
         }

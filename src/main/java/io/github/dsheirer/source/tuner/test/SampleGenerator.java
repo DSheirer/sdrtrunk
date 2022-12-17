@@ -25,12 +25,11 @@ import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 public class SampleGenerator
 {
@@ -189,7 +188,7 @@ public class SampleGenerator
 
                     long now = System.currentTimeMillis();
 
-                    FloatNativeBuffer buffer = new FloatNativeBuffer(samples, now);
+                    FloatNativeBuffer buffer = new FloatNativeBuffer(samples, now, 0.0f);
 
                     mNativeBufferBroadcaster.broadcast(buffer);
 

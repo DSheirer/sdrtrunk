@@ -21,9 +21,8 @@ package io.github.dsheirer.sample;
 
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSamples;
-import org.apache.commons.math3.util.FastMath;
-
 import java.util.Random;
+import org.apache.commons.math3.util.FastMath;
 
 public class SampleUtils
 {
@@ -33,9 +32,10 @@ public class SampleUtils
 	 * Converts from an interleaved complex sample array to a sample record with the
 	 * I and Q in separate arrays.
 	 * @param samples that are interleaved complex samples
+	 * @param timestamp of the samples
 	 * @return deinterleaved complex samples instance
 	 */
-	public static ComplexSamples deinterleave(float[] samples)
+	public static ComplexSamples deinterleave(float[] samples, long timestamp)
 	{
 		float[] i = new float[samples.length / 2];
 		float[] q = new float[samples.length / 2];
@@ -49,7 +49,7 @@ public class SampleUtils
 			q[x] = samples[offset + 1];
 		}
 
-		return new ComplexSamples(i, q);
+		return new ComplexSamples(i, q, timestamp);
 	}
 
 	/**
@@ -94,7 +94,7 @@ public class SampleUtils
 			q[x] = (float)Math.sin(angle);
 		}
 
-		return new ComplexSamples(i, q);
+		return new ComplexSamples(i, q, System.currentTimeMillis());
 	}
 
 	/**
@@ -119,7 +119,7 @@ public class SampleUtils
 			q[x] *= gain;
 		}
 
-		return new ComplexSamples(i, q);
+		return new ComplexSamples(i, q, System.currentTimeMillis());
 	}
 
     public static Complex multiply(Complex a, Complex b)

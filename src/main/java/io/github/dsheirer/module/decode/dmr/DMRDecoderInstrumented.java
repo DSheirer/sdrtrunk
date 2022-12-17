@@ -53,20 +53,20 @@ public class DMRDecoderInstrumented extends DMRDecoder
     @Override
     public void receive(ComplexSamples samples)
     {
-        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+        mMessageFramer.setCurrentTime(samples.timestamp());
 
         float[] i = mIBasebandFilter.filter(samples.i());
         float[] q = mQBasebandFilter.filter(samples.q());
 
         if(mFilteredSymbolListener != null)
         {
-            mFilteredSymbolListener.receive(new ComplexSamples(i, q));
+            mFilteredSymbolListener.receive(new ComplexSamples(i, q, samples.timestamp()));
         }
 
         //Process buffer for power measurements
         mPowerMonitor.process(i, q);
 
-        ComplexSamples amplified = mAGC.process(i, q);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
     }
 

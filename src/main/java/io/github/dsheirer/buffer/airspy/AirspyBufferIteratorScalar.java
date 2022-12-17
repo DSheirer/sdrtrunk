@@ -20,7 +20,6 @@
 package io.github.dsheirer.buffer.airspy;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
-
 import java.util.Arrays;
 
 /**
@@ -36,10 +35,11 @@ public class AirspyBufferIteratorScalar extends AirspyBufferIterator<ComplexSamp
      * @param residualQ samples from last buffer
      * @param averageDc measured
      * @param timestamp of the buffer
+     * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
-    public AirspyBufferIteratorScalar(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp)
+    public AirspyBufferIteratorScalar(short[] samples, short[] residualI, short[] residualQ, float averageDc, long timestamp, float samplesPerMillisecond)
     {
-        super(samples, residualI, residualQ, averageDc, timestamp);
+        super(samples, residualI, residualQ, averageDc, timestamp, samplesPerMillisecond);
     }
 
     @Override
@@ -49,6 +49,8 @@ public class AirspyBufferIteratorScalar extends AirspyBufferIterator<ComplexSamp
         {
             throw new IllegalStateException("End of buffer exceeded");
         }
+
+        long timestamp = getFragmentTimestamp(mSamplesPointer);
 
         int offset = mSamplesPointer;
 
@@ -91,6 +93,6 @@ public class AirspyBufferIteratorScalar extends AirspyBufferIterator<ComplexSamp
         System.arraycopy(mIBuffer, FRAGMENT_SIZE, mIBuffer, 0, I_OVERLAP);
         System.arraycopy(mQBuffer, FRAGMENT_SIZE, mQBuffer, 0, Q_OVERLAP);
 
-        return new ComplexSamples(i, q);
+        return new ComplexSamples(i, q, timestamp);
     }
 }

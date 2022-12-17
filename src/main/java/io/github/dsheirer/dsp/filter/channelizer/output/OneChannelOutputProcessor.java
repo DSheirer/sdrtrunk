@@ -90,7 +90,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
 
             if(mMixerAssembler.hasBuffer())
             {
-                ComplexSamples buffer = mMixerAssembler.getBuffer();
+                ComplexSamples buffer = mMixerAssembler.getBuffer(getCurrentSampleTimestamp());
 
                 if(mComplexSamplesListener != null)
                 {

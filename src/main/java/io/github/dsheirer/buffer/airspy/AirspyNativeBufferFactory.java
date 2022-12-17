@@ -19,19 +19,18 @@
 
 package io.github.dsheirer.buffer.airspy;
 
+import io.github.dsheirer.buffer.AbstractNativeBufferFactory;
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.INativeBufferFactory;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
 import io.github.dsheirer.vector.calibrate.CalibrationType;
 import io.github.dsheirer.vector.calibrate.Implementation;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
  * Implements a factory for creating SignedByteNativeBuffer instances
  */
-public class AirspyNativeBufferFactory implements INativeBufferFactory
+public class AirspyNativeBufferFactory extends AbstractNativeBufferFactory
 {
     private boolean mSamplePacking = false;
     private short[] mResidualI = new short[AirspyBufferIterator.I_OVERLAP];
@@ -106,7 +105,7 @@ public class AirspyNativeBufferFactory implements INativeBufferFactory
         INativeBuffer nativeBuffer = new AirspyNativeBuffer(samples,
                 Arrays.copyOf(mResidualI, mResidualI.length),
                 Arrays.copyOf(mResidualQ, mResidualQ.length), mConverter.getAverageDc(), timestamp,
-                mInterleavedIteratorImplementation, mNonInterleavedIteratorImplementation);
+                mInterleavedIteratorImplementation, mNonInterleavedIteratorImplementation, getSamplesPerMillisecond());
 
         extractResidual(samples);
 
