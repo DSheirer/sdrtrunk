@@ -20,15 +20,17 @@ package io.github.dsheirer.source.tuner.manager;
 
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
-
 import java.util.SortedSet;
 import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Calculates tuner center frequency for a set of tuner channels.
  */
 public class CenterFrequencyCalculator
 {
+    private static final Logger mLog = LoggerFactory.getLogger(CenterFrequencyCalculator.class);
     public static final long INVALID_FREQUENCY = -1;
 
     /**
@@ -145,7 +147,20 @@ public class CenterFrequencyCalculator
             }
             else
             {
-                SortedSet<TunerChannel> allChannels = new TreeSet<>(channels);
+                SortedSet<TunerChannel> allChannels = new TreeSet<>();
+
+                for(TunerChannel tunerChannel: allChannels)
+                {
+                    if(tunerChannel != null)
+                    {
+                        allChannels.add(tunerChannel);
+                    }
+                    else
+                    {
+                        mLog.error("Null tuner channel encountered - continuing");
+                    }
+                }
+
                 allChannels.add(channel);
 
                 //If the bandwidth of the channel set is less than or equal to the tuner's usable bandwidth, then
