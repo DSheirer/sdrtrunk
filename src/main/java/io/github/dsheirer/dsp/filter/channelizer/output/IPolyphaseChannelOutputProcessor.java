@@ -36,8 +36,9 @@ public interface IPolyphaseChannelOutputProcessor
     /**
      * Receive and enqueue output results from the polyphase analysis channelizer
      * @param channelResults to enqueue
+     * @param timestamp for the first channel results buffer
      */
-    void receiveChannelResults(List<float[]> channelResults);
+    void receiveChannelResults(List<float[]> channelResults, long timestamp);
 
     /**
      * Listener to receive assembled complex samples buffers

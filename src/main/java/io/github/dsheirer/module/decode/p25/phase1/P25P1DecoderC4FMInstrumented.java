@@ -49,20 +49,20 @@ public class P25P1DecoderC4FMInstrumented extends P25P1DecoderC4FM
     @Override
     public void receive(ComplexSamples samples)
     {
-        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+        mMessageFramer.setCurrentTime(samples.timestamp());
 
         float[] i = mIBasebandFilter.filter(samples.i());
         float[] q = mQBasebandFilter.filter(samples.q());
 
         if(mFilteredSymbolListener != null)
         {
-            mFilteredSymbolListener.receive(new ComplexSamples(i, q));
+            mFilteredSymbolListener.receive(new ComplexSamples(i, q, samples.timestamp()));
         }
 
         //Process the buffer for power meter measurements (before gain is applied)
         mPowerMonitor.process(i, q);
 
-        ComplexSamples amplified = mAGC.process(i, q);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
     }
 

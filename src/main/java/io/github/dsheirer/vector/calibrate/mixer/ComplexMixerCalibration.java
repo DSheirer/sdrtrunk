@@ -115,7 +115,7 @@ public class ComplexMixerCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples mixed = mScalarComplexMixer.mix(i, q);
+            ComplexSamples mixed = mScalarComplexMixer.mix(i, q, start);
             accumulator += mixed.i()[2];
             count++;
         }
@@ -131,7 +131,7 @@ public class ComplexMixerCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples mixed = mVectorComplexMixer.mix(i, q);
+            ComplexSamples mixed = mVectorComplexMixer.mix(i, q, start);
             accumulator += mixed.i()[2];
             count++;
         }

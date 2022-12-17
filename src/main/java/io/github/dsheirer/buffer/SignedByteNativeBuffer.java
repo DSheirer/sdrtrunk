@@ -21,14 +21,13 @@ package io.github.dsheirer.buffer;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
-
 import java.util.Iterator;
 
 /**
  * Native buffer sample array wrapper class that provides access to a stream of either interleaved or
  * non-interleaved complex sample buffers converted from the raw byte sample array.
  */
-public class SignedByteNativeBuffer implements INativeBuffer
+public class SignedByteNativeBuffer extends AbstractNativeBuffer
 {
     private static final int FRAGMENT_SIZE = 2048;
     private final static float[] LOOKUP_VALUES;
@@ -47,7 +46,6 @@ public class SignedByteNativeBuffer implements INativeBuffer
     }
 
     private byte[] mSamples;
-    private long mTimestamp;
     private float mIAverageDc;
     private float mQAverageDc;
 
@@ -57,9 +55,12 @@ public class SignedByteNativeBuffer implements INativeBuffer
      * @param timestamp of the samples
      * @param iAverageDc of the sample stream
      * @param qAverageDc of the sample stream
+     * @param samplesPerMillisecond to calculate sub-buffer timestamps
      */
-    public SignedByteNativeBuffer(byte[] samples, long timestamp, float iAverageDc, float qAverageDc)
+    public SignedByteNativeBuffer(byte[] samples, long timestamp, float iAverageDc, float qAverageDc, float samplesPerMillisecond)
     {
+        super(timestamp, samplesPerMillisecond);
+
         //Ensure we're an even multiple of the fragment size.  Typically, this will be 64k or 128k
         if(samples.length % FRAGMENT_SIZE != 0)
         {
@@ -67,15 +68,8 @@ public class SignedByteNativeBuffer implements INativeBuffer
         }
 
         mSamples = samples;
-        mTimestamp = timestamp;
         mIAverageDc = iAverageDc;
         mQAverageDc = qAverageDc;
-    }
-
-    @Override
-    public long getTimestamp()
-    {
-        return mTimestamp;
     }
 
     @Override
@@ -112,6 +106,8 @@ public class SignedByteNativeBuffer implements INativeBuffer
         @Override
         public ComplexSamples next()
         {
+            long timestamp = getFragmentTimestamp(mSamplesPointer);
+
             float[] i = new float[FRAGMENT_SIZE];
             float[] q = new float[FRAGMENT_SIZE];
             int samplesOffset = mSamplesPointer;
@@ -123,7 +119,7 @@ public class SignedByteNativeBuffer implements INativeBuffer
             }
 
             mSamplesPointer = samplesOffset;
-            return new ComplexSamples(i, q);
+            return new ComplexSamples(i, q, timestamp);
         }
     }
 
@@ -143,6 +139,8 @@ public class SignedByteNativeBuffer implements INativeBuffer
         @Override
         public InterleavedComplexSamples next()
         {
+            long timestamp = getFragmentTimestamp(mSamplesPointer);
+
             float[] converted = new float[FRAGMENT_SIZE * 2];
 
             int samplesOffset = mSamplesPointer;
@@ -155,7 +153,7 @@ public class SignedByteNativeBuffer implements INativeBuffer
 
             mSamplesPointer = samplesOffset;
 
-            return new InterleavedComplexSamples(converted, mTimestamp);
+            return new InterleavedComplexSamples(converted, timestamp);
         }
     }
 }

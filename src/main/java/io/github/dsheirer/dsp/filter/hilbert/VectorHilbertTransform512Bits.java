@@ -22,11 +22,10 @@ package io.github.dsheirer.dsp.filter.hilbert;
 import io.github.dsheirer.sample.SampleUtils;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.vector.VectorUtilities;
+import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
-
-import java.util.Arrays;
 
 /**
  * Implements a Hilbert transform using vector SIMD operations against a pre-defined 47-tap filter.
@@ -53,9 +52,10 @@ public class VectorHilbertTransform512Bits extends HilbertTransform
     /**
      * Filters the real samples array into complex samples at half the sample rate.
      * @param realSamples to filter
+     * @param timestamp of the first sample
      * @return complex samples at half the sample rate
      */
-    public ComplexSamples filter(float[] realSamples)
+    public ComplexSamples filter(float[] realSamples, long timestamp)
     {
         int bufferLength = realSamples.length / 2;
 
@@ -70,7 +70,7 @@ public class VectorHilbertTransform512Bits extends HilbertTransform
             mQBuffer = qTemp;
         }
 
-        ComplexSamples deinterleaved = SampleUtils.deinterleave(realSamples);
+        ComplexSamples deinterleaved = SampleUtils.deinterleave(realSamples, timestamp);
         VectorUtilities.checkComplexArrayLength(deinterleaved.i(), deinterleaved.q(), VECTOR_SPECIES);
 
         System.arraycopy(deinterleaved.i(), 0, mIBuffer, mIOverlap, deinterleaved.i().length);
@@ -103,6 +103,6 @@ public class VectorHilbertTransform512Bits extends HilbertTransform
         System.arraycopy(mIBuffer, mIBuffer.length - mIOverlap, mIBuffer, 0, mIOverlap);
         System.arraycopy(mQBuffer, mQBuffer.length - mQOverlap, mQBuffer, 0, mQOverlap);
 
-        return new ComplexSamples(i, q);
+        return new ComplexSamples(i, q, timestamp);
     }
 }

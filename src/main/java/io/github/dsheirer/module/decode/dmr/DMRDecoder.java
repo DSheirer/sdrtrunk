@@ -42,12 +42,11 @@ import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DMR decoder module.
@@ -147,7 +146,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     @Override
     public void receive(ComplexSamples samples)
     {
-        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+        mMessageFramer.setCurrentTime(samples.timestamp());
 
         float[] i = mIBasebandFilter.filter(samples.i());
         float[] q = mQBasebandFilter.filter(samples.q());
@@ -155,7 +154,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
         //Process buffer for power measurements
         mPowerMonitor.process(i, q);
 
-        ComplexSamples amplified = mAGC.process(i, q);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
     }
 

@@ -28,14 +28,14 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.Dispatcher;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sound.sampled.AudioFormat;
 
 /**
  * WAVE audio recorder module for recording complex (I&Q) samples to a wave file
@@ -46,7 +46,7 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
 
     private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>(500,
-            "sdrtrunk complex wave recorder", new ComplexSamples(new float[0], new float[0]));
+            "sdrtrunk complex wave recorder", new ComplexSamples(new float[0], new float[0], System.currentTimeMillis()));
 
     private AtomicBoolean mRunning = new AtomicBoolean();
     private BufferWaveWriter mWriter;

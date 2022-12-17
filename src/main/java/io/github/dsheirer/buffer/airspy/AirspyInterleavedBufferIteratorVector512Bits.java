@@ -40,11 +40,12 @@ public class AirspyInterleavedBufferIteratorVector512Bits extends AirspyBufferIt
      * @param residualQ samples from last buffer
      * @param averageDc measured
      * @param timestamp of the buffer
+     * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
     public AirspyInterleavedBufferIteratorVector512Bits(short[] samples, short[] residualI, short[] residualQ, float averageDc,
-                                                        long timestamp)
+                                                        long timestamp, float samplesPerMillisecond)
     {
-        super(samples, residualI, residualQ, averageDc, timestamp);
+        super(samples, residualI, residualQ, averageDc, timestamp, samplesPerMillisecond);
 
         //Arrange the last 8 taps of the filter into the higher indices of an array to align for SIMD
         mFilterPart2 = new float[16];
@@ -59,6 +60,7 @@ public class AirspyInterleavedBufferIteratorVector512Bits extends AirspyBufferIt
             throw new IllegalStateException("End of buffer exceeded");
         }
 
+        long timestamp = getFragmentTimestamp(mSamplesPointer);
         int offset = mSamplesPointer;
         int fragmentPointer = 0;
         float[] scaledSamples = new float[VECTOR_SPECIES.length()];
@@ -115,6 +117,6 @@ public class AirspyInterleavedBufferIteratorVector512Bits extends AirspyBufferIt
         System.arraycopy(mIBuffer, FRAGMENT_SIZE, mIBuffer, 0, I_OVERLAP);
         System.arraycopy(mQBuffer, FRAGMENT_SIZE, mQBuffer, 0, Q_OVERLAP);
 
-        return new InterleavedComplexSamples(samples, mTimestamp);
+        return new InterleavedComplexSamples(samples, timestamp);
     }
 }

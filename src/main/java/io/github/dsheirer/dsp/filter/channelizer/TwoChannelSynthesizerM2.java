@@ -156,7 +156,7 @@ public class TwoChannelSynthesizerM2
             mTopBlockFlag = !mTopBlockFlag;
         }
 
-        return new ComplexSamples(i, q);
+        return new ComplexSamples(i, q, channelBuffer1.timestamp());
     }
 
     /**

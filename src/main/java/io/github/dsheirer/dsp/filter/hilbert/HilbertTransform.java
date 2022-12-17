@@ -80,9 +80,10 @@ public abstract class HilbertTransform
     /**
      * Converts the real sample array to complex samples as half the sample rate
      * @param samples to convert
+     * @param timestamp of the first sample
      * @return converted samples
      */
-    public abstract ComplexSamples filter(float[] samples);
+    public abstract ComplexSamples filter(float[] samples, long timestamp);
 
     /**
      * Converts the half-band filter coefficients for use as hilbert transform filter coefficients.  Sets all

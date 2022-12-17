@@ -46,6 +46,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
     private long mChannelFrequencyCorrection;
+    private long mCurrentSamplesTimestamp;
     private ReentrantLock mOutputProcessorLock = new ReentrantLock();
 
     /**
@@ -106,6 +107,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     public void receive(ComplexSamples complexSamples)
     {
         mStreamHeartbeatProcessor.receive(complexSamples);
+        mCurrentSamplesTimestamp = complexSamples.timestamp();
     }
 
     /**
@@ -222,7 +224,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
         {
             if(mPolyphaseChannelOutputProcessor != null)
             {
-                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList);
+                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList, mCurrentSamplesTimestamp);
             }
         }
         finally

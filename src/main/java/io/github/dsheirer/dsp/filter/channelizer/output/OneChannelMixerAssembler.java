@@ -61,9 +61,9 @@ public class OneChannelMixerAssembler extends MixerAssembler
      * @return assembled buffer.
      */
     @Override
-    public ComplexSamples getBuffer()
+    public ComplexSamples getBuffer(long timestamp)
     {
-        ComplexSamples buffer = mSampleAssembler.getBufferAndReset();
+        ComplexSamples buffer = mSampleAssembler.getBufferAndReset(timestamp);
 
         if(getMixer().hasFrequency())
         {

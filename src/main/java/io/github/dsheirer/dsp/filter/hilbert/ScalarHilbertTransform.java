@@ -23,7 +23,6 @@ import io.github.dsheirer.dsp.oscillator.IRealOscillator;
 import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.sample.SampleUtils;
 import io.github.dsheirer.sample.complex.ComplexSamples;
-
 import java.util.Arrays;
 
 /**
@@ -35,9 +34,10 @@ public class ScalarHilbertTransform extends HilbertTransform
     /**
      * Filters the real samples array into complex samples at half the sample rate.
      * @param realSamples to filter
+     * @param timestamp of the first sample
      * @return complex samples at half the sample rate
      */
-    public ComplexSamples filter(float[] realSamples)
+    public ComplexSamples filter(float[] realSamples, long timestamp)
     {
         int bufferLength = realSamples.length / 2;
 
@@ -52,7 +52,7 @@ public class ScalarHilbertTransform extends HilbertTransform
             mQBuffer = qTemp;
         }
 
-        ComplexSamples deinterleaved = SampleUtils.deinterleave(realSamples);
+        ComplexSamples deinterleaved = SampleUtils.deinterleave(realSamples, timestamp);
         System.arraycopy(deinterleaved.i(), 0, mIBuffer, mIOverlap, deinterleaved.i().length);
         System.arraycopy(deinterleaved.q(), 0, mQBuffer, mQOverlap, deinterleaved.q().length);
 
@@ -78,7 +78,7 @@ public class ScalarHilbertTransform extends HilbertTransform
         System.arraycopy(mIBuffer, mIBuffer.length - mIOverlap, mIBuffer, 0, mIOverlap);
         System.arraycopy(mQBuffer, mQBuffer.length - mQOverlap, mQBuffer, 0, mQOverlap);
 
-        return new ComplexSamples(i, q);
+        return new ComplexSamples(i, q, timestamp);
     }
 
     public static void main(String[] args)
@@ -104,8 +104,8 @@ public class ScalarHilbertTransform extends HilbertTransform
 
         if(validate)
         {
-            ComplexSamples scalar = hilbertTransform.filter(realSamples);
-            ComplexSamples vector = vector512.filter(realSamples);
+            ComplexSamples scalar = hilbertTransform.filter(realSamples, 0l);
+            ComplexSamples vector = vector512.filter(realSamples, start);
 
             System.out.println("SI: " + Arrays.toString(scalar.i()));
             System.out.println("VI: " + Arrays.toString(vector.i()));
@@ -119,7 +119,7 @@ public class ScalarHilbertTransform extends HilbertTransform
             {
 //            ComplexSamples filtered = hilbertTransform.filter(realSamples);
 //            ComplexSamples filtered = vectorDefault.filter(realSamples);
-                ComplexSamples filtered = vector512.filter(realSamples);
+                ComplexSamples filtered = vector512.filter(realSamples, start);
 //            ComplexSamples filtered = vector256.filter(realSamples);
 //            ComplexSamples filtered = vector128.filter(realSamples);
 //            ComplexSamples filtered = vector64.filter(realSamples);

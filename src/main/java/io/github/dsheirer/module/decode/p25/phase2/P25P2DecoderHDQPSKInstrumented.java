@@ -71,7 +71,7 @@ public class P25P2DecoderHDQPSKInstrumented extends P25P2DecoderHDQPSK
         //Process the buffer for power measurements
         mPowerMonitor.process(i, q);
 
-        ComplexSamples amplified = mAGC.process(i, q);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
     }
 

@@ -34,11 +34,12 @@ public class AirspyInterleavedBufferIteratorScalar extends AirspyBufferIterator<
      * @param residualQ samples from last buffer
      * @param averageDc measured
      * @param timestamp of the buffer
+     * @param samplesPerMillisecond to calculate sub-buffer fragment timestamps
      */
     public AirspyInterleavedBufferIteratorScalar(short[] samples, short[] residualI, short[] residualQ, float averageDc,
-                                                 long timestamp)
+                                                 long timestamp, float samplesPerMillisecond)
     {
-        super(samples, residualI, residualQ, averageDc, timestamp);
+        super(samples, residualI, residualQ, averageDc, timestamp, samplesPerMillisecond);
     }
 
     @Override
@@ -49,6 +50,7 @@ public class AirspyInterleavedBufferIteratorScalar extends AirspyBufferIterator<
             throw new IllegalStateException("End of buffer exceeded");
         }
 
+        long timestamp = getFragmentTimestamp(mSamplesPointer);
         int offset = mSamplesPointer;
 
         for(int x = 0; x < FRAGMENT_SIZE; x++)
@@ -89,6 +91,6 @@ public class AirspyInterleavedBufferIteratorScalar extends AirspyBufferIterator<
         System.arraycopy(mIBuffer, FRAGMENT_SIZE, mIBuffer, 0, I_OVERLAP);
         System.arraycopy(mQBuffer, FRAGMENT_SIZE, mQBuffer, 0, Q_OVERLAP);
 
-        return new InterleavedComplexSamples(samples, mTimestamp);
+        return new InterleavedComplexSamples(samples, timestamp);
     }
 }

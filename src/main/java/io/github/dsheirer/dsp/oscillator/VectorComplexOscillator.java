@@ -21,13 +21,12 @@ package io.github.dsheirer.dsp.oscillator;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.vector.VectorUtilities;
+import java.util.Arrays;
 import jdk.incubator.vector.FloatVector;
 import jdk.incubator.vector.VectorSpecies;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 /**
  * Complex oscillator that uses JDK17 SIMD vector operations to generate complex sample arrays.
@@ -145,9 +144,10 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
     /**
      * Generates complex samples.
      * @param sampleCount number of samples to generate and length of the resulting float array.
+     * @param timestamp of the first sample
      * @return generated samples
      */
-    @Override public ComplexSamples generateComplexSamples(int sampleCount)
+    @Override public ComplexSamples generateComplexSamples(int sampleCount, long timestamp)
     {
         if(sampleCount % VECTOR_SPECIES.length() != 0)
         {
@@ -184,6 +184,6 @@ public class VectorComplexOscillator extends AbstractOscillator implements IComp
         previousInphase.intoArray(mPreviousInphases, 0);
         previousQuadrature.intoArray(mPreviousQuadratures, 0);
 
-        return new ComplexSamples(iSamples, qSamples);
+        return new ComplexSamples(iSamples, qSamples, timestamp);
     }
 }

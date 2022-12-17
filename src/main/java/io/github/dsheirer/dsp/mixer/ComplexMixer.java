@@ -84,11 +84,12 @@ public abstract class ComplexMixer
     /**
      * Generates complex samples from the underlying oscillator
      * @param sampleCount to generate
+     * @param timestamp of the first sample
      * @return complex samples
      */
-    protected ComplexSamples generate(int sampleCount)
+    protected ComplexSamples generate(int sampleCount, long timestamp)
     {
-        return mOscillator.generateComplexSamples(sampleCount);
+        return mOscillator.generateComplexSamples(sampleCount, timestamp);
     }
 
     /**
@@ -98,7 +99,7 @@ public abstract class ComplexMixer
      */
     public ComplexSamples mix(ComplexSamples samples)
     {
-        return mix(samples.i(), samples.q());
+        return mix(samples.i(), samples.q(), samples.timestamp());
     }
 
     /**
@@ -117,7 +118,5 @@ public abstract class ComplexMixer
      * @param q complex samples to mix
      * @return mixed samples
      */
-    public abstract ComplexSamples mix(float[] i, float[] q);
-
-
+    public abstract ComplexSamples mix(float[] i, float[] q, long timestamp);
 }

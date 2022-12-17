@@ -28,6 +28,11 @@ import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +41,6 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 public class ComplexWaveSource extends Source implements IControllableFileSource, AutoCloseable
 {
@@ -276,7 +276,8 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
                 }
 
                 float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
-                mListener.receive(new FloatNativeBuffer(samples, System.currentTimeMillis()));
+                mListener.receive(new FloatNativeBuffer(samples, System.currentTimeMillis(),
+                        mInputStream.getFormat().getSampleRate() / 1000.0f));
             }
         }
     }

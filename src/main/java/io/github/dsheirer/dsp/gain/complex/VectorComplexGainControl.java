@@ -1,3 +1,22 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.dsp.gain.complex;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
@@ -18,7 +37,7 @@ public class VectorComplexGainControl implements IComplexGainControl
     private static final float MINIMUM_ENVELOPE = 0.0001f;
     private static final float ENVELOPE_ESTIMATE = 0.4f;
 
-    @Override public ComplexSamples process(float[] i, float[] q)
+    @Override public ComplexSamples process(float[] i, float[] q, long timestamp)
     {
         VectorUtilities.checkComplexArrayLength(i, q, VECTOR_SPECIES);
 
@@ -47,6 +66,6 @@ public class VectorComplexGainControl implements IComplexGainControl
             FloatVector.fromArray(VECTOR_SPECIES, q, bufferPointer).mul(gain).intoArray(qProcessed, bufferPointer);
         }
 
-        return new ComplexSamples(iProcessed, qProcessed);
+        return new ComplexSamples(iProcessed, qProcessed, timestamp);
     }
 }

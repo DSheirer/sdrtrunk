@@ -29,10 +29,9 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.Dispatcher;
+import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Iterator;
 
 /**
  * Complex sample source that provides a frequency-translated and decimated sample buffer stream.  Uses a
@@ -229,7 +228,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
                 ComplexSamples basebanded = mFrequencyCorrectionMixer.mix(iterator.next());
                 float[] i = mIDecimationFilter.decimateReal(basebanded.i());
                 float[] q = mQDecimationFilter.decimateReal(basebanded.q());
-                mStreamHeartbeatProcessor.receive(new ComplexSamples(i, q));
+                mStreamHeartbeatProcessor.receive(new ComplexSamples(i, q, basebanded.timestamp()));
             }
         }
     }

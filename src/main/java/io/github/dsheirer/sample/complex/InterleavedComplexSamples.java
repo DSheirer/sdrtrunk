@@ -41,6 +41,6 @@ public record InterleavedComplexSamples(float[] samples, long timestamp) impleme
             q[x] = samples()[x / 2 + 1];
         }
 
-        return new ComplexSamples(i, q);
+        return new ComplexSamples(i, q, timestamp());
     }
 }

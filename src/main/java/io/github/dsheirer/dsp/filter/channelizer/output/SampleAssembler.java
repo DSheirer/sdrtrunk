@@ -76,9 +76,9 @@ public class SampleAssembler
     /**
      * Extracts the full buffer from this assembler and resets the assembler to accept more samples.
      */
-    public ComplexSamples getBufferAndReset()
+    public ComplexSamples getBufferAndReset(long timestamp)
     {
-        ComplexSamples buffer = new ComplexSamples(mI, mQ);
+        ComplexSamples buffer = new ComplexSamples(mI, mQ, timestamp);
         reset();
         return buffer;
     }

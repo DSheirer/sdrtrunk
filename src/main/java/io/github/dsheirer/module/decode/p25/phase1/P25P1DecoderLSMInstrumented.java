@@ -50,7 +50,7 @@ public class P25P1DecoderLSMInstrumented extends P25P1DecoderLSM
     @Override
     public void receive(ComplexSamples samples)
     {
-        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+        mMessageFramer.setCurrentTime(samples.timestamp());
 
         //The filter will decrement the user count when finished
         float[] i = mIBasebandFilter.filter(samples.i());
@@ -58,13 +58,13 @@ public class P25P1DecoderLSMInstrumented extends P25P1DecoderLSM
 
         if(mFilteredSymbolListener != null)
         {
-            mFilteredSymbolListener.receive(new ComplexSamples(i, q));
+            mFilteredSymbolListener.receive(new ComplexSamples(i, q, samples.timestamp()));
         }
 
         //Process the buffer for power measurements
         mPowerMonitor.process(i, q);
 
-        ComplexSamples amplified = mAGC.process(i, q);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
         mQPSKDemodulator.receive(amplified);
     }
 

@@ -27,7 +27,7 @@ import java.util.Iterator;
  * Native buffer sample array wrapper class that provides access to a stream of either interleaved or
  * non-interleaved complex sample buffers converted from the raw byte sample array.
  */
-public class ByteNativeBuffer implements INativeBuffer
+public class ByteNativeBuffer extends AbstractNativeBuffer
 {
     private static final int FRAGMENT_SIZE = 2048;
     private final static float[] LOOKUP_VALUES;
@@ -46,16 +46,17 @@ public class ByteNativeBuffer implements INativeBuffer
     }
 
     private byte[] mSamples;
-    private long mTimestamp;
 
     /**
      * Constructs an instance
      * @param samples to process
      * @param timestamp of the samples
      * @param averageDc measured from sample stream
+     * @param samplesPerMillisecond to calculate derivative timestamps for sub-buffers.
      */
-    public ByteNativeBuffer(byte[] samples, long timestamp, float averageDc)
+    public ByteNativeBuffer(byte[] samples, long timestamp, float averageDc, float samplesPerMillisecond)
     {
+        super(timestamp, samplesPerMillisecond);
         //Ensure we're an even multiple of the fragment size.  Typically, this will be 64k or 128k
         if(samples.length % FRAGMENT_SIZE != 0)
         {
@@ -63,7 +64,6 @@ public class ByteNativeBuffer implements INativeBuffer
         }
 
         mSamples = samples;
-        mTimestamp = timestamp;
         mAverageDc = averageDc;
     }
 
@@ -71,12 +71,6 @@ public class ByteNativeBuffer implements INativeBuffer
     public int sampleCount()
     {
         return mSamples.length / 2;
-    }
-
-    @Override
-    public long getTimestamp()
-    {
-        return mTimestamp;
     }
 
     @Override
@@ -104,6 +98,8 @@ public class ByteNativeBuffer implements INativeBuffer
         @Override
         public ComplexSamples next()
         {
+            long timestamp = getFragmentTimestamp(mSamplesPointer);
+
             float[] i = new float[FRAGMENT_SIZE];
             float[] q = new float[FRAGMENT_SIZE];
             int samplesOffset = mSamplesPointer;
@@ -115,8 +111,7 @@ public class ByteNativeBuffer implements INativeBuffer
             }
 
             mSamplesPointer = samplesOffset;
-
-            return new ComplexSamples(i, q);
+            return new ComplexSamples(i, q, timestamp);
         }
     }
 
@@ -136,6 +131,8 @@ public class ByteNativeBuffer implements INativeBuffer
         @Override
         public InterleavedComplexSamples next()
         {
+            long timestamp = getFragmentTimestamp(mSamplesPointer);
+
             float[] converted = new float[FRAGMENT_SIZE * 2];
 
             int samplesPointer = mSamplesPointer;
@@ -147,7 +144,7 @@ public class ByteNativeBuffer implements INativeBuffer
 
             mSamplesPointer = samplesPointer;
 
-            return new InterleavedComplexSamples(converted, mTimestamp);
+            return new InterleavedComplexSamples(converted, timestamp);
         }
     }
 }

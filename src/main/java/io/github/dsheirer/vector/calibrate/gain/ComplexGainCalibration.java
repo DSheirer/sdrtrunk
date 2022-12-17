@@ -121,7 +121,7 @@ public class ComplexGainCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples amplified = scalar.apply(i, q);
+            ComplexSamples amplified = scalar.apply(i, q, start);
             accumulator += amplified.i()[2];
             count++;
         }
@@ -140,7 +140,7 @@ public class ComplexGainCalibration extends Calibration
 
         while((System.currentTimeMillis() - start) < ITERATION_DURATION_MS)
         {
-            ComplexSamples amplified = scalar.apply(i, q);
+            ComplexSamples amplified = scalar.apply(i, q, start);
             accumulator += amplified.i()[2];
             count++;
         }

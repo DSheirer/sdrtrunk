@@ -33,6 +33,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     private Dispatcher<List<float[]>> mChannelResultsDispatcher;
     protected Listener<ComplexSamples> mComplexSamplesListener;
     private int mInputChannelCount;
+    private long mCurrentSampleTimestamp = System.currentTimeMillis();
 
     /**
      * Base class for polyphase channelizer output channel processing.  Provides built-in frequency translation
@@ -47,6 +48,15 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mInputChannelCount = inputChannelCount;
         mChannelResultsDispatcher = new Dispatcher<>((int)sampleRate, "sdrtrunk polyphase channel", Collections.emptyList());
         mChannelResultsDispatcher.setListener(floats -> process(floats));
+    }
+
+    /**
+     * Timestamp for the current series of samples.
+     * @return time in milliseconds to use with assembled complex sample buffers.
+     */
+    protected long getCurrentSampleTimestamp()
+    {
+        return mCurrentSampleTimestamp;
     }
 
     @Override
@@ -81,9 +91,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     }
 
     @Override
-    public void receiveChannelResults(List<float[]> channelResultsList)
+    public void receiveChannelResults(List<float[]> channelResultsList, long timestamp)
     {
         mChannelResultsDispatcher.receive(channelResultsList);
+        mCurrentSampleTimestamp = timestamp;
     }
 
     /**

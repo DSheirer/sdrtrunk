@@ -26,6 +26,12 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,12 +39,6 @@ import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import javax.usb.UsbException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.List;
 
 /**
  * Airspy tuner controller
@@ -272,6 +272,7 @@ public class AirspyTunerController extends USBTunerController
      */
     public void setSampleRate(AirspySampleRate rate) throws LibUsbException, UsbException, SourceException
     {
+        getNativeBufferFactory().setSamplesPerMillisecond((float)rate.getRate() / 1000.0f);
         if(rate.getRate() != mSampleRate)
         {
             int result = readByte(Command.SET_SAMPLE_RATE, 0, rate.getIndex(), true);

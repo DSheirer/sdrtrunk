@@ -20,11 +20,10 @@ package io.github.dsheirer.sample.adapter;
 
 import io.github.dsheirer.buffer.FloatNativeBuffer;
 import io.github.dsheirer.buffer.INativeBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Converts 16-bit/2-byte little endian byte data into a reusable buffer of complex float sample data
@@ -62,7 +61,7 @@ public class ComplexShortAdapter implements ISampleAdapter<INativeBuffer>
 
         long now = System.currentTimeMillis();
 
-        return new FloatNativeBuffer(convertedSamples, now);
+        return new FloatNativeBuffer(convertedSamples, now, 192.0f);
     }
 
     /**

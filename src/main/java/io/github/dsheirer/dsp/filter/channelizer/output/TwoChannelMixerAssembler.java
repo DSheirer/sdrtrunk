@@ -76,13 +76,14 @@ public class TwoChannelMixerAssembler extends MixerAssembler
 
     /**
      * Access the assembled buffer.  Frequency offset and gain are applied to the returned buffer.
+     * @param timestamp to use for the assembled buffer
      * @return assembled buffer.
      */
     @Override
-    public ComplexSamples getBuffer()
+    public ComplexSamples getBuffer(long timestamp)
     {
-        ComplexSamples channel1 = mChannel1SampleAssembler.getBufferAndReset();
-        ComplexSamples channel2 = mChannel2SampleAssembler.getBufferAndReset();
+        ComplexSamples channel1 = mChannel1SampleAssembler.getBufferAndReset(timestamp);
+        ComplexSamples channel2 = mChannel2SampleAssembler.getBufferAndReset(timestamp);
 
         //Synthesize two channels into one, reducing sample rate by 2 so it's same as single channel rate
         ComplexSamples buffer = mTwoChannelSynthesizer.process(channel1, channel2);
