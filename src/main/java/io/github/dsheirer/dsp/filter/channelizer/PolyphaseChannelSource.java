@@ -46,7 +46,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
     private long mChannelFrequencyCorrection;
-    private long mCurrentSamplesTimestamp;
     private ReentrantLock mOutputProcessorLock = new ReentrantLock();
 
     /**
@@ -107,7 +106,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     public void receive(ComplexSamples complexSamples)
     {
         mStreamHeartbeatProcessor.receive(complexSamples);
-        mCurrentSamplesTimestamp = complexSamples.timestamp();
     }
 
     /**
@@ -215,8 +213,9 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      * channel aggregation, and dispatch the results to the downstream sample listener/consumer.
      *
      * @param channelResultsList containing a list of polyphase channelizer output arrays.
+     * @param currentSamplesTimestamp for the samples
      */
-    public void receiveChannelResults(List<float[]> channelResultsList)
+    public void receiveChannelResults(List<float[]> channelResultsList, long currentSamplesTimestamp)
     {
         mOutputProcessorLock.lock();
 
@@ -224,7 +223,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
         {
             if(mPolyphaseChannelOutputProcessor != null)
             {
-                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList, mCurrentSamplesTimestamp);
+                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList, currentSamplesTimestamp);
             }
         }
         finally
