@@ -20,7 +20,6 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
-
 import java.util.List;
 
 public interface IPolyphaseChannelOutputProcessor
@@ -44,11 +43,6 @@ public interface IPolyphaseChannelOutputProcessor
      * Listener to receive assembled complex samples buffers
      */
     void setListener(Listener<ComplexSamples> listener);
-
-//    /**
-//     * Process the channel output channel results queue and deliver the output to the listener
-//     */
-//    void processChannelResults();
 
     /**
      * Sets the desired frequency offset from center.  The samples will be mixed with an oscillator set to this offset

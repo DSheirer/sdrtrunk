@@ -21,11 +21,10 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.util.Dispatcher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputProcessor
 {
