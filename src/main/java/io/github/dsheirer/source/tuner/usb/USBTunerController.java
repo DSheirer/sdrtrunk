@@ -643,9 +643,14 @@ public abstract class USBTunerController extends TunerController
                 default:
                     //Unexpected transfer error - need to reset the bulk transfer interface
                     transfer.buffer().rewind();
-                    setErrorMessage("LibUsb Transfer Error - stopping device - status [" + transfer.status() + "] - " +
-                            LibUsb.errorName(transfer.status()));
-                    return;
+
+                    //Only set an error if we're not shutting down
+                    if(mAutoResubmitTransfers)
+                    {
+                        setErrorMessage("LibUsb Transfer Error - stopping device - status [" + transfer.status() + "] - " +
+                                LibUsb.errorName(transfer.status()));
+                    }
+                    break;
             }
         }
 
