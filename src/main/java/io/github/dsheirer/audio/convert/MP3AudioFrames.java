@@ -16,11 +16,31 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
+
 package io.github.dsheirer.audio.convert;
 
 import java.util.List;
 
-public interface ISilenceGenerator
+public class MP3AudioFrames extends AudioFrames
 {
-    AudioFrames generate(long duration);
+
+    /**
+     * Create new MP3AudioFrame
+     * @param audioDuration total duration in milliseconds
+     * @param audioFrames series of audio frames, split on frame boundaries
+     */
+    public MP3AudioFrames(int audioDuration, List<byte[]> audioFrames)
+    {
+        super(audioDuration, audioFrames);
+    }
+
+    /**
+     * Get current frame duration
+     * @return frame duration in milliseconds
+     */
+    public int getCurrentFrameDuration()
+    {
+        return MP3Header.getFrameDuration(getCurrentFrame(), 0);
+    }
+
 }

@@ -55,6 +55,7 @@ public class MP3FrameInspector
         }
     }
 
+    /* TODO: Rework for MP3SilenceGenerator returning IAudioFrames
     public static void main(String[] args)
     {
         mLog.info("Starting ...");
@@ -66,4 +67,5 @@ public class MP3FrameInspector
 
         mLog.info("Finished");
     }
+    */
 }
