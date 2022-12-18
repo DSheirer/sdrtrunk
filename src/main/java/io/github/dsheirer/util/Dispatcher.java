@@ -122,7 +122,8 @@ public class Dispatcher<E> implements Listener<E>
 
             try
             {
-                mThread.join(2000);
+                mThread.interrupt();
+                mThread.join();
                 mThread = null;
             }
             catch(Exception e)
@@ -183,7 +184,7 @@ public class Dispatcher<E> implements Listener<E>
                     }
                     catch(InterruptedException e)
                     {
-                        mLog.error("Buffer processor thread was interrupted");
+                        //Normal shutdown is by interrupt
                     }
                     catch(Exception e)
                     {
@@ -191,6 +192,7 @@ public class Dispatcher<E> implements Listener<E>
                     }
                 }
 
+                //Shutting down - clear the queue
                 mQueue.clear();
             }
             catch(Throwable t)
