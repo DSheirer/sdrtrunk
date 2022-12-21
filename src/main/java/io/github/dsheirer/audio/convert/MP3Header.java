@@ -100,7 +100,7 @@ public class MP3Header
      */
     public static boolean isPadded(byte[] frame, int offset)
     {
-        return (frame[offset + 2] & 0x01) == 1;
+        return (frame[offset + 2] & 0x02) == 0x02;
     }
 
     /**
