@@ -25,6 +25,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.mp3.MP3Preference;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -99,10 +100,45 @@ public class MP3PreferenceEditor extends HBox
             mMP3SettingComboBox.getItems().addAll(MP3Setting.values());
             mMP3SettingComboBox.getSelectionModel().select(mMP3Preference.getMP3Setting());
             mMP3SettingComboBox.getSelectionModel().selectedItemProperty()
-                    .addListener((observable, oldValue, newValue) -> mMP3Preference.setMP3Setting(newValue));
+                    .addListener((observable, oldValue, newValue) -> {
+                        mMP3Preference.setMP3Setting(newValue);
+                        updateAudioSampleRateComboBox();
+                    });
         }
 
         return mMP3SettingComboBox;
+    }
+
+    /**
+     * Updates the input sample rate combo box values and alerts the user whenever we auto-change an input sample rate
+     * due to a change in the MP3 setting value.
+     */
+    private void updateAudioSampleRateComboBox()
+    {
+        InputAudioFormat currentSelection = getAudioSampleRateComboBox().getSelectionModel().getSelectedItem();
+        MP3Setting setting = getMP3SettingComboBox().getSelectionModel().getSelectedItem();
+
+        getAudioSampleRateComboBox().getItems().clear();
+        getAudioSampleRateComboBox().getItems().addAll(setting.getSupportedSampleRates());
+
+        if(currentSelection != null && getAudioSampleRateComboBox().getItems().contains(currentSelection))
+        {
+            getAudioSampleRateComboBox().getSelectionModel().select(currentSelection);
+        }
+        else
+        {
+            getAudioSampleRateComboBox().getSelectionModel().select(InputAudioFormat.getDefault());
+
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Sample Rate Updated");
+            alert.setHeaderText("Input Sample Rate Updated");
+
+            Label wrappingLabel = new Label("Previous input sample rate [" + currentSelection +
+                    "] is not supported with encoder setting [" + setting + "].  Sample rate updated to default.");
+            wrappingLabel.setWrapText(true);
+            alert.getDialogPane().setContent(wrappingLabel);
+            alert.show();
+        }
     }
 
     private ComboBox<InputAudioFormat> getAudioSampleRateComboBox()
@@ -113,7 +149,12 @@ public class MP3PreferenceEditor extends HBox
             mAudioSampleRateComboBox.getItems().addAll(InputAudioFormat.values());
             mAudioSampleRateComboBox.getSelectionModel().select(mMP3Preference.getAudioSampleRate());
             mAudioSampleRateComboBox.getSelectionModel().selectedItemProperty()
-                    .addListener((observable, oldValue, newValue) -> mMP3Preference.setAudioSampleRate(newValue));
+                    .addListener((observable, oldValue, newValue) -> {
+                        if(newValue != null)
+                        {
+                            mMP3Preference.setAudioSampleRate(newValue);
+                        }
+                    });
         }
 
         return mAudioSampleRateComboBox;

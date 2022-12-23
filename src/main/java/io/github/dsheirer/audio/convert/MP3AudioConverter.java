@@ -60,8 +60,17 @@ public class MP3AudioConverter implements IAudioConverter
         mEncoder = LameFactory.getLameEncoder(inputAudioFormat, setting);
         mNormalizeAudio = normalizeAudio;
 
+        //Ensure input audio sample rate is supported for the MP3 setting and update as necessary - should never happen.
+        if((mInputAudioFormat.getSampleRate() - mEncoder.getEffectiveSampleRate()) > 1.0)
+        {
+            mInputAudioFormat = InputAudioFormat.getDefault();
+            mLog.warn("MP3 setting [" + setting + "] does not support requested input audio sample rate [" +
+                    inputAudioFormat + "] - using default sample rate [" + mInputAudioFormat + "]");
+            mEncoder = LameFactory.getLameEncoder(inputAudioFormat, setting);
+        }
+
         //Resampling is only required if desired input sample rate is not system default of 8kHz
-        if(inputAudioFormat != InputAudioFormat.SR_8000 && inputAudioFormat != InputAudioFormat.SR_32_8000)
+        if(mInputAudioFormat != InputAudioFormat.SR_8000 && mInputAudioFormat != InputAudioFormat.SR_32_8000)
         {
             mResampler = LameFactory.getResampler(inputAudioFormat);
         }

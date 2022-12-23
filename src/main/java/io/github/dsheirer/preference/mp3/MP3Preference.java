@@ -116,6 +116,24 @@ public class MP3Preference extends Preference
             {
                 mInputAudioFormat = InputAudioFormat.getDefault();
             }
+
+            //Ensure the input sample rate is supported by the MP3 setting, or change it to the first supported rate.
+            MP3Setting setting = getMP3Setting();
+
+            if(!setting.getSupportedSampleRates().contains(mInputAudioFormat))
+            {
+                InputAudioFormat supportedAudioFormat = InputAudioFormat.getDefault();
+
+                //Default should always be supported by all mp3 settings, but fall-back to a supported rate if not.
+                if(!setting.getSupportedSampleRates().contains(supportedAudioFormat))
+                {
+                    supportedAudioFormat = setting.getSupportedSampleRates().get(0);
+                }
+
+                mLog.warn("MP3 Setting [" + setting + "] does not support input sample rate [" + getAudioSampleRate().name() +
+                        "] - updating to supported sample rate [" + supportedAudioFormat.name() + "]");
+                setAudioSampleRate(supportedAudioFormat);
+            }
         }
 
         return mInputAudioFormat;
