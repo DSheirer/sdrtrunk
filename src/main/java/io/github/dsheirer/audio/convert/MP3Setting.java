@@ -19,6 +19,8 @@
 
 package io.github.dsheirer.audio.convert;
 
+import java.util.Arrays;
+import java.util.List;
 import net.sourceforge.lame.mp3.Lame;
 
 /**
@@ -77,6 +79,30 @@ public enum MP3Setting
     public int getSetting()
     {
         return mSetting;
+    }
+
+    /**
+     * Input audio formats that are supported by the MP3Setting value.
+     * @return list of supported input audio sample rates.
+     */
+    public List<InputAudioFormat> getSupportedSampleRates()
+    {
+        switch(this)
+        {
+            case CBR_16:
+            {
+                return InputAudioFormat.SAMPLE_RATES_8_16.stream().toList();
+            }
+            case CBR_32:
+            case VBR_7:
+            {
+                return InputAudioFormat.SAMPLE_RATES_8_16_22.stream().toList();
+            }
+            default:
+            {
+                return Arrays.stream(InputAudioFormat.values()).toList();
+            }
+        }
     }
 
     @Override

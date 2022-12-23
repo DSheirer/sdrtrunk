@@ -20,6 +20,7 @@
 package io.github.dsheirer.audio.convert;
 
 import io.github.dsheirer.audio.AudioFormats;
+import java.util.EnumSet;
 
 import javax.sound.sampled.AudioFormat;
 
@@ -29,8 +30,8 @@ import javax.sound.sampled.AudioFormat;
 public enum InputAudioFormat
 {
     SR_8000(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, "16-Bit 8000 Hz (no resample)"),
-    SR_16000(AudioFormats.PCM_SIGNED_16000_HZ_16_BIT_MONO, "16-Bit 16000 Hz"),
-    SR_22050(AudioFormats.PCM_SIGNED_22050_HZ_16_BIT_MONO, "16-Bit 22050 Hz (default)"),
+    SR_16000(AudioFormats.PCM_SIGNED_16000_HZ_16_BIT_MONO, "16-Bit 16000 Hz (default)"),
+    SR_22050(AudioFormats.PCM_SIGNED_22050_HZ_16_BIT_MONO, "16-Bit 22050 Hz"),
     SR_44100(AudioFormats.PCM_SIGNED_44100_HZ_16_BIT_MONO, "16-Bit 44100 Hz"),
 
     SR_32_8000(AudioFormats.PCM_SIGNED_8000_HZ_32_BIT_MONO, "32-Bit 8000 Hz (no resample)"),
@@ -40,6 +41,17 @@ public enum InputAudioFormat
 
     private AudioFormat mAudioFormat;
     private String mLabel;
+
+    /**
+     * Set that includes sample rates of 8 or 16 kHz
+     */
+    public static final EnumSet<InputAudioFormat> SAMPLE_RATES_8_16 = EnumSet.of(SR_8000, SR_32_8000, SR_16000, SR_32_16000);
+
+    /**
+     * Set that includes sample rates of 8, 16, or 22 kHz
+     */
+    public static final EnumSet<InputAudioFormat> SAMPLE_RATES_8_16_22 = EnumSet.of(SR_8000, SR_32_8000, SR_16000,
+            SR_32_16000, SR_22050, SR_32_22050);
 
     /**
      * Constructs an instance
@@ -56,7 +68,7 @@ public enum InputAudioFormat
      */
     public static InputAudioFormat getDefault()
     {
-        return SR_22050;
+        return SR_16000;
     }
 
     /**
