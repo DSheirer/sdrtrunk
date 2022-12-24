@@ -25,19 +25,15 @@ import io.github.dsheirer.audio.convert.MP3FrameTools;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.util.ThreadPool;
-import org.apache.commons.math3.util.FastMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration> extends AbstractAudioBroadcaster<T>
 {
@@ -255,7 +251,6 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     public boolean canConnect()
     {
         BroadcastState state = getBroadcastState();
-
         return state != BroadcastState.CONNECTED && !state.isErrorState();
     }
 

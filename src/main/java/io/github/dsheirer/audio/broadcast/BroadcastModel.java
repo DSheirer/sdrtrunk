@@ -26,13 +26,6 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.*;
-import javax.swing.table.AbstractTableModel;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -48,6 +41,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.table.AbstractTableModel;
 
 public class BroadcastModel extends AbstractTableModel implements Listener<AudioRecording>
 {
@@ -58,7 +57,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
     private static final String UNIQUE_NAME_REGEX = "(.*)\\((\\d*)\\)";
 
-    public static final int COLUMN_SERVER_ICON = 0;
+    public static final int COLUMN_BROADCAST_SERVER_TYPE = 0;
     public static final int COLUMN_STREAM_NAME = 1;
     public static final int COLUMN_BROADCASTER_STATUS = 2;
     public static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
@@ -67,7 +66,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     public static final int COLUMN_BROADCASTER_ERROR_COUNT = 6;
 
     public static final String[] COLUMN_NAMES = new String[]
-        {"Streaming", "Name", "Status", "Queued", "Streamed/Uploaded", "Aged Off", "Upload Error"};
+        {"Stream Type", "Name", "Status", "Queued", "Streamed/Uploaded", "Aged Off", "Upload Error"};
 
     private ObservableList<ConfiguredBroadcast> mConfiguredBroadcasts =
         FXCollections.observableArrayList(ConfiguredBroadcast.extractor());
@@ -575,15 +574,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 {
                     switch(columnIndex)
                     {
-                        case COLUMN_SERVER_ICON:
-                            String iconPath = configuredBroadcast.getBroadcastConfiguration()
-                                .getBroadcastServerType().getIconPath();
-
-                            if(iconPath != null && mIconModel != null)
-                            {
-                                return mIconModel.getScaledIcon(iconPath, 14);
-                            }
-                            break;
+                        case COLUMN_BROADCAST_SERVER_TYPE:
+                            return configuredBroadcast.getBroadcastServerType();
                         case COLUMN_STREAM_NAME:
                             return configuredBroadcast.getBroadcastConfiguration().getName();
                         case COLUMN_BROADCASTER_STATUS:
@@ -653,8 +645,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             case COLUMN_BROADCASTER_STREAMED_COUNT:
             case COLUMN_BROADCASTER_ERROR_COUNT:
                 return Integer.class;
-            case COLUMN_SERVER_ICON:
-                return ImageIcon.class;
+            case COLUMN_BROADCAST_SERVER_TYPE:
+                return BroadcastServerType.class;
             case COLUMN_STREAM_NAME:
             default:
                 return String.class;

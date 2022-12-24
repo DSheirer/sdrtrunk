@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,23 +14,29 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.icon.Icon;
+import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
+import java.awt.Color;
+import java.awt.Component;
 import net.miginfocom.swing.MigLayout;
 
+import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.Color;
-import java.awt.Component;
 
+/**
+ * Table of broadcast streams and statuses.
+ */
 public class BroadcastStatusPanel extends JPanel
 {
     private JTable mTable;
@@ -41,6 +46,12 @@ public class BroadcastStatusPanel extends JPanel
     private UserPreferences mUserPreferences;
     private String mPreferenceKey;
 
+    /**
+     * Constructs an instance
+     * @param broadcastModel to access the streams
+     * @param userPreferences for configuring the panel
+     * @param preferenceKey to store column preferences for this panel.
+     */
     public BroadcastStatusPanel(BroadcastModel broadcastModel, UserPreferences userPreferences, String preferenceKey)
     {
         mBroadcastModel = broadcastModel;
@@ -65,11 +76,43 @@ public class BroadcastStatusPanel extends JPanel
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
 
         mTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCASTER_STATUS).setCellRenderer(new StatusCellRenderer());
+        mTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCAST_SERVER_TYPE).setCellRenderer(new ServerTypeRenderer());
         mColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, mPreferenceKey);
 
         mScrollPane = new JScrollPane(mTable);
 
         add(mScrollPane);
+    }
+
+    public class ServerTypeRenderer extends DefaultTableCellRenderer
+    {
+        public ServerTypeRenderer()
+        {
+            setOpaque(true);
+            setHorizontalAlignment(SwingConstants.CENTER);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
+        {
+            JLabel component = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if(value instanceof BroadcastServerType broadcastServerType)
+            {
+                component.setText(broadcastServerType.toString());
+                Icon icon = new Icon("empty", broadcastServerType.getIconPath());
+                ImageIcon imageIcon = icon.getIcon();
+                ImageIcon scaledIcon = IconModel.getScaledIcon(imageIcon, 13);
+                component.setIcon(scaledIcon);
+            }
+            else
+            {
+                component.setText(null);
+                component.setIcon(null);
+            }
+
+            return component;
+        }
     }
 
     /**
