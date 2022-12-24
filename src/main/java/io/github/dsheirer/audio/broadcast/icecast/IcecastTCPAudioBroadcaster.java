@@ -321,7 +321,6 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             {
                 String message = (String) object;
 
-                mLog.info("Stream [" + getStreamName() + "] message received: " + message);
                 if(message != null && !message.trim().isEmpty())
                 {
                     if(message.startsWith("HTTP/1.0 200 OK"))
