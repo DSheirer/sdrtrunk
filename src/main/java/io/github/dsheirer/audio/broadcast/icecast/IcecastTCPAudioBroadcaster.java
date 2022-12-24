@@ -21,13 +21,19 @@ package io.github.dsheirer.audio.broadcast.icecast;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.icecast.codec.IcecastCodecFactory;
-import io.github.dsheirer.audio.broadcast.icecast.IcecastMetadata;
 import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.nio.channels.UnresolvedAddressException;
+import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -36,14 +42,6 @@ import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketException;
-import java.nio.channels.UnresolvedAddressException;
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 {
@@ -215,7 +213,13 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         }
         else
         {
-            setBroadcastState(BroadcastState.DISCONNECTED);
+            //Only set broadcast state to disconnected if it's not already in an error state, to prevent a restart.  We
+            //want to preserve the error state that got us here, so the user can see it.
+            if(!getBroadcastState().isErrorState())
+            {
+                setBroadcastState(BroadcastState.DISCONNECTED);
+            }
+
             mLastConnectionAttempt = System.currentTimeMillis();
         }
     }
@@ -317,6 +321,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             {
                 String message = (String) object;
 
+                mLog.info("Stream [" + getStreamName() + "] message received: " + message);
                 if(message != null && !message.trim().isEmpty())
                 {
                     if(message.startsWith("HTTP/1.0 200 OK"))
