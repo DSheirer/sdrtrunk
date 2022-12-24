@@ -34,6 +34,11 @@ import io.github.dsheirer.rrapi.type.Type;
 import io.github.dsheirer.rrapi.type.Voice;
 import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.util.ThreadPool;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.IntegerProperty;
@@ -54,12 +59,6 @@ import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Radio Reference editor for trunked radio systems
@@ -293,7 +292,13 @@ public class SystemEditor extends VBox
                     List<EnrichedSite> enrichedSites = new ArrayList<>();
                     for(Site site: sites)
                     {
-                        CountyInfo countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
+                        CountyInfo countyInfo = null;
+
+                        if(site.getCountyId() > 0)
+                        {
+                            countyInfo = mRadioReference.getService().getCountyInfo(site.getCountyId());
+                        }
+
                         enrichedSites.add(new EnrichedSite(site, countyInfo));
                     }
 
