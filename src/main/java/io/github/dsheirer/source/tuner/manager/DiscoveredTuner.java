@@ -24,11 +24,10 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A discovered tuner that may be accessible for use.
@@ -106,8 +105,8 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
 
             if(mEnabled)
             {
-                setTunerStatus(TunerStatus.ENABLED);
                 start();
+                setTunerStatus(TunerStatus.ENABLED);
             }
             else
             {
