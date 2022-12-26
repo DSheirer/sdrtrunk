@@ -122,7 +122,7 @@ public class MutableIdentifierCollection extends IdentifierCollection implements
      *
      * @param identifier to add
      */
-    private void add(Identifier identifier)
+    public void add(Identifier identifier)
     {
         if(identifier.isValid() && !mIdentifiers.contains(identifier))
         {

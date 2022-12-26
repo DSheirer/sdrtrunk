@@ -270,6 +270,15 @@ public class DuplicateCallDetector implements Listener<AudioSegment>
                                 {
                                     if(isDuplicate(current, toCheck))
                                     {
+                                        /* Copy TO identifiers to current audio segment so that duplicates from different TGs broadcast/record correctly */
+                                        for(Identifier identifier: toCheck.getIdentifierCollection().getIdentifiers(Role.TO))
+                                        {
+                                            if(!current.getIdentifierCollection().getIdentifiers().contains(identifier))
+                                            {
+                                                current.addIdentifier(identifier, false);
+                                            }
+                                        }
+
                                         toCheck.setDuplicate(true);
                                         toCheck.decrementConsumerCount();
                                         duplicates.add(toCheck);

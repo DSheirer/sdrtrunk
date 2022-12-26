@@ -409,11 +409,33 @@ public class AudioSegment implements Listener<IdentifierUpdateNotification>
     /**
      * Adds the identifier to this audio segment and updates record, priority and streaming properties.
      *
+     * @param identifier object
+     * 
      * Note: identifiers pass to this method must be checked for timeslot match.
      */
     public void addIdentifier(Identifier identifier)
     {
-        mIdentifierCollection.update(identifier);
+        addIdentifier(identifier, true);
+    }
+
+    /**
+     * Adds the identifier to this audio segment and updates record, priority and streaming properties.
+     *
+     * @param identifier object
+     * @param replace true if this identifier should replace the existing
+     * 
+     * Note: identifiers pass to this method must be checked for timeslot match.
+     */
+    public void addIdentifier(Identifier identifier, Boolean replace)
+    {
+        if(replace)
+        {
+            mIdentifierCollection.update(identifier);
+        }
+        else
+        {
+            mIdentifierCollection.add(identifier);
+        }
 
         List<Alias> aliases = mAliasList.getAliases(identifier);
 
