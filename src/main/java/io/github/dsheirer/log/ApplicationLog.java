@@ -128,7 +128,7 @@ public class ApplicationLog
             mRollingFileAppender.start();
 
             Logger logger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
-            ((ch.qos.logback.classic.Logger)logger).setLevel(Level.ALL);
+            ((ch.qos.logback.classic.Logger)logger).setLevel(Level.DEBUG);
             ((ch.qos.logback.classic.Logger)logger).addAppender(mRollingFileAppender);
 
 //            StatusPrinter.print(loggerContext);
