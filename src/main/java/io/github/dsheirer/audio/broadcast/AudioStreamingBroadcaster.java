@@ -25,6 +25,7 @@ import io.github.dsheirer.audio.convert.MP3FrameTools;
 import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.util.ThreadPool;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Queue;
@@ -95,7 +96,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     /**
      * Broadcast binary audio data frames or sequences.
      */
-    protected abstract void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection);
+    protected abstract void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection, long time);
 
     /**
      * Protocol-specific metadata updater
@@ -106,14 +107,15 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
      * Broadcasts the next song's audio metadata prior to streaming the next song.
      *
      * @param identifierCollection for the next recording that will be streamed
+     * @param startTime containing recording start time as MS since epoch
      */
-    protected void broadcastMetadata(IdentifierCollection identifierCollection)
+    protected void broadcastMetadata(IdentifierCollection identifierCollection, long startTime)
     {
         IBroadcastMetadataUpdater metadataUpdater = getMetadataUpdater();
 
         if(metadataUpdater != null)
         {
-            metadataUpdater.update(identifierCollection);
+            metadataUpdater.update(identifierCollection, startTime);
         }
     }
 
@@ -273,6 +275,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
         private AtomicBoolean mProcessing = new AtomicBoolean();
         private AudioFrames mInputFrames;
         private IdentifierCollection mInputIdentifierCollection;
+        private long mInputStart = -1;
 
         @Override
         public void run()
@@ -290,24 +293,17 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
                     if(mInputFrames != null && mInputFrames.hasNextFrame())
                     {
-                        while(mInputFrames.hasNextFrame() && timeSent < PROCESSOR_RUN_INTERVAL_MS)
-                        {
-                            mInputFrames.nextFrame();
-                            broadcastAudio(mInputFrames.getCurrentFrame(), mInputIdentifierCollection);
-                            timeSent += mInputFrames.getCurrentFrameDuration();
-                        }
+                        AudioFrames segment = mInputFrames.getSegment(PROCESSOR_RUN_INTERVAL_MS);
+                        broadcastAudio(segment.toByteArray(), mInputIdentifierCollection, mInputStart + mInputFrames.getCurrentPositionTime());
+                        timeSent += segment.getDuration();
                     }
 
                     if((mInputFrames == null || !mInputFrames.hasNextFrame()) && timeSent < PROCESSOR_RUN_INTERVAL_MS)
                     {
                         AudioFrames silenceFrames = mSilenceGenerator.generate(PROCESSOR_RUN_INTERVAL_MS - mTimeOverrun - timeSent);
-                        while(silenceFrames.hasNextFrame())
-                        {
-                            silenceFrames.nextFrame();
-                            broadcastAudio(silenceFrames.getCurrentFrame(), null);
-                            timeSent += silenceFrames.getCurrentFrameDuration();
-                        }
-                    }
+                        broadcastAudio(silenceFrames.toByteArray(), null, -1);
+                        timeSent += silenceFrames.getDuration();
+                }
 
                     mTimeOverrun += timeSent - PROCESSOR_RUN_INTERVAL_MS;
                 }
@@ -337,6 +333,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
             mInputFrames = null;
             mInputIdentifierCollection = null;
+            mInputStart = -1;
 
             //Peek at the next recording but don't remove it from the queue yet, so we can inspect the start time for
             //age limits and/or delay elapsed
@@ -375,10 +372,11 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                                     throw new IllegalArgumentException("Unsupported broadcast format [" + mBroadcastFormat + "]");
                             }
                             mInputIdentifierCollection = nextRecording.getIdentifierCollection();
+                            mInputStart = nextRecording.getStartTime();
 
                             if(connected())
                             {
-                                broadcastMetadata(nextRecording.getIdentifierCollection());
+                                broadcastMetadata(nextRecording.getIdentifierCollection(), mInputStart);
                             }
 
                             metadataUpdateRequired = false;
@@ -392,6 +390,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
                     mInputFrames = null;
                     mInputIdentifierCollection = null;
+                    mInputStart = -1;
                     metadataUpdateRequired = false;
                 }
 
@@ -403,7 +402,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
             //If we closed out a recording and don't have a new/next recording, send an empty metadata update
             if(metadataUpdateRequired && connected())
             {
-                broadcastMetadata(null);
+                broadcastMetadata(null, -1);
             }
         }
     }
