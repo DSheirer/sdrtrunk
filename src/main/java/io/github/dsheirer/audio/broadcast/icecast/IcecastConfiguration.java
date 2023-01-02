@@ -45,6 +45,13 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     private int mChannels = 1;
     private int mSampleRate = 8000;
     private String mURL;
+    private String mMetadataDefaultFormat = "{{ ID }} {{ ALIAS }}";
+    private String mMetadataFormat = "{{ TIME }} - {{ TO }} FROM: {{ FROM|default('Unknown') }} {%- if TONE %} TONES: {{ TONE }} {%- endif -%}";
+    private String mMetadataIdleMessage = "{{ TIME }} - Scanning...";
+    private String mMetadataRadioFormat = "";
+    private String mMetadataTalkgroupFormat = "";
+    private String mMetadataTimeFormat = "HH:mm";
+    private String mMetadataToneFormat = "{{ ALIAS }} {{ ID }}";
     private boolean mInline = true;
 
     public IcecastConfiguration(BroadcastFormat format)
@@ -274,6 +281,79 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     public boolean hasURL()
     {
         return mURL != null;
+    }
+
+    /**
+     * Define metadata format
+     */
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_format")
+    public String getMetadataFormat()
+    {
+        return mMetadataFormat;
+    }
+
+    public void setMetadataFormat(String metadataFormat) {
+        mMetadataFormat = metadataFormat;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_idle_message")
+    public String getMetadataIdleMessage()
+    {
+        return mMetadataIdleMessage;
+    }
+
+    public void setMetadataIdleMessage(String metadataIdleMessage) {
+        mMetadataIdleMessage = metadataIdleMessage;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_default_format")
+    public String getMetadataDefaultFormat()
+    {
+        return mMetadataDefaultFormat;
+    }
+
+    public void setMetadataDefaultFormat(String metadataDefaultFormat) {
+        mMetadataDefaultFormat = metadataDefaultFormat;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_radio_format")
+    public String getMetadataRadioFormat()
+    {
+        return mMetadataRadioFormat;
+    }
+
+    public void setMetadataRadioFormat(String metadataRadioFormat) {
+        mMetadataRadioFormat = metadataRadioFormat;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_talkgroup_format")
+    public String getMetadataTalkgroupFormat()
+    {
+        return mMetadataTalkgroupFormat;
+    }
+
+    public void setMetadataTalkgroupFormat(String metadataTalkgroupFormat) {
+        mMetadataTalkgroupFormat = metadataTalkgroupFormat;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_time_format")
+    public String getMetadataTimeFormat()
+    {
+        return mMetadataTimeFormat;
+    }
+
+    public void setMetadataTimeFormat(String metadataTimeFormat) {
+        mMetadataTimeFormat = metadataTimeFormat;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "metadata_tone_format")
+    public String getMetadataToneFormat()
+    {
+        return mMetadataToneFormat;
+    }
+
+    public void setMetadataToneFormat(String metadataToneFormat) {
+        mMetadataToneFormat = metadataToneFormat;
     }
 
     /**
