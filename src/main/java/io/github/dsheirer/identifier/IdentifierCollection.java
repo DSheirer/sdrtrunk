@@ -278,17 +278,39 @@ public class IdentifierCollection
      */
     public Identifier getFromIdentifier()
     {
-        Identifier from = getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
-
-        if(from == null)
+        List<Identifier> fromIdentifiers = getFromIdentifiers();
+        if(!fromIdentifiers.isEmpty())
         {
-            List<Identifier> fromIdentifiers = getIdentifiers(Role.FROM);
+            return fromIdentifiers.get(0);
+        }
 
-            if(!fromIdentifiers.isEmpty())
+        return null;
+    }
+
+    /**
+     * @return list of 'from' identifiers with radios first, then all others
+     */
+    public List<Identifier> getFromIdentifiers()
+    {
+        List<Identifier> from = new ArrayList<>();
+        List<Identifier> radio = new ArrayList<>();
+        List<Identifier> other = new ArrayList<>();
+        
+        for(Identifier identifier: getIdentifiers(Role.FROM))
+        {
+            switch(identifier.getForm())
             {
-                from = fromIdentifiers.get(0);
+                case RADIO:
+                    radio.add(identifier);
+                    break;
+
+                default:
+                    other.add(identifier);
             }
         }
+
+        from.addAll(radio);
+        from.addAll(other);
 
         return from;
     }
@@ -298,21 +320,59 @@ public class IdentifierCollection
      */
     public Identifier getToIdentifier()
     {
-        Identifier to = getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
-
-        if(to == null)
+        List<Identifier> toIdentifiers = getToIdentifiers();
+        if(!toIdentifiers.isEmpty())
         {
-            to = getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
+            return toIdentifiers.get(0);
         }
 
-        if(to == null)
+        return null;
+    }
+
+    /**
+     * @return list of 'to' identifiers with patch groups first, followed by talkgroups, otherwise all others
+     */
+    public List<Identifier> getToIdentifiers()
+    {
+        List<Identifier> to = new ArrayList<>();
+        List<Identifier> patch = new ArrayList<>();
+        List<Identifier> talkgroup = new ArrayList<>();
+        List<Identifier> radio = new ArrayList<>();
+        List<Identifier> other = new ArrayList<>();
+        
+        for(Identifier identifier: getIdentifiers(Role.TO))
         {
-            List<Identifier> toIdentifiers = getIdentifiers(Role.TO);
-            if(!toIdentifiers.isEmpty())
+            switch(identifier.getForm())
             {
-                to = toIdentifiers.get(0);
+                case PATCH_GROUP:
+                    patch.add(identifier);
+                    break;
+
+                case RADIO:
+                    radio.add(identifier);
+                    break;
+
+                case TALKGROUP:
+                    talkgroup.add(identifier);
+                    break;
+
+                default:
+                    other.add(identifier);
             }
         }
+
+        to.addAll(patch);
+        to.addAll(talkgroup);
+        if((patch.isEmpty())&&(talkgroup.isEmpty()))
+        {
+            /**
+             * DMR – specifically TRBO variants - sometimes has a radio ID as the destination,
+             * in addition to talkgroup. To avoid confusion, only send the radio ID when there
+             * are no patch/talk groups.
+             */
+            to.addAll(radio);
+        }
+        to.addAll(other);
 
         return to;
     }
