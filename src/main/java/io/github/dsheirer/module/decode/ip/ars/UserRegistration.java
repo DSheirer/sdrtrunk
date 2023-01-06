@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.ip.ars;
@@ -25,11 +24,10 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ip.ars.identifier.ARSDevice;
 import io.github.dsheirer.module.decode.ip.ars.identifier.ARSPassword;
 import io.github.dsheirer.module.decode.ip.ars.identifier.ARSUser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UserRegistration extends ARSHeader
 {
@@ -108,7 +106,7 @@ public class UserRegistration extends ARSHeader
 
         pointer += 8;
 
-        if(deviceIdentifierSize > 0)
+        if(deviceIdentifierSize > 0 && deviceIdentifierSize < 8)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -118,22 +116,13 @@ public class UserRegistration extends ARSHeader
                 pointer += 8;
             }
 
-            try
-            {
-                int device = Integer.parseInt(sb.toString());
-                mDevice = ARSDevice.createFrom(device);
-            }
-            catch(Exception e)
-            {
-                //Abort processing
-                return;
-            }
+            mDevice = ARSDevice.createFrom(sb.toString());
         }
 
         int userIdentifierSize = getMessage().getInt(BYTE_VALUE, pointer);
         pointer += 8;
 
-        if(userIdentifierSize > 0)
+        if(userIdentifierSize > 0 && deviceIdentifierSize < 8)
         {
             StringBuilder sb = new StringBuilder();
 
@@ -149,7 +138,7 @@ public class UserRegistration extends ARSHeader
         int passwordSize = getMessage().getInt(BYTE_VALUE, pointer);
         pointer += 8;
 
-        if(passwordSize > 0)
+        if(passwordSize > 0 && passwordSize < 8)
         {
             StringBuilder sb = new StringBuilder();
 
