@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,9 +50,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
     private double mChannelSampleRate;
-    private long mChannelFrequencyCorrection = 0;
     private long mTunerFrequency;
-    private Listener<ComplexSamples> mListener;
     private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
 
     /**
@@ -132,35 +130,22 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     }
 
     /**
-     * Current frequency correction being applied to the channel sample stream
-     *
-     * @return correction in hertz
-     */
-    public long getFrequencyCorrection()
-    {
-        return mChannelFrequencyCorrection;
-    }
-
-    /**
-     * Changes the frequency correction value and broadcasts the change to the registered downstream listener.
-     *
-     * @param correction current frequency correction value.
-     */
-    public void setFrequencyCorrection(long correction)
-    {
-        mChannelFrequencyCorrection = correction;
-        updateMixerFrequencyOffset();
-        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
-    }
-
-    /**
      * Calculates the local mixer frequency offset from the tuned frequency,
      * channel's requested frequency, and channel frequency correction.
      */
     private void updateMixerFrequencyOffset()
     {
-        long offset = mTunerFrequency - getTunerChannel().getFrequency() - mChannelFrequencyCorrection;
+        long offset = mTunerFrequency - getTunerChannel().getFrequency();
         mFrequencyCorrectionMixer.setFrequency(offset);
+    }
+
+    /**
+     * Mixer frequency applying offset to the samples.
+     * @return mixer frequency
+     */
+    public long getMixerFrequency()
+    {
+        return (long)mFrequencyCorrectionMixer.getFrequency();
     }
 
     /**
@@ -172,28 +157,6 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     protected void setSampleRate(double sampleRate)
     {
         //Not implemented.  Sample rate changes are not permitted once sample stream starts
-    }
-
-    /**
-     * Sets the frequency correction for the outbound sample stream to the consumer
-     *
-     * @param correction in hertz
-     */
-    @Override
-    protected void setChannelFrequencyCorrection(long correction)
-    {
-        mChannelFrequencyCorrection = correction;
-        broadcastConsumerSourceEvent(SourceEvent.channelFrequencyCorrectionChange(correction));
-        updateMixerFrequencyOffset();
-    }
-
-    /**
-     * Frequency correction value currently being applied to the outbound sample stream
-     */
-    @Override
-    public long getChannelFrequencyCorrection()
-    {
-        return mChannelFrequencyCorrection;
     }
 
     /**

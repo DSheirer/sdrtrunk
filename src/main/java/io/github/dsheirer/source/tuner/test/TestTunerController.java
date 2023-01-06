@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,7 @@ public class TestTunerController extends TunerController
     private final static Logger mLog = LoggerFactory.getLogger(TestTunerController.class);
 
     public static final long MINIMUM_FREQUENCY = 1l;
-    public static final long MAXIMUM_FREQUENCY = 1000000000l;
+    public static final long MAXIMUM_FREQUENCY = 1_000_000_000l;
     public static final int SAMPLE_RATE = 2_400_000;
     public static final int DC_NOISE_BANDWIDTH = 0;
     public static final double USABLE_BANDWIDTH_PERCENTAGE = 1.00;
@@ -42,7 +42,7 @@ public class TestTunerController extends TunerController
     public static final long SAMPLE_GENERATION_INTERVAL = 1000 / SPECTRAL_FRAME_RATE;
 
     private SampleGenerator mSampleGenerator;
-    private long mFrequency = 100000000l;
+    private long mFrequency = 460662500l;
 
     /**
      * Tuner controller testing implementation.

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -169,7 +169,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      * @return optimal center tuned frequency for the set of currently sourced tuner channels.
      * @throws IllegalArgumentException if a center frequency cannot be determined for the set of tuner channels
      */
-    private long getCenterFrequency(SortedSet<TunerChannel> channels, long currentCenterFrequency)
+    protected long getCenterFrequency(SortedSet<TunerChannel> channels, long currentCenterFrequency)
         throws IllegalArgumentException
     {
         if(channels.isEmpty())

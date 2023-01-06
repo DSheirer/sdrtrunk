@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
+import io.github.dsheirer.source.tuner.manager.TestPolyphaseChannelSourceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ public class TestTuner extends Tuner
     public TestTuner(ITunerErrorListener tunerErrorListener)
     {
         super(new TestTunerController(), tunerErrorListener);
+        setChannelSourceManager(new TestPolyphaseChannelSourceManager(getTunerController()));
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,14 +72,13 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import io.github.dsheirer.source.heartbeat.IHeartbeatProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Processing chain provides a framework for connecting a complex or real sample
@@ -267,6 +266,15 @@ public class ProcessingChain implements Listener<ChannelEvent>
         mSource = source;
 
         addModule(mSource);
+    }
+
+    /**
+     * Source of sample data for this channel.
+     * @return source, may be null.
+     */
+    public Source getSource()
+    {
+        return mSource;
     }
 
     /**

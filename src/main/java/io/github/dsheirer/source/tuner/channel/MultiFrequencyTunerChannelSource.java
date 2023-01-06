@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,13 +29,12 @@ import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.tuner.channel.rotation.FrequencyLockChangeRequest;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Multiple-frequency tuner channel source.  Provides a wrapper around a tuner channel source and listens for external
@@ -271,26 +270,6 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
         {
             mTunerChannelSource.setSampleRate(sampleRate);
         }
-    }
-
-    @Override
-    protected void setChannelFrequencyCorrection(long correction)
-    {
-        if(mTunerChannelSource != null)
-        {
-            mTunerChannelSource.setChannelFrequencyCorrection(correction);
-        }
-    }
-
-    @Override
-    public long getChannelFrequencyCorrection()
-    {
-        if(mTunerChannelSource != null)
-        {
-            return mTunerChannelSource.getChannelFrequencyCorrection();
-        }
-
-        return 0;
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,17 +79,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     protected abstract void setSampleRate(double sampleRate);
 
     /**
-     * Sets the frequency correction for the outbound sample stream to the consumer
-     * @param correction in hertz
-     */
-    protected abstract void setChannelFrequencyCorrection(long correction);
-
-    /**
-     * Frequency correction value currently being applied to the outbound sample stream
-     */
-    public abstract long getChannelFrequencyCorrection();
-
-    /**
      * Sets the listener to receive the complex buffer sample output from this channel
      * @param complexSamplesListener to receive complex buffers
      */
@@ -152,11 +141,11 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         switch(sourceEvent.getEvent())
         {
-            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+            case NOTIFICATION_PLL_FREQUENCY:
             case NOTIFICATION_STOP_SAMPLE_STREAM:
                 //no-op
                 break;
@@ -171,10 +160,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
                 //Rebroadcast this measurement event so the producer can process it
                 sourceEvent.setSource(this);
                 broadcastProducerSourceEvent(sourceEvent);
-                break;
-            //Request events from the consumer
-            case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                setChannelFrequencyCorrection(sourceEvent.getValue().longValue());
                 break;
             case NOTIFICATION_FREQUENCY_ROTATION_FAILURE:
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
