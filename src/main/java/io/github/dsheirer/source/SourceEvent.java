@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ public class SourceEvent
     public enum Event
     {
         NOTIFICATION_CHANNEL_COUNT_CHANGE,
+        NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION,
         NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         NOTIFICATION_CHANNEL_POWER,
         NOTIFICATION_CHANNEL_SAMPLE_RATE_CHANGE,
@@ -40,6 +41,7 @@ public class SourceEvent
         NOTIFICATION_FREQUENCY_ROTATION_FAILURE,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR,
         NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED,
+        NOTIFICATION_PLL_FREQUENCY,
         NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_SQUELCH_THRESHOLD,
@@ -47,7 +49,6 @@ public class SourceEvent
         NOTIFICATION_TUNER_SHUTDOWN,
         NOTIFICATION_ERROR_STATE,
 
-        REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
         REQUEST_FREQUENCY_ROTATION,
         REQUEST_FREQUENCY_SELECTION,
@@ -242,13 +243,13 @@ public class SourceEvent
     }
 
     /**
-     * Creates a new channel frequency correction change event
+     * Creates a new PLL frequency error measurement notification event.
      *
-     * @param frequencyCorrection in hertz
+     * @param frequencyError in hertz
      */
-    public static SourceEvent channelFrequencyCorrectionChange(long frequencyCorrection)
+    public static SourceEvent pllFrequencyMeasurement(long frequencyError)
     {
-        return new SourceEvent(Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, frequencyCorrection);
+        return new SourceEvent(Event.NOTIFICATION_PLL_FREQUENCY, frequencyError);
     }
 
     /**
@@ -330,16 +331,6 @@ public class SourceEvent
     public static SourceEvent frequencyRequest(long frequency)
     {
         return new SourceEvent(Event.REQUEST_FREQUENCY_CHANGE, frequency);
-    }
-
-    /**
-     * Creates a new channel frequency correction change request event
-     *
-     * @param frequency requested
-     */
-    public static SourceEvent channelFrequencyCorrectionRequest(long frequency)
-    {
-        return new SourceEvent(Event.REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE, frequency);
     }
 
     /**

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,10 +27,9 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.util.Dispatcher;
+import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Iterator;
 
 /**
  * Pass-through channel source that simply passes complex sample buffers from the tuner controller
@@ -88,18 +87,6 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     protected void setSampleRate(double sampleRate)
     {
         mLog.debug("Request to set sample rate: " + sampleRate);
-    }
-
-    @Override
-    protected void setChannelFrequencyCorrection(long correction)
-    {
-        mLog.debug("Request to set frequency correction: " + correction);
-    }
-
-    @Override
-    public long getChannelFrequencyCorrection()
-    {
-        return 0;
     }
 
     @Override

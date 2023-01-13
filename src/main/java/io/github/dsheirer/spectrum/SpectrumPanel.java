@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,12 +29,6 @@ import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
-import org.apache.commons.lang3.Validate;
-import org.apache.commons.math3.util.FastMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GradientPaint;
@@ -45,6 +39,12 @@ import java.awt.RenderingHints;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
 import java.util.Arrays;
+import org.apache.commons.lang3.Validate;
+import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.JPanel;
 
 public class SpectrumPanel extends JPanel implements DFTResultsListener, SettingChangeListener, SpectralDisplayAdjuster
 {
@@ -82,7 +82,6 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
 
     private int mZoom = 0;
     private int mZoomWindowOffset = 0;
-    ;
 
     private SettingsManager mSettingsManager;
 

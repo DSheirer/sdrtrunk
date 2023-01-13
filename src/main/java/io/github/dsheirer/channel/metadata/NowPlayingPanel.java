@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.channel.metadata;
 
@@ -28,10 +27,11 @@ import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.settings.SettingsManager;
+import java.awt.Color;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.JPanel;
-import java.awt.Color;
 
 public class NowPlayingPanel extends JPanel
 {
@@ -45,13 +45,14 @@ public class NowPlayingPanel extends JPanel
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
      * messages, events, and spectral view.
      */
-    public NowPlayingPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences)
+    public NowPlayingPanel(PlaylistManager playlistManager, IconModel iconModel, UserPreferences userPreferences,
+                           SettingsManager settingsManager)
     {
         mChannelDetailPanel = new ChannelDetailPanel(playlistManager.getChannelProcessingManager());
         mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
         mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
-        mChannelPowerPanel = new ChannelPowerPanel(playlistManager);
+        mChannelPowerPanel = new ChannelPowerPanel(playlistManager, settingsManager);
 
         init();
     }
@@ -67,6 +68,10 @@ public class NowPlayingPanel extends JPanel
         tabbedPane.addTab("Channel", mChannelPowerPanel);
         tabbedPane.setFont(this.getFont());
         tabbedPane.setForeground(Color.BLACK);
+
+        //Register state change listener to toggle visibility state for channel tab to turn-on/off FFT processing
+        tabbedPane.addChangeListener(e -> mChannelPowerPanel.setPanelVisible(tabbedPane.getSelectedIndex() == tabbedPane
+                .indexOfComponent(mChannelPowerPanel)));
 
         JideSplitPane splitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
         splitPane.setShowGripper(true);

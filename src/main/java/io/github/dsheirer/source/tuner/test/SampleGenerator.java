@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package io.github.dsheirer.source.tuner.test;
 
 import io.github.dsheirer.buffer.FloatNativeBuffer;
 import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.dsp.oscillator.AWGNOscillator;
 import io.github.dsheirer.dsp.oscillator.IComplexOscillator;
 import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.sample.Broadcaster;
@@ -59,7 +60,9 @@ public class SampleGenerator
             throw new IllegalArgumentException("Sweep update rate cannot be greater than sample rate");
         }
 
-        mComplexOscillator = OscillatorFactory.getComplexOscillator(frequency, sampleRate);
+//        mComplexOscillator = OscillatorFactory.getComplexOscillator(frequency, sampleRate);
+        IComplexOscillator oscillator = OscillatorFactory.getComplexOscillator(frequency, sampleRate);
+        mComplexOscillator = new AWGNOscillator(oscillator, 0.003f);
 
         mInterval = 1000 / (sampleRate / mSamplesPerInterval);
         mSweepUpdateInterval = sweepUpdateRate;

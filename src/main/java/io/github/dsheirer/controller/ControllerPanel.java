@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,8 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerViewPanel;
+import java.awt.Color;
+import java.awt.Dimension;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
@@ -41,8 +43,6 @@ import org.slf4j.LoggerFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import java.awt.Color;
-import java.awt.Dimension;
 
 public class ControllerPanel extends JPanel
 {
@@ -63,7 +63,7 @@ public class ControllerPanel extends JPanel
     {
         mAudioPanel = new AudioPanel(iconModel, userPreferences, settingsManager, audioPlaybackManager,
             playlistManager.getAliasModel());
-        mNowPlayingPanel = new NowPlayingPanel(playlistManager, iconModel, userPreferences);
+        mNowPlayingPanel = new NowPlayingPanel(playlistManager, iconModel, userPreferences, settingsManager);
         mMapPanel = new MapPanel(mapService, playlistManager.getAliasModel(), iconModel, settingsManager);
         mTunerManagerPanel = new TunerViewPanel(tunerManager, userPreferences);
 
