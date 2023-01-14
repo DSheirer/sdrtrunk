@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.record.wave;
@@ -43,7 +42,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 
 public class AudioMetadataUtils
 {
@@ -86,37 +89,41 @@ public class AudioMetadataUtils
 
         if(identifierCollection != null)
         {
-            for(Identifier to: identifierCollection.getIdentifiers(Role.TO))
+            StringBuilder sb;
+
+            Identifier to = identifierCollection.getToIdentifier();
+            if(to != null)
             {
-                StringBuilder sb = new StringBuilder();
+                sb = new StringBuilder();
                 sb.append(to.toString());
 
-                List<Alias> aliases = aliasList.getAliases(to);
+                List<Alias> toAliases = aliasList.getAliases(to);
 
-                if(!aliases.isEmpty())
+                if(!toAliases.isEmpty())
                 {
-                    sb.append("\"").append(Joiner.on("\",\"").join(aliases)).append("\"");
+                    sb.append("\"").append(Joiner.on("\",\"").join(toAliases)).append("\"");
                 }
 
                 audioMetadata.put(AudioMetadata.TRACK_TITLE, sb.toString());
-                break;
             }
 
-            for(Identifier from: identifierCollection.getIdentifiers(Role.FROM))
+            Identifier from = identifierCollection.getFromIdentifier();
+            if(from != null)
             {
-                StringBuilder sb = new StringBuilder();
+                sb = new StringBuilder();
                 sb.append(from.toString());
 
-                List<Alias> aliases = aliasList.getAliases(from);
+                List<Alias> fromAliases = aliasList.getAliases(from);
 
-                for(Alias alias: aliases)
+                for(Alias alias: fromAliases)
                 {
                     sb.append(" ").append(alias.toString());
                 }
 
                 audioMetadata.put(AudioMetadata.ARTIST_NAME, sb.toString());
-                break;
             }
+            
+            sb = null;
 
             Identifier system = identifierCollection.getIdentifier(IdentifierClass.CONFIGURATION, Form.SYSTEM, Role.ANY);
             if(system instanceof SystemConfigurationIdentifier)

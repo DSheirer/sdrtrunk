@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,15 @@ import io.github.dsheirer.audio.playback.AudioPlaybackManager;
 import io.github.dsheirer.controller.ControllerPanel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
+import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
+import io.github.dsheirer.gui.preference.CalibrateRequest;
+import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.log.ApplicationLog;
 import io.github.dsheirer.map.MapService;
@@ -44,17 +48,19 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.AudioRecordingManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
-import io.github.dsheirer.source.tuner.TunerModel;
-import io.github.dsheirer.source.tuner.TunerSpectralDisplayManager;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
+import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
+import io.github.dsheirer.source.tuner.ui.TunerSpectralDisplayManager;
 import io.github.dsheirer.spectrum.ClearTunerMenuItem;
 import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
+import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import javafx.application.Platform;
+import javafx.scene.control.ButtonType;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.swing.IconFontSwing;
 import net.miginfocom.swing.MigLayout;
@@ -78,6 +84,7 @@ import java.awt.AWTException;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Robot;
 import java.awt.event.ActionEvent;
@@ -92,6 +99,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class SDRTrunk implements Listener<TunerEvent>
 {
@@ -110,19 +118,24 @@ public class SDRTrunk implements Listener<TunerEvent>
     private ControllerPanel mControllerPanel;
     private IconModel mIconModel = new IconModel();
     private PlaylistManager mPlaylistManager;
-    private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
-    private JFrame mMainGui = new JFrame();
+    private JFrame mMainGui;
     private JideSplitPane mSplitPane;
     private JavaFxWindowManager mJavaFxWindowManager;
     private UserPreferences mUserPreferences = new UserPreferences();
+    private TunerManager mTunerManager;
     private ApplicationLog mApplicationLog;
 
     private String mTitle;
 
     public SDRTrunk()
     {
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            mMainGui = new JFrame();
+        }
+
         mApplicationLog = new ApplicationLog(mUserPreferences);
         mApplicationLog.start();
 
@@ -160,16 +173,24 @@ public class SDRTrunk implements Listener<TunerEvent>
         //Register FontAwesome so we can use the fonts in Swing windows
         IconFontSwing.register(FontAwesome.getIconFont());
 
-        TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
-        TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
+        mTunerManager = new TunerManager(mUserPreferences);
+        mTunerManager.start();
 
-        mSettingsManager = new SettingsManager(tunerConfigurationModel);
-        mSourceManager = new SourceManager(tunerModel, mSettingsManager, mUserPreferences);
+        mSettingsManager = new SettingsManager();
 
         AliasModel aliasModel = new AliasModel();
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, mSourceManager, aliasModel, eventLogManager, mIconModel);
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, mIconModel);
+
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
+        }
+
+        CalibrationManager calibrationManager = CalibrationManager.getInstance(mUserPreferences);
+        final boolean calibrating = !calibrationManager.isCalibrated() &&
+            !mUserPreferences.getVectorCalibrationPreference().isHideCalibrationDialog();
+
         new ChannelSelectionManager(mPlaylistManager.getChannelModel());
 
         AudioPlaybackManager audioPlaybackManager = new AudioPlaybackManager(mUserPreferences);
@@ -191,31 +212,66 @@ public class SDRTrunk implements Listener<TunerEvent>
         MapService mapService = new MapService(mIconModel);
         mPlaylistManager.getChannelProcessingManager().addDecodeEventListener(mapService);
 
-        mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
-            mSettingsManager, mSourceManager, mUserPreferences);
+        if(!GraphicsEnvironment.isHeadless())
+        {
+            mControllerPanel = new ControllerPanel(mPlaylistManager, audioPlaybackManager, mIconModel, mapService,
+                    mSettingsManager, mTunerManager, mUserPreferences);
+        }
 
-        mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, tunerModel);
+        mSpectralPanel = new SpectralDisplayPanel(mPlaylistManager, mSettingsManager, mTunerManager.getDiscoveredTunerModel());
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
-            mPlaylistManager, mSettingsManager, tunerModel);
-        tunerModel.addListener(tunerSpectralDisplayManager);
-        tunerModel.addListener(this);
+            mPlaylistManager, mSettingsManager, mTunerManager.getDiscoveredTunerModel());
+        mTunerManager.getDiscoveredTunerModel().addListener(tunerSpectralDisplayManager);
+        mTunerManager.getDiscoveredTunerModel().addListener(this);
 
         mPlaylistManager.init();
 
-        mLog.info("starting main application gui");
+        if(GraphicsEnvironment.isHeadless())
+        {
+            mLog.info("starting main application headless");
+        }
+        else
+        {
+            mLog.info("starting main application gui");
 
-        //Initialize the GUI
-        initGUI();
-
-        tunerModel.requestFirstTunerDisplay();
+            //Initialize the GUI
+            initGUI();
+        }
 
         //Start the gui
         EventQueue.invokeLater(() -> {
             try
             {
-                mMainGui.setVisible(true);
-                autoStartChannels();
+                if(!GraphicsEnvironment.isHeadless())
+                {
+                    mMainGui.setVisible(true);
+                    Tuner tuner = tunerSpectralDisplayManager.showFirstTuner();
+                    updateTitle(tuner);
+                }
+
+                if(calibrating && !GraphicsEnvironment.isHeadless())
+                {
+                    Platform.runLater(() ->
+                    {
+                        CalibrationDialog calibrationDialog = mJavaFxWindowManager.getCalibrationDialog(mUserPreferences);
+                        Optional<ButtonType> calibrate = calibrationDialog.showAndWait();
+                        if(calibrate.isPresent() && calibrate.get().getText().equals("Calibrate"))
+                        {
+                            //Request focus and execute calibration
+                            MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest(PreferenceEditorType.VECTOR_CALIBRATION));
+                            MyEventBus.getGlobalEventBus().post(new CalibrateRequest());
+                        }
+                        else
+                        {
+                            autoStartChannels();
+                        }
+                    });
+                }
+                else
+                {
+                    autoStartChannels();
+                }
             }
             catch(Exception e)
             {
@@ -235,8 +291,25 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         if(channels.size() > 0)
         {
-            ChannelAutoStartFrame autoStartFrame = new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(),
-                channels);
+            if(GraphicsEnvironment.isHeadless())
+            {
+                for(Channel channel: channels)
+                {
+                    try
+                    {
+                        mLog.info("Auto-starting channel " + channel.getName());
+                        mPlaylistManager.getChannelProcessingManager().start(channel);
+                    }
+                    catch(ChannelException ce)
+                    {
+                        mLog.error("Channel: " + channel.getName() + " auto-start failed: " + ce.getMessage());
+                    }
+                }
+            }
+            else
+            {
+                new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(), channels);
+            }
         }
     }
 
@@ -434,7 +507,8 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mLog.info("Stopping spectral display ...");
         mSpectralPanel.clearTuner();
-        mSourceManager.shutdown();
+        mLog.info("Stopping tuners ...");
+        mTunerManager.stop();
         mLog.info("Shutdown complete.");
         mApplicationLog.stop();
     }
@@ -551,7 +625,23 @@ public class SDRTrunk implements Listener<TunerEvent>
     {
         if(event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)
         {
-            mMainGui.setTitle(mTitle + " - " + event.getTuner().getName());
+            updateTitle(event.getTuner());
+        }
+    }
+
+    /**
+     * Updates the title bar with the tuner name
+     * @param tuner optional
+     */
+    private void updateTitle(Tuner tuner)
+    {
+        if(tuner != null)
+        {
+            mMainGui.setTitle(mTitle + " - " + tuner.getPreferredName());
+        }
+        else
+        {
+            mMainGui.setTitle(mTitle);
         }
     }
 
@@ -601,9 +691,9 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     removeAll();
 
-                    for(Tuner tuner : mSourceManager.getTunerModel().getTuners())
+                    for(DiscoveredTuner discoveredTuner: mTunerManager.getAvailableTuners())
                     {
-                        add(new ShowTunerMenuItem(mSourceManager.getTunerModel(), tuner));
+                        add(new ShowTunerMenuItem(mTunerManager.getDiscoveredTunerModel(), discoveredTuner.getTuner()));
                     }
                 }
 

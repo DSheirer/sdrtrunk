@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,20 +21,23 @@ package io.github.dsheirer.record;
 
 import io.github.dsheirer.audio.AudioFormats;
 import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
+import io.github.dsheirer.audio.convert.MP3Setting;
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.wave.AudioMetadata;
 import io.github.dsheirer.record.wave.AudioMetadataUtils;
 import io.github.dsheirer.record.wave.WaveWriter;
 import io.github.dsheirer.sample.ConversionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Recording utility for audio segments
@@ -53,12 +56,13 @@ public class AudioSegmentRecorder
      * @param recordFormat to use (WAVE, MP3)
      * @throws IOException on any errors
      */
-    public static void record(AudioSegment audioSegment, Path path, RecordFormat recordFormat) throws IOException
+    public static void record(AudioSegment audioSegment, Path path, RecordFormat recordFormat,
+                              UserPreferences userPreferences) throws IOException
     {
         switch(recordFormat)
         {
             case MP3:
-                recordMP3(audioSegment, path);
+                recordMP3(audioSegment, path, userPreferences);
                 break;
             case WAVE:
                 recordWAVE(audioSegment, path);
@@ -74,7 +78,7 @@ public class AudioSegmentRecorder
      * @param path for the recording
      * @throws IOException on any errors
      */
-    public static void recordMP3(AudioSegment audioSegment, Path path) throws IOException
+    public static void recordMP3(AudioSegment audioSegment, Path path, UserPreferences userPreferences) throws IOException
     {
         if(audioSegment.hasAudio())
         {
@@ -88,15 +92,26 @@ public class AudioSegmentRecorder
             outputStream.write(id3Bytes);
 
             //Convert audio to MP3 and write to file
-            MP3AudioConverter converter = new MP3AudioConverter(MP3_BIT_RATE, CONSTANT_BIT_RATE);
-            byte[] mp3 = converter.convertAudio(audioSegment.getAudioBuffers());
-            outputStream.write(mp3);
+            InputAudioFormat inputAudioFormat = userPreferences.getMP3Preference().getAudioSampleRate();
+            MP3Setting mp3Setting = userPreferences.getMP3Preference().getMP3Setting();
 
-            byte[] lastFrame = converter.flush();
+            boolean normalizeAudio = userPreferences.getMP3Preference().isNormalizeAudioBeforeEncode();
 
-            if(lastFrame != null && lastFrame.length > 0)
+            MP3AudioConverter converter = new MP3AudioConverter(inputAudioFormat, mp3Setting, normalizeAudio);
+            List<byte[]> mp3Frames = converter.convert(audioSegment.getAudioBuffers());
+            for(byte[] mp3Frame: mp3Frames)
             {
-                outputStream.write(lastFrame);
+                outputStream.write(mp3Frame);
+            }
+
+            List<byte[]> lastFrames = converter.flush();
+
+            if(!lastFrames.isEmpty())
+            {
+                for(byte[] lastFrame: lastFrames)
+                {
+                    outputStream.write(lastFrame);
+                }
             }
 
             outputStream.flush();
@@ -114,7 +129,7 @@ public class AudioSegmentRecorder
     {
         if(audioSegment.hasAudio())
         {
-            WaveWriter writer = new WaveWriter(AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO, path);
+            WaveWriter writer = new WaveWriter(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, path);
 
             for(float[] audioBuffer: audioSegment.getAudioBuffers())
             {

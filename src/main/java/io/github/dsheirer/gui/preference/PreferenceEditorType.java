@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,11 +27,13 @@ public enum PreferenceEditorType
     CHANNEL_EVENT("Channel Events"),
     DIRECTORY("Directories"),
     JMBE_LIBRARY("JMBE Audio Library"),
+    AUDIO_MP3("MP3"),
     AUDIO_RECORD("Record"),
     AUDIO_OUTPUT("Output/Tones"),
     AUDIO_DUPLICATE_CALL_DETECTION("Duplicate Calls"),
     SOURCE_TUNER_CHANNELIZER("Tuner Channelizer"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
+    VECTOR_CALIBRATION("Vector Calibration"),
     DEFAULT("Default");
 
     private String mLabel;

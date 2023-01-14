@@ -1,46 +1,47 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 
 package io.github.dsheirer.source.tuner.channel;
 
+import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerController;
+import io.github.dsheirer.util.Dispatcher;
+import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Pass-through channel source that simply passes complex sample buffers from the tuner controller
  * directly to the registered listener
  */
 public class PassThroughChannelSource extends TunerChannelSource implements ISourceEventListener,
-        Listener<ReusableComplexBuffer>
+        Listener<INativeBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PassThroughChannelSource.class);
     private TunerController mTunerController;
-    private OverflowableReusableBufferTransferQueue<ReusableComplexBuffer> mBufferQueue =
-            new OverflowableReusableBufferTransferQueue<>(500, 100);
-    private List<ReusableComplexBuffer> mBuffersToProcess = new ArrayList<>();
-    private Listener<ReusableComplexBuffer> mComplexBufferListener;
+    private Dispatcher<INativeBuffer> mBufferDispatcher;
+    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
 
     /**
      * Constructs an instance
@@ -54,6 +55,26 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     {
         super(listener, tunerChannel);
         mTunerController = tunerController;
+        mBufferDispatcher = new Dispatcher<>(500, "sdrtrunk pass-through channel " +
+                tunerChannel.getFrequency(), new NativeBufferPoisonPill());
+        mBufferDispatcher.setListener(new BufferProcessor());
+        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+        mStreamHeartbeatProcessor.stop();
+        mBufferDispatcher.start();
+    }
+
+    @Override
+    public void stop()
+    {
+        super.stop();
+        mBufferDispatcher.stop();
+        mStreamHeartbeatProcessor.stop();
     }
 
     @Override
@@ -69,47 +90,9 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     }
 
     @Override
-    protected void setChannelFrequencyCorrection(long correction)
+    public void setListener(Listener<ComplexSamples> listener)
     {
-        mLog.debug("Request to set frequency correction: " + correction);
-    }
-
-    @Override
-    public long getChannelFrequencyCorrection()
-    {
-        return 0;
-    }
-
-    @Override
-    public void setListener(Listener<ReusableComplexBuffer> complexBufferListener)
-    {
-        mComplexBufferListener = complexBufferListener;
-    }
-
-    @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
-    {
-        mComplexBufferListener = null;
-    }
-
-    @Override
-    protected void processSamples()
-    {
-        mBufferQueue.drainTo(mBuffersToProcess);
-
-        for(ReusableComplexBuffer buffer: mBuffersToProcess)
-        {
-            if(mComplexBufferListener != null)
-            {
-                mComplexBufferListener.receive(buffer);
-            }
-            else
-            {
-                buffer.decrementUserCount();
-            }
-        }
-
-        mBuffersToProcess.clear();
+        mStreamHeartbeatProcessor.setListener(listener);
     }
 
     @Override
@@ -119,8 +102,22 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(INativeBuffer buffer)
     {
-        mBufferQueue.offer(reusableComplexBuffer);
+        mBufferDispatcher.receive(buffer);
+    }
+
+    public class BufferProcessor implements Listener<INativeBuffer>
+    {
+        @Override
+        public void receive(INativeBuffer nativeBuffer)
+        {
+            Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
+
+            while(iterator.hasNext())
+            {
+                mStreamHeartbeatProcessor.receive(iterator.next());
+            }
+        }
     }
 }

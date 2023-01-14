@@ -1,20 +1,21 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.buffer;
 
 import java.util.Arrays;
@@ -25,13 +26,12 @@ import java.util.Arrays;
  * fills buffer with 0-valued samples
  *
  * Can be used as a delay-type buffer, to delay samples by the 'size' amount
- *
- * @author denny
  */
 public class FloatCircularBuffer
 {
-    float[] mBuffer;
-    int mBufferPointer = 0;
+    private float[] mBuffer;
+    private int mBufferPointer = 0;
+    private float mOldestSample;
 
     /**
      * Creates a circular double buffer of the specified size and all entries filled with the specified initial value.
@@ -61,25 +61,27 @@ public class FloatCircularBuffer
     }
 
     /**
-     * Puts the new value into the buffer and returns the oldest buffer value that it replaced
+     * Gets the current buffer value and overwrites that value position in the buffer with the new value.
      *
      * @param newValue to add to the buffer
      * @return oldest value that was overwritten by the new value
      */
-    public float get(float newValue)
+    public float getAndPut(float newValue)
     {
-        float oldestSample = mBuffer[mBufferPointer];
+        mOldestSample = mBuffer[mBufferPointer];
+        put(newValue);
+        return mOldestSample;
+    }
 
-        mBuffer[mBufferPointer] = newValue;
-
-        mBufferPointer++;
-
-        if(mBufferPointer >= mBuffer.length)
-        {
-            mBufferPointer = 0;
-        }
-
-        return oldestSample;
+    /**
+     * Puts the value into the buffer, updates the pointer and returns the buffer value at the pointer position.
+     * @param sample to add
+     * @return next pointed sample.
+     */
+    public float putAndGet(float sample)
+    {
+        put(sample);
+        return mBuffer[mBufferPointer];
     }
 
     public float[] getAll()
@@ -109,12 +111,7 @@ public class FloatCircularBuffer
     public void put(float newValue)
     {
         mBuffer[mBufferPointer] = newValue;
-
         mBufferPointer++;
-
-        if(mBufferPointer >= mBuffer.length)
-        {
-            mBufferPointer = 0;
-        }
+        mBufferPointer %= mBuffer.length;
     }
 }

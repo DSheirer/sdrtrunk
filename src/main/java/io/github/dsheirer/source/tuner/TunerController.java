@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,14 @@
  */
 package io.github.dsheirer.source.tuner;
 
+import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.buffer.INativeBufferProvider;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.RecorderFactory;
-import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
+import io.github.dsheirer.record.wave.IRecordingStatusListener;
+import io.github.dsheirer.record.wave.NativeBufferWaveRecorder;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableComplexBufferProvider;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -34,48 +35,91 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController.Tunable;
+import io.github.dsheirer.source.tuner.manager.FrequencyErrorCorrectionManager;
+import java.text.DecimalFormat;
+import java.util.SortedSet;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.SortedSet;
-
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>, ITunerErrorListener
+        INativeBufferProvider, Listener<INativeBuffer>, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
-    protected ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
+    protected Broadcaster<INativeBuffer> mNativeBufferBroadcaster = new Broadcaster();
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
-    private double mUsableBandwidthPercentage;
-    private Listener<SourceEvent> mSourceEventListener;
     private int mMeasuredFrequencyError;
-    private ComplexBufferWaveRecorder mRecorder;
+    private double mUsableBandwidthPercentage;
+    private SourceEventListenerToProcessorAdapter mSourceEventListener;
+    private NativeBufferWaveRecorder mRecorder;
     private ITunerErrorListener mTunerErrorListener;
+    private DecimalFormat mFrequencyErrorPPMFormat = new DecimalFormat("0.0");
+    private FrequencyErrorCorrectionManager mFrequencyErrorCorrectionManager;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
      * that are being fed samples from the tuner.
-     *
-     * @param minimumFrequency minimum uncorrected tunable frequency
-     * @param maximumFrequency maximum uncorrected tunable frequency
-     * @param middleUnusableHalfBandwidth is the +/- value center DC spike to avoid for channels
-     * @param usableBandwidth percentage of usable bandwidth relative to space at the extreme ends of the spectrum
-     * @throws SourceException - for any issues related to constructing the
-     *                         class, tuning a frequency, or setting the bandwidth
+     * @param tunerErrorListener to monitor errors produced from this tuner controller
      */
-    public TunerController(long minimumFrequency, long maximumFrequency, int middleUnusableHalfBandwidth, double usableBandwidth)
+    public TunerController(ITunerErrorListener tunerErrorListener)
     {
-        mFrequencyController = new FrequencyController(this, minimumFrequency, maximumFrequency, 0.0d);
-        mMiddleUnusableHalfBandwidth = middleUnusableHalfBandwidth;
-        mUsableBandwidthPercentage = usableBandwidth;
+        mTunerErrorListener = tunerErrorListener;
+        mFrequencyController = new FrequencyController(this);
         mSourceEventListener = new SourceEventListenerToProcessorAdapter(this);
+        mFrequencyErrorCorrectionManager = new FrequencyErrorCorrectionManager(this);
     }
 
     /**
-     * Dispose of this tuner controller and prepare for shutdown.
+     * Lock for the frequency controller.  This should only be used by the channel source manager to lock access to the
+     * frequency controller while creating a channel source, to block multi-threaded access to the frequency controller
+     * which might put the center tuned frequency value in an indeterminant state.
+     * @return frequency controller lock
      */
-    public abstract void dispose();
+    public ReentrantLock getFrequencyControllerLock()
+    {
+        return mFrequencyController.getFrequencyControllerLock();
+    }
 
+    /**
+     * Frequency correction manager for this tuner controller.
+     */
+    public FrequencyErrorCorrectionManager getFrequencyErrorCorrectionManager()
+    {
+        return mFrequencyErrorCorrectionManager;
+    }
+
+    protected void dispose()
+    {
+        getFrequencyErrorCorrectionManager().dispose();
+        mNativeBufferBroadcaster.clear();
+        mFrequencyController.dispose();
+        mSourceEventListener.dispose();
+        mTunerErrorListener = null;
+    }
+
+    /**
+     * Perform startup operations
+     * @throws SourceException if there is an error that makes this tuner controller unusable
+     */
+    public abstract void start() throws SourceException;
+
+    /**
+     * Perform shutdown and disposal operations.
+     *
+     * Note: implementation should notify any native buffer listeners that we're shutting down.
+     */
+    public abstract void stop();
+
+    /**
+     * Tuner type for this controller
+     */
+    public abstract TunerType getTunerType();
+
+    /**
+     * Sets an unrecoverable error for this tuner controller that will be handled by the listener
+     * @param errorMessage to set
+     */
     @Override
     public void setErrorMessage(String errorMessage)
     {
@@ -83,15 +127,6 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         {
             mTunerErrorListener.setErrorMessage(errorMessage);
         }
-    }
-
-    /**
-     * Sets the listener for tuner error messages that originate outside of the tuner.  This is normally the enclosing
-     * tuner so that it can receive error signals from the USB processor(s)..
-     */
-    public void setTunerErrorListener(ITunerErrorListener tunerErrorListener)
-    {
-        mTunerErrorListener = tunerErrorListener;
     }
 
     /**
@@ -121,7 +156,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     /**
      * Applies the settings in the tuner configuration
      */
-    public abstract void apply(TunerConfiguration config) throws SourceException;
+    public void apply(TunerConfiguration config) throws SourceException
+    {
+        setFrequency(config.getFrequency());
+        setFrequencyCorrection(config.getFrequencyCorrection());
+        getFrequencyErrorCorrectionManager().setEnabled(config.getAutoPPMCorrectionEnabled());
+    }
 
     /**
      * Responds to requests to set the frequency
@@ -137,13 +177,13 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
             case REQUEST_START_SAMPLE_STREAM:
                 if(sourceEvent.getSource() instanceof Listener)
                 {
-                    addBufferListener((Listener<ReusableComplexBuffer>)sourceEvent.getSource());
+                    addBufferListener((Listener<INativeBuffer>)sourceEvent.getSource());
                 }
                 break;
             case REQUEST_STOP_SAMPLE_STREAM:
                 if(sourceEvent.getSource() instanceof Listener)
                 {
-                    removeBufferListener((Listener<ReusableComplexBuffer>)sourceEvent.getSource());
+                    removeBufferListener((Listener<INativeBuffer>)sourceEvent.getSource());
                 }
                 break;
             default:
@@ -153,29 +193,30 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
-     * Indicates if the frequency and sample rate controls are locked by another process.  User interface controls
-     * should monitor source events and check the locked state via this method to correctly render the enabled state
-     * of the frequency and sample rate controls.
+     * Indicates if the sample rate control is locked by another process.  User interface controls should monitor source
+     * events and check the locked state via this method to correctly render the enabled state of the sample rate control.
      *
      * @return true if the tuner controller is locked.
      */
-    public boolean isLocked()
+    public boolean isLockedSampleRate()
     {
-        return mFrequencyController.isLocked();
+        //Note: this access is not protected by the mFrequencyControllerLock
+        return mFrequencyController.isSampleRateLocked();
     }
 
     /**
-     * Sets the frequency and sample rate locked state to the locked argument value.  This should only be changed
-     * by a downstream consumer of samples to prevent users or other processes from modifying the center frequency
-     * and/or sample rate of the tuner while processing samples.
+     * Sets the sample rate locked state to the locked argument value.  This should only be changed by a downstream
+     * consumer of samples to prevent users or other processes from modifying the sample rate of the tuner while
+     * processing samples.
      *
      * @param locked true to indicate the tuner controller is in a locked state, otherwise false.
      */
-    public void setLocked(boolean locked)
+    public void setLockedSampleRate(boolean locked)
     {
         try
         {
-            mFrequencyController.setLocked(locked);
+            //Note: this access is not protected by the mFrequencyControllerLock
+            mFrequencyController.setSampleRateLocked(locked);
         }
         catch(SourceException se)
         {
@@ -185,6 +226,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
     public int getBandwidth()
     {
+        //Note: this access is not protected by the mFrequencyControllerLock
         return mFrequencyController.getBandwidth();
     }
 
@@ -196,7 +238,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void setFrequency(long frequency) throws SourceException
     {
-        mFrequencyController.setFrequency(frequency);
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setFrequency(frequency);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
     /**
@@ -206,57 +256,201 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public long getFrequency()
     {
-        return mFrequencyController.getFrequency();
+        long frequency;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            frequency = mFrequencyController.getFrequency();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return frequency;
     }
 
     @Override
     public boolean canTune(long frequency)
     {
-        return mFrequencyController.canTune(frequency);
+        boolean canTune;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            canTune = mFrequencyController.canTune(frequency);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return canTune;
     }
 
     public double getSampleRate()
     {
+        //Note: this access is not protected by the mFrequencyControllerLock
         return mFrequencyController.getSampleRate();
     }
 
     public double getFrequencyCorrection()
     {
-        return mFrequencyController.getFrequencyCorrection();
+        double correction;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            correction = mFrequencyController.getFrequencyCorrection();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return correction;
     }
 
     public void setFrequencyCorrection(double correction) throws SourceException
     {
-        mFrequencyController.setFrequencyCorrection(correction);
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setFrequencyCorrection(correction);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
-    public long getMinFrequency()
+    /**
+     * Minimum tunable frequency
+     * @return minimum in Hertz
+     */
+    public long getMinimumFrequency()
     {
-        return mFrequencyController.getMinimumFrequency();
+        long minimum;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            minimum = mFrequencyController.getMinimumFrequency();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return minimum;
     }
 
-    public long getMaxFrequency()
+    /**
+     * Sets the minimum tunable frequency
+     * @param minimum frequency in Hertz
+     */
+    public void setMinimumFrequency(long minimum)
     {
-        return mFrequencyController.getMaximumFrequency();
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setMinimumFrequency(minimum);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+    }
+
+    /**
+     * Maximum tunable frequency
+     * @return maximum in Hertz
+     */
+    public long getMaximumFrequency()
+    {
+        long maximum;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            maximum = mFrequencyController.getMaximumFrequency();
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return maximum;
+    }
+
+    /**
+     * Sets the maximum tunable frequency
+     * @param maximum in Hertz
+     */
+    public void setMaximumFrequency(long maximum)
+    {
+        try
+        {
+            getFrequencyControllerLock().lock();
+            mFrequencyController.setMaximumFrequency(maximum);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
     }
 
     public long getMinTunedFrequency() throws SourceException
     {
-        return mFrequencyController.getFrequency() - (getUsableBandwidth() / 2);
+        long minTuned;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            minTuned = mFrequencyController.getFrequency() - (getUsableBandwidth() / 2);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return minTuned;
     }
 
     public long getMaxTunedFrequency() throws SourceException
     {
-        return mFrequencyController.getFrequency() + (getUsableBandwidth() / 2);
+        long maxTuned;
+
+        try
+        {
+            getFrequencyControllerLock().lock();
+            maxTuned = mFrequencyController.getFrequency() + (getUsableBandwidth() / 2);
+        }
+        finally
+        {
+            getFrequencyControllerLock().unlock();
+        }
+
+        return maxTuned;
     }
 
     /**
-     * Total bandwidth of the middle unusable bandwidth region.  This value is used to avoid a central DC spike
-     * present in some tuners.
+     * Half of the total bandwidth of the middle unusable bandwidth region.  This value is used to avoid a central DC
+     * spike present in some tuners.
      */
     public int getMiddleUnusableHalfBandwidth()
     {
         return mMiddleUnusableHalfBandwidth;
+    }
+
+    /**
+     * Sets the middle unusable half bandwidth value
+     * @param halfBandwidth in Hertz
+     */
+    public void setMiddleUnusableHalfBandwidth(int halfBandwidth)
+    {
+        mMiddleUnusableHalfBandwidth = halfBandwidth;
     }
 
     /**
@@ -303,6 +497,25 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
+     * Status of measured frequency and PPM error
+     */
+    public String getMeasuredErrorStatus()
+    {
+        if(hasMeasuredFrequencyError())
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Measured Error: ");
+            sb.append(getMeasuredFrequencyError());
+            sb.append("Hz (");
+            sb.append(mFrequencyErrorPPMFormat.format(getPPMFrequencyError()));
+            sb.append("ppm)");
+            return sb.toString();
+        }
+
+        return "";
+    }
+
+    /**
      * Indicates if this tuner controller has a non-zero measured frequency error value.
      */
     public boolean hasMeasuredFrequencyError()
@@ -342,7 +555,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void addListener( ISourceEventProcessor processor )
     {
-        mFrequencyController.addListener(processor);
+        mFrequencyController.addSourceEventProcessor(processor);
     }
 
     /**
@@ -350,25 +563,25 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     public void removeListener( ISourceEventProcessor processor )
     {
-        mFrequencyController.removeFrequencyChangeProcessor(processor);
+        mFrequencyController.removeSourceEventProcessor(processor);
     }
 
     /**
      * Adds the listener to receive complex buffer samples
      */
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
-        mReusableBufferBroadcaster.addListener(listener);
+        mNativeBufferBroadcaster.addListener(listener);
     }
 
     /**
      * Removes the listener from receiving complex buffer samples
      */
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        mReusableBufferBroadcaster.removeListener(listener);
+        mNativeBufferBroadcaster.removeListener(listener);
     }
 
     /**
@@ -377,24 +590,24 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public boolean hasBufferListeners()
     {
-        return mReusableBufferBroadcaster.hasListeners();
+        return mNativeBufferBroadcaster.hasListeners();
     }
 
     /**
      * Broadcasts the buffer to any registered listeners
      */
-    protected void broadcast(ReusableComplexBuffer reusableComplexBuffer)
+    protected void broadcast(INativeBuffer complexSamples)
     {
-        mReusableBufferBroadcaster.broadcast(reusableComplexBuffer);
+        mNativeBufferBroadcaster.broadcast(complexSamples);
     }
 
     /**
      * Implements the Listener<T> interface to receive and distribute complex buffers from subclass implementations
      */
     @Override
-    public void receive(ReusableComplexBuffer complexBuffer)
+    public void receive(INativeBuffer nativeBuffer)
     {
-        broadcast(complexBuffer);
+        broadcast(nativeBuffer);
     }
 
     /**
@@ -480,13 +693,15 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
 
     /**
      * Records the complex I/Q buffers produced by the tuner
-     * @param recorderManager to obtain a baseband recorder
+     * @param userPreferences to obtain a baseband recorder
+     * @param statusListener to receive updates on recording file name and size
+     * @param prefix for the recording file name (ie tuner class name)
      */
-    public void startRecorder(UserPreferences userPreferences)
+    public void startRecorder(UserPreferences userPreferences, IRecordingStatusListener statusListener, String prefix)
     {
         if(!isRecording())
         {
-            mRecorder = RecorderFactory.getBasebandRecorder("TUNER_" + getFrequency(), userPreferences);
+            mRecorder = RecorderFactory.getTunerRecorder(prefix + "_" + getFrequency(), userPreferences, statusListener);
             mRecorder.setSampleRate((float)getSampleRate());
             mRecorder.start();
             addBufferListener(mRecorder);

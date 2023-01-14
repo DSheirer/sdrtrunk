@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,25 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.sample.IOverflowListener;
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
+import io.github.dsheirer.util.Dispatcher;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input baseband complex sample
@@ -67,8 +64,13 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0");
     private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 25000;
 
-    //Sized at 152 buffers a second where max = 5 seconds and reset = 2 seconds worth of buffers
-    private IFFTProcessor mIFFTProcessor = new IFFTProcessor((5 * 152), (2 * 152));
+    /**
+     * Determines how many processed channel results to dispatch for threaded IFFT processing per batch
+     */
+    private static final int PROCESSED_CHANNEL_RESULTS_THRESHOLD = 1024;
+
+    //Sized at 152 buffers a second where max = 5 seconds
+    private IFFTProcessorDispatcher mIFFTProcessorDispatcher = new IFFTProcessorDispatcher(5 * 152);
     private FloatFFT_1D mFFT;
     private float[] mInlineSamples;
     private float[] mInlineFilter;
@@ -78,6 +80,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private int mSampleBufferPointer;
     private int mSamplesPerBlock;
     private int mTapsPerChannel;
+    private List<float[]> mProcessedChannelResultsList = new ArrayList<>();
 
     /**
      * Creates a NMDPFB channelizer instance.
@@ -128,7 +131,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     public void start()
     {
-        mIFFTProcessor.start();
+        mIFFTProcessorDispatcher.start();
     }
 
     /**
@@ -136,7 +139,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     public void stop()
     {
-        mIFFTProcessor.stop();
+        mIFFTProcessorDispatcher.stop();
     }
 
     /**
@@ -187,12 +190,11 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Receives the complex sample buffer and processes the results through the channelizer.
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(InterleavedComplexSamples complexSamples)
     {
-        ReusableChannelResultsBuffer channelResultsBuffer = getChannelResultsBuffer();
-        channelResultsBuffer.setTimestamp(reusableComplexBuffer.getTimestamp());
+        mCurrentSamplesTimestamp = complexSamples.timestamp();
 
-        float[] samples = reusableComplexBuffer.getSamples();
+        float[] samples = complexSamples.samples();
 
         int samplesPointer = 0;
         int samplesToCopy;
@@ -218,20 +220,19 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             if(mSampleBufferPointer >= mSamplesPerBlock)
             {
                 //Filter buffered samples and produce a single sample across each of the polyphase channels
-                process(channelResultsBuffer);
+                mProcessedChannelResultsList.add(process());
+
+                if(mProcessedChannelResultsList.size() >= PROCESSED_CHANNEL_RESULTS_THRESHOLD)
+                {
+                    mIFFTProcessorDispatcher.receive(new ArrayList<>(mProcessedChannelResultsList));
+                    mProcessedChannelResultsList.clear();
+                }
 
                 //Right-shift the samples in the buffer over to make room for a new block of samples
-                //Note: since JDK 8, hotspot JIT compiler uses native processor intrinsics for efficiency
                 System.arraycopy(mInlineSamples, 0, mInlineSamples, mSamplesPerBlock, (mInlineSamples.length - mSamplesPerBlock));
                 mSampleBufferPointer = 0;
             }
         }
-
-        //Enqueue the channel results buffer for IFFT processing and distribution on a different thread
-        mIFFTProcessor.receive(channelResultsBuffer);
-
-        //Decrement the user count to let the originator know we're done with their buffer
-        reusableComplexBuffer.decrementUserCount();
     }
 
     /**
@@ -334,7 +335,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Processes the sample buffer for each new block of sample data that is loaded and distributes the results to any
      * registered channel listeners.
      */
-    private void process(ReusableChannelResultsBuffer channelResultsBuffer)
+    private float[] process()
     {
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
         float[] inlineInterimOutput = new float[bufferLength];
@@ -360,7 +361,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             }
         }
 
-        float[] processed = channelResultsBuffer.getEmptyBuffer(getSubChannelCount());
+        float[] processed = new float[getSubChannelCount()];
 
         if(mTopBlockIndicator)
         {
@@ -377,9 +378,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             }
         }
 
-        channelResultsBuffer.addChannelResults(processed);
-
         mTopBlockIndicator = !mTopBlockIndicator;
+
+        return processed;
     }
 
     /**
@@ -389,10 +390,10 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     private void init(float[] coefficients)
     {
-        mFFT = new FloatFFT_1D(getChannelCount());
         int channelCount = getChannelCount();
+        mFFT = new FloatFFT_1D(channelCount);
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
-        mSamplesPerBlock = getChannelCount(); //Same as subChannelCount / 2
+        mSamplesPerBlock = channelCount; //Same as subChannelCount / 2
         mTopBlockMap = getTopBlockMap(channelCount);
         mMiddleBlockMap = getMiddleBlockMap(channelCount);
         mInlineFilter = getAlignedFilter(coefficients, channelCount, mTapsPerChannel);
@@ -404,46 +405,28 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * as required to align the phase of each polyphase channel, and then dispatch the results to any registered
      * sample consumer channels.
      */
-    public class IFFTProcessor extends ContinuousBufferProcessor<ReusableChannelResultsBuffer>
+    public class IFFTProcessorDispatcher extends Dispatcher<List<float[]>>
     {
-        public IFFTProcessor(int maximumSize, int resetThreshold)
+        public IFFTProcessorDispatcher(int maximumSize)
         {
-            super(maximumSize, resetThreshold);
+            super(maximumSize, "sdrtrunk polyphase ifft processor", Collections.emptyList());
 
-            //We create a listener interface to receive the buffers from the scheduled thread pool
+            //We create a listener interface to receive the batched channel results arrays from the scheduled thread pool
             //dispatcher thread that is part of this continuous buffer processor.  We perform an IFFT on each
             //channel results array contained in each results buffer and then dispatch the buffer
             //so that it can be distributed to each channel listener.
-            setListener(buffers -> {
-                for(ReusableChannelResultsBuffer buffer: buffers)
+            setListener(list -> {
+                List<float[]> processedChannelResults = new ArrayList<>();
+
+                for(float[] channelResults: list)
                 {
-                    for(float[] channelResults: buffer.getChannelResults())
-                    {
-                        //Rotate each of the channels to the correct phase using the IFFT
-                        mFFT.complexInverse(channelResults, true);
-                    }
-
-                    dispatch(buffer);
+                    //Rotate each of the channels to the correct phase using the IFFT
+                    mFFT.complexInverse(channelResults, true);
+                    processedChannelResults.add(channelResults);
                 }
+
+                dispatch(processedChannelResults);
             });
-
-            setOverflowListener(overflow -> mLog.debug("IFFTProcessor overflow changed - overflow:" + overflow));
-        }
-
-        /**
-         * Clears any buffers from the dispatch/processing queue.  Overrides the parent method so that we can set
-         * the user count to 0 to allow the buffer to be reclaimed.
-         */
-        protected Collection<ReusableChannelResultsBuffer> clearQueue()
-        {
-            Collection<ReusableChannelResultsBuffer> buffersToDispose = super.clearQueue();
-
-            for(ReusableChannelResultsBuffer buffer: buffersToDispose)
-            {
-                buffer.clearUserCount();
-            }
-
-            return buffersToDispose;
         }
     }
 }

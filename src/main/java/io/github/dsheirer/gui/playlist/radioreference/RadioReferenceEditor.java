@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.radioreference;
@@ -44,7 +41,13 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.util.StringConverter;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -119,7 +122,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
             if(credentials != null)
             {
-                ThreadPool.SCHEDULED.execute(() -> accept(credentials));
+                ThreadPool.CACHED.execute(() -> accept(credentials));
             }
         }
     }
@@ -134,7 +137,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         final int preferredCountryId = mUserPreferences.getRadioReferencePreference().getPreferredCountryId();
 
-        ThreadPool.SCHEDULED.execute(() -> {
+        ThreadPool.CACHED.execute(() -> {
             try
             {
                 List<Country> countries = mRadioReference.getService().getCountries();
@@ -565,7 +568,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
         {
             int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
 
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.CACHED.execute(() -> {
                 try
                 {
                     final CountryInfo countryInfo = mRadioReference.getService().getCountryInfo(country.getCountryId());
@@ -623,7 +626,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         if(state != null)
         {
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.CACHED.execute(() -> {
                 try
                 {
                     final StateInfo stateInfo = mRadioReference.getService().getStateInfo(state.getStateId());
@@ -679,7 +682,7 @@ public class RadioReferenceEditor extends BorderPane implements Consumer<Authori
 
         if(county != null)
         {
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.CACHED.execute(() -> {
                 try
                 {
                     final CountyInfo countyInfo = mRadioReference.getService().getCountyInfo(county.getCountyId());

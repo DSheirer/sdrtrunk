@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -155,7 +155,7 @@ public class AgencyEditor extends VBox
 
             mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agency.getAgencyId(), mLevel);
 
-            ThreadPool.SCHEDULED.submit(() -> {
+            ThreadPool.CACHED.submit(() -> {
                 try
                 {
                     final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);

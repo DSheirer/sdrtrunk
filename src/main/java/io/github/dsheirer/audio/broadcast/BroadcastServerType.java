@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast;
 
 public enum BroadcastServerType
@@ -23,17 +23,17 @@ public enum BroadcastServerType
     /**
      * Broadcastify feeds (ie streaming) service
      */
-    BROADCASTIFY("Broadcastify Feed", "/images/broadcastify.png"), //Icecast Server 2.3.2
+    BROADCASTIFY("Broadcastify Feed", "images/broadcastify.png"), //Icecast Server 2.3.2
 
     /**
      * Broadcastify calls - completed audio recording push service
      */
-    BROADCASTIFY_CALL("Broadcastify Call", "/images/broadcastify.png"),
+    BROADCASTIFY_CALL("Broadcastify Call", "images/broadcastify.png"),
 
-    ICECAST_HTTP("Icecast 2 (v2.4+)", "/images/icecast.png"),
-    ICECAST_TCP("Icecast (v2.3)", "/images/icecast.png"),
-    SHOUTCAST_V1("Shoutcast v1.x", "/images/shoutcast.png"),
-    SHOUTCAST_V2("Shoutcast v2.x", "/images/shoutcast.png"),
+    ICECAST_HTTP("Icecast 2 (v2.4+)", "images/icecast.png"),
+    ICECAST_TCP("Icecast (v2.3)", "images/icecast.png"),
+    SHOUTCAST_V1("Shoutcast v1.x", "images/shoutcast.png"),
+    SHOUTCAST_V2("Shoutcast v2.x", "images/shoutcast.png"),
     UNKNOWN("Unknown", null);
 
     private String mLabel;

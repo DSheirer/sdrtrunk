@@ -1,34 +1,30 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.audio.convert.AudioFrames;
 import io.github.dsheirer.audio.convert.ISilenceGenerator;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
+import io.github.dsheirer.audio.convert.MP3FrameTools;
+import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.util.ThreadPool;
-import org.apache.commons.math3.util.FastMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Queue;
@@ -36,21 +32,30 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration> extends AbstractAudioBroadcaster<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioStreamingBroadcaster.class);
 
     public static final int PROCESSOR_RUN_INTERVAL_MS = 1000;
-    private ScheduledFuture mRecordingQueueProcessorFuture;
+    private ScheduledFuture<?> mRecordingQueueProcessorFuture;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
     private ISilenceGenerator mSilenceGenerator;
 
+    private BroadcastFormat mBroadcastFormat;
     private long mDelay;
     private long mMaximumRecordingAge;
     private AtomicBoolean mStreaming = new AtomicBoolean();
+
+    protected boolean mInlineActive = false;
+    protected int mInlineInterval;
+    protected int mInlineRemaining = -1;
+
+    private int mTimeOverrun = 0;
 
     /**
      * AudioBroadcaster for streaming audio recordings to a remote streaming audio server.  Audio recordings are
@@ -73,12 +78,14 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
      * The last audio packet's metadata is automatically attached to the closed audio recording when it is enqueued for
      * broadcast.  That metadata will be updated on the remote server once the audio recording is opened for streaming.
      */
-    public AudioStreamingBroadcaster(T broadcastConfiguration)
+    public AudioStreamingBroadcaster(T broadcastConfiguration, InputAudioFormat inputAudioFormat, MP3Setting mp3Setting)
     {
         super(broadcastConfiguration);
+        mBroadcastFormat = broadcastConfiguration.getBroadcastFormat();
         mDelay = getBroadcastConfiguration().getDelay();
         mMaximumRecordingAge = getBroadcastConfiguration().getMaximumRecordingAge();
-        mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
+        mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat(),
+        inputAudioFormat, mp3Setting);
     }
 
     public void dispose()
@@ -88,7 +95,7 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     /**
      * Broadcast binary audio data frames or sequences.
      */
-    protected abstract void broadcastAudio(byte[] audio);
+    protected abstract void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection);
 
     /**
      * Protocol-specific metadata updater
@@ -204,13 +211,15 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
 
             super.setBroadcastState(state);
 
-            if(mBroadcastState.get() instanceof BroadcastState && ((BroadcastState)mBroadcastState.get()).isErrorState())
+            if(mBroadcastState.get() != null && mBroadcastState.get().isErrorState())
             {
                 stop();
             }
 
             if(!connected())
             {
+                //Reset inline metadata
+                mInlineRemaining = -1;
                 //Remove all pending audio recordings
                 while(!mAudioRecordingQueue.isEmpty())
                 {
@@ -242,7 +251,6 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     public boolean canConnect()
     {
         BroadcastState state = getBroadcastState();
-
         return state != BroadcastState.CONNECTED && !state.isErrorState();
     }
 
@@ -263,10 +271,8 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
     public class RecordingQueueProcessor implements Runnable
     {
         private AtomicBoolean mProcessing = new AtomicBoolean();
-        private ByteArrayInputStream mInputStream;
-        private long mFinalSilencePadding = 0;
-        private int mBytesStreamedActual = 0;
-        private int mBytesStreamedRequired = 0;
+        private AudioFrames mInputFrames;
+        private IdentifierCollection mInputIdentifierCollection;
 
         @Override
         public void run()
@@ -275,45 +281,35 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
             {
                 try
                 {
-                    if(mInputStream == null || mInputStream.available() <= 0)
-                    {
-                        if(mFinalSilencePadding > 0)
-                        {
-                            broadcastAudio(mSilenceGenerator.generate(mFinalSilencePadding));
-                            mFinalSilencePadding = 0;
-                        }
+                    int timeSent = 0;
 
+                    if(mInputFrames == null || !mInputFrames.hasNextFrame())
+                    {
                         nextRecording();
                     }
 
-                    if(mInputStream != null)
+                    if(mInputFrames != null && mInputFrames.hasNextFrame())
                     {
-                        //We need to stream at 13.888 fps (144 byte frame) to achieve 2000 Bps or 16 kbps
-                        mBytesStreamedRequired += 2000;  //2000 bytes per second for 16 kbps data rate
-                        int bytesToStream = mBytesStreamedRequired - mBytesStreamedActual;
-
-                        //Trim length to whole-frame intervals (144 byte frame)
-                        bytesToStream -= (bytesToStream % 144);
-
-                        int length = FastMath.min(bytesToStream, mInputStream.available());
-
-                        byte[] audio = new byte[length];
-
-                        try
+                        while(mInputFrames.hasNextFrame() && timeSent < PROCESSOR_RUN_INTERVAL_MS)
                         {
-                            mBytesStreamedActual += mInputStream.read(audio);
-
-                            broadcastAudio(audio);
-                        }
-                        catch(IOException ioe)
-                        {
-                            mLog.error("Error reading from in-memory audio recording input stream", ioe);
+                            mInputFrames.nextFrame();
+                            broadcastAudio(mInputFrames.getCurrentFrame(), mInputIdentifierCollection);
+                            timeSent += mInputFrames.getCurrentFrameDuration();
                         }
                     }
-                    else
+
+                    if((mInputFrames == null || !mInputFrames.hasNextFrame()) && timeSent < PROCESSOR_RUN_INTERVAL_MS)
                     {
-                        broadcastAudio(mSilenceGenerator.generate(PROCESSOR_RUN_INTERVAL_MS));
+                        AudioFrames silenceFrames = mSilenceGenerator.generate(PROCESSOR_RUN_INTERVAL_MS - mTimeOverrun - timeSent);
+                        while(silenceFrames.hasNextFrame())
+                        {
+                            silenceFrames.nextFrame();
+                            broadcastAudio(silenceFrames.getCurrentFrame(), null);
+                            timeSent += silenceFrames.getCurrentFrameDuration();
+                        }
                     }
+
+                    mTimeOverrun += timeSent - PROCESSOR_RUN_INTERVAL_MS;
                 }
                 catch(Throwable t)
                 {
@@ -329,12 +325,9 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
          */
         private void nextRecording()
         {
-            mBytesStreamedActual = 0;
-            mBytesStreamedRequired = 0;
-
             boolean metadataUpdateRequired = false;
 
-            if(mInputStream != null)
+            if(mInputFrames != null)
             {
                 mStreamedAudioCount++;
                 broadcast(new BroadcastEvent(AudioStreamingBroadcaster.this,
@@ -342,7 +335,8 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                 metadataUpdateRequired = true;
             }
 
-            mInputStream = null;
+            mInputFrames = null;
+            mInputIdentifierCollection = null;
 
             //Peek at the next recording but don't remove it from the queue yet, so we can inspect the start time for
             //age limits and/or delay elapsed
@@ -370,17 +364,17 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                     {
                         byte[] audio = Files.readAllBytes(nextRecording.getPath());
 
-                        if(audio != null && audio.length > 0)
+                        if(audio.length > 0)
                         {
-                            mInputStream = new ByteArrayInputStream(audio);
-
-                            mFinalSilencePadding = PROCESSOR_RUN_INTERVAL_MS -
-                                (nextRecording.getRecordingLength() % PROCESSOR_RUN_INTERVAL_MS);
-
-                            while(mFinalSilencePadding >= PROCESSOR_RUN_INTERVAL_MS)
+                            switch(mBroadcastFormat)
                             {
-                                mFinalSilencePadding -= PROCESSOR_RUN_INTERVAL_MS;
+                                case MP3:
+                                    mInputFrames = MP3FrameTools.split(audio);
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException("Unsupported broadcast format [" + mBroadcastFormat + "]");
                             }
+                            mInputIdentifierCollection = nextRecording.getIdentifierCollection();
 
                             if(connected())
                             {
@@ -396,7 +390,8 @@ public abstract class AudioStreamingBroadcaster<T extends BroadcastConfiguration
                     mLog.error("Stream [" + getBroadcastConfiguration().getName() + "] error reading temporary audio " +
                         "stream recording [" + nextRecording.getPath().toString() + "] - skipping recording - ", ioe);
 
-                    mInputStream = null;
+                    mInputFrames = null;
+                    mInputIdentifierCollection = null;
                     metadataUpdateRequired = false;
                 }
 

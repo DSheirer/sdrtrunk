@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.sample;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Broadcasts an item to multiple listeners
@@ -31,20 +31,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Broadcaster<T> implements Listener<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Broadcaster.class);
-    private boolean mDebug;
-
-    protected List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
+    private ReentrantLock mLock = new ReentrantLock();
+    private List<Listener<T>> mListeners = new ArrayList<>();
 
     public Broadcaster()
     {
-    }
-
-    /**
-     * Turns on/off debugging to troubleshoot and log which listeners are receiving an item.
-     */
-    public void setDebug(boolean debug)
-    {
-        mDebug = debug;
     }
 
     /**
@@ -64,7 +55,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void dispose()
     {
-        mListeners.clear();
+        clear();
     }
 
     /**
@@ -73,14 +64,6 @@ public class Broadcaster<T> implements Listener<T>
     public boolean hasListeners()
     {
         return !mListeners.isEmpty();
-    }
-
-    /**
-     * Indicates if the listener is currently registered with this broadcaster
-     */
-    public boolean hasListener(Listener<T> listener)
-    {
-        return listener != null && mListeners.contains(listener);
     }
 
     /**
@@ -96,7 +79,7 @@ public class Broadcaster<T> implements Listener<T>
      */
     public List<Listener<T>> getListeners()
     {
-        return mListeners;
+        return Collections.unmodifiableList(mListeners);
     }
 
     /**
@@ -106,9 +89,21 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void addListener(Listener<T> listener)
     {
-        if(listener != null && !mListeners.contains(listener))
+        if(listener != null)
         {
-            mListeners.add(listener);
+            mLock.lock();
+
+            try
+            {
+                if(!mListeners.contains(listener))
+                {
+                    mListeners.add(listener);
+                }
+            }
+            finally
+            {
+                mLock.unlock();
+            }
         }
     }
 
@@ -119,7 +114,16 @@ public class Broadcaster<T> implements Listener<T>
     {
         if(listener != null)
         {
-            mListeners.remove(listener);
+            mLock.lock();
+
+            try
+            {
+                mListeners.remove(listener);
+            }
+            finally
+            {
+                mLock.unlock();
+            }
         }
     }
 
@@ -136,21 +140,20 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        if(mDebug)
+        mLock.lock();
+
+        try
         {
-            for(Listener<T> listener : mListeners)
+            List<Listener<T>> listeners = new ArrayList<>(mListeners);
+
+            for(Listener listener: listeners)
             {
-                mLog.debug("Sending [" + t + "] to listener [" + listener.getClass() + "]");
                 listener.receive(t);
-                mLog.debug("Finished sending to listener [" + listener.getClass() + "]");
             }
         }
-        else
+        finally
         {
-            for(Listener<T> listener : mListeners)
-            {
-                listener.receive(t);
-            }
+            mLock.unlock();
         }
     }
 }

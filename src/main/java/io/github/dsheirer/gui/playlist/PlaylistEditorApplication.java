@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,17 +20,12 @@
 package io.github.dsheirer.gui.playlist;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.broadcast.BroadcastModel;
-import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.gui.JavaFxWindowManager;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.TunerModel;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.application.Application;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -43,6 +38,7 @@ public class PlaylistEditorApplication extends Application
 {
     private Stage mStage;
     private Parent mPlaylistEditor;
+    private TunerManager mTunerManager;
     private UserPreferences mUserPreferences = new UserPreferences();
     private PlaylistManager mPlaylistManager;
     private JavaFxWindowManager mJavaFxWindowManager;
@@ -50,17 +46,13 @@ public class PlaylistEditorApplication extends Application
     public PlaylistEditorApplication()
     {
         AliasModel aliasModel = new AliasModel();
-        BroadcastModel broadcastModel = new BroadcastModel(aliasModel, new IconModel(), mUserPreferences);
-        ChannelMapModel channelMapModel = new ChannelMapModel();
-        TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
-        TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
-        SourceManager sourceManager = new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel),
-            mUserPreferences);
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconModel());
+        mTunerManager = new TunerManager(mUserPreferences);
+        mTunerManager.start();
+        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
 
         mPlaylistManager.init();
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mPlaylistManager);
+        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, mTunerManager, mPlaylistManager);
     }
 
     @Override
@@ -77,7 +69,7 @@ public class PlaylistEditorApplication extends Application
     {
         if(mPlaylistEditor == null)
         {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mUserPreferences);
+            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
         }
 
         return mPlaylistEditor;

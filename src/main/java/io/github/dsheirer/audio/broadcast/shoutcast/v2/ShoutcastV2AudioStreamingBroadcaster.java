@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast.shoutcast.v2;
 
@@ -43,6 +40,8 @@ import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageF
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageType;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxMetadata;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ultravox.UltravoxProtocolFactory;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
+import io.github.dsheirer.audio.convert.MP3Setting;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -67,7 +66,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcaster implements IBroadcastMetadataUpdater
@@ -95,9 +93,10 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
      *
      * @param configuration for the Shoutcast V2 stream
      */
-    public ShoutcastV2AudioStreamingBroadcaster(ShoutcastV2Configuration configuration, AliasModel aliasModel)
+    public ShoutcastV2AudioStreamingBroadcaster(ShoutcastV2Configuration configuration, InputAudioFormat inputAudioFormat,
+                                                MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration);
+        super(configuration, inputAudioFormat, mp3Setting);
         mAliasModel = aliasModel;
     }
 
@@ -110,7 +109,7 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
     {
         //Dispatch any queued metadata messages
         UltravoxMessage metadataMessage = mMetadataMessageQueue.poll();
@@ -225,7 +224,7 @@ public class ShoutcastV2AudioStreamingBroadcaster extends AudioStreamingBroadcas
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.CACHED.submit(runnable);
         }
 
         return connected();

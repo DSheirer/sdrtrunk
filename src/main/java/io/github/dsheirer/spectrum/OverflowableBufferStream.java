@@ -1,39 +1,45 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.spectrum;
 
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.FloatBuffer;
+import java.util.Iterator;
 import java.util.LinkedList;
 
-public class OverflowableBufferStream extends OverflowableTransferQueue<ReusableComplexBuffer>
+public class OverflowableBufferStream<T extends INativeBuffer> extends OverflowableTransferQueue<T>
 {
     private static final Logger mLog = LoggerFactory.getLogger(OverflowableBufferStream.class);
 
     private int mFlushCount = 0;
-    private ReusableComplexBuffer mCurrentBuffer;
+    private Iterator<InterleavedComplexSamples> mCurrentNativeBufferIterator;
+    private InterleavedComplexSamples mCurrentBuffer;
     private int mCurrentBufferPointer = 0;
     private FloatBuffer mFloatBuffer;
-    private LinkedList<ReusableComplexBuffer> mBufferList = new LinkedList<>();
+    private LinkedList<T> mBufferList = new LinkedList<>();
     private int mBufferFetchLimit;
 
     /**
@@ -90,7 +96,7 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
 
         while(mFloatBuffer.hasRemaining())
         {
-            int available = mCurrentBuffer.getSamples().length - mCurrentBufferPointer;
+            int available = mCurrentBuffer.samples().length - mCurrentBufferPointer;
 
             if(available <= 0)
             {
@@ -108,7 +114,7 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
 
                 if(toCopy > 0)
                 {
-                    mFloatBuffer.put(mCurrentBuffer.getSamples(), mCurrentBufferPointer, toCopy);
+                    mFloatBuffer.put(mCurrentBuffer.samples(), mCurrentBufferPointer, toCopy);
                     mCurrentBufferPointer += toCopy;
                 }
             }
@@ -150,7 +156,7 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
         //Flush sample data as requested
         while(mFlushCount > 0)
         {
-            int available = mCurrentBuffer.getSamples().length - mCurrentBufferPointer;
+            int available = mCurrentBuffer.samples().length - mCurrentBufferPointer;
 
             if(available <= mFlushCount)
             {
@@ -181,35 +187,41 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
      */
     private void getNextBuffer() throws IOException
     {
-        if(mCurrentBuffer != null)
+        if(mCurrentNativeBufferIterator == null)
         {
-            //Decrement the user count to let the originator know we're done with their buffer
-            mCurrentBuffer.decrementUserCount();
+            if(mBufferList.isEmpty())
+            {
+                drainTo(mBufferList, mBufferFetchLimit);
+            }
+
+            if(!mBufferList.isEmpty())
+            {
+                T buffer = mBufferList.poll();
+
+                if(buffer != null)
+                {
+                    mCurrentNativeBufferIterator = buffer.iteratorInterleaved();
+                }
+            }
+        }
+
+        if(mCurrentNativeBufferIterator != null && !mCurrentNativeBufferIterator.hasNext())
+        {
+            mCurrentNativeBufferIterator = null;
+            getNextBuffer();
+            return;
+        }
+
+        if(mCurrentNativeBufferIterator != null && mCurrentNativeBufferIterator.hasNext())
+        {
+            mCurrentBuffer = mCurrentNativeBufferIterator.next();
+            mCurrentBufferPointer = 0;
+        }
+        else
+        {
             mCurrentBuffer = null;
+            throw new IOException("Buffer queue is empty");
         }
-
-        mCurrentBufferPointer = 0;
-
-        if(mBufferList.isEmpty())
-        {
-            drainTo(mBufferList, mBufferFetchLimit);
-        }
-
-        if(!mBufferList.isEmpty())
-        {
-            mCurrentBuffer = mBufferList.poll();
-        }
-
-        if(mCurrentBuffer == null)
-        {
-            throw new IOException("Reusable complex buffer queue is (currently) empty");
-        }
-    }
-
-    @Override
-    protected void overflow(ReusableComplexBuffer reusableComplexBuffer)
-    {
-        reusableComplexBuffer.decrementUserCount();
     }
 
     /**
@@ -220,14 +232,7 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
     {
         synchronized(mQueue)
         {
-            ReusableComplexBuffer buffer = mQueue.poll();
-
-            while(buffer != null)
-            {
-                buffer.decrementUserCount();
-                buffer = mQueue.poll();
-            }
-
+            mQueue.clear();
             mCounter.set(0);
             mOverflow.set(false);
         }

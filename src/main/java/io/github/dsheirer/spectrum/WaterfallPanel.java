@@ -1,20 +1,21 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.spectrum;
 
 import io.github.dsheirer.settings.ColorSetting;
@@ -22,11 +23,6 @@ import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
-import org.apache.commons.math3.util.FastMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Graphics;
@@ -38,6 +34,11 @@ import java.awt.image.ColorModel;
 import java.awt.image.MemoryImageSource;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.JPanel;
 
 public class WaterfallPanel extends JPanel implements DFTResultsListener,
     Pausable,
@@ -81,13 +82,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     public WaterfallPanel(SettingsManager settingsManager)
     {
         super();
-
         mSettingsManager = settingsManager;
-
         mSettingsManager.addListener(this);
-
         mColorSpectrumCursor = getColor(ColorSettingName.SPECTRUM_CURSOR);
-
         reset();
     }
 
@@ -172,7 +169,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
      * 6	64x Zoom
      *
      * @param zoom level, 0 - 6.
-     * @param offset into the DFT bins for display
      */
     public void setZoom(int zoom)
     {
@@ -215,12 +211,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     @Override
     public void settingChanged(Setting setting)
     {
-        if(setting instanceof ColorSetting)
+        if(setting instanceof ColorSetting colorSetting)
         {
-            ColorSetting colorSetting = (ColorSetting)setting;
-
-            if(((ColorSetting)setting).getColorSettingName() ==
-                ColorSettingName.SPECTRUM_CURSOR)
+            if(colorSetting.getColorSettingName() == ColorSettingName.SPECTRUM_CURSOR)
             {
                 mColorSpectrumCursor = colorSetting.getColor();
             }
@@ -240,7 +233,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     public void setCursorLocation(Point point)
     {
         mCursorLocation = point;
-
         repaint();
     }
 
@@ -263,7 +255,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     public void setCursorVisible(boolean visible)
     {
         mCursorVisible = visible;
-
         repaint();
     }
 
@@ -281,7 +272,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         if(mZoom != 0)
         {
             double binPixelWidth = getBinPixelWidth(multiplier);
-
             offset = -binPixelWidth * (double)(mDFTZoomWindowOffset);
         }
 
@@ -303,18 +293,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         int multiplier = getZoomMultiplier();
 
         double binPixelWidth = getBinPixelWidth(multiplier);
-
         int offset = (int)(getPixelOffset(multiplier) - binPixelWidth);
-
-        g.drawImage(mWaterfallImage,
-            offset,
-            0,
-            (getWidth() * multiplier) + (int)binPixelWidth,
-            mImageHeight,
-            this);
-
+        g.drawImage(mWaterfallImage, offset, 0, (getWidth() * multiplier) + (int)binPixelWidth, mImageHeight, this);
         Graphics2D graphics = (Graphics2D)g;
-
         graphics.setColor(mColorSpectrumCursor);
 
         if(mCursorVisible)
@@ -334,7 +315,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         }
 
         paintZoomIndicator(graphics);
-
         graphics.dispose();
     }
 
@@ -348,50 +328,35 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         if(mZoom != 0)
         {
             int width = getWidth() / 4;
-
             int x = (getWidth() / 2) - (width / 2);
 
             //Draw the outer window
             graphics.drawRect(x, getHeight() - 12, width, 10);
-
             int zoomWidth = width / getZoomMultiplier();
-
             int windowOffset = 0;
 
             if(mDFTZoomWindowOffset != 0)
             {
-                windowOffset = (int)(((double)mDFTZoomWindowOffset /
-                    (double)mDFTSize) * width);
+                windowOffset = (int)(((double)mDFTZoomWindowOffset / (double)mDFTSize) * width);
             }
 
             //Draw the zoom window
             graphics.fillRect(x + windowOffset, getHeight() - 12, zoomWidth, 10);
 
             //Draw the zoom text
-            graphics.drawString("Zoom: " + getZoomMultiplier() + "x",
-                x + width + 3, getHeight() - 2);
+            graphics.drawString("Zoom: " + getZoomMultiplier() + "x", x + width + 3, getHeight() - 2);
         }
     }
 
     /**
-     * Implements the DFT results listener interface method.  This is the
-     * primary method for receiving new frequency bin results.
+     * Implements the DFT results listener interface method.  This is the primary method for receiving new frequency bin results.
      */
     @Override
     public void receive(float[] update)
     {
         mDisabled = false;
 
-        //If our FFT size changes, reset our pixel map and image source
-        if(mDFTSize != update.length)
-        {
-            mDFTSize = update.length;
-
-            reset();
-        }
-
-        //Move the pixels down a row to make room for the new results
-        System.arraycopy(mPixels, 0, mPixels, mDFTSize, mPixels.length - mDFTSize);
+        byte[] newPixels = new byte[update.length];
 
         /**
          * Find the average value and scale the display to it
@@ -404,7 +369,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         }
 
         float average = (float)(sum / (double)update.length - 1);
-
         float scale = 256.0f / average;
 
         for(int x = 0; x < update.length - 1; x++)
@@ -413,34 +377,40 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 
             if(value < 0)
             {
-                mPixels[x] = 0;
+                newPixels[x] = 0;
             }
             else if(value > 255)
             {
-                mPixels[x] = (byte)255;
+                newPixels[x] = (byte)255;
             }
             else
             {
-                mPixels[x] = (byte)value;
+                newPixels[x] = (byte)value;
             }
         }
 
-        //Task the swing event thread to update the display
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+        //Task the swing event thread to add the new pixels to the pixel array and update the display
+        EventQueue.invokeLater(() -> {
+            if(mMemoryImageSource != null)
             {
-                if(mMemoryImageSource != null)
+                //If our FFT size changes, reset our pixel map and image source
+                if(mDFTSize != newPixels.length)
                 {
-                    if(mPaused)
-                    {
-                        mMemoryImageSource.newPixels(mPausedPixels, mColorModel, 0, mDFTSize);
-                    }
-                    else
-                    {
-                        mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
-                    }
+                    mDFTSize = newPixels.length;
+                    reset();
+                }
+
+                //Move the pixels down a row and add in the new pixels row
+                System.arraycopy(mPixels, 0, mPixels, mDFTSize, mPixels.length - mDFTSize);
+                System.arraycopy(newPixels, 0, mPixels, 0, newPixels.length);
+
+                if(mPaused)
+                {
+                    mMemoryImageSource.newPixels(mPausedPixels, mColorModel, 0, mDFTSize);
+                }
+                else
+                {
+                    mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
                 }
             }
         });
@@ -451,14 +421,16 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         Arrays.fill(mPixels, (byte)0);
         mDisabled = true;
 
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
+        EventQueue.invokeLater(() -> {
+            if(mMemoryImageSource != null)
             {
-                if(mMemoryImageSource != null)
+                try
                 {
                     mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Temporary error updating cleared waterfall panel - " + e.getLocalizedMessage());
                 }
             }
         });

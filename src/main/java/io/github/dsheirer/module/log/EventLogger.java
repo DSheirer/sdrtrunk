@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,21 +14,20 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.module.log;
 
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.util.TimeStamp;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class EventLogger extends Module
 {
@@ -78,9 +77,6 @@ public abstract class EventLogger extends Module
                 sb.append(mFileNameSuffix);
 
                 mLogFileName = sb.toString();
-
-                mLog.info("Creating log file:" + mLogFileName);
-
                 mLogFile = new OutputStreamWriter(new FileOutputStream(mLogFileName));
 
                 write(getHeader());

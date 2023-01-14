@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,10 +19,7 @@
 
 package io.github.dsheirer.gui.preference.playback;
 
-import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
@@ -410,7 +407,7 @@ public class PlaybackPreferenceEditor extends HBox
 
             byte[] bytes = buffer.array();
 
-            DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+            DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
             if(!AudioSystem.isLineSupported(info))
             {
@@ -421,7 +418,7 @@ public class PlaybackPreferenceEditor extends HBox
             try
             {
                 Clip clip = (Clip)AudioSystem.getLine(info);
-                clip.open(AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO, bytes, 0, bytes.length);
+                clip.open(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, bytes, 0, bytes.length);
                 clip.start();
             }
             catch(Exception e)

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
@@ -23,8 +22,8 @@ import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 
 public class P25P1DecoderLSMInstrumented extends P25P1DecoderLSM
 {
@@ -32,7 +31,7 @@ public class P25P1DecoderLSMInstrumented extends P25P1DecoderLSM
     private Listener<Double> mPLLFrequencyListener;
     private Listener<Double> mSamplesPerSymbolListener;
     private Listener<Complex> mComplexSymbolListener;
-    private Listener<ReusableComplexBuffer> mFilteredSymbolListener;
+    private Listener<ComplexSamples> mFilteredSymbolListener;
     private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
 
     /**
@@ -46,19 +45,27 @@ public class P25P1DecoderLSMInstrumented extends P25P1DecoderLSM
     }
 
     /**
-     * Overrides the filter method so that we can capture the filtered samples for instrumentation
+     * Primary method for receiving incoming channel samples
      */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
+    @Override
+    public void receive(ComplexSamples samples)
     {
-        ReusableComplexBuffer filtered = super.filter(reusableComplexBuffer);
+        mMessageFramer.setCurrentTime(samples.timestamp());
+
+        //The filter will decrement the user count when finished
+        float[] i = mIBasebandFilter.filter(samples.i());
+        float[] q = mQBasebandFilter.filter(samples.q());
 
         if(mFilteredSymbolListener != null)
         {
-            filtered.incrementUserCount();
-            mFilteredSymbolListener.receive(filtered);
+            mFilteredSymbolListener.receive(new ComplexSamples(i, q, samples.timestamp()));
         }
 
-        return filtered;
+        //Process the buffer for power measurements
+        mPowerMonitor.process(i, q);
+
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
+        mQPSKDemodulator.receive(amplified);
     }
 
     /**
@@ -101,7 +108,7 @@ public class P25P1DecoderLSMInstrumented extends P25P1DecoderLSM
         ((DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator).setPLLFrequencyListener(listener);
     }
 
-    public void setFilteredBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void setFilteredBufferListener(Listener<ComplexSamples> listener)
     {
         mFilteredSymbolListener = listener;
     }

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.passport;
 
@@ -26,10 +25,9 @@ import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.real.IRealBufferListener;
 
-public class PassportDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableFloatBuffer>
+public class PassportDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
     public static final int PASSPORT_MESSAGE_LENGTH = 68;
 
@@ -55,15 +53,15 @@ public class PassportDecoder extends Decoder implements IReusableBufferListener,
     }
 
     @Override
-    public Listener<ReusableFloatBuffer> getReusableBufferListener()
+    public Listener<float[]> getBufferListener()
     {
         return mLTRDecoder;
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(float[] realBuffer)
     {
-        mLTRDecoder.receive(reusableFloatBuffer);
+        mLTRDecoder.receive(realBuffer);
     }
 
     @Override

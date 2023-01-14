@@ -45,6 +45,7 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     private int mChannels = 1;
     private int mSampleRate = 8000;
     private String mURL;
+    private boolean mInline = true;
 
     public IcecastConfiguration(BroadcastFormat format)
     {
@@ -273,6 +274,37 @@ public abstract class IcecastConfiguration extends BroadcastConfiguration
     public boolean hasURL()
     {
         return mURL != null;
+    }
+
+    /**
+     * Control whether metadata is sent inline or out-of-band.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "inline")
+    public boolean getInline()
+    {
+        return mInline;
+    }
+
+    @JsonIgnore
+    public int getInlineInterval()
+    {
+        if (hasBitRate())
+        {
+            // Interval = BitRate * 1000 / 8 = 1 second
+            return getBitRate() * 125;
+        }
+        return -1;
+    }
+
+    public void setInline(boolean inline)
+    {
+        mInline = inline;
+    }
+
+    public boolean hasInline()
+    {
+        // Bitrate must be known to calculate metadata interval
+        return mInline != false && hasBitRate();
     }
 
     @Override

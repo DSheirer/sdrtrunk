@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
@@ -28,6 +25,7 @@ import io.github.dsheirer.channel.metadata.ChannelAndMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadata;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.event.ChannelStartProcessingRequest;
+import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.controller.channel.event.PreloadDataContent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.identifier.Form;
@@ -47,14 +45,12 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
-import javafx.application.Platform;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.awt.GraphicsEnvironment;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +58,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import javafx.application.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Channel processing manager handles all starting and stopping of channel decoding.  A processing chain is created
@@ -74,7 +75,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private final static Logger mLog = LoggerFactory.getLogger(ChannelProcessingManager.class);
     private static final String TUNER_UNAVAILABLE_DESCRIPTION = "TUNER UNAVAILABLE";
     private Map<Channel,ProcessingChain> mProcessingChains = new ConcurrentHashMap<>();
+    private Lock mLock = new ReentrantLock();
 
+    private ChannelSourceEventErrorListener mSourceErrorListener = new ChannelSourceEventErrorListener();
     private List<Listener<AudioSegment>> mAudioSegmentListeners = new CopyOnWriteArrayList<>();
     private List<Listener<IDecodeEvent>> mDecodeEventListeners = new CopyOnWriteArrayList<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
@@ -82,7 +85,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     private ChannelMapModel mChannelMapModel;
     private ChannelMetadataModel mChannelMetadataModel;
     private EventLogManager mEventLogManager;
-    private SourceManager mSourceManager;
+    private TunerManager mTunerManager;
     private AliasModel mAliasModel;
     private UserPreferences mUserPreferences;
     private List<Long> mLoggedFrequencies = new ArrayList<>();
@@ -93,16 +96,16 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      *
      * @param channelMapModel containing channel maps defined by the user
      * @param eventLogManager for adding event loggers to channels
-     * @param sourceManager for obtaining a tuner channel source for the channel
+     * @param tunerManager for obtaining a tuner channel source for the channel
      * @param aliasModel for aliasing of identifiers produced by the channel
      * @param userPreferences for user defined behavior and settings
      */
     public ChannelProcessingManager(ChannelMapModel channelMapModel, EventLogManager eventLogManager,
-                                    SourceManager sourceManager, AliasModel aliasModel, UserPreferences userPreferences)
+                                    TunerManager tunerManager, AliasModel aliasModel, UserPreferences userPreferences)
     {
         mChannelMapModel = channelMapModel;
         mEventLogManager = eventLogManager;
-        mSourceManager = sourceManager;
+        mTunerManager = tunerManager;
         mAliasModel = aliasModel;
         mUserPreferences = userPreferences;
         mChannelMetadataModel = new ChannelMetadataModel();
@@ -122,7 +125,20 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     private boolean isProcessing(Channel channel)
     {
-        return mProcessingChains.containsKey(channel) && mProcessingChains.get(channel).isProcessing();
+        boolean isProcessing = false;
+
+        mLock.lock();
+
+        try
+        {
+            isProcessing = mProcessingChains.containsKey(channel) && mProcessingChains.get(channel).isProcessing();
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return isProcessing;
     }
 
     /**
@@ -151,18 +167,60 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     public Channel getChannel(ProcessingChain processingChain)
     {
+        Channel channel = null;
+
         if(processingChain != null)
         {
-            for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
+            mLock.lock();
+
+            try
             {
-                if(entry.getValue() == processingChain)
+                for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
                 {
-                    return entry.getKey();
+                    if(entry.getValue() == processingChain)
+                    {
+                        channel = entry.getKey();
+                        break;
+                    }
                 }
+            }
+            finally
+            {
+                mLock.unlock();
             }
         }
 
-        return null;
+        return channel;
+    }
+
+    /**
+     * Retrieves the channel associated with the processing chain that is consuming from the tuner channel source
+     * @param tunerChannelSource to find the channel
+     * @return channel
+     */
+    private Channel getChannel(TunerChannelSource tunerChannelSource)
+    {
+        Channel channel = null;
+
+        mLock.lock();
+
+        try
+        {
+            for(Map.Entry<Channel,ProcessingChain> entry : mProcessingChains.entrySet())
+            {
+                if(entry.getValue().hasSource(tunerChannelSource))
+                {
+                    channel = entry.getKey();
+                    break;
+                }
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return channel;
     }
 
     /**
@@ -170,9 +228,8 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      *
      * @param event that requests either enable/start or disable/stop a channel.
      */
-    @Deprecated //TODO: convert all usage to start(ChannelStartProcessingRequest request) method
     @Override
-    public synchronized void receive(ChannelEvent event)
+    public void receive(ChannelEvent event)
     {
         Channel channel = event.getChannel();
 
@@ -273,6 +330,28 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Request to stop a channel that is currently processing
+     * @param request with the tuner channel source feeding the channel to be stopped.
+     */
+    @Subscribe
+    public void stopChannelRequest(ChannelStopProcessingRequest request)
+    {
+        Channel channel = getChannel(request.getTunerChannelSource());
+
+        if(channel != null)
+        {
+            try
+            {
+                stop(channel);
+            }
+            catch(ChannelException ce)
+            {
+                mLog.error("Error stopping channel [" + channel + "]", ce);
+            }
+        }
+    }
+
+    /**
      * Stops the specified channel
      * @param channel to stop
      */
@@ -300,7 +379,7 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
 
         try
         {
-            source = mSourceManager.getSource(channel.getSourceConfiguration(),
+            source = mTunerManager.getSource(channel.getSourceConfiguration(),
                 channel.getDecodeConfiguration().getChannelSpecification());
         }
         catch(SourceException se)
@@ -350,38 +429,9 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             processingChain.addDecodeEventListener(listener);
         }
 
-        //Add a listener to detect source error state that indicates the channel should be shutdown
-        processingChain.addSourceEventListener(sourceEvent ->
-        {
-            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
-            {
-                Channel toShutdown = null;
-
-                for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChains.entrySet())
-                {
-                    if(entry.getValue().hasSource(sourceEvent.getSource()))
-                    {
-                        toShutdown = entry.getKey();
-                        break;
-                    }
-                }
-
-                if(toShutdown != null)
-                {
-                    mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
-
-                    try
-                    {
-                        stopProcessing(toShutdown);
-                    }
-                    catch(ChannelException ce)
-                    {
-                        mLog.error("Error stopping channel [" + channel.getName() + "] with source error - " +
-                            ce.getMessage());
-                    }
-                }
-            }
-        });
+        //Add a listener to detect source error state that indicates the channel should be shutdown.
+        //Note: processing chain will only add this once.
+        processingChain.addSourceEventListener(mSourceErrorListener);
 
         //Register this manager to receive channel events from traffic channel manager modules within
         //the processing chain
@@ -459,18 +509,97 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                     processingChain.getChannelState().updateChannelStateIdentifiers(notification);
                 }
             }
-
         }
 
-        mProcessingChains.put(channel, processingChain);
-        processingChain.start();
+        if(addProcessingChain(channel, processingChain))
+        {
+            processingChain.start();
 
-        //This has to be done on the FX event thread when the playlist editor is constructed
-        Platform.runLater(() -> channel.setProcessing(true));
+            if(GraphicsEnvironment.isHeadless())
+            {
+                channel.setProcessing(true);
+            }
+            else
+            {
+                //This has to be done on the FX event thread when the playlist editor is constructed
+                Platform.runLater(() -> channel.setProcessing(true));
+            }
 
-        getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
+        }
+        else
+        {
+            mLog.warn("Channel [" + channel.getName() + "] processing chain not added because it already exists");
+            processingChain.removeEventLoggingModules();
+            processingChain.removeRecordingModules();
+            processingChain.removeFrequencyChangeListener(channel);
+            channel.resetFrequencyCorrection();
+            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
+            mChannelEventBroadcaster.removeListener(processingChain);
+            processingChain.getEventBus().unregister(ChannelProcessingManager.this);
+            processingChain.dispose();
+        }
+    }
 
-        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_START));
+    /**
+     * Thread-safe add processing chain and add channel metadata to channel metadata model.
+     * @param channel for the processing chain
+     * @param processingChain to add
+     * @return true if processing chain was added or false if it was not added due to there already
+     * being a processing chain registered for that channel.
+     */
+    private boolean addProcessingChain(Channel channel, ProcessingChain processingChain)
+    {
+        boolean added = false;
+
+        mLock.lock();
+
+        try
+        {
+            if(!mProcessingChains.containsKey(channel))
+            {
+                added = true;
+                mProcessingChains.put(channel, processingChain);
+                getChannelMetadataModel().add(new ChannelAndMetadata(channel, processingChain.getChannelState().getChannelMetadata()));
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return added;
+    }
+
+    /**
+     * Thread-safe remove processing chain.
+     * @param channel for identifying the processing chain
+     * @return the removed processing chain or null
+     */
+    private ProcessingChain removeProcessingChain(Channel channel)
+    {
+        ProcessingChain removed = null;
+
+        mLock.lock();
+
+        try
+        {
+            removed = mProcessingChains.remove(channel);
+
+            if(removed != null)
+            {
+                for(ChannelMetadata channelMetadata: removed.getChannelState().getChannelMetadata())
+                {
+                    getChannelMetadataModel().remove(channelMetadata);
+                }
+            }
+        }
+        finally
+        {
+            mLock.unlock();
+        }
+
+        return removed;
     }
 
     /**
@@ -480,37 +609,44 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
      */
     private void stopProcessing(Channel channel) throws ChannelException
     {
-        //This has to be done on the FX event thread when the playlist editor is constructed
-        Platform.runLater(() -> channel.setProcessing(false));
+        ProcessingChain processingChain = removeProcessingChain(channel);
 
-        if(mProcessingChains.containsKey(channel))
+        if(processingChain != null)
         {
-            ProcessingChain processingChain = mProcessingChains.remove(channel);
-
-            for(ChannelMetadata channelMetadata: processingChain.getChannelState().getChannelMetadata())
+            if(GraphicsEnvironment.isHeadless())
             {
-                getChannelMetadataModel().remove(channelMetadata);
+                channel.setProcessing(false);
+            }
+            else
+            {
+                //This has to be done on the FX event thread when the playlist editor is constructed
+                Platform.runLater(() -> channel.setProcessing(false));
             }
 
-            processingChain.stop();
+            //Since the processing chain's source will block on stop(), throw it to the thread pool to run
+            ThreadPool.CACHED.submit(() -> {
+                try
+                {
+                    processingChain.stop();
+                    processingChain.removeEventLoggingModules();
+                    processingChain.removeRecordingModules();
 
-            processingChain.removeEventLoggingModules();
-            processingChain.removeRecordingModules();
+                    //Deregister channel from receive frequency correction events to show in the spectral display (hack!)
+                    processingChain.removeFrequencyChangeListener(channel);
+                    channel.resetFrequencyCorrection();
 
-            //Deregister channel from receive frequency correction events to show in the spectral display (hack!)
-            processingChain.removeFrequencyChangeListener(channel);
-            channel.resetFrequencyCorrection();
+                    mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
+                    mChannelEventBroadcaster.removeListener(processingChain);
 
-            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
-            mChannelEventBroadcaster.removeListener(processingChain);
-
-            //Unregister for event bus requests and notifications
-            processingChain.getEventBus().unregister(ChannelProcessingManager.this);
-            processingChain.dispose();
-        }
-        else
-        {
-            throw new ChannelException("Channel is not currently playing");
+                    //Unregister for event bus requests and notifications
+                    processingChain.getEventBus().unregister(ChannelProcessingManager.this);
+                    processingChain.dispose();
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error during shutdown of processing chain for channel [" + channel.getName() + "}", e);
+                }
+            });
         }
     }
 
@@ -650,6 +786,61 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
             catch(Throwable t)
             {
                 mLog.error("Error executing persistent channel start task");
+            }
+        }
+    }
+
+    /**
+     * Monitors all channels for an error in the source event that would require the
+     * channel's processing chain to be stopped
+     */
+    private class ChannelSourceEventErrorListener implements Listener<SourceEvent>
+    {
+        @Override public void receive(SourceEvent sourceEvent)
+        {
+            if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE && sourceEvent.getSource() != null)
+            {
+                Channel toShutdown = null;
+
+                mLock.lock();
+
+                try
+                {
+                    for(Map.Entry<Channel,ProcessingChain> entry: mProcessingChains.entrySet())
+                    {
+                        if(entry.getValue().hasSource(sourceEvent.getSource()))
+                        {
+                            toShutdown = entry.getKey();
+                            break;
+                        }
+                    }
+                }
+                finally
+                {
+                    mLock.unlock();
+                }
+
+                if(toShutdown != null)
+                {
+                    if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_ERROR_STATE)
+                    {
+                        mLog.warn("Channel source error detected - stopping channel [" + toShutdown.getName() + "]");
+                    }
+                    else
+                    {
+                        mLog.warn("Source event error - stopping channel [" + toShutdown.getName() + "]");
+                    }
+
+                    try
+                    {
+                        stopProcessing(toShutdown);
+                    }
+                    catch(ChannelException ce)
+                    {
+                        mLog.error("Error stopping channel [" + (toShutdown != null ? toShutdown.getName() : "unknown") +
+                                "] with source error - " + ce.getMessage());
+                    }
+                }
             }
         }
     }

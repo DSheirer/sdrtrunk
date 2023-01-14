@@ -8,7 +8,6 @@ import java.util.Calendar;
 import java.util.Date;
 
 import static io.github.dsheirer.service.radioreference.RadioReference.CheckExpDate;
-import static org.junit.Assert.*;
 
 public class RadioReferenceTest
 {

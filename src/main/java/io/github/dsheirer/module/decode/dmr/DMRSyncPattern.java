@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2020 Dennis Sheirer, Zhenyu Mao
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.dmr;
 
@@ -34,10 +33,10 @@ public enum DMRSyncPattern
 
     MOBILE_STATION_DATA(0xD5D7F77FD757l, 0xBFBEAEEABEFEl, 0x404151154101l, 0x2A28088028A8l, "MS DATA"),
     MOBILE_STATION_VOICE(0x7F7D5DD57DFDl, 0xEAEBFBBFEBABl, 0x151404401454l, 0x8082A22A8202l, "MS VOICE A"),
-    DIRECT_MODE_DATA_TIMESLOT_1(0xF7FDD5DDFD55l, 0xAEABBFBBABFFl, 0x515440445400l, 0x08022A2202AAl, "DM DAT0"),
-    DIRECT_MODE_DATA_TIMESLOT_2(0xD7557F5FF7F5l, 0xBEFFEAFAAEAFl, 0x410015055150l, 0x28AA80A0080Al, "DM DAT1"),
-    DIRECT_MODE_VOICE_TIMESLOT_1(0x5D577F7757FFl, 0xFBFEEAEEFEAAl, 0x040115110155l, 0xA2A88088A800l, "DM VOX0"),
-    DIRECT_MODE_VOICE_TIMESLOT_2(0x7DFFD5F55D5Fl, 0xEBAABFAFFBFAl, 0x145540500405l, 0x82002A0AA2A0l, "DM VOX1"),
+    DIRECT_MODE_DATA_TIMESLOT_1(0xF7FDD5DDFD55l, 0xAEABBFBBABFFl, 0x515440445400l, 0x08022A2202AAl, "MS DATA - DUAL CAPACITY DIRECT MODE"),
+    DIRECT_MODE_DATA_TIMESLOT_2(0xD7557F5FF7F5l, 0xBEFFEAFAAEAFl, 0x410015055150l, 0x28AA80A0080Al, "MS DATA - DUAL CAPACITY DIRECT MODE"),
+    DIRECT_MODE_VOICE_TIMESLOT_1(0x5D577F7757FFl, 0xFBFEEAEEFEAAl, 0x040115110155l, 0xA2A88088A800l, "MS VOICE A - DUAL CAPACITY DIRECT MODE"),
+    DIRECT_MODE_VOICE_TIMESLOT_2(0x7DFFD5F55D5Fl, 0xEBAABFAFFBFAl, 0x145540500405l, 0x82002A0AA2A0l, "MS VOICE A - DUAL CAPACITY DIRECT MODE"),
     MOBILE_STATION_REVERSE_CHANNEL(0x77D55F7DFD77l, 0xEEBFFAEBABEEl, 0x114005145411l, 0x882AA0820288l, "MS RVRS"),
 
     RESERVED(0xDD7FF5D757DDl, 0xBBEAAFBEFEBBl, 0x441550410144l, 0x22800A28A822l, "RESERVED"),

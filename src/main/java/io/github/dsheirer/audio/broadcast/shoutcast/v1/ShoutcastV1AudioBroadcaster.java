@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +14,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
+import io.github.dsheirer.audio.convert.MP3Setting;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.util.ThreadPool;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -37,7 +40,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
@@ -62,9 +64,10 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
      *
      * @param configuration for the Shoutcast stream
      */
-    public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration, AliasModel aliasModel)
+    public ShoutcastV1AudioBroadcaster(ShoutcastV1Configuration configuration, InputAudioFormat inputAudioFormat,
+                                       MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration);
+        super(configuration, inputAudioFormat, mp3Setting);
         mAliasModel = aliasModel;
     }
 
@@ -91,7 +94,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
     {
         if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
@@ -179,7 +182,7 @@ public class ShoutcastV1AudioBroadcaster extends AudioStreamingBroadcaster
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.CACHED.submit(runnable);
         }
 
         return connected();

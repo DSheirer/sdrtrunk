@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.channel;
@@ -39,7 +36,7 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.TunerModel;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -83,6 +80,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private final static Logger mLog = LoggerFactory.getLogger(ChannelConfigurationEditor.class);
 
     private PlaylistManager mPlaylistManager;
+    protected TunerManager mTunerManager;
     protected UserPreferences mUserPreferences;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private Button mPlayButton;
@@ -103,9 +101,17 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private IconNode mStopGraphicNode;
     private ChannelProcessingMonitor mChannelProcessingMonitor = new ChannelProcessingMonitor();
 
-    public ChannelConfigurationEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    /**
+     * Constructs an instance
+     * @param playlistManager for playlists
+     * @param tunerManager for tuners
+     * @param userPreferences for preferences
+     */
+    public ChannelConfigurationEditor(PlaylistManager playlistManager, TunerManager tunerManager,
+                                      UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
 
         setMaxWidth(Double.MAX_VALUE);
@@ -239,11 +245,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         modifiedProperty().setValue(false);
     }
 
-    protected TunerModel getTunerModel()
-    {
-        return mPlaylistManager.getTunerModel();
-    }
-
     @Override
     public void save()
     {
@@ -365,7 +366,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
                     if(!getItem().processingProperty().get())
                     {
-                        ThreadPool.SCHEDULED.execute(() -> {
+                        ThreadPool.CACHED.execute(() -> {
                             try
                             {
                                 mPlaylistManager.getChannelProcessingManager().start(getItem());
@@ -386,7 +387,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                     }
                     else
                     {
-                        ThreadPool.SCHEDULED.execute(() -> {
+                        ThreadPool.CACHED.execute(() -> {
                             try
                             {
                                 mPlaylistManager.getChannelProcessingManager().stop(getItem());

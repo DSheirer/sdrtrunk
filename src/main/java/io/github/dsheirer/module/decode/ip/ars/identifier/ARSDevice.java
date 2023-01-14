@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,20 +22,20 @@ package io.github.dsheirer.module.decode.ip.ars.identifier;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.Role;
-import io.github.dsheirer.identifier.integer.IntegerIdentifier;
+import io.github.dsheirer.identifier.string.StringIdentifier;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
  * Automatic Registration Service - Device Identifier
  */
-public class ARSDevice extends IntegerIdentifier
+public class ARSDevice extends StringIdentifier
 {
     /**
      * Constructs an instance
      * @param value of the device identifier
      * @param role of the device (TO/FROM)
      */
-    public ARSDevice(int value, Role role)
+    public ARSDevice(String value, Role role)
     {
         super(value, IdentifierClass.USER, Form.ARS_DEVICE, role);
     }
@@ -49,7 +49,7 @@ public class ARSDevice extends IntegerIdentifier
     /**
      * Creates an ARS device with a FROM role
      */
-    public static ARSDevice createFrom(int value)
+    public static ARSDevice createFrom(String value)
     {
         return new ARSDevice(value, Role.FROM);
     }
@@ -57,7 +57,7 @@ public class ARSDevice extends IntegerIdentifier
     /**
      * Creates an ARS device with a TO role
      */
-    public static ARSDevice createTo(int value)
+    public static ARSDevice createTo(String value)
     {
         return new ARSDevice(value, Role.TO);
     }

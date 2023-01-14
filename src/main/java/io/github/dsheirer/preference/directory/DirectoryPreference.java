@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.preference.directory;
@@ -41,6 +40,7 @@ public class DirectoryPreference extends Preference
 
     private static final String DIRECTORY_APPLICATION_ROOT = "SDRTrunk";
     private static final String DIRECTORY_APPLICATION_LOG = "logs";
+    private static final String DIRECTORY_CONFIGURATION = "configuration";
     private static final String DIRECTORY_EVENT_LOG = "event_logs";
     private static final String DIRECTORY_JMBE = "jmbe";
     private static final String DIRECTORY_PLAYLIST = "playlist";
@@ -50,6 +50,7 @@ public class DirectoryPreference extends Preference
 
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_ROOT = "directory.application.root";
     private static final String PREFERENCE_KEY_DIRECTORY_APPLICATION_LOGS = "directory.application.logs";
+    private static final String PREFERENCE_KEY_DIRECTORY_CONFIGURATION = "directory.configuration";
     private static final String PREFERENCE_KEY_DIRECTORY_EVENT_LOGS = "directory.event.logs";
     private static final String PREFERENCE_KEY_DIRECTORY_JMBE = "directory.jmbe";
     private static final String PREFERENCE_KEY_DIRECTORY_PLAYLIST = "directory.playlist";
@@ -59,6 +60,7 @@ public class DirectoryPreference extends Preference
 
     private Path mDirectoryApplicationRoot;
     private Path mDirectoryApplicationLogs;
+    private Path mDirectoryConfiguration;
     private Path mDirectoryEventLogs;
     private Path mDirectoryJmbe;
     private Path mDirectoryPlaylist;
@@ -175,6 +177,40 @@ public class DirectoryPreference extends Preference
     }
 
     /**
+     * Path to the folder for storing configuration files
+     */
+    public Path getDirectoryConfiguration()
+    {
+        if(mDirectoryConfiguration == null)
+        {
+            mDirectoryConfiguration = getPath(PREFERENCE_KEY_DIRECTORY_CONFIGURATION, getDefaultConfigurationDirectory());
+            createDirectory(mDirectoryConfiguration);
+        }
+
+        return mDirectoryConfiguration;
+    }
+
+    /**
+     * Sets the path to the configuration files folder
+     */
+    public void setDirectoryConfiguration(Path path)
+    {
+        mDirectoryConfiguration = path;
+        mPreferences.put(PREFERENCE_KEY_DIRECTORY_CONFIGURATION, path.toString());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * Removes a stored configuration directory preference so that the default path can be used again
+     */
+    public void resetDirectoryConfiguration()
+    {
+        mPreferences.remove(PREFERENCE_KEY_DIRECTORY_CONFIGURATION);
+        mDirectoryConfiguration = null;
+        notifyPreferenceUpdated();
+    }
+
+    /**
      * Path to the folder for storing event logs
      */
     public Path getDirectoryEventLog()
@@ -199,7 +235,7 @@ public class DirectoryPreference extends Preference
     }
 
     /**
-     * Removes a stored playlist directory preference so that the default path can be used again
+     * Removes a stored event logs directory preference so that the default path can be used again
      */
     public void resetDirectoryEventLogs()
     {
@@ -392,6 +428,14 @@ public class DirectoryPreference extends Preference
     public Path getDefaultApplicationLogsDirectory()
     {
         return getDirectoryApplicationRoot().resolve(DIRECTORY_APPLICATION_LOG);
+    }
+
+    /**
+     * Default configuration directory
+     */
+    public Path getDefaultConfigurationDirectory()
+    {
+        return getDirectoryApplicationRoot().resolve(DIRECTORY_CONFIGURATION);
     }
 
     /**

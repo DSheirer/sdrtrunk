@@ -30,6 +30,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import org.controlsfx.control.ToggleSwitch;
 
 /**
  * Icecast streaming configuration editor
@@ -37,6 +38,7 @@ import javafx.scene.layout.GridPane;
 public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastConfiguration>
 {
     private GridPane mEditorPane;
+    private ToggleSwitch mInlineToggleSwitch;
     private TextField mMountPointTextField;
     private TextField mUserNameTextField;
     private TextField mDescriptionTextField;
@@ -52,6 +54,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
     public void setItem(IcecastConfiguration item)
     {
         getMountPointTextField().setDisable(item == null);
+        getInlineToggleSwitch().setDisable(item == null);
         getUserNameTextField().setDisable(item == null);
         getDescriptionTextField().setDisable(item == null);
         getGenreTextField().setDisable(item == null);
@@ -60,6 +63,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
         if(item != null)
         {
             getMountPointTextField().setText(item.getMountPoint());
+            getInlineToggleSwitch().setSelected(item.getInline());
             getUserNameTextField().setText(item.getUserName());
             getDescriptionTextField().setText(item.getDescription());
             getGenreTextField().setText(item.getGenre());
@@ -68,6 +72,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
         else
         {
             getMountPointTextField().setText(null);
+            getInlineToggleSwitch().setSelected(false);
             getUserNameTextField().setText(null);
             getDescriptionTextField().setText(null);
             getGenreTextField().setText(null);
@@ -83,6 +88,7 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
         if(getItem() != null)
         {
             getItem().setMountPoint(getMountPointTextField().getText());
+            getItem().setInline(getInlineToggleSwitch().isSelected());
             getItem().setUserName(getUserNameTextField().getText());
             getItem().setDescription(getDescriptionTextField().getText());
             getItem().setGenre(getGenreTextField().getText());
@@ -149,6 +155,14 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
 
             GridPane.setConstraints(getMountPointTextField(), 1, 3);
             mEditorPane.getChildren().add(getMountPointTextField());
+
+            Label inlineLabel = new Label("Inline Metadata");
+            GridPane.setHalignment(inlineLabel, HPos.RIGHT);
+            GridPane.setConstraints(inlineLabel, 2, 3);
+            mEditorPane.getChildren().add(inlineLabel);
+
+            GridPane.setConstraints(getInlineToggleSwitch(), 3, 3);
+            mEditorPane.getChildren().add(getInlineToggleSwitch());
 
             Label userNameLabel = new Label("User Name");
             GridPane.setHalignment(userNameLabel, HPos.RIGHT);
@@ -224,6 +238,19 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
         }
 
         return mMountPointTextField;
+    }
+
+    private ToggleSwitch getInlineToggleSwitch()
+    {
+        if(mInlineToggleSwitch == null)
+        {
+            mInlineToggleSwitch = new ToggleSwitch();
+            mInlineToggleSwitch.setDisable(true);
+            mInlineToggleSwitch.selectedProperty()
+                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mInlineToggleSwitch;
     }
 
     private TextField getUserNameTextField()

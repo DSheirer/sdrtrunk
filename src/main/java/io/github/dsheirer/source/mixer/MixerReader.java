@@ -1,35 +1,33 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.adapter.AbstractSampleAdapter;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
-import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
-import java.util.Arrays;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -37,36 +35,51 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * the samples to an array of floats using the specified adapter.  Dispatches float arrays to the registered
  * buffer listener.
  */
-public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
+public class MixerReader<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(MixerReader.class);
-
-    private static final long BUFFER_PROCESSING_INTERVAL_MS = 50; //50 milliseconds, 20 reads per second
     private TargetDataLine mTargetDataLine;
-    private byte[] mBuffer;
     private int mBufferSize;
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private ScheduledFuture mScheduledFuture;
-    private int mBytesRead;
-    private AbstractSampleAdapter<T> mSampleAdapter;
-    private Listener<T> mReusableBufferListener;
+    private ISampleAdapter<T> mSampleAdapter;
+    private Listener<T> mListener;
     private Listener<SourceEvent> mSourceEventListener;
     private AudioFormat mAudioFormat;
     private HeartbeatManager mHeartbeatManager;
+    private Thread mReaderThread;
 
+    /**
+     * Constructs an instance
+     * @param audioFormat for the target mixer
+     * @param targetDataLine to read samples from
+     * @param abstractSampleAdapter to convert samples to native buffers
+     * @param heartbeatManager to ping before each buffer read for downstream consumers
+     */
     public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine,
-                       AbstractSampleAdapter<T> abstractSampleAdapter, HeartbeatManager heartbeatManager)
+                       ISampleAdapter<T> abstractSampleAdapter, HeartbeatManager heartbeatManager)
     {
         mTargetDataLine = targetDataLine;
         mAudioFormat = audioFormat;
         mSampleAdapter = abstractSampleAdapter;
         mHeartbeatManager = heartbeatManager;
 
-        /* Set buffer size to 1/10 second of samples */
-        mBufferSize = (int)(mAudioFormat.getSampleRate() * 0.1) * mAudioFormat.getFrameSize();
+        if(mAudioFormat.getSampleRate() <= 96000)
+        {
+            setBufferSampleSize(4096);
+        }
+        else
+        {
+            setBufferSampleSize(8192);
+        }
     }
 
-    public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine, AbstractSampleAdapter<T> abstractSampleAdapter)
+    /**
+     * Constructs an instance
+     * @param audioFormat for the target mixer
+     * @param targetDataLine to read samples from
+     * @param abstractSampleAdapter to convert samples to native buffers
+     */
+    public MixerReader(AudioFormat audioFormat, TargetDataLine targetDataLine, ISampleAdapter<T> abstractSampleAdapter)
     {
         this(audioFormat, targetDataLine, abstractSampleAdapter, new HeartbeatManager());
     }
@@ -80,54 +93,12 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     }
 
     /**
-     * Sets the size of buffers to use.  This reader will read from target data line 20 times per second.
-     * @param bytesPerBuffer to size for each buffer read.
+     * Sets the number of samples per native buffer to produce.
+     * @param samples is the number of samples
      */
-    public void setBufferSize(int bytesPerBuffer)
+    public void setBufferSampleSize(int samples)
     {
-        mBufferSize = bytesPerBuffer;
-        mBuffer = new byte[mBufferSize];
-    }
-
-    /**
-     * Opens the source mixer target data line
-     *
-     * @throws LineUnavailableException if the target data line is null or unavailable (from the OS).
-     */
-    private void openTargetDataLine() throws LineUnavailableException
-    {
-        if(mTargetDataLine == null)
-        {
-            throw new LineUnavailableException("Source Mixer TargetDataLine is null");
-        }
-
-        mBuffer = new byte[mBufferSize];
-
-        mTargetDataLine.open(getAudioFormat());
-        mLog.info("TDL Open:" + mTargetDataLine.isOpen() + " Active:" + mTargetDataLine.isActive() + " Running:" + mTargetDataLine.isRunning());
-        mLog.info("Format:" + mTargetDataLine.getFormat().toString());
-        mTargetDataLine.start();
-        mLog.info("TDL Open:" + mTargetDataLine.isOpen() + " Active:" + mTargetDataLine.isActive() + " Running:" + mTargetDataLine.isRunning());
-
-    }
-
-    /**
-     * Closes the mixer source target data line
-     */
-    private void closeTargetDataLine()
-    {
-        if(mTargetDataLine != null && mTargetDataLine.isOpen())
-        {
-            if(mTargetDataLine.isRunning())
-            {
-                mTargetDataLine.stop();
-            }
-
-            if(mTargetDataLine.isOpen())
-            {
-                mTargetDataLine.close();
-            }
-        }
+        mBufferSize = samples * mAudioFormat.getFrameSize();
     }
 
     /**
@@ -137,9 +108,17 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     {
         if(mRunning.compareAndSet(false, true))
         {
+            if(mTargetDataLine == null)
+            {
+                mRunning.set(false);
+                mLog.error("Attempt to start failed - target data line is null");
+                return;
+            }
+
             try
             {
-                openTargetDataLine();
+                mTargetDataLine.open(getAudioFormat());
+                mTargetDataLine.start();
             }
             catch(LineUnavailableException e)
             {
@@ -148,15 +127,9 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
                 return;
             }
 
-            //Cancel the scheduled thread if it wasn't cancelled previously ... this shouldn't happen
-            if(mScheduledFuture != null)
-            {
-                mScheduledFuture.cancel(true);
-                mScheduledFuture = null;
-            }
-
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this,
-                0, BUFFER_PROCESSING_INTERVAL_MS, TimeUnit.MILLISECONDS);
+            mReaderThread = new Thread(new DataLineReader());
+            mReaderThread.setName("sdrtrunk mixer sample reader");
+            mReaderThread.start();
         }
         else
         {
@@ -171,66 +144,31 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
     {
         if(mRunning.compareAndSet(true, false))
         {
-            if(mScheduledFuture != null)
+            if(mTargetDataLine != null && mTargetDataLine.isOpen())
             {
-                mScheduledFuture.cancel(true);
-                mScheduledFuture = null;
+                if(mTargetDataLine.isRunning())
+                {
+                    mTargetDataLine.stop();
+                }
+
+                if(mTargetDataLine.isOpen())
+                {
+                    mTargetDataLine.close();
+                }
             }
 
-            closeTargetDataLine();
-        }
-        else
-        {
-            mLog.warn("Attempt to stop an already stopped BufferReader instance - this shouldn't happen");
-        }
-    }
-
-    /**
-     * Sample processing thread.  This method runs each time the timer fires.
-     */
-    @Override
-    public void run()
-    {
-        if(mRunning.get())
-        {
-            if(mHeartbeatManager != null)
-            {
-                mHeartbeatManager.broadcast();
-            }
+            mReaderThread.interrupt();
 
             try
             {
-                mBytesRead = 0;
-
-                //Blocking read - waits until the buffer fills
-                mBytesRead = mTargetDataLine.read(mBuffer, 0, mBuffer.length);
-
-                if(mBytesRead == mBuffer.length)
-                {
-                    //Sample adapter automatically sets initial listener count to one.
-                    T reusableBuffer = mSampleAdapter.convert(mBuffer);
-
-                    if(reusableBuffer != null && mReusableBufferListener != null)
-                    {
-                        mReusableBufferListener.receive(reusableBuffer);
-                    }
-                }
-                else if(mBytesRead > 0)
-                {
-                    //Sample adapter automatically sets initial listener count to one.
-                    T reusableBuffer = mSampleAdapter.convert(Arrays.copyOf(mBuffer, mBytesRead));
-
-                    if(reusableBuffer != null && mReusableBufferListener != null)
-                    {
-                        mReusableBufferListener.receive(reusableBuffer);
-                    }
-                }
+                mReaderThread.join(500);
             }
-            catch(Throwable t)
+            catch(InterruptedException ie)
             {
-                mLog.error("MixerSource - error while reading from the mixer target data line", t);
-                stop();
+                //No-op ... we're shutting down
             }
+
+            mReaderThread = null;
         }
     }
 
@@ -247,7 +185,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
      */
     public void setBufferListener(Listener<T> listener)
     {
-        mReusableBufferListener = listener;
+        mListener = listener;
     }
 
     /**
@@ -255,7 +193,7 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
      */
     public void removeBufferListener()
     {
-        mReusableBufferListener = null;
+        mListener = null;
     }
 
     /**
@@ -294,9 +232,49 @@ public class MixerReader<T extends ReusableFloatBuffer> implements Runnable
 
     public void dispose()
     {
-        stop();
         mHeartbeatManager = null;
-        mReusableBufferListener = null;
+        mListener = null;
         mSourceEventListener = null;
+    }
+
+    /**
+     * Runnable reader to read samples from the target data line, convert them to native buffers, and dispatch.
+     */
+    public class DataLineReader implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            while(mRunning.get())
+            {
+                if(mHeartbeatManager != null)
+                {
+                    mHeartbeatManager.broadcast();
+                }
+
+                byte[] buffer = new byte[mBufferSize];
+
+                int bytesRead = 0;
+
+                try
+                {
+                    while(bytesRead < buffer.length)
+                    {
+                        bytesRead += mTargetDataLine.read(buffer, bytesRead, buffer.length);
+                    }
+                }
+                catch(ArrayIndexOutOfBoundsException aioobe)
+                {
+                    //No-op ... this can happen during USB disconnect
+                }
+
+                //We'll always read the correct number of bytes until the data line is closed or stopped, and we're
+                //shutting down.
+                if(bytesRead == buffer.length && mListener != null)
+                {
+                    mListener.receive(mSampleAdapter.convert(buffer));
+                }
+            }
+        }
     }
 }

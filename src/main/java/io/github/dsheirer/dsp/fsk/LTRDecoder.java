@@ -1,35 +1,32 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.dsp.fsk;
 
 import io.github.dsheirer.bits.MessageFramer;
+import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.dc.IIRSinglePoleDCRemovalFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * adjustment may not fully compensate for mis-tuned signals and may result in missed decodes of idle bursts.  However,
  * the DC filter will track a mis-tuned signal to baseband quickly upon a continuous transmission.
  */
-public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectListener, ISyncStateListener
+public class LTRDecoder implements Listener<float[]>, ISyncDetectListener, ISyncStateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(LTRDecoder.class);
 
@@ -95,7 +92,7 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
     protected ZeroCrossingErrorDetector mTimingErrorDetector = new ZeroCrossingErrorDetector(SAMPLES_PER_SYMBOL);
     protected SynchronizationMonitor mSynchronizationMonitor;
     private IIRSinglePoleDCRemovalFilter mDCFilter = new IIRSinglePoleDCRemovalFilter(0.99999f);
-    private RealFIRFilter2 mLowPassFilter = new RealFIRFilter2(sLowPassFilterCoefficients);
+    private IRealFilter mLowPassFilter = FilterFactory.getRealFilter(sLowPassFilterCoefficients);
     private MessageFramer mMessageFramer;
 
     private boolean mSampleDecision;
@@ -154,12 +151,12 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
      * @param buffer containing 8.0 kHz unfiltered FM demodulated audio samples with sub-audible LTR signalling.
      */
     @Override
-    public void receive(ReusableFloatBuffer buffer)
+    public void receive(float[] buffer)
     {
-        ReusableFloatBuffer dcFiltered = mDCFilter.filter(buffer);
-        ReusableFloatBuffer lowPassFiltered = mLowPassFilter.filter(dcFiltered);
+        float[] dcFiltered = mDCFilter.filter(buffer);
+        float[] lowPassFiltered = mLowPassFilter.filter(dcFiltered);
 
-        for(float sample : lowPassFiltered.getSamples())
+        for(float sample : lowPassFiltered)
         {
             mSampleDecision = sample > 0.0;
 
@@ -178,8 +175,6 @@ public class LTRDecoder implements Listener<ReusableFloatBuffer>, ISyncDetectLis
                 mSynchronizationMonitor.increment();
             }
         }
-
-        lowPassFiltered.decrementUserCount();
     }
 
     /**

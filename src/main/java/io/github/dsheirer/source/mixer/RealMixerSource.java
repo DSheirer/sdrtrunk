@@ -1,23 +1,25 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.adapter.AbstractSampleAdapter;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.source.RealSource;
 import io.github.dsheirer.source.SourceEvent;
 
@@ -40,7 +42,7 @@ public class RealMixerSource extends RealSource
      * @param sampleAdapter - adapter to convert byte array data read from the
      * mixer into float array data.
      */
-    public RealMixerSource(TargetDataLine targetDataLine, AudioFormat format, AbstractSampleAdapter sampleAdapter)
+    public RealMixerSource(TargetDataLine targetDataLine, AudioFormat format, ISampleAdapter sampleAdapter)
     {
         mMixerReader = new MixerReader(format, targetDataLine, sampleAdapter, getHeartbeatManager());
     }
@@ -101,7 +103,7 @@ public class RealMixerSource extends RealSource
     /**
      * Sets the listener to receive sample data in reusable buffers.
      */
-    public void setListener(Listener<ReusableFloatBuffer> listener)
+    public void setListener(Listener<float[]> listener)
     {
         mMixerReader.setBufferListener(listener);
     }
@@ -110,7 +112,7 @@ public class RealMixerSource extends RealSource
      * Removes the listener from receiving sample data.
      * @param listener
      */
-    public void removeListener(Listener<ReusableFloatBuffer> listener)
+    public void removeListener(Listener<float[]> listener)
     {
         mMixerReader.removeBufferListener();
     }

@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,30 +14,36 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
-import io.github.dsheirer.source.Source;
-
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import java.util.List;
 
 public interface IPolyphaseChannelOutputProcessor
 {
     /**
-     * Receive and enqueue output results from the polyphase analysis channelizer
-     * @param channelResultsBuffer to enqueue
+     * Start processing channel results
      */
-    void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer);
+    void start();
 
     /**
-     * Process the channel output channel results queue and deliver the output to the listener
-     *
-     * @param reusableComplexBufferAssembler to receive the processed channel results
+     * Stop processing channel results.
      */
-    void processChannelResults(ReusableComplexBufferAssembler reusableComplexBufferAssembler);
+    void stop();
+    /**
+     * Receive and enqueue output results from the polyphase analysis channelizer
+     * @param channelResults to enqueue
+     * @param timestamp for the first channel results buffer
+     */
+    void receiveChannelResults(List<float[]> channelResults, long timestamp);
+
+    /**
+     * Listener to receive assembled complex samples buffers
+     */
+    void setListener(Listener<ComplexSamples> listener);
 
     /**
      * Sets the desired frequency offset from center.  The samples will be mixed with an oscillator set to this offset
@@ -49,13 +55,12 @@ public interface IPolyphaseChannelOutputProcessor
 
     /**
      * Indicates the number of input channels processed by this output processor
-     * @return
      */
     int getInputChannelCount();
 
     /**
      * Updates the input polyphase channel index(es) used by this output processor
-     * @param indexes
+     * @param indexes for the channel
      */
     void setPolyphaseChannelIndices(List<Integer> indexes);
 
@@ -66,16 +71,9 @@ public interface IPolyphaseChannelOutputProcessor
 
     /**
      * Updates the synthesis filter taps for this output processor
-     * @param filter
+     * @param filter for the output processor
      */
     void setSynthesisFilter(float[] filter);
-
-    /**
-     * Sets the listener to receive buffer overflow notifications
-     * @param source to receive overflow notifications
-     */
-    void setSourceOverflowListener(Source source);
-
 
     void dispose();
 }

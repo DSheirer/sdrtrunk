@@ -1,83 +1,114 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.hackrf;
 
+import io.github.dsheirer.buffer.INativeBufferFactory;
+import io.github.dsheirer.buffer.SignedByteNativeBufferFactory;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.ITunerErrorListener;
+import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
 import io.github.dsheirer.source.tuner.usb.USBTunerController;
-import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
-import io.github.dsheirer.source.tuner.usb.converter.SignedByteSampleConverter;
-import org.apache.commons.io.EndianUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
-import org.usb4java.DeviceHandle;
-import org.usb4java.LibUsb;
-import org.usb4java.LibUsbException;
-
-import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.concurrent.locks.ReentrantLock;
+import org.apache.commons.io.EndianUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
+
+import javax.usb.UsbException;
 
 public class HackRFTunerController extends USBTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(HackRFTunerController.class);
 
     public final static long USB_TIMEOUT_US = 1000000l; //uSeconds
-    public static final byte USB_ENDPOINT = (byte)0x81;
-    public static final byte USB_INTERFACE = (byte)0x0;
     public static final int USB_TRANSFER_BUFFER_SIZE = 262144;
 
     public static final byte REQUEST_TYPE_IN = (byte)(LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
     public static final byte REQUEST_TYPE_OUT = (byte)(LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR | LibUsb.RECIPIENT_DEVICE);
 
-    public static final long MIN_FREQUENCY = 10000000l;
-    public static final long MAX_FREQUENCY = 6000000000l;
+    public static final long MINIMUM_TUNABLE_FREQUENCY = 10000000l;
+    public static final long MAXIMUM_TUNABLE_FREQUENCY = 6000000000l;
     public static final long DEFAULT_FREQUENCY = 101100000;
-    public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
-    public static final int DC_SPIKE_AVOID_BUFFER = 5000;
+    public static final double USABLE_BANDWIDTH = 0.90;
+    public static final int DC_HALF_BANDWIDTH = 5000;
 
-    private NativeBufferConverter mNativeBufferConverter = new SignedByteSampleConverter();
-    private USBTransferProcessor mUSBTransferProcessor;
-
+    private INativeBufferFactory mNativeBufferFactory = new SignedByteNativeBufferFactory();
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE_5_0;
     private boolean mAmplifierEnabled = false;
 
-    private Device mDevice;
-    private DeviceDescriptor mDeviceDescriptor;
-    private DeviceHandle mDeviceHandle;
-    private ReentrantLock mLock = new ReentrantLock();
-
-    public HackRFTunerController(Device device, DeviceDescriptor descriptor) throws SourceException
+    /**
+     * Constructs an instance
+     * @param bus usb
+     * @param portAddress usb
+     */
+    public HackRFTunerController(int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
+        super(bus, portAddress, MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, DC_HALF_BANDWIDTH, USABLE_BANDWIDTH,
+                tunerErrorListener);
+    }
 
-        mDevice = device;
-        mDeviceDescriptor = descriptor;
+    /**
+     * Tuner type for this HackRf
+     */
+    @Override
+    public TunerType getTunerType()
+    {
+        if(isRunning())
+        {
+            try
+            {
+                BoardID boardID = getBoardID();
+
+                switch(boardID)
+                {
+                    case RAD1O:
+                        return TunerType.HACKRF_RAD1O;
+                    case JAWBREAKER:
+                        return TunerType.HACKRF_JAWBREAKER;
+                    case HACKRF_ONE:
+                        return TunerType.HACKRF_ONE;
+                };
+            }
+            catch(UsbException ue)
+            {
+                mLog.error("Couldn't read HackRF board ID - " + ue.getLocalizedMessage());
+            }
+        }
+
+        return TunerType.HACKRF_ONE;
+    }
+
+    @Override
+    protected INativeBufferFactory getNativeBufferFactory()
+    {
+        return mNativeBufferFactory;
+    }
+
+    @Override
+    protected int getTransferBufferSize()
+    {
+        return USB_TRANSFER_BUFFER_SIZE;
     }
 
     @Override
@@ -86,118 +117,37 @@ public class HackRFTunerController extends USBTunerController
         return USB_TRANSFER_BUFFER_SIZE / 2;
     }
 
-    public void init() throws SourceException
+    /**
+     * Device startup actions invoked by the parent start() method.
+     * @throws SourceException if there is an error performing these operations
+     */
+    protected void deviceStart() throws SourceException
     {
-        mDeviceHandle = new DeviceHandle();
-
-        int result = LibUsb.open(mDevice, mDeviceHandle);
-
-        if(result != 0)
-        {
-            if(result == LibUsb.ERROR_ACCESS)
-            {
-                mLog.error("Unable to access HackRF - insufficient permissions.  "
-                    + "If you are running a Linux OS, have you installed the "
-                    + "hackRF rules file in \\etc\\udev\\rules.d ??");
-            }
-
-            throw new SourceException("Couldn't open hackrf device - " +
-                LibUsb.strError(result));
-        }
-
         try
         {
-            claimInterface();
-
             setMode(Mode.RECEIVE);
-
             setFrequency(DEFAULT_FREQUENCY);
         }
         catch(Exception e)
         {
-            throw new SourceException("HackRF Tuner Controller - couldn't "
-                + "claim USB interface or get endpoint or pipe", e);
+            mLog.error("Error on Hack RF startup", e);
+            throw new SourceException("HackRF Tuner Controller - couldn't claim USB interface or get endpoint or pipe", e);
         }
-
-        String name;
-
-        try
-        {
-            name = "HackRF " + getSerial().getSerialNumber();
-        }
-        catch(UsbException ue)
-        {
-            //Do nothing, we couldn't determine the serial number
-            name = "HackRF - Unidentified Serial";
-        }
-
-        mUSBTransferProcessor = new USBTransferProcessor(name, mDeviceHandle, mNativeBufferConverter,
-            USB_TRANSFER_BUFFER_SIZE, this);
-    }
-
-    @Override
-    public void dispose()
-    {
-        if(mDeviceHandle != null)
-        {
-            mLog.info("Releasing HackRF Tuner");
-            try
-            {
-                LibUsb.close(mDeviceHandle);
-            }
-            catch(Exception e)
-            {
-                mLog.error("error while closing device handle", e);
-            }
-
-            mDeviceHandle = null;
-        }
-    }
-
-    @Override
-    protected USBTransferProcessor getUSBTransferProcessor()
-    {
-        return mUSBTransferProcessor;
     }
 
     /**
-     * Claims the USB interface.  If another application currently has
-     * the interface claimed, the USB_FORCE_CLAIM_INTERFACE setting
-     * will dictate if the interface is forcibly claimed from the other
-     * application
+     * Devices shutdown actions invoked by the parent stop() method
      */
-    private void claimInterface() throws SourceException
+    @Override
+    protected void deviceStop()
     {
-        if(mDeviceHandle != null)
+        try
         {
-            int result = LibUsb.kernelDriverActive(mDeviceHandle, USB_INTERFACE);
-
-            if(result == 1)
-            {
-                result = LibUsb.detachKernelDriver(mDeviceHandle, USB_INTERFACE);
-
-                if(result != LibUsb.SUCCESS)
-                {
-                    mLog.error("failed attempt to detach kernel driver [" +
-                        LibUsb.errorName(result) + "]");
-
-                    throw new SourceException("couldn't detach kernel driver "
-                        + "from device");
-                }
-            }
-
-            result = LibUsb.claimInterface(mDeviceHandle, USB_INTERFACE);
-
-            if(result != LibUsb.SUCCESS)
-            {
-                throw new SourceException("couldn't claim usb interface [" +
-                    LibUsb.errorName(result) + "]");
-            }
+            setMode(Mode.OFF);
         }
-        else
+        catch(UsbException ue)
         {
-            throw new SourceException("couldn't claim usb interface - no "
-                + "device handle");
+            mLog.error("Error while setting HackRF mode to OFF", ue);
         }
     }
 
@@ -207,7 +157,6 @@ public class HackRFTunerController extends USBTunerController
     public BoardID getBoardID() throws UsbException
     {
         int id = readByte(Request.BOARD_ID_READ, (byte)0, (byte)0, false);
-
         return BoardID.lookup(id);
     }
 
@@ -217,11 +166,8 @@ public class HackRFTunerController extends USBTunerController
     public String getFirmwareVersion() throws UsbException
     {
         ByteBuffer buffer = readArray(Request.VERSION_STRING_READ, 0, 0, 255);
-
         byte[] data = new byte[255];
-
         buffer.get(data);
-
         return new String(data);
     }
 
@@ -231,7 +177,6 @@ public class HackRFTunerController extends USBTunerController
     public Serial getSerial() throws UsbException
     {
         ByteBuffer buffer = readArray(Request.BOARD_PARTID_SERIALNO_READ, 0, 0, 24);
-
         return new Serial(buffer);
     }
 
@@ -246,18 +191,9 @@ public class HackRFTunerController extends USBTunerController
     /**
      * Sets the HackRF baseband filter
      */
-    public void setBasebandFilter(BasebandFilter filter) throws UsbException
+    public  void setBasebandFilter(BasebandFilter filter) throws UsbException
     {
-        mLock.lock();
-
-        try
-        {
-            write(Request.BASEBAND_FILTER_BANDWIDTH_SET, filter.getLowValue(), filter.getHighValue());
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        write(Request.BASEBAND_FILTER_BANDWIDTH_SET, filter.getLowValue(), filter.getHighValue());
     }
 
     /**
@@ -265,17 +201,8 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setAmplifierEnabled(boolean enabled) throws UsbException
     {
-        mLock.lock();
-
-        try
-        {
-            write(Request.AMP_ENABLE, (enabled ? 1 : 0), 0);
-            mAmplifierEnabled = enabled;
-        }
-        finally
-        {
-            mLock.unlock();;
-        }
+        write(Request.AMP_ENABLE, (enabled ? 1 : 0), 0);
+        mAmplifierEnabled = enabled;
     }
 
     public boolean getAmplifier()
@@ -288,20 +215,11 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setLNAGain(HackRFLNAGain gain) throws UsbException
     {
-        mLock.lock();
+        int result = readByte(Request.SET_LNA_GAIN, 0, gain.getValue(), true);
 
-        try
+        if(result != 1)
         {
-            int result = readByte(Request.SET_LNA_GAIN, 0, gain.getValue(), true);
-
-            if(result != 1)
-            {
-                throw new UsbException("couldn't set lna gain to " + gain);
-            }
-        }
-        finally
-        {
-            mLock.unlock();
+            throw new UsbException("couldn't set lna gain to " + gain);
         }
     }
 
@@ -310,20 +228,11 @@ public class HackRFTunerController extends USBTunerController
      */
     public void setVGAGain(HackRFVGAGain gain) throws UsbException
     {
-        mLock.lock();
+        int result = readByte(Request.SET_VGA_GAIN, 0, gain.getValue(), true);
 
-        try
+        if(result != 1)
         {
-            int result = readByte(Request.SET_VGA_GAIN, 0, gain.getValue(), true);
-
-            if(result != 1)
-            {
-                throw new UsbException("couldn't set vga gain to " + gain);
-            }
-        }
-        finally
-        {
-            mLock.unlock();
+            throw new UsbException("couldn't set vga gain to " + gain);
         }
     }
 
@@ -338,34 +247,25 @@ public class HackRFTunerController extends USBTunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        mLock.lock();
+        ByteBuffer buffer = ByteBuffer.allocateDirect(8);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        int mhz = (int)(frequency / 1E6);
+        int hz = (int)(frequency - (mhz * 1E6));
+
+        buffer.putInt(mhz);
+        buffer.putInt(hz);
+
+        buffer.rewind();
 
         try
         {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(8);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-            int mhz = (int)(frequency / 1E6);
-            int hz = (int)(frequency - (mhz * 1E6));
-
-            buffer.putInt(mhz);
-            buffer.putInt(hz);
-
-            buffer.rewind();
-
-            try
-            {
-                write(Request.SET_FREQUENCY, 0, 0, buffer);
-            }
-            catch(UsbException e)
-            {
-                mLog.error("error setting frequency [" + frequency + "]", e);
-                throw new SourceException("error setting frequency [" + frequency + "]", e);
-            }
+            write(Request.SET_FREQUENCY, 0, 0, buffer);
         }
-        finally
+        catch(UsbException e)
         {
-            mLock.unlock();
+            mLog.error("error setting frequency [" + frequency + "]", e);
+            throw new SourceException("error setting frequency [" + frequency + "]", e);
         }
     }
 
@@ -378,38 +278,29 @@ public class HackRFTunerController extends USBTunerController
     @Override
     public void apply(TunerConfiguration config) throws SourceException
     {
-        if(config instanceof HackRFTunerConfiguration)
-        {
-            HackRFTunerConfiguration hackRFConfig = (HackRFTunerConfiguration)config;
+        //Invoke super for frequency, frequency correction and autoPPM
+        super.apply(config);
 
+        if(config instanceof HackRFTunerConfiguration hackRFConfig)
+        {
             //Convert legacy sample rate setting to new sample rates
             if(!hackRFConfig.getSampleRate().isValidSampleRate())
             {
-                mLog.warn("Changing legacy HackRF Sample Rates Setting [" + hackRFConfig.getSampleRate().name() + "] to current valid setting");
+                mLog.warn("Changing legacy HackRF Sample Rates Setting [" + hackRFConfig.getSampleRate().name() +
+                        "] to current valid setting");
                 hackRFConfig.setSampleRate(HackRFSampleRate.RATE_5_0);
             }
 
             try
             {
                 setSampleRate(hackRFConfig.getSampleRate());
-                setFrequencyCorrection(hackRFConfig.getFrequencyCorrection());
                 setAmplifierEnabled(hackRFConfig.getAmplifierEnabled());
                 setLNAGain(hackRFConfig.getLNAGain());
                 setVGAGain(hackRFConfig.getVGAGain());
-                setFrequency(getFrequency());
             }
             catch(UsbException e)
             {
                 throw new SourceException("Error while applying tuner configuration", e);
-            }
-
-            try
-            {
-                setFrequency(hackRFConfig.getFrequency());
-            }
-            catch(SourceException se)
-            {
-                //Do nothing, we couldn't set the frequency
             }
         }
         else
@@ -418,39 +309,22 @@ public class HackRFTunerController extends USBTunerController
         }
     }
 
-    public ByteBuffer readArray(Request request,
-                                int value,
-                                int index,
-                                int length) throws UsbException
+    public ByteBuffer readArray(Request request, int value, int index, int length) throws UsbException
     {
-        if(mDeviceHandle != null)
+        ByteBuffer buffer = ByteBuffer.allocateDirect(length);
+
+        int transferred = LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_IN, request.getRequestNumber(),
+                (short)value, (short)index, buffer, USB_TIMEOUT_US);
+
+        if(transferred < 0)
         {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(length);
-
-            int transferred = LibUsb.controlTransfer(mDeviceHandle,
-                REQUEST_TYPE_IN,
-                request.getRequestNumber(),
-                (short)value,
-                (short)index,
-                buffer,
-                USB_TIMEOUT_US);
-
-            if(transferred < 0)
-            {
-                throw new LibUsbException("read error", transferred);
-            }
-
-            return buffer;
+            throw new LibUsbException("read error", transferred);
         }
-        else
-        {
-            throw new LibUsbException("device handle is null",
-                LibUsb.ERROR_NO_DEVICE);
-        }
+
+        return buffer;
     }
 
-    public int read(Request request, int value, int index, int length)
-        throws UsbException
+    public int read(Request request, int value, int index, int length) throws UsbException
     {
         if(!(length == 1 || length == 2 || length == 4))
         {
@@ -478,61 +352,36 @@ public class HackRFTunerController extends USBTunerController
         }
     }
 
-    public int readByte(Request request, int value, int index, boolean signed)
-        throws UsbException
+    public synchronized int readByte(Request request, int value, int index, boolean signed) throws UsbException
     {
         ByteBuffer buffer = readArray(request, value, index, 1);
 
         if(signed)
         {
-            return (int)(buffer.get());
+            return buffer.get();
         }
         else
         {
-            return (int)(buffer.get() & 0xFF);
+            return (buffer.get() & 0xFF);
         }
     }
 
-    public void write(Request request,
-                      int value,
-                      int index,
-                      ByteBuffer buffer) throws UsbException
+    public synchronized void write(Request request, int value, int index, ByteBuffer buffer) throws UsbException
     {
-        if(mDeviceHandle != null)
-        {
-            int transferred = LibUsb.controlTransfer(mDeviceHandle,
-                REQUEST_TYPE_OUT,
-                request.getRequestNumber(),
-                (short)value,
-                (short)index,
-                buffer,
-                USB_TIMEOUT_US);
+        int status = LibUsb.controlTransfer(getDeviceHandle(), REQUEST_TYPE_OUT, request.getRequestNumber(),
+                (short)value, (short)index, buffer, USB_TIMEOUT_US);
 
-            if(transferred < 0)
-            {
-                throw new LibUsbException("error writing byte buffer",
-                    transferred);
-            }
-            else if(transferred != buffer.capacity())
-            {
-                throw new LibUsbException("transferred bytes [" +
-                    transferred + "] is not what was expected [" +
-                    buffer.capacity() + "]", transferred);
-            }
-        }
-        else
+        if(status < LibUsb.SUCCESS)
         {
-            throw new LibUsbException("device handle is null",
-                LibUsb.ERROR_NO_DEVICE);
+            throw new LibUsbException("error writing control transfer for request [" + request.name() +
+                    "] value [" + value + "]", status);
         }
     }
 
     /**
      * Sends a request that doesn't have a data payload
      */
-    public void write(Request request,
-                      int value,
-                      int index) throws UsbException
+    public void write(Request request, int value, int index) throws UsbException
     {
         write(request, value, index, ByteBuffer.allocateDirect(0));
     }
@@ -552,24 +401,18 @@ public class HackRFTunerController extends USBTunerController
         }
 
         setSampleRateManual(rate.getRate(), 1);
-
         mFrequencyController.setSampleRate(rate.getRate());
-
         setBasebandFilter(rate.getFilter());
-
         mSampleRate = rate;
+        getNativeBufferFactory().setSamplesPerMillisecond((float)getSampleRate() / 1000.0f);
     }
 
-    public void setSampleRateManual(int frequency, int divider)
-        throws UsbException
+    public void setSampleRateManual(int frequency, int divider) throws UsbException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(8);
-
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-
         buffer.putInt(frequency);
         buffer.putInt(divider);
-
         write(Request.SET_SAMPLE_RATE, 0, 0, buffer);
     }
 
@@ -605,7 +448,7 @@ public class HackRFTunerController extends USBTunerController
 
         private byte mRequestNumber;
 
-        private Request(int number)
+        Request(int number)
         {
             mRequestNumber = (byte)number;
         }
@@ -659,7 +502,7 @@ public class HackRFTunerController extends USBTunerController
         private String mLabel;
         private BasebandFilter mFilter;
 
-        private HackRFSampleRate(int rate, String label, BasebandFilter filter)
+        HackRFSampleRate(int rate, String label, BasebandFilter filter)
         {
             mRate = rate;
             mLabel = label;
@@ -717,7 +560,7 @@ public class HackRFTunerController extends USBTunerController
         private int mBandwidth;
         private String mLabel;
 
-        private BasebandFilter(int bandwidth, String label)
+        BasebandFilter(int bandwidth, String label)
         {
             mBandwidth = bandwidth;
             mLabel = label;
@@ -749,12 +592,13 @@ public class HackRFTunerController extends USBTunerController
         JELLYBEAN(0x00, "HackRF Jelly Bean"),
         JAWBREAKER(0x01, "HackRF Jaw Breaker"),
         HACKRF_ONE(0x02, "HackRF One"),
+        RAD1O(0x03, "RAD1O"),
         INVALID(0xFF, "HackRF Unknown Board");
 
         private byte mIDNumber;
         private String mLabel;
 
-        private BoardID(int number, String label)
+        BoardID(int number, String label)
         {
             mIDNumber = (byte)number;
             mLabel = label;
@@ -785,6 +629,8 @@ public class HackRFTunerController extends USBTunerController
                     return JAWBREAKER;
                 case 2:
                     return HACKRF_ONE;
+                case 3:
+                    return RAD1O;
                 default:
                     return INVALID;
             }
@@ -801,7 +647,7 @@ public class HackRFTunerController extends USBTunerController
         private byte mNumber;
         private String mLabel;
 
-        private Mode(int number, String label)
+        Mode(int number, String label)
         {
             mNumber = (byte)number;
             mLabel = label;
@@ -834,7 +680,7 @@ public class HackRFTunerController extends USBTunerController
 
         private int mValue;
 
-        private HackRFLNAGain(int value)
+        HackRFLNAGain(int value)
         {
             mValue = value;
         }
@@ -846,7 +692,7 @@ public class HackRFTunerController extends USBTunerController
 
         public String toString()
         {
-            return String.valueOf(mValue) + " dB";
+            return mValue + " dB";
         }
     }
 
@@ -890,7 +736,7 @@ public class HackRFTunerController extends USBTunerController
 
         private int mValue;
 
-        private HackRFVGAGain(int value)
+        HackRFVGAGain(int value)
         {
             mValue = value;
         }
@@ -902,7 +748,7 @@ public class HackRFTunerController extends USBTunerController
 
         public String toString()
         {
-            return String.valueOf(mValue) + " dB";
+            return mValue + " dB";
         }
     }
 

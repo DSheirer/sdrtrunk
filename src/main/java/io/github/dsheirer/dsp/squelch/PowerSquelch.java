@@ -42,7 +42,7 @@ public class PowerSquelch implements Listener<SourceEvent>
      * @param ramp count of samples before transition between mute and unmute.  Setting this value to zero
      * causes immediate mute and unmute.  Set to higher count to prevent mute/unmute flapping.
      */
-    public PowerSquelch(double alpha, double squelchThreshold, int ramp)
+    public PowerSquelch(float alpha, double squelchThreshold, int ramp)
     {
         mFilter = new SinglePoleIirFilter(alpha);
         setSquelchThreshold(squelchThreshold);
@@ -85,9 +85,19 @@ public class PowerSquelch implements Listener<SourceEvent>
      * @param inphase complex sample component
      * @param quadrature complex sample component
      */
-    public void process(double inphase, double quadrature)
+    public void process(float inphase, float quadrature)
     {
-        mPower = mFilter.filter(inphase * inphase + quadrature * quadrature);
+        process(inphase * inphase + quadrature * quadrature);
+    }
+
+    /**
+     * Processes a complex IQ sample and changes squelch state when the signal power is above or below the
+     * threshold value.
+     * @param magnitude of a complex sample (inphase * inphase + quadrature * quadrature)
+     */
+    public void process(float magnitude)
+    {
+        mPower = mFilter.filter(magnitude);
 
         mPowerLevelBroadcastCount++;
         if(mPowerLevelBroadcastCount % mPowerLevelBroadcastThreshold == 0)

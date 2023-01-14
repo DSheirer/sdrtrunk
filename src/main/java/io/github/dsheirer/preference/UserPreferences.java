@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,14 @@
 package io.github.dsheirer.preference;
 
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
 import io.github.dsheirer.preference.duplicate.DuplicateCallDetectionPreference;
 import io.github.dsheirer.preference.event.DecodeEventPreference;
 import io.github.dsheirer.preference.identifier.TalkgroupFormatPreference;
 import io.github.dsheirer.preference.javafx.JavaFxPreferences;
+import io.github.dsheirer.preference.mp3.MP3Preference;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
@@ -53,11 +55,13 @@ import io.github.dsheirer.sample.Listener;
  */
 public class UserPreferences implements Listener<PreferenceType>
 {
+    private VectorCalibrationPreference mVectorCalibrationPreference;
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
     private DuplicateCallDetectionPreference mDuplicateCallDetectionPreference;
     private JmbeLibraryPreference mJmbeLibraryPreference;
+    private MP3Preference mMP3Preference;
     private PlaybackPreference mPlaybackPreference;
     private PlaylistPreference mPlaylistPreference;
     private RadioReferencePreference mRadioReferencePreference;
@@ -74,6 +78,11 @@ public class UserPreferences implements Listener<PreferenceType>
     public UserPreferences()
     {
         loadPreferenceTypes();
+    }
+
+    public VectorCalibrationPreference getVectorCalibrationPreference()
+    {
+        return mVectorCalibrationPreference;
     }
 
     /**
@@ -149,6 +158,14 @@ public class UserPreferences implements Listener<PreferenceType>
     }
 
     /**
+     * MP3 preferences
+     */
+    public MP3Preference getMP3Preference()
+    {
+        return mMP3Preference;
+    }
+
+    /**
      * Identifier preferences
      */
     public TalkgroupFormatPreference getTalkgroupFormatPreference()
@@ -186,11 +203,13 @@ public class UserPreferences implements Listener<PreferenceType>
      */
     private void loadPreferenceTypes()
     {
+        mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
         mDecodeEventPreference = new DecodeEventPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
         mDuplicateCallDetectionPreference = new DuplicateCallDetectionPreference(this::receive);
         mJmbeLibraryPreference = new JmbeLibraryPreference(this::receive);
+        mMP3Preference = new MP3Preference(this::receive);
         mPlaybackPreference = new PlaybackPreference(this::receive);
         mPlaylistPreference = new PlaylistPreference(this::receive, mDirectoryPreference);
         mRadioReferencePreference = new RadioReferencePreference(this::receive);

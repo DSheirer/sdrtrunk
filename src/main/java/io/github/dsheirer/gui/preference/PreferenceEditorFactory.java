@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,11 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
 import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
 import io.github.dsheirer.gui.preference.duplicate.DuplicateCallPreferenceEditor;
+import io.github.dsheirer.gui.preference.mp3.MP3PreferenceEditor;
 import io.github.dsheirer.gui.preference.playback.PlaybackPreferenceEditor;
 import io.github.dsheirer.gui.preference.record.RecordPreferenceEditor;
 import io.github.dsheirer.gui.preference.tuner.TunerPreferenceEditor;
@@ -39,6 +41,8 @@ public class PreferenceEditorFactory
         {
             case AUDIO_DUPLICATE_CALL_DETECTION:
                 return new DuplicateCallPreferenceEditor(userPreferences);
+            case AUDIO_MP3:
+                return new MP3PreferenceEditor(userPreferences);
             case AUDIO_OUTPUT:
                 return new PlaybackPreferenceEditor(userPreferences);
             case AUDIO_RECORD:
@@ -53,6 +57,8 @@ public class PreferenceEditorFactory
                 return new TunerPreferenceEditor(userPreferences);
             case TALKGROUP_FORMAT:
                 return new TalkgroupFormatPreferenceEditor(userPreferences);
+            case VECTOR_CALIBRATION:
+                return new VectorCalibrationPreferenceEditor(userPreferences);
         }
 
         return null;

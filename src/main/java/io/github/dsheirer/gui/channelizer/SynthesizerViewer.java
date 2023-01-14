@@ -1,39 +1,42 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.gui.channelizer;
 
+import io.github.dsheirer.buffer.FloatNativeBuffer;
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.mixer.FS4DownConverter;
-import io.github.dsheirer.dsp.mixer.IOscillator;
-import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
-import io.github.dsheirer.sample.IOverflowListener;
+import io.github.dsheirer.dsp.oscillator.FS4DownConverter;
+import io.github.dsheirer.dsp.oscillator.IComplexOscillator;
+import io.github.dsheirer.dsp.oscillator.OscillatorFactory;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
-import io.github.dsheirer.spectrum.DFTProcessor;
+import io.github.dsheirer.spectrum.ComplexDftProcessor;
 import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.SpectrumPanel;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
 import io.github.dsheirer.util.ThreadPool;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.util.concurrent.TimeUnit;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +48,6 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.util.concurrent.TimeUnit;
 
 public class SynthesizerViewer extends JFrame
 {
@@ -58,7 +58,7 @@ public class SynthesizerViewer extends JFrame
     private static final int CHANNEL_FFT_FRAME_RATE = 20; //frames per second
     private static final int DATA_GENERATOR_FRAME_RATE = 50; //frames per second
 
-    private SettingsManager mSettingsManager = new SettingsManager(new TunerConfigurationModel());
+    private SettingsManager mSettingsManager = new SettingsManager();
     private JPanel mPrimaryPanel;
     private PrimarySpectrumPanel mPrimarySpectrumPanel;
     private ChannelPanel mChannel1Panel;
@@ -141,9 +141,9 @@ public class SynthesizerViewer extends JFrame
         return mChannel2Panel;
     }
 
-    public class PrimarySpectrumPanel extends JPanel implements Listener<ReusableComplexBuffer>
+    public class PrimarySpectrumPanel extends JPanel implements Listener<INativeBuffer>
     {
-        private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        private ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
 
@@ -154,36 +154,26 @@ public class SynthesizerViewer extends JFrame
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel);
 
-            mDFTProcessor.addConverter(mComplexDecibelConverter);
-            mDFTProcessor.process(SourceEvent.sampleRateChange(CHANNEL_SAMPLE_RATE));
-            mDFTProcessor.setFrameRate(CHANNEL_FFT_FRAME_RATE);
+            mComplexDftProcessor.addConverter(mComplexDecibelConverter);
+            mComplexDftProcessor.setFrameRate(CHANNEL_FFT_FRAME_RATE);
             mComplexDecibelConverter.addListener(mSpectrumPanel);
-
-            mDFTProcessor.setOverflowListener(new IOverflowListener()
-            {
-                @Override
-                public void sourceOverflow(boolean overflow)
-                {
-                    mLog.debug("Buffer " + (overflow ? "overflow" : "reset"));
-                }
-            });
         }
 
         public void setDFTSize(DFTSize dftSize)
         {
-            mDFTProcessor.setDFTSize(dftSize);
+            mComplexDftProcessor.setDFTSize(dftSize);
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(INativeBuffer nativeBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer);
+            mComplexDftProcessor.receive(nativeBuffer);
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>
+    public class ChannelPanel extends JPanel implements Listener<INativeBuffer>
     {
-        private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        private ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
         private boolean mLoggingEnabled = false;
@@ -196,22 +186,21 @@ public class SynthesizerViewer extends JFrame
             add(mSpectrumPanel, "wrap");
             add(channelControlPanel);
 
-            mDFTProcessor.addConverter(mComplexDecibelConverter);
-            mDFTProcessor.process(SourceEvent.sampleRateChange(CHANNEL_SAMPLE_RATE));
-            mDFTProcessor.setFrameRate(CHANNEL_FFT_FRAME_RATE);
+            mComplexDftProcessor.addConverter(mComplexDecibelConverter);
+            mComplexDftProcessor.setFrameRate(CHANNEL_FFT_FRAME_RATE);
 
             mComplexDecibelConverter.addListener(mSpectrumPanel);
         }
 
         public void setDFTSize(DFTSize dftSize)
         {
-            mDFTProcessor.setDFTSize(dftSize);
+            mComplexDftProcessor.setDFTSize(dftSize);
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(INativeBuffer nativeBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer);
+            mComplexDftProcessor.receive(nativeBuffer);
         }
     }
 
@@ -241,7 +230,7 @@ public class SynthesizerViewer extends JFrame
         private static final int MAX_FREQUENCY = 6250;
         private static final int DEFAULT_FREQUENCY = 50;
 
-        private IOscillator mOscillator = new LowPhaseNoiseOscillator(DEFAULT_FREQUENCY, CHANNEL_SAMPLE_RATE);
+        private IComplexOscillator mOscillator = OscillatorFactory.getComplexOscillator(DEFAULT_FREQUENCY, CHANNEL_SAMPLE_RATE);
 
         public ChannelControlPanel()
         {
@@ -264,7 +253,7 @@ public class SynthesizerViewer extends JFrame
             add(new JLabel("Hz"));
         }
 
-        public IOscillator getOscillator()
+        public IComplexOscillator getOscillator()
         {
             return mOscillator;
         }
@@ -275,7 +264,6 @@ public class SynthesizerViewer extends JFrame
         private TwoChannelSynthesizerM2 mSynthesizer;
         private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
         private int mSamplesPerCycle = CHANNEL_SAMPLE_RATE / DATA_GENERATOR_FRAME_RATE;
-        private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SynthesizerViewer");
 
         public DataGenerationManager()
         {
@@ -293,22 +281,15 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void run()
         {
-            ReusableComplexBuffer channel1Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
-            getChannel1ControlPanel().getOscillator().generateComplex(channel1Buffer);
+            ComplexSamples channel1Buffer = getChannel1ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle, 0l);
+            ComplexSamples channel2Buffer = getChannel2ControlPanel().getOscillator().generateComplexSamples(mSamplesPerCycle, 0l);
 
-            ReusableComplexBuffer channel2Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
-            getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
+            ComplexSamples synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
+            getChannel1Panel().receive(new FloatNativeBuffer(channel1Buffer));
 
-            channel1Buffer.incrementUserCount();
-            channel2Buffer.incrementUserCount();
+            getChannel2Panel().receive(new FloatNativeBuffer(channel2Buffer));
 
-            ReusableComplexBuffer synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
-
-            getChannel1Panel().receive(channel1Buffer);
-
-            getChannel2Panel().receive(channel2Buffer);
-
-            getSpectrumPanel().receive(synthesizedBuffer);
+            getSpectrumPanel().receive(new FloatNativeBuffer(synthesizedBuffer));
         }
     }
 

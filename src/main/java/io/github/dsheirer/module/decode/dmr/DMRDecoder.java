@@ -1,9 +1,29 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.dmr;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
-import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
+import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
@@ -16,24 +36,23 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.FeedbackDecoder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
-import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.IByteBufferProvider;
+import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DMR decoder module.
  */
 public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener, ISourceEventProvider,
-        IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableByteBufferProvider
+        IComplexSamplesListener, Listener<ComplexSamples>, IByteBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRDecoder.class);
     protected static final float SAMPLE_COUNTER_GAIN = 0.4f;
@@ -42,16 +61,17 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
     private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
     private DMRMessageProcessor mMessageProcessor;
-    private Listener<SourceEvent> mSourceEventListener;
-    private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
+    protected IComplexGainControl mAGC = ComplexGainFactory.getComplexGainControl();
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    private ComplexFIRFilter2 mBasebandFilter;
+    protected IRealFilter mIBasebandFilter;
+    protected IRealFilter mQBasebandFilter;
+
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
     protected DMRMessageFramer mMessageFramer;
-    private PowerMonitor mPowerMonitor = new PowerMonitor();
+    protected PowerMonitor mPowerMonitor = new PowerMonitor();
 
     /**
      * Constructs an instance
@@ -83,7 +103,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
 
     /**
      * Sets the sample rate and configures internal decoder components.
-     * @param sampleRate
+     * @param sampleRate of the channel to decode
      */
     public void setSampleRate(double sampleRate)
     {
@@ -95,7 +115,8 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
 
         mPowerMonitor.setSampleRate((int)sampleRate);
         mSampleRate = sampleRate;
-        mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
+        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
+        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
         mFrequencyCorrectionSyncMonitor = new FrequencyCorrectionSyncMonitor(mCostasLoop, this);
@@ -120,35 +141,21 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
 
     /**
      * Primary method for processing incoming complex sample buffers
-     * @param reusableComplexBuffer containing channelized complex samples
+     * @param samples containing channelized complex samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexSamples samples)
     {
-        //User accounting of the incoming buffer is handled by the filter
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        mMessageFramer.setCurrentTime(samples.timestamp());
+
+        float[] i = mIBasebandFilter.filter(samples.i());
+        float[] q = mQBasebandFilter.filter(samples.q());
 
         //Process buffer for power measurements
-        mPowerMonitor.process(basebandFiltered);
+        mPowerMonitor.process(i, q);
 
-        //User accounting of the incoming buffer is handled by the gain filter
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
-
-        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
-
-        //User accounting of the filtered buffer is handled by the demodulator
-        mQPSKDemodulator.receive(gainApplied);
-    }
-
-    /**
-     * Filters the complex buffer and returns a new reusable complex buffer with the filtered contents.
-     * @param reusableComplexBuffer to filter
-     * @return filtered complex buffer
-     */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
-    {
-        //User accounting of the incoming buffer is handled by the filter
-        return mBasebandFilter.filter(reusableComplexBuffer);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
+        mQPSKDemodulator.receive(amplified);
     }
 
     /**
@@ -233,7 +240,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
      * Implements the IByteBufferProvider interface - delegates to the byte buffer assembler
      */
     @Override
-    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    public void setBufferListener(Listener<ByteBuffer> listener)
     {
         mByteBufferAssembler.setBufferListener(listener);
     }
@@ -242,7 +249,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
      * Implements the IByteBufferProvider interface - delegates to the byte buffer assembler
      */
     @Override
-    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    public void removeBufferListener(Listener<ByteBuffer> listener)
     {
         mByteBufferAssembler.removeBufferListener(listener);
     }
@@ -283,7 +290,7 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     @Override
     public void setSourceEventListener(Listener<SourceEvent> listener)
     {
-        mSourceEventListener = listener;
+        super.setSourceEventListener(listener);
         mPowerMonitor.setSourceEventListener(listener);
     }
 
@@ -293,41 +300,21 @@ public class DMRDecoder extends FeedbackDecoder implements ISourceEventListener,
     @Override
     public void removeSourceEventListener()
     {
-        mSourceEventListener = null;
+        super.removeSourceEventListener();
         mPowerMonitor.setSourceEventListener(null);
     }
 
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {
-        return new Listener<SourceEvent>()
-        {
-            @Override
-            public void receive(SourceEvent sourceEvent)
-            {
-                process(sourceEvent);
-            }
-        };
-    }
-
-    /**
-     * Broadcasts the source event to an optional registered listener.  This method should primarily be used to
-     * issue frequency correction requests to the channel source.
-     * @param sourceEvent to broadcast
-     */
-    public void broadcast(SourceEvent sourceEvent)
-    {
-        if(mSourceEventListener != null)
-        {
-            mSourceEventListener.receive(sourceEvent);
-        }
+        return sourceEvent -> process(sourceEvent);
     }
 
     /**
      * Listener interface to receive reusable complex buffers
      */
     @Override
-    public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
+    public Listener<ComplexSamples> getComplexSamplesListener()
     {
         return DMRDecoder.this;
     }

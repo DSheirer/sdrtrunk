@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.manager;
 
@@ -28,8 +25,9 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-
 import java.util.SortedSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Interface to define the functionality of a channel source manager for handling tuner channel management and source
@@ -37,7 +35,17 @@ import java.util.SortedSet;
  */
 public abstract class ChannelSourceManager implements ISourceEventProcessor
 {
+    private Logger mLogger = LoggerFactory.getLogger(ChannelSourceManager.class);
+
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
+
+    /**
+     * Prepare for disposal
+     */
+    public void dispose()
+    {
+        mSourceEventBroadcaster.clear();
+    }
 
     /**
      * Sorted set of tuner channels being sourced by this source manager.  Set is ordered by frequency lowest to highest
@@ -49,6 +57,11 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      * @return
      */
     public abstract int getTunerChannelCount();
+
+    /**
+     * Tells this channel source manager to shutdown all tuner channel sources to prepare for tuner shutdown.
+     */
+    public abstract void stopAllChannels();
 
     /**
      * Obtains a source for the tuner channel or returns null if the channel cannot be sourced by this tuner.

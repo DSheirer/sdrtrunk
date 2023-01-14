@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.spectrum;
 
@@ -33,9 +32,6 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
-import org.apache.commons.math3.util.FastMath;
-
-import javax.swing.JPanel;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
@@ -53,6 +49,9 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.apache.commons.math3.util.FastMath;
+
+import javax.swing.JPanel;
 
 public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISourceEventProcessor, SettingChangeListener
 {
@@ -226,15 +225,10 @@ public class OverlayPanel extends JPanel implements Listener<ChannelEvent>, ISou
     private void setColors()
     {
         mColorChannelConfig = getColor(ColorSettingName.CHANNEL_CONFIG);
-
         mColorChannelConfigProcessing = getColor(ColorSettingName.CHANNEL_CONFIG_PROCESSING);
-
         mColorChannelConfigSelected = getColor(ColorSettingName.CHANNEL_CONFIG_SELECTED);
-
         mColorSpectrumCursor = getColor(ColorSettingName.SPECTRUM_CURSOR);
-
         mColorSpectrumLine = getColor(ColorSettingName.SPECTRUM_LINE);
-
         mColorSpectrumBackground = getColor(ColorSettingName.SPECTRUM_BACKGROUND);
     }
 

@@ -1,35 +1,38 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.wave;
 
+import io.github.dsheirer.buffer.FloatNativeBuffer;
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
-import io.github.dsheirer.source.ComplexSource;
+import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
+import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +41,8 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
-public class ComplexWaveSource extends ComplexSource implements IControllableFileSource, AutoCloseable
+public class ComplexWaveSource extends Source implements IControllableFileSource, AutoCloseable
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexWaveSource.class);
 
@@ -52,10 +50,9 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     private int mBytesPerFrame;
     private int mFrameCounter = 0;
     private long mFrequency = 0;
-    private Listener<ReusableComplexBuffer> mListener;
+    private Listener<INativeBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexWaveSource");
     private boolean mAutoReplay;
     private ScheduledFuture<?> mReplayController;
 
@@ -83,6 +80,11 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     public ComplexWaveSource(File file) throws IOException
     {
         this(file, false);
+    }
+
+    @Override public SampleType getSampleType()
+    {
+        return SampleType.COMPLEX;
     }
 
     @Override
@@ -167,7 +169,6 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     @Override
     public long getFrameCount() throws IOException
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 
@@ -275,11 +276,8 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
                 }
 
                 float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
-
-                ReusableComplexBuffer reusableBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
-                System.arraycopy(samples, 0, reusableBuffer.getSamples(), 0, samples.length);
-                reusableBuffer.setTimestamp(System.currentTimeMillis());
-                mListener.receive(reusableBuffer);
+                mListener.receive(new FloatNativeBuffer(samples, System.currentTimeMillis(),
+                        mInputStream.getFormat().getSampleRate() / 1000.0f));
             }
         }
     }
@@ -288,8 +286,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
      * Registers the listener to receive sample buffers as they are read from
      * the wave file
      */
-    @Override
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<INativeBuffer> listener)
     {
         mListener = listener;
     }
@@ -297,7 +294,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     /**
      * Unregisters the listener from receiving sample buffers
      */
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<INativeBuffer> listener)
     {
         mListener = null;
     }

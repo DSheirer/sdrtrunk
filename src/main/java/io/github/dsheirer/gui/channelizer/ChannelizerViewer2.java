@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,28 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.gui.channelizer;
 
-import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.buffer.FloatNativeBuffer;
+import io.github.dsheirer.buffer.INativeBuffer;
+import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelSource;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.LoggingTunerErrorListener;
 import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import io.github.dsheirer.source.tuner.test.TestTuner;
-import io.github.dsheirer.spectrum.DFTProcessor;
+import io.github.dsheirer.spectrum.ComplexDftProcessor;
 import io.github.dsheirer.spectrum.DFTSize;
 import io.github.dsheirer.spectrum.SpectrumPanel;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,13 +57,6 @@ import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class ChannelizerViewer2 extends JFrame
 {
@@ -65,7 +64,7 @@ public class ChannelizerViewer2 extends JFrame
 
     private static final int CHANNEL_BANDWIDTH = 12500;
 
-    private SettingsManager mSettingsManager = new SettingsManager(new TunerConfigurationModel());
+    private SettingsManager mSettingsManager = new SettingsManager();
     private JPanel mPrimaryPanel;
     private JPanel mControlPanel;
     private JButton mTopFrameAddChannelButton;
@@ -77,7 +76,7 @@ public class ChannelizerViewer2 extends JFrame
     private ChannelArrayPanel mBottomChannelArrayPanel;
     private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
     private DFTSize mChannelPanelDFTSize = DFTSize.FFT04096;
-    private TestTuner mTestTuner = new TestTuner(new UserPreferences());
+    private TestTuner mTestTuner = new TestTuner(new LoggingTunerErrorListener());
 
     /**
      * GUI Test utility for researching polyphase channelizers.
@@ -196,9 +195,9 @@ public class ChannelizerViewer2 extends JFrame
 
                             getTopChannelArrayPanel().addChannel(tunerChannel);
                         }
-                        catch(Exception exception)
+                        catch(Exception e1)
                         {
-                            mLog.error("Can't parse frequency from value: " + value);
+                            mLog.error("Can't parse frequency from value: " + value, e1);
                         }
                     }
                 }
@@ -231,9 +230,9 @@ public class ChannelizerViewer2 extends JFrame
 
                             getBottomChannelArrayPanel().addChannel(tunerChannel);
                         }
-                        catch(Exception exception)
+                        catch(Exception e1)
                         {
-                            mLog.error("Can't parse frequency from value: " + value);
+                            mLog.error("Can't parse frequency from value: " + value, e1);
                         }
                     }
                 }
@@ -325,9 +324,9 @@ public class ChannelizerViewer2 extends JFrame
         return tunerChannels;
     }
 
-    public class PrimarySpectrumPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
+    public class PrimarySpectrumPanel extends JPanel implements Listener<INativeBuffer>, ISourceEventProcessor
     {
-        private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        private ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
 
@@ -338,20 +337,19 @@ public class ChannelizerViewer2 extends JFrame
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel);
 
-            mDFTProcessor.addConverter(mComplexDecibelConverter);
-            mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
+            mComplexDftProcessor.addConverter(mComplexDecibelConverter);
             mComplexDecibelConverter.addListener(mSpectrumPanel);
         }
 
         public void setDFTSize(DFTSize dftSize)
         {
-            mDFTProcessor.setDFTSize(dftSize);
+            mComplexDftProcessor.setDFTSize(dftSize);
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(INativeBuffer nativeBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer);
+            mComplexDftProcessor.receive(nativeBuffer);
         }
 
         @Override
@@ -361,10 +359,10 @@ public class ChannelizerViewer2 extends JFrame
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
+    public class ChannelPanel extends JPanel implements Listener<INativeBuffer>, ISourceEventProcessor
     {
         private TunerChannelSource mSource;
-        private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        private ComplexDftProcessor mComplexDftProcessor = new ComplexDftProcessor();
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
         private JToggleButton mLoggingButton;
@@ -377,8 +375,7 @@ public class ChannelizerViewer2 extends JFrame
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "span");
 
-            mDFTProcessor.addConverter(mComplexDecibelConverter);
-            mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
+            mComplexDftProcessor.addConverter(mComplexDecibelConverter);
             mComplexDecibelConverter.addListener(mSpectrumPanel);
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
@@ -387,21 +384,30 @@ public class ChannelizerViewer2 extends JFrame
             if(mSource != null)
             {
                 mLog.debug("Channel: " + mSource.getTunerChannel() + " Rate:" + mSource.getSampleRate());
-                mSource.setListener(new Listener<ReusableComplexBuffer>()
+                mSource.setListener((Listener<ComplexSamples>) complexSamples ->
                 {
-                    @Override
-                    public void receive(ReusableComplexBuffer complexBuffer)
-                    {
-                        if(mLoggingEnabled)
-                        {
-                            mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
-                        }
-
-                        complexBuffer.incrementUserCount();
-                        mDFTProcessor.receive(complexBuffer);
-                        complexBuffer.decrementUserCount();
-                    }
+                    mComplexDftProcessor.receive(new FloatNativeBuffer(complexSamples.toInterleaved()));
                 });
+
+                if(mSource instanceof PolyphaseChannelSource pcs)
+                {                    List<Integer> indexes = pcs.getOutputProcessorIndexes();
+                    double sRate = pcs.getSampleRate();
+                    long indexCenterFrequency = pcs.getIndexCenterFrequency();
+                    long appliedFrequencyOffset = pcs.getFrequencyOffset();
+                    long requestedCenterFrequency = pcs.getFrequency();
+
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("Polyphase Channel - Bandwidth: ").append(sRate);
+                    sb.append(" Channel/Requested/Offset: ").append(indexCenterFrequency);
+                    sb.append("/").append(requestedCenterFrequency);
+                    sb.append("/").append(appliedFrequencyOffset);
+                    sb.append(" Indexes: ").append(indexes);
+                    sb.append(" Tuner SR:").append(pcs.getTunerSampleRate());
+                    sb.append(" Tuner CF:").append(pcs.getTunerCenterFrequency());
+                    mLog.info(sb.toString());
+
+
+                }
 
                 mSource.start();
             }
@@ -423,14 +429,7 @@ public class ChannelizerViewer2 extends JFrame
             }
 
             mLoggingButton = new JToggleButton("Logging");
-            mLoggingButton.addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    mLoggingEnabled = mLoggingButton.isSelected();
-                }
-            });
+            mLoggingButton.addActionListener(e -> mLoggingEnabled = mLoggingButton.isSelected());
         }
 
         public TunerChannelSource getSource()
@@ -440,15 +439,13 @@ public class ChannelizerViewer2 extends JFrame
 
         public void setDFTSize(DFTSize dftSize)
         {
-            mDFTProcessor.setDFTSize(dftSize);
+            mComplexDftProcessor.setDFTSize(dftSize);
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(INativeBuffer nativeBuffer)
         {
-            reusableComplexBuffer.incrementUserCount();
-            mDFTProcessor.receive(reusableComplexBuffer);
-            reusableComplexBuffer.decrementUserCount();
+            mComplexDftProcessor.receive(nativeBuffer);
         }
 
         @Override

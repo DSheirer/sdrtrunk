@@ -1,31 +1,39 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastState;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
+import io.github.dsheirer.audio.convert.MP3Setting;
+import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -40,13 +48,6 @@ import org.apache.mina.http.api.HttpVersion;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 {
@@ -72,23 +73,51 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
      *
      * @param configuration for the Icecast stream
      */
-    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration, AliasModel aliasModel)
+    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration, InputAudioFormat inputAudioFormat,
+                                       MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(configuration, aliasModel);
+        super(configuration, inputAudioFormat, mp3Setting, aliasModel);
     }
 
     /**
      * Broadcasts the audio frame or sequence
      */
     @Override
-    protected void broadcastAudio(byte[] audio)
+    protected void broadcastAudio(byte[] audio, IdentifierCollection identifierCollection)
     {
         if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
             IoBuffer buffer = IoBuffer.allocate(audio.length);
-            buffer.put(audio);
-            buffer.flip();
 
+            if(mInlineActive)
+            {
+                byte[] metadata = IcecastMetadata.formatInline(IcecastMetadata.getTitle(identifierCollection, mAliasModel)).getBytes();
+                buffer.setAutoExpand(true);
+                if (mInlineRemaining == -1)
+                {
+                    mInlineRemaining = mInlineInterval;
+                }
+                int audioOffset = 0;
+                while(audioOffset < audio.length)
+                {
+                    byte[] chunk = Arrays.copyOfRange(audio, audioOffset, Math.min(audioOffset + mInlineRemaining, audio.length));
+                    mInlineRemaining -= chunk.length;
+                    audioOffset += chunk.length;
+                    buffer.put(chunk);
+                    if(mInlineRemaining == 0)
+                    {
+                        mInlineRemaining = mInlineInterval;
+                        buffer.put(metadata);
+                    }
+                }
+                buffer.shrink();
+            }
+            else
+            {
+                buffer.put(audio);
+            }
+
+            buffer.flip();
             mStreamingSession.write(buffer);
         }
     }
@@ -114,8 +143,9 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 mSocketConnector = new NioSocketConnector();
                 mSocketConnector.setConnectTimeoutCheckInterval(10000);
 
-//                mSocketConnector.getFilterChain().addLast("logger",
-//                    new LoggingFilter(IcecastHTTPAudioBroadcaster.class));
+//                LoggingFilter loggingFilter = new LoggingFilter(IcecastHTTPAudioBroadcaster.class);
+//                loggingFilter.setMessageReceivedLogLevel(LogLevel.DEBUG);
+//                mSocketConnector.getFilterChain().addLast("logger", loggingFilter);
 
                 mSocketConnector.getFilterChain().addLast("codec", new HttpClientCodec());
                 mSocketConnector.setHandler(new IcecastHTTPIOHandler());
@@ -164,8 +194,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 }
             };
 
-            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
-
+            ThreadPool.CACHED.submit(runnable);
         }
 
         return connected();
@@ -240,6 +269,17 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 {
                     mHTTPHeaders.put(IcecastHeader.BITRATE.getValue(), String.valueOf(getConfiguration().getBitRate()));
                 }
+
+                if(getConfiguration().hasInline())
+                {
+                    mInlineActive = true;
+                    mInlineInterval = getConfiguration().getInlineInterval();
+                    mHTTPHeaders.put(IcecastHeader.METAINT.getValue(), String.valueOf(mInlineInterval));
+                }
+                else
+                {
+                    mInlineActive = false;
+                }
             }
 
             return mHTTPHeaders;
@@ -276,10 +316,49 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                  * intercept the out of bounds exception and then inspect the message hex dump to see if it's an
                  * OK response and then play like everything is well and good.
                  */
-                if(cause instanceof ArrayIndexOutOfBoundsException &&
-                    ((ProtocolDecoderException)throwable).getHexdump().startsWith(HTTP_1_0_OK_HEX_DUMP))
+                if(cause instanceof ArrayIndexOutOfBoundsException)
                 {
-                    setBroadcastState(BroadcastState.CONNECTED);
+                    String hexDump = ((ProtocolDecoderException)throwable).getHexdump();
+
+                    if(hexDump.startsWith(HTTP_1_0_OK_HEX_DUMP))
+                    {
+                        setBroadcastState(BroadcastState.CONNECTED);
+                    }
+                    else
+                    {
+                        HttpDumpMessage message = new HttpDumpMessage(hexDump);
+
+                        if(message.hasHttpResponseCode())
+                        {
+                            switch(message.getHttpResponseCode())
+                            {
+                                case 403: //Forbidden
+                                    if(message.toString().contains("Mountpoint in use"))
+                                    {
+                                        mLog.error("Stream [" + getStreamName() + "] - unable to connect - mountpoint in use");
+                                        setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
+                                        disconnect();
+                                    }
+                                    else
+                                    {
+                                        mLog.error("String [" + getStreamName() + "] - HTTP protocol decoder error - message:\n\n" + message);
+                                        setBroadcastState(BroadcastState.DISCONNECTED);
+                                        disconnect();
+                                    }
+                                    break;
+                                default:
+                                    mLog.error("String [" + getStreamName() + "] - HTTP protocol decoder error - message:\n\n" + message);
+                                    setBroadcastState(BroadcastState.DISCONNECTED);
+                                    disconnect();
+                            }
+                        }
+                        else
+                        {
+                            mLog.error("HTTP protocol decoder error - message:\n\n" + message);
+                            setBroadcastState(BroadcastState.DISCONNECTED);
+                            disconnect();
+                        }
+                    }
                 }
                 else
                 {
@@ -333,6 +412,99 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 mLog.error("Icecast HTTP broadcaster - unrecognized message [ " + object.getClass() +
                     "] received:" + object.toString());
             }
+        }
+    }
+
+    /**
+     * Class for parsing HTTP response messages from Icecast 2.4.2+
+     */
+    public class HttpDumpMessage
+    {
+        private String mHexDump;
+        private String mMessage;
+        private int mHttpResponseCode = -1;
+
+        public HttpDumpMessage(String hexDump)
+        {
+            mHexDump = hexDump;
+
+            String[] split = mHexDump.split(" ");
+            byte[] bytes = new byte[split.length];
+
+            int pointer = 0;
+            for(String a : split)
+            {
+                try
+                {
+                    int value = Integer.parseInt(a, 16);
+                    bytes[pointer++] = (byte) (value & 0xFF);
+                }
+                catch(Exception e)
+                {
+                    pointer++;
+                }
+            }
+
+            mMessage = new String(bytes);
+
+            Pattern pattern = Pattern.compile("HTTP/1.0 (\\d{3})");
+            Matcher m = pattern.matcher(mMessage);
+
+            if(m.find())
+            {
+                try
+                {
+                    mHttpResponseCode = Integer.parseInt(m.group(1));
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Unable to parse HTTP response code that was matched from message: " + m.group(1));
+                }
+            }
+        }
+
+        /**
+         * Indicates if an HTTP response code was parsed from the message
+         * @return true if it was parsed.
+         */
+        public boolean hasHttpResponseCode()
+        {
+            return mHttpResponseCode != -1;
+        }
+
+        /**
+         * Response code parsed from the hexdump message
+         * @return value.
+         */
+        public int getHttpResponseCode()
+        {
+            return mHttpResponseCode;
+        }
+
+        @Override
+        public String toString()
+        {
+            return mMessage;
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        String text = "HTTP/1.0 403 Forbidden";
+
+        Pattern pattern = Pattern.compile("HTTP/1.0 (\\d{3})");
+
+        Matcher m = pattern.matcher(text);
+
+        if(m.find())
+        {
+            mLog.info("Matching Group Count: " + m.groupCount());
+            mLog.info("Match 0: " + m.group(0));
+            mLog.info("Match 1: " + m.group(1));
+        }
+        else
+        {
+            mLog.info("No Match");
         }
     }
 }

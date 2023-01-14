@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.fcd.proplusV2;
 
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.ITunerErrorListener;
 import io.github.dsheirer.source.tuner.MixerTunerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -27,13 +28,14 @@ import io.github.dsheirer.source.tuner.fcd.FCDCommand;
 import io.github.dsheirer.source.tuner.fcd.FCDTunerController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.usb4java.Device;
-import org.usb4java.DeviceDescriptor;
 
 import javax.sound.sampled.TargetDataLine;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+/**
+ * Funcube Dongle Pro Plus tuner controller.  Combines USB HID control with Audio Mixer for data streaming.
+ */
 public class FCD2TunerController extends FCDTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(FCD2TunerController.class);
@@ -42,16 +44,21 @@ public class FCD2TunerController extends FCDTunerController
     public static final int MAXIMUM_TUNABLE_FREQUENCY = 2050000000;
     public static final int SAMPLE_RATE = 192000;
 
-    public FCD2TunerController(TargetDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
+    /**
+     * Constructs an instance
+     * @param mixerTDL for the sample stream
+     * @param bus usb
+     * @param portAddress usb
+     * @param tunerErrorListener to receive errors from this tuner
+     */
+    public FCD2TunerController(TargetDataLine mixerTDL, int bus, String portAddress, ITunerErrorListener tunerErrorListener)
     {
-        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, device, descriptor,
-            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY);
+        super(MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS, mixerTDL, bus, portAddress, MINIMUM_TUNABLE_FREQUENCY,
+                MAXIMUM_TUNABLE_FREQUENCY, tunerErrorListener);
     }
 
-    public void init() throws SourceException
+    protected void deviceStart() throws SourceException
     {
-        super.init();
-
         mFrequencyController.setSampleRate(SAMPLE_RATE);
 
         try
@@ -83,69 +90,24 @@ public class FCD2TunerController extends FCDTunerController
 
     public void setLNAGain(boolean enabled) throws SourceException
     {
-        mLock.lock();
-
-        try
-        {
-            send(FCDCommand.APP_SET_LNA_GAIN, enabled ? 1 : 0);
-        }
-        catch(Exception e)
-        {
-            throw new SourceException("error while setting LNA Gain", e);
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        send(FCDCommand.APP_SET_LNA_GAIN, enabled ? 1 : 0);
     }
 
     public void setMixerGain(boolean enabled) throws SourceException
     {
-        mLock.lock();
-
-        try
-        {
-            send(FCDCommand.APP_SET_MIXER_GAIN, enabled ? 1 : 0);
-        }
-        catch(Exception e)
-        {
-            throw new SourceException("error while setting Mixer Gain", e);
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        send(FCDCommand.APP_SET_MIXER_GAIN, enabled ? 1 : 0);
     }
 
     @Override
     public void apply(TunerConfiguration config) throws SourceException
     {
-        if(config instanceof FCD2TunerConfiguration)
+        //Invoke super for frequency, frequency correction and autoPPM
+        super.apply(config);
+
+        if(config instanceof FCD2TunerConfiguration fcd2)
         {
-            FCD2TunerConfiguration fcd2 = (FCD2TunerConfiguration)config;
-
-            setFrequencyCorrection(fcd2.getFrequencyCorrection());
-
-            long frequency = MINIMUM_TUNABLE_FREQUENCY;
-
-            if(fcd2.getFrequency() >= MINIMUM_TUNABLE_FREQUENCY &&
-                fcd2.getFrequency() <= MAXIMUM_TUNABLE_FREQUENCY)
-            {
-                frequency = fcd2.getFrequency();
-            }
-
-            setFrequency(frequency);
             setLNAGain(fcd2.getGainLNA());
             setMixerGain(fcd2.getGainMixer());
-
-            try
-            {
-                setFrequency(fcd2.getFrequency());
-            }
-            catch(SourceException se)
-            {
-                //Do nothing, we couldn't set the frequency
-            }
         }
     }
 
@@ -156,9 +118,7 @@ public class FCD2TunerController extends FCDTunerController
         try
         {
             ByteBuffer buffer = send(FCDCommand.APP_GET_DC_CORRECTION);
-
             buffer.order(ByteOrder.LITTLE_ENDIAN);
-
             return buffer.getInt(2);
         }
         catch(Exception e)
@@ -171,20 +131,7 @@ public class FCD2TunerController extends FCDTunerController
 
     public void setDCCorrection(int value)
     {
-        mLock.lock();
-
-        try
-        {
-            send(FCDCommand.APP_SET_DC_CORRECTION, value);
-        }
-        catch(Exception e)
-        {
-            mLog.error("error setting dc correction to [" + value + "]", e);
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        send(FCDCommand.APP_SET_DC_CORRECTION, value);
     }
 
     public int getIQCorrection()
@@ -194,9 +141,7 @@ public class FCD2TunerController extends FCDTunerController
         try
         {
             ByteBuffer buffer = send(FCDCommand.APP_GET_IQ_CORRECTION);
-
             buffer.order(ByteOrder.LITTLE_ENDIAN);
-
             return buffer.getInt(2);
         }
         catch(Exception e)
@@ -209,19 +154,6 @@ public class FCD2TunerController extends FCDTunerController
 
     public void setIQCorrection(int value)
     {
-        mLock.lock();
-
-        try
-        {
-            send(FCDCommand.APP_SET_IQ_CORRECTION, value);
-        }
-        catch(Exception e)
-        {
-            mLog.error("error setting IQ correction to [" + value + "]", e);
-        }
-        finally
-        {
-            mLock.unlock();
-        }
+        send(FCDCommand.APP_SET_IQ_CORRECTION, value);
     }
 }

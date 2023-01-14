@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,32 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.util;
 
 import io.github.dsheirer.controller.NamingThreadFactory;
-import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ThreadPool
 {
     private final static Logger mLog = LoggerFactory.getLogger(ThreadPool.class);
-
-    private static int CORES = Runtime.getRuntime().availableProcessors();
-    public static ScheduledExecutorService SCHEDULED;
-
-    static
-    {
-        //Create a scheduled thread pool sized according to the available processors/cores, minimum 2
-        CORES = (FastMath.max(CORES, 2));
-
-        SCHEDULED = Executors.newScheduledThreadPool(CORES, new NamingThreadFactory("sdrtrunk"));
-    }
+    public static ScheduledExecutorService SCHEDULED =
+            Executors.newScheduledThreadPool(4, new NamingThreadFactory("sdrtrunk scheduled"));
+    public static ExecutorService CACHED =
+            Executors.newCachedThreadPool(new NamingThreadFactory("sdrtrunk cached"));
 
     /**
      * Application-wide shared thread pools and scheduled executor service.
@@ -50,6 +43,6 @@ public class ThreadPool
 
     public static void logSettings()
     {
-        mLog.info("Application thread pool created with [" + CORES + "] threads");
+        mLog.info("Application thread pool created SCHEDULED and CACHED executors threads");
     }
 }

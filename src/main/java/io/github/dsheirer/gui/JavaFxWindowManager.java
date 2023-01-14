@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui;
@@ -37,16 +34,14 @@ import io.github.dsheirer.gui.playlist.channelMap.ViewChannelMapEditorRequest;
 import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.UserPreferencesEditor;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
+import io.github.dsheirer.gui.preference.calibration.CalibrationDialog;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.jmbe.JmbeEditor;
 import io.github.dsheirer.jmbe.JmbeEditorRequest;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
-import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.SourceManager;
-import io.github.dsheirer.source.tuner.TunerModel;
-import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.embed.swing.JFXPanel;
@@ -68,6 +63,7 @@ public class JavaFxWindowManager extends Application
     public static final String ICON_MANAGER = "iconmanager";
     public static final String PLAYLIST_EDITOR = "playlist";
     public static final String USER_PREFERENCES_EDITOR = "preferences";
+    public static final String STAGE_MONITOR_KEY_CALIBRATION_DIALOG = "calibration.dialog";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
     public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
     public static final String STAGE_MONITOR_KEY_JMBE_EDITOR = "jmbe.editor";
@@ -80,6 +76,7 @@ public class JavaFxWindowManager extends Application
     private JmbeEditor mJmbeEditor;
     private PlaylistEditor mPlaylistEditor;
     private PlaylistManager mPlaylistManager;
+    private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private UserPreferencesEditor mUserPreferencesEditor;
 
@@ -92,9 +89,10 @@ public class JavaFxWindowManager extends Application
     /**
      * Constructs an instance.  Note: this constructor is used for Swing applications.
      */
-    public JavaFxWindowManager(UserPreferences userPreferences, PlaylistManager playlistManager)
+    public JavaFxWindowManager(UserPreferences userPreferences, TunerManager tunerManager, PlaylistManager playlistManager)
     {
         mUserPreferences = userPreferences;
+        mTunerManager = tunerManager;
         mPlaylistManager = playlistManager;
 
         setup();
@@ -107,12 +105,10 @@ public class JavaFxWindowManager extends Application
     {
         mUserPreferences = new UserPreferences();
         AliasModel aliasModel = new AliasModel();
-        TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
-        TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
-        SourceManager sourceManager = new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel),
-            mUserPreferences);
         EventLogManager eventLogManager = new EventLogManager(aliasModel, mUserPreferences);
-        mPlaylistManager = new PlaylistManager(mUserPreferences, sourceManager, aliasModel, eventLogManager, new IconModel());
+        mTunerManager = new TunerManager(mUserPreferences);
+        mTunerManager.start();
+        mPlaylistManager = new PlaylistManager(mUserPreferences, mTunerManager, aliasModel, eventLogManager, new IconModel());
         mPlaylistManager.init();
         setup();
     }
@@ -185,6 +181,12 @@ public class JavaFxWindowManager extends Application
         }
 
         Platform.exit();
+    }
+
+    public CalibrationDialog getCalibrationDialog(UserPreferences userPreferences)
+    {
+        createJFXPanel();
+        return new CalibrationDialog(userPreferences);
     }
 
     public Stage getIconManagerStage()
@@ -269,7 +271,7 @@ public class JavaFxWindowManager extends Application
     {
         if(mPlaylistEditor == null)
         {
-            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mUserPreferences);
+            mPlaylistEditor = new PlaylistEditor(mPlaylistManager, mTunerManager, mUserPreferences);
         }
 
         return mPlaylistEditor;

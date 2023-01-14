@@ -1,46 +1,43 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.spectrum;
 
 import com.jidesoft.swing.JideSplitPane;
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
+import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.gui.playlist.channel.ViewChannelRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.Tuner;
-import io.github.dsheirer.source.tuner.TunerModel;
+import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
+import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.spectrum.OverlayPanel.ChannelDisplay;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
@@ -50,6 +47,17 @@ import io.github.dsheirer.spectrum.menu.FFTWindowTypeItem;
 import io.github.dsheirer.spectrum.menu.FrameRateItem;
 import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
+import java.util.ArrayList;
+import java.util.Hashtable;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
@@ -71,20 +79,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.MouseInputAdapter;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.util.ArrayList;
-import java.util.Hashtable;
 
-public class SpectralDisplayPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor,
-    IDFTWidthChangeProcessor
+public class SpectralDisplayPanel extends JPanel
+        implements Listener<INativeBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 
@@ -104,32 +101,32 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
     private SpectrumPanel mSpectrumPanel;
     private WaterfallPanel mWaterfallPanel;
     private OverlayPanel mOverlayPanel;
-    private DFTProcessor mDFTProcessor;
+    private ComplexDftProcessor mComplexDftProcessor;
     private DFTResultsConverter mDFTConverter;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
-    private TunerModel mTunerModel;
+    private DiscoveredTunerModel mDiscoveredTunerModel;
     private Tuner mTuner;
 
     /**
      * Spectral Display Panel provides a frequency component display with a
      * historical waterfall display and a transparent overlay to show frequency,
      * cursor and channel information.
-     *
+     * <p>
      * Mouse scrolling and zooming are supported and the waterfall display can
      * be paused.
-     *
+     * <p>
      * Complex sample buffers are processed by a DFTProcessor and the output of
      * the DFT is translated to decibels for display in the spectrum and
      * waterfall components.
      */
-    public SpectralDisplayPanel(PlaylistManager playlistManager, SettingsManager settingsManager, TunerModel tunerModel)
+    public SpectralDisplayPanel(PlaylistManager playlistManager, SettingsManager settingsManager, DiscoveredTunerModel discoveredTunerModel)
     {
         mChannelModel = playlistManager.getChannelModel();
         mChannelProcessingManager = playlistManager.getChannelProcessingManager();
         mSettingsManager = settingsManager;
-        mTunerModel = tunerModel;
+        mDiscoveredTunerModel = discoveredTunerModel;
 
         mSpectrumPanel = new SpectrumPanel(mSettingsManager);
         mOverlayPanel = new OverlayPanel(mSettingsManager, mChannelModel, mChannelProcessingManager);
@@ -175,8 +172,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
         mSettingsManager = null;
 
-        mDFTProcessor.dispose();
-        mDFTProcessor = null;
+        mComplexDftProcessor.dispose();
+        mComplexDftProcessor = null;
 
         mDFTConverter.dispose();
         mDFTConverter = null;
@@ -190,7 +187,6 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         mOverlayPanel.dispose();
         mOverlayPanel = null;
 
-
         mTuner = null;
     }
 
@@ -200,7 +196,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
      */
     public void setDFTSize(DFTSize size, boolean save)
     {
-        mDFTProcessor.setDFTSize(size);
+        mComplexDftProcessor.setDFTSize(size);
         mOverlayPanel.setDFTSize(size);
         mDFTSize = size;
 
@@ -217,8 +213,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         setDFTSize(size, true);
     }
 
-    @Override
-    public DFTSize getDFTSize()
+    @Override public DFTSize getDFTSize()
     {
         return mDFTSize;
     }
@@ -230,7 +225,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
     /**
      * Sets the current zoom level which will be 2 to the power of zoom (2^zoom)
-     *
+     * <p>
      * 0 	No Zoom
      * 1	2x Zoom
      * 2	4x Zoom
@@ -239,8 +234,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
      * 5	32x Zoom
      * 6    64x Zoom
      *
-     * @param zoom level, 0 - 6.
-     * @param frequency under the mouse to maintain while zooming
+     * @param zoom         level, 0 - 6.
+     * @param frequency    under the mouse to maintain while zooming
      * @param windowOffset where to maintain the frequency under the mouse
      */
     public void setZoom(int zoom, long frequency, double windowOffset)
@@ -309,10 +304,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         return mDFTSize.getSize() / getZoomMultiplier();
     }
 
-
     public int getZoomMultiplier()
     {
-        return (int) FastMath.pow(2.0, mZoom);
+        return (int)FastMath.pow(2.0, mZoom);
     }
 
     /**
@@ -328,9 +322,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
         if(mOverlayPanel.containsFrequency(frequency))
         {
-            offset = (double)mDFTSize.getSize() *
-                ((double)(frequency - mOverlayPanel.getMinFrequency()) /
-                    (double)mOverlayPanel.getBandwidth());
+            offset = (double)mDFTSize.getSize() * ((double)(frequency - mOverlayPanel.getMinFrequency())
+                    / (double)mOverlayPanel.getBandwidth());
         }
 
         return offset;
@@ -376,14 +369,14 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         mWaterfallPanel.addMouseWheelListener(mouser);
 
         /* Attempt to set a 50/50 split preferred size for the split pane */
-        double totalHeight = mLayeredPanel.getPreferredSize().getHeight() +
-            mWaterfallPanel.getPreferredSize().getHeight();
+        double totalHeight =
+                mLayeredPanel.getPreferredSize().getHeight() + mWaterfallPanel.getPreferredSize().getHeight();
 
-        mLayeredPanel.setPreferredSize(new Dimension((int)mLayeredPanel
-            .getPreferredSize().getWidth(), (int)(totalHeight / 2.0d)));
+        mLayeredPanel.setPreferredSize(
+                new Dimension((int)mLayeredPanel.getPreferredSize().getWidth(), (int)(totalHeight / 2.0d)));
 
-        mWaterfallPanel.setPreferredSize(new Dimension((int)mWaterfallPanel
-            .getPreferredSize().getWidth(), (int)(totalHeight / 2.0d)));
+        mWaterfallPanel.setPreferredSize(
+                new Dimension((int)mWaterfallPanel.getPreferredSize().getWidth(), (int)(totalHeight / 2.0d)));
 
         //Create the split pane to hold the layered pane and the waterfall
         JideSplitPane splitPane = new JideSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -399,9 +392,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
          * Setup DFTProcessor to process samples and register the waterfall and
          * spectrum panel to receive the processed dft results
          */
-        mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        mComplexDftProcessor = new ComplexDftProcessor();
         mDFTConverter = new ComplexDecibelConverter();
-        mDFTProcessor.addConverter(mDFTConverter);
+        mComplexDftProcessor.addConverter(mDFTConverter);
 
         mDFTConverter.addListener((DFTResultsListener)mSpectrumPanel);
         mDFTConverter.addListener((DFTResultsListener)mWaterfallPanel);
@@ -413,16 +406,14 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
     public void process(SourceEvent event)
     {
         mOverlayPanel.process(event);
-        mDFTProcessor.process(event);
     }
 
     /**
      * Complex sample buffer receive method
      */
-    @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    @Override public void receive(INativeBuffer nativeBuffer)
     {
-        mDFTProcessor.receive(reusableComplexBuffer);
+        mComplexDftProcessor.receive(nativeBuffer);
     }
 
     /**
@@ -433,9 +424,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
     {
         clearTuner();
 
-        mDFTProcessor.clearBuffer();
+        mComplexDftProcessor.clearBuffer();
 
-        mDFTProcessor.start();
+        mComplexDftProcessor.start();
 
         mTuner = tuner;
 
@@ -445,14 +436,13 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             mTuner.getTunerController().addListener(this);
 
             //Register the dft processor to receive samples from the tuner
-            mTuner.getTunerController().addBufferListener(mDFTProcessor);
+            mTuner.getTunerController().addBufferListener(mComplexDftProcessor);
 
             mSpectrumPanel.setSampleSize(mTuner.getSampleSize());
 
             //Fire frequency and sample rate change events so that the spectrum
             //and overlay panels can synchronize
             process(SourceEvent.frequencyChange(null, mTuner.getTunerController().getFrequency()));
-
             process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
         }
     }
@@ -465,17 +455,25 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         if(mTuner != null)
         {
             //Deregister for frequency change events from the tuner
-            mTuner.getTunerController().removeListener(this);
+            mTuner.getTunerController().removeListener(SpectralDisplayPanel.this);
 
             //Deregister the dft processor from receiving samples
-            mTuner.getTunerController().removeBufferListener(mDFTProcessor);
+            mTuner.getTunerController().removeBufferListener(mComplexDftProcessor);
             mTuner = null;
         }
 
-        mDFTProcessor.stop();
-        mDFTProcessor.clearBuffer();
+        mComplexDftProcessor.stop();
+        mComplexDftProcessor.clearBuffer();
         mSpectrumPanel.clearSpectrum();
         mWaterfallPanel.clearWaterfall();
+    }
+
+    /**
+     * Currently displayed tuner
+     */
+    public Tuner getTuner()
+    {
+        return mTuner;
     }
 
     /**
@@ -484,8 +482,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
      */
     public class ResizeListener implements ComponentListener
     {
-        @Override
-        public void componentResized(ComponentEvent e)
+        @Override public void componentResized(ComponentEvent e)
         {
             Component c = e.getComponent();
 
@@ -493,18 +490,15 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             mOverlayPanel.setBounds(0, 0, c.getWidth(), c.getHeight());
         }
 
-        @Override
-        public void componentHidden(ComponentEvent arg0)
+        @Override public void componentHidden(ComponentEvent arg0)
         {
         }
 
-        @Override
-        public void componentMoved(ComponentEvent arg0)
+        @Override public void componentMoved(ComponentEvent arg0)
         {
         }
 
-        @Override
-        public void componentShown(ComponentEvent arg0)
+        @Override public void componentShown(ComponentEvent arg0)
         {
         }
     }
@@ -522,8 +516,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         {
         }
 
-        @Override
-        public void mouseWheelMoved(MouseWheelEvent e)
+        @Override public void mouseWheelMoved(MouseWheelEvent e)
         {
             int zoom = mZoom - e.getWheelRotation();
 
@@ -534,14 +527,12 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             setZoom(zoom, frequency, windowOffset);
         }
 
-        @Override
-        public void mouseMoved(MouseEvent event)
+        @Override public void mouseMoved(MouseEvent event)
         {
             update(event);
         }
 
-        @Override
-        public void mouseDragged(MouseEvent event)
+        @Override public void mouseDragged(MouseEvent event)
         {
             update(event);
 
@@ -566,16 +557,13 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             setZoomWindowOffset(offset);
         }
 
-        @Override
-        public void mousePressed(MouseEvent e)
+        @Override public void mousePressed(MouseEvent e)
         {
             mDragStartX = e.getX();
 
             mDFTZoomWindowOffsetAtDragStart = mDFTZoomWindowOffset;
 
-            mPixelsPerBin = (double)getWidth() /
-                ((double)(mDFTSize.getSize()) /
-                    (double)getZoomMultiplier());
+            mPixelsPerBin = (double)getWidth() / ((double)(mDFTSize.getSize()) / (double)getZoomMultiplier());
         }
 
         /**
@@ -590,13 +578,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             else
             {
                 mWaterfallPanel.setCursorLocation(event.getPoint());
-                mWaterfallPanel.setCursorFrequency(
-                    mOverlayPanel.getFrequencyFromAxis(event.getPoint().x));
+                mWaterfallPanel.setCursorFrequency(mOverlayPanel.getFrequencyFromAxis(event.getPoint().x));
             }
         }
 
-        @Override
-        public void mouseEntered(MouseEvent e)
+        @Override public void mouseEntered(MouseEvent e)
         {
             if(e.getComponent() == mOverlayPanel)
             {
@@ -608,8 +594,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             }
         }
 
-        @Override
-        public void mouseExited(MouseEvent e)
+        @Override public void mouseExited(MouseEvent e)
         {
             mOverlayPanel.setCursorVisible(false);
             mWaterfallPanel.setCursorVisible(false);
@@ -618,8 +603,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
         /**
          * Displays the context menu.
          */
-        @Override
-        public void mouseClicked(MouseEvent event)
+        @Override public void mouseClicked(MouseEvent event)
         {
             if(SwingUtilities.isRightMouseButton(event))
             {
@@ -631,8 +615,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                     contextMenu.add(new JSeparator());
                 }
 
-                long frequency =
-                    mOverlayPanel.getFrequencyFromAxis(event.getX());
+                long frequency = mOverlayPanel.getFrequencyFromAxis(event.getX());
 
                 if(event.getComponent() == mOverlayPanel)
                 {
@@ -642,7 +625,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                     for(Channel channel : channels)
                     {
                         JMenuItem viewChannel = new JMenuItem("View/Edit: " + channel.getShortTitle());
-                        viewChannel.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
+                        viewChannel.addActionListener(
+                                e -> MyEventBus.getGlobalEventBus().post(new ViewChannelRequest(channel)));
                         channelMenu.add(viewChannel);
                     }
 
@@ -659,29 +643,21 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                  */
                 JMenu colorMenu = new JMenu("Color");
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.CHANNEL_CONFIG));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.CHANNEL_CONFIG));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.CHANNEL_CONFIG_PROCESSING));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.CHANNEL_CONFIG_PROCESSING));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.CHANNEL_CONFIG_SELECTED));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.CHANNEL_CONFIG_SELECTED));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.SPECTRUM_CURSOR));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.SPECTRUM_CURSOR));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.SPECTRUM_LINE));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.SPECTRUM_LINE));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.SPECTRUM_BACKGROUND));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.SPECTRUM_BACKGROUND));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.SPECTRUM_GRADIENT_BOTTOM));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.SPECTRUM_GRADIENT_BOTTOM));
 
-                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
-                    ColorSettingName.SPECTRUM_GRADIENT_TOP));
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager, ColorSettingName.SPECTRUM_GRADIENT_TOP));
 
                 contextMenu.add(colorMenu);
 
@@ -697,8 +673,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                      * Averaging menu
                      */
                     JMenu averagingMenu = new JMenu("Averaging");
-                    averagingMenu.add(
-                        new AveragingItem(mSpectrumPanel, 4));
+                    averagingMenu.add(new AveragingItem(mSpectrumPanel, 4));
                     displayMenu.add(averagingMenu);
 
                     /**
@@ -706,16 +681,12 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                      */
                     JMenu channelDisplayMenu = new JMenu("Channel");
 
-                    channelDisplayMenu.add(new ChannelDisplayItem(
-                        mOverlayPanel, ChannelDisplay.ALL));
-                    channelDisplayMenu.add(new ChannelDisplayItem(
-                        mOverlayPanel, ChannelDisplay.ENABLED));
-                    channelDisplayMenu.add(new ChannelDisplayItem(
-                        mOverlayPanel, ChannelDisplay.NONE));
+                    channelDisplayMenu.add(new ChannelDisplayItem(mOverlayPanel, ChannelDisplay.ALL));
+                    channelDisplayMenu.add(new ChannelDisplayItem(mOverlayPanel, ChannelDisplay.ENABLED));
+                    channelDisplayMenu.add(new ChannelDisplayItem(mOverlayPanel, ChannelDisplay.NONE));
 
                     displayMenu.add(channelDisplayMenu);
                 }
-
 
                 /**
                  * FFT width
@@ -734,14 +705,14 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                 JMenu frameRateMenu = new JMenu("Frame Rate");
                 displayMenu.add(frameRateMenu);
 
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 14));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 16));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 18));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 20));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 25));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 30));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 40));
-                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 50));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 14));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 16));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 18));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 20));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 25));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 30));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 40));
+                frameRateMenu.add(new FrameRateItem(mComplexDftProcessor, 50));
 
                 /**
                  * FFT Window Type
@@ -751,8 +722,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
                 for(WindowType type : WindowType.values())
                 {
-                    fftWindowType.add(
-                        new FFTWindowTypeItem(mDFTProcessor, type));
+                    fftWindowType.add(new FFTWindowTypeItem(mComplexDftProcessor, type));
                 }
 
                 if(event.getComponent() != mWaterfallPanel)
@@ -794,9 +764,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
                 boolean separatorAdded = false;
 
-                for(Tuner tuner: mTunerModel.getTuners())
+                for(DiscoveredTuner discoveredTuner : mDiscoveredTunerModel.getAvailableTuners())
                 {
-                    if(mTuner == null || mTuner != tuner)
+                    if(mTuner == null || mTuner != discoveredTuner.getTuner())
                     {
                         if(!separatorAdded)
                         {
@@ -804,7 +774,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                             separatorAdded = true;
                         }
 
-                        contextMenu.add(new ShowTunerMenuItem(mTunerModel, tuner));
+                        contextMenu.add(new ShowTunerMenuItem(mDiscoveredTunerModel, discoveredTuner.getTuner()));
                     }
                 }
 
@@ -812,15 +782,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                 {
                     if(event.getComponent() == mOverlayPanel)
                     {
-                        contextMenu.show(mOverlayPanel,
-                            event.getX(),
-                            event.getY());
+                        contextMenu.show(mOverlayPanel, event.getX(), event.getY());
                     }
                     else
                     {
-                        contextMenu.show(mWaterfallPanel,
-                            event.getX(),
-                            event.getY());
+                        contextMenu.show(mWaterfallPanel, event.getX(), event.getY());
                     }
                 }
             }
@@ -845,13 +811,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
             addActionListener(new ActionListener()
             {
-                @Override
-                public void actionPerformed(ActionEvent e)
+                @Override public void actionPerformed(ActionEvent e)
                 {
                     EventQueue.invokeLater(new Runnable()
                     {
-                        @Override
-                        public void run()
+                        @Override public void run()
                         {
                             mPausable.setPaused(!paused);
                         }
@@ -875,7 +839,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             mFrequency = frequency;
             mWindowOffset = windowOffset;
 
-            Hashtable<Integer,JComponent> labels = new Hashtable<>();
+            Hashtable<Integer, JComponent> labels = new Hashtable<>();
             labels.put(0, new JLabel("1x"));
             labels.put(1, new JLabel("2x"));
             labels.put(2, new JLabel("4x"));
@@ -893,8 +857,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
             this.addChangeListener(new ChangeListener()
             {
-                @Override
-                public void stateChanged(ChangeEvent e)
+                @Override public void stateChanged(ChangeEvent e)
                 {
                     setZoom(getValue(), mFrequency, mWindowOffset);
                 }
@@ -921,13 +884,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
             addActionListener(new ActionListener()
             {
-                @Override
-                public void actionPerformed(ActionEvent e)
+                @Override public void actionPerformed(ActionEvent e)
                 {
                     EventQueue.invokeLater(new Runnable()
                     {
-                        @Override
-                        public void run()
+                        @Override public void run()
                         {
                             mOverlayPanel.setChannelDisplay(mChannelDisplay);
                         }

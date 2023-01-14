@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25;
 
@@ -32,6 +29,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
+import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
 import io.github.dsheirer.identifier.scramble.ScrambleParameterIdentifier;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.IMessageListener;
@@ -317,7 +315,11 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                     sourceConfig.setFrequency(frequency);
                     trafficChannel.setSourceConfiguration(sourceConfig);
                     mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
-                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
+
+                    ChannelStartProcessingRequest startChannelRequest =
+                            new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection);
+                    startChannelRequest.addPreloadDataContent(new PatchGroupPreLoadDataContent(identifierCollection));
+                    getInterModuleEventBus().post(startChannelRequest);
                 }
             }
 
@@ -365,7 +367,11 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             sourceConfig.setFrequency(frequency);
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
-            getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
+
+            ChannelStartProcessingRequest startChannelRequest =
+                    new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection);
+            startChannelRequest.addPreloadDataContent(new PatchGroupPreLoadDataContent(identifierCollection));
+            getInterModuleEventBus().post(startChannelRequest);
         }
 
         broadcast(channelGrantEvent);
@@ -471,7 +477,10 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                         decodeConfig.setScrambleParameters(mPhase2ScrambleParameters.copy());
                     }
 
-                    getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
+                    ChannelStartProcessingRequest startChannelRequest =
+                            new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection);
+                    startChannelRequest.addPreloadDataContent(new PatchGroupPreLoadDataContent(identifierCollection));
+                    getInterModuleEventBus().post(startChannelRequest);
                 }
             }
 
@@ -527,7 +536,11 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             sourceConfig.setFrequency(frequency);
             trafficChannel.setSourceConfiguration(sourceConfig);
             mAllocatedTrafficChannelMap.put(frequency, trafficChannel);
-            getInterModuleEventBus().post(new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection));
+
+            ChannelStartProcessingRequest startChannelRequest =
+                    new ChannelStartProcessingRequest(trafficChannel, apco25Channel, identifierCollection);
+            startChannelRequest.addPreloadDataContent(new PatchGroupPreLoadDataContent(identifierCollection));
+            getInterModuleEventBus().post(startChannelRequest);
         }
 
         broadcast(channelGrantEvent);

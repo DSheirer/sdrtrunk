@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast.icecast;
 
@@ -26,6 +23,8 @@ import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastMetadata;
 import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
@@ -76,6 +75,12 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      */
     public void update(IdentifierCollection identifierCollection)
     {
+        if(mIcecastConfiguration.hasInline())
+        {
+            // Never send out-of-band metadata if inline metadata is enabled.
+            return;
+        }
+
         StringBuilder sb = new StringBuilder();
 
         try
@@ -87,7 +92,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             sb.append("/admin/metadata?mode=updinfo&mount=");
             sb.append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
             sb.append("&charset=UTF%2d8");
-            sb.append("&song=").append(URLEncoder.encode(getSong(identifierCollection), UTF8));
+            sb.append("&song=").append(URLEncoder.encode(IcecastMetadata.getTitle(identifierCollection, mAliasModel), UTF8));
         }
         catch(UnsupportedEncodingException uee)
         {
@@ -100,7 +105,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
             final String metadataUpdateURL = sb.toString();
             URI uri = URI.create(metadataUpdateURL);
 
-            ThreadPool.SCHEDULED.submit(new Runnable()
+            ThreadPool.CACHED.submit(new Runnable()
             {
                 @Override
                 public void run()
@@ -160,82 +165,4 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
         }
     }
 
-    /**
-     * Creates the song information for a metadata update
-     */
-    private String getSong(IdentifierCollection identifierCollection)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        if(identifierCollection != null)
-        {
-            AliasList aliasList = mAliasModel.getAliasList(identifierCollection);
-
-            Identifier to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.PATCH_GROUP, Role.TO);
-
-            if(to == null)
-            {
-                to = identifierCollection.getIdentifier(IdentifierClass.USER, Form.TALKGROUP, Role.TO);
-            }
-
-            if(to == null)
-            {
-                List<Identifier> toIdentifiers = identifierCollection.getIdentifiers(Role.TO);
-                if(!toIdentifiers.isEmpty())
-                {
-                    to = toIdentifiers.get(0);
-                }
-            }
-
-            if(to != null)
-            {
-                sb.append("TO:").append(to);
-
-                List<Alias> aliases = aliasList.getAliases(to);
-
-                if(aliases != null && !aliases.isEmpty())
-                {
-                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
-                }
-            }
-            else
-            {
-                sb.append("TO:UNKNOWN");
-            }
-
-            Identifier from = identifierCollection.getIdentifier(IdentifierClass.USER, Form.RADIO, Role.FROM);
-
-            if(from == null)
-            {
-                List<Identifier> fromIdentifiers = identifierCollection.getIdentifiers(Role.FROM);
-
-                if(!fromIdentifiers.isEmpty())
-                {
-                    from = fromIdentifiers.get(0);
-                }
-            }
-
-            if(from != null)
-            {
-                sb.append(" FROM:").append(from);
-
-                List<Alias> aliases = aliasList.getAliases(from);
-
-                if(aliases != null && !aliases.isEmpty())
-                {
-                    sb.append(" ").append(Joiner.on(", ").skipNulls().join(aliases));
-                }
-            }
-            else
-            {
-                sb.append(" FROM:UNKNOWN");
-            }
-        }
-        else
-        {
-            sb.append("Scanning ....");
-        }
-
-        return sb.toString();
-    }
 }

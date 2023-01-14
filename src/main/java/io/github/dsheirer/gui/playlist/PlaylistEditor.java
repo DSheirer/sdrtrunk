@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist;
@@ -35,6 +32,7 @@ import io.github.dsheirer.gui.preference.PreferenceEditorType;
 import io.github.dsheirer.gui.preference.ViewUserPreferenceEditorRequest;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import javafx.application.Platform;
@@ -68,6 +66,7 @@ public class PlaylistEditor extends BorderPane
     private static final Logger mLog = LoggerFactory.getLogger(PlaylistEditor.class);
 
     private PlaylistManager mPlaylistManager;
+    private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private MenuBar mMenuBar;
     private TabPane mTabPane;
@@ -82,11 +81,13 @@ public class PlaylistEditor extends BorderPane
     /**
      * Constructs an instance
      * @param playlistManager for alias and channel models
+     * @param tunerManager for tuners
      * @param userPreferences for settings
      */
-    public PlaylistEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public PlaylistEditor(PlaylistManager playlistManager, TunerManager tunerManager, UserPreferences userPreferences)
     {
         mPlaylistManager = playlistManager;
+        mTunerManager = tunerManager;
         mUserPreferences = userPreferences;
 
         //Throw a new runnable back onto the FX thread to lazy load the editor content after the editor has been
@@ -176,7 +177,7 @@ public class PlaylistEditor extends BorderPane
                 String filename = TimeStamp.getTimeStamp("_") + "_screen_capture.png";
                 final Path captureFile = mUserPreferences.getDirectoryPreference().getDirectoryScreenCapture().resolve(filename);
 
-                ThreadPool.SCHEDULED.execute(() -> {
+                ThreadPool.CACHED.submit(() -> {
                     try
                     {
                         ImageIO.write(bufferedImage, "png", captureFile.toFile());
@@ -243,7 +244,7 @@ public class PlaylistEditor extends BorderPane
     {
         if(mChannelEditor == null)
         {
-            mChannelEditor = new ChannelEditor(mPlaylistManager, mUserPreferences);
+            mChannelEditor = new ChannelEditor(mPlaylistManager, mTunerManager, mUserPreferences);
         }
 
         return mChannelEditor;

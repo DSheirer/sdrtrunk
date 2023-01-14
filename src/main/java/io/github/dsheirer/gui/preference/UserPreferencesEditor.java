@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -168,10 +168,16 @@ public class UserPreferencesEditor extends BorderPane
 
             TreeItem<String> audioItem = new TreeItem<>("Audio");
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_DUPLICATE_CALL_DETECTION));
+            audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_MP3));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_OUTPUT));
             audioItem.getChildren().add(new TreeItem(PreferenceEditorType.AUDIO_RECORD));
             treeRoot.getChildren().add(audioItem);
             audioItem.setExpanded(true);
+
+            TreeItem<String> cpuItem = new TreeItem<>("CPU");
+            cpuItem.getChildren().add(new TreeItem(PreferenceEditorType.VECTOR_CALIBRATION));
+            treeRoot.getChildren().add(cpuItem);
+            cpuItem.setExpanded(true);
 
             TreeItem<String> decoderItem = new TreeItem<>("Decoder");
             decoderItem.getChildren().add(new TreeItem(PreferenceEditorType.JMBE_LIBRARY));

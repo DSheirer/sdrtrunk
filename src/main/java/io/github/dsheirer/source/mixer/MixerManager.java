@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.audio.AudioFormats;
@@ -73,7 +76,7 @@ public class MixerManager
                         if(channel == MixerChannel.MONO)
                         {
                             DataLine.Info info = new DataLine.Info(TargetDataLine.class,
-                                AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+                                AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
                             TargetDataLine dataLine;
 
@@ -83,8 +86,8 @@ public class MixerManager
 
                                 if(dataLine != null)
                                 {
-                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO,
-                                        new RealShortAdapter("RealMixerSource - Mono"));
+                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO,
+                                        new RealShortAdapter());
                                 }
                             }
                             catch(LineUnavailableException e)
@@ -97,7 +100,7 @@ public class MixerManager
                         else //STEREO
                         {
                             DataLine.Info info = new DataLine.Info(TargetDataLine.class,
-                                    AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
+                                    AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO);
 
                             TargetDataLine dataLine;
 
@@ -107,8 +110,8 @@ public class MixerManager
 
                                 if(dataLine != null)
                                 {
-                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO,
-                                        new RealChannelShortAdapter(mixerConfig.getChannel(), "RealMixerSource-Stereo"));
+                                    return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO,
+                                        new RealChannelShortAdapter(mixerConfig.getChannel()));
                                 }
                             }
                             catch(LineUnavailableException e)
@@ -299,12 +302,12 @@ public class MixerManager
     private static EnumSet<MixerChannel> getSupportedTargetChannels(Mixer mixer)
     {
         DataLine.Info stereoInfo = new DataLine.Info(TargetDataLine.class,
-                AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
+                AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO);
 
         boolean stereoSupported = mixer.isLineSupported(stereoInfo);
 
         DataLine.Info monoInfo = new DataLine.Info(TargetDataLine.class,
-                AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+                AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
         boolean monoSupported = mixer.isLineSupported(monoInfo);
 
@@ -334,11 +337,11 @@ public class MixerManager
         List<MixerChannel> channels = new ArrayList<>();
 
         DataLine.Info stereoInfo = new DataLine.Info(SourceDataLine.class,
-                AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
+                AudioFormats.PCM_SIGNED_8000_HZ_16BITS_STEREO);
 
         boolean stereoSupported = mixer.isLineSupported(stereoInfo);
 
-        DataLine.Info monoInfo = new DataLine.Info(SourceDataLine.class, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+        DataLine.Info monoInfo = new DataLine.Info(SourceDataLine.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
         boolean monoSupported = mixer.isLineSupported(monoInfo);
 

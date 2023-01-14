@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.alias.action.beep;
@@ -72,7 +71,7 @@ public class BeepAction extends RecurringAction
 	@Override
 	public void performAction(Alias alias, IMessage message )
 	{
-		DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
+		DataLine.Info info = new DataLine.Info(Clip.class, AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO);
 
 		if(!AudioSystem.isLineSupported(info))
 		{
@@ -83,7 +82,7 @@ public class BeepAction extends RecurringAction
 		try
 		{
 			Clip clip = (Clip)AudioSystem.getLine(info);
-			clip.open(AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO, mToneBytes, 0, mToneBytes.length);
+			clip.open(AudioFormats.PCM_SIGNED_8000_HZ_16_BIT_MONO, mToneBytes, 0, mToneBytes.length);
 			clip.start();
 		}
 		catch(Exception e)

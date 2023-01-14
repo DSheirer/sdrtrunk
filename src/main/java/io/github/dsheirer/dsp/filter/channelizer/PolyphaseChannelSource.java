@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,144 +14,233 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
+import io.github.dsheirer.dsp.filter.channelizer.output.OneChannelOutputProcessor;
+import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
-import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
+import io.github.dsheirer.source.tuner.channel.StreamProcessorWithHeartbeat;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-
-public class PolyphaseChannelSource extends TunerChannelSource
+/**
+ * Polyphase Channelizer's Tuner Channel Source implementation.  Wraps a ChannelOutputProcessor instance and
+ * provides tuner channel source functionality.  Supports dynamic swapout of the underlying channel output processor
+ * as the upstream polyphase channelizer reconfigures during tuned center frequency changes.
+ */
+public class PolyphaseChannelSource extends TunerChannelSource implements Listener<ComplexSamples>
 {
-//    private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
-
-    private ReusableComplexBufferAssembler mReusableComplexBufferAssembler;
+    private Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
-    private IPolyphaseChannelOutputProcessor mReplacementPolyphaseChannelOutputProcessor;
-    private long mReplacementFrequency;
-    private ComplexFIRFilter2 mLowPassFilter;
-    private static Map<Integer,float[]> sLowPassFilters = new HashMap();
-
+    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
-    private long mChannelFrequencyCorrection;
+    private ReentrantLock mOutputProcessorLock = new ReentrantLock();
+
+    private List<Integer> mOutputProcessorIndexes = new ArrayList<>();
+    private double mTunerSampleRate;
+    private double mTunerCenterFrequency;
+
 
     /**
-     * Polyphase channelizer tuner channel source implementation.  Adapts the channel array output samples from the
-     * polyphase channelizer into a single channel, or a channel synthesized from two adjacent channels that is
-     * frequency translated and decimated to a single channel.
+     * Constructs an instance
      *
      * @param tunerChannel describing the desired channel frequency and bandwidth/minimum sample rate
-     * @param outputProcessor - to process polyphase channelizer channel results into a channel stream
+     * @param channelCalculator for current channel center frequency and sample rate and index calculations
+     * @param filterManager for access to new or cached synthesis filters
      * @param producerSourceEventListener to receive source event requests (e.g. start/stop sample stream)
-     * @param channelSampleRate for the downstream sample output
-     * @param centerFrequency of the incoming polyphase channel(s)
-     * @throws FilterDesignException if a channel low pass filter can't be designed to the channel specification
+     * @throws IllegalArgumentException if a channel low pass filter can't be designed to the channel specification
      */
-    public PolyphaseChannelSource(TunerChannel tunerChannel, IPolyphaseChannelOutputProcessor outputProcessor,
-                                  Listener<SourceEvent> producerSourceEventListener, double channelSampleRate,
-                                  long centerFrequency, ChannelSpecification channelSpecification)
-        throws FilterDesignException
+    public PolyphaseChannelSource(TunerChannel tunerChannel, ChannelCalculator channelCalculator, SynthesisFilterManager filterManager,
+                                  Listener<SourceEvent> producerSourceEventListener) throws IllegalArgumentException
     {
         super(producerSourceEventListener, tunerChannel);
-        mPolyphaseChannelOutputProcessor = outputProcessor;
-        mChannelSampleRate = channelSampleRate;
-        mReusableComplexBufferAssembler = new ReusableComplexBufferAssembler(2500, mChannelSampleRate);
+        mChannelSampleRate = channelCalculator.getChannelSampleRate();
+        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
+        updateOutputProcessor(channelCalculator, filterManager);
+    }
 
-        float[] filterCoefficients = getLowPassFilter(channelSampleRate, channelSpecification.getPassFrequency(),
-            channelSpecification.getStopFrequency());
-        mLowPassFilter = new ComplexFIRFilter2(filterCoefficients, 1.0f);
+    /**
+     * Current output processor indexes.
+     * @return indexes
+     */
+    public List<Integer> getOutputProcessorIndexes()
+    {
+        return mOutputProcessorIndexes;
+    }
 
-        setFrequency(centerFrequency);
+    /**
+     * Sample rate or bandwidth of the tuner providing input to the channelizer.
+     * @return sample rate
+     */
+    public double getTunerSampleRate()
+    {
+        return mTunerSampleRate;
+    }
+
+    /**
+     * Center tuned frequency of the tuner providing input to the channelizer.
+     * @return center frequency
+     */
+    public double getTunerCenterFrequency()
+    {
+        return mTunerCenterFrequency;
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+
+        mStreamHeartbeatProcessor.start();
+
+        if(mPolyphaseChannelOutputProcessor != null)
+        {
+            mPolyphaseChannelOutputProcessor.start();
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        super.stop();
+
+        if(mPolyphaseChannelOutputProcessor != null)
+        {
+            mPolyphaseChannelOutputProcessor.stop();
+        }
+
+        mStreamHeartbeatProcessor.stop();
     }
 
     /**
      * Registers the listener to receive complex sample buffers from this channel source
      */
     @Override
-    public void setListener(final Listener<ReusableComplexBuffer> listener)
+    public void setListener(final Listener<ComplexSamples> listener)
     {
-        mReusableComplexBufferAssembler.setListener(listener);
-   }
+        mStreamHeartbeatProcessor.setListener(listener);
+        mPolyphaseChannelOutputProcessor.setListener(this);
+    }
 
-    /**
-     * Removes the listener from receiving complex sample buffers from this channel source
-     */
     @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void receive(ComplexSamples complexSamples)
     {
-        mReusableComplexBufferAssembler.setListener(null);
+        mStreamHeartbeatProcessor.receive(complexSamples);
     }
 
     /**
-     * Channel output processor used by this channel source to convert polyphase channel results into a specific
-     * channel complex buffer output stream.
+     * Updates the output processor whenever the source tuner's center frequency changes.
+     * @param channelCalculator providing access to updated tuner center frequency, sample rate, etc.
+     * @param filterManager for designing and caching synthesis filters
      */
-    public IPolyphaseChannelOutputProcessor getPolyphaseChannelOutputProcessor()
+    public void updateOutputProcessor(ChannelCalculator channelCalculator, SynthesisFilterManager filterManager) throws IllegalArgumentException
     {
-        return mPolyphaseChannelOutputProcessor;
-    }
+        String errorMessage = null;
 
-    /**
-     * Sets/updates the output processor for this channel source, replacing the existing output processor.
-     *
-     * @param outputProcessor to use
-     * @param frequency center for the channels processed by the output processor
-     */
-    public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor, long frequency)
-    {
-        //If this is the first time, simply assign the output processor
-        if(mPolyphaseChannelOutputProcessor == null)
+        mOutputProcessorLock.lock();
+
+        try
         {
-            mPolyphaseChannelOutputProcessor = outputProcessor;
+            //If a change in sample rate or center frequency makes this channel no longer viable, then the channel
+            //calculator will throw an IllegalArgException ... handled below
+            List<Integer> indexes = channelCalculator.getChannelIndexes(getTunerChannel());
+
+            mOutputProcessorIndexes.clear();
+            mOutputProcessorIndexes.addAll(indexes);
+            mTunerCenterFrequency = channelCalculator.getCenterFrequency();
+            mTunerSampleRate = channelCalculator.getSampleRate();
+
+            //The provided channels are necessarily aligned to the center frequency that this source is providing and an
+            //oscillator will mix the provided channels to bring the desired center frequency to baseband.
+            setFrequency(channelCalculator.getCenterFrequencyForIndexes(indexes));
+
+            if(mPolyphaseChannelOutputProcessor != null && mPolyphaseChannelOutputProcessor.getInputChannelCount() == indexes.size())
+            {
+                mPolyphaseChannelOutputProcessor.setPolyphaseChannelIndices(indexes);
+
+                if(indexes.size() > 1)
+                {
+                    try
+                    {
+                        float[] filter = filterManager.getFilter(channelCalculator.getSampleRate(),
+                                channelCalculator.getChannelBandwidth(), indexes.size());
+                        mPolyphaseChannelOutputProcessor.setSynthesisFilter(filter);
+                    }
+                    catch(FilterDesignException fde)
+                    {
+                        mLog.error("Error creating an updated synthesis filter for the channel output processor");
+                        errorMessage ="Cannot update output processor - unable to design synthesis filter for [" +
+                                indexes.size() + "] channel indices";
+                    }
+                }
+
+                mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+            }
+            else //Create a new output processor.
+            {
+                if(mPolyphaseChannelOutputProcessor != null)
+                {
+                    mPolyphaseChannelOutputProcessor.setListener(null);
+                }
+
+                mPolyphaseChannelOutputProcessor = null;
+
+                switch(indexes.size())
+                {
+                    case 1:
+                        mPolyphaseChannelOutputProcessor = new OneChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
+                                indexes, channelCalculator.getChannelCount());
+                        mPolyphaseChannelOutputProcessor.setListener(this);
+                        mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+                        mPolyphaseChannelOutputProcessor.start();
+                        break;
+                    case 2:
+                        try
+                        {
+                            float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
+                                    channelCalculator.getChannelBandwidth(), 2);
+                            mPolyphaseChannelOutputProcessor = new TwoChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
+                                    indexes, filter, channelCalculator.getChannelCount());
+                            mPolyphaseChannelOutputProcessor.setListener(this);
+                            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+                            mPolyphaseChannelOutputProcessor.start();
+                        }
+                        catch(FilterDesignException fde)
+                        {
+                            errorMessage = "Cannot create new output processor - unable to design synthesis filter for [" +
+                                    indexes.size() + "] channel indices";
+                            mLog.error("Error creating a synthesis filter for a new channel output processor");
+                        }
+                        break;
+                    default:
+                        mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
+                        mLog.info(channelCalculator.toString());
+                        errorMessage = "Unable to create new channel output processor - unexpected channel index size: " +
+                                indexes.size();
+                }
+            }
         }
-        //Otherwise, we have to swap out the processor on the sample processing thread
-        else
+        finally
         {
-            mReplacementPolyphaseChannelOutputProcessor = outputProcessor;
-            mReplacementFrequency = frequency;
+            mOutputProcessorLock.unlock();
         }
-    }
 
-    /**
-     * Updates the output processor to use the new output processor provided by the external
-     * polyphase channel manager.  This method should only be executed on the sample processing
-     * thread, within the processChannelResults() method.
-     */
-    private void swapOutputProcessor()
-    {
-        if(mReplacementPolyphaseChannelOutputProcessor != null)
+        //Unlikely, but if we had an error designing a synthesis filter, throw an exception
+        if(errorMessage != null)
         {
-            IPolyphaseChannelOutputProcessor existingProcessor = mPolyphaseChannelOutputProcessor;
-
-            //Swap out the processor so that incoming samples can accumulate in the new channel output processor
-            mPolyphaseChannelOutputProcessor = mReplacementPolyphaseChannelOutputProcessor;
-            mReplacementPolyphaseChannelOutputProcessor = null;
-
-            //Remove the buffer overflow listener and clear any previous buffer overflow state
-            existingProcessor.setSourceOverflowListener(null);
-            broadcastOverflowState(false);
-
-            //Register to receive buffer overflow notifications so we can push them up through the source chain
-            mPolyphaseChannelOutputProcessor.setSourceOverflowListener(this);
-
-            //Finally, setup the frequency offset for the output processor.
-            mIndexCenterFrequency = mReplacementFrequency;
-            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+            throw new IllegalArgumentException(errorMessage);
         }
     }
 
@@ -161,17 +249,24 @@ public class PolyphaseChannelSource extends TunerChannelSource
      * queued for processing to extract the target channel samples, process them for frequency correction and/or
      * channel aggregation, and dispatch the results to the downstream sample listener/consumer.
      *
-     * @param channelResultsBuffer containing an array of polyphase channelizer outputs.
+     * @param channelResultsList containing a list of polyphase channelizer output arrays.
+     * @param currentSamplesTimestamp for the samples
      */
-    public void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer)
+    public void receiveChannelResults(List<float[]> channelResultsList, long currentSamplesTimestamp)
     {
-        if(mReplacementPolyphaseChannelOutputProcessor != null)
-        {
-            swapOutputProcessor();
-        }
+        mOutputProcessorLock.lock();
 
-        mReusableComplexBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
-        mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
+        try
+        {
+            if(mPolyphaseChannelOutputProcessor != null)
+            {
+                mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList, currentSamplesTimestamp);
+            }
+        }
+        finally
+        {
+            mOutputProcessorLock.unlock();
+        }
     }
 
     /**
@@ -198,73 +293,39 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void dispose()
     {
-        if(mReusableComplexBufferAssembler != null)
-        {
-            mReusableComplexBufferAssembler.dispose();
-        }
-
         if(mPolyphaseChannelOutputProcessor != null)
         {
+            mPolyphaseChannelOutputProcessor.setListener(null);
             mPolyphaseChannelOutputProcessor.dispose();
         }
     }
 
-    @Override
-    public long getChannelFrequencyCorrection()
-    {
-        return mChannelFrequencyCorrection;
-    }
-
     /**
-     * Adjusts the frequency correction value that is being applied to the channelized output stream by the
-     * polyphase channel output processor.
-     *
-     * @param value to apply for frequency correction in hertz
-     */
-    protected void setChannelFrequencyCorrection(long value)
-    {
-        mChannelFrequencyCorrection = value;
-        updateFrequencyOffset();
-        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
-    }
-
-    /**
-     * Sets the center frequency for this channel.frequency for the incoming sample stream channel results and resets frequency correction to zero.
+     * Sets the center frequency for this channel.
      * @param frequency in hertz
      */
     @Override
     public void setFrequency(long frequency)
     {
         mIndexCenterFrequency = frequency;
-
-        //Set frequency correction to zero to trigger an update to the mixer and allow downstream monitors to
-        //recalculate the frequency error correction again
-        setChannelFrequencyCorrection(0);
     }
 
-    @Override
-    protected void processSamples()
+    /**
+     * Center frequency from the incoming index channel(s).
+     * @return frequency in hertz
+     */
+    public long getIndexCenterFrequency()
     {
-        mPolyphaseChannelOutputProcessor.processChannelResults(mReusableComplexBufferAssembler);
+        return mIndexCenterFrequency;
     }
 
     /**
      * Calculates the frequency offset required to mix the incoming signal to center the desired frequency
      * within the channel
      */
-    private long getFrequencyOffset()
+    public long getFrequencyOffset()
     {
-        return mIndexCenterFrequency - getTunerChannel().getFrequency() + mChannelFrequencyCorrection;
-    }
-
-    /**
-     * Updates the frequency offset being applied by the output processor.  Calculates the offset using the center
-     * frequency of the incoming polyphase channel results and the desired output channel frequency adjusted by any
-     * requested frequency correction value.
-     */
-    private void updateFrequencyOffset()
-    {
-        mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+        return mIndexCenterFrequency - getTunerChannel().getFrequency();
     }
 
     @Override
@@ -272,44 +333,5 @@ public class PolyphaseChannelSource extends TunerChannelSource
     {
         return "POLYPHASE [" + mPolyphaseChannelOutputProcessor.getInputChannelCount() + "] " +
             getTunerChannel().getFrequency();
-    }
-
-    /**
-     * Creates a low-pass filter to use as the final cleanup filter for the decimated output stream
-     *
-     * @param sampleRate for the final output channel rate
-     * @param passFrequency for half of the desired channel rate
-     * @param stopFrequency for the attenuated band
-     * @return a newly designed filter or a previously designed (cached) filter
-     * @throws FilterDesignException
-     */
-    private float[] getLowPassFilter(double sampleRate, double passFrequency, double stopFrequency) throws FilterDesignException
-    {
-        //Use existing filter if we've already designed one
-        float[] filter = sLowPassFilters.get((int) sampleRate);
-        if(filter != null)
-        {
-            return filter;
-        }
-
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(sampleRate)
-            .gridDensity(16)
-            .passBandCutoff(passFrequency)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .stopBandStart(stopFrequency)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.01)
-            .build();
-
-        RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-        //This will throw an exception if the filter cannot be designed
-        float[] taps = designer.getImpulseResponse();
-
-        sLowPassFilters.put((int)sampleRate, taps);
-
-        return taps;
     }
 }

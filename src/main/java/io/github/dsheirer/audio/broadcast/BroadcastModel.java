@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.broadcast;
 
@@ -29,13 +26,6 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.ImageIcon;
-import javax.swing.table.AbstractTableModel;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -51,6 +41,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.table.AbstractTableModel;
 
 public class BroadcastModel extends AbstractTableModel implements Listener<AudioRecording>
 {
@@ -61,7 +57,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
     private static final String UNIQUE_NAME_REGEX = "(.*)\\((\\d*)\\)";
 
-    public static final int COLUMN_SERVER_ICON = 0;
+    public static final int COLUMN_BROADCAST_SERVER_TYPE = 0;
     public static final int COLUMN_STREAM_NAME = 1;
     public static final int COLUMN_BROADCASTER_STATUS = 2;
     public static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
@@ -70,7 +66,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     public static final int COLUMN_BROADCASTER_ERROR_COUNT = 6;
 
     public static final String[] COLUMN_NAMES = new String[]
-        {"Streaming", "Name", "Status", "Queued", "Streamed/Uploaded", "Aged Off", "Upload Error"};
+        {"Stream Type", "Name", "Status", "Queued", "Streamed/Uploaded", "Aged Off", "Upload Error"};
 
     private ObservableList<ConfiguredBroadcast> mConfiguredBroadcasts =
         FXCollections.observableArrayList(ConfiguredBroadcast.extractor());
@@ -80,6 +76,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     private AliasModel mAliasModel;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
     private BroadcastEventListener mBroadcastEventListener = new BroadcastEventListener();
+    private UserPreferences mUserPreferences;
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
@@ -88,6 +85,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     {
         mAliasModel = aliasModel;
         mIconModel = iconModel;
+        mUserPreferences = userPreferences;
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
         ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(), 15l, 15l, TimeUnit.SECONDS);
@@ -346,7 +344,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 deleteBroadcaster(configuredBroadcast);
             }
 
-            AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration, mAliasModel);
+            AbstractAudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration,
+                    mAliasModel, mUserPreferences);
 
             if(audioBroadcaster != null)
             {
@@ -575,15 +574,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 {
                     switch(columnIndex)
                     {
-                        case COLUMN_SERVER_ICON:
-                            String iconPath = configuredBroadcast.getBroadcastConfiguration()
-                                .getBroadcastServerType().getIconPath();
-
-                            if(iconPath != null && mIconModel != null)
-                            {
-                                return mIconModel.getScaledIcon(iconPath, 14);
-                            }
-                            break;
+                        case COLUMN_BROADCAST_SERVER_TYPE:
+                            return configuredBroadcast.getBroadcastServerType();
                         case COLUMN_STREAM_NAME:
                             return configuredBroadcast.getBroadcastConfiguration().getName();
                         case COLUMN_BROADCASTER_STATUS:
@@ -653,8 +645,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             case COLUMN_BROADCASTER_STREAMED_COUNT:
             case COLUMN_BROADCASTER_ERROR_COUNT:
                 return Integer.class;
-            case COLUMN_SERVER_ICON:
-                return ImageIcon.class;
+            case COLUMN_BROADCAST_SERVER_TYPE:
+                return BroadcastServerType.class;
             case COLUMN_STREAM_NAME:
             default:
                 return String.class;

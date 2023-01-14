@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,12 @@ import io.github.dsheirer.jmbe.github.Release;
 import io.github.dsheirer.util.FileUtil;
 import io.github.dsheirer.util.OSType;
 import io.github.dsheirer.util.ThreadPool;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -36,13 +42,6 @@ import org.rauschig.jarchivelib.Archiver;
 import org.rauschig.jarchivelib.ArchiverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Creates the JMBE library by downloading the JMBE Creator CLI application from GitHub and executing it.
@@ -125,7 +124,7 @@ public class JmbeCreator
 
         if(asset != null)
         {
-            ThreadPool.SCHEDULED.execute(() -> {
+            ThreadPool.CACHED.execute(() -> {
                 Path tempDirectory = null;
                 try
                 {
@@ -147,7 +146,7 @@ public class JmbeCreator
 
                         OSType osType = OSType.getCurrentOSType();
 
-                        if(osType.isLinux())
+                        if(osType.isLinux() || osType.isOsx())
                         {
                             script = FileUtil.findFile(unzipped, CREATOR_SCRIPT_LINUX);
                         }
@@ -155,6 +154,7 @@ public class JmbeCreator
                         {
                             script = FileUtil.findFile(unzipped, CREATOR_SCRIPT_WINDOWS);
                         }
+
 
                         if(script != null)
                         {
@@ -282,18 +282,25 @@ public class JmbeCreator
 
             switch(osType)
             {
-                case LINUX_32:
+                case LINUX_AARCH_64:
+                    return name.contains("linux") && name.contains("aarch64");
+                case LINUX_ARM_32:
+                    return name.contains("linux") && name.contains("arm32");
+                case LINUX_X86_32:
                     return name.contains("linux") && name.contains("_32");
-                case LINUX_64:
+                case LINUX_X86_64:
                     return name.contains("linux") && name.contains("_64");
-                case OSX_64:
+                case OSX_AARCH_64:
+                    return name.contains("osx") && name.contains("aarch64");
+                case OSX_X86_64:
                     return name.contains("osx") && name.contains("_64");
-                case WINDOWS_32:
+                case WINDOWS_AARCH_64:
+                    return name.contains("windows") && name.contains("aarch64");
+                case WINDOWS_X86_32:
                     return name.contains("windows") && name.contains("_32");
-                case WINDOWS_64:
+                case WINDOWS_X86_64:
                     return name.contains("windows") && name.contains("_64");
                 case UNKNOWN:
-                case OSX_32:
                 default:
                     return false;
             }

@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,23 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.audio.broadcast.icecast;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.AudioStreamingBroadcaster;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
+import io.github.dsheirer.audio.convert.InputAudioFormat;
+import io.github.dsheirer.audio.convert.MP3Setting;
 
 public abstract class IcecastAudioBroadcaster extends AudioStreamingBroadcaster
 {
     private IBroadcastMetadataUpdater mMetadataUpdater;
-    private AliasModel mAliasModel;
+    protected AliasModel mAliasModel;
 
-    public IcecastAudioBroadcaster(BroadcastConfiguration broadcastConfiguration, AliasModel aliasModel)
+    public IcecastAudioBroadcaster(BroadcastConfiguration broadcastConfiguration, InputAudioFormat inputAudioFormat,
+                                   MP3Setting mp3Setting, AliasModel aliasModel)
     {
-        super(broadcastConfiguration);
+        super(broadcastConfiguration, inputAudioFormat, mp3Setting);
         mAliasModel = aliasModel;
     }
 

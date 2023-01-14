@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,14 +14,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.source.tuner.test;
 
+import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.LoggingTunerErrorListener;
 import io.github.dsheirer.source.tuner.TunerController;
+import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +33,8 @@ public class TestTunerController extends TunerController
     private final static Logger mLog = LoggerFactory.getLogger(TestTunerController.class);
 
     public static final long MINIMUM_FREQUENCY = 1l;
-    public static final long MAXIMUM_FREQUENCY = 1000000000l;
-    public static final int SAMPLE_RATE = 10000000;
+    public static final long MAXIMUM_FREQUENCY = 1_000_000_000l;
+    public static final int SAMPLE_RATE = 2_400_000;
     public static final int DC_NOISE_BANDWIDTH = 0;
     public static final double USABLE_BANDWIDTH_PERCENTAGE = 1.00;
 
@@ -40,19 +42,24 @@ public class TestTunerController extends TunerController
     public static final long SAMPLE_GENERATION_INTERVAL = 1000 / SPECTRAL_FRAME_RATE;
 
     private SampleGenerator mSampleGenerator;
-    private long mFrequency = 100000000l;
+    private long mFrequency = 460662500l;
 
     /**
      * Tuner controller testing implementation.
       */
     public TestTunerController()
     {
-        super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
+        super(new LoggingTunerErrorListener());
+
+        setMinimumFrequency(MINIMUM_FREQUENCY);
+        setMaximumFrequency(MAXIMUM_FREQUENCY);
+        setMiddleUnusableHalfBandwidth(DC_NOISE_BANDWIDTH);
+        setUsableBandwidthPercentage(USABLE_BANDWIDTH_PERCENTAGE);
 
         int sweepRate = 0;  //Hz per interval
-        long initialToneFrequency = SAMPLE_RATE / 2 + 100;
-        mSampleGenerator = new SampleGenerator(SAMPLE_RATE, initialToneFrequency, SAMPLE_GENERATION_INTERVAL,
-            sweepRate);
+//        long initialToneFrequency = SAMPLE_RATE / 2 + 100;
+        long initialToneFrequency = 50000;
+        mSampleGenerator = new SampleGenerator(SAMPLE_RATE, initialToneFrequency, sweepRate);
 
         try
         {
@@ -72,19 +79,31 @@ public class TestTunerController extends TunerController
     }
 
     @Override
-    public void dispose()
+    public void start() throws SourceException
     {
-        //no-op
+        //No-op
     }
 
     @Override
-    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void stop()
+    {
+        //No-op
+    }
+
+    @Override
+    public TunerType getTunerType()
+    {
+        return TunerType.TEST;
+    }
+
+    @Override
+    public void addBufferListener(Listener<INativeBuffer> listener)
     {
         mSampleGenerator.addListener(listener);
     }
 
     @Override
-    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    public void removeBufferListener(Listener<INativeBuffer> listener)
     {
         mSampleGenerator.removeListener(listener);
     }

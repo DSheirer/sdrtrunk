@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -200,7 +200,7 @@ public class ScriptEditor extends ActionEditor<ScriptAction>
             final TestMessage testMessage = new TestMessage();
             final Alias testAlias = new Alias("Test Alias");
 
-            ThreadPool.SCHEDULED.submit(new Runnable()
+            ThreadPool.CACHED.submit(new Runnable()
             {
                 @Override
                 public void run()

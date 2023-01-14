@@ -1,39 +1,42 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.module.decode.nbfm;
 
 import io.github.dsheirer.channel.state.DecoderStateEvent;
 import io.github.dsheirer.channel.state.IDecoderStateEventProvider;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
+import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
+import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
-import io.github.dsheirer.dsp.fm.SquelchingFMDemodulator;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.ISquelchingFmDemodulator;
+import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
-import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.sample.complex.IComplexSamplesListener;
+import io.github.dsheirer.sample.real.IRealBufferProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
@@ -44,21 +47,23 @@ import org.slf4j.LoggerFactory;
  * Decoder module with integrated narrowband FM (12.5 or 25.0 kHz channel) demodulator
  */
 public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener, ISourceEventProvider,
-		IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableBufferProvider,
+		IComplexSamplesListener, Listener<ComplexSamples>, IRealBufferProvider,
 		IDecoderStateEventProvider
 {
 	private final static Logger mLog = LoggerFactory.getLogger(NBFMDecoder.class);
 	private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
-	private static final double POWER_SQUELCH_ALPHA_DECAY = 0.0002;
-	private static final double POWER_SQUELCH_THRESHOLD_DB = -78.0;
+	private static final float POWER_SQUELCH_ALPHA_DECAY = 0.0004f;
+	private static final float POWER_SQUELCH_THRESHOLD_DB = -78.0f;
 	private static final int POWER_SQUELCH_RAMP = 4;
 
-	private ComplexFIRFilter2 mIQFilter;
-	private SquelchingFMDemodulator mDemodulator = new SquelchingFMDemodulator(POWER_SQUELCH_ALPHA_DECAY,
-			POWER_SQUELCH_THRESHOLD_DB, POWER_SQUELCH_RAMP);
+	private IRealFilter mIBasebandFilter;
+	private IRealFilter mQBasebandFilter;
+	private IRealDecimationFilter mIDecimationFilter;
+	private IRealDecimationFilter mQDecimationFilter;
+	private ISquelchingFmDemodulator mDemodulator;
 	private RealResampler mResampler;
 	private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
-	private Listener<ReusableFloatBuffer> mResampledReusableBufferListener;
+	private Listener<float[]> mResampledBufferListener;
 	private Listener<DecoderStateEvent> mDecoderStateEventListener;
 	private double mChannelBandwidth;
 	private double mOutputSampleRate = DEMODULATED_AUDIO_SAMPLE_RATE;
@@ -72,6 +77,8 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 	{
 		super( config );
 		mChannelBandwidth = config.getBandwidth().getValue();
+		mDemodulator = FmDemodulatorFactory.getSquelchingFmDemodulator(POWER_SQUELCH_ALPHA_DECAY,
+				POWER_SQUELCH_THRESHOLD_DB, POWER_SQUELCH_RAMP);
 		mDemodulator.setSquelchThreshold(config.getSquelchThreshold());
 	}
 
@@ -82,7 +89,7 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
     }
 
 	@Override
-	public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
+	public Listener<ComplexSamples> getComplexSamplesListener()
 	{
 		return this;
 	}
@@ -110,29 +117,33 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 	}
 
 	@Override
-	public void setBufferListener(Listener<ReusableFloatBuffer> listener)
+	public void setBufferListener(Listener<float[]> listener)
 	{
-		mResampledReusableBufferListener = listener;
+		mResampledBufferListener = listener;
 	}
 
 	@Override
 	public void removeBufferListener()
 	{
-		mResampledReusableBufferListener = null;
+		mResampledBufferListener = null;
 	}
 
 	@Override
-	public void receive(ReusableComplexBuffer reusableComplexBuffer)
+	public void receive(ComplexSamples samples)
 	{
-		if(mIQFilter == null)
+		if(mIDecimationFilter == null || mQDecimationFilter == null)
 		{
-			reusableComplexBuffer.decrementUserCount();
 			throw new IllegalStateException("NBFM demodulator module must receive a sample rate change source " +
 					"event before it can process complex sample buffers");
 		}
 
-		ReusableComplexBuffer basebandFilteredBuffer = mIQFilter.filter(reusableComplexBuffer);
-		ReusableFloatBuffer demodulatedBuffer = mDemodulator.demodulate(basebandFilteredBuffer);
+		float[] decimatedI = mIDecimationFilter.decimateReal(samples.i());
+		float[] decimatedQ = mQDecimationFilter.decimateReal(samples.q());
+
+		float[] filteredI = mIBasebandFilter.filter(decimatedI);
+		float[] filteredQ = mQBasebandFilter.filter(decimatedQ);
+
+		float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
 
 		if(mResampler != null)
 		{
@@ -147,12 +158,11 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 			//Either send the demodulated buffer to the resampler for distro, or decrement the user count
 			if(mSquelch)
 			{
-				demodulatedBuffer.incrementUserCount();
 				notifyIdle();
 			}
 			else
 			{
-				mResampler.resample(demodulatedBuffer);
+				mResampler.resample(demodulated);
 				notifyCallContinuation();
 			}
 
@@ -165,7 +175,6 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 		}
 		else
 		{
-			demodulatedBuffer.decrementUserCount();
 			notifyIdle();
 		}
 	}
@@ -260,28 +269,49 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 		{
 			if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
 			{
-				if(mIQFilter != null)
+				if(mIBasebandFilter != null)
 				{
-					mIQFilter.dispose();
-					mIQFilter = null;
+					mIBasebandFilter = null;
+					mQBasebandFilter = null;
 				}
 
 				double sampleRate = sourceEvent.getValue().doubleValue();
 
-				if((sampleRate < (2.0 * mChannelBandwidth)))
+				int decimationRate = 0;
+				double decimatedSampleRate = sampleRate;
+
+				if(sampleRate / 2 >= (mChannelBandwidth * 2))
+				{
+					decimationRate = 2;
+
+					while(sampleRate / decimationRate / 2 >= (mChannelBandwidth * 2))
+					{
+						decimationRate *= 2;
+					}
+				}
+
+				if(decimationRate > 0)
+				{
+					decimatedSampleRate /= decimationRate;
+				}
+
+				mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
+				mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
+
+				if((decimatedSampleRate < (2.0 * mChannelBandwidth)))
 				{
 					throw new IllegalStateException("FM Demodulator with channel bandwidth [" + mChannelBandwidth +
 							"] requires a channel sample rate of [" + (2.0 * mChannelBandwidth + "] - sample rate of [" +
-							sampleRate + "] is not supported"));
+							decimatedSampleRate + "] is not supported"));
 				}
 
 				int passBandStop = (int)(mChannelBandwidth * .8);
 				int stopBandStart = (int)mChannelBandwidth;
 
-				float[] filterTaps = null;
+				float[] coefficients = null;
 
 				FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-						.sampleRate(sampleRate)
+						.sampleRate(decimatedSampleRate * 2)
 						.gridDensity(16)
 						.oddLength(true)
 						.passBandCutoff(passBandStop)
@@ -294,34 +324,34 @@ public class NBFMDecoder extends PrimaryDecoder implements ISourceEventListener,
 
 				try
 				{
-					filterTaps = FilterFactory.getTaps(specification);
+					coefficients = FilterFactory.getTaps(specification);
 				}
 				catch(FilterDesignException fde)
 				{
 					mLog.error("Couldn't design FM demodulator remez filter for sample rate [" + sampleRate +
 							"] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
-							"] - using sinc filter");
+							"] - will proceed using sinc (low-pass) filter");
 				}
 
-				if(filterTaps == null)
+				if(coefficients == null)
 				{
-					filterTaps = FilterFactory.getLowPass(sampleRate, passBandStop, stopBandStart, 60,
-							Window.WindowType.HAMMING, true);
+					mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate +
+							"] pass band stop [" + passBandStop +
+							"] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
+					coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60,
+							WindowType.HAMMING, true);
 				}
 
-				mIQFilter = new ComplexFIRFilter2(filterTaps);
+				mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
+				mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
 
-				mResampler = new RealResampler(sampleRate, mOutputSampleRate, 2000, 1000);
+				mResampler = new RealResampler(decimatedSampleRate, mOutputSampleRate, 4192, 512);
 
-				mResampler.setListener(reusableFloatBuffer ->
+				mResampler.setListener(resampled ->
 				{
-					if(mResampledReusableBufferListener != null)
+					if(mResampledBufferListener != null)
 					{
-						mResampledReusableBufferListener.receive(reusableFloatBuffer);
-					}
-					else
-					{
-						reusableFloatBuffer.decrementUserCount();
+						mResampledBufferListener.receive(resampled);
 					}
 				});
 			}

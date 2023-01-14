@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,22 +14,19 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
+import io.github.dsheirer.sample.complex.ComplexSamples;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class OneChannelOutputProcessor extends ChannelOutputProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(OneChannelOutputProcessor.class);
-
+    private final OneChannelMixerAssembler mMixerAssembler;
     private int mChannelOffset;
 
     /**
@@ -38,12 +35,14 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      *
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing a single channel index.
-     * @param gain value to apply.  Typically this is the same as the channelizer's channel count.
+     * @param gain value to apply.  This is typically the same as the channelizer's channel count.
      */
-    public OneChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, double gain)
+    public OneChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float gain)
     {
-        super(1, sampleRate, gain);
+        super(1, sampleRate);
         setPolyphaseChannelIndices(channelIndexes);
+        mMixerAssembler = new OneChannelMixerAssembler(gain);
+        mMixerAssembler.getMixer().setSampleRate(sampleRate);
     }
 
     @Override
@@ -62,7 +61,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
         if(indexes.size() != 1)
         {
             throw new IllegalArgumentException("Single channel output processor requires a single index to " +
-                "process - provided indexes " + indexes.toString());
+                "process - provided indexes " + indexes);
         }
 
         //Set the channelized output results offset to twice the channel index to account for each channel having
@@ -70,38 +69,45 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
         mChannelOffset = indexes.get(0) * 2;
     }
 
+    @Override
+    public void setFrequencyOffset(long frequency)
+    {
+        mMixerAssembler.getMixer().setFrequency(frequency);
+    }
+
     /**
-     * Extract the channel from the channel results array, apply frequency translation, and deliver the
-     * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
+     * Extract the channel from the channel results array and pass to the assembler.  The assembler will
+     * apply frequency translation and gain and indicate when a buffer is fully assembled.
      *
-     * @param channelResults to process containing a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
-     * @param reusableComplexBufferAssembler to receive the extracted, frequency-translated channel results
+     * @param channelResultsList to process containing a list of a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      */
     @Override
-    public void process(List<ReusableChannelResultsBuffer> channelResults,
-                        ReusableComplexBufferAssembler reusableComplexBufferAssembler)
+    public void process(List<float[]> channelResultsList)
     {
-        for(ReusableChannelResultsBuffer channelResultsBuffer: channelResults)
+        for(float[] channelResults: channelResultsList)
         {
-            try
-            {
-                ReusableComplexBuffer channelBuffer = channelResultsBuffer.getChannel(mChannelOffset);
+            mMixerAssembler.receive(channelResults[mChannelOffset], channelResults[mChannelOffset + 1]);
 
-                if(hasFrequencyCorrection())
+            if(mMixerAssembler.hasBuffer())
+            {
+                ComplexSamples buffer = mMixerAssembler.getBuffer(getCurrentSampleTimestamp());
+
+                if(mComplexSamplesListener != null)
                 {
-                    getFrequencyCorrectionMixer().mixComplex(channelBuffer.getSamples());
+                    try
+                    {
+                        mComplexSamplesListener.receive(buffer);
+                    }
+                    catch(NullPointerException npe)
+                    {
+                        //Ignore ... can happen when the listener is nullified on another thread
+                    }
+                    catch(Exception e)
+                    {
+                        mLog.error("Error extracting channel samples from one polyphase channel results buffer", e);
+                    }
                 }
-
-                channelBuffer.applyGain(getGain());
-
-                reusableComplexBufferAssembler.receive(channelBuffer);
             }
-            catch(IllegalArgumentException iae)
-            {
-                mLog.error("Error extracting channel samples from polyphase channel results buffer");
-            }
-
-            channelResultsBuffer.decrementUserCount();
         }
     }
 }

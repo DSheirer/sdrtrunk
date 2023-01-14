@@ -1,31 +1,27 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.bits;
 
 import io.github.dsheirer.edac.CRC;
+import java.util.BitSet;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.math3.util.FastMath;
-
-import java.util.BitSet;
 
 public class BinaryMessage extends BitSet
 {
@@ -35,7 +31,7 @@ public class BinaryMessage extends BitSet
      * Logical (ie constructed) size of this bitset, despite the actual size of
      * the super bitset that this class is based on
      */
-    private int mSize = 0;
+    private int mSize;
 
     /**
      * Pointer to the next fill index location, when adding bits to this bitset
@@ -44,20 +40,20 @@ public class BinaryMessage extends BitSet
     private int mPointer = 0;
 
     /**
-     * Bitset that buffers bits added one at a time, up to the size of the this
-     * bitset. 
-     *
-     * Note: the super class bitset behind this class may have a size larger 
-     * that the size parameter specified.
-     * @param size
-     */
-
-    /**
      * Used for temporary storage of CRC check results when we're passing this
      * message to an EDAC function.
      */
     private CRC mCRC;
 
+    /**
+     * Constructs a bitset that buffers bits added one at a time, up to the size
+     * of the this bitset.
+     * <p>
+     * Note: the super class bitset behind this class may have a size larger
+     * that the size parameter specified.
+     *
+     * @param size of constructed bitset
+     */
     public BinaryMessage(int size)
     {
         super(size);
@@ -214,9 +210,7 @@ public class BinaryMessage extends BitSet
     }
 
     /**
-     * Returns a (new) copy of this bitsetbuffer
-     *
-     * @return
+     * @return a (new) copy of this binary message
      */
     public BinaryMessage copy()
     {
@@ -1035,6 +1029,51 @@ public class BinaryMessage extends BitSet
             {
                 buffer.set(x);
             }
+        }
+
+        return buffer;
+    }
+
+    /**
+     * Loads the hexadecimal text into a binary message
+     * @param hex text to load from
+     * @return loaded binary message
+     */
+    public static BinaryMessage loadHex(String hex)
+    {
+        if(!hex.matches("[0-9A-F]*"))
+        {
+            throw new IllegalArgumentException("Message must contain only 0-9 and A-F hexadecimal characters");
+        }
+
+        int length = hex.length() / 2;
+
+        if(length * 2 < hex.length())
+        {
+            length++;
+        }
+
+        BinaryMessage buffer = new BinaryMessage(length * 8);
+
+        int bufferOffset = 0;
+        for(int x = 0; x < hex.length(); x += 2)
+        {
+            int endIndex = x + 2;
+            if(endIndex > hex.length())
+            {
+                endIndex--;
+            }
+
+            String rawHex = hex.substring(x, endIndex);
+
+            if(rawHex.length() == 1)
+            {
+                rawHex = rawHex + "0";
+            }
+
+            int value = Integer.parseInt(rawHex, 16);
+            buffer.setByte(bufferOffset, (byte)(value & 0xFF));
+            bufferOffset += 8;
         }
 
         return buffer;

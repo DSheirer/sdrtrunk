@@ -62,6 +62,11 @@ public class MessageActivityModel extends AbstractTableModel implements Listener
         mMessageFilterSet = filterSet;
     }
 
+    public void clearFilters()
+    {
+        mMessageFilterSet = new FilterSet<>(new AllPassFilter<>());
+    }
+
     /**
      * Clears all messages from history
      */

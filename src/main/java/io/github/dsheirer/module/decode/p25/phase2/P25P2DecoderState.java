@@ -1,26 +1,24 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase2;
 
+import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.channel.state.ChangeChannelTimeoutEvent;
 import io.github.dsheirer.channel.state.DecoderStateEvent;
@@ -36,7 +34,9 @@ import io.github.dsheirer.identifier.IdentifierUpdateListener;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.encryption.EncryptionKey;
+import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroupManager;
+import io.github.dsheirer.identifier.patch.PatchGroupPreLoadDataContent;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
@@ -143,6 +143,22 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
         super.resetState();
         closeCurrentCallEvent(System.currentTimeMillis(), true, MacPduType.MAC_3_IDLE);
         mEndPttOnFacchCounter = 0;
+    }
+
+    /**
+     * Processes an identifier collection to harvest Patch Groups to preload when this channel is first starting up.
+     * @param preLoadDataContent containing an identifier collection with optional patch group identifier(s).
+     */
+    @Subscribe
+    public void process(PatchGroupPreLoadDataContent preLoadDataContent)
+    {
+        for(Identifier identifier: preLoadDataContent.getData().getIdentifiers(Role.TO))
+        {
+            if(identifier instanceof PatchGroupIdentifier patchGroupIdentifier)
+            {
+                mPatchGroupManager.addPatchGroup(patchGroupIdentifier);
+            }
+        }
     }
 
     /**
@@ -1144,6 +1160,8 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     @Override
     public void start()
     {
+        mPatchGroupManager.clear();
+
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannelType == ChannelType.TRAFFIC)
         {
@@ -1159,5 +1177,6 @@ public class P25P2DecoderState extends TimeslotDecoderState implements Identifie
     @Override
     public void stop()
     {
+        mPatchGroupManager.clear();
     }
 }

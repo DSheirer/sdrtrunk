@@ -1,45 +1,41 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25.phase1;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
-import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
+import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
+import io.github.dsheirer.dsp.gain.complex.ComplexGainFactory;
+import io.github.dsheirer.dsp.gain.complex.IComplexGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.FrequencyCorrectionSyncMonitor;
 import io.github.dsheirer.dsp.psk.pll.PLLBandwidth;
-import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class P25P1DecoderC4FM extends P25P1Decoder
 {
@@ -51,9 +47,10 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     protected CostasLoop mCostasLoop;
     protected FrequencyCorrectionSyncMonitor mFrequencyCorrectionSyncMonitor;
     protected P25P1MessageFramer mMessageFramer;
-    private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
+    protected IComplexGainControl mAGC = ComplexGainFactory.getComplexGainControl();
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    private ComplexFIRFilter2 mBasebandFilter;
+    protected IRealFilter mIBasebandFilter;
+    protected IRealFilter mQBasebandFilter;
 
     /**
      * P25 Phase 1 - standard C4FM modulation decoder.  Uses Differential QPSK decoding with a Costas PLL and a
@@ -68,7 +65,8 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     public void setSampleRate(double sampleRate)
     {
         super.setSampleRate(sampleRate);
-        mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
+        mIBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
+        mQBasebandFilter = FilterFactory.getRealFilter(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mCostasLoop.setPLLBandwidth(PLLBandwidth.BW_300);
@@ -95,35 +93,21 @@ public class P25P1DecoderC4FM extends P25P1Decoder
 
     /**
      * Primary method for processing incoming complex sample buffers
-     * @param reusableComplexBuffer containing channelized complex samples
+     * @param samples containing channelized complex samples
      */
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    public void receive(ComplexSamples samples)
     {
-        //User accounting of the incoming buffer is handled by the filter
-        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+        mMessageFramer.setCurrentTime(System.currentTimeMillis());
+
+        float[] i = mIBasebandFilter.filter(samples.i());
+        float[] q = mQBasebandFilter.filter(samples.q());
 
         //Process the buffer for power meter measurements (before gain is applied)
-        mPowerMonitor.process(basebandFiltered);
+        mPowerMonitor.process(i, q);
 
-        //User accounting of the incoming buffer is handled by the gain filter
-        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
-
-        mMessageFramer.setCurrentTime(reusableComplexBuffer.getTimestamp());
-
-        //User accounting of the filtered buffer is handled by the demodulator
-        mQPSKDemodulator.receive(gainApplied);
-    }
-
-    /**
-     * Filters the complex buffer and returns a new reusable complex buffer with the filtered contents.
-     * @param reusableComplexBuffer to filter
-     * @return filtered complex buffer
-     */
-    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
-    {
-        //User accounting of the incoming buffer is handled by the filter
-        return mBasebandFilter.filter(reusableComplexBuffer);
+        ComplexSamples amplified = mAGC.process(i, q, samples.timestamp());
+        mQPSKDemodulator.receive(amplified);
     }
 
     /**

@@ -1,49 +1,41 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceEventListenerToProcessorAdapter;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 public abstract class TunerChannelSource extends ComplexSource implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
-    private static final long BUFFER_PROCESSOR_RUN_INTERVAL_MILLISECONDS = 50;
+    protected static final long HEARTBEAT_INTERVAL_MS = 100;
     private SourceEventListenerToProcessorAdapter mConsumerSourceEventListenerAdapter;
     protected TunerChannel mTunerChannel;
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
-    private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -87,27 +79,10 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     protected abstract void setSampleRate(double sampleRate);
 
     /**
-     * Sets the frequency correction for the outbound sample stream to the consumer
-     * @param correction in hertz
-     */
-    protected abstract void setChannelFrequencyCorrection(long correction);
-
-    /**
-     * Frequency correction value currently being applied to the outbound sample stream
-     */
-    public abstract long getChannelFrequencyCorrection();
-
-    /**
      * Sets the listener to receive the complex buffer sample output from this channel
-     * @param complexBufferListener to receive complex buffers
+     * @param complexSamplesListener to receive complex buffers
      */
-    public abstract void setListener(Listener<ReusableComplexBuffer> complexBufferListener);
-
-    /**
-     * Commands sub-class to process queued samples and distribute them to the consumer.  This method will be invoked
-     * by an interval timer.
-     */
-    protected abstract void processSamples();
+    public abstract void setListener(Listener<ComplexSamples> complexSamplesListener);
 
     /**
      * Tuner channel for this tuner channel source
@@ -125,7 +100,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(this, getFrequency(), "Startup"));
         broadcastProducerSourceEvent(SourceEvent.startSampleStreamRequest(this));
-        mScheduledIntervalProcessor.start();
     }
 
     /**
@@ -136,7 +110,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         broadcastProducerSourceEvent(SourceEvent.stopSampleStreamRequest(this));
         broadcastProducerSourceEvent(SourceEvent.sourceDisposeRequest(this));
-        mScheduledIntervalProcessor.stop();
     }
 
     @Override
@@ -168,11 +141,11 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         switch(sourceEvent.getEvent())
         {
-            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+            case NOTIFICATION_PLL_FREQUENCY:
             case NOTIFICATION_STOP_SAMPLE_STREAM:
                 //no-op
                 break;
@@ -187,10 +160,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
                 //Rebroadcast this measurement event so the producer can process it
                 sourceEvent.setSource(this);
                 broadcastProducerSourceEvent(sourceEvent);
-                break;
-            //Request events from the consumer
-            case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                setChannelFrequencyCorrection(sourceEvent.getValue().longValue());
                 break;
             case NOTIFICATION_FREQUENCY_ROTATION_FAILURE:
             case NOTIFICATION_FREQUENCY_ROTATION_SUCCESS:
@@ -259,96 +228,5 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public void removeSourceEventListener()
     {
         mConsumerSourceEventListener = null;
-    }
-
-    /**
-     * Processor to periodically invoke buffer sample processing on an interval timer.  At each interval this processor
-     * sends a heartbeat to the registered consumer and then commands the sub-class implementation to process any
-     * queued buffers and distribute complex buffer sample(s) to the registered consumer.
-     */
-    public class ScheduledIntervalProcessor implements Runnable
-    {
-        private ScheduledFuture<?> mScheduledFuture;
-        private boolean mStopped = false;
-
-        /**
-         * Commands this processor to do a shutdown at the end of this or the next iteration.  Once successfully
-         * shutdown, it will invoke the performDisposal() method to cleanup this instance.
-         */
-        public void stop()
-        {
-            mStopped = true;
-        }
-
-        /**
-         * Starts buffer processing on a fixed interval using a scheduled thread pool
-         */
-        public void start()
-        {
-            if(mScheduledFuture == null)
-            {
-                mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(this, 0,
-                    BUFFER_PROCESSOR_RUN_INTERVAL_MILLISECONDS, TimeUnit.MILLISECONDS);
-            }
-        }
-
-        /**
-         * Implementation of the Runnable interface to periodically send a heartbeat and then process buffer samples.
-         */
-        @Override
-        public void run()
-        {
-            try
-            {
-                if(!mStopped)
-                {
-                    try
-                    {
-                        getHeartbeatManager().broadcast();
-                    }
-                    catch(Throwable t)
-                    {
-                        mLog.error("Error while sending heartbeat", t);
-                    }
-                }
-
-                if(!mStopped)
-                {
-                    try
-                    {
-                        processSamples();
-                    }
-                    catch(Throwable t)
-                    {
-                        mLog.error("Error while processing samples", t);
-                    }
-                }
-
-                if(mStopped)
-                {
-                    if(mScheduledFuture != null)
-                    {
-                        //Set may-interrupt to false so that we can complete this iteration
-                        mScheduledFuture.cancel(false);
-                    }
-
-                    mScheduledFuture = null;
-
-                    try
-                    {
-                        getHeartbeatManager().broadcast();
-                        performDisposal();
-                    }
-                    catch(Throwable t)
-                    {
-                        mLog.error("Error during final shutdown processing of samples", t);
-                    }
-                }
-            }
-            catch(Throwable t)
-            {
-                mLog.error("Error during heartbeat processing", t);
-            }
-        }
     }
 }

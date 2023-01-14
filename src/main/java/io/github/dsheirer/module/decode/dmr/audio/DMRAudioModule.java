@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,14 +22,16 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.audio.codec.mbe.AmbeAudioModule;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.audio.squelch.SquelchStateEvent;
-import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
 import io.github.dsheirer.identifier.IdentifierUpdateProvider;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.identifier.tone.AmbeTone;
 import io.github.dsheirer.identifier.tone.Tone;
+import io.github.dsheirer.identifier.tone.ToneIdentifier;
+import io.github.dsheirer.identifier.tone.ToneIdentifierMessage;
 import io.github.dsheirer.identifier.tone.ToneSequence;
 import io.github.dsheirer.message.IMessage;
+import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRToneIdentifier;
 import io.github.dsheirer.module.decode.dmr.message.data.header.VoiceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
@@ -40,19 +42,19 @@ import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceEMBMessage;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import jmbe.iface.IAudioWithMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 /**
  * DMR Audio Module for converting transmitted AMBE audio frames to 8 kHz PCM audio
  */
-public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateProvider
+public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateProvider, IMessageProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DMRAudioModule.class);
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
@@ -61,6 +63,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     private List<byte[]> mQueuedAmbeFrames = new ArrayList<>();
     private boolean mEncryptedCallStateEstablished = false;
     private boolean mEncryptedCall = false;
+    private Listener<IMessage> mMessageListener;
 
     /**
      * Constructs an instance
@@ -102,11 +105,22 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     {
         if(hasAudioCodec() && message.getTimeslot() == getTimeslot())
         {
+            //DCDM doesn't provide FLCs or EMBs ... assume that the call is unencrypted.
+            if(!mEncryptedCallStateEstablished && message instanceof VoiceMessage vm &&
+                    vm.getSyncPattern().isDirectMode())
+            {
+                mEncryptedCallStateEstablished = true;
+                mEncryptedCall = false;
+                List<byte[]> frames = vm.getAMBEFrames();
+                for(byte[] frame: frames)
+                {
+                    processAudio(frame, message.getTimestamp());
+                }
+            }
             //Both Motorola and Hytera signal their Basic Privacy (BP) scrambling in some of the Voice B-F frames
             //in the EMB field.
-            if(!mEncryptedCallStateEstablished && message instanceof VoiceEMBMessage)
+            else if(!mEncryptedCallStateEstablished && message instanceof VoiceEMBMessage voiceMessage)
             {
-                VoiceEMBMessage voiceMessage = (VoiceEMBMessage)message;
                 if(voiceMessage.getEMB().isValid())
                 {
                     mEncryptedCallStateEstablished = true;
@@ -116,26 +130,23 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                 List<byte[]> frames = voiceMessage.getAMBEFrames();
                 for(byte[] frame: frames)
                 {
-                    processAudio(frame);
+                    processAudio(frame, message.getTimestamp());
                 }
             }
-            else if(message instanceof VoiceMessage)
+            else if(message instanceof VoiceMessage voiceMessage)
             {
-                VoiceMessage voiceMessage = (VoiceMessage)message;
                 List<byte[]> frames = voiceMessage.getAMBEFrames();
                 for(byte[] frame: frames)
                 {
-                    processAudio(frame);
+                    processAudio(frame, message.getTimestamp());
                 }
             }
-            else if(!mEncryptedCallStateEstablished && message instanceof VoiceHeader)
+            else if(!mEncryptedCallStateEstablished && message instanceof VoiceHeader voiceHeader)
             {
-                LCMessage lc = ((VoiceHeader)message).getLCMessage();
+                LCMessage lc = voiceHeader.getLCMessage();
 
-                if(lc instanceof FullLCMessage) //We know it is, but this null checks as well
+                if(lc instanceof FullLCMessage flc) //We know it is, but this null checks as well
                 {
-                    FullLCMessage flc = (FullLCMessage)lc;
-
                     if(flc.isValid())
                     {
                         mEncryptedCallStateEstablished = true;
@@ -146,9 +157,9 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
             //Note: the DMRMessageProcess extracts Full Link Control messages from Voice Frames B-C and sends them
             // independent of any DMR Burst messaging.  When encountered, it can be assumed that they are part of
             // an ongoing call and can be used to establish encryption state when the FLC is a voice channel user.
-            else if(!mEncryptedCallStateEstablished && message instanceof AbstractVoiceChannelUser)
+            else if(!mEncryptedCallStateEstablished && message instanceof AbstractVoiceChannelUser avcu)
             {
-                ServiceOptions serviceOptions = ((AbstractVoiceChannelUser)message).getServiceOptions();
+                ServiceOptions serviceOptions = avcu.getServiceOptions();
                 mEncryptedCallStateEstablished = true;
                 mEncryptedCall = serviceOptions.isEncrypted();
             }
@@ -163,7 +174,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
      * Processes the audio frame.  Queues the frame until encryption state is determined.  Once determined, the audio
      * frames are dequeued and audio is generated.
      */
-    private void processAudio(byte[] frame)
+    private void processAudio(byte[] frame, long timestamp)
     {
         if(mEncryptedCallStateEstablished)
         {
@@ -174,7 +185,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                 {
                     for(byte[] queuedFrame: mQueuedAmbeFrames)
                     {
-                        produceAudio(queuedFrame);
+                        produceAudio(queuedFrame, timestamp);
                     }
 
                     mQueuedAmbeFrames.clear();
@@ -183,7 +194,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
                 mQueuedAmbeFrames.clear();
             }
 
-            produceAudio(frame);
+            produceAudio(frame, timestamp);
         }
         else
         {
@@ -191,13 +202,13 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
         }
     }
 
-    private void produceAudio(byte[] frame)
+    private void produceAudio(byte[] frame, long timestamp)
     {
         try
         {
             IAudioWithMetadata audioWithMetadata = getAudioCodec().getAudioWithMetadata(frame);
             addAudio(audioWithMetadata.getAudio());
-            processMetadata(audioWithMetadata);
+            processMetadata(audioWithMetadata, timestamp);
         }
         catch(Exception e)
         {
@@ -209,7 +220,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
      * Processes optional metadata that can be included with decoded audio (ie dtmf, tones, knox, etc.) so that the
      * tone metadata can be converted into a FROM identifier and included with any call segment.
      */
-    private void processMetadata(IAudioWithMetadata audioWithMetadata)
+    private void processMetadata(IAudioWithMetadata audioWithMetadata, long timestamp)
     {
         if(audioWithMetadata.hasMetadata())
         {
@@ -217,11 +228,11 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
             for(Map.Entry<String,String> entry: audioWithMetadata.getMetadata().entrySet())
             {
                 //Each metadata map entry contains a tone-type (key) and tone (value)
-                Identifier metadataIdentifier = mToneMetadataProcessor.process(entry.getKey(), entry.getValue());
+                ToneIdentifier metadataIdentifier = mToneMetadataProcessor.process(entry.getKey(), entry.getValue());
 
                 if(metadataIdentifier != null)
                 {
-                    broadcast(metadataIdentifier);
+                    broadcast(metadataIdentifier, timestamp);
                 }
             }
         }
@@ -234,12 +245,24 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     /**
      * Broadcasts the identifier to a registered listener
      */
-    private void broadcast(Identifier identifier)
+    private void broadcast(ToneIdentifier identifier, long timestamp)
     {
         if(mIdentifierUpdateNotificationListener != null)
         {
             mIdentifierUpdateNotificationListener.receive(new IdentifierUpdateNotification(identifier,
                 IdentifierUpdateNotification.Operation.ADD, getTimeslot()));
+        }
+
+        if(mMessageListener != null)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append("DMR Timeslot ");
+            sb.append(getTimeslot());
+            sb.append("Audio Tone Sequence Decoded: ");
+            sb.append(identifier.toString());
+
+            mMessageListener.receive(new ToneIdentifierMessage(Protocol.DMR, getTimeslot(), timestamp,
+                    identifier, sb.toString()));
         }
     }
 
@@ -259,6 +282,25 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
     public void removeIdentifierUpdateListener()
     {
         mIdentifierUpdateNotificationListener = null;
+    }
+
+    /**
+     * Registers the listener to receive tone identifier messages from this module.
+     * @param listener to receive messages
+     */
+    @Override
+    public void setMessageListener(Listener<IMessage> listener)
+    {
+        mMessageListener = listener;
+    }
+
+    /**
+     * Unregisters the message listener
+     */
+    @Override
+    public void removeMessageListener()
+    {
+        mMessageListener = null;
     }
 
     /**
@@ -302,7 +344,7 @@ public class DMRAudioModule extends AmbeAudioModule implements IdentifierUpdateP
          * @param value of tone
          * @return an identifier with the accumulated tone metadata set
          */
-        public Identifier process(String type, String value)
+        public ToneIdentifier process(String type, String value)
         {
             if(type == null || value == null)
             {

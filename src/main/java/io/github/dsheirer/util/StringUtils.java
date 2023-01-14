@@ -1,6 +1,6 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,8 +14,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * ****************************************************************************
+ */
 package io.github.dsheirer.util;
 
 public class StringUtils
@@ -45,8 +45,15 @@ public class StringUtils
     /**
      * Replaces any illegal filename characters in the proposed filename
      */
-    public static String replaceIllegalCharacters(String filename) {
-        for (String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS) {
+    public static String replaceIllegalCharacters(String filename)
+    {
+        if(isEmpty(filename))
+        {
+            return filename;
+        }
+
+        for (String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS)
+        {
             filename = filename.replace(illegalCharacter, "_");
         }
 

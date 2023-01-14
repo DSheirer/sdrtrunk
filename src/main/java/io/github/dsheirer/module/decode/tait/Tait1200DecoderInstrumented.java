@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.tait;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
 import io.github.dsheirer.gui.instrument.chart.IInstrumentedAFSK1200Decoder;
-import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
 
 /**
@@ -48,9 +46,9 @@ public class Tait1200DecoderInstrumented extends Tait1200Decoder implements IIns
     }
 
     @Override
-    public void receive(ReusableFloatBuffer reusableFloatBuffer)
+    public void receive(float[] realBuffer)
     {
-        super.receive(reusableFloatBuffer);
+        super.receive(realBuffer);
 
         bufferCount.setValue(bufferCount.intValue() + 1);
     }

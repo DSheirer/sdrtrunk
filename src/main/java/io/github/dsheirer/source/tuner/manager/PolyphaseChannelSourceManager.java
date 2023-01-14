@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.source.tuner.manager;
 
@@ -28,12 +25,16 @@ import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import java.util.SortedSet;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.SortedSet;
-
+/**
+ * PolyphaseChannelSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
+ * polyphase tuner channel sources (ie DDCs).  This class is responsible for determining IF a requested channel can
+ * be provided and then adjusting the center frequency and provisioning a DDC Polyphase Tuner channel source.
+ */
 public class PolyphaseChannelSourceManager extends ChannelSourceManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSourceManager.class);
@@ -41,10 +42,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     private TunerController mTunerController;
 
     /**
-     * PolyphaseChannelSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
-     * polyphase tuner channel sources (ie DDCs).  This class is responsible for determining IF a requested channel can
-     * be provided and then adjusting the center frequency and provisioning a DDC Polyphase Tuner channel source.
-     *
+     * Constructs an instance
      * @param tunerController with a center tuned frequency that will be managed by this instance
      */
     public PolyphaseChannelSourceManager(TunerController tunerController)
@@ -55,6 +53,12 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
         //Register to receive channel count change notifications for rebroadcasting
         mPolyphaseChannelManager.addSourceEventListener(this::process);
         mTunerController.addListener(mPolyphaseChannelManager);
+    }
+
+    @Override
+    public void stopAllChannels()
+    {
+        mPolyphaseChannelManager.stopAllChannels();
     }
 
     /**
@@ -165,7 +169,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      * @return optimal center tuned frequency for the set of currently sourced tuner channels.
      * @throws IllegalArgumentException if a center frequency cannot be determined for the set of tuner channels
      */
-    private long getCenterFrequency(SortedSet<TunerChannel> channels, long currentCenterFrequency)
+    protected long getCenterFrequency(SortedSet<TunerChannel> channels, long currentCenterFrequency)
         throws IllegalArgumentException
     {
         if(channels.isEmpty())
@@ -405,53 +409,62 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
      * Allocates a tuner channel source for the tuner channel.
      *
      * @param tunerChannel for requested source
+     * @param channelSpecification for the requested channel
      * @return allocated DDC tuner channel source, or null if the channel cannot be provided by this source manager
      */
     @Override
     public TunerChannelSource getSource(TunerChannel tunerChannel, ChannelSpecification channelSpecification)
     {
-        if(isTunable(tunerChannel))
+        TunerChannelSource tunerChannelSource = null;
+
+        try
         {
-            //Get a new set of currently tuned channels
-            SortedSet<TunerChannel> tunerChannels = getTunerChannels();
-
-            //Add the requested channel to the list
-            tunerChannels.add(tunerChannel);
-
-            if(canTune(tunerChannels))
+            mTunerController.getFrequencyControllerLock().lock();
+            if(isTunable(tunerChannel))
             {
-                long currentCenterFrequency = mTunerController.getFrequency();
-                long updatedCenterFrequency = 0;
+                //Get a new set of currently tuned channels
+                SortedSet<TunerChannel> tunerChannels = getTunerChannels();
 
-                //Attempt to adjust the center frequency before we allocate the channel
-                try
+                //Add the requested channel to the list
+                tunerChannels.add(tunerChannel);
+
+                if(canTune(tunerChannels))
                 {
-                    updatedCenterFrequency = getCenterFrequency(tunerChannels, currentCenterFrequency);
+                    long currentCenterFrequency = mTunerController.getFrequency();
+                    long updatedCenterFrequency = 0;
 
-                    if(updatedCenterFrequency != currentCenterFrequency && updatedCenterFrequency != 0)
+                    //Attempt to adjust the center frequency before we allocate the channel
+                    try
                     {
-                        mTunerController.setFrequency(updatedCenterFrequency);
-                    }
+                        updatedCenterFrequency = getCenterFrequency(tunerChannels, currentCenterFrequency);
 
-                    //If we're successful to here, allocate the channel
-                    return mPolyphaseChannelManager.getChannel(tunerChannel, channelSpecification);
-                }
-                catch(SourceException se)
-                {
-                    //Tuner controller threw an error trying to tune to the updated frequency
-                    mLog.error("Error while updating tuner controller with new center frequency [" +
-                        updatedCenterFrequency + "] - unable to allocate new tuner channel", se);
-                }
-                catch(IllegalArgumentException iae)
-                {
-                    //Center frequency calculation failed
-//                    mLog.debug("Couldn't calculate new tuner center frequency for new tuner channel [" +
-//                        tunerChannel + "] unable to allocate new tuner channel");
+                        if(updatedCenterFrequency != currentCenterFrequency && updatedCenterFrequency != 0)
+                        {
+                            mTunerController.setFrequency(updatedCenterFrequency);
+                        }
+
+                        //If we're successful to here, allocate the channel
+                        tunerChannelSource = mPolyphaseChannelManager.getChannel(tunerChannel);
+                    }
+                    catch(SourceException se)
+                    {
+                        //Tuner controller threw an error trying to tune to the updated frequency
+                        mLog.error("Error while updating tuner controller with new center frequency [" +
+                                updatedCenterFrequency + "] - unable to allocate new tuner channel", se);
+                    }
+                    catch(IllegalArgumentException iae)
+                    {
+                        //Center frequency calculation failed
+                    }
                 }
             }
         }
+        finally
+        {
+            mTunerController.getFrequencyControllerLock().unlock();
+        }
 
-        return null;
+        return tunerChannelSource;
     }
 
     /**
@@ -468,7 +481,7 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
                 broadcast(sourceEvent);
                 //Lock the frequency and sample rate controls on the tuner controller so users can't change them
                 //when the polyphase manager has channels allocated
-                mTunerController.setLocked(getTunerChannelCount() > 0);
+                mTunerController.setLockedSampleRate(getTunerChannelCount() > 0);
                 break;
             case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
                 //Rebroadcast these frequency measurement errors to the tuner and tuner controller

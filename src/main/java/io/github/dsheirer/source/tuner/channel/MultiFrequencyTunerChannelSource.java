@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,28 +14,27 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.source.tuner.channel;
 
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
-import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.channel.rotation.FrequencyLockChangeRequest;
+import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Multiple-frequency tuner channel source.  Provides a wrapper around a tuner channel source and listens for external
@@ -47,25 +45,25 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(MultiFrequencyTunerChannelSource.class);
 
-    private TunerModel mTunerModel;
+    private TunerManager mTunerManager;
     private TunerChannelSource mTunerChannelSource;
     private List<Long> mFrequencies;
     private List<Long> mLockedFrequencies = new ArrayList<>();
     private int mFrequencyListPointer = 0;
     private ChannelSpecification mChannelSpecification;
-    private Listener<ReusableComplexBuffer> mReusableComplexBufferListener;
+    private Listener<ComplexSamples> mComplexSamplesListener;
     private Listener<Heartbeat> mHeartbeatListener;
     private String mPreferredTuner;
     private AtomicBoolean mChangingChannels = new AtomicBoolean();
     private boolean mStarted;
     private ConsumerSourceEventAdapter mConsumerSourceEventAdapter = new ConsumerSourceEventAdapter();
 
-    public MultiFrequencyTunerChannelSource(TunerModel tunerModel, TunerChannelSource tunerChannelSource,
+    public MultiFrequencyTunerChannelSource(TunerManager tunerManager, TunerChannelSource tunerChannelSource,
                                             List<Long> frequencies, ChannelSpecification channelSpecification,
                                             String preferredTuner)
     {
         super(null, tunerChannelSource.getTunerChannel());
-        mTunerModel = tunerModel;
+        mTunerManager = tunerManager;
         mTunerChannelSource = tunerChannelSource;
         mTunerChannelSource.setSourceEventListener(mConsumerSourceEventAdapter);
         mFrequencies = frequencies;
@@ -93,7 +91,7 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
             {
                 //Shutdown the existing tuner channel source
                 mTunerChannelSource.stop();
-                mTunerChannelSource.removeListener(mReusableComplexBufferListener);
+                mTunerChannelSource.setListener(null);
                 mTunerChannelSource.removeSourceEventListener();
                 mTunerChannelSource.removeHeartbeatListener(mHeartbeatListener);
                 mTunerChannelSource.dispose();
@@ -116,13 +114,13 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     {
         if(mStarted)
         {
-            Source source = mTunerModel.getSource(nextChannel, mChannelSpecification, mPreferredTuner);
+            Source source = mTunerManager.getSource(nextChannel, mChannelSpecification, mPreferredTuner);
 
             if(source instanceof TunerChannelSource)
             {
                 mTunerChannelSource = (TunerChannelSource)source;
                 mTunerChannelSource.setSourceEventListener(mConsumerSourceEventAdapter);
-                mTunerChannelSource.setListener(mReusableComplexBufferListener);
+                mTunerChannelSource.setListener(mComplexSamplesListener);
                 mTunerChannelSource.addHeartbeatListener(mHeartbeatListener);
                 mTunerChannelSource.start();
                 mTunerChannel = nextChannel;
@@ -275,54 +273,14 @@ public class MultiFrequencyTunerChannelSource extends TunerChannelSource
     }
 
     @Override
-    protected void setChannelFrequencyCorrection(long correction)
+    public void setListener(Listener<ComplexSamples> complexSamplesListener)
     {
-        if(mTunerChannelSource != null)
-        {
-            mTunerChannelSource.setChannelFrequencyCorrection(correction);
-        }
-    }
-
-    @Override
-    public long getChannelFrequencyCorrection()
-    {
-        if(mTunerChannelSource != null)
-        {
-            return mTunerChannelSource.getChannelFrequencyCorrection();
-        }
-
-        return 0;
-    }
-
-    @Override
-    protected void processSamples()
-    {
-        if(mTunerChannelSource != null)
-        {
-            mTunerChannelSource.processSamples();
-        }
-    }
-
-    @Override
-    public void setListener(Listener<ReusableComplexBuffer> complexBufferListener)
-    {
-        mReusableComplexBufferListener = complexBufferListener;
+        mComplexSamplesListener = complexSamplesListener;
 
         if(mTunerChannelSource != null)
         {
-            mTunerChannelSource.setListener(complexBufferListener);
+            mTunerChannelSource.setListener(complexSamplesListener);
         }
-    }
-
-    @Override
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
-    {
-        if(mTunerChannelSource != null)
-        {
-            mTunerChannelSource.removeListener(listener);
-        }
-
-        mReusableComplexBufferListener = null;
     }
 
     @Override

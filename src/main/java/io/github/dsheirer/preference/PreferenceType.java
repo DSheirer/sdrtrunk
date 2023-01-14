@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,10 +24,12 @@ package io.github.dsheirer.preference;
  */
 public enum PreferenceType
 {
+    CALIBRATION,
     DECODE_EVENT,
     DIRECTORY,
     DUPLICATE_CALL_DETECTION,
     JMBE_LIBRARY,
+    MP3,
     MULTI_FREQUENCY,
     PLAYLIST,
     PLAYBACK,
