@@ -28,7 +28,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.5.0'
+version = '0.5.1-beta1'
 sourceCompatibility = '17'
 
 sourceSets {
