@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.manager.TunerStatus;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.SwingUtils;
+import io.github.dsheirer.util.ThreadPool;
 import java.awt.EventQueue;
 import java.text.CharacterIterator;
 import java.text.DecimalFormat;
@@ -298,8 +299,8 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
 
                 if(tuner != null)
                 {
-                    mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
-                            TunerEvent.Event.REQUEST_NEW_SPECTRAL_DISPLAY));
+                    ThreadPool.CACHED.submit(() -> mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
+                            TunerEvent.Event.REQUEST_NEW_SPECTRAL_DISPLAY)));
                 }
             });
         }
@@ -324,8 +325,8 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
                 {
                     SystemProperties.getInstance().set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
 
-                    mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
-                            TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
+                    ThreadPool.CACHED.submit(() -> mTunerManager.getDiscoveredTunerModel().broadcast(new TunerEvent(tuner,
+                            TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)));
                 }
             });
         }

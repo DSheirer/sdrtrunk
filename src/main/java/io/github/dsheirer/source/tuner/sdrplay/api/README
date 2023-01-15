@@ -1,0 +1,15 @@
+SDRplay API 3.07
+Auto-created from sdrplay api header files using JDK 17 jextract tool:
+
+1. Install the sdrplay api
+2. On Linux, headers are located here: /usr/local/include/*.h
+3. cd into the (project)/jSDRplay/sdrplay-api/src/main/java/ directory
+4. Run: jextract -t io.github.dsheirer.sdrplay.api /usr/local/include/sdrplay_api.h -l libsdrplay_api --source
+
+IntelliJ setup
+1. Run configuration
+2. JVM Option: --enable-native-access=ALL-UNNAMED
+3. Add library location to the java.library.path:
+   Linux: /usr/local/lib
+   Windows: ??
+   MacOS: ??
