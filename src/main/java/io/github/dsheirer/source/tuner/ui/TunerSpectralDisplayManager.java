@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,20 +67,18 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
      */
     public Tuner showFirstTuner()
     {
-        if(!SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
+        //Ensure spectral display is enabled before selecting first tuner
+        if(SystemProperties.getInstance().get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true))
         {
-            //Spectral display is disabled, stop
-            return null;
-        }
+            List<DiscoveredTuner> availableTuners = mDiscoveredTunerModel.getAvailableTuners();
 
-        List<DiscoveredTuner> availableTuners = mDiscoveredTunerModel.getAvailableTuners();
-
-        for(DiscoveredTuner discoveredTuner: availableTuners)
-        {
-            if(discoveredTuner.hasTuner())
+            for(DiscoveredTuner discoveredTuner: availableTuners)
             {
-                mSpectralDisplayPanel.showTuner(discoveredTuner.getTuner());
-                return discoveredTuner.getTuner();
+                if(discoveredTuner.hasTuner())
+                {
+                    mSpectralDisplayPanel.showTuner(discoveredTuner.getTuner());
+                    return discoveredTuner.getTuner();
+                }
             }
         }
 

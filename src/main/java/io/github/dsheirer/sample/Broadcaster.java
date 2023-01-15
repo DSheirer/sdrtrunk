@@ -18,12 +18,13 @@
  */
 package io.github.dsheirer.sample;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Broadcasts an item to multiple listeners
@@ -100,6 +101,10 @@ public class Broadcaster<T> implements Listener<T>
                     mListeners.add(listener);
                 }
             }
+            catch(Exception e)
+            {
+                mLog.error("Unexpected error while adding listener", e);
+            }
             finally
             {
                 mLock.unlock();
@@ -119,6 +124,10 @@ public class Broadcaster<T> implements Listener<T>
             try
             {
                 mListeners.remove(listener);
+            }
+            catch(Exception e)
+            {
+                mLog.error("Unexpected error while removing listener", e);
             }
             finally
             {
@@ -150,6 +159,10 @@ public class Broadcaster<T> implements Listener<T>
             {
                 listener.receive(t);
             }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Unexpected error while broadcasting to listeners", e);
         }
         finally
         {

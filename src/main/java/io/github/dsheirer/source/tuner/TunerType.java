@@ -37,6 +37,13 @@ public enum TunerType
     HACKRF_RAD1O("RAD1O"),
     RAFAELMICRO_R820T("R820T"),
     RAFAELMICRO_R828D("R828D"),
+    RSP_1("RSP1"),
+    RSP_1A("RSP1A"),
+    RSP_2("RSP2"),
+    RSP_DUO_1("RSPduo Tuner 1"),
+    RSP_DUO_2("RSPduo Tuner 2"),
+    RSP_DX("RSPdx"),
+
     TEST("Test"),
     RECORDING("Recording"),
     UNKNOWN("Unknown");

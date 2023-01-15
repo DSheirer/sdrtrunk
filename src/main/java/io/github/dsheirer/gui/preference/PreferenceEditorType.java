@@ -31,7 +31,7 @@ public enum PreferenceEditorType
     AUDIO_RECORD("Record"),
     AUDIO_OUTPUT("Output/Tones"),
     AUDIO_DUPLICATE_CALL_DETECTION("Duplicate Calls"),
-    SOURCE_TUNER_CHANNELIZER("Tuner Channelizer"),
+    SOURCE_TUNERS("Tuners"),
     TALKGROUP_FORMAT("Talkgroup & Radio ID"),
     VECTOR_CALIBRATION("Vector Calibration"),
     DEFAULT("Default");

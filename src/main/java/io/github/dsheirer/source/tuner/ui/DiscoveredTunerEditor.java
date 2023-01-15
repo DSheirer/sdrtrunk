@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,7 +124,14 @@ public class DiscoveredTunerEditor extends Editor<DiscoveredTuner> implements ID
         //If this is the currently displayed tuner, set it again to re-render the editor
         if(hasItem() && getItem().equals(discoveredTuner))
         {
-            setItem(discoveredTuner);
+            if(current == TunerStatus.REMOVED)
+            {
+                setItem(null);
+            }
+            else
+            {
+                setItem(discoveredTuner);
+            }
         }
     }
 }

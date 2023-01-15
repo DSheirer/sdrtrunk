@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 /*
  * *****************************************************************************
  * Copyright (C) 2014-2022 Dennis Sheirer
@@ -28,8 +30,14 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.5.1'
-sourceCompatibility = '17'
+version = '0.6.0-alpha1'
+
+//Java 19 is required for this version of the Project Panama preview/incubator feature
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(19)
+    }
+}
 
 sourceSets {
     main.java.srcDirs 'src/main'
@@ -91,9 +99,10 @@ dependencies {
 }
 
 /**
- * This is needed for the JDK17 vector API ... until it moves out of incubation
+ * This is needed for the JDK19 panama and vector API ... until it moves out of incubation or preview
  */
 tasks.withType(JavaCompile) {
+    options.compilerArgs.add("--enable-preview") //Panama Foreign Function/Memory is preview in JDK 19
     options.compilerArgs.add("--add-modules=jdk.incubator.vector") //Needed while Panama Vector API remains in incubator
 }
 
@@ -101,8 +110,21 @@ application {
     mainClassName = "io.github.dsheirer.gui.SDRTrunk"
     applicationDefaultJvmArgs =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
-         '--add-modules=jdk.incubator.vector',   //Needed while Panama Vector API remains in incubator
-         '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED'] //Windows Swing - jide-oss library
+         '--add-modules=jdk.incubator.vector',   //Needed while Project Panama API is still in incubator
+         '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
+         '--enable-native-access=ALL-UNNAMED'] //Allows Project Panama Foreign Function access to system library
+
+    OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem;
+    if(os.isWindows()) {
+        //Replace the default Java system library path with an explicit location for the SDRplay API library (Windows)
+        applicationDefaultJvmArgs.add('-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64')
+        //On windows, we also need to export the windows swing look & feel module
+        applicationDefaultJvmArgs.add('--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED')
+    }
+    else {
+        //Replace the default Java system library path with an explicit location for the SDRplay API library (Linux/OS-X)
+        applicationDefaultJvmArgs.add("-Djava.library.path=/usr/local/lib")
+    }
 }
 
 jar {
@@ -111,7 +133,7 @@ jar {
                 'Implementation-Title'  : 'sdrtrunk project',
                 'Implementation-Version' : archiveVersion,
                 'Created-By'            : "Gradle ${gradle.gradleVersion}",
-                'Build-Timestamp'       : new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
+                'Build-Timestamp'       : new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").format(new Date()),
                 'Build-JDK'             : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']}",
                 'Build-OS'              : "${System.properties['os.name']} (${System.properties['os.arch']} ${System.properties['os.version']}"
         )
@@ -212,9 +234,10 @@ runtime {
     }
 
     //Additional modules to include with auto-detected modules.
-    //jdk.crypto.ec needed for HTTPS connections (broadcastify calls & map tile server)
+    //jdk.crypto.ec - needed for HTTPS connections (broadcastify calls & map tile server)
+    //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
-    modules = ['jdk.crypto.ec','jdk.accessibility']
+    modules = ['jdk.crypto.ec','jdk.incubator.vector','jdk.accessibility']
 
     //Use auto-detected modules and 'add' any specified modules.
     additive = true

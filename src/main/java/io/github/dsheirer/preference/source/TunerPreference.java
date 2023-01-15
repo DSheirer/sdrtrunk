@@ -19,13 +19,13 @@
 
 package io.github.dsheirer.preference.source;
 
+import io.github.dsheirer.gui.preference.tuner.RspDuoSelectionMode;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
+import java.util.prefs.Preferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.prefs.Preferences;
 
 /**
  * Tuner preferences
@@ -35,8 +35,10 @@ public class TunerPreference extends Preference
     private final static Logger mLog = LoggerFactory.getLogger(TunerPreference.class);
     private Preferences mPreferences = Preferences.userNodeForPackage(TunerPreference.class);
     private static final String PREFERENCE_KEY_CHANNELIZER_TYPE = "channelizer.type";
+    private static final String PREFERENCE_KEY_RSP_DUO_TUNER_MODE = "rsp.duo.tuner.mode";
 
     private ChannelizerType mChannelizerType;
+    private RspDuoSelectionMode mRspDuoSelectionMode;
 
     /**
      * Constructs a tuner preference with the update listener
@@ -92,6 +94,32 @@ public class TunerPreference extends Preference
     {
         mChannelizerType = type;
         mPreferences.put(PREFERENCE_KEY_CHANNELIZER_TYPE, mChannelizerType.name());
+        notifyPreferenceUpdated();
+    }
+
+    /**
+     * RSPduo tuner select mode.
+     * @return mode or a default value of DUAL
+     */
+    public RspDuoSelectionMode getRspDuoTunerMode()
+    {
+        if(mRspDuoSelectionMode == null)
+        {
+            String mode = mPreferences.get(PREFERENCE_KEY_RSP_DUO_TUNER_MODE, RspDuoSelectionMode.DUAL.name());
+            mRspDuoSelectionMode = RspDuoSelectionMode.fromValue(mode);
+        }
+
+        return mRspDuoSelectionMode;
+    }
+
+    /**
+     * Sets the RSPduo tuner select mode
+     * @param mode to use
+     */
+    public void setRspDuoTunerMode(RspDuoSelectionMode mode)
+    {
+        mRspDuoSelectionMode = mode;
+        mPreferences.put(PREFERENCE_KEY_RSP_DUO_TUNER_MODE, mRspDuoSelectionMode.name());
         notifyPreferenceUpdated();
     }
 }

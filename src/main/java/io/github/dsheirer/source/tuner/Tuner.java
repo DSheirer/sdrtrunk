@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -146,6 +146,20 @@ public abstract class Tuner implements ISourceEventProcessor, ITunerErrorListene
         if(mTunerErrorListener != null)
         {
             mTunerErrorListener.setErrorMessage(errorMessage);
+        }
+    }
+
+    /**
+     * Process tuner removal error from tuner controller and propagate to an external listener.
+     */
+    @Override
+    public void tunerRemoved()
+    {
+        stop();
+
+        if(mTunerErrorListener != null)
+        {
+            mTunerErrorListener.tunerRemoved();
         }
     }
 

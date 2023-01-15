@@ -219,7 +219,10 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
      */
     public void addTunerStatusListener(IDiscoveredTunerStatusListener listener)
     {
-        mListeners.add(listener);
+        if(!mListeners.contains(listener))
+        {
+            mListeners.add(listener);
+        }
     }
 
     /**
@@ -255,6 +258,12 @@ public abstract class DiscoveredTuner implements ITunerErrorListener
         mLog.info("Tuner Error - Stopping - " + getId() + " Error: " + errorMessage);
         stop();
         setTunerStatus(TunerStatus.ERROR);
+    }
+
+    @Override
+    public void tunerRemoved()
+    {
+        setTunerStatus(TunerStatus.REMOVED);
     }
 
     /**

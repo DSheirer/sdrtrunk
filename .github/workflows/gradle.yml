@@ -22,10 +22,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 17
+      - name: Set up JDK 19
         uses: actions/setup-java@v2
         with:
-          java-version: '17'
+          java-version: '19'
           distribution: 'liberica'
           java-package: 'jdk+fx'
       - name: Build with Gradle

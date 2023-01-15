@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,7 +46,11 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         INativeBufferProvider, Listener<INativeBuffer>, ITunerErrorListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
+
+    //Protects access to the native buffer broadcaster for adding, removing or checking for listener count.
+    protected ReentrantLock mBufferListenerLock = new ReentrantLock();
     protected Broadcaster<INativeBuffer> mNativeBufferBroadcaster = new Broadcaster();
+
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
     private int mMeasuredFrequencyError;
@@ -126,6 +130,19 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         if(mTunerErrorListener != null)
         {
             mTunerErrorListener.setErrorMessage(errorMessage);
+        }
+    }
+
+    /**
+     * Indicates that the tuner has been removed from the system and requests the listener to process the cleanup.
+     */
+    @Override
+    public void tunerRemoved()
+    {
+        //Request parent tuner process the shutdown and cleanup
+        if(mTunerErrorListener != null)
+        {
+            mTunerErrorListener.tunerRemoved();
         }
     }
 
@@ -572,7 +589,16 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public void addBufferListener(Listener<INativeBuffer> listener)
     {
-        mNativeBufferBroadcaster.addListener(listener);
+        mBufferListenerLock.lock();
+
+        try
+        {
+            mNativeBufferBroadcaster.addListener(listener);
+        }
+        finally
+        {
+            mBufferListenerLock.unlock();
+        }
     }
 
     /**
@@ -581,7 +607,16 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        mNativeBufferBroadcaster.removeListener(listener);
+        mBufferListenerLock.lock();
+
+        try
+        {
+            mNativeBufferBroadcaster.removeListener(listener);
+        }
+        finally
+        {
+            mBufferListenerLock.unlock();
+        }
     }
 
     /**
@@ -590,7 +625,20 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public boolean hasBufferListeners()
     {
-        return mNativeBufferBroadcaster.hasListeners();
+        boolean hasListeners;
+
+        mBufferListenerLock.lock();
+
+        try
+        {
+            hasListeners = mNativeBufferBroadcaster.hasListeners();
+        }
+        finally
+        {
+            mBufferListenerLock.unlock();
+        }
+
+        return hasListeners;
     }
 
     /**
@@ -598,6 +646,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     protected void broadcast(INativeBuffer complexSamples)
     {
+        //Note: unprotected access to the broadcaster ... the broadcaster uses thread-save internal list
         mNativeBufferBroadcaster.broadcast(complexSamples);
     }
 
