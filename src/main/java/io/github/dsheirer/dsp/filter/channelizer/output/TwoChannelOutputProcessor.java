@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,16 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
         mMixerAssembler = new TwoChannelMixerAssembler(gain);
         mMixerAssembler.getMixer().setSampleRate(sampleRate);
         setSynthesisFilter(filter);
+    }
+
+    @Override
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Two Channel Output Processor");
+        sb.append("\n\tIndices (doubled) 1 [").append(mChannelOffset1).append("] 2 [").append(mChannelOffset2).append("]");
+        sb.append("\n\tMixer Assembler: ").append(mMixerAssembler.getStateDescription());
+        return sb.toString();
     }
 
     /**

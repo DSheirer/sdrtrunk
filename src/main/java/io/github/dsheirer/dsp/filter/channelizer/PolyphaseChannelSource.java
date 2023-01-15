@@ -72,6 +72,14 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     }
 
     /**
+     * Description of the state or configuration of the output processor.
+     */
+    public String getStateDescription()
+    {
+        return mPolyphaseChannelOutputProcessor.getStateDescription();
+    }
+
+    /**
      * Current output processor indexes.
      * @return indexes
      */
@@ -174,7 +182,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                 {
                     try
                     {
-                        float[] filter = filterManager.getFilter(channelCalculator.getSampleRate(),
+                        float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
                                 channelCalculator.getChannelBandwidth(), indexes.size());
                         mPolyphaseChannelOutputProcessor.setSynthesisFilter(filter);
                     }

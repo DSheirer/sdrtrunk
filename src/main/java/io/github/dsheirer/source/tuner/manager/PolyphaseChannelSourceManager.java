@@ -56,6 +56,17 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
     }
 
     @Override
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Polyphase Channel Source Manager");
+        sb.append("\n\tTuner Controller Frequency: ").append(mTunerController.getFrequency());
+        sb.append("\n\t").append(mPolyphaseChannelManager.getStateDescription());
+
+        return sb.toString();
+    }
+
+    @Override
     public void stopAllChannels()
     {
         mPolyphaseChannelManager.stopAllChannels();
@@ -454,7 +465,12 @@ public class PolyphaseChannelSourceManager extends ChannelSourceManager
                     }
                     catch(IllegalArgumentException iae)
                     {
+                        mLog.error("Center frequency calculation failed", iae);
                         //Center frequency calculation failed
+                    }
+                    catch(Exception e)
+                    {
+                        mLog.error("Error getting source", e);
                     }
                 }
             }

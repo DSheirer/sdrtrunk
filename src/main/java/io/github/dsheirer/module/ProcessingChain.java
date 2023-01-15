@@ -74,9 +74,11 @@ import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import io.github.dsheirer.source.heartbeat.IHeartbeatProvider;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,12 +117,15 @@ public class ProcessingChain implements Listener<ChannelEvent>
     private Broadcaster<IMessage> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchStateEvent> mSquelchStateEventBroadcaster = new Broadcaster<>();
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private List<Module> mModules = new ArrayList<>();
     private DecodeEventHistory mDecodeEventHistory = new DecodeEventHistory(500);
     private MessageHistory mMessageHistory = new MessageHistory(500);
     private AbstractChannelState mChannelState;
     private EventBus mEventBus;
     protected Source mSource;
+    //Lock to protect access to the modules list.
+    private ReentrantLock mModuleLock = new ReentrantLock();
+    private List<Module> mModules = new ArrayList<>();
+
 
     /**
      * Creates a processing chain for managing a set of modules
@@ -195,14 +200,23 @@ public class ProcessingChain implements Listener<ChannelEvent>
      */
     public void removeTrafficChannelManager()
     {
-        Iterator<Module> it = mModules.iterator();
+        mModuleLock.lock();
 
-        while(it.hasNext())
+        try
         {
-            if(it.next() instanceof TrafficChannelManager)
+            Iterator<Module> it = mModules.iterator();
+
+            while(it.hasNext())
             {
-                it.remove();
+                if(it.next() instanceof TrafficChannelManager)
+                {
+                    it.remove();
+                }
             }
+        }
+        finally
+        {
+            mModuleLock.unlock();
         }
     }
 
@@ -210,15 +224,22 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         stop();
 
-        List<Module> modules = new ArrayList<>(mModules);
+        mModuleLock.lock();
 
-        for(Module module : modules)
+        try
         {
-            removeModule(module);
-            module.dispose();
-        }
+            List<Module> modulesToRemove = new ArrayList<>(mModules);
 
-        mModules.clear();
+            for(Module module : modulesToRemove)
+            {
+                removeModule(module);
+                module.dispose();
+            }
+        }
+        finally
+        {
+            mModuleLock.unlock();
+        }
 
         mAudioSegmentBroadcaster.dispose();
         mDecodeEventBroadcaster.dispose();
@@ -282,7 +303,7 @@ public class ProcessingChain implements Listener<ChannelEvent>
      */
     public List<Module> getModules()
     {
-        return mModules;
+        return Collections.unmodifiableList(mModules);
     }
 
     /**
@@ -292,12 +313,21 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         List<DecoderState> decoderStates = new ArrayList<>();
 
-        for(Module module : mModules)
+        mModuleLock.lock();
+
+        try
         {
-            if(module instanceof DecoderState)
+            for(Module module : mModules)
             {
-                decoderStates.add((DecoderState)module);
+                if(module instanceof DecoderState)
+                {
+                    decoderStates.add((DecoderState)module);
+                }
             }
+        }
+        finally
+        {
+            mModuleLock.unlock();
         }
 
         return decoderStates;
@@ -330,7 +360,17 @@ public class ProcessingChain implements Listener<ChannelEvent>
      */
     public void addModule(Module module)
     {
-        mModules.add(module);
+        mModuleLock.lock();
+
+        try
+        {
+            mModules.add(module);
+        }
+        finally
+        {
+            mModuleLock.unlock();
+        }
+
         module.setInterModuleEventBus(getEventBus());
         registerListeners(module);
         registerProviders(module);
@@ -345,7 +385,17 @@ public class ProcessingChain implements Listener<ChannelEvent>
         unregisterListeners(module);
         unregisterProviders(module);
         module.setInterModuleEventBus(null);
-        mModules.remove(module);
+
+        mModuleLock.lock();
+
+        try
+        {
+            mModules.remove(module);
+        }
+        finally
+        {
+            mModuleLock.unlock();
+        }
     }
 
     /**
@@ -664,17 +714,26 @@ public class ProcessingChain implements Listener<ChannelEvent>
                             + "sample type - cannot start processing chain");
                 }
 
-                /* Start each of the modules */
-                for(Module module : mModules)
+                mModuleLock.lock();
+
+                try
                 {
-                    try
+                    /* Start each of the modules */
+                    for(Module module : mModules)
                     {
-                        module.start();
+                        try
+                        {
+                            module.start();
+                        }
+                        catch(Exception e)
+                        {
+                            mLog.error("Error starting module", e);
+                        }
                     }
-                    catch(Exception e)
-                    {
-                        mLog.error("Error starting module", e);
-                    }
+                }
+                finally
+                {
+                    mModuleLock.unlock();
                 }
             }
             else
@@ -716,15 +775,28 @@ public class ProcessingChain implements Listener<ChannelEvent>
             }
 
             /* Stop each of the remaining modules */
-            for(Module module : mModules)
-            {
-                module.stop();
-            }
+            mModuleLock.lock();
 
-            //Reset each of the modules
-            for(Module module : mModules)
+            try
             {
-                module.reset();
+                for(Module module : mModules)
+                {
+                    module.stop();
+                }
+
+                //Reset each of the modules
+                for(Module module : mModules)
+                {
+                    module.reset();
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error stopping or resetting modules", e);
+            }
+            finally
+            {
+                mModuleLock.unlock();
             }
         }
     }
@@ -736,12 +808,21 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         List<Module> eventLoggingModules = new ArrayList<>();
 
-        for(Module module : mModules)
+        mModuleLock.lock();
+
+        try
         {
-            if(module instanceof EventLogger)
+            for(Module module : mModules)
             {
-                eventLoggingModules.add(module);
+                if(module instanceof EventLogger)
+                {
+                    eventLoggingModules.add(module);
+                }
             }
+        }
+        finally
+        {
+            mModuleLock.unlock();
         }
 
         for(Module eventLoggingModule : eventLoggingModules)
@@ -757,20 +838,29 @@ public class ProcessingChain implements Listener<ChannelEvent>
     {
         List<Module> recordingModules = new ArrayList<>();
 
-        for(Module module : mModules)
+        mModuleLock.lock();
+
+        try
         {
-            if(module instanceof ComplexSamplesWaveRecorder)
+            for(Module module : mModules)
             {
-                recordingModules.add(module);
+                if(module instanceof ComplexSamplesWaveRecorder)
+                {
+                    recordingModules.add(module);
+                }
+                else if(module instanceof MBECallSequenceRecorder)
+                {
+                    recordingModules.add(module);
+                }
+                else if(module instanceof BinaryRecorder)
+                {
+                    recordingModules.add(module);
+                }
             }
-            else if(module instanceof MBECallSequenceRecorder)
-            {
-                recordingModules.add(module);
-            }
-            else if(module instanceof BinaryRecorder)
-            {
-                recordingModules.add(module);
-            }
+        }
+        finally
+        {
+            mModuleLock.unlock();
         }
 
         for(Module recordingModule : recordingModules)

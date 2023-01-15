@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -189,6 +189,7 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
      */
     public void removeDiscoveredTuner(DiscoveredTuner discoveredTuner)
     {
+        mLog.info("Removing discovered tuner: " + discoveredTuner.getId());
         mLock.lock();
 
         try

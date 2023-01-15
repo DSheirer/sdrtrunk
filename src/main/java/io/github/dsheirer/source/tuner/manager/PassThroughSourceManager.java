@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,19 @@ public class PassThroughSourceManager extends ChannelSourceManager
     public PassThroughSourceManager(TunerController tunerController)
     {
         mTunerController = tunerController;
+    }
+
+    @Override
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Pass-Through Channel Source Manager Providing [").append(mTunerChannels.size()).append("] Channels");
+        for(TunerChannel channel: mTunerChannels)
+        {
+            sb.append("\n\tChannel: ").append(channel);
+        }
+
+        return sb.toString();
     }
 
     @Override

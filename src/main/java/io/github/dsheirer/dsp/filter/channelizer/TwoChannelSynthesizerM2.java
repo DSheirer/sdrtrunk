@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
+import java.util.Arrays;
 import org.apache.commons.math3.util.FastMath;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -66,6 +67,20 @@ public class TwoChannelSynthesizerM2
     }
 
     /**
+     * Description of the state/configuration of this synthesizer to support debugging.
+     * @return state description.
+     */
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Two-Channel Synthesizer");
+        sb.append("\n\t\t Interleaved Filter: " + Arrays.toString(mIQInterleavedFilter));
+        sb.append("\n\t\t Serpentine Buffer Length: ").append(mSerpentineDataBuffer.length);
+        sb.append("\n\t\t Filter Vector Product Length: ").append(mFilterVectorProduct.length);
+        return sb.toString();
+    }
+
+    /**
      * Initializes the synthesizer filter and data buffers for operation.
      *
      * @param filter to use for polyphase synthesis of two channels.
@@ -73,7 +88,6 @@ public class TwoChannelSynthesizerM2
     private void init(float[] filter)
     {
         int tapsPerChannel = (int) FastMath.ceil(filter.length / 2);
-
         mIQInterleavedFilter = getInterleavedFilter(filter, tapsPerChannel);
         mSerpentineDataBuffer = new float[mIQInterleavedFilter.length];
         mFilterVectorProduct = new float[mIQInterleavedFilter.length];

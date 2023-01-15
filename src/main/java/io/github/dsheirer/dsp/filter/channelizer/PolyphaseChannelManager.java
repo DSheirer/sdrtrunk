@@ -35,6 +35,7 @@ import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.util.Dispatcher;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -43,6 +44,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PolyphaseChannelManager implements ISourceEventProcessor
 {
+    private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final double MINIMUM_CHANNEL_BANDWIDTH = 25000.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
@@ -121,6 +124,34 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     public PolyphaseChannelManager(TunerController tunerController)
     {
         this(tunerController, tunerController.getFrequency(), tunerController.getSampleRate());
+    }
+
+    /**
+     * Provides a description of the state of this manager.
+     */
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Polyphase Channel Manager Providing [").append(mChannelSources.size()).append("] Channels");
+        sb.append("\n\t").append(mChannelCalculator);
+        for(PolyphaseChannelSource pcs: mChannelSources)
+        {
+            List<Integer> indexes = pcs.getOutputProcessorIndexes();
+            double sampleRate = pcs.getSampleRate();
+            long indexCenterFrequency = pcs.getIndexCenterFrequency();
+            long appliedFrequencyOffset = pcs.getFrequencyOffset();
+            long requestedCenterFrequency = pcs.getFrequency();
+
+            sb.append("\n\tPolyphase | Tuner SR:").append(FREQUENCY_FORMAT.format(pcs.getTunerSampleRate() / 1E6d));
+            sb.append(" CF:").append(FREQUENCY_FORMAT.format(pcs.getTunerCenterFrequency() / 1E6d));
+            sb.append(" BW: ").append(FREQUENCY_FORMAT.format(sampleRate / 1E6d));
+            sb.append(" | Channel CF: ").append(FREQUENCY_FORMAT.format(indexCenterFrequency / 1E6d));
+            sb.append(" REQUESTED CF: ").append(FREQUENCY_FORMAT.format(requestedCenterFrequency / 1E6d));
+            sb.append(" MIXER:").append(FREQUENCY_FORMAT.format(appliedFrequencyOffset / 1E6d));
+            sb.append(" | Polyphase Indices: ").append(indexes);
+        }
+
+        return sb.toString();
     }
 
     public void stopAllChannels()
@@ -278,7 +309,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 //no-op
                 break;
             default:
-                mLog.info("Unrecognized source event: " + sourceEvent.toString());
+                mLog.info("Unrecognized source event: " + sourceEvent);
                 break;
         }
     }
@@ -442,16 +473,18 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     /**
      * Processes the incoming buffer stream from the provider and transfers the buffers to the polyphase channelizer.
      *
-     * This monitor incorporates a queue for receiving source events that affect configuration of the channelizer so
-     * that they can be processed on the buffer processor calling thread, avoiding unnecessary locks on the channelizer
-     * and/or the channel sources and output processors.
+     * This monitor incorporates a source event handler that queues a center frequency update so that it can be
+     * handled on the buffer processing thread, avoiding having to lock on the output processor thread.  Since we
+     * anticipate that these two threads will contend for access to this update required flag, we use an update lock
+     * to protect access to the flag.
      */
     public class NativeBufferReceiver implements Listener<INativeBuffer>
     {
         private boolean mOutputProcessorUpdateRequired = false;
+        private ReentrantLock mUpdateFlagLock = new ReentrantLock();
 
         /**
-         * Queues the source event for deferred execution on the buffer processing thread.
+         * Processes tuner center frequency change source events to flag when output processors need updating.
          * @param event that affects configuration of the channelizer (frequency or sample rate change events)
          */
         public void receive(SourceEvent event)
@@ -460,14 +493,31 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             if(mChannelCalculator.getCenterFrequency() != frequency)
             {
-                mChannelCalculator.setCenterFrequency(frequency);
-                mOutputProcessorUpdateRequired = true;
+                mUpdateFlagLock.lock();
+
+                try
+                {
+                    //Update the channel calculator frequency so that it's ready when the output processor update occurs
+                    mChannelCalculator.setCenterFrequency(frequency);
+                    mOutputProcessorUpdateRequired = true;
+                }
+                finally
+                {
+                    mUpdateFlagLock.unlock();
+                }
             }
         }
 
+        /**
+         * Process native buffer streams and update polyphase output channels when the parent tuner center
+         * frequency changes.
+         * @param nativeBuffer of sample to process.
+         */
         @Override
         public void receive(INativeBuffer nativeBuffer)
         {
+            mUpdateFlagLock.lock();
+
             try
             {
                 if(mOutputProcessorUpdateRequired)
@@ -475,20 +525,27 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                     updateOutputProcessors();
                     mOutputProcessorUpdateRequired = false;
                 }
+            }
+            finally
+            {
+                mUpdateFlagLock.unlock();
+            }
 
-                if(mPolyphaseChannelizer != null)
+            if(mPolyphaseChannelizer != null)
+            {
+                Iterator<InterleavedComplexSamples> iterator = nativeBuffer.iteratorInterleaved();
+
+                while(iterator.hasNext())
                 {
-                    Iterator<InterleavedComplexSamples> iterator = nativeBuffer.iteratorInterleaved();
-
-                    while(iterator.hasNext())
+                    try
                     {
                         mPolyphaseChannelizer.receive(iterator.next());
                     }
+                    catch(Throwable throwable)
+                    {
+                        mLog.error("Error", throwable);
+                    }
                 }
-            }
-            catch(Throwable throwable)
-            {
-                mLog.error("Error", throwable);
             }
         }
     }
