@@ -190,6 +190,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
                     sb.append(" Tuner SR:").append(FREQUENCY_FORMAT.format(pcs.getTunerSampleRate() / 1E6d));
                     sb.append(" CF:").append(FREQUENCY_FORMAT.format(pcs.getTunerCenterFrequency() / 1E6d));
                     mLog.info(sb.toString());
+                    mLog.info("Output Processor: " + pcs.getStateDescription());
                 }
                 else if(source instanceof HalfBandTunerChannelSource<?> hbtcs)
                 {

@@ -1,31 +1,34 @@
-/*******************************************************************************
- * *********************************************************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- * *********************************************************************************************************************
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class ChannelCalculator
 {
+    private static final DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
     private final static Logger mLog = LoggerFactory.getLogger(ChannelCalculator.class);
 
     /**
@@ -546,13 +549,13 @@ public class ChannelCalculator
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("Channel Calculator Settings");
-        sb.append(" Channels:").append(getChannelCount());
-        sb.append(" Sample Rate:").append(getSampleRate());
-        sb.append(" Channel Bandwidth:").append(getChannelBandwidth());
-        sb.append(" Channel Rate:").append(getChannelSampleRate());
-        sb.append(" Min:").append(getMinimumFrequency());
-        sb.append(" Max:").append(getMaximumFrequency());
+        sb.append("Channel Calculator | Tuner SR:").append(FREQUENCY_FORMAT.format(getSampleRate() / 1E6D));
+        sb.append(" CF:").append(FREQUENCY_FORMAT.format(getCenterFrequency() / 1E6D));
+        sb.append(" MIN:").append(FREQUENCY_FORMAT.format(getMinimumFrequency() / 1E6D));
+        sb.append(" MAX:").append(FREQUENCY_FORMAT.format(getMaximumFrequency() / 1E6D));
+        sb.append(" | Channel COUNT:").append(getChannelCount());
+        sb.append(" BW:").append(FREQUENCY_FORMAT.format(getChannelBandwidth() / 1E6D));
+        sb.append(" SR:").append(FREQUENCY_FORMAT.format(getChannelSampleRate() / 1E6D));
         return sb.toString();
     }
 }

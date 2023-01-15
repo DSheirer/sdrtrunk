@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,16 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
         setPolyphaseChannelIndices(channelIndexes);
         mMixerAssembler = new OneChannelMixerAssembler(gain);
         mMixerAssembler.getMixer().setSampleRate(sampleRate);
+    }
+
+    @Override
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("One Channel Output Processor");
+        sb.append("\n\tIndex (doubled) [").append(mChannelOffset).append("]");
+        sb.append("\n\tMixer Assembler: none");
+        return sb.toString();
     }
 
     @Override

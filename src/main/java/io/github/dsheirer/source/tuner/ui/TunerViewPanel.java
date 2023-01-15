@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.JButton;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
@@ -114,6 +116,32 @@ public class TunerViewPanel extends JPanel
                 }
             }
         });
+
+        //Add support for right-click context menu to the tuner table
+        JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem logStateMenuItem = new JMenuItem("Log Tuner State");
+        logStateMenuItem.addActionListener(e -> {
+            int viewRow = mTunerTable.getSelectedRow();
+
+            DiscoveredTuner selected = null;
+
+            if(viewRow >= 0)
+            {
+                int modelRow = mTunerTable.convertRowIndexToModel(viewRow);
+                selected = mDiscoveredTunerModel.getDiscoveredTuner(modelRow);
+            }
+
+            if(selected != null)
+            {
+                selected.logState();
+            }
+            else
+            {
+                mLog.error("Can't log state - tuner not selected");
+            }
+        });
+        popupMenu.add(logStateMenuItem);
+        mTunerTable.setComponentPopupMenu(popupMenu);
 
         //Monitor for tuner removal events so we can update the editor when our selected tuner is removed
         mDiscoveredTunerModel.addTableModelListener(e ->

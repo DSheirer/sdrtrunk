@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,23 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
     {
         mTunerController = tunerController;
         mTunerController.addListener(this);
+    }
+
+    @Override
+    public String getStateDescription()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Heterodyne Channel Source Manager Providing [").append(mTunerChannels.size()).append("] Channels");
+        sb.append("\n\tTuner Controller Frequency: ").append(mTunerController.getFrequency());
+        for(HalfBandTunerChannelSource channelSource: mChannelSources)
+        {
+            sb.append("\n\tChannel [").append(channelSource.getTunerChannel())
+                    .append("] Frequency [").append(channelSource.getFrequency())
+                    .append("] Mixer [").append(channelSource.getMixerFrequency())
+                    .append("]");
+        }
+
+        return sb.toString();
     }
 
     @Override
