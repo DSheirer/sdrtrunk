@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,8 +43,10 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.ip.IPacket;
+import io.github.dsheirer.module.decode.ip.UnknownPacket;
 import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
 import io.github.dsheirer.module.decode.ip.cellocator.MCGPPacket;
+import io.github.dsheirer.module.decode.ip.icmp.ICMPPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
 import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
@@ -87,7 +89,6 @@ import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCUn
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCUnitToUnitVoiceServiceChannelGrant;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.ambtc.osp.AMBTCUnitToUnitVoiceServiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.PacketMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPPacketMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.umbtc.isp.UMBTCTelephoneInterconnectRequestExplicitDialing;
 import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDULinkControlMessage;
@@ -139,11 +140,10 @@ import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.PacketUtil;
+import java.util.List;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Decoder state for an APCO25 channel.  Maintains the call/data/idle state of the channel and produces events by
@@ -877,12 +877,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
         if(message instanceof SNDCPPacketMessage)
         {
-            SNDCPPacketMessage sndcp = (SNDCPPacketMessage)message;
+            SNDCPPacketMessage sndcp = (SNDCPPacketMessage) message;
             getIdentifierCollection().update(sndcp.getIdentifiers());
         }
         else if(message instanceof PacketMessage)
         {
-            PacketMessage packetMessage = (PacketMessage)message;
+            PacketMessage packetMessage = (PacketMessage) message;
             getIdentifierCollection().remove(IdentifierClass.USER);
             getIdentifierCollection().update(packetMessage.getIdentifiers());
 
@@ -890,41 +890,41 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
             if(packet instanceof IPV4Packet)
             {
-                IPV4Packet ipv4 = (IPV4Packet)packet;
+                IPV4Packet ipv4 = (IPV4Packet) packet;
 
                 IPacket ipPayload = ipv4.getPayload();
 
                 if(ipPayload instanceof UDPPacket)
                 {
-                    UDPPacket udpPacket = (UDPPacket)ipPayload;
+                    UDPPacket udpPacket = (UDPPacket) ipPayload;
 
                     IPacket udpPayload = udpPacket.getPayload();
 
                     if(udpPayload instanceof ARSPacket)
                     {
-                        ARSPacket arsPacket = (ARSPacket)udpPayload;
+                        ARSPacket arsPacket = (ARSPacket) udpPayload;
 
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                        for(Identifier identifier: packet.getIdentifiers())
+                        for(Identifier identifier : packet.getIdentifiers())
                         {
                             ic.update(identifier);
                         }
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
-                            .channel(getCurrentChannel())
-                            .eventDescription(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE.toString())
-                            .identifiers(ic)
-                            .details(arsPacket.toString() + " " + ipv4.toString())
-                            .build();
+                                .channel(getCurrentChannel())
+                                .eventDescription(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE.toString())
+                                .identifiers(ic)
+                                .details(arsPacket.toString() + " " + ipv4.toString())
+                                .build();
 
                         broadcast(packetEvent);
                     }
                     else if(udpPayload instanceof MCGPPacket)
                     {
-                        MCGPPacket mcgpPacket = (MCGPPacket)udpPayload;
+                        MCGPPacket mcgpPacket = (MCGPPacket) udpPayload;
 
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                        for(Identifier identifier: packet.getIdentifiers())
+                        for(Identifier identifier : packet.getIdentifiers())
                         {
                             ic.update(identifier);
                         }
@@ -954,7 +954,7 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
                         GeoPosition geoPosition = PacketUtil.extractGeoPosition(lrrpPacket);
 
-                        if (geoPosition != null)
+                        if(geoPosition != null)
                         {
                             PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(message.getTimestamp())
                                     .channel(getCurrentChannel())
@@ -970,21 +970,72 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     else
                     {
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                        for(Identifier identifier: packet.getIdentifiers())
+                        for(Identifier identifier : packet.getIdentifiers())
                         {
                             ic.update(identifier);
                         }
 
                         DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
-                            .channel(getCurrentChannel())
-                            .eventDescription(DecodeEventType.UDP_PACKET.toString())
-                            .identifiers(ic)
-                            .details(ipv4.toString())
-                            .build();
+                                .channel(getCurrentChannel())
+                                .eventDescription(DecodeEventType.UDP_PACKET.toString())
+                                .identifiers(ic)
+                                .details(ipv4.toString())
+                                .build();
 
                         broadcast(packetEvent);
                     }
                 }
+                else if(ipPayload instanceof ICMPPacket)
+                {
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    for(Identifier identifier : packet.getIdentifiers())
+                    {
+                        ic.update(identifier);
+                    }
+
+                    DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                            .channel(getCurrentChannel())
+                            .eventDescription(DecodeEventType.ICMP_PACKET.toString())
+                            .identifiers(ic)
+                            .details(ipv4.toString())
+                            .build();
+
+                    broadcast(packetEvent);
+                }
+                else
+                {
+                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                    for(Identifier identifier : packet.getIdentifiers())
+                    {
+                        ic.update(identifier);
+                    }
+
+                    DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                            .channel(getCurrentChannel())
+                            .eventDescription(DecodeEventType.IP_PACKET.toString())
+                            .identifiers(ic)
+                            .details(ipv4.toString())
+                            .build();
+
+                    broadcast(packetEvent);
+                }
+            }
+            else if(packet instanceof UnknownPacket)
+            {
+                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+                for(Identifier identifier : packet.getIdentifiers())
+                {
+                    ic.update(identifier);
+                }
+
+                DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                        .channel(getCurrentChannel())
+                        .eventDescription(DecodeEventType.UNKNOWN_PACKET.toString())
+                        .identifiers(ic)
+                        .details(packet.toString())
+                        .build();
+
+                broadcast(packetEvent);
             }
         }
     }
@@ -992,18 +1043,14 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     /**
      * Sub-Network Dependent Convergence Protocol (SNDCP)
      *
-     * @param message
+     * @param message to process
      */
     private void processSNDCP(P25Message message)
     {
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
 
-        if(message.isValid() && message instanceof SNDCPPacketMessage)
+        if(message.isValid() && message instanceof SNDCPPacketMessage sndcpPacket)
         {
-            SNDCPPacketMessage sndcpPacket = (SNDCPPacketMessage)message;
-
-            SNDCPMessage sndcpMessage = sndcpPacket.getSNDCPMessage();
-
             MutableIdentifierCollection ic = getMutableIdentifierCollection(sndcpPacket.getIdentifiers());
 
             switch(sndcpPacket.getSNDCPPacketHeader().getPDUType())
