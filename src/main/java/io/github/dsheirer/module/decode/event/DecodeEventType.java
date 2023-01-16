@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.event;
@@ -50,6 +49,7 @@ public enum DecodeEventType
     EMERGENCY("EMERGENCY"),
     FUNCTION("Function"),
     GPS("GPS"),
+    ICMP_PACKET("ICMP Packet"),
     ID_ANI("ANI"),
     ID_UNIQUE("Unique ID"),
     IP_PACKET("IP Packet"),
@@ -66,6 +66,7 @@ public enum DecodeEventType
     STATION_ID("Station ID"),
     STATUS("Status"),
     UDP_PACKET("UDP/IP Packet"),
+    UNKNOWN_PACKET("Unknown Packet"),
     UNKNOWN("Unknown");
 
     private String mLabel;
