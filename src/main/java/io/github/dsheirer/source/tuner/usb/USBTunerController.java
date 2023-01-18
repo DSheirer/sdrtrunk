@@ -574,7 +574,7 @@ public abstract class USBTunerController extends TunerController
         {
             for(Transfer transfer: transfers)
             {
-                submitTransfer(transfer, LibUsb.SUCCESS, 0);
+                submitTransfer(transfer);
             }
         }
 
@@ -582,7 +582,7 @@ public abstract class USBTunerController extends TunerController
          * (Re)Submits the transfer for stream processing
          * @param transfer to (re)submit
          */
-        private void submitTransfer(Transfer transfer, int previousStatus, int previousBytesTransferred)
+        private void submitTransfer(Transfer transfer)
         {
             int status = LibUsb.submitTransfer(transfer);
 
@@ -599,21 +599,26 @@ public abstract class USBTunerController extends TunerController
                     if(resubmitStatus == LibUsb.SUCCESS)
                     {
                         mInProgressTransfers.add(transfer);
-                        mLog.error("Successfully resubmitted previous error USB transfer buffer.  Current transfer buffer" +
-                                " status (error queue/total available) [" + mErrorTransfers.size() + "/" +
-                                mAvailableTransfers.size() + "]");
+
+                        //Only log this if more than half of the total transfer buffers are in error-holding
+                        if(mErrorTransfers.size() >= (mAvailableTransfers.size() / 2))
+                        {
+                            mLog.info("Successfully resubmitted previous error USB transfer buffer.  Current transfer buffer" +
+                                    " status (error queue/total available) [" + mErrorTransfers.size() + "/" +
+                                    mAvailableTransfers.size() + "]");
+                        }
                     }
                     else
                     {
                         mErrorTransfers.add(transfer);
                         mTransferErrorCount++;
 
-                        //Only log this a few times in case we get transfer buffer(s) that are perpetually stuck in error
-                        if(mTransferErrorCount < mAvailableTransfers.size())
+                        //Only log this if more than half of the total transfer buffers are in error-holding
+                        if(mErrorTransfers.size() >= (mAvailableTransfers.size() / 2))
                         {
                             mLog.error("Attempt to resubmit previous error USB transfer buffer failed with status [" +
-                                    LibUsb.errorName(resubmitStatus) + "] - this may be temporary and it has happened [" +
-                                    mTransferErrorCount + "] times so far.  Transfer buffer status (error queue/total available) [" +
+                                    LibUsb.errorName(resubmitStatus) + "] - this may be temporary and has happened [" +
+                                    mTransferErrorCount + "] times so far.  Transfer buffer holding queue (error/total) [" +
                                     mErrorTransfers.size() + "/" + mAvailableTransfers.size() + "]");
                         }
                     }
@@ -621,24 +626,23 @@ public abstract class USBTunerController extends TunerController
             }
             else
             {
-                //For ERROR_BUSY error, there is a weird issue/bug with libusb on Windows where libusb tells us the
-                //transfer is complete and then tells us that the transfer is already submitted when we attempt to
-                //re-submit the transfer.  We track the number of times this occurs and log when the anomaly count
-                //exceeds the number of transfer buffers in case the application gets to a state where all transfers
-                //are no longer usable ... so that we know post-mortem what happened to the application.
-
                 mErrorTransfers.add(transfer);
                 mTransferErrorCount++;
-                mLog.error("Attempt to submit USB transfer buffer failed with status [" +
-                        LibUsb.errorName(status) + "] - this may be temporary and it has happened [" +
-                        mTransferErrorCount + "] time(s) so far.  Transfer buffer status (error queue/total available) [" +
-                        mErrorTransfers.size() + "/" + mAvailableTransfers.size() + "]");
+
+                //Only log this if more than half of the total transfer buffers are in error-holding
+                if(mErrorTransfers.size() >= (mAvailableTransfers.size() / 2))
+                {
+                    mLog.error("Attempt to submit USB transfer buffer failed with status [" +
+                            LibUsb.errorName(status) + "] - this may be temporary and has happened [" +
+                            mTransferErrorCount + "] time(s) so far.  Transfer buffer holding queue (error/total) [" +
+                            mErrorTransfers.size() + "/" + mAvailableTransfers.size() + "]");
+                }
             }
 
             if(mErrorTransfers.size() >= mAvailableTransfers.size())
             {
                 mLog.error("Maximum USB transfer buffer errors reached - transfer buffers exhausted - shutting down USB tuner");
-                ThreadPool.CACHED.submit(() -> setErrorMessage("USB Error - Transfer Buffer Errors"));
+                ThreadPool.CACHED.submit(() -> setErrorMessage("USB Error - Transfer Buffers Exhausted"));
             }
         }
 
@@ -707,7 +711,7 @@ public abstract class USBTunerController extends TunerController
 
                     if(mAutoResubmitTransfers)
                     {
-                        submitTransfer(transfer, transfer.status(), transferLength);
+                        submitTransfer(transfer);
                     }
                     break;
                 case LibUsb.TRANSFER_CANCELLED:
