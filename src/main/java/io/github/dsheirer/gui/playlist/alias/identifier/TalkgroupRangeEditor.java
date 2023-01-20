@@ -161,7 +161,7 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
             else
             {
                 mLog.warn("Couldn't find talkgroup detail for protocol [" + getItem().getProtocol() +
-                    "] and format [" + format + "]");
+                        "] and format [" + format + "]");
                 getFormatLabel().setText(" ");
             }
         }
@@ -269,6 +269,9 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
             }
         }
 
+        mLog.warn("Unable to find talkgroup range editor for protocol [" + protocol + "] and format [" + integerFormat +
+                "] - using default editor");
+
         //Use a default instance
         for(TalkgroupDetail detail: mTalkgroupDetails)
         {
@@ -289,31 +292,35 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
     {
         List<TalkgroupDetail> details = new ArrayList<>();
         details.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
-            new IntegerFormatter(0,65535), "Format: 0 - 65535"));
+                new IntegerFormatter(0,65535), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.HEXADECIMAL, new HexFormatter(0,65535),
-            new HexFormatter(0,65535), "Format: 0 - FFFF"));
+                new HexFormatter(0,65535), "Format: 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.FLEETSYNC, IntegerFormat.FORMATTED,
-            new PrefixIdentFormatter(0,0xFFFFF), new PrefixIdentFormatter(0,0xFFFFF),
-            "Format: PPP-IIII = Prefix (0-127), Ident (0-8191)"));
+                new PrefixIdentFormatter(0,0xFFFFF), new PrefixIdentFormatter(0,0xFFFFF),
+                "Format: PPP-IIII = Prefix (0-127), Ident (0-8191)"));
         details.add(new TalkgroupDetail(Protocol.LTR, IntegerFormat.FORMATTED, new LtrFormatter(0,0x3FFF),
-            new LtrFormatter(0,0x3FFF), "Format: A-HH-TTT = Area (0-1), Home (1-31), Talkgroup (1-255)"));
+                new LtrFormatter(0,0x3FFF), "Format: A-HH-TTT = Area (0-1), Home (1-31), Talkgroup (1-255)"));
         details.add(new TalkgroupDetail(Protocol.MDC1200, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
-            new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
+                new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.MDC1200, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
-            new HexFormatter(0,0xFFFF), "Format: 0 - FFFF"));
+                new HexFormatter(0,0xFFFF), "Format: 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.MPT1327, IntegerFormat.FORMATTED,
-            new PrefixIdentFormatter(0,0xFFFFF), new PrefixIdentFormatter(0,0xFFFFF),
-            "Format: PPP-IIII = Prefix (0-127), Ident (1-8191)"));
+                new PrefixIdentFormatter(0,0xFFFFF), new PrefixIdentFormatter(0,0xFFFFF),
+                "Format: PPP-IIII = Prefix (0-127), Ident (1-8191)"));
         details.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
-            new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
+                new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
-            new HexFormatter(0,0xFFFF), "Format: 0 - FFFF"));
+                new HexFormatter(0,0xFFFF), "Format: 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.DECIMAL, new IntegerFormatter(0,16777215),
-            new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
+                new IntegerFormatter(0,16777215), "Format: 0 - 16777215"));
         details.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.FORMATTED, new IntegerFormatter(0,16777215),
-            new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
+                new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
         details.add(new TalkgroupDetail(Protocol.UNKNOWN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,16777215),
-            new HexFormatter(0,16777215), "Format: 0 - FFFFFF"));
+                new HexFormatter(0,16777215), "Format: 0 - FFFFFF"));
+        details.add(new TalkgroupDetail(Protocol.DMR, IntegerFormat.DECIMAL, new IntegerFormatter(1,16777215),
+                new IntegerFormatter(1,16777215), "Format: 1 - 16777215"));
+        details.add(new TalkgroupDetail(Protocol.DMR, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0XFFFFFF),
+                new HexFormatter(1, 0xFFFFFF), "Format: 0 - FFFFFF"));
 
         return details;
     }

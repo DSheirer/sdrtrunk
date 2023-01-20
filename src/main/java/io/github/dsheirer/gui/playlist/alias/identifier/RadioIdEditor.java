@@ -217,6 +217,9 @@ public class RadioIdEditor extends IdentifierEditor<Radio>
             }
         }
 
+        mLog.warn("Unable to find radio id editor for protocol [" + protocol + "] and format [" + integerFormat +
+                "] - using default editor");
+
         //Use a default instance
         for(RadioDetail detail: mRadioDetails)
         {
