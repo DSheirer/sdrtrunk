@@ -159,7 +159,7 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
             else
             {
                 mLog.warn("Couldn't find radio ID detail for protocol [" + getItem().getProtocol() +
-                    "] and format [" + format + "]");
+                        "] and format [" + format + "]");
                 getFormatLabel().setText(" ");
             }
         }
@@ -267,6 +267,9 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
             }
         }
 
+        mLog.warn("Unable to find radio id range editor for protocol [" + protocol + "] and format [" + integerFormat +
+                "] - using default editor");
+
         //Use a default instance
         for(RadioIdDetail detail: mRadioDetails)
         {
@@ -287,20 +290,23 @@ public class RadioIdRangeEditor extends IdentifierEditor<RadioRange>
     {
         List<RadioIdDetail> details = new ArrayList<>();
         details.add(new RadioIdDetail(Protocol.APCO25, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFFFF),
-            new IntegerFormatter(0,0xFFFFFF), "Format: 0 - 16777215"));
+                new IntegerFormatter(0,0xFFFFFF), "Format: 0 - 16777215"));
         details.add(new RadioIdDetail(Protocol.APCO25, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFFFF),
-            new HexFormatter(0,0xFFFFFF), "Format: 0 - FFFFFF"));
+                new HexFormatter(0,0xFFFFFF), "Format: 0 - FFFFFF"));
         details.add(new RadioIdDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0x7FFFFF),
-            new IntegerFormatter(0,0x7FFFFF), "Format: 0 - 8388607"));
+                new IntegerFormatter(0,0x7FFFFF), "Format: 0 - 8388607"));
         details.add(new RadioIdDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0x7FFFFF),
-            new HexFormatter(0,0x7FFFFF), "Format: 0 - 7FFFFF"));
+                new HexFormatter(0,0x7FFFFF), "Format: 0 - 7FFFFF"));
         details.add(new RadioIdDetail(Protocol.UNKNOWN, IntegerFormat.DECIMAL, new IntegerFormatter(0,16777215),
-            new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
+                new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
         details.add(new RadioIdDetail(Protocol.UNKNOWN, IntegerFormat.FORMATTED, new IntegerFormatter(0,16777215),
-            new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
+                new IntegerFormatter(0,16777215), "Format: 0 - FFFFFF"));
         details.add(new RadioIdDetail(Protocol.UNKNOWN, IntegerFormat.HEXADECIMAL, new HexFormatter(0,16777215),
-            new HexFormatter(0,16777215), "Format: 0 - FFFFFF"));
-
+                new HexFormatter(0,16777215), "Format: 0 - FFFFFF"));
+        details.add(new RadioIdDetail(Protocol.DMR, IntegerFormat.DECIMAL, new IntegerFormatter(0,16777215),
+                new IntegerFormatter(0,16777215), "Format: 0 - 16777215"));
+        details.add(new RadioIdDetail(Protocol.DMR, IntegerFormat.HEXADECIMAL, new HexFormatter(0,16777215),
+                new HexFormatter(0,16777215), "Format: 0 - FFFFFF"));
         return details;
     }
 
