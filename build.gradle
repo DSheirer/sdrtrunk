@@ -212,7 +212,9 @@ runtime {
     }
 
     //Additional modules to include with auto-detected modules.
-    modules = ['jdk.crypto.ec'] //jdk.crypto.ec needed for HTTPS connections (broadcastify calls & map tile server)
+    //jdk.crypto.ec needed for HTTPS connections (broadcastify calls & map tile server)
+    //jdk.accessibility is used with assistive technologies like screen readers
+    modules = ['jdk.crypto.ec','jdk.accessibility']
 
     //Use auto-detected modules and 'add' any specified modules.
     additive = true
