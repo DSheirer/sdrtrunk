@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,22 +28,20 @@ import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.AbstractVoiceChannelUser;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Motorola Capacity Plus - Wide Area (Multi-Site) Voice Channel User
  */
-public class CapacityPlusWideAreaVoiceChannelUser extends AbstractVoiceChannelUser implements ITimeslotFrequencyReceiver
+public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChannelUser implements ITimeslotFrequencyReceiver
 {
     private static final int[] UNKNOWN_1 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
     private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] REST_REPEATER = new int[]{51, 52, 53, 54};
     private static final int[] REST_TIMESLOT = new int[]{55};
     private static final int[] SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
-    private static final int[] UNKNOWN_2 = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
+    private static final int[] UNKNOWN_3 = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
     private RadioIdentifier mRadio;
     private TalkgroupIdentifier mTalkgroup;
@@ -68,6 +66,16 @@ public class CapacityPlusWideAreaVoiceChannelUser extends AbstractVoiceChannelUs
         if(!isValid())
         {
             sb.append("[CRC-ERROR] ");
+        }
+
+        if(isEncrypted())
+        {
+            sb.append(" *ENCRYPTED*");
+        }
+
+        if(isReservedBitSet())
+        {
+            sb.append(" *RESERVED-BIT*");
         }
 
         sb.append("FLC MOTOROLA CAP+ WIDE-AREA VOICE CHANNEL USER FM:");
@@ -102,7 +110,7 @@ public class CapacityPlusWideAreaVoiceChannelUser extends AbstractVoiceChannelUs
      */
     public int getUnknown2()
     {
-        return getMessage().getInt(UNKNOWN_2);
+        return getMessage().getInt(UNKNOWN_3);
     }
 
     /**

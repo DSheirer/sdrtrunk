@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -98,5 +98,14 @@ public abstract class FullLCMessage extends LCMessage
     public boolean isEncrypted()
     {
         return getMessage().get(ENCRYPTION_FLAG);
+    }
+
+    /**
+     * Indicates if the reserved bit is set.
+     * @return true if set
+     */
+    public boolean isReservedBitSet()
+    {
+        return getMessage().get(RESERVED);
     }
 }

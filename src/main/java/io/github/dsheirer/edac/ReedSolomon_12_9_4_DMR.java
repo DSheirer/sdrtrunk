@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,12 +20,16 @@
 package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Berlecamp-Massey decoder for Reed Solomon RS(12,9,4) protected messages using DMR generator polynomial
  */
 public class ReedSolomon_12_9_4_DMR extends ReedSolomon_255_DMR
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ReedSolomon_12_9_4_DMR.class);
+
     private static final int[] FLC_CODEWORD_0 = {0, 1, 2, 3, 4, 5, 6, 7};
     private static final int[] FLC_CODEWORD_1 = {8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] FLC_CODEWORD_2 = {16, 17, 18, 19, 20, 21, 22, 23};
@@ -56,16 +60,16 @@ public class ReedSolomon_12_9_4_DMR extends ReedSolomon_255_DMR
      *
      * @param message to be corrected.
      * @param crcMask as defined in the TS 102-361-1 Table B.21
-     * @return true if the message was corrected.
+     * @return true if the message is correct or if the message was corrected.
      */
     public boolean correctFullLinkControl(CorrectedBinaryMessage message, int crcMask)
     {
         int[] input = new int[255];
         int[] output = new int[255];
 
-        input[0] = message.getInt(FLC_PARITY_2) ^ crcMask;
-        input[1] = message.getInt(FLC_PARITY_1) ^ crcMask;
-        input[2] = message.getInt(FLC_PARITY_0) ^ crcMask;
+        input[0] = (message.getInt(FLC_PARITY_2) ^ crcMask);
+        input[1] = (message.getInt(FLC_PARITY_1) ^ crcMask);
+        input[2] = (message.getInt(FLC_PARITY_0) ^ crcMask);
         input[3] = message.getInt(FLC_CODEWORD_8);
         input[4] = message.getInt(FLC_CODEWORD_7);
         input[5] = message.getInt(FLC_CODEWORD_6);
@@ -105,5 +109,41 @@ public class ReedSolomon_12_9_4_DMR extends ReedSolomon_255_DMR
         }
 
         return true;
+    }
+
+    public static void main(String[] args)
+    {
+        int[] output = new int[255];
+        int[] input = new int[255];
+        input[0] = 247;
+        input[1] = 236;
+        input[2] = 171;
+        input[3] = 24;
+        input[4] = 46;
+        input[5] = 177;
+        input[6] = 246;
+        input[7] = 205;
+        input[8] = 232;
+        input[9] = 32;
+        input[10] = 124;
+        input[11] = 0;
+
+//        input[254] = 247;
+//        input[253] = 236;
+//        input[252] = 171;
+//        input[251] = 24;
+//        input[250] = 46;
+//        input[249] = 177;
+//        input[248] = 246;
+//        input[247] = 205;
+//        input[246] = 232;
+//        input[245] = 32;
+//        input[244] = 124;
+//        input[243] = 0;
+
+        ReedSolomon_12_9_4_DMR rs = new ReedSolomon_12_9_4_DMR();
+        boolean irrecoverable = rs.decode(input, output);
+
+        mLog.info("Irrecoverable: " + irrecoverable);
     }
 }

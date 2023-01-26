@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -93,7 +93,7 @@ public class FLCAssembler
     }
 
     /**
-     * Dispatches a fully-received messsage
+     * Dispatches a fully-received message
      */
     private FullLCMessage dispatch()
     {
@@ -133,6 +133,7 @@ public class FLCAssembler
             for(int row = 0; row < 8; row++)
             {
                 int rowErrorCount = Hamming16.checkAndCorrect(descrambled, row * 16);
+
                 errorCount += rowErrorCount;
 
                 if(errorCount > 1)
@@ -179,6 +180,9 @@ public class FLCAssembler
                 {
                     extractedMessage.set(pointer++, descrambled.get(row * 16 + column));
                 }
+
+                //Transfer the checksum parity bit from this row
+                extractedMessage.set(70 + row, descrambled.get(row * 16 + 10));
             }
 
             extractedMessage.setCorrectedBitCount(errorCount);

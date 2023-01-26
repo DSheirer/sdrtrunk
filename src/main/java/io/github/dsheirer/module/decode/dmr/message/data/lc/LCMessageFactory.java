@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.lc;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.edac.CRCDMR;
+import io.github.dsheirer.edac.Checksum_5_DMR;
 import io.github.dsheirer.edac.ReedSolomon_12_9_4_DMR;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
@@ -71,9 +72,23 @@ public class LCMessageFactory
             throw new IllegalArgumentException("Message cannot be null");
         }
 
-        //RS(12,9,4) can correct up to floor(4/2) = 1 bit error.
-        boolean corrected = REED_SOLOMON_12_9_4_DMR.correctFullLinkControl(message,
-            isTerminator ? TERMINATOR_LINK_CONTROL_CRC_MASK : VOICE_LINK_CONTROL_CRC_MASK);
+        boolean valid = true;
+
+        if(message.size() == 77)
+        {
+            valid = Checksum_5_DMR.isValid(message);
+        }
+        else if(message.size() == 96)
+        {
+            //RS(12,9,4) can correct up to floor(4/2) = 1 bit error.
+            valid = REED_SOLOMON_12_9_4_DMR.correctFullLinkControl(message,
+                    isTerminator ? TERMINATOR_LINK_CONTROL_CRC_MASK : VOICE_LINK_CONTROL_CRC_MASK);
+            mLog.warn("Doing the reed solomon thing ....  valid: " + valid);
+        }
+        else
+        {
+            mLog.warn("Unrecognized Link Control Message Size: " + message.size());
+        }
 
         LCOpcode opcode = FullLCMessage.getOpcode(message);
 
@@ -118,7 +133,8 @@ public class LCMessageFactory
                 break;
         }
 
-        flc.setValid(corrected);
+        flc.setValid(valid);
+
         return flc;
     }
 
