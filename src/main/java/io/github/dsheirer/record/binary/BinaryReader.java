@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,6 @@
  */
 package io.github.dsheirer.record.binary;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -29,6 +26,8 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BinaryReader implements Iterator<ByteBuffer>, AutoCloseable
 {
@@ -94,7 +93,7 @@ public class BinaryReader implements Iterator<ByteBuffer>, AutoCloseable
             byte[] readBytes = new byte[mBufferSize];
             int bytesRead = mInputStream.read(readBytes);
 
-            if(bytesRead < readBytes.length)
+            if(bytesRead < readBytes.length && bytesRead > 0)
             {
                 readBytes = Arrays.copyOf(readBytes, bytesRead);
             }

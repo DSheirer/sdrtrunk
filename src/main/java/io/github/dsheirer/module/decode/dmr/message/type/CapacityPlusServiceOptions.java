@@ -24,93 +24,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DMR Service Options parsing class
+ * Motorola Capacity Plus flavor of service options.  Motorola uses the 2x reserved bits from the default implementation.
  */
-public class ServiceOptions
+public class CapacityPlusServiceOptions extends ServiceOptions
 {
-    private static final int EMERGENCY_MASK = 0x80;
-    private static final int ENCRYPTION_MASK = 0x40;
-    private static final int RESERVED_1 = 0x20;
-    private static final int RESERVED_2 = 0x10;
-    private static final int BROADCAST_SERVICE_MASK = 0x8;
-    private static final int OPEN_VOICE_CALL_MODE_MASK = 0x4;
-    private static final int PRIORITY_MASK = 0x3;
-    private int mValue;
-
     /**
      * Constructs an instance
+     *
      * @param value of the service options bitmap
      */
-    public ServiceOptions(int value)
+    public CapacityPlusServiceOptions(int value)
     {
-        mValue = value;
+        super(value);
     }
 
     /**
-     * Indicates if this is an emergency communication
+     * Reserved bit 1 is used to signal if the system is IP Site Connect or Conventional (true) or Capacity Plus (false).
+     * @return
      */
-    public boolean isEmergency()
+    public boolean isCapacityPlus()
     {
-        return isSet(EMERGENCY_MASK);
+        return !isReserved1();
     }
 
     /**
-     * Indicates if the call is encrypted
+     * Indicates if the transmission is interruptible.
+     * @return true if interruptible.
      */
-    public boolean isEncrypted()
+    public boolean isInterruptible()
     {
-        return isSet(ENCRYPTION_MASK);
-    }
-
-    /**
-     * Indicates if this is broadcast service
-     */
-    public boolean isBroadcastService()
-    {
-        return isSet(BROADCAST_SERVICE_MASK);
-    }
-
-    /**
-     * Indicates if the call is using open voice call mode
-     */
-    public boolean isOpenVoiceCallMode()
-    {
-        return isSet(OPEN_VOICE_CALL_MODE_MASK);
-    }
-
-    /**
-     * Indicates if Reserved 1 bit is set
-     * @return true if set
-     */
-    public boolean isReserved1()
-    {
-        return isSet(RESERVED_1);
-    }
-
-    /**
-     * Indicates if Reserved 2 bit is set
-     * @return true if set
-     */
-    public boolean isReserved2()
-    {
-        return isSet(RESERVED_2);
-    }
-
-    /**
-     * Priority of the communication
-     * @return priority 0-3, 0 = lowest/routine, 3 = highest
-     */
-    public int getPriority()
-    {
-        return (mValue & PRIORITY_MASK);
-    }
-
-    /**
-     * Indicates if the bits corresponding to the mask value are set in the service options bitmap value.
-     */
-    private boolean isSet(int mask)
-    {
-        return (mValue & mask) == mask;
+        return isReserved2();
     }
 
     @Override
@@ -138,14 +81,9 @@ public class ServiceOptions
             flags.add("OVCM");
         }
 
-        if(isReserved1())
+        if(isInterruptible())
         {
-            flags.add("RSVD1");
-        }
-
-        if(isReserved2())
-        {
-            flags.add("RSVD2");
+            flags.add("TXI CALL");
         }
 
         if(getPriority() > 0)

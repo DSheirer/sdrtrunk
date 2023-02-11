@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,20 +28,22 @@ import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.AbstractVoiceChannelUser;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Motorola Capacity Plus - Group Voice Channel User
  */
-public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser implements ITimeslotFrequencyReceiver
+public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelUser implements ITimeslotFrequencyReceiver
 {
-    private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] CAPACITY_PLUS_GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] CONVENTIONAL_GROUP_ADDRESS = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
+            36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] VOICE_CHANNEL_REPEATER = new int[]{51, 52, 53, 54};
     private static final int[] VOICE_CHANNEL_TIMESLOT = new int[]{55};
-    private static final int[] SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    private static final int[] CAPACITY_PLUS_SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    private static final int[] CONVENTIONAL_SOURCE_ADDRESS = new int[]{48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+            60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] UNKNOWN = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
     private RadioIdentifier mRadio;
@@ -69,20 +71,33 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser 
             sb.append("[CRC-ERROR] ");
         }
 
-        sb.append("FLC MOTOROLA CAP+ GROUP VOICE CHANNEL USER FM:");
-        sb.append(getRadio());
-        sb.append(" TO:").append(getTalkgroup());
-        sb.append(" ON CHANNEL:");
-        if(hasVoiceChannel())
+        if(isEncrypted())
         {
-            sb.append(getVoiceChannel());
+            sb.append(" ENCRYPTED");
+        }
+
+        if(isReservedBitSet())
+        {
+            sb.append(" RESERVED-BIT");
+        }
+
+        if(getServiceOptions().isCapacityPlus())
+        {
+            sb.append("FLC MOTOROLA CAP+ GROUP VOICE CHANNEL USER");
         }
         else
         {
-            sb.append("--");
+            sb.append("FLC MOTOROLA CONV/IP SITE GROUP VOICE CHANNEL USER");
+        }
+        sb.append(" FM:").append(getRadio());
+        sb.append(" TO:").append(getTalkgroup());
+
+        if(hasVoiceChannel())
+        {
+            sb.append(" ON CHANNEL:");
+            sb.append(getVoiceChannel());
         }
 
-        sb.append(" UNK:").append(getUnknown());
         sb.append(" ").append(getServiceOptions());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
@@ -119,6 +134,7 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser 
 
     /**
      * Rest timeslot
+     *
      * @return
      */
     public int getVoiceChannelTimeslot()
@@ -131,7 +147,7 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser 
      */
     public boolean hasVoiceChannel()
     {
-        return getVoiceChannelRepeater() != 0;
+        return getServiceOptions().isCapacityPlus() && getVoiceChannelRepeater() != 0;
     }
 
     /**
@@ -141,7 +157,14 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser 
     {
         if(mRadio == null)
         {
-            mRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE_ADDRESS));
+            if(getServiceOptions().isCapacityPlus())
+            {
+                mRadio = DMRRadio.createFrom(getMessage().getInt(CAPACITY_PLUS_SOURCE_ADDRESS));
+            }
+            else
+            {
+                mRadio = DMRRadio.createFrom(getMessage().getInt(CONVENTIONAL_SOURCE_ADDRESS));
+            }
         }
 
         return mRadio;
@@ -154,7 +177,14 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser 
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(GROUP_ADDRESS));
+            if(getServiceOptions().isCapacityPlus())
+            {
+                mTalkgroup = DMRTalkgroup.create(getMessage().getInt(CAPACITY_PLUS_GROUP_ADDRESS));
+            }
+            else
+            {
+                mTalkgroup = DMRTalkgroup.create(getMessage().getInt(CONVENTIONAL_GROUP_ADDRESS));
+            }
         }
 
         return mTalkgroup;
@@ -189,12 +219,13 @@ public class CapacityPlusGroupVoiceChannelUser extends AbstractVoiceChannelUser 
 
     /**
      * Applies the LSN to frequency map to the rest channel.
+     *
      * @param timeslotFrequencies that match the logical timeslots
      */
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
+        for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
             if(getVoiceChannel().getLogicalSlotNumber() == timeslotFrequency.getNumber())
             {
