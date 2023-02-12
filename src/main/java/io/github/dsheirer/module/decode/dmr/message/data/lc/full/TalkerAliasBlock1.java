@@ -17,52 +17,54 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.voice;
+package io.github.dsheirer.module.decode.dmr.message.data.lc.full;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.message.CACH;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * DMR Voice Frame A with embedded sync pattern.
+ * Talker alias continuation block 1.
  */
-public class VoiceAMessage extends VoiceMessage
+public class TalkerAliasBlock1 extends FullLCMessage
 {
+    private static final int PAYLOAD_START = 16;
+    private static final int PAYLOAD_END = 72;
+
     /**
-     * Constructs an instance.
+     * Constructs an instance
      *
-     * @param syncPattern for the Voice A frame
-     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
+     * @param message for link control payload
+     * @param timestamp for the message
+     * @param timeslot where the message was transmitted
      */
-    public VoiceAMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, long timestamp,
-                         int timeslot)
+    public TalkerAliasBlock1(CorrectedBinaryMessage message, long timestamp, int timeslot)
     {
-        super(syncPattern, message, cach, timestamp, timeslot);
+        super(message, timestamp, timeslot);
     }
 
-    @Override
-    public String toString()
+    /**
+     * Payload fragment carried by the header.
+     * @return payload fragment.
+     */
+    public CorrectedBinaryMessage getPayloadFragment()
     {
-        StringBuilder sb = new StringBuilder();
-
-        if(getSyncPattern().isDirectMode())
-        {
-            sb.append(getSyncPattern());
-        }
-        else
-        {
-            sb.append("CC:- ").append(getSyncPattern());
-        }
-
-        return sb.toString();
+        return getMessage().getSubMessage(PAYLOAD_START, PAYLOAD_END);
     }
 
     @Override
     public List<Identifier> getIdentifiers()
     {
         return Collections.emptyList();
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append("FLC TALKER ALIAS BLOCK 1");
+        sb.append(" MSG:").append(getMessage().toHexString());
+        return sb.toString();
     }
 }

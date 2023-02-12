@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -59,6 +59,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.HeaderMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.LCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasComplete;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
@@ -66,6 +67,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.Capaci
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
+import io.github.dsheirer.module.decode.dmr.message.data.packet.UDTShortMessageService;
 import io.github.dsheirer.module.decode.dmr.message.data.terminator.Terminator;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceOptions;
 import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
@@ -75,13 +77,12 @@ import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
 import io.github.dsheirer.util.PacketUtil;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Decoder state for an DMR channel.  Maintains the call/data/idle state of the channel and produces events by
@@ -207,6 +208,10 @@ public class DMRDecoderState extends TimeslotDecoderState
             {
                 processPacket((DMRPacketMessage)message);
             }
+            else if(message instanceof UDTShortMessageService sms)
+            {
+                processSMS(sms);
+            }
             else if(message instanceof DMRMessage)
             {
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE, getTimeslot()));
@@ -267,6 +272,24 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             mNetworkConfigurationMonitor = preloadData.getData();
         }
+    }
+
+    /**
+     * Processes a short data message carrying SMS text
+     * @param sms
+     */
+    private void processSMS(UDTShortMessageService sms)
+    {
+        broadcast(new DecoderStateEvent(this, Event.START, State.DATA, getTimeslot()));
+
+        DecodeEvent smsEvent = DMRDecodeEvent.builder(sms.getTimestamp())
+                .eventType(DecodeEventType.SMS)
+                .eventDescription(DecodeEventType.SMS.toString())
+                .details("MESSAGE: " + sms.getSMS())
+                .identifiers(new IdentifierCollection(sms.getIdentifiers()))
+                .timeslot(sms.getTimeslot())
+                .build();
+        broadcast(smsEvent);
     }
 
     /**
@@ -1125,6 +1148,12 @@ public class DMRDecoderState extends TimeslotDecoderState
                         .build();
 
                     broadcast(gpsEvent);
+                }
+                break;
+            case FULL_STANDARD_TALKER_ALIAS_COMPLETE:
+                if(message instanceof TalkerAliasComplete tac && tac.hasTalkerAliasIdentifier())
+                {
+                    getIdentifierCollection().update(tac.getTalkerAliasIdentifier());
                 }
                 break;
         }

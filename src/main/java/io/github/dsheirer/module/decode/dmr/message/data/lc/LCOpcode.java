@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@
 package io.github.dsheirer.module.decode.dmr.message.data.lc;
 
 import io.github.dsheirer.module.decode.dmr.message.type.Vendor;
-
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -39,6 +39,7 @@ public enum LCOpcode
     FULL_STANDARD_TALKER_ALIAS_BLOCK_1(Vendor.STANDARD,true, 5, "TALKER ALIAS BLOCK 1"),
     FULL_STANDARD_TALKER_ALIAS_BLOCK_2(Vendor.STANDARD,true, 6, "TALKER ALIAS BLOCK 2"),
     FULL_STANDARD_TALKER_ALIAS_BLOCK_3(Vendor.STANDARD,true, 7, "TALKER ALIAS BLOCK 3"),
+    FULL_STANDARD_TALKER_ALIAS_COMPLETE(Vendor.STANDARD, true, -1, "TALKER ALIAS COMPLETE"), //Not part of ICD
     FULL_STANDARD_GPS_INFO(Vendor.STANDARD,true, 8, "GPS INFO"),
     FULL_STANDARD_TERMINATOR_DATA(Vendor.STANDARD, true, 48, "TERMINATOR DATA"),
     FULL_STANDARD_UNKNOWN(Vendor.STANDARD,true, -1, "FULL UNKNOWN"),
@@ -66,6 +67,9 @@ public enum LCOpcode
 
 
     SHORT_STANDARD_UNKNOWN(Vendor.STANDARD,false,-1, "SHORT UNKNOWN");
+
+    private static final EnumSet<LCOpcode> TALKER_ALIAS_OPCODES = EnumSet.of(FULL_STANDARD_TALKER_ALIAS_HEADER,
+            FULL_STANDARD_TALKER_ALIAS_BLOCK_1, FULL_STANDARD_TALKER_ALIAS_BLOCK_2, FULL_STANDARD_TALKER_ALIAS_BLOCK_3);
 
     private Vendor mVendor;
     private boolean mFull;
@@ -109,6 +113,14 @@ public enum LCOpcode
     public boolean isShort()
     {
         return !mFull;
+    }
+
+    /**
+     * Indicates if this entry is one of the four talker alias opcodes.
+     */
+    public boolean isTalkerAliasOpcode()
+    {
+        return TALKER_ALIAS_OPCODES.contains(this);
     }
 
     public int getValue()

@@ -26,6 +26,10 @@ import io.github.dsheirer.edac.ReedSolomon_12_9_4_DMR;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GPSInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.GroupVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasBlock1;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasBlock2;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasBlock3;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TerminatorData;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnknownFullLCMessage;
@@ -83,7 +87,6 @@ public class LCMessageFactory
             //RS(12,9,4) can correct up to floor(4/2) = 1 bit error.
             valid = REED_SOLOMON_12_9_4_DMR.correctFullLinkControl(message,
                     isTerminator ? TERMINATOR_LINK_CONTROL_CRC_MASK : VOICE_LINK_CONTROL_CRC_MASK);
-            mLog.warn("Doing the reed solomon thing ....  valid: " + valid);
         }
         else
         {
@@ -125,9 +128,17 @@ public class LCMessageFactory
                 flc = new HyteraTerminator(message, timestamp, timeslot);
                 break;
             case FULL_STANDARD_TALKER_ALIAS_HEADER:
+                flc = new TalkerAliasHeader(message, timestamp, timeslot);
+                break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_1:
+                flc = new TalkerAliasBlock1(message, timestamp, timeslot);
+                break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_2:
+                flc = new TalkerAliasBlock2(message, timestamp, timeslot);
+                break;
             case FULL_STANDARD_TALKER_ALIAS_BLOCK_3:
+                flc = new TalkerAliasBlock3(message, timestamp, timeslot);
+                break;
             default:
                 flc = new UnknownFullLCMessage(message, timestamp, timeslot);
                 break;

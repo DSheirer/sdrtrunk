@@ -17,30 +17,43 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.dmr.message.voice;
+package io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
+import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * DMR Voice Frame A with embedded sync pattern.
+ * Hytera DMR Tier III - CSBKO 44 -
+ *
+ * Analysis: ... this was transmitted on the Tier III traffic channel during call termination.  This CSBK was
+ * interleaved with every other Terminator message, starting after the first 2x terminator messages.  This continued
+ * through the final teardown which was 3x Clear messages.
  */
-public class VoiceAMessage extends VoiceMessage
+public class HyteraCsbko44 extends CSBKMessage
 {
+    private static final int[] UNKNOWN_1 = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
+
+    private List<Identifier> mIdentifiers;
+
     /**
-     * Constructs an instance.
+     * Constructs an instance
      *
-     * @param syncPattern for the Voice A frame
-     * @param message containing 288-bit DMR message with preliminary bit corrections indicated.
+     * @param syncPattern for the CSBK
+     * @param message bits
+     * @param cach for the DMR burst
+     * @param slotType for this message
+     * @param timestamp
+     * @param timeslot
      */
-    public VoiceAMessage(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, long timestamp,
-                         int timeslot)
+    public HyteraCsbko44(DMRSyncPattern syncPattern, CorrectedBinaryMessage message, CACH cach, SlotType slotType, long timestamp, int timeslot)
     {
-        super(syncPattern, message, cach, timestamp, timeslot);
+        super(syncPattern, message, cach, slotType, timestamp, timeslot);
     }
 
     @Override
@@ -48,18 +61,17 @@ public class VoiceAMessage extends VoiceMessage
     {
         StringBuilder sb = new StringBuilder();
 
-        if(getSyncPattern().isDirectMode())
+        if(!isValid())
         {
-            sb.append(getSyncPattern());
+            sb.append("[CRC-ERROR] ");
         }
-        else
-        {
-            sb.append("CC:- ").append(getSyncPattern());
-        }
+
+        sb.append("CC:").append(getSlotType().getColorCode());
+        sb.append(" HYTERA UNKNOWN CSBKO=44");
+        sb.append(" MSG:").append(getMessage().toHexString());
 
         return sb.toString();
     }
-
     @Override
     public List<Identifier> getIdentifiers()
     {

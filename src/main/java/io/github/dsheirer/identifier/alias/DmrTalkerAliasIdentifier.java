@@ -16,52 +16,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.identifier;
+
+package io.github.dsheirer.identifier.alias;
+
+import io.github.dsheirer.protocol.Protocol;
 
 /**
- * Identifier form.  Indicates the type of identifier.
+ * Talker alias value provided by the network for the current talker (ie FROM).
  */
-public enum Form
+public class DmrTalkerAliasIdentifier extends TalkerAliasIdentifier
 {
-    ALIAS_LIST,
-    ARS_DEVICE,
-    ARS_USER,
-    ARS_PASSWORD,
-    CALL_PROGRESS_TONE,
-    CHANNEL,
-    CHANNEL_DESCRIPTOR,
-    CHANNEL_NAME,
-    CHANNEL_FREQUENCY,
-    DECODER_TYPE,
-    DTMF,
-    ENCRYPTION_KEY,
-    ESN,
-    FULLY_QUALIFIED_IDENTIFIER,
-    IPV4_ADDRESS,
-    KNOX_TONE,
-    LOCATION,
-    LOCATION_REGISTRATION_AREA,
-    LOJACK,
-    NEIGHBOR_SITE,
-    NETWORK,
-    NETWORK_ACCESS_CODE,
-    PATCH_GROUP,
-    RADIO,
-    RF_SUBSYSTEM,
-    SCRAMBLE_PARAMETERS,
-    SHORT_DATA_MESSAGE,
-    SITE,
-    STATE,
-    SYSTEM,
-    TALKER_ALIAS,
-    TALKGROUP,
-    TELEPHONE_NUMBER,
-    TONE,
-    UDP_PORT,
-    UNIT_IDENTIFIER,
-    UNIT_STATUS,
-    USER_STATUS,
-    UNIQUE_ID,
-    WACN,
-    ANY;
+    /**
+     * Constructs an instance.
+     * @param value of the talker alias
+     */
+    public DmrTalkerAliasIdentifier(String value)
+    {
+        super(value);
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return getValue() != null && !getValue().isEmpty();
+    }
+
+    @Override
+    public Protocol getProtocol()
+    {
+        return Protocol.DMR;
+    }
+
+    public static DmrTalkerAliasIdentifier create(String value)
+    {
+        return new DmrTalkerAliasIdentifier(value);
+    }
 }

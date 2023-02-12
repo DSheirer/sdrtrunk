@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@
 package io.github.dsheirer.module.decode.dmr.message.data.csbk;
 
 import io.github.dsheirer.module.decode.dmr.message.type.Vendor;
-
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
@@ -50,8 +49,8 @@ public enum Opcode
     STANDARD_ACKNOWLEDGE_RESPONSE_INBOUND_PAYLOAD(Vendor.STANDARD, 35, "ACKNOWLEDGE RESPONSE INBOUND PAYLOAD"),
     STANDARD_UNIFIED_DATA_TRANSPORT_FOR_DGNA_OUTBOUND_HEADER(Vendor.STANDARD, 36, "UNIFIED DATA TRANSPORT OUTBOUND HEADER"),
     STANDARD_UNIFIED_DATA_TRANSPORT_FOR_DGNA_INBOUND_HEADER(Vendor.STANDARD, 37, "UNIFIED DATA TRANSPORT OUTBOUND HEADER"),
-    STANDARD_ANNOUNCEMENT(Vendor.STANDARD, 40, "ANNOUNCEMENT"),
     STANDARD_NEGATIVE_ACKNOWLEDGE_RESPONSE(Vendor.STANDARD, 38, "NEGATIVE ACKNOWLEDGE RESPONSE"),
+    STANDARD_ANNOUNCEMENT(Vendor.STANDARD, 40, "ANNOUNCEMENT"),
     STANDARD_MAINTENANCE(Vendor.STANDARD, 42, "MAINTENANCE"),
     STANDARD_CLEAR(Vendor.STANDARD, 46, "CLEAR"),
     STANDARD_PROTECT(Vendor.STANDARD, 47, "PROTECT"),
@@ -90,12 +89,17 @@ public enum Opcode
     MOTOROLA_CAPPLUS_PREAMBLE(Vendor.MOTOROLA_CAPACITY_PLUS, 61, "PREAMBLE"),
     MOTOROLA_CAPPLUS_SYSTEM_STATUS(Vendor.MOTOROLA_CAPACITY_PLUS, 62, "SYSTEM STATUS"),
 
-    HYTERA_XPT_SITE_STATE(Vendor.HYTERA_68, 10, "HYTERA XPT SITE STATE"),
+    HYTERA_CSBKO_32(Vendor.HYTERA_8, 32, "T-III HYTERA 08 CSBKO 32"),
     HYTERA_08_ANNOUNCEMENT(Vendor.HYTERA_8, 40, "T-III 08 ANNOUNCEMENT"),
-    HYTERA_68_ANNOUNCEMENT(Vendor.HYTERA_68, 40, "T-III 68 ANNOUNCEMENT"),
+    HYTERA_CSBKO_44(Vendor.HYTERA_8, 44, "T-III HYTERA 08 CSBKO 44"),
+    HYTERA_CSBKO_47(Vendor.HYTERA_8, 47, "T-III HYTERA 08 CSBKO 47"),
 
-    //Opcode 54 and/or 55 - See patent on Hytera call forwarding
-    HYTERA_XPT_PREAMBLE(Vendor.HYTERA_68, 61, "HYTERA XPT PREAMBLE"),
+    HYTERA_XPT_SITE_STATE(Vendor.HYTERA_68, 10, "HYTERA XPT SITE STATE"),
+    HYTERA_ALOHA(Vendor.HYTERA_68, 25, "HYTERA ALOHA"),
+    HYTERA_68_ANNOUNCEMENT(Vendor.HYTERA_68, 40, "T-III 68 ANNOUNCEMENT"),
+    HYTERA_XPT_PREAMBLE(Vendor.HYTERA_68, 61, "HYTERA XPT PREAMBLE"), //Opcode 54 and/or 55 - See patent on Hytera call forwarding
+    HYTERA_CSBKO_62(Vendor.HYTERA_68, 62, "HYTERA CSBKO 62"),
+
 
     UNKNOWN(Vendor.UNKNOWN, -1, "UNKNOWN");
 

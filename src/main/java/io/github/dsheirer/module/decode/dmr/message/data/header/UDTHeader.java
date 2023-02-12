@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.Opcode;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceAccessPoint;
 import io.github.dsheirer.module.decode.dmr.message.type.UnifiedDataTransportFormat;
 import io.github.dsheirer.module.decode.dmr.message.type.Vendor;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,13 +83,13 @@ public class UDTHeader extends DataHeader
             sb.append(" [CRC ERROR]");
         }
         sb.append(" UDT HEADER");
-        if(isSupplementaryData())
+        if(isShortData())
         {
-            sb.append(" SUPPLEMENTARY DATA");
+            sb.append(" SHORT DATA");
         }
         else
         {
-            sb.append(" SHORT DATA");
+            sb.append(" SUPPLEMENTARY DATA");
         }
         sb.append(" FM:").append(getSourceLLID());
         sb.append(" TO:").append(getDestinationLLID());
@@ -106,7 +105,7 @@ public class UDTHeader extends DataHeader
             sb.append(" OPCODE:").append(getOpcode());
         }
         sb.append(" PAD NIBBLES:").append(getPadNibbleCount());
-        sb.append(" ").append(getServiceAccessPoint());
+        sb.append(" SAP:").append(getServiceAccessPoint());
         return sb.toString();
     }
 
@@ -121,7 +120,15 @@ public class UDTHeader extends DataHeader
     }
 
     /**
-     * Indicates if the header contains supplementary data (true) or short data (false)
+     * Indicates if the header is for a short data sequence
+     */
+    public boolean isShortData()
+    {
+        return !isSupplementaryData();
+    }
+
+    /**
+     * Indicates if the header is for supplementary data
      */
     public boolean isSupplementaryData()
     {

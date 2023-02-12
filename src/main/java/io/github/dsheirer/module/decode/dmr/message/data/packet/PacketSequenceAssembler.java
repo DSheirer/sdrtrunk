@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.header.PacketSequenceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataHeader;
+import io.github.dsheirer.module.decode.dmr.message.data.header.UDTHeader;
 import io.github.dsheirer.sample.Listener;
 
 /**
@@ -70,7 +71,7 @@ public class PacketSequenceAssembler
     }
 
     /**
-     * Sets the listener to receive packet packet sequence messages
+     * Sets the listener to receive packet sequence messages
      * @param listener to receive messages
      */
     public void setMessageListener(Listener<IMessage> listener)
@@ -82,11 +83,11 @@ public class PacketSequenceAssembler
      * Dispatches the packet sequence for the specified timeslot and sets the sequence to null.
      * @param timeslot to dispatch
      */
-    private void dispatchPacketSequence(int timeslot)
+    public void dispatchPacketSequence(int timeslot)
     {
         PacketSequence packetSequence = (timeslot == 1 ? mTimeslot1Sequence : mTimeslot2Sequence);
 
-        if(mMessageListener != null && packetSequence != null && packetSequence.isComplete())
+        if(packetSequence != null && mMessageListener != null)
         {
             IMessage message = PacketSequenceMessageFactory.create(packetSequence);
 
@@ -152,6 +153,27 @@ public class PacketSequenceAssembler
         }
 
         packetSequence.setPacketSequenceHeader(header);
+    }
+
+    /**
+     * Process a UDT header.
+     * @param header
+     */
+    public void process(UDTHeader header)
+    {
+        int timeslot = header.getTimeslot();
+
+        PacketSequence packetSequence = getPacketSequence(timeslot);
+
+        //If we already have headers or data blocks for the current sequence, then this is a new sequence
+        if(packetSequence.hasPacketSequenceHeader() || packetSequence.hasProprietaryDataHeader() ||
+                packetSequence.hasDataBlocks())
+        {
+            dispatchPacketSequence(timeslot);
+            packetSequence = getPacketSequence(timeslot);
+        }
+
+        packetSequence.setUDTHeader(header);
     }
 
     /**
