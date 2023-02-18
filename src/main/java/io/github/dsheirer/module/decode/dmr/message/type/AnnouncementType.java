@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ public enum AnnouncementType
     ADJACENT_SITE_INFORMATION(6, "NEIGHBOR SITE INFORMATION"),
     GENERAL_SITE_INFORMATION(7, "SITE INFORMATION"),
     RESERVED_8(8, "RESERVED 8"),
-    RESERVED_9(9, "RESERVED 8"),
+    RESERVED_9(9, "RESERVED 9"),
     RESERVED_10(10, "RESERVED 10"),
     RESERVED_11(11, "RESERVED 11"),
     RESERVED_12(12, "RESERVED 12"),

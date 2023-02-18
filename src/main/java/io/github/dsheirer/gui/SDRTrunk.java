@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
 import io.github.dsheirer.controller.channel.ChannelException;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.dmr.ViewDmrRecordingViewerRequest;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.ViewPlaylistRequest;
 import io.github.dsheirer.gui.preference.CalibrateRequest;
@@ -59,6 +60,26 @@ import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import io.github.dsheirer.vector.calibrate.CalibrationManager;
+import java.awt.AWTException;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.GraphicsEnvironment;
+import java.awt.Point;
+import java.awt.Robot;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
 import jiconfont.icons.font_awesome.FontAwesome;
@@ -80,26 +101,6 @@ import javax.swing.UIManager;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import javax.swing.plaf.metal.MetalLookAndFeel;
-import java.awt.AWTException;
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.GraphicsEnvironment;
-import java.awt.Point;
-import java.awt.Robot;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 
 public class SDRTrunk implements Listener<TunerEvent>
 {
@@ -413,9 +414,11 @@ public class SDRTrunk implements Listener<TunerEvent>
         viewPlaylistItem.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewPlaylistRequest()));
         viewMenu.add(viewPlaylistItem);
 
-        JMenuItem preferencesItem = new JMenuItem("User Preferences");
-        preferencesItem.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest()));
-        viewMenu.add(preferencesItem);
+        viewMenu.add(new JSeparator());
+
+        JMenuItem dmrMessageViewerMenu = new JMenuItem("DMR Recording Viewer");
+        dmrMessageViewerMenu.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewDmrRecordingViewerRequest()));
+        viewMenu.add(dmrMessageViewerMenu);
 
         JMenuItem settingsMenu = new JMenuItem("Icon Manager");
         settingsMenu.addActionListener(arg0 -> MyEventBus.getGlobalEventBus().post(new ViewIconManagerRequest()));
@@ -436,14 +439,18 @@ public class SDRTrunk implements Listener<TunerEvent>
                     mLog.error("Couldn't open file explorer");
 
                     JOptionPane.showMessageDialog(mMainGui,
-                        "Can't launch file explorer - files are located at: " +
-                            getHomePath().toString(),
-                        "Can't launch file explorer",
-                        JOptionPane.ERROR_MESSAGE);
+                            "Can't launch file explorer - files are located at: " +
+                                    getHomePath().toString(),
+                            "Can't launch file explorer",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
         viewMenu.add(logFilesMenu);
+
+        JMenuItem preferencesItem = new JMenuItem("User Preferences");
+        preferencesItem.addActionListener(e -> MyEventBus.getGlobalEventBus().post(new ViewUserPreferenceEditorRequest()));
+        viewMenu.add(preferencesItem);
 
         viewMenu.add(new JSeparator());
         viewMenu.add(new TunersMenu());

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package io.github.dsheirer.identifier;
 
 import io.github.dsheirer.protocol.Protocol;
-
 import java.util.Objects;
 
 /**
@@ -68,6 +67,15 @@ public abstract class Identifier<T>
     public T getValue()
     {
         return mValue;
+    }
+
+    /**
+     * Allow subclass implementations to set or update the value after construction.
+     * @param value to update or set.
+     */
+    protected void setValue(T value)
+    {
+        mValue = value;
     }
 
     /**

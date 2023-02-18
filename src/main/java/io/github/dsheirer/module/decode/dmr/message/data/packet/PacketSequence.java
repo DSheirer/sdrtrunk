@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.block.DataBlock;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
 import io.github.dsheirer.module.decode.dmr.message.data.header.PacketSequenceHeader;
 import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataHeader;
-
+import io.github.dsheirer.module.decode.dmr.message.data.header.UDTHeader;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +34,7 @@ public class PacketSequence
 {
     private int mTimeslot;
     private PacketSequenceHeader mPacketSequenceHeader;
+    private UDTHeader mUDTHeader;
     private ProprietaryDataHeader mProprietaryDataHeader;
     private List<Preamble> mPreambles = new ArrayList<>();
     private List<DataBlock> mDataBlocks = new ArrayList<>();
@@ -51,7 +52,11 @@ public class PacketSequence
         sb.append(" TS:").append(getTimeslot());
         if(mPacketSequenceHeader != null)
         {
-            sb.append(mPacketSequenceHeader.toString());
+            sb.append(mPacketSequenceHeader);
+        }
+        else if(mUDTHeader != null)
+        {
+            sb.append(mUDTHeader);
         }
         sb.append(" HEADER:").append(hasPacketSequenceHeader());
         sb.append(" PROPRIETARY HEADER:").append(hasProprietaryDataHeader());
@@ -98,6 +103,15 @@ public class PacketSequence
     }
 
     /**
+     * Unified Data Transport (UDT) header
+     * @param header for a UDT sequence
+     */
+    public void setUDTHeader(UDTHeader header)
+    {
+        mUDTHeader = header;
+    }
+
+    /**
      * Proprietary data header
      */
     public void setProprietaryHeader(ProprietaryDataHeader header)
@@ -136,6 +150,23 @@ public class PacketSequence
     public boolean hasPacketSequenceHeader()
     {
         return mPacketSequenceHeader != null;
+    }
+
+    /**
+     * UDT header
+     * @return header or null.
+     */
+    public UDTHeader getUDTHeader()
+    {
+        return mUDTHeader;
+    }
+
+    /**
+     * Indicates if this packet sequence has a UDT header
+     */
+    public boolean hasUDTHeader()
+    {
+        return getUDTHeader() != null;
     }
 
     /**

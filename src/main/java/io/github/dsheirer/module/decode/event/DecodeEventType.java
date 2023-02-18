@@ -63,6 +63,7 @@ public enum DecodeEventType
     RESPONSE("Response"),
     RESPONSE_PACKET("Response Packet"),
     SDM("Short Data Message"),
+    SMS("SMS"),
     STATION_ID("Station ID"),
     STATUS("Status"),
     UDP_PACKET("UDP/IP Packet"),

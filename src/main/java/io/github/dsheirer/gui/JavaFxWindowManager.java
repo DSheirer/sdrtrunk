@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelRange;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.dmr.DMRRecordingViewer;
+import io.github.dsheirer.gui.dmr.ViewDmrRecordingViewerRequest;
 import io.github.dsheirer.gui.icon.IconManager;
 import io.github.dsheirer.gui.icon.ViewIconManagerRequest;
 import io.github.dsheirer.gui.playlist.PlaylistEditor;
@@ -65,6 +67,7 @@ public class JavaFxWindowManager extends Application
     public static final String USER_PREFERENCES_EDITOR = "preferences";
     public static final String STAGE_MONITOR_KEY_CALIBRATION_DIALOG = "calibration.dialog";
     public static final String STAGE_MONITOR_KEY_CHANNEL_MAP_EDITOR = "channel.map";
+    public static final String STAGE_MONITOR_KEY_DMR_MESSAGE_VIEWER = "dmr.message.viewer";
     public static final String STAGE_MONITOR_KEY_ICON_MANAGER_EDITOR = "icon.manager";
     public static final String STAGE_MONITOR_KEY_JMBE_EDITOR = "jmbe.editor";
     public static final String STAGE_MONITOR_KEY_PLAYLIST_EDITOR = "playlist";
@@ -79,12 +82,14 @@ public class JavaFxWindowManager extends Application
     private TunerManager mTunerManager;
     private UserPreferences mUserPreferences;
     private UserPreferencesEditor mUserPreferencesEditor;
+    private DMRRecordingViewer mDmrRecordingViewer;
 
     private Stage mChannelMapStage;
     private Stage mIconManagerStage;
     private Stage mJmbeEditorStage;
     private Stage mPlaylistStage;
     private Stage mUserPreferencesStage;
+    private Stage mDmrRecordingViewerStage;
 
     /**
      * Constructs an instance.  Note: this constructor is used for Swing applications.
@@ -187,6 +192,34 @@ public class JavaFxWindowManager extends Application
     {
         createJFXPanel();
         return new CalibrationDialog(userPreferences);
+    }
+
+    /**
+     * Stage for the DMR Message Viewer
+     */
+    public Stage getDmrRecordingViewerStage()
+    {
+        if(mDmrRecordingViewerStage == null)
+        {
+            createJFXPanel();
+            Scene scene = new Scene(getDmrRecordingViewer(), 1100, 800);
+            mDmrRecordingViewerStage = new Stage();
+            mDmrRecordingViewerStage.setTitle("sdrtrunk - DMR Recording Viewer");
+            mDmrRecordingViewerStage.setScene(scene);
+            mUserPreferences.getJavaFxPreferences().monitor(mDmrRecordingViewerStage, STAGE_MONITOR_KEY_DMR_MESSAGE_VIEWER);
+        }
+
+        return mDmrRecordingViewerStage;
+    }
+
+    public DMRRecordingViewer getDmrRecordingViewer()
+    {
+        if(mDmrRecordingViewer == null)
+        {
+            mDmrRecordingViewer = new DMRRecordingViewer();
+        }
+
+        return mDmrRecordingViewer;
     }
 
     public Stage getIconManagerStage()
@@ -413,6 +446,19 @@ public class JavaFxWindowManager extends Application
             getChannelMapStage().requestFocus();
             getChannelMapStage().toFront();
             getChannelMapEditor().process(request);
+        });
+    }
+
+    /**
+     * Process a channel map editor request
+     */
+    @Subscribe
+    public void process(final ViewDmrRecordingViewerRequest request)
+    {
+        execute(() -> {
+            getDmrRecordingViewerStage().show();
+            getDmrRecordingViewerStage().requestFocus();
+            getDmrRecordingViewerStage().toFront();
         });
     }
 

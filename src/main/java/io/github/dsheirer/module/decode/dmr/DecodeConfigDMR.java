@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2020 Dennis Sheirer, Zhenyu Mao
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.dmr;
 
@@ -25,7 +24,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +38,7 @@ public class DecodeConfigDMR extends DecodeConfiguration
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
     private boolean mIgnoreDataCalls = true;
     private boolean mIgnoreCRCChecksums = false;
+    private boolean mUseCompressedTalkgroups = false;
     private List<TimeslotFrequency> mTimeslotMap = new ArrayList<>();
 
     public DecodeConfigDMR()
@@ -107,6 +106,28 @@ public class DecodeConfigDMR extends DecodeConfiguration
     public void setIgnoreCRCChecksums(boolean ignore)
     {
         mIgnoreCRCChecksums = ignore;
+    }
+
+    /**
+     * Indicates if decoder should use compressed talkgroups
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "use_compressed_talkgroups")
+    public boolean isUseCompressedTalkgroups()
+    {
+        return mUseCompressedTalkgroups;
+    }
+
+    /**
+     * Sets flag to use compressed talkgroups.
+     *
+     * Converts the air interface value to a compressed value described in ETSI 102 361-2, V.2.4.1, Paragraph C2.1.2
+     * This has been observed in use on Hytera Tier III systems.
+     * See: https://cwh050.blogspot.com/2021/03/converting-flat-number-to-dmr-id.html?m=1
+     * @param useCompressedTalkgroups true to use compressed talkgroups.
+     */
+    public void setUseCompressedTalkgroups(boolean useCompressedTalkgroups)
+    {
+        mUseCompressedTalkgroups = useCompressedTalkgroups;
     }
 
     /**

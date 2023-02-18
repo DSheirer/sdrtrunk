@@ -16,52 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
-package io.github.dsheirer.identifier;
+
+package io.github.dsheirer.gui.dmr;
+
+import io.github.dsheirer.gui.JavaFxWindowRequest;
 
 /**
- * Identifier form.  Indicates the type of identifier.
+ * Request to show the DMR recording viewer
  */
-public enum Form
+public class ViewDmrRecordingViewerRequest extends JavaFxWindowRequest
 {
-    ALIAS_LIST,
-    ARS_DEVICE,
-    ARS_USER,
-    ARS_PASSWORD,
-    CALL_PROGRESS_TONE,
-    CHANNEL,
-    CHANNEL_DESCRIPTOR,
-    CHANNEL_NAME,
-    CHANNEL_FREQUENCY,
-    DECODER_TYPE,
-    DTMF,
-    ENCRYPTION_KEY,
-    ESN,
-    FULLY_QUALIFIED_IDENTIFIER,
-    IPV4_ADDRESS,
-    KNOX_TONE,
-    LOCATION,
-    LOCATION_REGISTRATION_AREA,
-    LOJACK,
-    NEIGHBOR_SITE,
-    NETWORK,
-    NETWORK_ACCESS_CODE,
-    PATCH_GROUP,
-    RADIO,
-    RF_SUBSYSTEM,
-    SCRAMBLE_PARAMETERS,
-    SHORT_DATA_MESSAGE,
-    SITE,
-    STATE,
-    SYSTEM,
-    TALKER_ALIAS,
-    TALKGROUP,
-    TELEPHONE_NUMBER,
-    TONE,
-    UDP_PORT,
-    UNIT_IDENTIFIER,
-    UNIT_STATUS,
-    USER_STATUS,
-    UNIQUE_ID,
-    WACN,
-    ANY;
+    /**
+     * Constructs an instance
+     */
+    public ViewDmrRecordingViewerRequest() {}
 }
