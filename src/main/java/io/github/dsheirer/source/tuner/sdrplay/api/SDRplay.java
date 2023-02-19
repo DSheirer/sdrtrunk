@@ -561,21 +561,28 @@ public class SDRplay
      */
     public Status close()
     {
-        Status closeStatus;
-
-        try
+        if(mSdrplayLibraryLoaded)
         {
-            closeStatus = Status.fromValue(sdrplay_api_h.sdrplay_api_Close());
-        }
-        catch(Exception e)
-        {
-            closeStatus = Status.FAIL;
-            mLog.error("Error closing SDRPlay API", e);
-        }
+            Status closeStatus;
 
-        mSdrplayLibraryLoaded = false;
-        mAvailable = false;
-        return closeStatus;
+            try
+            {
+                closeStatus = Status.fromValue(sdrplay_api_h.sdrplay_api_Close());
+            }
+            catch(Exception e)
+            {
+                closeStatus = Status.FAIL;
+                mLog.error("Error closing SDRPlay API", e);
+            }
+
+            mSdrplayLibraryLoaded = false;
+            mAvailable = false;
+            return closeStatus;
+        }
+        else
+        {
+            return Status.API_UNAVAILABLE;
+        }
     }
 
     /**
