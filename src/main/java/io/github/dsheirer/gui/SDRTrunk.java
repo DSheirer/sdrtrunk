@@ -248,7 +248,11 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     mMainGui.setVisible(true);
                     Tuner tuner = tunerSpectralDisplayManager.showFirstTuner();
-                    updateTitle(tuner);
+
+                    if(tuner != null)
+                    {
+                        updateTitle(tuner.getPreferredName());
+                    }
                 }
 
                 if(calibrating && !GraphicsEnvironment.isHeadless())
@@ -630,21 +634,34 @@ public class SDRTrunk implements Listener<TunerEvent>
     @Override
     public void receive(TunerEvent event)
     {
-        if(event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)
+        switch(event.getEvent())
         {
-            updateTitle(event.getTuner());
+            case REQUEST_MAIN_SPECTRAL_DISPLAY:
+                updateTitle(event.getTuner().getPreferredName());
+                break;
+            case REQUEST_CLEAR_MAIN_SPECTRAL_DISPLAY:
+                updateTitle(null);
+                break;
+            case NOTIFICATION_SHUTTING_DOWN:
+                Tuner currentTuner = mSpectralPanel.getTuner();
+
+                if(event.hasTuner() && event.getTuner().equals(currentTuner) || currentTuner == null)
+                {
+                    updateTitle(null);
+                }
+                break;
         }
     }
 
     /**
      * Updates the title bar with the tuner name
-     * @param tuner optional
+     * @param tunerName optional
      */
-    private void updateTitle(Tuner tuner)
+    private void updateTitle(String tunerName)
     {
-        if(tuner != null)
+        if(tunerName != null)
         {
-            mMainGui.setTitle(mTitle + " - " + tuner.getPreferredName());
+            mMainGui.setTitle(mTitle + " - " + tunerName);
         }
         else
         {

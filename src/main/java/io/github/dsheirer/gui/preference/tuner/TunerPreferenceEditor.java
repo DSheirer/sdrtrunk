@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2022 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.preference.tuner;
@@ -55,6 +52,8 @@ public class TunerPreferenceEditor extends HBox
     private Label mHelpTextPolyphaseLabel;
     private Label mHeterodyneLabel;
     private Label mHelpTextHeterodyneLabel;
+    private ChoiceBox<RspDuoSelectionMode> mRspDuoTunerModeChoiceBox;
+    private Label mRspDuoModeLabel;
 
     public TunerPreferenceEditor(UserPreferences userPreferences)
     {
@@ -66,19 +65,24 @@ public class TunerPreferenceEditor extends HBox
     {
         if(mEditorPane == null)
         {
+            int row = 0;
             mEditorPane = new GridPane();
             mEditorPane.setVgap(10);
             mEditorPane.setHgap(10);
             mEditorPane.setPadding(new Insets(10, 10, 10, 10));
-            GridPane.setHalignment(getChannelizerLabel(), HPos.LEFT);
-            mEditorPane.add(getChannelizerLabel(), 0, 0);
-            mEditorPane.add(getChannelizerTypeChoiceBox(), 1, 0);
-            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, 1, 2, 1);
-            mEditorPane.add(getPolyphaseLabel(), 0, 2, 2, 1);
-            mEditorPane.add(getHelpTextPolyphaseLabel(), 0, 3, 2, 3);
-            mEditorPane.add(new Label(" "), 0, 6);
-            mEditorPane.add(getHeterodyneLabel(), 0, 7, 2, 1);
-            mEditorPane.add(getHelpTextHeterodyneLabel(), 0, 8, 2, 3);
+            GridPane.setHalignment(getChannelizerLabel(), HPos.RIGHT);
+            mEditorPane.add(getChannelizerLabel(), 0, row);
+            mEditorPane.add(getChannelizerTypeChoiceBox(), 1, row);
+            mEditorPane.add(getPolyphaseLabel(), 0, ++row, 2, 1);
+            mEditorPane.add(getHelpTextPolyphaseLabel(), 0, ++row, 2, 3);
+            row += 3;
+            mEditorPane.add(new Label(" "), 0, row);
+            mEditorPane.add(getHeterodyneLabel(), 0, ++row, 2, 1);
+            mEditorPane.add(getHelpTextHeterodyneLabel(), 0, ++row, 2, 3);
+            row += 3;
+            mEditorPane.add(new Separator(Orientation.HORIZONTAL), 0, row, 2, 1);
+            mEditorPane.add(getRspDuoModeLabel(), 0, ++row);
+            mEditorPane.add(getRspDuoTunerModeChoiceBox(), 1, row);
         }
 
         return mEditorPane;
@@ -160,5 +164,41 @@ public class TunerPreferenceEditor extends HBox
         }
 
         return mHelpTextHeterodyneLabel;
+    }
+
+    private ChoiceBox<RspDuoSelectionMode> getRspDuoTunerModeChoiceBox()
+    {
+        if(mRspDuoTunerModeChoiceBox == null)
+        {
+            mRspDuoTunerModeChoiceBox = new ChoiceBox<>();
+            mRspDuoTunerModeChoiceBox.getItems().addAll(RspDuoSelectionMode.values());
+
+            RspDuoSelectionMode current = mTunerPreference.getRspDuoTunerMode();
+            mRspDuoTunerModeChoiceBox.getSelectionModel().select(current);
+
+            mRspDuoTunerModeChoiceBox.setOnAction(event -> {
+                RspDuoSelectionMode selected = mRspDuoTunerModeChoiceBox.getSelectionModel().getSelectedItem();
+                mTunerPreference.setRspDuoTunerMode(selected);
+
+                Label label = new Label("Please restart the application for this change to take effect");
+                label.setWrapText(true);
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.getDialogPane().setContent(label);
+                alert.initOwner(((Node)getRspDuoTunerModeChoiceBox()).getScene().getWindow());
+                alert.show();
+            });
+        }
+
+        return mRspDuoTunerModeChoiceBox;
+    }
+
+    private Label getRspDuoModeLabel()
+    {
+        if(mRspDuoModeLabel == null)
+        {
+            mRspDuoModeLabel = new Label("SDRPlay RSPduo Selection Mode");
+        }
+
+        return mRspDuoModeLabel;
     }
 }

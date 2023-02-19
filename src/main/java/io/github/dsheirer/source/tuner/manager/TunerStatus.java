@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,12 @@ public enum TunerStatus
      * A tuner that has been disabled or black-listed for use
      */
     DISABLED("Disabled"),
+
+
+    /**
+     * Indicates that the tuner has been removed from the system.
+      */
+    REMOVED("Removed"),
 
     /**
      * A tuner that has an error state and is unusable

@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -66,7 +65,6 @@ public abstract class USBTunerController extends TunerController
     private TransferManager mTransferManager = new TransferManager();
     private UsbEventProcessor mEventProcessor = new UsbEventProcessor();
     private AtomicBoolean mStreaming = new AtomicBoolean();
-    private ReentrantLock mListenerLock = new ReentrantLock();
     private boolean mRunning = false;
 
     //Troubleshooting libusb bug: https://github.com/DSheirer/sdrtrunk/issues/1253
@@ -469,7 +467,7 @@ public abstract class USBTunerController extends TunerController
     {
         if(isRunning())
         {
-            mListenerLock.lock();
+            mBufferListenerLock.lock();
 
             try
             {
@@ -484,7 +482,7 @@ public abstract class USBTunerController extends TunerController
             }
             finally
             {
-                mListenerLock.unlock();
+                mBufferListenerLock.unlock();
             }
         }
     }
@@ -495,7 +493,7 @@ public abstract class USBTunerController extends TunerController
     @Override
     public void removeBufferListener(Listener<INativeBuffer> listener)
     {
-        mListenerLock.lock();
+        mBufferListenerLock.lock();
 
         try
         {
@@ -508,7 +506,7 @@ public abstract class USBTunerController extends TunerController
         }
         finally
         {
-            mListenerLock.unlock();
+            mBufferListenerLock.unlock();
         }
     }
 

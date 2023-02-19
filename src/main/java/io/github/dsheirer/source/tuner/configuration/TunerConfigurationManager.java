@@ -147,6 +147,12 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
         }
     }
 
+    /**
+     * Monitors discovered tuner enabled status and applies configurations or updates disable state of tuners.
+     * @param discoveredTuner that has a status change.
+     * @param previous tuner status
+     * @param current tuner status
+     */
     @Override
     public void tunerStatusUpdated(DiscoveredTuner discoveredTuner, TunerStatus previous, TunerStatus current)
     {
@@ -157,6 +163,23 @@ public class TunerConfigurationManager implements IDiscoveredTunerStatusListener
         else if(current == TunerStatus.ENABLED)
         {
             removeDisabledTuner(discoveredTuner);
+
+            if(discoveredTuner.hasTuner())
+            {
+                TunerType tunerType = discoveredTuner.getTuner().getTunerType();
+
+                if(tunerType != TunerType.RECORDING)
+                {
+                    TunerConfiguration tunerConfiguration = getTunerConfiguration(tunerType, discoveredTuner.getId());
+
+                    if(tunerConfiguration != null)
+                    {
+                        discoveredTuner.setTunerConfiguration(tunerConfiguration);
+                        saveConfigurations();
+                    }
+                }
+            }
+
         }
     }
 
