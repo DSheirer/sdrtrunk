@@ -53,7 +53,7 @@ public abstract class USBTunerController extends TunerController
     private static final int USB_INTERFACE = 0x0;  //Common value for all currently supported devices
     private static final int USB_CONFIGURATION = 0x1;  //Common value for all currently supported devices
     private static final int USB_BULK_TRANSFER_BUFFER_POOL_SIZE = 8;
-    private static final byte USB_BULK_TRANSFER_ENDPOINT = (byte) 0x81;
+    protected static final byte USB_BULK_TRANSFER_ENDPOINT = (byte) 0x81;
     private static final long USB_BULK_TRANSFER_TIMEOUT_MS = 2000l;
 
     private int mBus;
@@ -355,7 +355,17 @@ public abstract class USBTunerController extends TunerController
 
             //Perform final event processing iteration so LibUsb returns all of our cancelled tranfers
             mEventProcessor.handleFinalEvents();
+
+            streamingCleanup();
         }
+    }
+
+    /**
+     * Post streaming cleanup actions.  This method can be overridden by sub-class to implement additional actions
+     * needed to cleanup after streaming stops.
+     */
+    protected void streamingCleanup()
+    {
     }
 
     /**
