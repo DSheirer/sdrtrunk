@@ -61,8 +61,7 @@ import org.slf4j.LoggerFactory;
 public class SDRplay
 {
     public static final String SDRPLAY_API_LIBRARY_NAME = "sdrplay_api";
-    public static final String SDRPLAY_API_PATH_LINUX = "/usr/local/lib/libsdrplay_api.so";
-    public static final String SDRPLAY_API_PATH_MAC_OS = "/usr/local/lib/libsdrplay_api.dylib";
+    public static final String SDRPLAY_API_PATH_LINUX_AND_OSX = "/usr/local/lib/libsdrplay_api.so";
     public static final String SDRPLAY_API_PATH_WINDOWS = System.getenv("ProgramFiles") +
             "\\SDRplay\\API\\" + (System.getProperty("sun.arch.data.model").contentEquals("64") ? "x64" : "x86") +
             "\\" + SDRPLAY_API_LIBRARY_NAME;
@@ -672,11 +671,11 @@ public class SDRplay
         }
         else if(SystemUtils.IS_OS_LINUX)
         {
-            return SDRPLAY_API_PATH_LINUX;
+            return SDRPLAY_API_PATH_LINUX_AND_OSX;
         }
         else if(SystemUtils.IS_OS_MAC_OSX)
         {
-            return SDRPLAY_API_PATH_MAC_OS;
+            return SDRPLAY_API_PATH_LINUX_AND_OSX;
         }
 
         mLog.error("Unrecognized operating system.  Cannot identify sdrplay api library path");
