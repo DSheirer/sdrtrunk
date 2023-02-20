@@ -2,7 +2,7 @@ import java.text.SimpleDateFormat
 
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,29 @@ import java.text.SimpleDateFormat
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  * ****************************************************************************
  */
+
+/**
+ * Instructions for building/compiling the sdrtrunk application.
+ *
+ * Prerequisites:
+ * Install and configure an OpenJDK version 19+ that includes the JavaFX modules (e.g. Bellsoft Liberica JDK)
+ * - Optional: install and configure Gradle 7.6+
+ *
+ * Scenario 1: run the application via gradle command line from the source code root directory:
+ * command: ./gradlew run
+ *
+ * Scenario 2: create an application release for the current operating system
+ * command: ./gradlew runtimeZipCurrent
+ * Note: release image is located in the /build/image/ directory
+ *
+ * Scenario 3: create releases for Linux and OSX operating systems using downloaded JDKs
+ * command: ./gradlew runtimeZipOthers
+ * Note: release images are located in the /build/image/ directory
+ *
+ * Scenario 4: create release for Windows operating system using downloaded JDK
+ * command: ./gradlew runtimeZipWindows
+ * Note: release image is located in the /build/image/ directory
+ */
 plugins {
     id 'application'
     id 'java'
@@ -30,7 +53,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.6.0-alpha2'
+version = '0.6.0-alpha3'
 
 //Java 19 is required for this version of the Project Panama preview/incubator feature
 java {
@@ -98,6 +121,8 @@ dependencies {
     implementation 'pl.edu.icm:JLargeArrays:1.6'
 }
 
+def os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem
+
 /**
  * This is needed for the JDK19 panama and vector API ... until it moves out of incubation or preview
  */
@@ -106,24 +131,35 @@ tasks.withType(JavaCompile) {
     options.compilerArgs.add("--add-modules=jdk.incubator.vector") //Needed while Panama Vector API remains in incubator
 }
 
-application {
-    mainClassName = "io.github.dsheirer.gui.SDRTrunk"
-    applicationDefaultJvmArgs =
+/**
+ * JVM Arguments for running the application on Windows.
+ */
+def jvmArgsWindows =
+        ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
+         '--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED', //windows users for JIDE
+         '--add-modules=jdk.incubator.vector',   //Needed while Project Panama API is still in incubator
+         '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
+         '--enable-native-access=ALL-UNNAMED',
+         '-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64'] //Allows Project Panama Foreign Function access to system library
+
+/**
+ * JVM Arguments for running the application on Linux.
+ */
+def jvmArgsLinux =
         ['--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED', //Needed for controls-fx.jar
          '--add-modules=jdk.incubator.vector',   //Needed while Project Panama API is still in incubator
          '--enable-preview', //Project Panama Vector & Foreign Function APIs remain in incubator
-         '--enable-native-access=ALL-UNNAMED'] //Allows Project Panama Foreign Function access to system library
+         '--enable-native-access=ALL-UNNAMED',
+         '-Djava.library.path=/usr/local/lib'] //Allows Project Panama Foreign Function access to system library
 
-    OperatingSystem os = org.gradle.nativeplatform.platform.internal.DefaultNativePlatform.currentOperatingSystem;
+application {
+    mainClassName = "io.github.dsheirer.gui.SDRTrunk"
+
     if(os.isWindows()) {
-        //Replace the default Java system library path with an explicit location for the SDRplay API library (Windows)
-        applicationDefaultJvmArgs.add('-Djava.library.path=c:\\Program Files\\SDRplay\\API\\x64')
-        //On windows, we also need to export the windows swing look & feel module
-        applicationDefaultJvmArgs.add('--add-exports=java.desktop/com.sun.java.swing.plaf.windows=ALL-UNNAMED')
+        applicationDefaultJvmArgs = jvmArgsWindows
     }
     else {
-        //Replace the default Java system library path with an explicit location for the SDRplay API library (Linux/OS-X)
-        applicationDefaultJvmArgs.add("-Djava.library.path=/usr/local/lib")
+        applicationDefaultJvmArgs = jvmArgsLinux
     }
 }
 
@@ -167,85 +203,142 @@ String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-19.0.1-full.jdk'
 String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-19.0.1-full.jdk'
 String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-19.0.1-full'
 
-boolean hasTargetJdks = file(jdk_linux_x86_64).exists() || file(jdk_linux_aarch64).exists() ||
-        file(jdk_osx_x86_64).exists() || file(jdk_osx_aarch64).exists() || file(jdk_windows_x86_64).exists()
+/**
+ * Download URLs to download the JDK as part of the gradle build packaging process
+ */
+String jdk_download_base = 'https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-'
+String jdk_download_suffix = '-full.tar.gz'
+String jdk_download_linux_aarch64 = jdk_download_base + 'linux-aarch64' + jdk_download_suffix
+String jdk_download_linux_x86_64 = jdk_download_base + 'linux-amd64' + jdk_download_suffix
+String jdk_download_osx_x86_64 = jdk_download_base + 'macos-aarch64' + jdk_download_suffix
+String jdk_download_osx_aarch64 = jdk_download_base + 'macos-amd64' + jdk_download_suffix
+String jdk_download_windows_x86_64 = jdk_download_base + 'windows-amd64-full.zip'
 
 /**
- * Auto-download target JDKs.  Defaults to false, or the user can override via the gradle command line by
- * including this option: '-PdownloadJdks=true'
+ * Configures the runtime zip task with additional options/settings.
+ * @param rt task to configure
+ * @param jvmArgs to use (windows or linux)
+ * @return configured task.
  */
-boolean downloadJdks = project.hasProperty('downloadJdks') ? project.getProperty('downloadJdks') : false
-
-/**
- * Beryx Runtime plugin for creating OS and CPU targeted build(s) of the software.
- *
- * Option 1: Create a single target build using the locally installed JDK, or optionally create target builds for
- * all OS and CPU targets when pre-downloaded target JDKs are available (see 'jdk_*' properties above).
- *
- *    >: gradle runtimeZip
- *
- * Option 2: Create all OS and CPU target builds by automatically downloading all JDKs needed to build the target images
- *
- *    >: gradle runtimeZip -PdownloadJdks=true
- */
-runtime {
-    //Build by automatically downloading JDKs for the OS and CPU targets
-    if(downloadJdks) {
-        println("Building all runtime images")
-        println("The [ > jre: ] build phase downloads several target JDKs and this may take a while ... please wait")
-        targetPlatform(targetLinuxAarch64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-linux-aarch64-full.tar.gz")
-        }
-        targetPlatform(targetLinuxX86_64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-linux-amd64-full.tar.gz")
-        }
-        targetPlatform(targetOsxAarch64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-macos-aarch64-full.tar.gz")
-        }
-        targetPlatform(targetOsxX86_64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-macos-amd64-full.tar.gz")
-        }
-        targetPlatform(targetWindowsX86_64) {
-            jdkHome = jdkDownload("https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-windows-amd64-full.zip")
-        }
-    }
-    //Build using pre-downloaded JDKs
-    else if(hasTargetJdks) {
-        println("Building all runtime images using pre-downloaded JDKs")
-        if(file(jdk_linux_aarch64).exists()) {
-            targetPlatform(targetLinuxAarch64, jdk_linux_aarch64)
-        }
-        if(file(jdk_linux_x86_64).exists()) {
-            targetPlatform(targetLinuxX86_64, jdk_linux_x86_64)
-        }
-        if(file(jdk_osx_aarch64).exists()) {
-            targetPlatform(targetOsxAarch64, jdk_osx_aarch64)
-        }
-        if(file(jdk_osx_x86_64).exists()) {
-            targetPlatform(targetOsxX86_64, jdk_osx_x86_64)
-        }
-        if(file(jdk_windows_x86_64).exists()) {
-            targetPlatform(targetWindowsX86_64, jdk_windows_x86_64)
-        }
-    }
-    //Build using locally installed JDK only
-    else {
-        println("Building a single runtime image using locally installed JDK")
-    }
+def configure(org.beryx.runtime.RuntimeZipTask rt, List<String> jvmArgs) {
+    //Use the correct set of JVM arguments
+    rt.extension.launcherData.get().jvmArgs = jvmArgs
 
     //Additional modules to include with auto-detected modules.
     //jdk.crypto.ec - needed for HTTPS connections (broadcastify calls & map tile server)
     //jdk.incubator.vector - needed for Project Panama foreign function and vector apis
     //jdk.accessibility is used with assistive technologies like screen readers
-    modules = ['jdk.crypto.ec','jdk.incubator.vector','jdk.accessibility']
+    rt.extension.addModules('jdk.crypto.ec', 'jdk.incubator.vector', 'jdk.accessibility')
 
     //Use auto-detected modules and 'add' any specified modules.
-    additive = true
+    rt.extension.additive.set(true)
 
     //Recommended options for reducing/shrinking runtime target image size
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    rt.extension.addOptions('--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages')
 
     //Runtime images have auto appended version in image zip name.  Override to include version in single target image.
-    imageZip = (hasTargetJdks | downloadJdks) ? file("$buildDir/image/sdr-trunk.zip") :
-            file("$buildDir/image/sdr-trunk-" + version + ".zip")
+    rt.extension.imageZip.set(file("$buildDir/image/sdr-trunk.zip"))
 }
+
+/**
+ * Creates a release package for the current operating system.
+ *
+ * Note: you cannot create both Windows and Linux releases at the same time due to limitations of the Runtime plugin
+ *
+ * Usage: gradle runtimeZipCurrent
+ * Usage: gradlew runtimeZipCurrent   (windows - using gradlew)
+ * Usage: ./gradlew runtimeZipCurrent   (linux - using gradlew)
+ */
+tasks.register('runtimeZipCurrent', org.beryx.runtime.RuntimeZipTask) {rt ->
+    def arch = System.properties.getProperty("os.arch")
+    def javaHome = org.gradle.internal.jvm.Jvm.current().getJavaHome().toString()
+
+    if(os.isWindows()) {
+        rt.extension.targetPlatform(targetWindowsX86_64, javaHome)
+        configure(rt, jvmArgsWindows)
+    }
+    else if(os.isLinux())
+    {
+        if(arch.equals("amd64")) {
+            rt.extension.targetPlatform(targetLinuxX86_64, javaHome)
+        }
+        else if(arch.equals("aarch64")) {
+            rt.extension.targetPlatform(targetLinuxAarch64, javaHome)
+        }
+        configure(rt, jvmArgsLinux)
+    }
+    else if(os.isMacOsX())
+    {
+        if(arch.equals("amd64")) {
+            rt.extension.targetPlatform(targetOsxX86_64, javaHome)
+        }
+        else if(arch.equals("aarch64")) {
+            rt.extension.targetPlatform(targetOsxAarch64, javaHome)
+        }
+        configure(rt, jvmArgsLinux)
+    }
+}
+
+
+/**
+ * Creates a Windows release package.
+ *
+ * Note: you cannot create both Windows and Linux releases at the same time due to limitations of the Runtime plugin
+ *
+ * Usage: gradle runtimeZipWindows
+ * Usage: gradlew runtimeZipWindows   (windows - using gradlew)
+ * Usage: ./gradlew runtimeZipWindows   (linux - using gradlew)
+ */
+tasks.register('runtimeZipWindows', org.beryx.runtime.RuntimeZipTask) {rt ->
+    if(file(jdk_windows_x86_64).exists()) {
+        rt.extension.targetPlatform(targetWindowsX86_64, jdk_windows_x86_64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetWindowsX86_64, jdkDownload(jdk_download_windows_x86_64))
+    }
+
+    configure(rt, jvmArgsWindows)
+}
+
+/**
+ * Creates Linux & OSX release packages.
+ *
+ * Note: you cannot create both Windows and Linux releases at the same time due to limitations of the Runtime plugin
+ *
+ * Usage: gradle runtimeZipOthers
+ * Usage: gradlew runtimeZipOthers   (windows - using gradlew)
+ * Usage: ./gradlew runtimeZipOthers   (linux - using gradlew)
+ */
+tasks.register('runtimeZipOthers', org.beryx.runtime.RuntimeZipTask) {rt ->
+    //Linux aarch64
+    if(file(jdk_linux_aarch64).exists()) {
+        rt.extension.targetPlatform(targetLinuxAarch64, jdk_linux_aarch64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetLinuxAarch64, jdkDownload(jdk_download_linux_aarch64))
+    }
+    //Linux x86-64
+    if(file(jdk_linux_x86_64).exists()) {
+        rt.extension.targetPlatform(targetLinuxX86_64, jdk_linux_x86_64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetLinuxX86_64, jdkDownload(jdk_download_linux_x86_64))
+    }
+    //OSX aarch64
+    if(file(jdk_osx_aarch64).exists()) {
+        rt.extension.targetPlatform(targetOsxAarch64, jdk_osx_aarch64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetOsxAarch64, jdkDownload(jdk_download_osx_aarch64))
+    }
+    //Linux x86-64
+    if(file(jdk_osx_x86_64).exists()) {
+        rt.extension.targetPlatform(targetOsxX86_64, jdk_osx_x86_64, [])
+    }
+    else {
+        rt.extension.targetPlatform(targetOsxX86_64, jdkDownload(jdk_download_osx_x86_64))
+    }
+
+    configure(rt, jvmArgsLinux);
+}
+
