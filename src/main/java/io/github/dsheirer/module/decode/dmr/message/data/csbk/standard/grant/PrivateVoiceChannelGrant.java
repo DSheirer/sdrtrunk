@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,11 +23,10 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -118,7 +117,7 @@ public class PrivateVoiceChannelGrant extends ChannelGrant
     {
         if(mSourceRadio == null)
         {
-            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE));
+            mSourceRadio = DmrTier3Radio.createFrom(getMessage().getInt(SOURCE));
         }
 
         return mSourceRadio;
@@ -131,7 +130,7 @@ public class PrivateVoiceChannelGrant extends ChannelGrant
     {
         if(mDestinationRadio == null)
         {
-            mDestinationRadio = DMRRadio.createTo(getMessage().getInt(DESTINATION));
+            mDestinationRadio = DmrTier3Radio.createTo(getMessage().getInt(DESTINATION));
         }
 
         return mDestinationRadio;

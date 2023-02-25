@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,9 +21,9 @@ package io.github.dsheirer.util;
 
 import io.github.dsheirer.module.decode.ip.IPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
-import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
-import io.github.dsheirer.module.decode.ip.lrrp.token.Point2d;
-import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token.Point2d;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token.Token;
 import io.github.dsheirer.module.decode.ip.udp.UDPPacket;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 

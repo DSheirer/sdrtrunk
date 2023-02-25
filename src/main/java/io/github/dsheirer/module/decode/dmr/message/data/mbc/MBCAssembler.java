@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ package io.github.dsheirer.module.decode.dmr.message.data.mbc;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.data.header.MBCHeader;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,10 +30,10 @@ import java.util.List;
  */
 public class MBCAssembler
 {
-    private MBCHeader mTS0Header;
     private MBCHeader mTS1Header;
-    private List<MBCContinuationBlock> mTS0ContinuationBlocks = new ArrayList<>();
+    private MBCHeader mTS2Header;
     private List<MBCContinuationBlock> mTS1ContinuationBlocks = new ArrayList<>();
+    private List<MBCContinuationBlock> mTS2ContinuationBlocks = new ArrayList<>();
 
     /**
      * Constructs an instance
@@ -53,13 +52,13 @@ public class MBCAssembler
         {
             reset(header.getTimeslot());
 
-            if(header.getTimeslot() == 0)
-            {
-                mTS0Header = header;
-            }
-            else
+            if(header.getTimeslot() == 1)
             {
                 mTS1Header = header;
+            }
+            else if(header.getTimeslot() == 2)
+            {
+                mTS2Header = header;
             }
         }
     }
@@ -73,25 +72,7 @@ public class MBCAssembler
     {
         if(continuationBlock != null)
         {
-            if(continuationBlock.getTimeslot() == 0)
-            {
-                mTS0ContinuationBlocks.add(continuationBlock);
-
-                if(continuationBlock.isLastBlock())
-                {
-                    if(mTS0Header != null)
-                    {
-                        CSBKMessage csbk = CSBKMessageFactory.create(mTS0Header, new ArrayList<>(mTS0ContinuationBlocks));
-                        reset(0);
-                        return csbk;
-                    }
-                    else
-                    {
-                        reset(0);
-                    }
-                }
-            }
-            else
+            if(continuationBlock.getTimeslot() == 1)
             {
                 mTS1ContinuationBlocks.add(continuationBlock);
 
@@ -109,6 +90,24 @@ public class MBCAssembler
                     }
                 }
             }
+            else if(continuationBlock.getTimeslot() == 2)
+            {
+                mTS2ContinuationBlocks.add(continuationBlock);
+
+                if(continuationBlock.isLastBlock())
+                {
+                    if(mTS2Header != null)
+                    {
+                        CSBKMessage csbk = CSBKMessageFactory.create(mTS2Header, new ArrayList<>(mTS2ContinuationBlocks));
+                        reset(2);
+                        return csbk;
+                    }
+                    else
+                    {
+                        reset(2);
+                    }
+                }
+            }
         }
 
         return null;
@@ -120,15 +119,15 @@ public class MBCAssembler
      */
     public void reset(int timeslot)
     {
-        if(timeslot == 0)
-        {
-            mTS0Header = null;
-            mTS0ContinuationBlocks.clear();
-        }
-        else
+        if(timeslot == 1)
         {
             mTS1Header = null;
             mTS1ContinuationBlocks.clear();
+        }
+        else if(timeslot == 2)
+        {
+            mTS2Header = null;
+            mTS2ContinuationBlocks.clear();
         }
     }
 }

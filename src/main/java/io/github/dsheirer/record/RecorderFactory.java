@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,8 +31,8 @@ import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.record.wave.NativeBufferWaveRecorder;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
+import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.util.StringUtils;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -69,7 +69,7 @@ public class RecorderFactory
                     if(channel.isStandardChannel() && channel.getDecodeConfiguration().getDecoderType().providesBitstream())
                     {
                         recorderModules.add(new BinaryRecorder(getRecordingBasePath(userPreferences),
-                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
+                            getRecordingNameFromChannel(channel), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
                     }
                     break;
                 case TRAFFIC_BASEBAND:
@@ -82,7 +82,7 @@ public class RecorderFactory
                     if(channel.isTrafficChannel() && channel.getDecodeConfiguration().getDecoderType().providesBitstream())
                     {
                         recorderModules.add(new BinaryRecorder(getRecordingBasePath(userPreferences),
-                            channel.toString(), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
+                            getRecordingNameFromChannel(channel), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
                     }
                     break;
                 case MBE_CALL_SEQUENCE:
@@ -147,6 +147,27 @@ public class RecorderFactory
         }
 
         return recorderModules;
+    }
+
+    /**
+     * Creates a recording file name from the channel frequency and the channel configuration.
+     * @param channel to process
+     * @return recording file name.
+     */
+    private static String getRecordingNameFromChannel(Channel channel)
+    {
+        if(channel.getSourceConfiguration() != null)
+        {
+            SourceConfiguration sourceConfiguration = channel.getSourceConfiguration();
+
+            if(sourceConfiguration instanceof SourceConfigTuner sourceConfigTuner)
+            {
+                long frequency = sourceConfigTuner.getFrequency();
+                return frequency + "_" + channel.toString();
+            }
+        }
+
+        return StringUtils.replaceIllegalCharacters(channel.toString());
     }
 
     /**

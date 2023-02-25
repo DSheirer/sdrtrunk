@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,7 +73,7 @@ public class ConnectPlusTalkgroupAffiliation extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" CON+ AFFILIATE RADIO:").append(getRadio());
+        sb.append(" CSBK CON+ AFFILIATE RADIO:").append(getRadio());
         sb.append(" TO TALKGROUP:").append(getTalkgroup());
         sb.append(" UNK:").append(getUnknown());
         sb.append(" MSG:").append(getMessage().toHexString());

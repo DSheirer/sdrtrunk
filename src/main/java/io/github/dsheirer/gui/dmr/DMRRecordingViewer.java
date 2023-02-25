@@ -26,6 +26,8 @@ import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.record.binary.BinaryReader;
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.prefs.Preferences;
 import javafx.application.Application;
@@ -35,6 +37,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -42,9 +45,15 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TablePosition;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -60,6 +69,7 @@ import org.slf4j.LoggerFactory;
 public class DMRRecordingViewer extends VBox
 {
     private static final Logger mLog = LoggerFactory.getLogger(DMRRecordingViewer.class);
+    private static final KeyCodeCombination KEY_CODE_COPY = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_ANY);
     private static final String LAST_SELECTED_DIRECTORY = "last.selected.directory";
     private Preferences mPreferences = Preferences.userNodeForPackage(DMRRecordingViewer.class);
     private Scene mScene;
@@ -243,7 +253,56 @@ public class DMRRecordingViewer extends VBox
     {
         if(mMessageTableView == null)
         {
-            mMessageTableView = new TableView<>(mFilteredMessages);
+            mMessageTableView = new TableView<>();
+            SortedList<IMessage> sortedList = new SortedList<>(mFilteredMessages);
+            sortedList.comparatorProperty().bind(mMessageTableView.comparatorProperty());
+            mMessageTableView.setItems(sortedList);
+
+            mMessageTableView.setOnKeyPressed(event ->
+            {
+                if(KEY_CODE_COPY.match(event))
+                {
+                    final Set<Integer> rows = new TreeSet<>();
+                    for (final TablePosition tablePosition : mMessageTableView.getSelectionModel().getSelectedCells())
+                    {
+                        rows.add(tablePosition.getRow());
+                    }
+
+                    final StringBuilder sb = new StringBuilder();
+                    boolean firstRow = true;
+                    for (final Integer row : rows)
+                    {
+                        if(firstRow)
+                        {
+                            firstRow = false;
+                        }
+                        else
+                        {
+                            sb.append('\n');
+                        }
+
+                        boolean firstCol = true;
+
+                        for (final TableColumn<?, ?> column : mMessageTableView.getColumns())
+                        {
+                            if(firstCol)
+                            {
+                                firstCol = false;
+                            }
+                            else
+                            {
+                                sb.append('\t');
+                            }
+
+                            final Object cellData = column.getCellData(row);
+                            sb.append(cellData == null ? "" : cellData.toString());
+                        }
+                    }
+                    final ClipboardContent clipboardContent = new ClipboardContent();
+                    clipboardContent.putString(sb.toString());
+                    Clipboard.getSystemClipboard().setContent(clipboardContent);
+                }
+            });
 
             TableColumn timestampColumn = new TableColumn();
             timestampColumn.setPrefWidth(110);

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,8 +28,7 @@ import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-import io.github.dsheirer.module.decode.ip.xcmp.XCMPMessageType;
-
+import io.github.dsheirer.module.decode.ip.mototrbo.xcmp.XCMPMessageType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,7 +77,7 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" CON+ ANNOUNCE OTA ").append(getMessageType());
+        sb.append(" CSBK CON+ ANNOUNCE OTA ").append(getMessageType());
         sb.append(" VER:").append(getMessageVersion());
         sb.append(" AVAILABLE ON ").append(getDataChannel());
         sb.append(" MSG:").append(getMessage().toHexString());

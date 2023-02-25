@@ -23,7 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
@@ -94,7 +94,7 @@ public class HyteraCsbko47 extends CSBKMessage
     {
         if(mDestinationRadio == null)
         {
-            mDestinationRadio = DMRRadio.createTo(getMessage().getInt(DESTINATION_RADIO));
+            mDestinationRadio = DmrTier3Radio.createTo(getMessage().getInt(DESTINATION_RADIO));
         }
 
         return mDestinationRadio;
@@ -117,7 +117,7 @@ public class HyteraCsbko47 extends CSBKMessage
     {
         if(mSourceRadio == null)
         {
-            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE_RADIO));
+            mSourceRadio = DmrTier3Radio.createFrom(getMessage().getInt(SOURCE_RADIO));
         }
 
         return mSourceRadio;

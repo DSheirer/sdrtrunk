@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,7 +71,7 @@ public class ConnectPlusCSBKO_16 extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" CON+ CSBKO:16 FM:").append(getSourceRadio());
+        sb.append(" CSBK CON+ CSBKO:16 FM:").append(getSourceRadio());
         sb.append(" TO:").append(getTargetRadio());
         sb.append(" UNK:").append(getUnknown());
         sb.append(" MSG:").append(getMessage().toHexString());

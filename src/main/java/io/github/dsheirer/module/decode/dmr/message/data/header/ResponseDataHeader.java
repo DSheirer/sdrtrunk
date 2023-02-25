@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,12 +24,12 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
+import io.github.dsheirer.module.decode.dmr.message.type.ResponseStatus;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceAccessPoint;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +47,7 @@ public class ResponseDataHeader extends DataHeader
     private static final int[] BLOCKS_TO_FOLLOW = new int[]{65, 66, 67, 68, 69, 70, 71};
     private static final int[] CLASS_TYPE_STATUS = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
+    private ResponseStatus mResponseStatus;
     private IntegerIdentifier mDestinationLLID;
     private RadioIdentifier mSourceLLID;
     private List<Identifier> mIdentifiers;
@@ -79,16 +80,29 @@ public class ResponseDataHeader extends DataHeader
         sb.append(" FM:").append(getSourceLLID());
         sb.append(" TO:").append(getDestinationLLID());
         sb.append(" ").append(getServiceAccessPoint());
-        sb.append(" CLASS/TYPE/STATUS:").append(getClassTypeStatus());
-        sb.append(" BLOCKS TO FOLLOW:").append(getBlocksToFollow());
+        sb.append(" STATUS:").append(getResponseStatus());
+        sb.append(" - BLOCKS TO FOLLOW:").append(getBlocksToFollow());
+        sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
 
     /**
+     * Description of the response code.
+     * @return response status description.
+     */
+    public ResponseStatus getResponseStatus()
+    {
+        if(mResponseStatus == null)
+        {
+            mResponseStatus = new ResponseStatus(getClassTypeStatus());
+        }
+
+        return mResponseStatus;
+    }
+
+    /**
      * Class, Type and Status of response.
-     *
-     * TODO: create an enumeration for this value - see TS 102 361-3 for definitions
-     * @return
+     * @return integer value of the field.
      */
     public int getClassTypeStatus()
     {
@@ -132,7 +146,7 @@ public class ResponseDataHeader extends DataHeader
             }
             else
             {
-                mDestinationLLID = DMRRadio.createTo(getMessage().getInt(DESTINATION_IDENTIFIER));
+                mDestinationLLID = DmrTier3Radio.createTo(getMessage().getInt(DESTINATION_IDENTIFIER));
             }
         }
 
@@ -147,7 +161,7 @@ public class ResponseDataHeader extends DataHeader
     {
         if(mSourceLLID == null)
         {
-            mSourceLLID = DMRRadio.createFrom(getMessage().getInt(SOURCE_RADIO));
+            mSourceLLID = DmrTier3Radio.createFrom(getMessage().getInt(SOURCE_RADIO));
         }
 
         return mSourceLLID;

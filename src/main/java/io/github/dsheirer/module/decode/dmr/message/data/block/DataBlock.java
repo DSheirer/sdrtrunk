@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -34,6 +33,8 @@ import java.util.List;
  */
 public abstract class DataBlock extends DataMessage
 {
+    private static final int[] DATA_BLOCK_SERIAL_NUMBER = new int[]{0, 1, 2, 3, 4, 5, 6};
+
     /**
      * Constructs an instance.
      *
@@ -63,7 +64,11 @@ public abstract class DataBlock extends DataMessage
     /**
      * Serial number for a confirmed data block
      */
-    public abstract int getDataBlockSerialNumber();
+    public int getDataBlockSerialNumber()
+    {
+        return getMessage().getInt(DATA_BLOCK_SERIAL_NUMBER);
+    }
+
 
     @Override
     public String toString()
