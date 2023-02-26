@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@ import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.Opcode;
+import io.github.dsheirer.module.decode.dmr.message.type.AnnouncementType;
 import io.github.dsheirer.module.decode.dmr.message.type.Vendor;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -36,6 +36,8 @@ import java.util.List;
  */
 public class MBCHeader extends CSBKMessage
 {
+    private static final int[] ANNOUNCEMENT_TYPE = new int[]{16, 17, 18, 19, 20};
+
     /**
      * Constructs an instance
      *
@@ -87,7 +89,7 @@ public class MBCHeader extends CSBKMessage
             }
             else
             {
-                sb.append(" VENDOR:").append(vendor);
+                sb.append(" ").append(vendor);
             }
         }
 
@@ -96,6 +98,10 @@ public class MBCHeader extends CSBKMessage
         if(opcode == Opcode.UNKNOWN)
         {
             sb.append(" UNKNOWN CSBKO:").append(getOpcodeValue());
+        }
+        else if(opcode == Opcode.HYTERA_08_ANNOUNCEMENT)
+        {
+            sb.append(" ANNOUNCEMENT:").append(AnnouncementType.fromValue(getMessage().getInt(ANNOUNCEMENT_TYPE)));
         }
         else
         {

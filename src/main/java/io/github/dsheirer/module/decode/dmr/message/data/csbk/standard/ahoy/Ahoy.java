@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ package io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.ahoy;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
@@ -117,7 +117,7 @@ public abstract class Ahoy extends CSBKMessage
             }
             else
             {
-                mTargetAddress = DMRRadio.createTo(getMessage().getInt(TARGET_ADDRESS));
+                mTargetAddress = DmrTier3Radio.createTo(getMessage().getInt(TARGET_ADDRESS));
             }
 
         }

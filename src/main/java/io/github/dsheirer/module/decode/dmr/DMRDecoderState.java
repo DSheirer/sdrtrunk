@@ -27,6 +27,7 @@ import io.github.dsheirer.channel.state.TimeslotDecoderState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelConfigurationChangeNotification;
+import io.github.dsheirer.identifier.Form;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.IdentifierCollection;
@@ -74,6 +75,7 @@ import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
 import io.github.dsheirer.util.PacketUtil;
@@ -299,27 +301,47 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         broadcast(new DecoderStateEvent(this, Event.START, State.DATA, getTimeslot()));
 
-        DecodeEvent packetEvent = DMRDecodeEvent.builder(packet.getTimestamp())
-            .eventDescription(DecodeEventType.DATA_PACKET.name())
-            .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
-            .timeslot(packet.getTimeslot())
-            .details(packet.toString())
-            .build();
+        //Hytera SDS Long SMS message
+        if(packet.getPacket() instanceof HyteraSmsPacket hyteraSmsPacket)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+            mic.remove(Form.RADIO);
+            mic.remove(Form.TALKGROUP);
+            mic.update(hyteraSmsPacket.getSource());
+            mic.update(hyteraSmsPacket.getDestination());
 
-        broadcast(packetEvent);
-
-        GeoPosition geoPosition = PacketUtil.extractGeoPosition(packet.getPacket());
-
-        if (geoPosition != null) {
-            PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(packet.getTimestamp())
-                    .channel(getCurrentChannel())
-                    .eventDescription(DecodeEventType.GPS.toString())
+            DecodeEvent smsEvent = DMRDecodeEvent.builder(packet.getTimestamp())
+                    .eventDescription(DecodeEventType.SMS.name())
+                    .identifiers(mic)
+                    .timeslot(packet.getTimeslot())
+                    .details("SMS:" + hyteraSmsPacket.getSMS())
+                    .build();
+            broadcast(smsEvent);
+        }
+        else
+        {
+            DecodeEvent packetEvent = DMRDecodeEvent.builder(packet.getTimestamp())
+                    .eventDescription(DecodeEventType.DATA_PACKET.name())
                     .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
-                    .protocol(Protocol.LRRP)
-                    .location(geoPosition)
+                    .timeslot(packet.getTimeslot())
+                    .details(packet.toString())
                     .build();
 
-            broadcast(plottableDecodeEvent);
+            broadcast(packetEvent);
+
+            GeoPosition geoPosition = PacketUtil.extractGeoPosition(packet.getPacket());
+
+            if (geoPosition != null) {
+                PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(packet.getTimestamp())
+                        .channel(getCurrentChannel())
+                        .eventDescription(DecodeEventType.GPS.toString())
+                        .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
+                        .protocol(Protocol.LRRP)
+                        .location(geoPosition)
+                        .build();
+
+                broadcast(plottableDecodeEvent);
+            }
         }
     }
 
@@ -628,7 +650,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                 break;
             case HYTERA_08_ANNOUNCEMENT:
             case HYTERA_68_ANNOUNCEMENT:
-            case HYTERA_XPT_SITE_STATE:
+            case HYTERA_68_XPT_SITE_STATE:
 
             case MOTOROLA_CAPPLUS_NEIGHBOR_REPORT:
                 if(csbk instanceof CapacityPlusNeighbors)

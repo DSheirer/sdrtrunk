@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,14 +23,13 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.type.ServiceFunction;
 import io.github.dsheirer.module.decode.dmr.message.type.SystemIdentityCode;
 import io.github.dsheirer.module.decode.dmr.message.type.Version;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,7 +82,7 @@ public class CapacityMaxAloha extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" CAPACITY-MAX ALOHA");
+        sb.append(" CSBK CAPACITY-MAX ALOHA");
 
         if(hasRadioIdentifier())
         {
@@ -153,7 +152,7 @@ public class CapacityMaxAloha extends CSBKMessage
     {
         if(mRadioIdentifier == null)
         {
-            mRadioIdentifier = DMRRadio.createTo(getMessage().getInt(RADIO));
+            mRadioIdentifier = DmrTier3Radio.createTo(getMessage().getInt(RADIO));
         }
 
         return mRadioIdentifier;

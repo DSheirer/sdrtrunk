@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,14 +24,13 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.type.AcknowledgeType;
 import io.github.dsheirer.module.decode.dmr.message.type.Reason;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -136,7 +135,7 @@ public class Acknowledge extends CSBKMessage
             }
             else
             {
-                mTargetAddress = DMRRadio.createTo(getMessage().getInt(TARGET_ADDRESS));
+                mTargetAddress = DmrTier3Radio.createTo(getMessage().getInt(TARGET_ADDRESS));
             }
         }
 
@@ -159,7 +158,7 @@ public class Acknowledge extends CSBKMessage
     {
         if(mSourceRadio == null)
         {
-            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(ADDITIONAL_INFO_SOURCE_ADDRESS));
+            mSourceRadio = DmrTier3Radio.createFrom(getMessage().getInt(ADDITIONAL_INFO_SOURCE_ADDRESS));
         }
 
         return mSourceRadio;

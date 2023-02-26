@@ -29,8 +29,8 @@ import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
-import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
+import io.github.dsheirer.module.decode.dmr.identifier.DmrTier3Radio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
@@ -141,7 +141,7 @@ public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
     {
         if(mSourceRadio == null)
         {
-            mSourceRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE));
+            mSourceRadio = DmrTier3Radio.createFrom(getMessage().getInt(SOURCE));
         }
 
         return mSourceRadio;
@@ -157,7 +157,7 @@ public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
             }
             else
             {
-                mDestinationId = DMRRadio.createTo(getMessage().getInt(DESTINATION));
+                mDestinationId = DmrTier3Radio.createTo(getMessage().getInt(DESTINATION));
             }
         }
 

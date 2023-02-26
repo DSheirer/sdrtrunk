@@ -23,13 +23,14 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.Hytera08Acknowledge;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.Hytera68Acknowledge;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAdjacentSiteInformation;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraAnnouncement;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraCsbko32;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraCsbko44;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraCsbko47;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraSmsWaitingNotification;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraSmsAvailableNotification;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTPreamble;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.hytera.HyteraXPTSiteState;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
@@ -221,7 +222,7 @@ public class CSBKMessageFactory
                     csbk = new Preamble(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
 
-                case HYTERA_ALOHA:
+                case HYTERA_68_ALOHA:
                     csbk = new HyteraAloha(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
                 case HYTERA_08_ANNOUNCEMENT:
@@ -237,23 +238,26 @@ public class CSBKMessageFactory
                             break;
                     }
                     break;
-                case HYTERA_XPT_PREAMBLE:
+                case HYTERA_68_XPT_PREAMBLE:
                     csbk = new HyteraXPTPreamble(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case HYTERA_XPT_SITE_STATE:
+                case HYTERA_68_XPT_SITE_STATE:
                     csbk = new HyteraXPTSiteState(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case HYTERA_CSBKO_32:
-                    csbk = new HyteraCsbko32(pattern, message, cach, slotType, timestamp, timeslot);
+                case HYTERA_08_ACKNOWLEDGE:
+                    csbk = new Hytera08Acknowledge(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case HYTERA_CSBKO_44:
+                case HYTERA_08_CSBKO_44:
                     csbk = new HyteraCsbko44(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case HYTERA_CSBKO_47:
+                case HYTERA_08_CSBKO_47:
                     csbk = new HyteraCsbko47(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case HYTERA_CSBKO_62:
-                    csbk = new HyteraSmsWaitingNotification(pattern, message, cach, slotType, timestamp, timeslot);
+                case HYTERA_68_ACKNOWLEDGE:
+                    csbk = new Hytera68Acknowledge(pattern, message, cach, slotType, timestamp, timeslot);
+                    break;
+                case HYTERA_68_CSBKO_62:
+                    csbk = new HyteraSmsAvailableNotification(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
                 case MOTOROLA_CAPMAX_ALOHA:
                     csbk = new CapacityMaxAloha(pattern, message, cach, slotType, timestamp, timeslot);

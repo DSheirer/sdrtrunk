@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
  */
 public class DataBlock3_4Rate extends DataBlock
 {
-    private static final int[] DATA_BLOCK_SERIAL_NUMBER = new int[]{0, 1, 2, 3, 4, 5, 6};
     private static final int[] CRC = new int[]{7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int CONFIRMED_PAYLOAD_START = 16;
     private static final int UNCONFIRMED_PAYLOAD_START = 0;
@@ -57,15 +56,14 @@ public class DataBlock3_4Rate extends DataBlock
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("RATE 3/4 DATA CONFIRMED:").append(getConfirmedPayload().toHexString());
+        sb.append("CC:").append(getSlotType().getColorCode());
+        if(!isValid())
+        {
+            sb.append(" [CRC ERROR]");
+        }
+        sb.append(" RATE 3/4 DATA CONFIRMED:").append(getConfirmedPayload().toHexString());
         sb.append(" UNCONFIRMED:").append(getUnConfirmedPayload().toHexString());
         return sb.toString();
-    }
-
-    @Override
-    public int getDataBlockSerialNumber()
-    {
-        return getMessage().getInt(DATA_BLOCK_SERIAL_NUMBER);
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,17 +30,14 @@ import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessage;
 import io.github.dsheirer.module.decode.dmr.message.DMRMessageFactory;
 import io.github.dsheirer.module.decode.dmr.message.data.packet.DMRPacketMessage;
-import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
-import io.github.dsheirer.module.decode.ip.lrrp.token.Identity;
-import io.github.dsheirer.module.decode.ip.lrrp.token.Token;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token.Identity;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.token.Token;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.record.binary.BinaryReader;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.DirectoryStream;
@@ -53,6 +50,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DMR Sync Detector and Message Framer.  Includes capability to detect PLL out-of-phase lock errors
