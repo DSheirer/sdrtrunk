@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -60,7 +59,7 @@ public class CapacityPlusCSBKO_60 extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" CAP+ *UNKNOWN* CSBK:60");
+        sb.append(" CSBK CAP+ *UNKNOWN* CSBK:60");
         sb.append(" MSG:").append(getMessage().toHexString());
 
         return sb.toString();

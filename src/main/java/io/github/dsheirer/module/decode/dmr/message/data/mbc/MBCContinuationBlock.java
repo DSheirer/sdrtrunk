@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2020 Zhenyu Mao
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.dmr.message.data.mbc;
 
@@ -25,7 +24,6 @@ import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -52,7 +50,19 @@ public class MBCContinuationBlock extends DataMessage
     {
         StringBuilder sb = new StringBuilder();
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" MULTI-BLOCK CSBK CONTINUATION FINAL BLOCK:").append(isLastBlock() ? "YES" : "NO");
+
+        if(!isValid())
+        {
+            sb.append(" [CRC ERROR]");
+        }
+
+        sb.append(" MULTI-BLOCK CSBK CONTINUATION");
+
+        if(isLastBlock())
+        {
+            sb.append("-FINAL");
+        }
+
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }

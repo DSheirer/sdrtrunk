@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,14 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.ip;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -41,7 +39,7 @@ public class UnknownPacket implements IPacket
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("PACKET:");
+        sb.append("UNKNOWN PACKET:");
 
         if(getMessage().size() > getOffset())
         {

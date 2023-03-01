@@ -33,6 +33,8 @@ public class BinaryMessage extends BitSet
     private static final int[] CHARACTER_7_BIT = new int[]{0, 1, 2, 3, 4, 5, 6};
     private static final int[] CHARACTER_8_BIT = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
     private static final String UTF_8 = "UTF-8";
+    private static final String GB2312 = "GB2312";
+
 
     /**
      * Logical (ie constructed) size of this bitset, despite the actual size of
@@ -1234,6 +1236,26 @@ public class BinaryMessage extends BitSet
         }
 
         return new String(bytes, UTF_8);
+    }
+
+    /**
+     * Parse GB2312 Simplified Chinese Characters from the message starting at the offset.
+     * @param offset where to start parsing.
+     * @param characterCount number of characters to parse
+     * @return parsed message.
+     * @throws UnsupportedEncodingException if GB2312 encoding is not supported.
+     */
+    public String parseGB2312(int offset, int characterCount) throws UnsupportedEncodingException
+    {
+        int length = characterCount * 2;
+        byte[] bytes = new byte[length];
+
+        for(int x = 0; x < length; x++)
+        {
+            bytes[x] = getByte(CHARACTER_8_BIT, x * 8 + offset);
+        }
+
+        return new String(bytes, GB2312);
     }
 
     /**

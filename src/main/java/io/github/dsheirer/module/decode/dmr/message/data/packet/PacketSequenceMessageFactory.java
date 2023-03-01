@@ -31,11 +31,13 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.hytera.HyteraPro
 import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MNISProprietaryDataHeader;
 import io.github.dsheirer.module.decode.dmr.message.type.ApplicationType;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
-import io.github.dsheirer.module.decode.ip.ars.ARSPacket;
+import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraTokenHeader;
+import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Header;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
-import io.github.dsheirer.module.decode.ip.lrrp.LRRPPacket;
-import io.github.dsheirer.module.decode.ip.xcmp.XCMPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.ars.ARSPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.lrrp.LRRPPacket;
+import io.github.dsheirer.module.decode.ip.mototrbo.xcmp.XCMPPacket;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -60,6 +62,7 @@ public class PacketSequenceMessageFactory
             if(packetSequence.hasPacketSequenceHeader())
             {
                 PacketSequenceHeader primaryHeader = packetSequence.getPacketSequenceHeader();
+                boolean confirmed = primaryHeader.isConfirmedData();
                 CorrectedBinaryMessage packet = getPacket(packetSequence, primaryHeader.isConfirmedData());
 
                 if(packet != null)
@@ -136,6 +139,7 @@ public class PacketSequenceMessageFactory
     {
         HeaderMessage secondaryHeader = packetSequence.getProprietaryDataHeader();
 
+        //MotoTRBO MNIS
         if(secondaryHeader instanceof MNISProprietaryDataHeader)
         {
             ApplicationType applicationType = ((MNISProprietaryDataHeader)secondaryHeader).getApplicationType();
@@ -162,8 +166,18 @@ public class PacketSequenceMessageFactory
         }
         else if(secondaryHeader instanceof HyteraProprietaryDataHeader)
         {
-            return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
-                packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
+            HyteraTokenHeader hyteraTokenHeader = new HyteraTokenHeader(packet);
+
+            if(hyteraTokenHeader.isSMSMessage())
+            {
+                return new DMRPacketMessage(packetSequence, new HyteraSmsPacket(hyteraTokenHeader), packet,
+                        packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
+            }
+            else
+            {
+                return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
+                        packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
+            }
         }
         else
         {
@@ -265,5 +279,32 @@ public class PacketSequenceMessageFactory
         }
 
         return null;
+    }
+
+    /**
+     * Inspects the first 7 bits of each data block to see if a contiguous data block sequence number pattern is
+     * present.  This might indicate that the payload is a confirmed payload versus an unconfirmed payload when
+     * the packet sequence is not yet identified.
+     *
+     * @param dataBlocks to inspect.
+     * @return true if each of the data blocks have a sequential data block sequencing number.
+     */
+    public static boolean isConfirmedDataBlocks(List<DataBlock> dataBlocks)
+    {
+        int sequenceNumber = 0;
+
+        for(DataBlock dataBlock: dataBlocks)
+        {
+            if(dataBlock.getDataBlockSerialNumber() == sequenceNumber)
+            {
+                sequenceNumber++;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ import io.github.dsheirer.module.decode.dmr.identifier.DMRTalkgroup;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Preamble;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -76,7 +75,7 @@ public class CapacityPlusPreamble extends Preamble
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
-        sb.append(" MOTOROLA CAP+").append(isCSBKPreamble() ? " CSBK" : " DATA");
+        sb.append(" CSBK CAP+").append(isCSBKPreamble() ? " CSBK" : " DATA");
         sb.append(" PREAMBLE FM:").append(getSourceAddress());
         sb.append(" TO:").append(getTargetAddress());
         sb.append(" BLOCKS TO FOLLOW:").append(getBlocksToFollow());

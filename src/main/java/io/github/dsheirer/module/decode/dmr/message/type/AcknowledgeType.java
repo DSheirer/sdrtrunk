@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ package io.github.dsheirer.module.decode.dmr.message.type;
 public enum AcknowledgeType
 {
     ACKNOWLEDGE(0, "ACKNOWLEDGED"),
-    NOT_ACKNOWLEDGE(1, "REJECTED/REFUSED"),
+    NOT_ACKNOWLEDGE(1, "REJECTED/REFUSED/NOT ACKNOWLEDGED"),
     QUEUED(2, "QUEUED"),
     WAIT(3, "WAIT"),
     UNKNOWN(-1, "UNKNOWN");

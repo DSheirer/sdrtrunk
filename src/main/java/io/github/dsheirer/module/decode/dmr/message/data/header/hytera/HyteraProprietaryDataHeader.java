@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,6 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.ProprietaryDataH
  */
 public class HyteraProprietaryDataHeader extends ProprietaryDataHeader
 {
-    private static final int[] UNKNOWN_1 = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
-    private static final int[] UNKNOWN_2 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
-
     /**
      * Constructs an instance.
      *
@@ -52,27 +49,14 @@ public class HyteraProprietaryDataHeader extends ProprietaryDataHeader
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("HYTERA PROPRIETARY DATA HEADER");
-        sb.append(" ").append(getServiceAccessPoint());
-        sb.append(" UNK1:").append(getUnknown1());
-        sb.append(" UNK2:").append(getUnknown2());
+        sb.append("CC:").append(getSlotType().getColorCode());
+        if(!isValid())
+        {
+            sb.append(" [CRC ERROR]");
+        }
+        sb.append(" HYTERA PROPRIETARY DATA HEADER");
+        sb.append(" SAP:").append(getServiceAccessPoint());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
-    }
-
-    /**
-     * Unknown 8-bit field.  This is likely the encryption type identifier.
-     */
-    public int getUnknown1()
-    {
-        return getMessage().getInt(UNKNOWN_1);
-    }
-
-    /**
-     * Unknown 8-bit field.  This is likely the encryption key identifier.
-     */
-    public int getUnknown2()
-    {
-        return getMessage().getInt(UNKNOWN_2);
     }
 }
