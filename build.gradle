@@ -53,7 +53,7 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.6.0-alpha3'
+version = '0.6.0-alpha4'
 
 //Java 19 is required for this version of the Project Panama preview/incubator feature
 java {
@@ -206,13 +206,13 @@ String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-19.0.1-full'
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
-String jdk_download_base = 'https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-'
-String jdk_download_suffix = '-full.tar.gz'
-String jdk_download_linux_aarch64 = jdk_download_base + 'linux-aarch64' + jdk_download_suffix
-String jdk_download_linux_x86_64 = jdk_download_base + 'linux-amd64' + jdk_download_suffix
-String jdk_download_osx_x86_64 = jdk_download_base + 'macos-aarch64' + jdk_download_suffix
-String jdk_download_osx_aarch64 = jdk_download_base + 'macos-amd64' + jdk_download_suffix
-String jdk_download_windows_x86_64 = jdk_download_base + 'windows-amd64-full.zip'
+def jdk_download_base = "https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-"
+def jdk_download_suffix = "-full.tar.gz"
+def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
+def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix
+def jdk_download_osx_x86_64 = jdk_download_base + "macos-aarch64" + jdk_download_suffix
+def jdk_download_osx_aarch64 = jdk_download_base + "macos-amd64" + jdk_download_suffix
+def jdk_download_windows_x86_64 = jdk_download_base + "windows-amd64-full.zip"
 
 /**
  * Configures the runtime zip task with additional options/settings.
@@ -294,7 +294,9 @@ tasks.register('runtimeZipWindows', org.beryx.runtime.RuntimeZipTask) {rt ->
         rt.extension.targetPlatform(targetWindowsX86_64, jdk_windows_x86_64, [])
     }
     else {
-        rt.extension.targetPlatform(targetWindowsX86_64, jdkDownload(jdk_download_windows_x86_64))
+        rt.extension.targetPlatform(targetWindowsX86_64) {
+            jdkHome = jdkDownload(jdk_download_windows_x86_64)
+        }
     }
 
     configure(rt, jvmArgsWindows)
@@ -315,28 +317,36 @@ tasks.register('runtimeZipOthers', org.beryx.runtime.RuntimeZipTask) {rt ->
         rt.extension.targetPlatform(targetLinuxAarch64, jdk_linux_aarch64, [])
     }
     else {
-        rt.extension.targetPlatform(targetLinuxAarch64, jdkDownload(jdk_download_linux_aarch64))
+        rt.extension.targetPlatform(targetLinuxAarch64) {
+            jdkHome = jdkDownload(jdk_download_linux_aarch64)
+        }
     }
     //Linux x86-64
     if(file(jdk_linux_x86_64).exists()) {
         rt.extension.targetPlatform(targetLinuxX86_64, jdk_linux_x86_64, [])
     }
     else {
-        rt.extension.targetPlatform(targetLinuxX86_64, jdkDownload(jdk_download_linux_x86_64))
+        rt.extension.targetPlatform(targetLinuxX86_64) {
+            jdkHome = jdkDownload(jdk_download_linux_x86_64)
+        }
     }
     //OSX aarch64
     if(file(jdk_osx_aarch64).exists()) {
         rt.extension.targetPlatform(targetOsxAarch64, jdk_osx_aarch64, [])
     }
     else {
-        rt.extension.targetPlatform(targetOsxAarch64, jdkDownload(jdk_download_osx_aarch64))
+        rt.extension.targetPlatform(targetOsxAarch64) {
+            jdkHome = jdkDownload(jdk_download_osx_aarch64)
+        }
     }
     //Linux x86-64
     if(file(jdk_osx_x86_64).exists()) {
         rt.extension.targetPlatform(targetOsxX86_64, jdk_osx_x86_64, [])
     }
     else {
-        rt.extension.targetPlatform(targetOsxX86_64, jdkDownload(jdk_download_osx_x86_64))
+        rt.extension.targetPlatform(targetOsxX86_64) {
+            jdkHome = jdkDownload(jdk_download_osx_x86_64)
+        }
     }
 
     configure(rt, jvmArgsLinux);
