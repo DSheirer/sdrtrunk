@@ -28,11 +28,12 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.StreamProcessorWithHeartbeat;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Polyphase Channelizer's Tuner Channel Source implementation.  Wraps a ChannelOutputProcessor instance and
@@ -201,6 +202,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                 if(mPolyphaseChannelOutputProcessor != null)
                 {
                     mPolyphaseChannelOutputProcessor.setListener(null);
+                    mPolyphaseChannelOutputProcessor.stop();
                 }
 
                 mPolyphaseChannelOutputProcessor = null;
