@@ -25,6 +25,7 @@ import io.github.dsheirer.source.tuner.sdrplay.api.callback.IDeviceEventListener
 import io.github.dsheirer.source.tuner.sdrplay.api.callback.IStreamListener;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.Device;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
+import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 
 /**
  * Control interface for base RSP device
@@ -125,4 +126,22 @@ public interface IControlRsp
      * @return gain index value (0 - 28)
      */
     int getGain();
+
+    /**
+     * Current IF AGC mode setting.
+     * @return IF agc mode
+     */
+    AgcMode getAgcMode();
+
+    /**
+     * Sets the IF AGC mode
+     * @param mode to set.
+     */
+    void setAgcMode(AgcMode mode) throws SDRPlayException;
+
+    /**
+     * Registers a listener to receive notifications of gain overload.
+     * @param listener to register
+     */
+    void setGainOverloadListener(IGainOverloadListener listener);
 }

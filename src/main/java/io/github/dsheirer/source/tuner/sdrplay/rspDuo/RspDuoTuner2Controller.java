@@ -57,44 +57,56 @@ public class RspDuoTuner2Controller extends RspTunerController<IControlRspDuoTun
     @Override
     public void apply(TunerConfiguration config) throws SourceException
     {
-        if(config instanceof RspDuoTuner2Configuration duo2)
+        if(config instanceof RspDuoTuner2Configuration rtc)
         {
             super.apply(config);
 
-            try
+            if(!getControlRsp().isSlaveMode())
             {
-                getControlRsp().setRfNotch(duo2.isRfNotch());
-            }
-            catch(SDRPlayException se)
-            {
-                mLog.error("Error setting RSPduo tuner 2 RF notch enabled to " + duo2.isRfNotch());
-            }
-
-            try
-            {
-                getControlRsp().setRfDabNotch(duo2.isRfDabNotch());
-            }
-            catch(SDRPlayException se)
-            {
-                mLog.error("Error setting RSPduo tuner 2 RF DAB notch enabled to " + duo2.isRfDabNotch());
+                try
+                {
+                    getControlRsp().setAgcMode(rtc.getAgcMode());
+                }
+                catch(SDRPlayException se)
+                {
+                    mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
+                }
             }
 
             try
             {
-                getControlRsp().setBiasT(duo2.isBiasT());
+                getControlRsp().setRfNotch(rtc.isRfNotch());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 2 Bias-T enabled to " + duo2.isBiasT());
+                mLog.error("Error setting RSPduo tuner 2 RF notch enabled to " + rtc.isRfNotch());
             }
 
             try
             {
-                getControlRsp().setExternalReferenceOutput(duo2.isExternalReferenceOutput());
+                getControlRsp().setRfDabNotch(rtc.isRfDabNotch());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 2 external reference output enabled to " + duo2.isExternalReferenceOutput());
+                mLog.error("Error setting RSPduo tuner 2 RF DAB notch enabled to " + rtc.isRfDabNotch());
+            }
+
+            try
+            {
+                getControlRsp().setBiasT(rtc.isBiasT());
+            }
+            catch(SDRPlayException se)
+            {
+                mLog.error("Error setting RSPduo tuner 2 Bias-T enabled to " + rtc.isBiasT());
+            }
+
+            try
+            {
+                getControlRsp().setExternalReferenceOutput(rtc.isExternalReferenceOutput());
+            }
+            catch(SDRPlayException se)
+            {
+                mLog.error("Error setting RSPduo tuner 2 external reference output enabled to " + rtc.isExternalReferenceOutput());
             }
         }
         else

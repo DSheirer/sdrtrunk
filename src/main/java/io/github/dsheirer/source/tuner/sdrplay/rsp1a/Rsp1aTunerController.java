@@ -61,6 +61,15 @@ public class Rsp1aTunerController extends RspTunerController<IControlRsp1a>
 
             try
             {
+                getControlRsp().setAgcMode(rtc.getAgcMode());
+            }
+            catch(SDRPlayException se)
+            {
+                mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
+            }
+
+            try
+            {
                 getControlRsp().setBiasT(rtc.isBiasT());
             }
             catch(SDRPlayException se)

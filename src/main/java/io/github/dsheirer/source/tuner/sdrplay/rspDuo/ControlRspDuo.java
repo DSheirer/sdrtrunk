@@ -20,6 +20,7 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.ControlRsp;
+import io.github.dsheirer.source.tuner.sdrplay.IGainOverloadListener;
 import io.github.dsheirer.source.tuner.sdrplay.RspSampleRate;
 import io.github.dsheirer.source.tuner.sdrplay.api.DeviceSelectionMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
@@ -28,11 +29,11 @@ import io.github.dsheirer.source.tuner.sdrplay.api.UpdateReason;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoTuner;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
-import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
+import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,8 +98,7 @@ public abstract class ControlRspDuo<T extends RspDuoTuner> extends ControlRsp<Rs
             getControlParameters().getDcOffset().setDC(true);
             getControlParameters().getDcOffset().setIQ(true);
 
-            //Setup LO and AGC Mode
-            getControlParameters().getAgc().setAgcMode(AgcMode.DISABLE);
+            //Setup LO Mode
             getTunerParameters().setLoMode(LoMode.AUTO);
 
             //Setup IF mode. In master/slave dual-tuner mode use IF_2048, otherwise use IF_ZERO
@@ -238,6 +238,17 @@ public abstract class ControlRspDuo<T extends RspDuoTuner> extends ControlRsp<Rs
         else
         {
             throw new SDRPlayException("Device is not initialized");
+        }
+
+        //Notify an optional weakly referenced, registered listener that gain overload has been acknowledged.
+        if(mGainOverloadReference != null)
+        {
+            IGainOverloadListener listener = mGainOverloadReference.get();
+
+            if(listener != null)
+            {
+                ThreadPool.CACHED.submit(() -> listener.notifyGainOverload(tunerSelect));
+            }
         }
     }
 
