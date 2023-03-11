@@ -32,6 +32,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.header.motorola.MNISPro
 import io.github.dsheirer.module.decode.dmr.message.type.ApplicationType;
 import io.github.dsheirer.module.decode.ip.UnknownPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraTokenHeader;
+import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraUnknownPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Header;
 import io.github.dsheirer.module.decode.ip.ipv4.IPV4Packet;
@@ -175,7 +176,7 @@ public class PacketSequenceMessageFactory
             }
             else
             {
-                return new DMRPacketMessage(packetSequence, new UnknownPacket(packet, 0), packet,
+                return new DMRPacketMessage(packetSequence, new HyteraUnknownPacket(hyteraTokenHeader), packet,
                         packetSequence.getTimeslot(), packetSequence.getPacketSequenceHeader().getTimestamp());
             }
         }
