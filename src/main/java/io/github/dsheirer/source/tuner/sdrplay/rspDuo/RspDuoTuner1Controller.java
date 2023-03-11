@@ -57,53 +57,62 @@ public class RspDuoTuner1Controller extends RspTunerController<IControlRspDuoTun
     @Override
     public void apply(TunerConfiguration config) throws SourceException
     {
-        if(config instanceof RspDuoTuner1Configuration duo1)
+        if(config instanceof RspDuoTuner1Configuration rtc)
         {
             super.apply(config);
 
             try
             {
-                getControlRsp().setRfNotch(duo1.isRfNotch());
+                getControlRsp().setAgcMode(rtc.getAgcMode());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 1 RF notch enabled to " + duo1.isRfNotch());
+                mLog.error("Error setting RSP IF AGC Mode to " + rtc.getAgcMode());
             }
 
             try
             {
-                getControlRsp().setRfDabNotch(duo1.isRfDabNotch());
+                getControlRsp().setRfNotch(rtc.isRfNotch());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 1 RF DAB notch enabled to " + duo1.isRfDabNotch());
+                mLog.error("Error setting RSPduo tuner 1 RF notch enabled to " + rtc.isRfNotch());
             }
 
             try
             {
-                getControlRsp().setAmNotch(duo1.isAmNotch());
+                getControlRsp().setRfDabNotch(rtc.isRfDabNotch());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 1 AM notch enabled to " + duo1.isAmNotch());
+                mLog.error("Error setting RSPduo tuner 1 RF DAB notch enabled to " + rtc.isRfDabNotch());
             }
 
             try
             {
-                getControlRsp().setAmPort(duo1.getAmPort());
+                getControlRsp().setAmNotch(rtc.isAmNotch());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 1 AM port to " + duo1.getAmPort());
+                mLog.error("Error setting RSPduo tuner 1 AM notch enabled to " + rtc.isAmNotch());
             }
 
             try
             {
-                getControlRsp().setExternalReferenceOutput(duo1.isExternalReferenceOutput());
+                getControlRsp().setAmPort(rtc.getAmPort());
             }
             catch(SDRPlayException se)
             {
-                mLog.error("Error setting RSPduo tuner 1 external reference output enabled to " + duo1.isExternalReferenceOutput());
+                mLog.error("Error setting RSPduo tuner 1 AM port to " + rtc.getAmPort());
+            }
+
+            try
+            {
+                getControlRsp().setExternalReferenceOutput(rtc.isExternalReferenceOutput());
+            }
+            catch(SDRPlayException se)
+            {
+                mLog.error("Error setting RSPduo tuner 1 external reference output enabled to " + rtc.isExternalReferenceOutput());
             }
         }
         else

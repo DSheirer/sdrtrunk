@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
+import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.Rsp2TunerConfiguration;
@@ -33,7 +34,7 @@ import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerConfiguration;
 /**
  * Abstract RSP tuner configuration
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Rsp1aTunerConfiguration.class, name = "rsp1aTunerConfiguration"),
         @JsonSubTypes.Type(value = Rsp2TunerConfiguration.class, name = "rsp2TunerConfiguration"),
@@ -47,7 +48,8 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
     public static final RspSampleRate DEFAULT_DUAL_TUNER_SAMPLE_RATE = RspSampleRate.DUO_RATE_2_000;
 
     private RspSampleRate mRspSampleRate = DEFAULT_SINGLE_TUNER_SAMPLE_RATE;
-    private int mGain = 14;
+    private int mGain = 24;
+    private AgcMode mAgcMode = AgcMode.ENABLE;
 
     /**
      * JAXB Constructor
@@ -102,5 +104,24 @@ public abstract class RspTunerConfiguration extends TunerConfiguration
         {
             mGain = gain;
         }
+    }
+
+    /**
+     * IF AGC mode
+     * @return mode
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "agcMode")
+    public AgcMode getAgcMode()
+    {
+        return mAgcMode;
+    }
+
+    /**
+     * Sets the IF AGC mode
+     * @param mode to set
+     */
+    public void setAgcMode(AgcMode mode)
+    {
+        mAgcMode = mode;
     }
 }

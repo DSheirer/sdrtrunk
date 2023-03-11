@@ -25,16 +25,16 @@ import java.util.EnumSet;
 
 /**
  * RSP device Sample Rate, Bandwidth and Decimation enumeration
- *
  * Note: final effective sample rate must be greater than IF bandwidth setting to avoid aliasing.  The available IF
  * bandwidth values effectively dictate the available sample rates
  */
 public enum RspSampleRate
 {
-    RATE_0_250(8_000_000, 016_000, Bandwidth.BW_0_300, Decimate.X32, "0.250 MHz (0.234 usable)"),
-    RATE_0_500(8_000_000, 024_000, Bandwidth.BW_0_600, Decimate.X16, "0.500 MHz (0.476 usable)"),
+    RATE_0_250(8_000_000, 16_000, Bandwidth.BW_0_300, Decimate.X32, "0.250 MHz (0.234 usable)"),
+    RATE_0_500(8_000_000, 24_000, Bandwidth.BW_0_600, Decimate.X16, "0.500 MHz (0.476 usable)"),
     RATE_1_000(8_000_000, 100_000, Bandwidth.BW_1_536, Decimate.X8, "1.000 MHz (0.900 usable)"),
     RATE_1_500(6_000_000, 140_000, Bandwidth.BW_1_536, Decimate.X4, "1.500 MHz (1.360 usable)"),
+    RATE_2_048(8_192_000, 248_000, Bandwidth.BW_1_536, Decimate.X4, "2.048 MHz (1.800 usable)"),
     RATE_3_000(6_000_000, 300_000, Bandwidth.BW_5_000, Decimate.X2, "3.000 MHz (2.700 usable)"),
     RATE_4_000(8_000_000, 340_000, Bandwidth.BW_5_000, Decimate.X2, "4.000 MHz (3.560 usable)"),
     RATE_5_000(5_000_000, 880_000, Bandwidth.BW_5_000, Decimate.X1, "5.000 MHz (4.120 usable)"),
@@ -55,11 +55,11 @@ public enum RspSampleRate
 
     UNDEFINED(0, 0, Bandwidth.UNDEFINED, Decimate.X1, "UNDEFINED");
 
-    private long mSampleRate;
-    private long mUnusable;
-    private Bandwidth mBandwidth;
-    private Decimate mDecimation;
-    private String mDescription;
+    private final long mSampleRate;
+    private final long mUnusable;
+    private final Bandwidth mBandwidth;
+    private final Decimate mDecimation;
+    private final String mDescription;
 
     /**
      * Constructs an instance
@@ -81,12 +81,12 @@ public enum RspSampleRate
     /**
      * Single tuner sample rates for all devices operating in single tuner mode
      */
-    public static EnumSet<RspSampleRate> SINGLE_TUNER_SAMPLE_RATES = EnumSet.range(RATE_0_250, RATE_10_000);
+    public static final EnumSet<RspSampleRate> SINGLE_TUNER_SAMPLE_RATES = EnumSet.range(RATE_0_250, RATE_10_000);
 
     /**
      * RSPduo dual-tuner mode sample rates
      */
-    public static EnumSet<RspSampleRate> DUAL_TUNER_SAMPLE_RATES = EnumSet.range(DUO_RATE_0_500, DUO_RATE_2_000);
+    public static final EnumSet<RspSampleRate> DUAL_TUNER_SAMPLE_RATES = EnumSet.range(DUO_RATE_0_500, DUO_RATE_2_000);
 
     /**
      * Sample Rate
@@ -135,14 +135,6 @@ public enum RspSampleRate
     public Decimate getDecimation()
     {
         return mDecimation;
-    }
-
-    /**
-     * Indicates if this sample rate specifies decimation
-     */
-    public boolean hasDecimation()
-    {
-        return getDecimation().isEnabled();
     }
 
     /**
