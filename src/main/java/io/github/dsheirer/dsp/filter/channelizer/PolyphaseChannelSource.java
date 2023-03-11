@@ -28,12 +28,10 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.StreamProcessorWithHeartbeat;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Polyphase Channelizer's Tuner Channel Source implementation.  Wraps a ChannelOutputProcessor instance and
@@ -47,12 +45,10 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
-    private ReentrantLock mOutputProcessorLock = new ReentrantLock();
-
     private List<Integer> mOutputProcessorIndexes = new ArrayList<>();
     private double mTunerSampleRate;
     private double mTunerCenterFrequency;
-
+    private PendingOutputProcessorUpdate mPendingOutputProcessorUpdate;
 
     /**
      * Constructs an instance
@@ -69,7 +65,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
         super(producerSourceEventListener, tunerChannel);
         mChannelSampleRate = channelCalculator.getChannelSampleRate();
         mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
-        updateOutputProcessor(channelCalculator, filterManager);
+        doUpdateOutputProcessor(channelCalculator, filterManager);
     }
 
     /**
@@ -150,101 +146,107 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     }
 
     /**
-     * Updates the output processor whenever the source tuner's center frequency changes.
+     * Queues a request to update the output processor whenever the source tuner's center frequency changes.
      * @param channelCalculator providing access to updated tuner center frequency, sample rate, etc.
      * @param filterManager for designing and caching synthesis filters
      */
-    public void updateOutputProcessor(ChannelCalculator channelCalculator, SynthesisFilterManager filterManager) throws IllegalArgumentException
+    public void updateOutputProcessor(ChannelCalculator channelCalculator, SynthesisFilterManager filterManager)
+            throws IllegalArgumentException
+    {
+        mPendingOutputProcessorUpdate = new PendingOutputProcessorUpdate(channelCalculator, filterManager);
+    }
+
+    /**
+     * Performs the output processor update.  This method must be invoked on the channel results calling thread to
+     * ensure we don't have thread contention on the output processor.
+     * @param channelCalculator for updates
+     * @param filterManager for updates
+     * @throws IllegalArgumentException if there's an issue.
+     */
+    public void doUpdateOutputProcessor(ChannelCalculator channelCalculator, SynthesisFilterManager filterManager)
+            throws IllegalArgumentException
     {
         String errorMessage = null;
 
-        mOutputProcessorLock.lock();
+        //If a change in sample rate or center frequency makes this channel no longer viable, then the channel
+        //calculator will throw an IllegalArgException ... handled below
+        List<Integer> indexes = channelCalculator.getChannelIndexes(getTunerChannel());
 
-        try
+        mOutputProcessorIndexes.clear();
+        mOutputProcessorIndexes.addAll(indexes);
+        mTunerCenterFrequency = channelCalculator.getCenterFrequency();
+        mTunerSampleRate = channelCalculator.getSampleRate();
+
+        //The provided channels are necessarily aligned to the center frequency that this source is providing and an
+        //oscillator will mix the provided channels to bring the desired center frequency to baseband.
+        setFrequency(channelCalculator.getCenterFrequencyForIndexes(indexes));
+
+        if(mPolyphaseChannelOutputProcessor != null && mPolyphaseChannelOutputProcessor.getInputChannelCount() == indexes.size())
         {
-            //If a change in sample rate or center frequency makes this channel no longer viable, then the channel
-            //calculator will throw an IllegalArgException ... handled below
-            List<Integer> indexes = channelCalculator.getChannelIndexes(getTunerChannel());
+            mPolyphaseChannelOutputProcessor.setPolyphaseChannelIndices(indexes);
 
-            mOutputProcessorIndexes.clear();
-            mOutputProcessorIndexes.addAll(indexes);
-            mTunerCenterFrequency = channelCalculator.getCenterFrequency();
-            mTunerSampleRate = channelCalculator.getSampleRate();
-
-            //The provided channels are necessarily aligned to the center frequency that this source is providing and an
-            //oscillator will mix the provided channels to bring the desired center frequency to baseband.
-            setFrequency(channelCalculator.getCenterFrequencyForIndexes(indexes));
-
-            if(mPolyphaseChannelOutputProcessor != null && mPolyphaseChannelOutputProcessor.getInputChannelCount() == indexes.size())
+            if(indexes.size() > 1)
             {
-                mPolyphaseChannelOutputProcessor.setPolyphaseChannelIndices(indexes);
-
-                if(indexes.size() > 1)
+                try
                 {
+                    float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
+                            channelCalculator.getChannelBandwidth(), indexes.size());
+                    mPolyphaseChannelOutputProcessor.setSynthesisFilter(filter);
+                }
+                catch(FilterDesignException fde)
+                {
+                    mLog.error("Error creating an updated synthesis filter for the channel output processor");
+                    errorMessage ="Cannot update output processor - unable to design synthesis filter for [" +
+                        indexes.size() + "] channel indices - channel sample rate [" + channelCalculator.getChannelSampleRate() +
+                        "] channel bandwidth [" + channelCalculator.getChannelBandwidth() + "]";
+                }
+            }
+
+            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+        }
+        else //Create a new output processor.
+        {
+            if(mPolyphaseChannelOutputProcessor != null)
+            {
+                mPolyphaseChannelOutputProcessor.setListener(null);
+                mPolyphaseChannelOutputProcessor.stop();
+            }
+
+            mPolyphaseChannelOutputProcessor = null;
+
+            switch(indexes.size())
+            {
+                case 1:
+                    mPolyphaseChannelOutputProcessor = new OneChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
+                            indexes, channelCalculator.getChannelCount());
+                    mPolyphaseChannelOutputProcessor.setListener(this);
+                    mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+                    mPolyphaseChannelOutputProcessor.start();
+                    break;
+                case 2:
                     try
                     {
                         float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
-                                channelCalculator.getChannelBandwidth(), indexes.size());
-                        mPolyphaseChannelOutputProcessor.setSynthesisFilter(filter);
-                    }
-                    catch(FilterDesignException fde)
-                    {
-                        mLog.error("Error creating an updated synthesis filter for the channel output processor");
-                        errorMessage ="Cannot update output processor - unable to design synthesis filter for [" +
-                                indexes.size() + "] channel indices";
-                    }
-                }
-
-                mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
-            }
-            else //Create a new output processor.
-            {
-                if(mPolyphaseChannelOutputProcessor != null)
-                {
-                    mPolyphaseChannelOutputProcessor.setListener(null);
-                    mPolyphaseChannelOutputProcessor.stop();
-                }
-
-                mPolyphaseChannelOutputProcessor = null;
-
-                switch(indexes.size())
-                {
-                    case 1:
-                        mPolyphaseChannelOutputProcessor = new OneChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                                indexes, channelCalculator.getChannelCount());
+                                channelCalculator.getChannelBandwidth(), 2);
+                        mPolyphaseChannelOutputProcessor = new TwoChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
+                                indexes, filter, channelCalculator.getChannelCount());
                         mPolyphaseChannelOutputProcessor.setListener(this);
                         mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                         mPolyphaseChannelOutputProcessor.start();
-                        break;
-                    case 2:
-                        try
-                        {
-                            float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
-                                    channelCalculator.getChannelBandwidth(), 2);
-                            mPolyphaseChannelOutputProcessor = new TwoChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                                    indexes, filter, channelCalculator.getChannelCount());
-                            mPolyphaseChannelOutputProcessor.setListener(this);
-                            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
-                            mPolyphaseChannelOutputProcessor.start();
-                        }
-                        catch(FilterDesignException fde)
-                        {
-                            errorMessage = "Cannot create new output processor - unable to design synthesis filter for [" +
-                                    indexes.size() + "] channel indices";
-                            mLog.error("Error creating a synthesis filter for a new channel output processor");
-                        }
-                        break;
-                    default:
-                        mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
-                        mLog.info(channelCalculator.toString());
-                        errorMessage = "Unable to create new channel output processor - unexpected channel index size: " +
-                                indexes.size();
-                }
+                    }
+                    catch(FilterDesignException fde)
+                    {
+                        errorMessage = "Cannot create new output processor - unable to design synthesis filter for [" +
+                                indexes.size() + "] channel indices";
+                        mLog.error("Error creating a synthesis filter for a new channel output processor");
+                    }
+                    break;
+                default:
+                    mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
+                    mLog.info(channelCalculator.toString());
+                    errorMessage = "Unable to create new channel output processor - unexpected channel index size: " +
+                            indexes.size();
             }
-        }
-        finally
-        {
-            mOutputProcessorLock.unlock();
         }
 
         //Unlikely, but if we had an error designing a synthesis filter, throw an exception
@@ -264,7 +266,13 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
      */
     public void receiveChannelResults(List<float[]> channelResultsList, long currentSamplesTimestamp)
     {
-        mOutputProcessorLock.lock();
+        if(mPendingOutputProcessorUpdate != null)
+        {
+            ChannelCalculator channelCalculator = mPendingOutputProcessorUpdate.getChannelCalculator();
+            SynthesisFilterManager filterManager = mPendingOutputProcessorUpdate.getSynthesisFilterManager();
+            mPendingOutputProcessorUpdate = null;
+            doUpdateOutputProcessor(channelCalculator, filterManager);
+        }
 
         try
         {
@@ -273,9 +281,9 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                 mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsList, currentSamplesTimestamp);
             }
         }
-        finally
+        catch(Exception e)
         {
-            mOutputProcessorLock.unlock();
+            mLog.error("Error processing channel results", e);
         }
     }
 
@@ -343,5 +351,41 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     {
         return "POLYPHASE [" + mPolyphaseChannelOutputProcessor.getInputChannelCount() + "] " +
             getTunerChannel().getFrequency();
+    }
+
+    /**
+     * Support classes needed to update the output processor.
+     */
+    public class PendingOutputProcessorUpdate
+    {
+        private final ChannelCalculator mChannelCalculator;
+        private final SynthesisFilterManager mSynthesisFilterManager;
+
+        /**
+         * Constructs an instance
+         * @param channelCalculator for support
+         * @param synthesisFilterManager for support
+         */
+        public PendingOutputProcessorUpdate(ChannelCalculator channelCalculator, SynthesisFilterManager synthesisFilterManager)
+        {
+            mChannelCalculator = channelCalculator;
+            mSynthesisFilterManager = synthesisFilterManager;
+        }
+
+        /**
+         * Channel calculator
+         */
+        public ChannelCalculator getChannelCalculator()
+        {
+            return mChannelCalculator;
+        }
+
+        /**
+         * Channel calculator
+         */
+        public SynthesisFilterManager getSynthesisFilterManager()
+        {
+            return mSynthesisFilterManager;
+        }
     }
 }

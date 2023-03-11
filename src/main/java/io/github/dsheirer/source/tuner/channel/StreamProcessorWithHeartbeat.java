@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,10 +22,10 @@ package io.github.dsheirer.source.tuner.channel;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.util.ThreadPool;
-
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Thread-safe implementation that coordinates the flow of data/buffer stream processing with a parallel, periodic
@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class StreamProcessorWithHeartbeat<T> implements Listener<T>
 {
-    private ReentrantLock mLock = new ReentrantLock();
+    private static final Logger mLog = LoggerFactory.getLogger(StreamProcessorWithHeartbeat.class);
     private HeartbeatManager mHeartbeatManager;
     private long mHeartbeatInterval;
     private Listener<T> mListener;
@@ -88,25 +88,19 @@ public class StreamProcessorWithHeartbeat<T> implements Listener<T>
      */
     private void fireOptionalHeartbeat()
     {
-        //Acquire lock only if it's not already locked, otherwise ignore heartbeat for this timer interval.
-        if(mLock.tryLock())
+        try
         {
-            try
-            {
-                mHeartbeatManager.broadcast();
-            }
-            finally
-            {
-                mLock.unlock();
-            }
+            mHeartbeatManager.broadcast();
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error firing optional heartbeat", e);
         }
     }
 
     @Override
     public void receive(T data)
     {
-        mLock.lock();
-
         try
         {
             mHeartbeatManager.broadcast();
@@ -118,9 +112,9 @@ public class StreamProcessorWithHeartbeat<T> implements Listener<T>
                 listener.receive(data);
             }
         }
-        finally
+        catch(Exception e)
         {
-            mLock.unlock();
+            mLog.error("Error distributing data to listeners following heartbeat", e);
         }
     }
 

@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -481,7 +480,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     public class NativeBufferReceiver implements Listener<INativeBuffer>
     {
         private boolean mOutputProcessorUpdateRequired = false;
-        private ReentrantLock mUpdateFlagLock = new ReentrantLock();
 
         /**
          * Processes tuner center frequency change source events to flag when output processors need updating.
@@ -493,18 +491,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             if(mChannelCalculator.getCenterFrequency() != frequency)
             {
-                mUpdateFlagLock.lock();
-
-                try
-                {
-                    //Update the channel calculator frequency so that it's ready when the output processor update occurs
-                    mChannelCalculator.setCenterFrequency(frequency);
-                    mOutputProcessorUpdateRequired = true;
-                }
-                finally
-                {
-                    mUpdateFlagLock.unlock();
-                }
+                //Update the channel calculator frequency so that it's ready when the output processor update occurs
+                mChannelCalculator.setCenterFrequency(frequency);
+                mOutputProcessorUpdateRequired = true;
             }
         }
 
@@ -516,19 +505,17 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         @Override
         public void receive(INativeBuffer nativeBuffer)
         {
-            mUpdateFlagLock.lock();
-
-            try
+            if(mOutputProcessorUpdateRequired)
             {
-                if(mOutputProcessorUpdateRequired)
+                try
                 {
                     updateOutputProcessors();
-                    mOutputProcessorUpdateRequired = false;
                 }
-            }
-            finally
-            {
-                mUpdateFlagLock.unlock();
+                catch(Exception e)
+                {
+                    mLog.error("Error updating polyphase channel output processors");
+                }
+                mOutputProcessorUpdateRequired = false;
             }
 
             if(mPolyphaseChannelizer != null)
