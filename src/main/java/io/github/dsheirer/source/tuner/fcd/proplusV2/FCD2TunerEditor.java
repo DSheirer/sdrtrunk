@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -195,7 +195,7 @@ public class FCD2TunerEditor extends TunerEditor<FCDTuner, FCD2TunerConfiguratio
     @Override
     public void setTunerLockState(boolean locked)
     {
-        super.setTunerLockState(locked);
+        getFrequencyPanel().updateControls();
     }
 
     private String getTunerInfo()

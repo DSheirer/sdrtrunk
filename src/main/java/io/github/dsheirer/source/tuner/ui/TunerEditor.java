@@ -547,12 +547,11 @@ public abstract class TunerEditor<T extends Tuner,C extends TunerConfiguration> 
     /**
      * Sets the lock state for the tuner so that the frequency and sample rate controls can be enabled/disabled.
      *
+     * Note: implementing classes should invoke: getFrequencyPanel().updateControls() method.
+     *
      * @param locked true if the tuner is locked.
      */
-    public void setTunerLockState(boolean locked)
-    {
-        getFrequencyPanel().updateControls();
-    }
+    public abstract void setTunerLockState(boolean locked);
 
     /**
      * Tuner buttons panel

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -97,6 +97,6 @@ public class RTL2832UnknownTunerEditor extends TunerEditor<RTL2832Tuner, RTL2832
     @Override
     public void setTunerLockState(boolean locked)
     {
-        super.setTunerLockState(locked);
+        getFrequencyPanel().updateControls();
     }
 }
