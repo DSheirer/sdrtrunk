@@ -133,6 +133,14 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
     }
 
     @Override
+    public void setTunerLockState(boolean locked)
+    {
+        getFrequencyPanel().updateControls();
+        getSampleRateCombo().setEnabled(!locked);
+        updateSampleRateToolTip();
+    }
+
+    @Override
     protected void tunerStatusUpdated()
     {
         setLoading(true);
@@ -146,6 +154,8 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         }
         getTunerStatusLabel().setText(status);
         getButtonPanel().updateControls();
+        mLog.info("Update tuner status - has tuner: " + hasTuner() + " is locked:" + getTuner().getTunerController().isLockedSampleRate());
+
         getFrequencyPanel().updateControls();
 
         clearSampleRates();
@@ -155,6 +165,7 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         }
         getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
         getSampleRateCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getSampleRateEnumeration() : null);
+        updateSampleRateToolTip();
 
         getAgcModeCombo().setEnabled(hasTuner());
         if(hasTuner())
@@ -454,5 +465,24 @@ public class RspDuoTuner1Editor extends RspTunerEditor<RspDuoTuner1Configuration
         }
 
         return mTunerPreferencesButton;
+    }
+
+    /**
+     * Updates the sample rate tooltip according to the tuner controller's lock state.
+     */
+    private void updateSampleRateToolTip()
+    {
+        if(hasTuner() && getTuner().getTunerController().isLockedSampleRate())
+        {
+            getSampleRateCombo().setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
+        }
+        else if(hasTuner())
+        {
+            getSampleRateCombo().setToolTipText("Select a sample rate for the tuner");
+        }
+        else
+        {
+            getSampleRateCombo().setToolTipText("No tuner available");
+        }
     }
 }

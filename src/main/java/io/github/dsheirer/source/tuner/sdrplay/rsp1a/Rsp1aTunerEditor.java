@@ -118,6 +118,14 @@ public class Rsp1aTunerEditor extends RspTunerEditor<Rsp1aTunerConfiguration>
     }
 
     @Override
+    public void setTunerLockState(boolean locked)
+    {
+        getFrequencyPanel().updateControls();
+        getSampleRateCombo().setEnabled(!locked);
+        updateSampleRateToolTip();
+    }
+
+    @Override
     protected void tunerStatusUpdated()
     {
         setLoading(true);
@@ -135,6 +143,7 @@ public class Rsp1aTunerEditor extends RspTunerEditor<Rsp1aTunerConfiguration>
 
         getSampleRateCombo().setEnabled(hasTuner() && !getTuner().getTunerController().isLockedSampleRate());
         getSampleRateCombo().setSelectedItem(hasTuner() ? getTunerController().getControlRsp().getSampleRateEnumeration() : null);
+        updateSampleRateToolTip();
 
         getAgcModeCombo().setEnabled(hasTuner());
         if(hasTuner())
@@ -315,4 +324,24 @@ public class Rsp1aTunerEditor extends RspTunerEditor<Rsp1aTunerConfiguration>
 
         return mRfNotchCheckBox;
     }
+
+    /**
+     * Updates the sample rate tooltip according to the tuner controller's lock state.
+     */
+    private void updateSampleRateToolTip()
+    {
+        if(hasTuner() && getTuner().getTunerController().isLockedSampleRate())
+        {
+            getSampleRateCombo().setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
+        }
+        else if(hasTuner())
+        {
+            getSampleRateCombo().setToolTipText("Select a sample rate for the tuner");
+        }
+        else
+        {
+            getSampleRateCombo().setToolTipText("No tuner available");
+        }
+    }
+
 }

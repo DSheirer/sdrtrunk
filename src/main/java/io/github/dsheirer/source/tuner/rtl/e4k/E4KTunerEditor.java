@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -400,8 +400,9 @@ public class E4KTunerEditor extends TunerEditor<RTL2832Tuner, E4KTunerConfigurat
     @Override
     public void setTunerLockState(boolean locked)
     {
-        super.setTunerLockState(locked);
-        mSampleRateCombo.setEnabled(!locked);
+        getFrequencyPanel().updateControls();
+        getSampleRateCombo().setEnabled(!locked);
+        updateSampleRateToolTip();
     }
 
     private String getTunerInfo()
