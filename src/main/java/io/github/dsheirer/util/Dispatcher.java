@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -91,7 +91,9 @@ public class Dispatcher<E> implements Listener<E>
                 if(System.currentTimeMillis() > (mLastOverflowLogEvent + OVERFLOW_LOG_EVENT_WAIT_PERIOD))
                 {
                     mLastOverflowLogEvent = System.currentTimeMillis();
-                    mLog.warn("Temporary buffer overflow for thread [" + mThreadName + "] - throwing away samples");
+                    mLog.warn("Dispatcher - temporary buffer overflow for thread [" + mThreadName + "] - throwing away samples - " +
+                            " processor flag:" + (mRunning.get() ? "running" : "stopped") +
+                            " thread:" + (mThread != null ? (mThread.isAlive() ? mThread.getState() : "dead") : "null" ));
                 }
             }
         }
@@ -185,6 +187,7 @@ public class Dispatcher<E> implements Listener<E>
                     catch(InterruptedException e)
                     {
                         //Normal shutdown is by interrupt
+                        mRunning.set(false);
                     }
                     catch(Exception e)
                     {
