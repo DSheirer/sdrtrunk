@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 
 package io.github.dsheirer.gui.preference;
 
+import io.github.dsheirer.gui.preference.application.ApplicationPreferenceEditor;
 import io.github.dsheirer.gui.preference.calibration.VectorCalibrationPreferenceEditor;
 import io.github.dsheirer.gui.preference.decoder.JmbeLibraryPreferenceEditor;
 import io.github.dsheirer.gui.preference.directory.DirectoryPreferenceEditor;
@@ -39,6 +40,8 @@ public class PreferenceEditorFactory
     {
         switch(preferenceEditorType)
         {
+            case APPLICATION:
+                return new ApplicationPreferenceEditor(userPreferences);
             case AUDIO_DUPLICATE_CALL_DETECTION:
                 return new DuplicateCallPreferenceEditor(userPreferences);
             case AUDIO_MP3:

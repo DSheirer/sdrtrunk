@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 package io.github.dsheirer.preference;
 
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.preference.application.ApplicationPreference;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
 import io.github.dsheirer.preference.decoder.JmbeLibraryPreference;
 import io.github.dsheirer.preference.directory.DirectoryPreference;
@@ -55,7 +56,7 @@ import io.github.dsheirer.sample.Listener;
  */
 public class UserPreferences implements Listener<PreferenceType>
 {
-    private VectorCalibrationPreference mVectorCalibrationPreference;
+    private ApplicationPreference mApplicationPreference;
     private ChannelMultiFrequencyPreference mChannelMultiFrequencyPreference;
     private DecodeEventPreference mDecodeEventPreference;
     private DirectoryPreference mDirectoryPreference;
@@ -68,6 +69,7 @@ public class UserPreferences implements Listener<PreferenceType>
     private RecordPreference mRecordPreference;
     private TalkgroupFormatPreference mTalkgroupFormatPreference;
     private TunerPreference mTunerPreference;
+    private VectorCalibrationPreference mVectorCalibrationPreference;
 
     private SwingPreference mSwingPreference = new SwingPreference();
     private JavaFxPreferences mJavaFxPreferences = new JavaFxPreferences();
@@ -80,6 +82,19 @@ public class UserPreferences implements Listener<PreferenceType>
         loadPreferenceTypes();
     }
 
+    /**
+     * Application general/miscellaneous preferences.
+     * @return application preferences.
+     */
+    public ApplicationPreference getApplicationPreference()
+    {
+        return mApplicationPreference;
+    }
+
+    /**
+     * Vector/SIMD calibration preferences.
+     * @return vector calibration preferences.
+     */
     public VectorCalibrationPreference getVectorCalibrationPreference()
     {
         return mVectorCalibrationPreference;
@@ -203,7 +218,7 @@ public class UserPreferences implements Listener<PreferenceType>
      */
     private void loadPreferenceTypes()
     {
-        mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);
+        mApplicationPreference = new ApplicationPreference(this::receive);
         mChannelMultiFrequencyPreference = new ChannelMultiFrequencyPreference(this::receive);
         mDecodeEventPreference = new DecodeEventPreference(this::receive);
         mDirectoryPreference = new DirectoryPreference(this::receive);
@@ -216,6 +231,7 @@ public class UserPreferences implements Listener<PreferenceType>
         mRecordPreference = new RecordPreference(this::receive);
         mTalkgroupFormatPreference = new TalkgroupFormatPreference(this::receive);
         mTunerPreference = new TunerPreference(this::receive);
+        mVectorCalibrationPreference = new VectorCalibrationPreference(this::receive);
     }
 
     /**
