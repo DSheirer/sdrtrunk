@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.controller.channel;
 
+import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
@@ -41,12 +31,21 @@ import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
 
 public class ChannelAutoStartFrame extends JFrame
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelAutoStartFrame.class);
 
-    private static final int COUNTDOWN_SECONDS = 10;
     private Listener<ChannelEvent> mChannelEventListener;
     private List<Channel> mChannels;
 
@@ -55,7 +54,7 @@ public class ChannelAutoStartFrame extends JFrame
     private JButton mCancelButton;
     private JTable mChannelTable;
     private AtomicBoolean mChannelsStarted = new AtomicBoolean();
-
+    private int mAutoStartTimeoutSeconds;
     private ScheduledFuture<?> mTimerFuture;
 
     /**
@@ -66,10 +65,12 @@ public class ChannelAutoStartFrame extends JFrame
      * @param listener to receive channel start/enable request(s)
      * @param channels to auto-start
      */
-    public ChannelAutoStartFrame(Listener<ChannelEvent> listener, List<Channel> channels)
+    public ChannelAutoStartFrame(Listener<ChannelEvent> listener, List<Channel> channels, UserPreferences userPreferences)
     {
         mChannelEventListener = listener;
         mChannels = channels;
+        mAutoStartTimeoutSeconds = userPreferences.getApplicationPreference().getChannelAutoStartTimeout();
+
         init();
 
         EventQueue.invokeLater(() -> {
@@ -100,7 +101,7 @@ public class ChannelAutoStartFrame extends JFrame
             "[][][grow,fill][]"));
         panel.add(new JLabel("The following channels will be automatically"), "span");
 
-        mCountdownLabel = new JLabel(getCountdownText(COUNTDOWN_SECONDS));
+        mCountdownLabel = new JLabel(getCountdownText(mAutoStartTimeoutSeconds));
         panel.add(mCountdownLabel, "span");
 
         panel.add(new JScrollPane(getChannelTable()), "span");
@@ -220,7 +221,7 @@ public class ChannelAutoStartFrame extends JFrame
      */
     public class CountdownTimer implements Runnable
     {
-        private int mCount = COUNTDOWN_SECONDS;
+        private int mCount = mAutoStartTimeoutSeconds;
 
         @Override
         public void run()
