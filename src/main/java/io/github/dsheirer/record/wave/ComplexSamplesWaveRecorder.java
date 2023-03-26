@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.Dispatcher;
 import io.github.dsheirer.util.ThreadPool;
-import io.github.dsheirer.util.TimeStamp;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,9 +44,7 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
 
-    private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>(500,
-            "sdrtrunk complex wave recorder", new ComplexSamples(new float[0], new float[0], System.currentTimeMillis()));
-
+    private Dispatcher<ComplexSamples> mBufferProcessor = new Dispatcher<>("sdrtrunk complex wave recorder", 100, 250);
     private AtomicBoolean mRunning = new AtomicBoolean();
     private BufferWaveWriter mWriter;
     private String mFilePrefix;
@@ -87,8 +84,6 @@ public class ComplexSamplesWaveRecorder extends Module implements IComplexSample
             {
                 StringBuilder sb = new StringBuilder();
                 sb.append(mFilePrefix);
-                sb.append("_");
-                sb.append(TimeStamp.getTimeStamp("_"));
                 sb.append(".wav");
                 mFile = Paths.get(sb.toString());
 

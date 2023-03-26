@@ -109,7 +109,6 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     public void stop()
     {
         broadcastProducerSourceEvent(SourceEvent.stopSampleStreamRequest(this));
-        broadcastProducerSourceEvent(SourceEvent.sourceDisposeRequest(this));
     }
 
     @Override

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,9 +25,6 @@ import io.github.dsheirer.sample.buffer.IByteBufferListener;
 import io.github.dsheirer.util.Dispatcher;
 import io.github.dsheirer.util.StringUtils;
 import io.github.dsheirer.util.TimeStamp;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -36,6 +33,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.EnumSet;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Binary recorder module for recording demodulated bit/byte streams
@@ -50,14 +49,14 @@ public class BinaryRecorder extends Module implements IByteBufferListener
     private final static Logger mLog = LoggerFactory.getLogger(BinaryRecorder.class);
     private static final int MAX_RECORDING_BYTE_SIZE = 524288;  //500 kB
 
-    private Dispatcher<ByteBuffer> mBufferProcessor = new Dispatcher<>(500,
-            "sdrtrunk binary recorder", ByteBuffer.allocate(0));
+    private Dispatcher<ByteBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk binary recorder", 200, 250);
     private AtomicBoolean mRunning = new AtomicBoolean();
     private Path mBaseRecordingPath;
     private String mRecordingIdentifier;
     private BinaryWriter mBinaryWriter = new BinaryWriter();
     private int mBytesRecordedCounter;
     private Protocol mProtocol;
+    private long mFrequency;
 
     /**
      * Constructs a binary recorder.
@@ -65,13 +64,15 @@ public class BinaryRecorder extends Module implements IByteBufferListener
      * @param baseRecordingPath where the recording should be created
      * @param recordingIdentifier to include in the recording file name.
      * @param protocol to include as a values in the recording file name
+     * @param frequency in hertz
      */
-    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier, Protocol protocol)
+    public BinaryRecorder(Path baseRecordingPath, String recordingIdentifier, Protocol protocol, long frequency)
     {
         mBaseRecordingPath = baseRecordingPath;
         mRecordingIdentifier = recordingIdentifier;
         mBufferProcessor.setListener(mBinaryWriter);
         mProtocol = protocol;
+        mFrequency = frequency;
     }
 
     public void start()
@@ -96,7 +97,7 @@ public class BinaryRecorder extends Module implements IByteBufferListener
         {
             if(mBufferProcessor != null)
             {
-                mBufferProcessor.flushAndStop();
+                mBufferProcessor.stop();
                 mBufferProcessor.setListener(null);
 
                 try
@@ -121,6 +122,8 @@ public class BinaryRecorder extends Module implements IByteBufferListener
     {
         StringBuilder sb = new StringBuilder();
         sb.append(TimeStamp.getTimeStamp("_"));
+        sb.append("_");
+        sb.append(mFrequency);
         sb.append("_");
         sb.append(mProtocol.getBitRate()).append("BPS_");
         sb.append(mProtocol.getFileNameLabel()).append("_");

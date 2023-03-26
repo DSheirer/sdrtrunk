@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,10 +24,9 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playback.PlaybackPreference;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
 import io.github.dsheirer.source.mixer.MixerManager;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
@@ -49,9 +48,6 @@ import org.slf4j.LoggerFactory;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.DataLine;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 
 
 /**
@@ -60,20 +56,16 @@ import java.nio.ShortBuffer;
 public class PlaybackPreferenceEditor extends HBox
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackPreferenceEditor.class);
-    private PlaybackPreference mPlaybackPreference;
+    private final PlaybackPreference mPlaybackPreference;
     private GridPane mEditorPane;
     private ComboBox<MixerChannelConfiguration> mMixerComboBox;
     private Button mMixerTestButton;
     private ToggleSwitch mUseAudioSegmentStartToneSwitch;
     private Button mTestStartToneButton;
-    private ToggleSwitch mUseAudioSegmentPreemptToneSwitch;
-    private Button mTestPreemptToneButton;
     private ToggleSwitch mUseAudioSegmentDropToneSwitch;
     private Button mTestDropToneButton;
     private ComboBox<ToneFrequency> mStartToneFrequencyComboBox;
     private ComboBox<ToneVolume> mStartToneVolumeComboBox;
-    private ComboBox<ToneFrequency> mPreemptToneFrequencyComboBox;
-    private ComboBox<ToneVolume> mPreemptToneVolumeComboBox;
     private ComboBox<ToneFrequency> mDropToneFrequencyComboBox;
     private ComboBox<ToneVolume> mDropToneVolumeComboBox;
 
@@ -113,18 +105,6 @@ public class PlaybackPreferenceEditor extends HBox
             mEditorPane.add(startVolumeLabel, 3, row);
             mEditorPane.add(getStartToneVolumeComboBox(), 4, row);
             mEditorPane.add(getTestStartToneButton(), 5, row);
-
-            mEditorPane.add(getUseAudioSegmentPreemptToneSwitch(), 0, ++row);
-            mEditorPane.add(new Label("Priority Preempt Tone"), 1, row, 3, 1);
-            Label preemptFrequencyLabel = new Label("Frequency:");
-            GridPane.setHalignment(preemptFrequencyLabel, HPos.RIGHT);
-            mEditorPane.add(preemptFrequencyLabel, 1, ++row);
-            mEditorPane.add(getPreemptToneFrequencyComboBox(), 2, row);
-            Label preemptVolumeLabel = new Label("Volume:");
-            GridPane.setHalignment(preemptVolumeLabel, HPos.RIGHT);
-            mEditorPane.add(preemptVolumeLabel, 3, row);
-            mEditorPane.add(getPreemptToneVolumeComboBox(), 4, row);
-            mEditorPane.add(getTestPreemptToneButton(), 5, row);
 
             mEditorPane.add(getUseAudioSegmentDropToneSwitch(), 0, ++row);
             mEditorPane.add(new Label("Drop Tone - Do Not Monitor"), 1, row, 3, 1);
@@ -177,36 +157,11 @@ public class PlaybackPreferenceEditor extends HBox
             mUseAudioSegmentStartToneSwitch = new ToggleSwitch();
             mUseAudioSegmentStartToneSwitch.setAlignment(Pos.BASELINE_RIGHT);
             mUseAudioSegmentStartToneSwitch.setSelected(mPlaybackPreference.getUseAudioSegmentStartTone());
-            mUseAudioSegmentStartToneSwitch.selectedProperty().addListener(new ChangeListener<Boolean>()
-            {
-                @Override
-                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
-                {
-                    mPlaybackPreference.setUseAudioSegmentStartTone(newValue);
-                }
-            });
+            mUseAudioSegmentStartToneSwitch.selectedProperty().addListener((observable, oldValue, newValue) ->
+                    mPlaybackPreference.setUseAudioSegmentStartTone(newValue));
         }
 
         return mUseAudioSegmentStartToneSwitch;
-    }
-
-    private ToggleSwitch getUseAudioSegmentPreemptToneSwitch()
-    {
-        if(mUseAudioSegmentPreemptToneSwitch == null)
-        {
-            mUseAudioSegmentPreemptToneSwitch = new ToggleSwitch();
-            mUseAudioSegmentPreemptToneSwitch.setSelected(mPlaybackPreference.getUseAudioSegmentPreemptTone());
-            mUseAudioSegmentPreemptToneSwitch.selectedProperty().addListener(new ChangeListener<Boolean>()
-            {
-                @Override
-                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
-                {
-                    mPlaybackPreference.setUseAudioSegmentPreemptTone(newValue);
-                }
-            });
-        }
-
-        return mUseAudioSegmentPreemptToneSwitch;
     }
 
     private ToggleSwitch getUseAudioSegmentDropToneSwitch()
@@ -215,14 +170,8 @@ public class PlaybackPreferenceEditor extends HBox
         {
             mUseAudioSegmentDropToneSwitch = new ToggleSwitch();
             mUseAudioSegmentDropToneSwitch.setSelected(mPlaybackPreference.getUseAudioSegmentDropTone());
-            mUseAudioSegmentDropToneSwitch.selectedProperty().addListener(new ChangeListener<Boolean>()
-            {
-                @Override
-                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
-                {
-                    mPlaybackPreference.setUseAudioSegmentDropTone(newValue);
-                }
-            });
+            mUseAudioSegmentDropToneSwitch.selectedProperty().addListener((observable, oldValue, newValue) ->
+                    mPlaybackPreference.setUseAudioSegmentDropTone(newValue));
         }
 
         return mUseAudioSegmentDropToneSwitch;
@@ -236,42 +185,12 @@ public class PlaybackPreferenceEditor extends HBox
             IconNode iconNode = new IconNode(FontAwesome.PLAY);
             iconNode.setFill(Color.CORNFLOWERBLUE);
             mTestStartToneButton.setGraphic(iconNode);
-            mTestStartToneButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    play(mPlaybackPreference.getStartTone());
-                }
-            });
+            mTestStartToneButton.setOnAction(event -> play(mPlaybackPreference.getStartTone()));
 
             mTestStartToneButton.disableProperty().bind(getUseAudioSegmentStartToneSwitch().selectedProperty().not());
         }
 
         return mTestStartToneButton;
-    }
-
-    public Button getTestPreemptToneButton()
-    {
-        if(mTestPreemptToneButton == null)
-        {
-            mTestPreemptToneButton = new Button("Test");
-            IconNode iconNode = new IconNode(FontAwesome.PLAY);
-            iconNode.setFill(Color.CORNFLOWERBLUE);
-            mTestPreemptToneButton.setGraphic(iconNode);
-            mTestPreemptToneButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    play(mPlaybackPreference.getPreemptTone());
-                }
-            });
-
-            mTestPreemptToneButton.disableProperty().bind(getUseAudioSegmentPreemptToneSwitch().selectedProperty().not());
-        }
-
-        return mTestPreemptToneButton;
     }
 
     public Button getTestDropToneButton()
@@ -282,14 +201,7 @@ public class PlaybackPreferenceEditor extends HBox
             IconNode iconNode = new IconNode(FontAwesome.PLAY);
             iconNode.setFill(Color.CORNFLOWERBLUE);
             mTestDropToneButton.setGraphic(iconNode);
-            mTestDropToneButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    play(mPlaybackPreference.getDropTone());
-                }
-            });
+            mTestDropToneButton.setOnAction(event -> play(mPlaybackPreference.getDropTone()));
 
             mTestDropToneButton.disableProperty().bind(getUseAudioSegmentDropToneSwitch().selectedProperty().not());
         }
@@ -355,36 +267,6 @@ public class PlaybackPreferenceEditor extends HBox
         }
 
         return mStartToneVolumeComboBox;
-    }
-
-    public ComboBox<ToneFrequency> getPreemptToneFrequencyComboBox()
-    {
-        if(mPreemptToneFrequencyComboBox == null)
-        {
-            mPreemptToneFrequencyComboBox = new ComboBox<>();
-            mPreemptToneFrequencyComboBox.getItems().addAll(ToneFrequency.values());
-            mPreemptToneFrequencyComboBox.getSelectionModel().select(mPlaybackPreference.getPreemptToneFrequency());
-            mPreemptToneFrequencyComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> mPlaybackPreference.setPreemptToneFrequency(newValue));
-            mPreemptToneFrequencyComboBox.disableProperty().bind(getUseAudioSegmentPreemptToneSwitch().selectedProperty().not());
-        }
-
-        return mPreemptToneFrequencyComboBox;
-    }
-
-    public ComboBox<ToneVolume> getPreemptToneVolumeComboBox()
-    {
-        if(mPreemptToneVolumeComboBox == null)
-        {
-            mPreemptToneVolumeComboBox = new ComboBox<>();
-            mPreemptToneVolumeComboBox.getItems().addAll(ToneVolume.values());
-            mPreemptToneVolumeComboBox.getSelectionModel().select(mPlaybackPreference.getPreemptToneVolume());
-            mPreemptToneVolumeComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> mPlaybackPreference.setPreemptToneVolume(newValue));
-            mPreemptToneVolumeComboBox.disableProperty().bind(getUseAudioSegmentPreemptToneSwitch().selectedProperty().not());
-        }
-
-        return mPreemptToneVolumeComboBox;
     }
 
     /**
