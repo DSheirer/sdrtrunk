@@ -185,9 +185,19 @@ public class TunerFactory
     {
         //API instance is retained across the lifecycle of the constructed device, so we only close it if we don't get
         //a device from it.
-        SDRplay api = new SDRplay();
+        SDRplay api = null;
 
-        if(api.isAvailable())
+        try
+        {
+            api = new SDRplay();
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.info("Caught the exception here ...", se);
+            api = null;
+        }
+
+        if(api != null && api.isAvailable())
         {
             Device device = api.getDevice(deviceInfo);
 

@@ -299,9 +299,18 @@ public class TunerManager implements IDiscoveredTunerStatusListener
 
         //Note: we have to keep this first API instance open while we use any RSP tuners, otherwise the additional API
         //instance(s) used by the individual tuners become unresponsive.  Note sure why.
-        mSDRplay = new SDRplay();
 
-        if(mSDRplay.isAvailable())
+        try
+        {
+            mSDRplay = new SDRplay();
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.error("Couldn't load SDRPlay API");
+            mSDRplay = null;
+        }
+
+        if(mSDRplay != null && mSDRplay.isAvailable())
         {
             try
             {
@@ -333,7 +342,11 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
         else
         {
-            mSDRplay.close();
+            if(mSDRplay != null)
+            {
+                mSDRplay.close();
+            }
+
             mSDRplay = null;
         }
     }

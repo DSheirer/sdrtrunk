@@ -104,7 +104,7 @@ public class SDRplay
     /**
      * Constructs an instance of the SDRPLay API
      */
-    public SDRplay()
+    public SDRplay() throws SDRPlayException
     {
         mSdrplayLibraryLoaded = loadLibrary();
 
@@ -116,6 +116,11 @@ public class SDRplay
                 mLog.info("API library - open status: " + openStatus);
             }
             mAvailable = openStatus.success() && getVersion().isSupported();
+
+            if(openStatus == Status.FAIL)
+            {
+                throw new SDRPlayException("Service not available");
+            }
         }
         else
         {
@@ -693,23 +698,23 @@ public class SDRplay
          * Java will look there for the library, without having to specify it as a launcher
          * option.  This would allow for users that have installed the API to an alternate location.
          */
-        SDRplay sdrplay = new SDRplay();
-        Status status = sdrplay.open();
-        mLog.info("Open Status: " + status);
 
         try
         {
+            SDRplay sdrplay = new SDRplay();
+            Status status = sdrplay.open();
+            mLog.info("Open Status: " + status);
+
             for(DeviceInfo deviceInfo: sdrplay.getDeviceInfos())
             {
                 mLog.info("Found: " + deviceInfo);
             }
+            Status closeStatus = sdrplay.close();
+            mLog.info("Close Status: " + closeStatus);
         }
         catch(SDRPlayException se)
         {
             mLog.info("Error", se);
         }
-
-        Status closeStatus = sdrplay.close();
-        mLog.info("Close Status: " + closeStatus);
     }
 }
