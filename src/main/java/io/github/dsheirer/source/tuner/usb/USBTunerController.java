@@ -699,22 +699,22 @@ public abstract class USBTunerController extends TunerController
                 case LibUsb.TRANSFER_STALL:
                 case LibUsb.TRANSFER_TIMED_OUT:
                 case LibUsb.TRANSFER_ERROR:
+                //Note: cancel flag can be set by libusb, independent of commanded cancel of transfers - we simply
+                //resubmit the transfer for continued use.
+                case LibUsb.TRANSFER_CANCELLED:
                     int transferLength = transfer.actualLength();
 
                     if(transferLength > 0)
                     {
                         dispatchTransfer(transfer);
-                        transfer.buffer().rewind();
                     }
+
+                    transfer.buffer().rewind();
 
                     if(mAutoResubmitTransfers)
                     {
                         submitTransfer(transfer);
                     }
-                    break;
-                case LibUsb.TRANSFER_CANCELLED:
-                    //Reset the transfer but don't do anything else since we're shutting down
-                    transfer.buffer().rewind();
                     break;
                 default:
                     //Unexpected transfer error - shutdown the tuner

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -623,30 +623,27 @@ public class ChannelProcessingManager implements Listener<ChannelEvent>
                 Platform.runLater(() -> channel.setProcessing(false));
             }
 
-            //Since the processing chain's source will block on stop(), throw it to the thread pool to run
-            ThreadPool.CACHED.submit(() -> {
-                try
-                {
-                    processingChain.stop();
-                    processingChain.removeEventLoggingModules();
-                    processingChain.removeRecordingModules();
+            try
+            {
+                processingChain.stop();
+                processingChain.removeEventLoggingModules();
+                processingChain.removeRecordingModules();
 
-                    //Deregister channel from receive frequency correction events to show in the spectral display (hack!)
-                    processingChain.removeFrequencyChangeListener(channel);
-                    channel.resetFrequencyCorrection();
+                //Deregister channel from receive frequency correction events to show in the spectral display (hack!)
+                processingChain.removeFrequencyChangeListener(channel);
+                channel.resetFrequencyCorrection();
 
-                    mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
-                    mChannelEventBroadcaster.removeListener(processingChain);
+                mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_PROCESSING_STOP));
+                mChannelEventBroadcaster.removeListener(processingChain);
 
-                    //Unregister for event bus requests and notifications
-                    processingChain.getEventBus().unregister(ChannelProcessingManager.this);
-                    processingChain.dispose();
-                }
-                catch(Exception e)
-                {
-                    mLog.error("Error during shutdown of processing chain for channel [" + channel.getName() + "}", e);
-                }
-            });
+                //Unregister for event bus requests and notifications
+                processingChain.getEventBus().unregister(ChannelProcessingManager.this);
+                processingChain.dispose();
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error during shutdown of processing chain for channel [" + channel.getName() + "}", e);
+            }
         }
     }
 

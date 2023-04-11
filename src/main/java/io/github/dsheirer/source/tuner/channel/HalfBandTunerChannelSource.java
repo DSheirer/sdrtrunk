@@ -19,7 +19,6 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
 import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
@@ -49,9 +48,9 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     private ComplexMixer mFrequencyCorrectionMixer;
     private IRealDecimationFilter mIDecimationFilter;
     private IRealDecimationFilter mQDecimationFilter;
+    private Listener<ComplexSamples> mSamplesListener;
     private double mChannelSampleRate;
     private long mTunerFrequency;
-    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
 
     /**
      * Constructs a frequency translating and CIC decimating channel source.
@@ -68,16 +67,15 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     {
         super(producerSourceEventListener, tunerChannel);
 
-        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
-
         int desiredDecimation = (int)(sampleRate / channelSpecification.getMinimumSampleRate());
         int decimation = DecimationFilterFactory.getDecimationRate(desiredDecimation);
 
         mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
         mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimation);
 
-        mBufferDispatcher = new Dispatcher(BUFFER_MAX_CAPACITY, "sdrtrunk heterodyne channel " +
-                tunerChannel.getFrequency(), new NativeBufferPoisonPill());
+        //Set dispatcher to process 1/10 of estimated sample arrival rate, 20 times per second (up to 200% per interval)
+        mBufferDispatcher = new Dispatcher("sdrtrunk heterodyne channel " + tunerChannel.getFrequency(),
+                (int)(sampleRate / 10), 50, getHeartbeatManager());
         mBufferDispatcher.setListener(new NativeBufferProcessor());
 
         //Setup the frequency mixer to the current source frequency
@@ -91,7 +89,6 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     public void start()
     {
         super.start();
-        mStreamHeartbeatProcessor.start();
         mBufferDispatcher.start();
     }
 
@@ -100,7 +97,6 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     {
         super.stop();
         mBufferDispatcher.stop();
-        mStreamHeartbeatProcessor.stop();
     }
 
     @Override
@@ -167,7 +163,7 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
     @Override
     public void setListener(Listener<ComplexSamples> listener)
     {
-        mStreamHeartbeatProcessor.setListener(listener);
+        mSamplesListener = listener;
     }
 
     @Override
@@ -184,14 +180,29 @@ public class HalfBandTunerChannelSource<T extends INativeBuffer> extends TunerCh
         @Override
         public void receive(T nativeBuffer)
         {
-            Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
-
-            while(iterator.hasNext())
+            if(mSamplesListener != null)
             {
-                ComplexSamples basebanded = mFrequencyCorrectionMixer.mix(iterator.next());
-                float[] i = mIDecimationFilter.decimateReal(basebanded.i());
-                float[] q = mQDecimationFilter.decimateReal(basebanded.q());
-                mStreamHeartbeatProcessor.receive(new ComplexSamples(i, q, basebanded.timestamp()));
+                Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
+
+                while(iterator.hasNext())
+                {
+                    ComplexSamples basebanded = mFrequencyCorrectionMixer.mix(iterator.next());
+                    float[] i = mIDecimationFilter.decimateReal(basebanded.i());
+                    float[] q = mQDecimationFilter.decimateReal(basebanded.q());
+
+                    try
+                    {
+                        mSamplesListener.receive(new ComplexSamples(i, q, basebanded.timestamp()));
+                    }
+                    catch(Throwable t)
+                    {
+                        //The listener can be made null and cause the error - only log if we have a non-null listener
+                        if(mSamplesListener != null)
+                        {
+                            mLog.error("Error dispatching complex samples to listener [" + mSamplesListener + "]");
+                        }
+                    }
+                }
             }
         }
     }

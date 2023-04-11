@@ -1,30 +1,27 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.playback;
 
 import com.google.common.eventbus.Subscribe;
-import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.AudioSegment;
+import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.IdentifierUpdateNotification;
@@ -33,11 +30,13 @@ import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.mixer.MixerChannel;
-import io.github.dsheirer.util.ThreadPool;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,10 +50,6 @@ import javax.sound.sampled.LineListener;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Audio output/playback channel for a single audio mixer channel.  Providers support for playback of audio segments
@@ -67,7 +62,6 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private int mBufferStopThreshold;
     private Listener<IdentifierCollection> mIdentifierCollectionListener;
     private Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
-    private ScheduledFuture<?> mProcessorFuture;
     private SourceDataLine mOutput;
     private Mixer mMixer;
     private MixerChannel mMixerChannel;
@@ -76,17 +70,17 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private AudioEvent mAudioStartEvent;
     private AudioEvent mAudioStopEvent;
     private boolean mCanProcessAudio = false;
+    private LinkedTransferQueue<AudioSegment> mAudioSegmentQueue = new LinkedTransferQueue<>();
     private AudioSegment mCurrentAudioSegment;
-    private AudioSegment mNextAudioSegment;
-    private ReentrantLock mLock = new ReentrantLock();
     private int mCurrentBufferIndex = 0;
     private UserPreferences mUserPreferences;
-    private BooleanProperty mEmptyProperty = new SimpleBooleanProperty(true);
-    private IntegerProperty mAudioPriority = new SimpleIntegerProperty(Priority.DEFAULT_PRIORITY);
     private ByteBuffer mAudioSegmentStartTone;
-    private ByteBuffer mAudioSegmentPreemptTone;
     private ByteBuffer mAudioSegmentDropTone;
     private boolean mRunning = false;
+    private ScheduledExecutorService mScheduledExecutorService;
+    private ScheduledFuture<?> mProcessorFuture;
+    private long mOutputLastTimestamp = 0;
+    private static final long STALE_PLAYBACK_THRESHOLD_MS = 500;
 
     /**
      * Single audio channel playback with automatic starting and stopping of the
@@ -107,6 +101,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     {
         mMixer = mixer;
         mMixerChannel = mixerChannel;
+        mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(
+                "sdrtrunk audio output " + mixerChannel.name()));
         mUserPreferences = userPreferences;
 
         try
@@ -150,7 +146,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
                     }
 
 					//Run the queue processor task every 100 milliseconds or 10 times a second
-                    mProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
+                    mProcessorFuture = mScheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
                         0, 100, TimeUnit.MILLISECONDS);
                 }
 
@@ -172,26 +168,17 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     }
 
     /**
-     * Boolean property that indicates if this audio output has an audio segment queued or in process of playback.
+     * Indicates if this audio output doesn't currently have any audio segments queued for playback.
+     * @return true if empty
      */
-    public BooleanProperty emptyProperty()
+    public boolean isEmpty()
     {
-        return mEmptyProperty;
+        return mAudioSegmentQueue.isEmpty();
     }
 
     /**
-     * Audio playback priority of the current audio segment or default audio priority if nothing is currently loaded.
-     */
-    public IntegerProperty audioPriorityProperty()
-    {
-        return mAudioPriority;
-    }
-
-    /**
-     * Schedules the audio segment for playback.
-     *
-     * Note: if a segment is currently playing and another audio segment is already queued for playback, invoking
-     * this method will overwrite the queued segment with the argument.
+     * Schedules the audio segment for playback.  The audio segment user count should already be incremented by the
+     * calling entity.
      *
      * @param audioSegment to schedule for playback.
      */
@@ -199,23 +186,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     {
         if(audioSegment != null)
         {
-            mLock.lock();
-
-            if(mNextAudioSegment != null)
-            {
-                mNextAudioSegment.decrementConsumerCount();
-                mNextAudioSegment = null;
-            }
-
-            try
-            {
-                mNextAudioSegment = audioSegment;
-                mEmptyProperty.set(false);
-            }
-            finally
-            {
-                mLock.unlock();
-            }
+            //Audio segment use count has already been incremented by the external caller.
+            mAudioSegmentQueue.add(audioSegment);
         }
     }
 
@@ -262,7 +234,6 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private void updateToneInsertionAudioClips()
     {
         mAudioSegmentStartTone = null;
-        mAudioSegmentPreemptTone = null;
         mAudioSegmentDropTone = null;
 
         float[] start = mUserPreferences.getPlaybackPreference().getStartTone();
@@ -272,61 +243,12 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             mAudioSegmentStartTone = convert(start);
         }
 
-        float[] preempt = mUserPreferences.getPlaybackPreference().getPreemptTone();
-
-        if(preempt != null)
-        {
-            mAudioSegmentPreemptTone = convert(preempt);
-        }
-
         float[] drop = mUserPreferences.getPlaybackPreference().getDropTone();
 
         if(drop != null)
         {
             mAudioSegmentDropTone = convert(drop);
         }
-    }
-
-    /**
-     * Disposes of a processed audio segment and notifies the originator that processing of the segment is complete
-     * by decrementing the consumer count.
-     * @param audioSegment to dispose
-     */
-    private void dispose(AudioSegment audioSegment)
-    {
-        mAudioPriority.unbind();
-
-        if(audioSegment != null)
-        {
-            audioSegment.decrementConsumerCount();
-            audioSegment.removeIdentifierUpdateNotificationListener(this);
-        }
-    }
-
-    /**
-     * Generates a tone indicating that a new audio segment is starting
-     */
-    private ByteBuffer getAudioSegmentStartTone()
-    {
-        return mAudioSegmentStartTone;
-    }
-
-    /**
-     * Generates a tone indicating that the current audio segment playback has been preempted for a higher priority
-     * audio segment that is now starting.
-     */
-    private ByteBuffer getAudioSegmentPreemptionTone()
-    {
-        return mAudioSegmentPreemptTone;
-    }
-
-    /**
-     * Generates a tone indicating that the current audio segment playback has been dropped because the audio segment
-     * has been flagged as Do Not Monitor after playback has started.
-     */
-    private ByteBuffer getAudioSegmentDropTone()
-    {
-        return mAudioSegmentDropTone;
     }
 
     /**
@@ -355,6 +277,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
                 //Top off the buffer and check if we can start it
                 wrote += mOutput.write(buffer.array(), 0, toWrite);
+                mOutputLastTimestamp = System.currentTimeMillis();
 
                 checkStart();
             }
@@ -363,147 +286,135 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             {
                 //This will block until the buffer is fully written to the data line
                 mOutput.write(buffer.array(), wrote, buffer.array().length - wrote);
+                mOutputLastTimestamp = System.currentTimeMillis();
             }
         }
     }
 
     /**
+     * Dispose of the currently assigned audio segment.
+     */
+    private void disposeCurrentAudioSegment()
+    {
+        if(mCurrentAudioSegment != null)
+        {
+            mCurrentAudioSegment.decrementConsumerCount();
+            mCurrentAudioSegment.removeIdentifierUpdateNotificationListener(this);
+            mCurrentAudioSegment = null;
+        }
+    }
+
+    /**
+     * Loads the next audio segment from the queue.
+     */
+    private void loadNextAudioSegment()
+    {
+        AudioSegment audioSegment = mAudioSegmentQueue.poll();
+
+        boolean verificationInProgress = (audioSegment != null);
+
+        while(verificationInProgress)
+        {
+            if(audioSegment != null)
+            {
+                //Throw away the audio segment if it has been flagged as do not monitor or is duplicate
+                if(isThrowaway(audioSegment))
+                {
+                    audioSegment.decrementConsumerCount();
+                    audioSegment = mAudioSegmentQueue.poll();
+                }
+                else
+                {
+                    verificationInProgress = false;
+                }
+            }
+            else
+            {
+                verificationInProgress = false;
+            }
+        }
+
+        mCurrentAudioSegment = audioSegment;
+
+        if(audioSegment != null)
+        {
+            mCurrentAudioSegment.addIdentifierUpdateNotificationListener(this);
+            broadcast(mCurrentAudioSegment.getIdentifierCollection());
+
+            //If we played any amount of the previous audio segment then play the audio segment start.  We check this
+            //to avoid repeatedly playing an audio segment start tone on the rare occasion that we have empty segments.
+            if(mCurrentBufferIndex > 0)
+            {
+                playAudio(mAudioSegmentStartTone);
+            }
+        }
+
+        mCurrentBufferIndex = 0;
+    }
+
+    /**
+     * Indicates if the audio segment should be thrown away because it is marked as duplicate or do-not-monitor.
+     * @param audioSegment to evaluate
+     * @return true if the audio should be thrown away.
+     */
+    private boolean isThrowaway(AudioSegment audioSegment)
+    {
+        return audioSegment != null &&
+               (audioSegment.isDoNotMonitor() ||
+               (audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference()
+                        .isDuplicatePlaybackSuppressionEnabled()));
+    }
+
+    /**
      * Manage audio segment playback and process audio segment buffers.  This method is designed to be called
-     * by a threaded processor repeatedly to playback the current audio segment and check for and start a newly
-     * assigned audio segment.  It also handles starting and stopping the playback source data line to avoid audio
+     * by a threaded processor repeatedly to playback the current audio segment and check for and start newly
+     * added audio segments.  It also handles starting and stopping the playback source data line to avoid audio
      * discontinuities due to buffer underruns.
      */
     private void processAudio()
     {
-        if(mNextAudioSegment != null)
+        if(mCurrentAudioSegment == null)
         {
-            mLock.lock();
-
-            try
-            {
-                //Remove an assigned segment that's subsequently flagged as duplicate or do not monitor before playback
-                if(mNextAudioSegment.isDoNotMonitor() || (mNextAudioSegment.isDuplicate() &&
-                    mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
-                {
-                    mNextAudioSegment = null;
-
-                    if(mCurrentAudioSegment == null)
-                    {
-                        mEmptyProperty.set(true);
-                    }
-                }
-                //For linked audio segments, allow the linked segment to complete first before assigning the next
-                else if(mNextAudioSegment.isLinked())
-                {
-                    if(mCurrentAudioSegment == null)
-                    {
-                        mCurrentAudioSegment = mNextAudioSegment;
-                        mNextAudioSegment = null;
-                        mCurrentBufferIndex = 0;
-
-                        if(mCurrentAudioSegment != null)
-                        {
-                            mAudioPriority.bind(mCurrentAudioSegment.monitorPriorityProperty());
-                            mCurrentAudioSegment.addIdentifierUpdateNotificationListener(this);
-                            broadcast(mCurrentAudioSegment.getIdentifierCollection());
-                        }
-                        else
-                        {
-                            mAudioPriority.setValue(Priority.DEFAULT_PRIORITY);
-                        }
-                    }
-                }
-                else
-                {
-                    //Insert audio segment start or audio priority preemption bonk tone
-                    if(mCurrentAudioSegment == null)
-                    {
-                        playAudio(getAudioSegmentStartTone());
-                    }
-                    else if(mCurrentBufferIndex > 0 &&
-                        (!mCurrentAudioSegment.completeProperty().get() ||
-                            mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount()))
-                    {
-                        playAudio(getAudioSegmentPreemptionTone());
-                    }
-                    else
-                    {
-                        playAudio(getAudioSegmentStartTone());
-                    }
-
-                    //Close current audio segment
-                    dispose(mCurrentAudioSegment);
-                    mCurrentAudioSegment = mNextAudioSegment;
-                    mNextAudioSegment = null;
-                    mCurrentBufferIndex = 0;
-
-                    if(mCurrentAudioSegment != null)
-                    {
-                        mAudioPriority.bind(mCurrentAudioSegment.monitorPriorityProperty());
-                        mCurrentAudioSegment.addIdentifierUpdateNotificationListener(this);
-                        broadcast(mCurrentAudioSegment.getIdentifierCollection());
-                    }
-                    else
-                    {
-                        mAudioPriority.setValue(Priority.DEFAULT_PRIORITY);
-                    }
-                }
-            }
-            finally
-            {
-                mLock.unlock();
-            }
+            loadNextAudioSegment();
         }
 
-        if(mCurrentAudioSegment != null)
+        //Reevaluate current audio segment to see if the status has changed for duplicate or do-not-monitor.
+        if(isThrowaway(mCurrentAudioSegment))
         {
-            //Check for completed audio segment or a segment flagged as duplicate or Do Not Monitor
-            if(mCurrentAudioSegment.isDoNotMonitor() ||
-               (mCurrentAudioSegment.isDuplicate() &&
-                mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()) ||
-                (mCurrentAudioSegment.completeProperty().get() && mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))
+            if(mCurrentBufferIndex > 0)
             {
-                if(mCurrentAudioSegment.isDoNotMonitor())
-                {
-                    playAudio(getAudioSegmentDropTone());
-                }
-
-                dispose(mCurrentAudioSegment);
-                mCurrentAudioSegment = null;
-
-                mLock.lock();
-
-                try
-                {
-                    if(mNextAudioSegment == null)
-                    {
-                        mEmptyProperty.set(true);
-                    }
-                }
-                finally
-                {
-                    mLock.unlock();
-                }
-
-                return;
+                playAudio(mAudioSegmentDropTone);
             }
 
-            //Process any new buffers that have been added to the audio segment.  If a next audio segment gets assigned
-            //while processing, exit the loop so that we can evaluate the next for higher priority preempt.  If the next
-            //segment is a linked segment, ignore it so that we can close out the current segment.
-            while(mCurrentAudioSegment != null && (mNextAudioSegment == null || mNextAudioSegment.isLinked()) &&
-                   mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount() &&
-                   !mCurrentAudioSegment.isDoNotMonitor() && !(mCurrentAudioSegment.isDuplicate() &&
-                mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled()))
+            disposeCurrentAudioSegment();
+            loadNextAudioSegment();
+        }
+
+        while(mCurrentAudioSegment != null && mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount())
+        {
+            try
             {
                 float[] audioBuffer = mCurrentAudioSegment.getAudioBuffers().get(mCurrentBufferIndex++);
 
                 if(audioBuffer != null)
                 {
                     ByteBuffer audio = convert(audioBuffer);
+                    //This call blocks until all audio bytes are dumped into the data line.
                     playAudio(audio);
                 }
             }
+            catch(Exception e)
+            {
+                mLog.error("Error while processing audio for [" + mMixerChannel.name() + "]", e);
+            }
+        }
+
+        //Check for completed and fully-played audio segment -- load next audio segment
+        if(mCurrentAudioSegment != null &&
+           mCurrentAudioSegment.isComplete() &&
+           (mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))
+        {
+            disposeCurrentAudioSegment();
         }
 
         checkStop();
@@ -523,25 +434,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         }
 
         mProcessorFuture = null;
-
-        mLock.lock();
-
-        try
-        {
-            if(mNextAudioSegment != null)
-            {
-                mNextAudioSegment.decrementConsumerCount();
-                mNextAudioSegment = null;
-            }
-        }
-        finally
-        {
-            mLock.unlock();
-        }
-
-        dispose(mCurrentAudioSegment);
-        mCurrentAudioSegment = null;
-
+        disposeCurrentAudioSegment();
         mAudioEventBroadcaster.clear();
         mIdentifierCollectionListener = null;
 
@@ -650,14 +543,28 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         if(mRunning)
         {
             //If the output buffer falls below the threshold then drain the output and stop playback
-            if(mOutput.isRunning() && mOutput.available() >= mBufferStopThreshold)
+            if(mOutput.isRunning())
             {
-                mOutput.drain();
-                mOutput.stop();
-                mRunning = false;
+                if(mOutput.available() >= mBufferStopThreshold)
+                {
+                    mOutput.drain();
+                    mOutput.stop();
+                    mRunning = false;
+                }
+                //Detect when we have a partially filled output that will neither start nor stop and the last write
+                //timestamp was more than the staleness threshold (500 ms) -- stop the output and discard stale contents
+                else if(mOutput.available() < mBufferStopThreshold &&
+                        mOutput.available() > mBufferStartThreshold &&
+                        (System.currentTimeMillis() - mOutputLastTimestamp >= STALE_PLAYBACK_THRESHOLD_MS))
+                {
+                    mOutput.stop();
+                    //Discard the stale buffer contents.
+                    mOutput.flush();
+                    mRunning = false;
+                }
             }
             //If output playback stopped on its own because the buffer emptied, then cleanup
-            else if(!mOutput.isRunning())
+            else
             {
                 mRunning = false;
             }
@@ -735,16 +642,33 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
      */
     public class AudioSegmentProcessor implements Runnable
     {
+        private AtomicBoolean mProcessing = new AtomicBoolean();
+
         @Override
         public void run()
         {
-            try
+            if(mProcessing.compareAndSet(false, true))
             {
-                processAudio();
-            }
-            catch(Throwable t)
-            {
-                mLog.error("Error while processing audio buffers", t);
+                try
+                {
+                    //TODO: Debug hooks - remove after testing
+                    if(mMixerChannel.name().equals("LEFT"))
+                    {
+                        int a = 0;
+                    }
+                    else if(mMixerChannel.name().equals("RIGHT"))
+                    {
+                        int a = 0;
+                    }
+
+                    processAudio();
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error while processing audio buffers", t);
+                }
+
+                mProcessing.set(false);
             }
         }
     }

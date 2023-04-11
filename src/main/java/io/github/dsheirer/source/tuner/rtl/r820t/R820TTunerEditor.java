@@ -123,7 +123,6 @@ public class R820TTunerEditor extends TunerEditor<RTL2832Tuner,R820TTunerConfigu
     @Override
     protected void tunerStatusUpdated()
     {
-        mLog.info("Tuner status was updated.");
         setLoading(true);
 
         if(hasTuner())

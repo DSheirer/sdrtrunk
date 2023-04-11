@@ -18,52 +18,70 @@
  */
 package io.github.dsheirer.util;
 
+import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.sample.Listener;
-import java.util.concurrent.LinkedBlockingQueue;
+import io.github.dsheirer.source.heartbeat.HeartbeatManager;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Threaded processor for receiving elements from a separate producer thread and forwarding those buffers to a
- * registered listener on this consumer/dispatcher thread.
+ * Threaded scheduled processor for receiving elements from a separate producer thread and forwarding those buffers to a
+ * registered listener on this consumer/dispatcher thread.  Internally uses a single-thread thread pool to effect a
+ * timer-based interval for processing to avoid excessive context switching inherent in a blocking queue.  Sizes the
+ * thread pool to a single thread to ensure Garbage Collector can efficiently clean objects created on the thread.
  */
 public class Dispatcher<E> implements Listener<E>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Dispatcher.class);
     private static final long OVERFLOW_LOG_EVENT_WAIT_PERIOD = TimeUnit.SECONDS.toMillis(10);
-    private LinkedBlockingQueue<E> mQueue;
+    private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<>();
     private Listener<E> mListener;
     private AtomicBoolean mRunning = new AtomicBoolean();
     private String mThreadName;
-    private Thread mThread;
-    private E mPoisonPill;
-    private long mLastOverflowLogEvent;
+    private ScheduledExecutorService mExecutorService;
+    private ScheduledFuture<?> mScheduledFuture;
+    private int mBatchSize;
+    private long mInterval;
+    private HeartbeatManager mHeartbeatManager;
 
     /**
-     * Constructs an instance
-     * @param maxSize of the internal queue
+     * Constructs an instance of a Dispatcher with integrated heartbeat support.
      * @param threadName to name the dispatcher thread
-     * @param poisonPill of type E, used to kill the thread
+     * @param batchSize is maximum number of elements to process from the queue per interval.  This should be sized to
+     * the anticipated number of elements per second, divided by the number of intervals per second and increased by
+     * a factor of two.  This serves to constrain how many elements are processed per interval when the queue starts
+     * to back up, so that the thread doesn't dominate CPU resources.
+     * @param interval for processing each batch in milliseconds.
+     * @param heartbeatManager to receive a heartbeat command at each processing interval.
      */
-    public Dispatcher(int maxSize, String threadName, E poisonPill)
+    public Dispatcher(String threadName, int batchSize, long interval, HeartbeatManager heartbeatManager)
     {
-        if(poisonPill == null)
-        {
-            throw new IllegalArgumentException("Poison pill must be non-null");
-        }
-        mQueue = new LinkedBlockingQueue<>(maxSize);
-        mThreadName = threadName;
-        mPoisonPill = poisonPill;
+        this(threadName, batchSize, interval);
+        mHeartbeatManager = heartbeatManager;
     }
 
     /**
-     * Listener to receive the queued buffers each time this processor runs.
+     * Constructs an instance
+     * @param threadName to name the dispatcher thread
+     * @param batchSize is maximum number of elements to process from the queue per interval.  This should be sized to
+     * the anticipated number of elements per second, divided by the number of intervals per second and increased by
+     * a factor of two.  This serves to constrain how many elements are processed per interval when the queue starts
+     * to back up, so that the thread doesn't dominate CPU resources.
+     * @param interval for processing each batch in milliseconds.
      */
-    protected Listener<E> getListener()
+    public Dispatcher(String threadName, int batchSize, long interval)
     {
-        return mListener;
+        mThreadName = threadName;
+        mBatchSize = batchSize;
+        mInterval = interval;
     }
 
     /**
@@ -86,16 +104,7 @@ public class Dispatcher<E> implements Listener<E>
     {
         if(mRunning.get())
         {
-            if(!mQueue.offer(e))
-            {
-                if(System.currentTimeMillis() > (mLastOverflowLogEvent + OVERFLOW_LOG_EVENT_WAIT_PERIOD))
-                {
-                    mLastOverflowLogEvent = System.currentTimeMillis();
-                    mLog.warn("Dispatcher - temporary buffer overflow for thread [" + mThreadName + "] - throwing away samples - " +
-                            " processor flag:" + (mRunning.get() ? "running" : "stopped") +
-                            " thread:" + (mThread != null ? (mThread.isAlive() ? mThread.getState() : "dead") : "null" ));
-                }
-            }
+            mQueue.add(e);
         }
     }
 
@@ -106,10 +115,22 @@ public class Dispatcher<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(false, true))
         {
-            mThread = new Thread(new Processor());
-            mThread.setName(mThreadName);
-            mThread.setPriority(Thread.MAX_PRIORITY);
-            mThread.start();
+            if(mScheduledFuture != null)
+            {
+                mScheduledFuture.cancel(true);
+            }
+
+            if(mExecutorService != null)
+            {
+                mExecutorService.shutdown();
+                mExecutorService = null;
+            }
+
+            mQueue.clear();
+            mExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(mThreadName));
+
+            Runnable r = (mHeartbeatManager != null ? new ProcessorWithHeartbeat() : new Processor());
+            mScheduledFuture = mExecutorService.scheduleAtFixedRate(r, 0, mInterval, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -120,27 +141,19 @@ public class Dispatcher<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(true, false))
         {
-            mQueue.offer(mPoisonPill);
-
-            try
+            if(mScheduledFuture != null)
             {
-                mThread.interrupt();
-                mThread.join();
-                mThread = null;
+                mScheduledFuture.cancel(true);
+                mScheduledFuture = null;
+                mQueue.clear();
             }
-            catch(Exception e)
+
+            if(mExecutorService != null)
             {
-                mLog.error("Timeout while waiting to join terminating buffer processor thread");
+                mExecutorService.shutdown();
+                mExecutorService = null;
             }
         }
-    }
-
-    /**
-     * Finishes processing any queued buffers and then stops the processing thread.
-     */
-    public void flushAndStop()
-    {
-        mQueue.offer(mPoisonPill);
     }
 
     /**
@@ -152,55 +165,74 @@ public class Dispatcher<E> implements Listener<E>
     }
 
     /**
+     * Processes elements from the queue.  Note: this should only be invoked on the Processor thread.
+     */
+    private void process()
+    {
+        List<E> elements = new ArrayList<>();
+
+        mQueue.drainTo(elements, mBatchSize);
+
+        for(E element: elements)
+        {
+            if(mRunning.get() && mListener != null)
+            {
+                try
+                {
+                    mListener.receive(element);
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error while dispatching element [" + element.getClass() + "] to listener [" +
+                            mListener.getClass() + "]", t);
+                }
+            }
+        }
+    }
+
+    /**
      * Processor to service the buffer queue and distribute the buffers to the registered listener
      */
     class Processor implements Runnable
     {
+        private AtomicBoolean mRunning = new AtomicBoolean();
+
         @Override
         public void run()
         {
-            try
+            if(mRunning.compareAndSet(false, true))
             {
-                mQueue.clear();
+                process();
+                mRunning.set(false);
+            }
+        }
+    }
 
-                E element;
+    /**
+     * Processor to service the buffer queue and distribute the buffers to the registered listener.  Includes a
+     * support for commanding a heart beat with each processing interval.
+     */
+    class ProcessorWithHeartbeat implements Runnable
+    {
+        private AtomicBoolean mRunning = new AtomicBoolean();
 
-                while(mRunning.get())
+        @Override
+        public void run()
+        {
+            if(mRunning.compareAndSet(false, true))
+            {
+                process();
+
+                try
                 {
-                    try
-                    {
-                        element = mQueue.take();
-
-                        if(mPoisonPill == element)
-                        {
-                            mRunning.set(false);
-                        }
-                        else if(element != null)
-                        {
-                            if(mListener == null)
-                            {
-                                throw new IllegalStateException("Listener for [" + mThreadName + "] is null");
-                            }
-                            mListener.receive(element);
-                        }
-                    }
-                    catch(InterruptedException e)
-                    {
-                        //Normal shutdown is by interrupt
-                        mRunning.set(false);
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.error("Error while processing element", e);
-                    }
+                    mHeartbeatManager.broadcast();
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Error broadcasting heartbeat during Dispatcher processing interval", t);
                 }
 
-                //Shutting down - clear the queue
-                mQueue.clear();
-            }
-            catch(Throwable t)
-            {
-                mLog.error("Unexpected error thrown from the Dispatcher thread", t);
+                mRunning.set(false);
             }
         }
     }

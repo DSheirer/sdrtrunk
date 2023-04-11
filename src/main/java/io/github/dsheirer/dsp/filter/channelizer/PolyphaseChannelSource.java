@@ -25,7 +25,6 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.tuner.channel.StreamProcessorWithHeartbeat;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import java.util.ArrayList;
@@ -42,7 +41,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
 {
     private Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
-    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
+    private Listener<ComplexSamples> mSamplesListener;
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
     private List<Integer> mOutputProcessorIndexes = new ArrayList<>();
@@ -64,7 +63,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     {
         super(producerSourceEventListener, tunerChannel);
         mChannelSampleRate = channelCalculator.getChannelSampleRate();
-        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
         doUpdateOutputProcessor(channelCalculator, filterManager);
     }
 
@@ -108,8 +106,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     {
         super.start();
 
-        mStreamHeartbeatProcessor.start();
-
         if(mPolyphaseChannelOutputProcessor != null)
         {
             mPolyphaseChannelOutputProcessor.start();
@@ -125,8 +121,6 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
         {
             mPolyphaseChannelOutputProcessor.stop();
         }
-
-        mStreamHeartbeatProcessor.stop();
     }
 
     /**
@@ -135,14 +129,24 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
     @Override
     public void setListener(final Listener<ComplexSamples> listener)
     {
-        mStreamHeartbeatProcessor.setListener(listener);
+        mSamplesListener = listener;
         mPolyphaseChannelOutputProcessor.setListener(this);
     }
 
     @Override
     public void receive(ComplexSamples complexSamples)
     {
-        mStreamHeartbeatProcessor.receive(complexSamples);
+        if(mSamplesListener != null)
+        {
+            try
+            {
+                mSamplesListener.receive(complexSamples);
+            }
+            catch(Throwable t)
+            {
+                mLog.error("Error dispatching complex samples to listener [" + mSamplesListener.getClass() + "]", t);
+            }
+        }
     }
 
     /**
@@ -218,7 +222,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
             {
                 case 1:
                     mPolyphaseChannelOutputProcessor = new OneChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                            indexes, channelCalculator.getChannelCount());
+                            indexes, channelCalculator.getChannelCount(), getHeartbeatManager());
                     mPolyphaseChannelOutputProcessor.setListener(this);
                     mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                     mPolyphaseChannelOutputProcessor.start();
@@ -229,7 +233,7 @@ public class PolyphaseChannelSource extends TunerChannelSource implements Listen
                         float[] filter = filterManager.getFilter(channelCalculator.getChannelSampleRate(),
                                 channelCalculator.getChannelBandwidth(), 2);
                         mPolyphaseChannelOutputProcessor = new TwoChannelOutputProcessor(channelCalculator.getChannelSampleRate(),
-                                indexes, filter, channelCalculator.getChannelCount());
+                                indexes, filter, channelCalculator.getChannelCount(), getHeartbeatManager());
                         mPolyphaseChannelOutputProcessor.setListener(this);
                         mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
                         mPolyphaseChannelOutputProcessor.start();

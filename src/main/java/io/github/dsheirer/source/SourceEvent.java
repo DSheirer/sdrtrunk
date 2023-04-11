@@ -52,7 +52,6 @@ public class SourceEvent
         REQUEST_FREQUENCY_CHANGE,
         REQUEST_FREQUENCY_ROTATION,
         REQUEST_FREQUENCY_SELECTION,
-        REQUEST_SOURCE_DISPOSE,
         REQUEST_CHANGE_SQUELCH_THRESHOLD,
         REQUEST_CURRENT_SQUELCH_THRESHOLD,
         REQUEST_START_SAMPLE_STREAM,
@@ -366,15 +365,6 @@ public class SourceEvent
     public static SourceEvent stopSampleStreamNotification(Source source)
     {
         return new SourceEvent(Event.NOTIFICATION_STOP_SAMPLE_STREAM, source);
-    }
-
-    /**
-     * Creates a request to dispose of the source.  This is normally used for TunerChannelSource to notify the
-     * parent source manager that the channel is no longer needed
-     */
-    public static SourceEvent sourceDisposeRequest(Source source)
-    {
-        return new SourceEvent(Event.REQUEST_SOURCE_DISPOSE, source);
     }
 
     /**

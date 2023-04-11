@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -122,6 +122,11 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<In
             mChannels.add(polyphaseChannelSource);
             mSourceChangeBroadcaster.addListener(polyphaseChannelSource.getSourceEventListener());
         }
+        else
+        {
+            mLog.error("Error adding polyphase channel source - " + (polyphaseChannelSource == null ? "source is null" :
+                    "channel source is already added to this channelizer"));
+        }
     }
 
     /**
@@ -135,6 +140,11 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<In
         {
             mChannels.remove(polyphaseChannelSource);
             mSourceChangeBroadcaster.removeListener(polyphaseChannelSource.getSourceEventListener());
+        }
+        else
+        {
+            mLog.error("Error removing polyphase channel source - " + (polyphaseChannelSource == null ? "source is null" :
+                    "channel source was not previously added to this channelizer"));
         }
     }
 
