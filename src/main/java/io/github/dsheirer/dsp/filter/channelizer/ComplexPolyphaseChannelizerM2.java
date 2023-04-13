@@ -421,9 +421,12 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
                     for(float[] channelResults: list)
                     {
-                        //Rotate each of the channels to the correct phase using the IFFT
-                        mFFT.complexInverse(channelResults, true);
-                        processedChannelResults.add(channelResults);
+                        if(channelResults != null)
+                        {
+                            //Rotate each of the channels to the correct phase using the IFFT
+                            mFFT.complexInverse(channelResults, true);
+                            processedChannelResults.add(channelResults);
+                        }
                     }
 
                     dispatch(processedChannelResults);
