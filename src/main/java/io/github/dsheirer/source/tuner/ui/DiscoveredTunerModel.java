@@ -367,6 +367,12 @@ public class DiscoveredTunerModel extends AbstractTableModel implements Listener
             EventQueue.invokeLater(() -> fireTableRowsUpdated(row, row));
             return;
         }
+        else if(current == TunerStatus.DISABLED)
+        {
+            int row = mDiscoveredTuners.indexOf(discoveredTuner);
+            EventQueue.invokeLater(() -> fireTableRowsUpdated(row, row));
+            return;
+        }
 
         if(current == TunerStatus.REMOVED)
         {

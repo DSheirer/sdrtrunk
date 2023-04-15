@@ -47,7 +47,6 @@ public class AirspyHfTuner extends Tuner
     @Override
     public String getPreferredName()
     {
-//        return "Airspy HF+ " + getController().getDeviceInfo().getSerialNumber();
         return "Airspy HF+";
     }
 
@@ -62,17 +61,7 @@ public class AirspyHfTuner extends Tuner
     @Override
     public String getUniqueID()
     {
-        return "Unique ID";
-//        try
-//        {
-//            return getController().getDeviceInfo().getSerialNumber();
-//        }
-//        catch(Exception e)
-//        {
-//            mLog.error("error getting serial number", e);
-//        }
-//
-//        return BoardID.AIRSPY.getLabel();
+        return getController().getSerialNumber();
     }
 
     @Override
