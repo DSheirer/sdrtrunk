@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.Icon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
@@ -94,6 +95,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
     private JButton mSquelchUpButton;
     private JButton mSquelchDownButton;
     private JButton mLogIndexesButton;
+    private JCheckBox mSquelchAutoTrackCheckBox;
     private double mSquelchThreshold;
     private boolean mPanelVisible = false;
     private boolean mDftProcessing = false;
@@ -114,10 +116,12 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         valuePanel.setLayout(new MigLayout("", "[right][left][][]", ""));
 
         mPeakLabel = new JLabel("0");
+        mPeakLabel.setToolTipText("Current peak power level in decibels.");
         valuePanel.add(new JLabel("Peak:"));
         valuePanel.add(mPeakLabel, "wrap");
 
         mPowerLabel = new JLabel("0");
+        mPowerLabel.setToolTipText("Current Power level in decibels");
         valuePanel.add(new JLabel("Power:"));
         valuePanel.add(mPowerLabel, "wrap");
 
@@ -125,21 +129,34 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         mSquelchLabel.setEnabled(false);
         valuePanel.add(mSquelchLabel);
         mSquelchValueLabel = new JLabel(NOT_AVAILABLE);
+        mSquelchValueLabel.setToolTipText("Squelch threshold value in decibels");
         mSquelchValueLabel.setEnabled(false);
         valuePanel.add(mSquelchValueLabel, "wrap");
 
         IconFontSwing.register(FontAwesome.getIconFont());
         Icon iconUp = IconFontSwing.buildIcon(FontAwesome.ANGLE_UP, 12);
         mSquelchUpButton = new JButton(iconUp);
+        mSquelchUpButton.setToolTipText("Increases the squelch threshold value");
         mSquelchUpButton.setEnabled(false);
         mSquelchUpButton.addActionListener(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold + 1)));
         valuePanel.add(mSquelchUpButton);
 
         Icon iconDown = IconFontSwing.buildIcon(FontAwesome.ANGLE_DOWN, 12);
         mSquelchDownButton = new JButton(iconDown);
+        mSquelchDownButton.setToolTipText("Decreases the squelch threshold value.");
         mSquelchDownButton.setEnabled(false);
         mSquelchDownButton.addActionListener(e -> broadcast(SourceEvent.requestSquelchThreshold(null, mSquelchThreshold - 1)));
-        valuePanel.add(mSquelchDownButton);
+        valuePanel.add(mSquelchDownButton, "wrap");
+
+        mSquelchAutoTrackCheckBox = new JCheckBox("Auto Track");
+        mSquelchAutoTrackCheckBox.setToolTipText("Enable or disable monitoring of the noise floor to auto-adjust the " +
+                "squelch threshold value maintaining a consistent level/buffer above the noise floor");
+        mSquelchAutoTrackCheckBox.setEnabled(false);
+        mSquelchAutoTrackCheckBox.addActionListener(e ->
+        {
+            broadcast(SourceEvent.requestSquelchAutoTrack(mSquelchAutoTrackCheckBox.isSelected()));
+        });
+        valuePanel.add(mSquelchAutoTrackCheckBox, "span,left");
 
         add(valuePanel);
         add(new JSeparator(JSeparator.VERTICAL));
@@ -165,7 +182,7 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         });
         mNoiseFloorSpinner = new JSpinner(mNoiseFloorSpinnerModel);
         labelPanel.add(mNoiseFloorSpinner);
-        labelPanel.add(new JLabel("Noise Floor"));
+        labelPanel.add(new JLabel("Spectral Display Noise Floor"));
 
         mLogIndexesButton = new JButton("Log Settings");
         mLogIndexesButton.addActionListener(e -> {
@@ -340,6 +357,22 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         }
     }
 
+    /**
+     * Updates the channel configuration squelch auto-track feature setting.
+     * @param autoTrack true to enable.
+     */
+    private void setConfigSquelchAutoTrack(boolean autoTrack)
+    {
+        Channel channel = mPlaylistManager.getChannelProcessingManager().getChannel(mProcessingChain);
+
+        if(channel != null && channel.getDecodeConfiguration() instanceof ISquelchConfiguration)
+        {
+            ISquelchConfiguration configuration = (ISquelchConfiguration)channel.getDecodeConfiguration();
+            configuration.setSquelchAutoTrack(autoTrack);
+            mPlaylistManager.schedulePlaylistSave();
+        }
+    }
+
     private void broadcast(SourceEvent sourceEvent)
     {
         if(mProcessingChain != null)
@@ -372,6 +405,8 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
         mSquelchValueLabel.setEnabled(false);
         mSquelchUpButton.setEnabled(false);
         mSquelchDownButton.setEnabled(false);
+        mSquelchAutoTrackCheckBox.setEnabled(false);
+        mSquelchAutoTrackCheckBox.setSelected(false);
     }
 
     /**
@@ -420,7 +455,8 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
 
         updateFFTProcessing();
 
-        broadcast(SourceEvent.requestCurrentSquelchThreshold(null));
+        broadcast(SourceEvent.requestCurrentSquelchAutoTrack());
+        broadcast(SourceEvent.requestCurrentSquelchThreshold());
     }
 
 
@@ -474,6 +510,15 @@ public class ChannelPowerPanel extends JPanel implements Listener<ProcessingChai
                     {
                         updatePllFrequency(sourceEvent.getValue().longValue());
                     }
+                }
+                case NOTIFICATION_SQUELCH_AUTO_TRACK ->
+                {
+                    boolean autoTrack = sourceEvent.getValue().intValue() == 1 ? true : false;
+                    setConfigSquelchAutoTrack(autoTrack);
+                    EventQueue.invokeLater(() -> {
+                        mSquelchAutoTrackCheckBox.setSelected(autoTrack);
+                        mSquelchAutoTrackCheckBox.setEnabled(true);
+                    });
                 }
             }
         }

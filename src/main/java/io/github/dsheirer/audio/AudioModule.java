@@ -141,11 +141,16 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
         @Override
         public void receive(SquelchStateEvent event)
         {
-            mSquelchState = event.getSquelchState();
+            SquelchState squelchState = event.getSquelchState();
 
-            if(mSquelchState == SquelchState.SQUELCH)
+            if(mSquelchState != squelchState)
             {
-                closeAudioSegment();
+                mSquelchState = squelchState;
+
+                if(mSquelchState == SquelchState.SQUELCH)
+                {
+                    closeAudioSegment();
+                }
             }
         }
     }

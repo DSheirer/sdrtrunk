@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,6 +40,8 @@ import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
@@ -59,9 +61,6 @@ import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Narrow-Band FM channel configuration editor
  */
@@ -75,6 +74,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TitledPane mSourcePane;
     private TextField mTalkgroupField;
     private TextField mSquelchThresholdField;
+    private ToggleSwitch mSquelchAutoTrackSwitch;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
     private IntegerFormatter mSquelchTextFormatter = new IntegerFormatter((int)DbPowerMeter.DEFAULT_MINIMUM_POWER,
             (int)DbPowerMeter.DEFAULT_MAXIMUM_POWER);
@@ -151,12 +151,21 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             GridPane.setConstraints(getSquelchThresholdField(), 3, 0);
             gridPane.getChildren().add(getSquelchThresholdField());
 
+            Label autoTrackLabel = new Label("Squelch Auto-Track");
+            GridPane.setHalignment(autoTrackLabel, HPos.RIGHT);
+            GridPane.setConstraints(autoTrackLabel, 4, 0);
+            gridPane.getChildren().add(autoTrackLabel);
+
+            GridPane.setConstraints(getSquelchAutoTrackSwitch(), 5, 0);
+            GridPane.setHalignment(getSquelchAutoTrackSwitch(), HPos.LEFT);
+            gridPane.getChildren().add(getSquelchAutoTrackSwitch());
+
             Label talkgroupLabel = new Label("Talkgroup To Assign");
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
-            GridPane.setConstraints(talkgroupLabel, 4, 0);
+            GridPane.setConstraints(talkgroupLabel, 6, 0);
             gridPane.getChildren().add(talkgroupLabel);
 
-            GridPane.setConstraints(getTalkgroupField(), 5, 0);
+            GridPane.setConstraints(getTalkgroupField(), 7, 0);
             gridPane.getChildren().add(getTalkgroupField());
 
             mDecoderPane.setContent(gridPane);
@@ -274,7 +283,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mBandwidthButton.getStyleClass().add(SegmentedButton.STYLE_CLASS_DARK);
             mBandwidthButton.setDisable(true);
 
-            for(DecodeConfigNBFM.Bandwidth bandwidth : DecodeConfigNBFM.Bandwidth.values())
+            for(DecodeConfigNBFM.Bandwidth bandwidth : DecodeConfigNBFM.Bandwidth.FM_BANDWIDTHS)
             {
                 ToggleButton toggleButton = new ToggleButton(bandwidth.toString());
                 toggleButton.setUserData(bandwidth);
@@ -338,9 +347,24 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         {
             mSquelchThresholdField = new TextField();
             mSquelchThresholdField.setTextFormatter(mSquelchTextFormatter);
+            mSquelchTextFormatter.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
         return mSquelchThresholdField;
+    }
+
+    /**
+     * Squelch noise floor auto-track feature.
+     */
+    private ToggleSwitch getSquelchAutoTrackSwitch()
+    {
+        if(mSquelchAutoTrackSwitch == null)
+        {
+            mSquelchAutoTrackSwitch = new ToggleSwitch();
+            mSquelchAutoTrackSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mSquelchAutoTrackSwitch;
     }
 
     /**
@@ -421,8 +445,10 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             }
 
             updateTextFormatter(decodeConfigNBFM.getTalkgroup());
-
+            getSquelchThresholdField().setDisable(false);
             mSquelchTextFormatter.setValue(decodeConfigNBFM.getSquelchThreshold());
+            getSquelchAutoTrackSwitch().setDisable(false);
+            getSquelchAutoTrackSwitch().setSelected(decodeConfigNBFM.isSquelchAutoTrack());
         }
         else
         {
@@ -435,6 +461,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             updateTextFormatter(0);
             getTalkgroupField().setDisable(true);
+            getSquelchThresholdField().setDisable(true);
+            getSquelchAutoTrackSwitch().setDisable(true);
+            getSquelchAutoTrackSwitch().setSelected(false);
         }
     }
 
@@ -470,6 +499,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         config.setTalkgroup(talkgroup);
         config.setSquelchThreshold(mSquelchTextFormatter.getValue());
+        config.setSquelchAutoTrack(getSquelchAutoTrackSwitch().isSelected());
         getItem().setDecodeConfiguration(config);
     }
 

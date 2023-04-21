@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
     private final static Logger mLog = LoggerFactory.getLogger(ComplexWaveSource.class);
 
     private IFrameLocationListener mFrameLocationListener;
+    private int mBufferSampleCount = 65536; //Complex samples per buffer
     private int mBytesPerFrame;
     private int mFrameCounter = 0;
     private long mFrequency = 0;
@@ -119,7 +120,8 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
      */
     public int getBufferSampleCount()
     {
-        return (int)(getSampleRate() / 20.0d);
+        return mBufferSampleCount;
+//        return (int)(getSampleRate() / 20.0d);
     }
 
     @Override
@@ -139,12 +141,11 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
 
         if(mAutoReplay)
         {
-            long intervalMilliseconds = 50; //20 intervals per second
-            double framesPerInterval = getSampleRate() / 20.0d;
-            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(framesPerInterval),
+            double sampleRate = getSampleRate();
+            double buffersPerSecond = (sampleRate / mBufferSampleCount);
+            long intervalMilliseconds = (long)(1000.0 / buffersPerSecond);
+            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(mBufferSampleCount),
                     0, intervalMilliseconds, TimeUnit.MILLISECONDS);
-
-
         }
     }
 

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,16 +18,15 @@
  */
 package io.github.dsheirer.dsp.fm;
 
-import io.github.dsheirer.sample.complex.Complex;
 import org.apache.commons.math3.util.FastMath;
 
 /**
  * FM Demodulator for demodulating complex samples and producing demodulated floating point samples.
  */
-public class ScalarFMDemodulator implements IFmDemodulator
+public class ScalarFMDemodulator implements IDemodulator
 {
-    private float mPreviousI = 0.0f;
-    private float mPreviousQ = 0.0f;
+    protected float mPreviousI = 0.0f;
+    protected float mPreviousQ = 0.0f;
     protected float mGain;
 
     /**
@@ -45,50 +44,6 @@ public class ScalarFMDemodulator implements IFmDemodulator
     public ScalarFMDemodulator(float gain)
     {
         mGain = gain;
-    }
-
-    /**
-     * Demodulates the I/Q sample via complex sample multiplication by the complex conjugates of the most recently
-     * demodulated complex sample (ie previous sample).  Each new sample overwrites the previously stored sample to
-     * allow future invocations of the method to simply use a new sample value.
-     *
-     * @param currentI of the sample
-     * @param currentQ of the sample
-     * @return demodulated sample
-     */
-    public float demodulate(float currentI, float currentQ)
-    {
-        /**
-         * Multiply the current sample against the complex conjugate of the
-         * previous sample to derive the phase delta between the two samples
-         *
-         * Negating the previous sample quadrature produces the conjugate
-         */
-        double inphase = (currentI * mPreviousI) - (currentQ * -mPreviousQ);
-        double quadrature = (currentQ * mPreviousI) + (currentI * -mPreviousQ);
-
-        double angle = 0.0f;
-
-        //Check for divide by zero
-        if(inphase != 0)
-        {
-            /**
-             * Use the arc-tangent of quadrature divided by inphase to
-             * get the phase angle (+/-) which was directly manipulated by the
-             * original message waveform during the modulation.  This value now
-             * serves as the instantaneous amplitude of the demodulated signal
-             */
-            double denominator = 1.0d / inphase;
-            angle = FastMath.atan((double)quadrature * denominator);
-        }
-
-        /**
-         * Store the current sample to use during the next iteration
-         */
-        mPreviousI = currentI;
-        mPreviousQ = currentQ;
-
-        return (float)(angle * mGain);
     }
 
     public float[] demodulate(float[] i, float[] q)
@@ -133,35 +88,6 @@ public class ScalarFMDemodulator implements IFmDemodulator
         }
 
         return demodulated;
-    }
-
-    /**
-     * Demodulates the complex samples and returns the demodulated value.
-     * @param previous
-     * @param current
-     * @return
-     */
-    public static double demodulate(Complex previous, Complex current)
-    {
-        double inphase = (current.inphase() * previous.inphase()) - (current.quadrature() * -previous.quadrature());
-        double quadrature = (current.quadrature() * previous.inphase()) + (current.inphase() * -previous.quadrature());
-
-        double angle = 0.0f;
-
-        //Check for divide by zero
-        if(inphase != 0)
-        {
-            /**
-             * Use the arc-tangent of quadrature divided by inphase to
-             * get the phase angle (+/-) which was directly manipulated by the
-             * original message waveform during the modulation.  This value now
-             * serves as the instantaneous amplitude of the demodulated signal
-             */
-            double denominator = 1.0d / inphase;
-            angle = FastMath.atan((double)quadrature * denominator);
-        }
-
-        return angle;
     }
 
     public void dispose()

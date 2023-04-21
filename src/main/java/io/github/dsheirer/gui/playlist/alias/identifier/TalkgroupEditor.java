@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@ import io.github.dsheirer.gui.control.PrefixIdentFormatter;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
@@ -37,9 +39,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Editor for talkgroup alias identifiers
@@ -238,6 +237,10 @@ public class TalkgroupEditor extends IdentifierEditor<Talkgroup>
     private void loadTalkgroupDetails()
     {
         mTalkgroupDetails.clear();
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.DECIMAL, new IntegerFormatter(1,0xFFFF),
+                "Format: 1 - 65535"));
+        mTalkgroupDetails.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.HEXADECIMAL, new HexFormatter(1,0xFFFF),
+                "Format: 1 - FFFF"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
                 "Format: 0 - 65535"));
         mTalkgroupDetails.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.HEXADECIMAL, new HexFormatter(0,65535),

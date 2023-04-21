@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,40 +37,23 @@ public class FmDemodulatorFactory
      * implementation from scalar and vector options.
      * @return demodulator instance
      */
-    public static IFmDemodulator getFmDemodulator()
+    public static IDemodulator getFmDemodulator()
     {
         Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.FM_DEMODULATOR);
 
         switch(implementation)
         {
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorFMDemodulator();
+            case VECTOR_SIMD_64:
+                return new VectorFMDemodulator64();
+            case VECTOR_SIMD_128:
+                return new VectorFMDemodulator128();
+            case VECTOR_SIMD_256:
+                return new VectorFMDemodulator256();
+            case VECTOR_SIMD_512:
+                return new VectorFMDemodulator512();
             case SCALAR:
-                return new ScalarFMDemodulator();
             default:
-                mLog.warn("Unrecognized optimal operation for FM demodulator: " + implementation.name());
                 return new ScalarFMDemodulator();
-        }
-    }
-
-    /**
-     * Creates the optimal Squelching FM demodulator using calibration data to select the optimal
-     * implementation from scalar and vector options.
-     * @return demodulator instance
-     */
-    public static ISquelchingFmDemodulator getSquelchingFmDemodulator(float alpha, float threshold, int ramp)
-    {
-        Implementation implementation = CalibrationManager.getInstance().getImplementation(CalibrationType.FM_DEMODULATOR);
-
-        switch(implementation)
-        {
-            case VECTOR_SIMD_PREFERRED:
-                return new VectorSquelchingFMDemodulator(alpha, threshold, ramp);
-            case SCALAR:
-                return new ScalarSquelchingFMDemodulator(alpha, threshold, ramp);
-            default:
-                mLog.warn("Unrecognized optimal operation for Squelching FM demodulator: " + implementation.name());
-                return new ScalarSquelchingFMDemodulator(alpha, threshold, ramp);
         }
     }
 }

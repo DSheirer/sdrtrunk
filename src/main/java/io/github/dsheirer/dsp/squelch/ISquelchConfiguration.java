@@ -16,4 +16,16 @@ public interface ISquelchConfiguration
      * @return threshold (dB)
      */
     int getSquelchThreshold();
+
+    /**
+     * Enable or disable the squelch noise floor auto-track feature.
+     * @param autoTrack true to enable.
+     */
+    void setSquelchAutoTrack(boolean autoTrack);
+
+    /**
+     * Indicates if the squelch noise floor auto-track feature is enabled.
+     * @return true if enabled.
+     */
+    boolean isSquelchAutoTrack();
 }

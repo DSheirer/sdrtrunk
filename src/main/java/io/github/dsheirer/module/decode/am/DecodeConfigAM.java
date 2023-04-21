@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,33 +14,35 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.am;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog;
 import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
 
-public class DecodeConfigAM extends DecodeConfiguration
+/**
+ * AM decoder configuration
+ */
+public class DecodeConfigAM extends DecodeConfigAnalog
 {
-    private boolean mRecordAudio = false;
-
 	public DecodeConfigAM()
     {
     }
 
-    @JacksonXmlProperty(isAttribute =  true, localName = "recordAudio")
-    public boolean getRecordAudio()
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    public DecoderType getDecoderType()
     {
-        return mRecordAudio;
+        return DecoderType.AM;
     }
 
-    public void setRecordAudio(boolean recordAudio)
+    @Override
+    protected Bandwidth getDefaultBandwidth()
     {
-        mRecordAudio = recordAudio;
+        return Bandwidth.BW_15_0;
     }
 
     /**
@@ -51,13 +52,20 @@ public class DecodeConfigAM extends DecodeConfiguration
     @Override
     public ChannelSpecification getChannelSpecification()
     {
-        return new ChannelSpecification(25000.0,
-            3000, 3000.0, 5000.0);
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
-    public DecoderType getDecoderType()
-    {
-        return DecoderType.AM;
+        switch(getBandwidth())
+        {
+            case BW_3_0:
+                return new ChannelSpecification(25000.0, 3000, 1500.0, 1700.0);
+            case BW_5_0:
+                return new ChannelSpecification(25000.0, 5000, 2500.0, 2700.0);
+            case BW_8_33:
+                return new ChannelSpecification(25000.0, 10000, 5000.0, 7000.0);
+            case BW_15_0:
+                return new ChannelSpecification(25000.0, 15000, 7500.0, 9500.0);
+            case BW_25_0:
+                return new ChannelSpecification(25000.0, 25000, 12500.0, 14500.0);
+            default:
+                throw new IllegalArgumentException("Unrecognized AM bandwidth value: " + getBandwidth());
+        }
     }
 }

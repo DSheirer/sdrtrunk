@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,13 @@
 
 package io.github.dsheirer.vector.calibrate;
 
+import io.github.dsheirer.dsp.am.AmDemodulatorCalibration;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.calibration.VectorCalibrationPreference;
 import io.github.dsheirer.vector.calibrate.airspy.AirspySampleConverterCalibration;
 import io.github.dsheirer.vector.calibrate.airspy.AirspyUnpackedCalibration;
 import io.github.dsheirer.vector.calibrate.airspy.AirspyUnpackedInterleavedCalibration;
 import io.github.dsheirer.vector.calibrate.demodulator.FmDemodulatorCalibration;
-import io.github.dsheirer.vector.calibrate.demodulator.SquelchingFmDemodulatorCalibration;
 import io.github.dsheirer.vector.calibrate.filter.FirFilterCalibration;
 import io.github.dsheirer.vector.calibrate.filter.RealDcRemovalCalibration;
 import io.github.dsheirer.vector.calibrate.filter.RealHalfBand11TapFilterCalibration;
@@ -35,19 +35,19 @@ import io.github.dsheirer.vector.calibrate.filter.RealHalfBand63TapFilterCalibra
 import io.github.dsheirer.vector.calibrate.filter.RealHalfBandDefaultFilterCalibration;
 import io.github.dsheirer.vector.calibrate.gain.ComplexGainCalibration;
 import io.github.dsheirer.vector.calibrate.gain.ComplexGainControlCalibration;
+import io.github.dsheirer.vector.calibrate.magnitude.MagnitudeCalibration;
 import io.github.dsheirer.vector.calibrate.mixer.ComplexMixerCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.ComplexOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.oscillator.RealOscillatorCalibration;
 import io.github.dsheirer.vector.calibrate.window.WindowCalibration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Determines the optimal (scalar vs vector) class to use for the current CPU architecture.
@@ -99,12 +99,14 @@ public class CalibrationManager
             sInstance.add(new AirspySampleConverterCalibration());
             sInstance.add(new AirspyUnpackedCalibration());
             sInstance.add(new AirspyUnpackedInterleavedCalibration());
+            sInstance.add(new AmDemodulatorCalibration());
             sInstance.add(new ComplexGainCalibration());
             sInstance.add(new ComplexGainControlCalibration());
             sInstance.add(new ComplexOscillatorCalibration());
             sInstance.add(new ComplexMixerCalibration());
             sInstance.add(new FirFilterCalibration());
             sInstance.add(new FmDemodulatorCalibration());
+            sInstance.add(new MagnitudeCalibration());
             sInstance.add(new RealDcRemovalCalibration());
             sInstance.add(new RealHalfBand11TapFilterCalibration());
             sInstance.add(new RealHalfBand15TapFilterCalibration());
@@ -112,7 +114,6 @@ public class CalibrationManager
             sInstance.add(new RealHalfBand63TapFilterCalibration());
             sInstance.add(new RealHalfBandDefaultFilterCalibration());
             sInstance.add(new RealOscillatorCalibration());
-            sInstance.add(new SquelchingFmDemodulatorCalibration());
 
 //            sInstance.add(new HilbertCalibration()); //Not currently used
             sInstance.add(new WindowCalibration()); //Not currently used
