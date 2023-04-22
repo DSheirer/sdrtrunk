@@ -75,6 +75,10 @@ public class Preamble extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK PREAMBLE FM:").append(getSourceAddress());
         sb.append(" TO:").append(getTargetAddress());
         sb.append(isCSBKPreamble() ? " CSBK" : " DATA");

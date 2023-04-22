@@ -44,7 +44,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.DataMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.CSBKMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityMaxAloha;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusNeighbors;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSystemStatus;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSiteStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusDataChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.standard.Aloha;
@@ -673,10 +673,10 @@ public class DMRDecoderState extends TimeslotDecoderState
                     updateRestChannel(((CapacityPlusNeighbors)csbk).getRestChannel());
                 }
                 break;
-            case MOTOROLA_CAPPLUS_SYSTEM_STATUS:
-                if(csbk instanceof CapacityPlusSystemStatus)
+            case MOTOROLA_CAPPLUS_SITE_STATUS:
+                if(csbk instanceof CapacityPlusSiteStatus)
                 {
-                    CapacityPlusSystemStatus cpss = (CapacityPlusSystemStatus)csbk;
+                    CapacityPlusSiteStatus cpss = (CapacityPlusSiteStatus)csbk;
 
                     //Channel rotation monitor normally uses only CONTROL state, so when we detect that we're a
                     //Capacity plus system, add ACTIVE as an active state to the monitor.  This can be requested repeatedly.

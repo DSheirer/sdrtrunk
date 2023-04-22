@@ -59,6 +59,10 @@ public class CapacityPlusCSBKO_60 extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CAP+ *UNKNOWN* CSBK:60");
         sb.append(" MSG:").append(getMessage().toHexString());
 

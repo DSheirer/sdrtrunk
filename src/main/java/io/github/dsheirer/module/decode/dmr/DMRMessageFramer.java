@@ -377,7 +377,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 
     public static void main(String[] args)
     {
-        String path = "/media/denny/Lexar/Recordings/DMR/";
+        String path = "/media/denny/T7 Shield/Recordings/DMR/";
 
         //Con+ Traffic + Voice
 //        String file = path + "20200513_143340_9600BPS_DMR_SaiaNet_Onondaga_Control.bits"; //Enh GPS Revert Window Annce
@@ -385,7 +385,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //        String file = path + "20200514_063507_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //GPS Window Grant 2579
 //        String file = path + "20200514_064224_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //GPS Window Grant 5056035
 //        String file = path + "20200514_131623_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //GPS Grant: 5074193
-        String file = path + "20200514_133947_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits"; //<<<<<<<------ Basic Encryption
+//        String file = path + "SaiaNet/20200514_133947_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits"; //<<<<<<<------ Basic Encryption
 //        String file = path + "20200514_142249_9600BPS_DMR_SaiaNet_Onondaga_LCN_4.bits";
 //        String file = path + "20200514_144534_9600BPS_DMR_SaiaNet_Onondaga_LCN_3_Control.bits"; //Con+ Control w/GPS Window Announce
 
@@ -395,12 +395,16 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
         //Cap-Max Tier III CC
 //        String file = path + "20200710_053632_9600BPS_DMR_Niles_Radio_Coconino_Control.bits";
 
-        //Cap+ Multi-Site 1 - Traffic LCN 2
-//        String file = path + "20200716_210133_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
-//        String file = path + "20200716_212309_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
+        //Cap+ Multi-Site 1 - Data Revert LSN1/2 with CSBKO 62 Site status
+//        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_210133_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
+//        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_210845_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
+//        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_212309_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
 
-        //Cap+ Multi-Site Enhanced GPS Channel
-//        String file = path + "20200714_224018_9600BPS_DMR_Farmers_Electric_Cooperative_Hunt_LCN_3.bits"; //This may have PLL mis-align issues
+        //Cap+ Multi-Site Enhanced Data Revert Channel  (no CSBKO 62)
+//        String file = path + "Texas_Hunt_Farmers_Electric_Capacity_Plus_Multi_Site/20200714_224018_9600BPS_DMR_Farmers_Electric_Cooperative_Hunt_LCN_3.bits"; //This may have PLL mis-align issues
+
+        //Cap+ Multi-Site - Dallas Unknown
+        String file = path + "Texas_Dallas_Unknown_1_Capacity_Plus_Multi_Site/20200716_211233_9600BPS_DMR_Dallas_Unk_Dallas_Unk.bits";
 
         //Hytera Short Data = Proprietary (encrypted)
 //        String file = path + "20200716_222839_9600BPS_DMR_SystemUnk_SiteUnk_Unk.bits"; //Hytera short data packets

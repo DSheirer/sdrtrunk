@@ -86,6 +86,11 @@ public class DuplexPrivateVoiceChannelGrant extends ChannelGrant
 
         sb.append("CC:").append(getSlotType().getColorCode());
 
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
+
         if(isEmergency())
         {
             sb.append(" EMERGENCY");

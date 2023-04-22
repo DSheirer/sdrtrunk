@@ -39,7 +39,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityP
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusDataRevertWindowGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusNeighbors;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusPreamble;
-import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSystemStatus;
+import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.CapacityPlusSiteStatus;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusCSBKO_16;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusDataChannelGrant;
 import io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola.ConnectPlusDataRevertWindowAnnouncement;
@@ -268,8 +268,8 @@ public class CSBKMessageFactory
                 case MOTOROLA_CAPPLUS_PREAMBLE:
                     csbk = new CapacityPlusPreamble(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
-                case MOTOROLA_CAPPLUS_SYSTEM_STATUS:
-                    csbk = new CapacityPlusSystemStatus(pattern, message, cach, slotType, timestamp, timeslot);
+                case MOTOROLA_CAPPLUS_SITE_STATUS:
+                    csbk = new CapacityPlusSiteStatus(pattern, message, cach, slotType, timestamp, timeslot);
                     break;
                 case MOTOROLA_CAPPLUS_DATA_WINDOW_ANNOUNCEMENT:
                     csbk = new CapacityPlusDataRevertWindowAnnouncement(pattern, message, cach, slotType, timestamp, timeslot);

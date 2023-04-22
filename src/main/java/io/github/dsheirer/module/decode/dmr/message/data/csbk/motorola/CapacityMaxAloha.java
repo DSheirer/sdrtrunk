@@ -82,6 +82,10 @@ public class CapacityMaxAloha extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CAPACITY-MAX ALOHA");
 
         if(hasRadioIdentifier())

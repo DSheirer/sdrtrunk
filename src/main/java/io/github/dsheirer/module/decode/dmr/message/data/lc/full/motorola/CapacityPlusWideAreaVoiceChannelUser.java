@@ -38,8 +38,9 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
 {
     private static final int[] UNKNOWN_1 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
     private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] REST_REPEATER = new int[]{51, 52, 53, 54};
-    private static final int[] REST_TIMESLOT = new int[]{55};
+    //private static final int[] REST_REPEATER = new int[]{51, 52, 53, 54};
+    //private static final int[] REST_TIMESLOT = new int[]{55};
+    private static final int[] REST_LSN = new int[]{52, 53, 54, 55};
     private static final int[] SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] UNKNOWN_3 = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
@@ -127,20 +128,26 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     }
 
     /**
+     * Rest LSN
+     * @return Logical Slot Number 1-16
+     */
+    public int getRestLSN()
+    {
+        return getMessage().getInt(REST_LSN);
+    }
+
+    /**
      * Rest channel timeslot
      */
     public int getRestTimeslot()
     {
-        return getMessage().getInt(REST_TIMESLOT) + 1;
+        return (getRestLSN() % 2 == 0) ? 2 : 1;
     }
 
     /**
      * Rest channel repeater number
      */
-    public int getRestRepeater()
-    {
-        return getMessage().getInt(REST_REPEATER) + 1;
-    }
+    public int getRestRepeater() { return (int) Math.ceil(getRestLSN() / 2.0); }
 
     /**
      * Indicates if this message has a reset channel defined.

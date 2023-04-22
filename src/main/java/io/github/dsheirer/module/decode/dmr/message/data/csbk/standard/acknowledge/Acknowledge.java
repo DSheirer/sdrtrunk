@@ -80,6 +80,10 @@ public class Acknowledge extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" ").append(getAcknowledgeType());
         sb.append(" REASON:").append(getReason());
         sb.append(" FM:").append(getSourceRadio());

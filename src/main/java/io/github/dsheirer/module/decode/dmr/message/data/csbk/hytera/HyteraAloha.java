@@ -85,6 +85,10 @@ public class HyteraAloha extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" HYTERA ALOHA");
 
         if(hasRadioIdentifier())

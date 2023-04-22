@@ -77,6 +77,10 @@ public class HyteraAnnouncement extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" HYTERA ANNOUNCEMENT-TYPE:").append(getAnnouncementType());
         sb.append(" ").append(getSystemIdentityCode().getModel());
         sb.append(" NETWORK:").append(getSystemIdentityCode().getNetwork());

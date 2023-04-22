@@ -71,6 +71,10 @@ public class CapacityPlusDataRevertWindowGrant extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CAP+ ENHANCED DATA REVERT GRANT TO:").append(getTargetAddress());
         sb.append(" TRANSMIT IN WINDOW:").append(getSuperFrame()).append(".").append(getWindow());
         sb.append(" MSG:").append(getMessage().toHexString());

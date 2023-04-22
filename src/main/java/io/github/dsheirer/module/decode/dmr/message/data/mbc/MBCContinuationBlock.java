@@ -51,6 +51,11 @@ public class MBCContinuationBlock extends DataMessage
         StringBuilder sb = new StringBuilder();
         sb.append("CC:").append(getSlotType().getColorCode());
 
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
+
         if(!isValid())
         {
             sb.append(" [CRC ERROR]");

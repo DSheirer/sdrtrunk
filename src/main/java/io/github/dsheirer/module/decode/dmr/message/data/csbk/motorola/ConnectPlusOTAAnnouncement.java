@@ -77,6 +77,10 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ ANNOUNCE OTA ").append(getMessageType());
         sb.append(" VER:").append(getMessageVersion());
         sb.append(" AVAILABLE ON ").append(getDataChannel());

@@ -88,6 +88,10 @@ public class CapacityPlusDataRevertWindowAnnouncement extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CAP+ ENHANCED DATA REVERT ANNOUNCEMENT");
         sb.append(" WINDOW:").append(getSuperFrame()).append(".").append(getWindow());
 

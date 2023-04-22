@@ -65,6 +65,11 @@ public class StunReviveKill extends Ahoy
 
         sb.append("CC:").append(getSlotType().getColorCode());
 
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
+
         if(isEncrypted())
         {
             sb.append(" ENCRYPTED");

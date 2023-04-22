@@ -1,9 +1,27 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.edac;
 
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.BitSetFullException;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,7 +32,7 @@ import java.util.List;
 public class BPTC_196_96
 {
     public static final int BPTC_LENGTH = 196;
-    public static final int EXTRACTED_LENGTH = 96;
+    public static final int EXTRACTED_LENGTH = 96; //However, we set the 3x reserved bits in 96, 97, and 98 making the length 99
     public static final int MAX_ORIGINAL_INDEX = 136;
     public static final int COLUMN_COUNT = 15;
     public static final int MESSAGE_COLUMN_COUNT = 12; //Should be 11, but adjusted for the first pad bit
@@ -98,6 +116,11 @@ public class BPTC_196_96
                 index += CHECKSUM_COLUMN_COUNT;
             }
         }
+
+        //Transfer bits R2, R1, and R0 to the end - RAS bits
+        extracted.set(96, message.get(0));
+        extracted.set(97, message.get(1));
+        extracted.set(98, message.get(2));
 
         return extracted;
     }
