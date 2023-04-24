@@ -18,10 +18,10 @@
  */
 package io.github.dsheirer.sample;
 
+import io.github.dsheirer.log.LoggingSuppressor;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -29,11 +29,15 @@ import org.slf4j.LoggerFactory;
  */
 public class Broadcaster<T> implements Listener<T>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Broadcaster.class);
+    private static LoggingSuppressor sLoggingSuppressor;
     private List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
 
+    /**
+     * Constructs an instance
+     */
     public Broadcaster()
     {
+        sLoggingSuppressor = new LoggingSuppressor(LoggerFactory.getLogger(Broadcaster.class));
     }
 
     /**
@@ -117,16 +121,25 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        try
+        for(Listener<T> listener: mListeners)
         {
-            for(Listener<T> listener: mListeners)
+            try
             {
                 listener.receive(t);
             }
-        }
-        catch(Exception e)
-        {
-            mLog.error("Error while broadcasting [" + t.getClass() + "] to listeners");
+            catch(Exception e)
+            {
+                if(t != null)
+                {
+                    sLoggingSuppressor.error(t.getClass().toGenericString(), 5,
+                    "Error while broadcasting [" + t.getClass() + "] to listeners", e);
+                }
+                else
+                {
+                    sLoggingSuppressor.error("null broadcast object", 5, "Can't broadcast null " +
+                            "object to listener [" + listener.getClass() + "]", e);
+                }
+            }
         }
     }
 }
