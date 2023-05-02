@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import java.util.EnumSet;
 public enum TunerType
 {
     AIRSPY_R820T("R820T"),
+    AIRSPY_HF_PLUS("HF+"),
     ELONICS_E4000("E4000"),
     FCI_FC2580("FC2580"),
     FITIPOWER_FC0012("FC0012"),

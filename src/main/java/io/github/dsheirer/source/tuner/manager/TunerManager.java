@@ -45,13 +45,6 @@ import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceInfo;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.DiscoveredRspDuoTuner1;
 import io.github.dsheirer.source.tuner.ui.DiscoveredTunerModel;
 import io.github.dsheirer.util.ThreadPool;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
@@ -61,6 +54,14 @@ import org.usb4java.DeviceList;
 import org.usb4java.HotplugCallback;
 import org.usb4java.HotplugCallbackHandle;
 import org.usb4java.LibUsb;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tuner manager provides access to tuners using USB, recording, sound-card and system-daemon accessible devices. This
@@ -299,9 +300,18 @@ public class TunerManager implements IDiscoveredTunerStatusListener
 
         //Note: we have to keep this first API instance open while we use any RSP tuners, otherwise the additional API
         //instance(s) used by the individual tuners become unresponsive.  Note sure why.
-        mSDRplay = new SDRplay();
 
-        if(mSDRplay.isAvailable())
+        try
+        {
+            mSDRplay = new SDRplay();
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.error("Couldn't load SDRPlay API");
+            mSDRplay = null;
+        }
+
+        if(mSDRplay != null && mSDRplay.isAvailable())
         {
             try
             {
@@ -333,7 +343,11 @@ public class TunerManager implements IDiscoveredTunerStatusListener
         }
         else
         {
-            mSDRplay.close();
+            if(mSDRplay != null)
+            {
+                mSDRplay.close();
+            }
+
             mSDRplay = null;
         }
     }

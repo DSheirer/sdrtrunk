@@ -31,8 +31,8 @@ import io.github.dsheirer.record.wave.IRecordingStatusListener;
 import io.github.dsheirer.record.wave.NativeBufferWaveRecorder;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
-import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.util.StringUtils;
+import io.github.dsheirer.util.TimeStamp;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -57,47 +57,43 @@ public class RecorderFactory
 
         for(RecorderType recorderType: channel.getRecordConfiguration().getRecorders())
         {
+            long frequency = getFrequency(channel);
+
             switch(recorderType)
             {
                 case BASEBAND:
                     if(channel.isStandardChannel())
                     {
-                        recorderModules.add(getBasebandRecorder(channel.toString(), userPreferences));
+                        recorderModules.add(getBasebandRecorder(channel.toString(), frequency, userPreferences));
                     }
                     break;
                 case DEMODULATED_BIT_STREAM:
                     if(channel.isStandardChannel() && channel.getDecodeConfiguration().getDecoderType().providesBitstream())
                     {
                         recorderModules.add(new BinaryRecorder(getRecordingBasePath(userPreferences),
-                            getRecordingNameFromChannel(channel), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
+                                StringUtils.replaceIllegalCharacters(channel.toString()),
+                                channel.getDecodeConfiguration().getDecoderType().getProtocol(),
+                                frequency));
                     }
                     break;
                 case TRAFFIC_BASEBAND:
                     if(channel.isTrafficChannel())
                     {
-                        recorderModules.add(getBasebandRecorder(channel.toString(), userPreferences));
+                        recorderModules.add(getBasebandRecorder(channel.toString(), frequency, userPreferences));
                     }
                     break;
                 case TRAFFIC_DEMODULATED_BIT_STREAM:
                     if(channel.isTrafficChannel() && channel.getDecodeConfiguration().getDecoderType().providesBitstream())
                     {
                         recorderModules.add(new BinaryRecorder(getRecordingBasePath(userPreferences),
-                            getRecordingNameFromChannel(channel), channel.getDecodeConfiguration().getDecoderType().getProtocol()));
+                                StringUtils.replaceIllegalCharacters(channel.toString()),
+                                channel.getDecodeConfiguration().getDecoderType().getProtocol(),
+                                frequency));
                     }
                     break;
                 case MBE_CALL_SEQUENCE:
                     if(channel.isStandardChannel() && channel.getSourceConfiguration() instanceof SourceConfigTuner)
                     {
-                        long frequency = 0;
-
-                        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
-                        {
-                            frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-                        }
-                        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
-                        {
-                            frequency = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies().get(0);
-                        }
 
                         switch(channel.getDecodeConfiguration().getDecoderType())
                         {
@@ -119,19 +115,12 @@ public class RecorderFactory
                 case TRAFFIC_MBE_CALL_SEQUENCE:
                     if(channel.isTrafficChannel() && channel.getSourceConfiguration() instanceof SourceConfigTuner)
                     {
-                        long frequency = 0;
-
-                        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
-                        {
-                            frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-                        }
-                        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
-                        {
-                            frequency = ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies().get(0);
-                        }
-
                         switch(channel.getDecodeConfiguration().getDecoderType())
                         {
+                            case DMR:
+                                recorderModules.add(new DMRCallSequenceRecorder(userPreferences, frequency,
+                                        channel.getSystem(), channel.getSite()));
+                                break;
                             case P25_PHASE1:
                                 recorderModules.add(new P25P1CallSequenceRecorder(userPreferences, frequency,
                                     channel.getSystem(), channel.getSite()));
@@ -150,24 +139,22 @@ public class RecorderFactory
     }
 
     /**
-     * Creates a recording file name from the channel frequency and the channel configuration.
-     * @param channel to process
-     * @return recording file name.
+     * Extract the frequency from the channel configuration
+     * @param channel with a source configuration
+     * @return frequency
      */
-    private static String getRecordingNameFromChannel(Channel channel)
+    private static long getFrequency(Channel channel)
     {
-        if(channel.getSourceConfiguration() != null)
+        if(channel.getSourceConfiguration() instanceof SourceConfigTuner)
         {
-            SourceConfiguration sourceConfiguration = channel.getSourceConfiguration();
-
-            if(sourceConfiguration instanceof SourceConfigTuner sourceConfigTuner)
-            {
-                long frequency = sourceConfigTuner.getFrequency();
-                return frequency + "_" + channel.toString();
-            }
+            return ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+        }
+        else if(channel.getSourceConfiguration() instanceof SourceConfigTunerMultipleFrequency)
+        {
+            return ((SourceConfigTunerMultipleFrequency)channel.getSourceConfiguration()).getFrequencies().get(0);
         }
 
-        return StringUtils.replaceIllegalCharacters(channel.toString());
+        return 0;
     }
 
     /**
@@ -181,11 +168,16 @@ public class RecorderFactory
     /**
      * Constructs a baseband recorder for use in a processing chain.
      */
-    public static ComplexSamplesWaveRecorder getBasebandRecorder(String channelName, UserPreferences userPreferences)
+    public static ComplexSamplesWaveRecorder getBasebandRecorder(String channelName, long frequency, UserPreferences userPreferences)
     {
         StringBuilder sb = new StringBuilder();
         sb.append(getRecordingBasePath(userPreferences));
-        sb.append(File.separator).append(StringUtils.replaceIllegalCharacters(channelName)).append("_baseband");
+        sb.append(File.separator);
+        sb.append(TimeStamp.getTimeStamp("_"));
+        sb.append("_");
+        sb.append(frequency);
+        sb.append("_");
+        sb.append(StringUtils.replaceIllegalCharacters(channelName)).append("_baseband");
 
         return new ComplexSamplesWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }

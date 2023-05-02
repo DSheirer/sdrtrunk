@@ -313,7 +313,7 @@ public class SDRTrunk implements Listener<TunerEvent>
             }
             else
             {
-                new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(), channels);
+                new ChannelAutoStartFrame(mPlaylistManager.getChannelProcessingManager(), channels, mUserPreferences);
             }
         }
     }

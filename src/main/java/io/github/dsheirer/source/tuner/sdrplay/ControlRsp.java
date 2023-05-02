@@ -31,6 +31,8 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
+import io.github.dsheirer.util.ThreadPool;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +48,7 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
     protected int mGain;
     private IDeviceEventListener mDeviceEventListener;
     private IStreamListener mStreamListener;
+    protected WeakReference<IGainOverloadListener> mGainOverloadReference;
 
     //Streaming control lock and boolean status indicator.  Access to the boolean indicator is protected by the lock.
     protected ReentrantLock mStreamingLock = new ReentrantLock();
@@ -77,8 +80,7 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
             getDevice().getCompositeParameters().getControlAParameters().getDcOffset().setDC(true);
             getDevice().getCompositeParameters().getControlAParameters().getDcOffset().setIQ(true);
 
-            //Setup IF, LO, and AGC Mode
-            getDevice().getCompositeParameters().getControlAParameters().getAgc().setAgcMode(AgcMode.DISABLE);
+            //Setup IF & LO Mode
             getDevice().setIfMode(IfMode.IF_ZERO);
             getDevice().setLoMode(LoMode.AUTO);
         }
@@ -257,6 +259,20 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
         }
     }
 
+    /**
+     * Registers the listener to receive gain overload notifications.
+     * @param listener to register
+     */
+    @Override
+    public void setGainOverloadListener(IGainOverloadListener listener)
+    {
+        if(mGainOverloadReference != null && mGainOverloadReference.get() != null)
+        {
+            mGainOverloadReference.clear();
+        }
+
+        mGainOverloadReference = new WeakReference<>(listener);
+    }
 
     @Override
     public void acknowledgePowerOverload(TunerSelect tunerSelect) throws SDRPlayException
@@ -268,6 +284,17 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
         else
         {
             throw new SDRPlayException("Device is not initialized");
+        }
+
+        //Notify an optional weakly referenced, registered listener that gain overload has been acknowledged.
+        if(mGainOverloadReference != null)
+        {
+            IGainOverloadListener listener = mGainOverloadReference.get();
+
+            if(listener != null)
+            {
+                ThreadPool.CACHED.submit(() -> listener.notifyGainOverload(tunerSelect));
+            }
         }
     }
 
@@ -337,6 +364,27 @@ public abstract class ControlRsp<T extends Device> implements IControlRsp
             throw new SDRPlayException("Invalid gain index value [" + gain + "].  Valid range is " +
                     GainReduction.MIN_GAIN_INDEX + " - " + GainReduction.MAX_GAIN_INDEX);
         }
+    }
+
+    /**
+     * Current IF AGC mode setting.
+     * @return AGC mode.
+     */
+    @Override
+    public AgcMode getAgcMode()
+    {
+        return getDevice().getCompositeParameters().getControlAParameters().getAgc().getAgcMode();
+    }
+
+    /**
+     * Sets the IF AGC mode
+     * @param mode to set.
+     */
+    @Override
+    public void setAgcMode(AgcMode mode) throws SDRPlayException
+    {
+        getDevice().getCompositeParameters().getControlAParameters().getAgc().setAgcMode(mode);
+        getDevice().update(getTunerSelect(), UpdateReason.CONTROL_AGC);
     }
 
     /**

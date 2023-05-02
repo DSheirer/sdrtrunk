@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.audio;
@@ -106,7 +105,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
      * Gets the current audio segment, or creates a new audio segment as necessary and broadcasts it to any registered
      * listener(s).
      */
-    protected AudioSegment getAudioSegment()
+    public AudioSegment getAudioSegment()
     {
         synchronized(this)
         {
@@ -135,7 +134,7 @@ public abstract class AbstractAudioModule extends Module implements IAudioSegmen
         }
     }
 
-    protected void addAudio(float[] audioBuffer)
+    public void addAudio(float[] audioBuffer)
     {
         AudioSegment audioSegment = getAudioSegment();
 

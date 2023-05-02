@@ -75,6 +75,7 @@ import io.github.dsheirer.module.decode.dmr.message.voice.VoiceMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
+import io.github.dsheirer.module.decode.ip.hytera.sds.HyteraUnknownPacket;
 import io.github.dsheirer.module.decode.ip.hytera.sms.HyteraSmsPacket;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.source.tuner.channel.rotation.AddChannelRotationActiveStateRequest;
@@ -317,6 +318,19 @@ public class DMRDecoderState extends TimeslotDecoderState
                     .details("SMS:" + hyteraSmsPacket.getSMS())
                     .build();
             broadcast(smsEvent);
+        }
+        //Unknown Hytera Long Data Service Token Message
+        else if(packet.getPacket() instanceof HyteraUnknownPacket hyteraUnknownPacket)
+        {
+            MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
+
+            DecodeEvent unknownTokenEvent = DMRDecodeEvent.builder(packet.getTimestamp())
+                    .eventDescription(DecodeEventType.UNKNOWN_PACKET.name())
+                    .identifiers(mic)
+                    .timeslot(packet.getTimeslot())
+                    .details("HYTERA UNK TOKEN MSG:" + hyteraUnknownPacket.getHeader().toString())
+                    .build();
+            broadcast(unknownTokenEvent);
         }
         else
         {

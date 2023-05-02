@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.audio.playback;
 
@@ -24,6 +23,7 @@ import io.github.dsheirer.audio.AudioEvent;
 import io.github.dsheirer.audio.AudioException;
 import io.github.dsheirer.audio.AudioSegment;
 import io.github.dsheirer.audio.IAudioController;
+import io.github.dsheirer.controller.NamingThreadFactory;
 import io.github.dsheirer.eventbus.MyEventBus;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
@@ -31,17 +31,18 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.mixer.MixerChannel;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
-import io.github.dsheirer.util.ThreadPool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manages scheduling and playback of audio segments to the local users audio system.
@@ -50,8 +51,6 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioPlaybackManager.class);
 
-    public static final String AUDIO_CHANNELS_PROPERTY = "audio.manager.channels";
-    public static final String AUDIO_MIXER_PROPERTY = "audio.manager.mixer";
     public static final AudioEvent CONFIGURATION_CHANGE_STARTED =
         new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null);
     public static final AudioEvent CONFIGURATION_CHANGE_COMPLETE =
@@ -64,6 +63,8 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
     private List<AudioSegment> mAudioSegments = new ArrayList<>();
     private List<AudioSegment> mPendingAudioSegments = new ArrayList<>();
     private LinkedTransferQueue<AudioSegment> mNewAudioSegmentQueue = new LinkedTransferQueue<>();
+    private ScheduledExecutorService mScheduledExecutorService =
+            Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory("sdrtrunk audio manager"));
 
     /**
      * Constructs an instance.
@@ -202,29 +203,13 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
             //Sort audio segments by playback priority and assign to empty audio outputs
             if(!mAudioSegments.isEmpty())
             {
+                //TODO: change this to take audio segment start time into account also
                 mAudioSegments.sort(Comparator.comparingInt(o -> o.monitorPriorityProperty().get()));
 
                 //Assign empty audio outputs first
                 for(AudioOutput audioOutput: mAudioOutputs)
                 {
-                    if(audioOutput.emptyProperty().get())
-                    {
-                        audioOutput.play(mAudioSegments.remove(0));
-
-                        if(mAudioSegments.isEmpty())
-                        {
-                            return;
-                        }
-                    }
-                }
-            }
-
-            //Preempt ongoing audio segment playback when higher priority audio segments are available
-            if(!mAudioSegments.isEmpty())
-            {
-                for(AudioOutput audioOutput: mAudioOutputs)
-                {
-                    if(mAudioSegments.get(0).monitorPriorityProperty().get() < audioOutput.audioPriorityProperty().get())
+                    if(audioOutput.isEmpty())
                     {
                         audioOutput.play(mAudioSegments.remove(0));
 
@@ -284,7 +269,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                 }
                 catch(AudioException ae)
                 {
-                    mLog.error("Error changing audio output to [" + configuration.toString() + "]", ae);
+                    mLog.error("Error changing audio output to [" + configuration + "]", ae);
                 }
             }
         }
@@ -332,7 +317,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
                     throw new AudioException("Unsupported mixer channel configuration: " + entry.getMixerChannel());
             }
 
-            mProcessingTask = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioSegmentProcessor(),
+            mProcessingTask = mScheduledExecutorService.scheduleAtFixedRate(new AudioSegmentProcessor(),
                 0, 100, TimeUnit.MILLISECONDS);
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
             mMixerChannelConfiguration = entry;
@@ -343,7 +328,7 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      * Current audio playback mixer channel configuration setting.
      */
     @Override
-    public MixerChannelConfiguration getMixerChannelConfiguration() throws AudioException
+    public MixerChannelConfiguration getMixerChannelConfiguration()
     {
         return mMixerChannelConfiguration;
     }
@@ -384,16 +369,23 @@ public class AudioPlaybackManager implements Listener<AudioSegment>, IAudioContr
      */
     public class AudioSegmentProcessor implements Runnable
     {
+        private AtomicBoolean mProcessing = new AtomicBoolean();
+
         @Override
         public void run()
         {
-            try
+            if(mProcessing.compareAndSet(false, true))
             {
-                processAudioSegments();
-            }
-            catch(Throwable t)
-            {
-                mLog.error("Encountered error while processing audio segments", t);
+                try
+                {
+                    processAudioSegments();
+                }
+                catch(Throwable t)
+                {
+                    mLog.error("Encountered error while processing audio segments", t);
+                }
+
+                mProcessing.set(false);
             }
         }
     }

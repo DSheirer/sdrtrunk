@@ -20,9 +20,11 @@
 package io.github.dsheirer.source.tuner.sdrplay.rspDuo;
 
 import io.github.dsheirer.source.tuner.sdrplay.api.SDRPlayException;
+import io.github.dsheirer.source.tuner.sdrplay.api.UpdateReason;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoDevice;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.RspDuoTuner2;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.TunerSelect;
+import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.ControlParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParameters;
 import org.slf4j.Logger;
@@ -102,5 +104,26 @@ public abstract class ControlRspDuoTuner2 extends ControlRspDuo<RspDuoTuner2> im
         {
             throw new SDRPlayException("Device is not initialized");
         }
+    }
+
+    /**
+     * Current IF AGC mode setting.
+     * @return AGC mode.
+     */
+    @Override
+    public AgcMode getAgcMode()
+    {
+        return getDevice().getCompositeParameters().getControlBParameters().getAgc().getAgcMode();
+    }
+
+    /**
+     * Sets the IF AGC mode
+     * @param mode to set.
+     */
+    @Override
+    public void setAgcMode(AgcMode mode) throws SDRPlayException
+    {
+        getDevice().getCompositeParameters().getControlBParameters().getAgc().setAgcMode(mode);
+        getDevice().update(getTunerSelect(), UpdateReason.CONTROL_AGC);
     }
 }

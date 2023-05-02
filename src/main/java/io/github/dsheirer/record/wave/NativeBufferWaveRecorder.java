@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package io.github.dsheirer.record.wave;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
@@ -29,16 +28,16 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.Dispatcher;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sound.sampled.AudioFormat;
 
 /**
  * WAVE audio recorder module for recording complex (I&Q) samples to a wave file
@@ -48,8 +47,7 @@ public class NativeBufferWaveRecorder extends Module implements Listener<INative
     private static final Logger mLog = LoggerFactory.getLogger(ComplexSamplesWaveRecorder.class);
     private static final long STATUS_UPDATE_BYTE_INTERVAL = 1_048_576;
     private static final long MAX_RECORDING_SIZE = (long)Integer.MAX_VALUE * 2l;
-    private Dispatcher<INativeBuffer> mBufferProcessor = new Dispatcher<>(500,
-            "sdrtrunk native buffer wave recorder", new NativeBufferPoisonPill());
+    private Dispatcher<INativeBuffer> mBufferProcessor = new Dispatcher<>("sdrtrunk native buffer wave recorder", 100, 250);
 
     private AtomicBoolean mRunning = new AtomicBoolean();
     private NativeBufferWaveWriter mWriter;

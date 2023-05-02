@@ -46,7 +46,7 @@ public class ComplexDftProcessor<T extends INativeBuffer> implements Listener<T>
     private static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
 
     //The Cosine and Hann windows seem to offer the best spectral display with minimal bin leakage/smearing
-    private WindowType mWindowType = WindowType.HANN;
+    private WindowType mWindowType = WindowType.BLACKMAN_HARRIS_7;
     private float[] mWindow;
     private DFTSize mDFTSize = DFTSize.FFT04096;
     private DFTSize mNewDFTSize = DFTSize.FFT04096;

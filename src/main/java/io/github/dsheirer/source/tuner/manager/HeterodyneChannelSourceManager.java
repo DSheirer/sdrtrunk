@@ -291,6 +291,7 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
         {
             switch(sourceEvent.getEvent())
             {
+//TODO: protect start/stop processing with a reentrant lock
                 case REQUEST_START_SAMPLE_STREAM:
                     if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
                     {
@@ -304,19 +305,13 @@ public class HeterodyneChannelSourceManager extends ChannelSourceManager
                     }
                     break;
                 case REQUEST_STOP_SAMPLE_STREAM:
-                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
+                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource halfBandSource)
                     {
-                        mSampleDelayBuffer.removeListener((HalfBandTunerChannelSource)sourceEvent.getSource());
+                        mSampleDelayBuffer.removeListener(halfBandSource);
                         stopDelayBuffer();
-                    }
-                    break;
-                case REQUEST_SOURCE_DISPOSE:
-                    if(sourceEvent.getSource() instanceof HalfBandTunerChannelSource)
-                    {
-                        HalfBandTunerChannelSource channelSource = (HalfBandTunerChannelSource) sourceEvent.getSource();
-                        mChannelSources.remove(channelSource);
-                        mTunerChannels.remove(channelSource.getTunerChannel());
-                        channelSource.dispose();
+                        mChannelSources.remove(halfBandSource);
+                        mTunerChannels.remove(halfBandSource.getTunerChannel());
+                        halfBandSource.dispose();
 
                         //Unlock the tuner controller if there are no more channels
                         if(getTunerChannelCount() == 0)

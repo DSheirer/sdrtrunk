@@ -61,7 +61,8 @@ import org.slf4j.LoggerFactory;
 public class SDRplay
 {
     public static final String SDRPLAY_API_LIBRARY_NAME = "sdrplay_api";
-    public static final String SDRPLAY_API_PATH_LINUX_AND_OSX = "/usr/local/lib/libsdrplay_api.so";
+    public static final String SDRPLAY_API_PATH_LINUX = "/usr/local/lib/libsdrplay_api.so";
+    public static final String SDRPLAY_API_PATH_MAC_OS = "/usr/local/lib/libsdrplay_api.dylib";
     public static final String SDRPLAY_API_PATH_WINDOWS = System.getenv("ProgramFiles") +
             "\\SDRplay\\API\\" + (System.getProperty("sun.arch.data.model").contentEquals("64") ? "x64" : "x86") +
             "\\" + SDRPLAY_API_LIBRARY_NAME;
@@ -103,7 +104,7 @@ public class SDRplay
     /**
      * Constructs an instance of the SDRPLay API
      */
-    public SDRplay()
+    public SDRplay() throws SDRPlayException
     {
         mSdrplayLibraryLoaded = loadLibrary();
 
@@ -115,6 +116,11 @@ public class SDRplay
                 mLog.info("API library - open status: " + openStatus);
             }
             mAvailable = openStatus.success() && getVersion().isSupported();
+
+            if(openStatus == Status.FAIL)
+            {
+                throw new SDRPlayException("Service not available");
+            }
         }
         else
         {
@@ -671,11 +677,11 @@ public class SDRplay
         }
         else if(SystemUtils.IS_OS_LINUX)
         {
-            return SDRPLAY_API_PATH_LINUX_AND_OSX;
+            return SDRPLAY_API_PATH_LINUX;
         }
         else if(SystemUtils.IS_OS_MAC_OSX)
         {
-            return SDRPLAY_API_PATH_LINUX_AND_OSX;
+            return SDRPLAY_API_PATH_MAC_OS;
         }
 
         mLog.error("Unrecognized operating system.  Cannot identify sdrplay api library path");
@@ -692,23 +698,23 @@ public class SDRplay
          * Java will look there for the library, without having to specify it as a launcher
          * option.  This would allow for users that have installed the API to an alternate location.
          */
-        SDRplay sdrplay = new SDRplay();
-        Status status = sdrplay.open();
-        mLog.info("Open Status: " + status);
 
         try
         {
+            SDRplay sdrplay = new SDRplay();
+            Status status = sdrplay.open();
+            mLog.info("Open Status: " + status);
+
             for(DeviceInfo deviceInfo: sdrplay.getDeviceInfos())
             {
                 mLog.info("Found: " + deviceInfo);
             }
+            Status closeStatus = sdrplay.close();
+            mLog.info("Close Status: " + closeStatus);
         }
         catch(SDRPlayException se)
         {
             mLog.info("Error", se);
         }
-
-        Status closeStatus = sdrplay.close();
-        mLog.info("Close Status: " + closeStatus);
     }
 }

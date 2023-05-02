@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import java.util.EnumSet;
 public enum TunerClass
 {
 	AIRSPY("Airspy"),
+	AIRSPY_HF("Airspy HF+"),
 	FUNCUBE_DONGLE_PRO("Funcube Dongle Pro" ),
 	FUNCUBE_DONGLE_PRO_PLUS("Funcube Dongle Pro+" ),
 	HACKRF("HackRF" ),
@@ -52,7 +53,7 @@ public enum TunerClass
 		return mDescription;
 	}
 
-	public static final EnumSet<TunerClass> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY, HACKRF, RTL2832,
+	public static final EnumSet<TunerClass> SUPPORTED_USB_TUNERS = EnumSet.of(AIRSPY, AIRSPY_HF, HACKRF, RTL2832,
 			FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
 
 	public static final EnumSet<TunerClass> FUNCUBE_TUNERS = EnumSet.of(FUNCUBE_DONGLE_PRO, FUNCUBE_DONGLE_PRO_PLUS);
@@ -122,6 +123,8 @@ public enum TunerClass
 				return HACKRF;
 			case 0x1D5060A1:
 				return AIRSPY;
+			case 0x03EB800C:
+				return AIRSPY_HF;
 		}
 		
 		return TunerClass.UNKNOWN;

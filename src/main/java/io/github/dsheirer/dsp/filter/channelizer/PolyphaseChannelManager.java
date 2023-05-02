@@ -20,7 +20,6 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.buffer.INativeBuffer;
 import io.github.dsheirer.buffer.INativeBufferProvider;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.controller.channel.event.ChannelStopProcessingRequest;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.eventbus.MyEventBus;
@@ -28,7 +27,6 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import io.github.dsheirer.source.ISourceEventProcessor;
-import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -44,7 +42,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.locks.ReentrantLock;
 import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,8 +108,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
 
         mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
-        mBufferDispatcher = new Dispatcher(500, "sdrtrunk polyphase buffer processor",
-                new NativeBufferPoisonPill());
+        mBufferDispatcher = new Dispatcher("sdrtrunk polyphase buffer processor", 50, 10);
         mBufferDispatcher.setListener(mNativeBufferReceiver);
     }
 
@@ -176,14 +172,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         {
             tunerChannelSource.setError(errorMessage);
         }
-    }
-
-    /**
-     * Current channel sample rate which is (2 * channel bandwidth).
-     */
-    public double getChannelSampleRate()
-    {
-        return mChannelCalculator.getChannelSampleRate();
     }
 
     /**
@@ -440,22 +428,15 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                     }
                     break;
                 case REQUEST_STOP_SAMPLE_STREAM:
-                    if(sourceEvent.hasSource() && sourceEvent.getSource() instanceof PolyphaseChannelSource)
+                    if(sourceEvent.hasSource() && sourceEvent.getSource() instanceof PolyphaseChannelSource channelSource)
                     {
-                        stopChannelSource((PolyphaseChannelSource)sourceEvent.getSource());
+                        stopChannelSource(channelSource);
+                        channelSource.dispose();
                     }
                     else
                     {
                         mLog.error("Request to stop sample stream for unrecognized source: " +
                             (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
-                    }
-                    break;
-                case REQUEST_SOURCE_DISPOSE:
-                    Source source = sourceEvent.getSource();
-
-                    if(source instanceof PolyphaseChannelSource)
-                    {
-                        source.dispose();
                     }
                     break;
                 case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
@@ -481,7 +462,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     public class NativeBufferReceiver implements Listener<INativeBuffer>
     {
         private boolean mOutputProcessorUpdateRequired = false;
-        private ReentrantLock mUpdateFlagLock = new ReentrantLock();
 
         /**
          * Processes tuner center frequency change source events to flag when output processors need updating.
@@ -493,18 +473,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             if(mChannelCalculator.getCenterFrequency() != frequency)
             {
-                mUpdateFlagLock.lock();
-
-                try
-                {
-                    //Update the channel calculator frequency so that it's ready when the output processor update occurs
-                    mChannelCalculator.setCenterFrequency(frequency);
-                    mOutputProcessorUpdateRequired = true;
-                }
-                finally
-                {
-                    mUpdateFlagLock.unlock();
-                }
+                //Update the channel calculator frequency so that it's ready when the output processor update occurs
+                mChannelCalculator.setCenterFrequency(frequency);
+                mOutputProcessorUpdateRequired = true;
             }
         }
 
@@ -516,19 +487,17 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         @Override
         public void receive(INativeBuffer nativeBuffer)
         {
-            mUpdateFlagLock.lock();
-
-            try
+            if(mOutputProcessorUpdateRequired)
             {
-                if(mOutputProcessorUpdateRequired)
+                try
                 {
                     updateOutputProcessors();
-                    mOutputProcessorUpdateRequired = false;
                 }
-            }
-            finally
-            {
-                mUpdateFlagLock.unlock();
+                catch(Exception e)
+                {
+                    mLog.error("Error updating polyphase channel output processors");
+                }
+                mOutputProcessorUpdateRequired = false;
             }
 
             if(mPolyphaseChannelizer != null)

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,25 +18,26 @@
  */
 package io.github.dsheirer.sample;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
+import io.github.dsheirer.log.LoggingSuppressor;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.CopyOnWriteArrayList;
+import org.slf4j.LoggerFactory;
 
 /**
  * Broadcasts an item to multiple listeners
  */
 public class Broadcaster<T> implements Listener<T>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Broadcaster.class);
-    private ReentrantLock mLock = new ReentrantLock();
-    private List<Listener<T>> mListeners = new ArrayList<>();
+    private static LoggingSuppressor sLoggingSuppressor;
+    private List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
 
+    /**
+     * Constructs an instance
+     */
     public Broadcaster()
     {
+        sLoggingSuppressor = new LoggingSuppressor(LoggerFactory.getLogger(Broadcaster.class));
     }
 
     /**
@@ -90,25 +91,9 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void addListener(Listener<T> listener)
     {
-        if(listener != null)
+        if(listener != null && !mListeners.contains(listener))
         {
-            mLock.lock();
-
-            try
-            {
-                if(!mListeners.contains(listener))
-                {
-                    mListeners.add(listener);
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("Unexpected error while adding listener", e);
-            }
-            finally
-            {
-                mLock.unlock();
-            }
+            mListeners.add(listener);
         }
     }
 
@@ -119,20 +104,7 @@ public class Broadcaster<T> implements Listener<T>
     {
         if(listener != null)
         {
-            mLock.lock();
-
-            try
-            {
-                mListeners.remove(listener);
-            }
-            catch(Exception e)
-            {
-                mLog.error("Unexpected error while removing listener", e);
-            }
-            finally
-            {
-                mLock.unlock();
-            }
+            mListeners.remove(listener);
         }
     }
 
@@ -149,24 +121,25 @@ public class Broadcaster<T> implements Listener<T>
      */
     public void broadcast(T t)
     {
-        mLock.lock();
-
-        try
+        for(Listener<T> listener: mListeners)
         {
-            List<Listener<T>> listeners = new ArrayList<>(mListeners);
-
-            for(Listener listener: listeners)
+            try
             {
                 listener.receive(t);
             }
-        }
-        catch(Exception e)
-        {
-            mLog.error("Unexpected error while broadcasting to listeners", e);
-        }
-        finally
-        {
-            mLock.unlock();
+            catch(Exception e)
+            {
+                if(t != null)
+                {
+                    sLoggingSuppressor.error(t.getClass().toGenericString(), 5,
+                    "Error while broadcasting [" + t.getClass() + "] to listeners", e);
+                }
+                else
+                {
+                    sLoggingSuppressor.error("null broadcast object", 5, "Can't broadcast null " +
+                            "object to listener [" + listener.getClass() + "]", e);
+                }
+            }
         }
     }
 }

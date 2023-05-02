@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.MixerGain;
 import io.github.dsheirer.source.tuner.manager.DiscoveredTuner;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
 import io.github.dsheirer.source.tuner.ui.TunerEditor;
+import java.text.DecimalFormat;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,6 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
-import java.text.DecimalFormat;
 
 /**
  * Funcube Dongle Pro tuner editor
@@ -312,7 +312,7 @@ public class FCD1TunerEditor extends TunerEditor<FCDTuner,FCD1TunerConfiguration
     @Override
     public void setTunerLockState(boolean locked)
     {
-        super.setTunerLockState(locked);
+        getFrequencyPanel().updateControls();
     }
 
     public JButton getTunerInfoButton()

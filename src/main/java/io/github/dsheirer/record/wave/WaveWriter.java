@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.record.wave;
 
-import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -35,6 +29,11 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sound.sampled.AudioFormat;
 
 public class WaveWriter implements AutoCloseable
 {
@@ -115,10 +114,15 @@ public class WaveWriter implements AutoCloseable
     {
         int version = 2;
 
-        while(Files.exists(mFile))
+        while(Files.exists(mFile) && version < 20)
         {
             mFile = Paths.get(mFile.toFile().getAbsolutePath().replace(".tmp", "_" + version + ".tmp"));
             version++;
+        }
+
+        if(version >= 20)
+        {
+            throw new IOException("Unable to create a unique file name for recording - exceeded 20 versioning attempts");
         }
 
         mFileChannel = (FileChannel.open(mFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW));

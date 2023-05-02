@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.audio.codec.mbe;
@@ -32,11 +29,6 @@ import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.sample.Listener;
-import jmbe.iface.IAudioCodec;
-import jmbe.iface.IAudioCodecLibrary;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -44,15 +36,20 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import jmbe.iface.IAudioCodec;
+import jmbe.iface.IAudioCodecLibrary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class JmbeAudioModule extends AbstractAudioModule implements Listener<IMessage>, IMessageListener,
     ISquelchStateListener
 {
     private static final Logger mLog = LoggerFactory.getLogger(JmbeAudioModule.class);
     private static final String JMBE_AUDIO_LIBRARY = "JMBE";
-    private static List<String> mLibraryLoadStatusLogged = new ArrayList<>();
+    private static final List<String> mLibraryLoadStatusLogged = new ArrayList<>();
     private IAudioCodec mAudioCodec;
-    private UserPreferences mUserPreferences;
+    private final UserPreferences mUserPreferences;
+    private static Class sLoadedJmbeAudioConverterClass;
 
     public JmbeAudioModule(UserPreferences userPreferences, AliasList aliasList, int timeslot)
     {
@@ -70,7 +67,7 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
         mAudioCodec = null;
     }
 
-    protected IAudioCodec getAudioCodec()
+    public IAudioCodec getAudioCodec()
     {
         return mAudioCodec;
     }
@@ -110,38 +107,67 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
     protected abstract String getCodecName();
 
     /**
-     * Loads audio frame processing chain.  Constructs an imbe targetdataline
-     * to receive the raw imbe frames.  Adds an IMBE to 8k PCM format conversion
-     * stream wrapper.  Finally, adds an upsampling (8k to 48k) stream wrapper.
+     * Loads JMBE audio converter library class and then instantiates new converter instances from the loaded class.
      */
     protected void loadConverter()
     {
         IAudioCodec audioConverter = null;
 
-        Path path = mUserPreferences.getJmbeLibraryPreference().getPathJmbeLibrary();
-
-        if(path != null)
+        if(sLoadedJmbeAudioConverterClass == null)
         {
-            try
+            Path path = mUserPreferences.getJmbeLibraryPreference().getPathJmbeLibrary();
+
+            if(path != null)
             {
                 if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
                 {
-                    mLog.info("Loading JMBE library from [" + path.toString() + "]");
+                    mLog.info("Loading JMBE library from [" + path + "]");
                 }
 
-                URLClassLoader childClassLoader = new URLClassLoader(new URL[]{path.toUri().toURL()},
-                    this.getClass().getClassLoader());
-
-                Class classToLoad = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
-
-                Object instance = classToLoad.getDeclaredConstructor().newInstance();
-
-                if(instance instanceof IAudioCodecLibrary)
+                try
                 {
-                    IAudioCodecLibrary library = (IAudioCodecLibrary)instance;
+                    URLClassLoader childClassLoader = new URLClassLoader(new URL[]{path.toUri().toURL()},
+                            this.getClass().getClassLoader());
 
+                    sLoadedJmbeAudioConverterClass = Class.forName("jmbe.JMBEAudioLibrary", true, childClassLoader);
+                }
+                catch(IllegalArgumentException iae)
+                {
+                    if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY + getCodecName()))
+                    {
+                        mLog.error("Couldn't load JMBE audio conversion library - " + iae.getMessage());
+                        mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY + getCodecName());
+                    }
+                }
+                catch(MalformedURLException mue)
+                {
+                    if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
+                    {
+                        mLog.error("Couldn't load JMBE audio conversion library from path [" + path + "]");
+                        mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
+                    }
+                }
+                catch(ClassNotFoundException e1)
+                {
+                    if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
+                    {
+                        mLog.error("Couldn't load JMBE audio conversion library - class not found");
+                        mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
+                    }
+                }
+            }
+        }
+
+        if(sLoadedJmbeAudioConverterClass != null)
+        {
+            try
+            {
+                Object instance = sLoadedJmbeAudioConverterClass.getDeclaredConstructor().newInstance();
+
+                if(instance instanceof IAudioCodecLibrary library)
+                {
                     if((library.getMajorVersion() == 1 && library.getMinorVersion() >= 0 &&
-                        library.getBuildVersion() >= 0) || library.getMajorVersion() >= 1)
+                            library.getBuildVersion() >= 0) || library.getMajorVersion() >= 1)
                     {
                         audioConverter = library.getAudioConverter(getCodecName());
 
@@ -169,38 +195,6 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     }
                 }
             }
-            catch(IllegalArgumentException iae)
-            {
-                if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY + getCodecName()))
-                {
-                    mLog.error("Couldn't load JMBE audio conversion library - " + iae.getMessage());
-                    mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY + getCodecName());
-                }
-            }
-            catch(NoSuchMethodException nsme)
-            {
-                if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
-                {
-                    mLog.error("Couldn't load JMBE audio conversion library - no such method exception");
-                    mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
-                }
-            }
-            catch(MalformedURLException mue)
-            {
-                if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
-                {
-                    mLog.error("Couldn't load JMBE audio conversion library from path [" + path + "]");
-                    mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
-                }
-            }
-            catch(ClassNotFoundException e1)
-            {
-                if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
-                {
-                    mLog.error("Couldn't load JMBE audio conversion library - class not found");
-                    mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
-                }
-            }
             catch(InvocationTargetException ite)
             {
                 if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
@@ -225,6 +219,14 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
                     mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
                 }
             }
+            catch(NoSuchMethodException nsme)
+            {
+                if(!mLibraryLoadStatusLogged.contains(JMBE_AUDIO_LIBRARY))
+                {
+                    mLog.error("Couldn't load JMBE audio conversion library - no such method exception");
+                    mLibraryLoadStatusLogged.add(JMBE_AUDIO_LIBRARY);
+                }
+            }
         }
         else
         {
@@ -235,13 +237,6 @@ public abstract class JmbeAudioModule extends AbstractAudioModule implements Lis
             }
         }
 
-        if(audioConverter != null)
-        {
-            mAudioCodec = audioConverter;
-        }
-        else
-        {
-            mAudioCodec = null;
-        }
+        mAudioCodec = audioConverter;
     }
 }

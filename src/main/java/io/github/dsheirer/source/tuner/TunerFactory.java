@@ -28,6 +28,10 @@ import io.github.dsheirer.source.tuner.airspy.AirspyTuner;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerConfiguration;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerController;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerEditor;
+import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTuner;
+import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerConfiguration;
+import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerController;
+import io.github.dsheirer.source.tuner.airspy.hf.AirspyHfTunerEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.fcd.FCDTuner;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerConfiguration;
@@ -185,9 +189,19 @@ public class TunerFactory
     {
         //API instance is retained across the lifecycle of the constructed device, so we only close it if we don't get
         //a device from it.
-        SDRplay api = new SDRplay();
+        SDRplay api = null;
 
-        if(api.isAvailable())
+        try
+        {
+            api = new SDRplay();
+        }
+        catch(SDRPlayException se)
+        {
+            mLog.info("Caught the exception here ...", se);
+            api = null;
+        }
+
+        if(api != null && api.isAvailable())
         {
             Device device = api.getDevice(deviceInfo);
 
@@ -313,6 +327,8 @@ public class TunerFactory
         {
             case AIRSPY:
                 return new AirspyTuner(new AirspyTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
+            case AIRSPY_HF:
+                return new AirspyHfTuner(new AirspyHfTunerController(bus, portAddress, tunerErrorListener), tunerErrorListener, channelizerType);
             case FUNCUBE_DONGLE_PRO:
                 TargetDataLine tdl1 = MixerManager.getTunerTargetDataLine(MixerTunerType.FUNCUBE_DONGLE_PRO);
                 if(tdl1 != null)
@@ -362,6 +378,8 @@ public class TunerFactory
     {
         switch(type)
         {
+            case AIRSPY_HF_PLUS:
+                return new AirspyHfTunerConfiguration(uniqueID);
             case AIRSPY_R820T:
                 return new AirspyTunerConfiguration(uniqueID);
             case ELONICS_E4000:
@@ -405,6 +423,8 @@ public class TunerFactory
         {
             case AIRSPY:
                 return new AirspyTunerEditor(userPreferences, tunerManager, discoveredTuner);
+            case AIRSPY_HF:
+                return new AirspyHfTunerEditor(userPreferences, tunerManager, discoveredTuner);
             case FUNCUBE_DONGLE_PRO:
                 return new FCD1TunerEditor(userPreferences, tunerManager, discoveredTuner);
             case FUNCUBE_DONGLE_PRO_PLUS:

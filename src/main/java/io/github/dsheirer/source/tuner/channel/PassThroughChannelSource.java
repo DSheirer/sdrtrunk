@@ -20,7 +20,6 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.buffer.INativeBuffer;
-import io.github.dsheirer.buffer.NativeBufferPoisonPill;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -41,7 +40,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     private final static Logger mLog = LoggerFactory.getLogger(PassThroughChannelSource.class);
     private TunerController mTunerController;
     private Dispatcher<INativeBuffer> mBufferDispatcher;
-    private StreamProcessorWithHeartbeat<ComplexSamples> mStreamHeartbeatProcessor;
+    private Listener<ComplexSamples> mBufferListener;
 
     /**
      * Constructs an instance
@@ -55,17 +54,15 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     {
         super(listener, tunerChannel);
         mTunerController = tunerController;
-        mBufferDispatcher = new Dispatcher<>(500, "sdrtrunk pass-through channel " +
-                tunerChannel.getFrequency(), new NativeBufferPoisonPill());
+        mBufferDispatcher = new Dispatcher<>("sdrtrunk pass-through channel " + tunerChannel.getFrequency(),
+                250, 50, getHeartbeatManager());
         mBufferDispatcher.setListener(new BufferProcessor());
-        mStreamHeartbeatProcessor = new StreamProcessorWithHeartbeat<>(getHeartbeatManager(), HEARTBEAT_INTERVAL_MS);
     }
 
     @Override
     public void start()
     {
         super.start();
-        mStreamHeartbeatProcessor.stop();
         mBufferDispatcher.start();
     }
 
@@ -74,7 +71,6 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     {
         super.stop();
         mBufferDispatcher.stop();
-        mStreamHeartbeatProcessor.stop();
     }
 
     @Override
@@ -92,7 +88,7 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
     @Override
     public void setListener(Listener<ComplexSamples> listener)
     {
-        mStreamHeartbeatProcessor.setListener(listener);
+        mBufferListener = listener;
     }
 
     @Override
@@ -112,11 +108,21 @@ public class PassThroughChannelSource extends TunerChannelSource implements ISou
         @Override
         public void receive(INativeBuffer nativeBuffer)
         {
-            Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
-
-            while(iterator.hasNext())
+            if(mBufferListener != null)
             {
-                mStreamHeartbeatProcessor.receive(iterator.next());
+                Iterator<ComplexSamples> iterator = nativeBuffer.iterator();
+
+                while(iterator.hasNext())
+                {
+                    try
+                    {
+                        mBufferListener.receive(iterator.next());
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Error dispatching complex sample buffers to listener [" + mBufferListener + "]", t);
+                    }
+                }
             }
         }
     }

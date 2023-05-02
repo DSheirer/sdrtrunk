@@ -19,6 +19,7 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.sample.complex.ComplexSamples;
+import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,12 +38,14 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing two channel indices.
      * @param gain to apply to output.  Typically this is equal to the channelizer's channel count.
+     * @param heartbeatManager to be pinged on the dispatcher thread
      */
-    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float[] filter, float gain)
+    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float[] filter, float gain,
+                                     HeartbeatManager heartbeatManager)
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels
-        super(2, sampleRate);
+        super(2, sampleRate, heartbeatManager);
         setPolyphaseChannelIndices(channelIndexes);
         mMixerAssembler = new TwoChannelMixerAssembler(gain);
         mMixerAssembler.getMixer().setSampleRate(sampleRate);
