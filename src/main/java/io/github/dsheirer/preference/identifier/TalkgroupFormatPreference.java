@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.preference.identifier;
@@ -29,6 +26,7 @@ import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.preference.Preference;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.identifier.talkgroup.APCO25TalkgroupFormatter;
+import io.github.dsheirer.preference.identifier.talkgroup.AnalogTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.DMRTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.FleetsyncTalkgroupFormatter;
 import io.github.dsheirer.preference.identifier.talkgroup.LTRTalkgroupFormatter;
@@ -37,13 +35,12 @@ import io.github.dsheirer.preference.identifier.talkgroup.MPT1327TalkgroupFormat
 import io.github.dsheirer.preference.identifier.talkgroup.PassportTalkgroupFormatter;
 import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.sample.Listener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.prefs.Preferences;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Specifies and applies user preferences for formatting identifiers
@@ -149,6 +146,7 @@ public class TalkgroupFormatPreference extends Preference
             case LTR_NET:
             case MPT1327:
                 return IntegerFormat.FORMATTED;
+            case AM:
             case APCO25:
             case DMR:
             case MDC1200:
@@ -169,6 +167,7 @@ public class TalkgroupFormatPreference extends Preference
             case LTR_NET:
             case MPT1327:
                 return IntegerFormat.DECIMAL_FORMATTED;
+            case AM:
             case APCO25:
             case DMR:
             case MDC1200:
@@ -187,6 +186,7 @@ public class TalkgroupFormatPreference extends Preference
             case MDC1200:
             case PASSPORT:
                 return false;
+            case AM:
             case APCO25:
             case DMR:
             case FLEETSYNC:
@@ -314,6 +314,9 @@ public class TalkgroupFormatPreference extends Preference
     {
         switch(talkgroupIdentifier.getProtocol())
         {
+            case AM:
+                return AnalogTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.AM),
+                        isTalkgroupFixedWidth(Protocol.AM));
             case APCO25:
                 return APCO25TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.APCO25),
                     isTalkgroupFixedWidth(Protocol.APCO25));
@@ -332,6 +335,9 @@ public class TalkgroupFormatPreference extends Preference
             case MPT1327:
                 return MPT1327TalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.MPT1327),
                     isTalkgroupFixedWidth(Protocol.MPT1327));
+            case NBFM:
+                return AnalogTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.NBFM),
+                        isTalkgroupFixedWidth(Protocol.NBFM));
             case PASSPORT:
                 return PassportTalkgroupFormatter.format(talkgroupIdentifier, getTalkgroupFormat(Protocol.PASSPORT),
                     isTalkgroupFixedWidth(Protocol.PASSPORT));

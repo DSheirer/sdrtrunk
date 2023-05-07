@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,8 +63,22 @@ public class VectorUtilities
     {
         if(i.length % species.length() != 0)
         {
-            throw new IllegalArgumentException("I/Q buffer lengths [" + i.length + "] must be a power of 2 multiple of SIMD lane width [" +
-                    species.length() + "]");
+            throw new IllegalArgumentException("I/Q buffer lengths [" + i.length + "] must be a power of 2 multiple of " +
+                    "SIMD lane width [" + species.length() + "]");
+        }
+    }
+
+    /**
+     * Checks the I/Q sample array length to be an integer multiple of the SIMD lane width.
+     * @param array samples
+     * @param species used for SIMD operations
+     */
+    public static void checkArrayLength(float[] array, VectorSpecies<Float> species)
+    {
+        if(array.length % species.length() != 0)
+        {
+            throw new IllegalArgumentException("Buffer array length [" + array.length + "] must be a power of 2 multiple " +
+                    "of SIMD lane width [" + species.length() + "]");
         }
     }
 

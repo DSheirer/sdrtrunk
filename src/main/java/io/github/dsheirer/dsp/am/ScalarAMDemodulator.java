@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import org.apache.commons.math3.util.FastMath;
 /**
  * Performs AM demodulation on baseband I/Q samples to produce demodulated float output.
  */
-public class AMDemodulator implements IAmDemodulator
+public class ScalarAMDemodulator implements IAmDemodulator
 {
     private float mGain;
 
@@ -32,7 +32,7 @@ public class AMDemodulator implements IAmDemodulator
      *
      * @param gain to apply to demodulated output samples.
      */
-    public AMDemodulator(float gain)
+    public ScalarAMDemodulator(float gain)
     {
         mGain = gain;
     }
@@ -57,13 +57,13 @@ public class AMDemodulator implements IAmDemodulator
         return (float) FastMath.sqrt((inphase * inphase) + (quadrature * quadrature)) * mGain;
     }
 
-    @Override public float[] demodulate(float[] i, float[] q)
+    @Override
+    public float[] demodulateMagnitude(float[] magnitude)
     {
-        float[] demodulated = new float[i.length];
-
-        for(int x = 0; x < i.length; x++)
+        float[] demodulated = new float[magnitude.length];
+        for(int x = 0; x < magnitude.length; x++)
         {
-            demodulated[x] = (float)FastMath.sqrt((i[x] * i[x]) + (q[x] * q[x])) * mGain;
+            demodulated[x] = (float)FastMath.sqrt(magnitude[x]) * mGain;
         }
 
         return demodulated;

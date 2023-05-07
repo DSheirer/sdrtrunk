@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.protocol;
 
@@ -28,6 +25,7 @@ import java.util.EnumSet;
  */
 public enum Protocol
 {
+    AM("AM", "AM", 0),
     APCO25("APCO-25", "APCO25PHASE1", 9600),
     APCO25_PHASE2("APCO-25 P2", "APCO25PHASE2", 12000),
     ARS("ARS", "ARS", 0),
@@ -51,7 +49,6 @@ public enum Protocol
     private String mFileNameLabel;
     private int mBitRate;
 
-
     Protocol(String label, String fileNameLabel, int bitRate)
     {
         mLabel = label;
@@ -59,7 +56,7 @@ public enum Protocol
         mBitRate = bitRate;
     }
 
-    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(APCO25, DMR, FLEETSYNC, LTR, LTR_NET, MDC1200,
+    public static EnumSet<Protocol> TALKGROUP_PROTOCOLS = EnumSet.of(AM, APCO25, DMR, FLEETSYNC, LTR, LTR_NET, MDC1200,
         MPT1327, NBFM, PASSPORT);
 
     public static EnumSet<Protocol> RADIO_ID_PROTOCOLS = EnumSet.of(APCO25, DMR, PASSPORT);

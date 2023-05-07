@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ public enum CalibrationType
     AIRSPY_SAMPLE_CONVERTER("Airspy Sample Converter", 1),
     AIRSPY_UNPACKED_INTERLEAVED_ITERATOR("Airspy Unpacked Interleaved Iterator", 1),
     AIRSPY_UNPACKED_ITERATOR("Airspy Unpacked Iterator", 1),
+    AM_DEMODULATOR("AM Demodulator", 1),
     DC_REMOVAL_REAL("Real DC Removal Filter", 1),
     FILTER_FIR("FIR Filter", 1),
     FILTER_HALF_BAND_REAL_11_TAP("Real Half-Band Decimation Filter - 11 Tap", 1),
@@ -42,9 +43,10 @@ public enum CalibrationType
     FILTER_HALF_BAND_REAL_23_TAP("Real Half-Band Decimation Filter - 23 Tap", 1),
     FILTER_HALF_BAND_REAL_63_TAP("Real Half-Band Decimation Filter - 63 Tap", 1),
     FILTER_HALF_BAND_REAL_DEFAULT("Real Half-Band Decimation Filter - Default", 1),
-    FM_DEMODULATOR("FM Demodulator", 1),
+    FM_DEMODULATOR("FM Demodulator", 2),
     GAIN_CONTROL_COMPLEX("Complex Gain Control", 1),
     HILBERT_TRANSFORM("Hilbert Transform", 1),
+    MAGNITUDE("Magnitude", 1),
     MIXER_COMPLEX("Complex Mixer", 1),
     OSCILLATOR_REAL("Real Oscillator", 1),
     SQUELCHING_FM_DEMODULATOR("Squelching FM Demodulator", 1),

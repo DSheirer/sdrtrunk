@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,17 +26,12 @@ import jdk.incubator.vector.VectorSpecies;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Random;
-
 /**
  * FM demodulator that uses JDK 17+ SIMD vector intrinsics
  */
-public class VectorFMDemodulator implements IFmDemodulator
+public abstract class VectorFMDemodulator implements IDemodulator
 {
     private static final Logger mLog = LoggerFactory.getLogger(VectorFMDemodulator.class);
-    protected static final VectorSpecies<Float> VECTOR_SPECIES = FloatVector.SPECIES_PREFERRED;
     protected static final float ZERO = 0.0f;
     private static final int BUFFER_OVERLAP = 1;
 
@@ -48,9 +43,16 @@ public class VectorFMDemodulator implements IFmDemodulator
     {
     }
 
+    /**
+     * Vector species as specified by the implementing sub-class.
+     */
+    protected abstract VectorSpecies<Float> getVectorSpecies();
+
     @Override public float[] demodulate(float[] i, float[] q)
     {
-        VectorUtilities.checkComplexArrayLength(i, q, VECTOR_SPECIES);
+//        VectorSpecies<Float> species= getVectorSpecies();
+
+        VectorUtilities.checkComplexArrayLength(i, q, getVectorSpecies());
 
         if(mIBuffer.length != (i.length + BUFFER_OVERLAP))
         {
@@ -70,12 +72,12 @@ public class VectorFMDemodulator implements IFmDemodulator
 
         FloatVector currentI, currentQ, previousI, previousQ, demod, demodI, demodQ;
 
-        for(int bufferPointer = 0; bufferPointer < mIBuffer.length - 1; bufferPointer += VECTOR_SPECIES.length())
+        for(int bufferPointer = 0; bufferPointer < mIBuffer.length - 1; bufferPointer += getVectorSpecies().length())
         {
-            previousI = FloatVector.fromArray(VECTOR_SPECIES, mIBuffer, bufferPointer);
-            previousQ = FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, bufferPointer);
-            currentI = FloatVector.fromArray(VECTOR_SPECIES, mIBuffer, bufferPointer + 1);
-            currentQ = FloatVector.fromArray(VECTOR_SPECIES, mQBuffer, bufferPointer + 1);
+            previousI = FloatVector.fromArray(getVectorSpecies(), mIBuffer, bufferPointer);
+            previousQ = FloatVector.fromArray(getVectorSpecies(), mQBuffer, bufferPointer);
+            currentI = FloatVector.fromArray(getVectorSpecies(), mIBuffer, bufferPointer + 1);
+            currentQ = FloatVector.fromArray(getVectorSpecies(), mQBuffer, bufferPointer + 1);
 
             demodI = currentI.mul(previousI).sub(currentQ.mul(previousQ.neg()));
             demodQ = currentQ.mul(previousI).add(currentI.mul(previousQ.neg()));
@@ -88,54 +90,5 @@ public class VectorFMDemodulator implements IFmDemodulator
         }
 
         return demodulated;
-    }
-
-    public static void main(String[] args)
-    {
-        int iterations = 3_000_000;
-        int sampleSize = 2048;
-
-        Random random = new Random();
-
-        float[] iSamples = new float[sampleSize];
-        float[] qSamples = new float[sampleSize];
-        for(int x = 0; x < iSamples.length; x++)
-        {
-            iSamples[x] = random.nextFloat() * 2.0f - 1.0f;
-            qSamples[x] = random.nextFloat() * 2.0f - 1.0f;
-        }
-
-        boolean validation = false;
-
-        ScalarFMDemodulator legacy = new ScalarFMDemodulator();
-        VectorFMDemodulator vector = new VectorFMDemodulator();
-
-        if(validation)
-        {
-            float[] legacySamples = legacy.demodulate(iSamples, qSamples);
-            float[] vectorSamples = vector.demodulate(iSamples, qSamples);
-            System.out.println("LEGACY:" + Arrays.toString(legacySamples));
-            System.out.println("VECTOR:" + Arrays.toString(vectorSamples));
-        }
-        else
-        {
-            System.out.println("Test Starting ...");
-            long start = System.currentTimeMillis();
-
-            double accumulator = 0.0;
-
-            for(int i = 0; i < iterations; i++)
-            {
-                float[] samples = legacy.demodulate(iSamples, qSamples);
-//                float[] samples = vector.demodulate(iSamples, qSamples);
-                accumulator += samples[3];
-            }
-
-            double elapsed = System.currentTimeMillis() - start;
-
-            DecimalFormat df = new DecimalFormat("0.000");
-            System.out.println("Accumulator: " + accumulator);
-            System.out.println("Test Complete.  Elapsed Time: " + df.format(elapsed / 1000.0d) + " seconds");
-        }
     }
 }

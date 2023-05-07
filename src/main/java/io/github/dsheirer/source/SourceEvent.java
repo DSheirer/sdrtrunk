@@ -45,6 +45,7 @@ public class SourceEvent
         NOTIFICATION_RECORDING_FILE_LOADED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_SQUELCH_THRESHOLD,
+        NOTIFICATION_SQUELCH_AUTO_TRACK,
         NOTIFICATION_STOP_SAMPLE_STREAM,
         NOTIFICATION_TUNER_SHUTDOWN,
         NOTIFICATION_ERROR_STATE,
@@ -54,6 +55,8 @@ public class SourceEvent
         REQUEST_FREQUENCY_SELECTION,
         REQUEST_CHANGE_SQUELCH_THRESHOLD,
         REQUEST_CURRENT_SQUELCH_THRESHOLD,
+        REQUEST_CHANGE_SQUELCH_AUTO_TRACK,
+        REQUEST_CURRENT_SQUELCH_AUTO_TRACK,
         REQUEST_START_SAMPLE_STREAM,
         REQUEST_STOP_SAMPLE_STREAM;
 
@@ -428,12 +431,11 @@ public class SourceEvent
 
     /**
      * Requests the current squelch threshold value
-     * @param source optional
      * @return source event
      */
-    public static SourceEvent requestCurrentSquelchThreshold(Source source)
+    public static SourceEvent requestCurrentSquelchThreshold()
     {
-        return new SourceEvent(Event.REQUEST_CURRENT_SQUELCH_THRESHOLD, source, 0);
+        return new SourceEvent(Event.REQUEST_CURRENT_SQUELCH_THRESHOLD, null, 0);
     }
 
     /**
@@ -445,6 +447,35 @@ public class SourceEvent
     public static SourceEvent requestSquelchThreshold(Source source, double thresholdDb)
     {
         return new SourceEvent(Event.REQUEST_CHANGE_SQUELCH_THRESHOLD, source, thresholdDb);
+    }
+
+    /**
+     * Creates a new request squelch auto track status source event.
+     * @return new source event
+     */
+    public static SourceEvent requestCurrentSquelchAutoTrack()
+    {
+        return new SourceEvent(Event.REQUEST_CURRENT_SQUELCH_AUTO_TRACK, null, 0);
+    }
+
+    /**
+     * Creates a new squelch auto-track notification
+     * @param autoTrack true or false.
+     * @return source event
+     */
+    public static SourceEvent squelchAutoTrack(boolean autoTrack)
+    {
+        return new SourceEvent(Event.NOTIFICATION_SQUELCH_AUTO_TRACK, null, autoTrack ? 1 : 0);
+    }
+
+    /**
+     * Creates a new squelch auto-track request
+     * @param autoTrack to enable (true) or disable auto-track.
+     * @return source event
+     */
+    public static SourceEvent requestSquelchAutoTrack(boolean autoTrack)
+    {
+        return new SourceEvent(Event.REQUEST_CHANGE_SQUELCH_AUTO_TRACK, null, autoTrack ? 1 : 0);
     }
 
     @Override

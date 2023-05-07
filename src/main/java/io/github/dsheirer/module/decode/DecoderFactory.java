@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AbstractAudioModule;
 import io.github.dsheirer.audio.AudioModule;
-import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
@@ -36,6 +35,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.am.AMDecoder;
+import io.github.dsheirer.module.decode.am.AMDecoderState;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
@@ -88,23 +88,20 @@ import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
 import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
 import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
-import io.github.dsheirer.module.demodulate.am.AMDemodulatorModule;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.rotation.ChannelRotationMonitor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
 
-    private static final double AM_CHANNEL_BANDWIDTH = 3000.0;
     private static final double FM_CHANNEL_BANDWIDTH = 12500.0;
     private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
 
@@ -313,29 +310,23 @@ public class DecoderFactory
         }
 
         DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
-
         modules.add(new NBFMDecoder(decodeConfigNBFM));
         modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
         modules.add(new AudioModule(aliasList));
     }
 
     private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
-        modules.add(new AMDecoder(decodeConfig));
-        modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
 
-        AudioModule audioModuleAM = new AudioModule(aliasList);
-        modules.add(audioModuleAM);
-
-        //Check if the user wants all audio recorded ..
-        if(((DecodeConfigAM)decodeConfig).getRecordAudio())
+        if(!(decodeConfig instanceof DecodeConfigAM))
         {
-            audioModuleAM.setRecordAudio(true);
+            throw new IllegalArgumentException("Can't create AM decoder - unrecognized decode config type: " +
+                    (decodeConfig != null ? decodeConfig.getClass() : "null/empty"));
         }
 
-        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-        {
-            modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-        }
+        DecodeConfigAM decodeConfigAM = (DecodeConfigAM) decodeConfig;
+        modules.add(new AMDecoder(decodeConfigAM));
+        modules.add(new AMDecoderState(channel.getName(), decodeConfigAM));
+        modules.add(new AudioModule(aliasList));
     }
 
     /**
@@ -506,8 +497,6 @@ public class DecoderFactory
 
     public static DecodeConfiguration getDecodeConfiguration(DecoderType decoder)
     {
-        DecodeConfiguration retVal;
-
         switch(decoder)
         {
             case AM:
@@ -545,7 +534,10 @@ public class DecoderFactory
                 case AM:
                     DecodeConfigAM copyAM = new DecodeConfigAM();
                     DecodeConfigAM origAM = (DecodeConfigAM)config;
-                    copyAM.setRecordAudio(origAM.getRecordAudio());
+                    copyAM.setBandwidth(origAM.getBandwidth());
+                    copyAM.setTalkgroup(origAM.getTalkgroup());
+                    copyAM.setSquelchThreshold(origAM.getSquelchThreshold());
+                    copyAM.setSquelchAutoTrack(origAM.isSquelchAutoTrack());
                     return copyAM;
                 case DMR:
                     return new DecodeConfigDMR();
@@ -571,6 +563,9 @@ public class DecoderFactory
                     DecodeConfigNBFM origNBFM = (DecodeConfigNBFM)config;
                     DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
                     copyNBFM.setBandwidth(origNBFM.getBandwidth());
+                    copyNBFM.setSquelchThreshold(origNBFM.getSquelchThreshold());
+                    copyNBFM.setSquelchAutoTrack(origNBFM.isSquelchAutoTrack());
+                    copyNBFM.setTalkgroup(origNBFM.getTalkgroup());
                     return copyNBFM;
                 case P25_PHASE1:
                     DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1)config;

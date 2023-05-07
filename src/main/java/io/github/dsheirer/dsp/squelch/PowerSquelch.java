@@ -1,8 +1,28 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.dsp.squelch;
 
 import io.github.dsheirer.dsp.filter.iir.SinglePoleIirFilter;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.SourceEvent;
+import org.apache.commons.math3.util.FastMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +37,8 @@ public class PowerSquelch implements Listener<SourceEvent>
     private static final Logger mLog = LoggerFactory.getLogger(PowerSquelch.class);
     private State mState = State.MUTE;
     private SinglePoleIirFilter mFilter;
-    private double mPower = 0.0f;
-    private double mSquelchThreshold;
+    private float mPower = 0.0f;
+    private float mSquelchThreshold;
     private int mRampThreshold;
     private int mRampCount;
     private boolean mSquelchChanged = false;
@@ -42,7 +62,7 @@ public class PowerSquelch implements Listener<SourceEvent>
      * @param ramp count of samples before transition between mute and unmute.  Setting this value to zero
      * causes immediate mute and unmute.  Set to higher count to prevent mute/unmute flapping.
      */
-    public PowerSquelch(float alpha, double squelchThreshold, int ramp)
+    public PowerSquelch(float alpha, float squelchThreshold, int ramp)
     {
         mFilter = new SinglePoleIirFilter(alpha);
         setSquelchThreshold(squelchThreshold);
@@ -64,9 +84,9 @@ public class PowerSquelch implements Listener<SourceEvent>
      * Squelch threshold value
      * @return value in decibels
      */
-    public double getSquelchThreshold()
+    public float getSquelchThreshold()
     {
-        return 10.0 * Math.log10(mSquelchThreshold);
+        return 10.0f * (float)FastMath.log10(mSquelchThreshold);
     }
 
     /**
@@ -75,7 +95,7 @@ public class PowerSquelch implements Listener<SourceEvent>
      */
     public void setSquelchThreshold(double squelchThreshold)
     {
-        mSquelchThreshold = Math.pow(10.0, squelchThreshold / 10.0);
+        mSquelchThreshold = (float) FastMath.pow(10.0, squelchThreshold / 10.0);
         broadcast(SourceEvent.squelchThreshold(null, squelchThreshold));
     }
 
@@ -268,7 +288,7 @@ public class PowerSquelch implements Listener<SourceEvent>
     {
         if(sourceEvent.getEvent() == SourceEvent.Event.REQUEST_CHANGE_SQUELCH_THRESHOLD)
         {
-            setSquelchThreshold(sourceEvent.getValue().doubleValue());
+            setSquelchThreshold(sourceEvent.getValue().floatValue());
         }
         else if(sourceEvent.getEvent() == SourceEvent.Event.REQUEST_CURRENT_SQUELCH_THRESHOLD)
         {

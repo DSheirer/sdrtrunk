@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,21 +21,16 @@ package io.github.dsheirer.buffer;
 import java.util.Arrays;
 
 /**
- * Circular sample buffer - allocates a buffer and stores samples in a circular
- * fashion, overwriting older samples with newly arrived samples.  Initially
- * fills buffer with 0-valued samples
- *
- * Can be used as a delay-type buffer, to delay samples by the 'size' amount
+ * Circular sample buffer - allocates a buffer and stores samples in a circular fashion, overwriting older samples with
+ * newly arrived samples.  Initially fills buffer with 0-valued (default) samples or with a specified value.
  */
 public class FloatCircularBuffer
 {
     private float[] mBuffer;
     private int mBufferPointer = 0;
-    private float mOldestSample;
 
     /**
      * Creates a circular double buffer of the specified size and all entries filled with the specified initial value.
-     *
      * @param size of the buffer
      * @param initialFillValue to fill the buffer entries
      */
@@ -47,7 +42,6 @@ public class FloatCircularBuffer
 
     /**
      * Creates a circular double buffer of the specified size and all entries filled with an initial value of zero.
-     *
      * @param size of the buffer
      */
     public FloatCircularBuffer(int size)
@@ -55,33 +49,34 @@ public class FloatCircularBuffer
         this(size, 0.0f);
     }
 
-    public float[] getBuffer()
+    /**
+     * Resets the delay buffer to an all zeros state
+     */
+    public void reset(float fillValue)
     {
-        return mBuffer;
+        Arrays.fill(mBuffer, fillValue);
     }
 
     /**
-     * Gets the current buffer value and overwrites that value position in the buffer with the new value.
+     * Puts the new value into the buffer and returns the oldest buffer value that it replaced
      *
      * @param newValue to add to the buffer
      * @return oldest value that was overwritten by the new value
      */
-    public float getAndPut(float newValue)
+    public float get(float newValue)
     {
-        mOldestSample = mBuffer[mBufferPointer];
-        put(newValue);
-        return mOldestSample;
-    }
+        float oldestSample = mBuffer[mBufferPointer];
 
-    /**
-     * Puts the value into the buffer, updates the pointer and returns the buffer value at the pointer position.
-     * @param sample to add
-     * @return next pointed sample.
-     */
-    public float putAndGet(float sample)
-    {
-        put(sample);
-        return mBuffer[mBufferPointer];
+        mBuffer[mBufferPointer] = newValue;
+
+        mBufferPointer++;
+
+        if(mBufferPointer >= mBuffer.length)
+        {
+            mBufferPointer = 0;
+        }
+
+        return oldestSample;
     }
 
     public float[] getAll()
@@ -105,13 +100,70 @@ public class FloatCircularBuffer
 
     /**
      * Places the new value into the buffer, overwriting the oldest value
-     *
      * @param newValue to add to the buffer
      */
     public void put(float newValue)
     {
         mBuffer[mBufferPointer] = newValue;
+
         mBufferPointer++;
-        mBufferPointer %= mBuffer.length;
+
+        if(mBufferPointer >= mBuffer.length)
+        {
+            mBufferPointer = 0;
+        }
+    }
+
+    /**
+     * Returns the maximum from the values currently in the buffer
+     */
+    public float max(float referenceValue)
+    {
+        float max = referenceValue;
+
+        for(int x = 0; x < mBuffer.length; x++)
+        {
+            if(mBuffer[x] > max)
+            {
+                max = mBuffer[x];
+            }
+        }
+
+//        System.out.println("Max [" + max + "] from " + Arrays.toString(mBuffer));
+
+        return max;
+    }
+
+    /**
+     * Returns the minimum from the values currently in the buffer
+     */
+    public float min()
+    {
+        float min = 0.0f;
+
+        for(int x = 0; x < mBuffer.length; x++)
+        {
+            if(mBuffer[x] < min)
+            {
+                min = mBuffer[x];
+            }
+        }
+
+        return min;
+    }
+
+    /**
+     * Calculates the average/mean of the values contained in this buffer
+     */
+    public float mean()
+    {
+        double accumulator = 0.0;
+
+        for(float value: mBuffer)
+        {
+            accumulator += value;
+        }
+
+        return (float)(accumulator / mBuffer.length);
     }
 }
