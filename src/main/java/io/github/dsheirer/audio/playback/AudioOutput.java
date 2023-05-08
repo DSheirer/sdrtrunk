@@ -340,13 +340,6 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         {
             mCurrentAudioSegment.addIdentifierUpdateNotificationListener(this);
             broadcast(mCurrentAudioSegment.getIdentifierCollection());
-
-            //If we played any amount of the previous audio segment then play the audio segment start.  We check this
-            //to avoid repeatedly playing an audio segment start tone on the rare occasion that we have empty segments.
-            if(mCurrentBufferIndex > 0)
-            {
-                playAudio(mAudioSegmentStartTone);
-            }
         }
 
         mCurrentBufferIndex = 0;
@@ -392,6 +385,11 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
         while(mCurrentAudioSegment != null && mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount())
         {
+            if(mCurrentBufferIndex == 0)
+            {
+                playAudio(mAudioSegmentStartTone);
+            }
+
             try
             {
                 float[] audioBuffer = mCurrentAudioSegment.getAudioBuffers().get(mCurrentBufferIndex++);
