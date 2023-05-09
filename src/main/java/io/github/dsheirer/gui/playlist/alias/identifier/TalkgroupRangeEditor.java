@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@ import io.github.dsheirer.gui.control.PrefixIdentFormatter;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
@@ -37,9 +39,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Editor for talkgroup range alias identifiers
@@ -291,6 +290,10 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
     private List<TalkgroupDetail> createTalkgroupDetails()
     {
         List<TalkgroupDetail> details = new ArrayList<>();
+        details.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
+                new IntegerFormatter(0,65535), "Format 0 - 65535"));
+        details.add(new TalkgroupDetail(Protocol.AM, IntegerFormat.HEXADECIMAL, new IntegerFormatter(0,65535),
+                new IntegerFormatter(0,65535), "Format 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
                 new IntegerFormatter(0,65535), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.APCO25, IntegerFormat.HEXADECIMAL, new HexFormatter(0,65535),
@@ -307,6 +310,10 @@ public class TalkgroupRangeEditor extends IdentifierEditor<TalkgroupRange>
         details.add(new TalkgroupDetail(Protocol.MPT1327, IntegerFormat.FORMATTED,
                 new PrefixIdentFormatter(0,0xFFFFF), new PrefixIdentFormatter(0,0xFFFFF),
                 "Format: PPP-IIII = Prefix (0-127), Ident (1-8191)"));
+        details.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.DECIMAL, new IntegerFormatter(0,65535),
+                new IntegerFormatter(0,65535), "Format 0 - 65535"));
+        details.add(new TalkgroupDetail(Protocol.NBFM, IntegerFormat.HEXADECIMAL, new IntegerFormatter(0,65535),
+                new IntegerFormatter(0,65535), "Format 0 - FFFF"));
         details.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.DECIMAL, new IntegerFormatter(0,0xFFFF),
                 new IntegerFormatter(0,0xFFFF), "Format: 0 - 65535"));
         details.add(new TalkgroupDetail(Protocol.PASSPORT, IntegerFormat.HEXADECIMAL, new HexFormatter(0,0xFFFF),
