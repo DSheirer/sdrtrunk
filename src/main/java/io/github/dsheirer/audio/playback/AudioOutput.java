@@ -79,6 +79,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
     private boolean mRunning = false;
     private ScheduledExecutorService mScheduledExecutorService;
     private ScheduledFuture<?> mProcessorFuture;
+    private boolean mDropDuplicates;
     private long mOutputLastTimestamp = 0;
     private static final long STALE_PLAYBACK_THRESHOLD_MS = 500;
 
@@ -104,6 +105,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         mScheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new NamingThreadFactory(
                 "sdrtrunk audio output " + mixerChannel.name()));
         mUserPreferences = userPreferences;
+        mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
 
         try
         {
@@ -163,7 +165,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
         updateToneInsertionAudioClips();
 
-        //Register to receive directory preference update notifications so we can update the preference items
+        //Register to receive preference update notifications so we can update the preference items
         MyEventBus.getGlobalEventBus().register(this);
     }
 
@@ -225,6 +227,10 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
         if(preferenceType == PreferenceType.PLAYBACK)
         {
             updateToneInsertionAudioClips();
+        }
+        else if(preferenceType == PreferenceType.DUPLICATE_CALL_DETECTION)
+        {
+            mDropDuplicates = mUserPreferences.getDuplicateCallDetectionPreference().isDuplicatePlaybackSuppressionEnabled();
         }
     }
 
@@ -301,6 +307,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             mCurrentAudioSegment.decrementConsumerCount();
             mCurrentAudioSegment.removeIdentifierUpdateNotificationListener(this);
             mCurrentAudioSegment = null;
+            broadcast(null);
         }
     }
 
@@ -352,10 +359,7 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
      */
     private boolean isThrowaway(AudioSegment audioSegment)
     {
-        return audioSegment != null &&
-               (audioSegment.isDoNotMonitor() ||
-               (audioSegment.isDuplicate() && mUserPreferences.getDuplicateCallDetectionPreference()
-                        .isDuplicatePlaybackSuppressionEnabled()));
+        return audioSegment != null && (audioSegment.isDoNotMonitor() || mDropDuplicates && (audioSegment.isDuplicate()));
     }
 
     /**
@@ -371,8 +375,8 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             loadNextAudioSegment();
         }
 
-        //Reevaluate current audio segment to see if the status has changed for duplicate or do-not-monitor.
-        if(isThrowaway(mCurrentAudioSegment))
+        //Evaluate current audio segment to see if the status has changed for duplicate or do-not-monitor.
+        while(isThrowaway(mCurrentAudioSegment))
         {
             if(mCurrentBufferIndex > 0)
             {
@@ -385,29 +389,42 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
 
         while(mCurrentAudioSegment != null && mCurrentBufferIndex < mCurrentAudioSegment.getAudioBufferCount())
         {
-            if(mCurrentBufferIndex == 0)
+            //Continuously evaluate current audio segment to see if the status has changed for duplicate or do-not-monitor.
+            if(isThrowaway(mCurrentAudioSegment))
             {
-                playAudio(mAudioSegmentStartTone);
-            }
-
-            try
-            {
-                float[] audioBuffer = mCurrentAudioSegment.getAudioBuffers().get(mCurrentBufferIndex++);
-
-                if(audioBuffer != null)
+                if(mCurrentBufferIndex > 0)
                 {
-                    ByteBuffer audio = convert(audioBuffer);
-                    //This call blocks until all audio bytes are dumped into the data line.
-                    playAudio(audio);
+                    playAudio(mAudioSegmentDropTone);
                 }
+
+                disposeCurrentAudioSegment();
             }
-            catch(Exception e)
+            else
             {
-                mLog.error("Error while processing audio for [" + mMixerChannel.name() + "]", e);
+                if(mCurrentBufferIndex == 0)
+                {
+                    playAudio(mAudioSegmentStartTone);
+                }
+
+                try
+                {
+                    float[] audioBuffer = mCurrentAudioSegment.getAudioBuffers().get(mCurrentBufferIndex++);
+
+                    if(audioBuffer != null)
+                    {
+                        ByteBuffer audio = convert(audioBuffer);
+                        //This call blocks until all audio bytes are dumped into the data line.
+                        playAudio(audio);
+                    }
+                }
+                catch(Exception e)
+                {
+                    mLog.error("Error while processing audio for [" + mMixerChannel.name() + "]", e);
+                }
             }
         }
 
-        //Check for completed and fully-played audio segment -- load next audio segment
+        //Check for completed and fully-played audio segment to closeout
         if(mCurrentAudioSegment != null &&
            mCurrentAudioSegment.isComplete() &&
            (mCurrentBufferIndex >= mCurrentAudioSegment.getAudioBufferCount()))
@@ -649,16 +666,6 @@ public abstract class AudioOutput implements LineListener, Listener<IdentifierUp
             {
                 try
                 {
-                    //TODO: Debug hooks - remove after testing
-                    if(mMixerChannel.name().equals("LEFT"))
-                    {
-                        int a = 0;
-                    }
-                    else if(mMixerChannel.name().equals("RIGHT"))
-                    {
-                        int a = 0;
-                    }
-
                     processAudio();
                 }
                 catch(Throwable t)
