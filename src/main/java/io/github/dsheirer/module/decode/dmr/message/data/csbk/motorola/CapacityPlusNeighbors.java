@@ -40,8 +40,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
 {
     private static final int[] LC_START_STOP = new int[]{16, 17};
     private static final int TIMESLOT = 18;
-    private static final int[] REST_REPEATER = new int[]{19, 20, 21, 22};
-    private static final int[] REST_TIMESLOT = new int[]{23};
+    private static final int[] REST_LSN = new int[]{19, 20, 21, 22, 23};
     private static final int ASYNC = 24;
     private static final int[] SITE = new int[]{25, 26, 27, 28};
     private static final int[] NEIGHBOR_COUNT = new int[]{29, 30, 31};
@@ -89,6 +88,10 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CAP+ SITE:").append(getSite());
         sb.append(" REST ").append(getRestChannel());
         sb.append(" FL:").append(getLCSS());
@@ -275,12 +278,18 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
     }
 
     /**
+     * Rest LSN
+     * @return Logical Slot Number 1-16
+     */
+    public int getRestLSN()
+    {
+        return getMessage().getInt(REST_LSN);
+    }
+
+    /**
      * Rest repeater
      */
-    public int getRestRepeater()
-    {
-        return getMessage().getInt(REST_REPEATER) + 1;
-    }
+    public int getRestRepeater() { return (int) Math.ceil(getRestLSN() / 2.0); }
 
     /**
      * Rest timeslot
@@ -288,7 +297,7 @@ public class CapacityPlusNeighbors extends CSBKMessage implements ITimeslotFrequ
      */
     public int getRestTimeslot()
     {
-        return getMessage().getInt(REST_TIMESLOT) + 1;
+        return (getRestLSN() % 2 == 0) ? 2 : 1;
     }
 
     /**

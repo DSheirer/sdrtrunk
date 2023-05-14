@@ -82,6 +82,10 @@ public class Aloha extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" ALOHA");
 
         if(hasRadioIdentifier())

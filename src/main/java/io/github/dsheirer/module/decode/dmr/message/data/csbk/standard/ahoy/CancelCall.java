@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,6 +63,11 @@ public class CancelCall extends Ahoy
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
 
         if(isEncrypted())
         {

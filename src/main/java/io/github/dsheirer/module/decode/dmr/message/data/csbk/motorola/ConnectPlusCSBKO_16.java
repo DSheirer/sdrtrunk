@@ -71,6 +71,10 @@ public class ConnectPlusCSBKO_16 extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ CSBKO:16 FM:").append(getSourceRadio());
         sb.append(" TO:").append(getTargetRadio());
         sb.append(" UNK:").append(getUnknown());

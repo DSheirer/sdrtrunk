@@ -75,6 +75,10 @@ public class HyteraSmsAvailableNotification extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" HYTERA SMS MESSAGE AVAILABLE FOR:").append(getDestinationRadio());
         sb.append(" FM:").append(getSourceRadio());
         sb.append(" UNK:").append(getUnknown());

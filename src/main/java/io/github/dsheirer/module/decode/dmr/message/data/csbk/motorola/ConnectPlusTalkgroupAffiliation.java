@@ -73,6 +73,10 @@ public class ConnectPlusTalkgroupAffiliation extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ AFFILIATE RADIO:").append(getRadio());
         sb.append(" TO TALKGROUP:").append(getTalkgroup());
         sb.append(" UNK:").append(getUnknown());

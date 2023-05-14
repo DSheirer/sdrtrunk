@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,9 @@ import io.github.dsheirer.module.decode.dmr.message.DMRBurst;
  */
 public abstract class DataMessage extends DMRBurst
 {
+    //R2, R1, R0 extracted from the BPTC extraction process. Note: message length remains at 96, even though these 3x bits
+    //are set at the end of the message.
+    private static final int[] BPTC_RESERVED_BITS = new int[]{96, 97, 98};
     private SlotType mSlotType;
 
     /**
@@ -53,5 +56,25 @@ public abstract class DataMessage extends DMRBurst
     public SlotType getSlotType()
     {
         return mSlotType;
+    }
+
+    /**
+     * 3x reserved bits that are left-over from the BPTC encode/decode process that can be used to hold values like
+     * Moto RAS indicator.  The message length from the BPTC decoder is set to 96 and these 3x bits are appended to
+     * the end as overage.  However, to keep the message.toString() correct, we specify the length as 96.
+     * @return reserved value.
+     */
+    public int getBPTCReservedBits()
+    {
+        return getMessage().getInt(BPTC_RESERVED_BITS);
+    }
+
+    /**
+     * Indicates if the BPTC reserved bits value is anything other than 0.
+     * @return true if non-zero.
+     */
+    public boolean hasRAS()
+    {
+        return getBPTCReservedBits() != 0;
     }
 }

@@ -71,6 +71,10 @@ public class ConnectPlusDataRevertWindowGrant extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ ENHANCED DATA REVERT GRANT TO:").append(getTargetRadio());
         sb.append(" TRANSMIT IN WINDOW:").append(getSuperFrame()).append(".").append(getWindow());
         sb.append(" MSG:").append(getMessage().toHexString());

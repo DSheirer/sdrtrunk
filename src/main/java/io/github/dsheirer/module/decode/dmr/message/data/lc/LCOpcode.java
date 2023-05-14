@@ -46,6 +46,12 @@ public enum LCOpcode
 
     FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 0, "GROUP VOICE CHANNEL USER"),
     FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 4, "WAN GROUP VOICE CHANNEL USER"),
+    //Cap+ opcodes from https://forums.radioreference.com/threads/understanding-capacity-plus-trunking-some-more.452566/
+    //FLCO 0: Group Call Maintenance
+    //FLCO 3: Private Call Maintenance (TermLC)
+    //FLCO 4: Group Call Grant
+    //FLCO 7: Private Call Grant
+    //FLCO 35: Private Call Maintenance (EMB)
 
     FULL_HYTERA_GROUP_VOICE_CHANNEL_USER(Vendor.HYTERA_68, true, 0, "HYTERA GROUP VOICE CHANNEL USER"),
     FULL_HYTERA_UNIT_TO_UNIT_VOICE_CHANNEL_USER(Vendor.HYTERA_68, true, 3, "HYTERA UNIT-TO-UNIT VOICE CHANNEL USER"),

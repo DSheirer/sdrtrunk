@@ -70,6 +70,10 @@ public class ConnectPlusDataRevertWindowAnnouncement extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ ENHANCED DATA REVERT CHANNEL ANNOUNCE WINDOW:");
         sb.append(getSuperFrame()).append(".").append(getWindow());
         if(hasTargetRadio())

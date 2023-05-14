@@ -71,6 +71,10 @@ public class ConnectPlusRegistrationResponse extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ REGISTRATION RESPONSE FM:").append(getSourceRadio());
         sb.append(" TO:").append(getTargetRadio());
         sb.append(" UNK:").append(getUnknown());

@@ -75,6 +75,11 @@ public abstract class DataBlock extends DataMessage
     {
         StringBuilder sb = new StringBuilder();
 
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
+
         sb.append(" ").append(getSlotType());
         sb.append(" ").append(getMessage().toHexString());
 

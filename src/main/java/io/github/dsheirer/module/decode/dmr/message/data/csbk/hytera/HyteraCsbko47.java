@@ -75,6 +75,10 @@ public class HyteraCsbko47 extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" HYTERA CSBKO=47  #########  UNKNOWN");
         sb.append(" FM:").append(getSourceRadio());
         sb.append(" TO:").append(getDestinationRadio());

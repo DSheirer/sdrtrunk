@@ -79,6 +79,10 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" CSBK CON+ VOICE CHANNEL USER FM:").append(getRadio());
         sb.append(" TO:").append(getTalkgroup());
         sb.append(" ").append(getChannel());

@@ -83,6 +83,10 @@ public class Hytera08Acknowledge extends CSBKMessage
         }
 
         sb.append("CC:").append(getSlotType().getColorCode());
+        if(hasRAS())
+        {
+            sb.append(" RAS:").append(getBPTCReservedBits());
+        }
         sb.append(" HYTERA 08 ").append(getAcknowledgeType());
         sb.append(" REASON:");
 

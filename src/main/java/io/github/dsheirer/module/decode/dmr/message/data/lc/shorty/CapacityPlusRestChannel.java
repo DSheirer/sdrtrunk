@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRSite;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,8 +34,9 @@ import java.util.List;
 public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslotFrequencyReceiver
 {
     private static final int[] UNKNOWN = new int[]{12, 13, 14};
-    private static final int[] REST_REPEATER = new int[]{15, 16, 17, 18};
-    private static final int[] REST_TIMESLOT = new int[]{19};
+    //private static final int[] REST_REPEATER = new int[]{15, 16, 17, 18};
+    private static final int[] REST_LSN = new int[]{15, 16, 17, 18, 19};
+    //private static final int[] REST_TIMESLOT = new int[]{19};
     private static final int[] SITE = new int[]{20, 21, 22, 23, 24};
     private static final int[] UNKNOWN_2 = new int[]{25, 26, 27};
 
@@ -63,7 +63,7 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
             sb.append("[CRC ERROR] ");
         }
         sb.append("SLC MOTOROLA CAP+ SITE:").append(getSite());
-        sb.append(" REST CHANNEL:").append(getRestChannel());
+        sb.append(" REST:").append(getRestChannel());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
@@ -95,19 +95,25 @@ public class CapacityPlusRestChannel extends ShortLCMessage implements ITimeslot
     }
 
     /**
+     * Rest LSN
+     * @return Logical Slot Number 1-16
+     */
+    public int getRestLSN()
+    {
+        return getMessage().getInt(REST_LSN);
+    }
+
+    /**
      * Rest repeater
      */
-    public int getRestRepeater()
-    {
-        return getMessage().getInt(REST_REPEATER) + 1;
-    }
+    public int getRestRepeater() { return (int) Math.ceil(getRestLSN() / 2.0); }
 
     /**
      * Rest timeslot
      */
     public int getRestTimeslot()
     {
-        return getMessage().getInt(REST_TIMESLOT) + 1;
+        return (getRestLSN() % 2 == 0) ? 2 : 1;
     }
 
     /**

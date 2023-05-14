@@ -111,6 +111,9 @@ public class DMRMessageProcessor implements Listener<IMessage>
             }
         }
 
+        //Now that the message has been (potentially) enriched, dispatch it to the modules
+        dispatch(message);
+
         //Extract the Full Link Control message fragment from the Voice with embedded signalling message
         if(message instanceof VoiceEMBMessage)
         {
@@ -202,9 +205,6 @@ public class DMRMessageProcessor implements Listener<IMessage>
         {
             dispatch(mTalkerAliasAssembler.process(flc));
         }
-
-        //Now that the message has been (potentially) enriched, dispatch it to the modules
-        dispatch(message);
     }
 
     /**
