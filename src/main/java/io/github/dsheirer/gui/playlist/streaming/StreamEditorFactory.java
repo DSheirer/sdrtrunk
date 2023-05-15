@@ -38,6 +38,8 @@ public class StreamEditorFactory
         {
             case BROADCASTIFY:
                 return new BroadcastifyStreamEditor(playlistManager);
+            case RDIOSCANNER_CALL:
+                return new RdioScannerEditor(playlistManager);
             case BROADCASTIFY_CALL:
                 return new BroadcastifyCallEditor(playlistManager);
             case ICECAST_HTTP:

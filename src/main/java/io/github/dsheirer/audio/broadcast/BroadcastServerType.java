@@ -31,6 +31,7 @@ public enum BroadcastServerType
     BROADCASTIFY_CALL("Broadcastify Call", "images/broadcastify.png"),
 
     ICECAST_HTTP("Icecast 2 (v2.4+)", "images/icecast.png"),
+    RDIOSCANNER_CALL("Rdio Scanner", "images/rdioscanner.png"),
     ICECAST_TCP("Icecast (v2.3)", "images/icecast.png"),
     SHOUTCAST_V1("Shoutcast v1.x", "images/shoutcast.png"),
     SHOUTCAST_V2("Shoutcast v2.x", "images/shoutcast.png"),
