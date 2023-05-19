@@ -25,6 +25,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.control.AgcMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.GainReduction;
+import io.github.dsheirer.source.tuner.sdrplay.rsp1.Rsp1TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp1a.Rsp1aTunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rsp2.Rsp2TunerConfiguration;
 import io.github.dsheirer.source.tuner.sdrplay.rspDuo.RspDuoTuner1Configuration;
@@ -36,6 +37,7 @@ import io.github.dsheirer.source.tuner.sdrplay.rspDx.RspDxTunerConfiguration;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
+        @JsonSubTypes.Type(value = Rsp1TunerConfiguration.class, name = "rsp1TunerConfiguration"),
         @JsonSubTypes.Type(value = Rsp1aTunerConfiguration.class, name = "rsp1aTunerConfiguration"),
         @JsonSubTypes.Type(value = Rsp2TunerConfiguration.class, name = "rsp2TunerConfiguration"),
         @JsonSubTypes.Type(value = RspDuoTuner1Configuration.class, name = "rspDuoTuner1Configuration"),
