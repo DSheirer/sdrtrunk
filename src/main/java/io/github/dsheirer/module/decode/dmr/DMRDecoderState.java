@@ -64,6 +64,7 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.TalkerAliasComp
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.UnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
@@ -1048,13 +1049,27 @@ public class DMRDecoderState extends TimeslotDecoderState
                     updateRestChannel(((CapacityPlusRestChannel)message).getRestChannel());
                 }
                 break;
-            case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
-                if(message instanceof CapacityPlusGroupVoiceChannelUser)
+            case FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER:
+                if(message instanceof CapacityPlusEncryptedVoiceChannelUser cpgvcu)
                 {
-                    CapacityPlusGroupVoiceChannelUser cpgvcu = (CapacityPlusGroupVoiceChannelUser)message;
-
-                    //This is the current channel - what do we do with the voice channel number?
-//                    updateRestChannel(cpgvcu.getVoiceChannel());
+                    if(isTerminator)
+                    {
+                        getIdentifierCollection().remove(Role.FROM);
+                        getIdentifierCollection().update(cpgvcu.getTalkgroup());
+                    }
+                    else
+                    {
+                        getIdentifierCollection().update(message.getIdentifiers());
+                        ServiceOptions serviceOptions = cpgvcu.getServiceOptions();
+                        updateCurrentCall(serviceOptions.isEncrypted() ? DecodeEventType.CALL_GROUP_ENCRYPTED :
+                                DecodeEventType.CALL_GROUP, serviceOptions.toString(), message.getTimestamp());
+                    }
+                }
+                break;
+            case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
+                if(message instanceof CapacityPlusGroupVoiceChannelUser cpgvcu)
+                {
+                    updateRestChannel(cpgvcu.getRestChannel());
 
                     if(isTerminator)
                     {

@@ -44,9 +44,6 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
     private static final int[] REST_LSN = new int[]{20, 21, 22, 23};
     private static final int[] LSN_VOICE_BITMAP = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
     private static final int LSN_1_8_BITMAP_START = 24;
-    private static final int[][] VOICE_TALKGROUPS = new int[][]{{32, 33, 34, 35, 36, 37, 38, 39},
-            {40, 41, 42, 43, 44, 45, 46, 47}, {48, 49, 50, 51, 52, 53, 54, 55}, {56, 57, 58, 59, 60, 61, 62, 63},
-            {64, 65, 66, 67, 68, 69, 70, 71}, {72, 73, 74, 75, 76, 77, 78, 79}};
 
     private DMRLogicalChannel mRestChannel;
     private List<Identifier> mIdentifiers;
@@ -117,8 +114,14 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
      */
     private String getActivityFragments()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.append("VOICE LSN ");
+        if(getMessage().get(48) && getMessage().get(56))
+        {
+            int a = 0; //debug
+        }
+        int[] talkgroups = new int[17];
+        int[] radios = new int[17];
+        boolean hasIdentifier = false;
+
         int pointer = LSN_1_8_BITMAP_START;
 
         //Process voice LSNs 1-8
@@ -133,31 +136,29 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
 
                 if(getMessage().get(x))
                 {
+                    hasIdentifier = true;
+
                     if(pointer <= 72)
                     {
-                        sb.append(lsn).append(":").append(getMessage().getInt(BYTE, pointer)).append(" ");
+                        talkgroups[lsn] = getMessage().getInt(BYTE, pointer);
                         pointer += 8;
                     }
                     else
                     {
-                        sb.append(lsn).append(":A ");
+                        talkgroups[lsn] = -1;
                     }
-                }
-                else
-                {
-                    sb.append(lsn).append(":* ");
                 }
             }
         }
         else
         {
-            sb.append("1-8:* ");
             pointer += 8;
         }
 
         //Process voice LSNs 9 - 16
         if(pointer <= 72 && getMessage().getInt(BYTE, pointer) > 0)
         {
+            hasIdentifier = true;
             int highLsnBitmap = pointer;
 
             pointer += 8;
@@ -170,30 +171,25 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
                 {
                     if(pointer <= 72)
                     {
-                        sb.append(lsn).append(":").append(getMessage().getInt(BYTE, pointer)).append(" ");
+                        talkgroups[lsn] = getMessage().getInt(BYTE, pointer);
                         pointer += 8;
                     }
                     else
                     {
-                        sb.append(lsn).append(":A ");
+                        talkgroups[lsn] = -1;
                     }
-                }
-                else
-                {
-                    sb.append(lsn).append(":* ");
                 }
             }
         }
         else
         {
-            sb.append("9-16:* ");
             pointer += 8;
         }
 
-        //Process Data and Private Radio IDs - first bit in radio options byte is set to indicate more activity
+        //Process Radio IDs - first bit in radio options byte is set to indicate more activity
         if(pointer <= 72 && getMessage().get(pointer))
         {
-            sb.append("DATA LSN ");
+            hasIdentifier = true;
             pointer += 8;
 
             //If we have the data revert channel bitmap ...
@@ -211,23 +207,57 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
                     {
                         if(pointer <= 64)
                         {
-                            sb.append(lsn).append(":").append(getMessage().getInt(TWO_BYTES, pointer)).append(" ");
+                            radios[lsn] = getMessage().getInt(TWO_BYTES, pointer);
                             pointer += 16;
                         }
                         else
                         {
-                            sb.append(lsn).append(":A ");
+                            radios[lsn] = -1;
                         }
-                    }
-                    else
-                    {
-                        sb.append(lsn).append(":* ");
                     }
                 }
             }
-            else
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        if(!hasIdentifier)
+        {
+            sb.append("IDLE LSN: 1-16");
+        }
+        else
+        {
+            sb.append("ACTIVE LSN");
+            for(int x = 1; x < 17; x++)
             {
-                sb.append("1-8:- ");
+                if(talkgroups[x] != 0 || radios[x] != 0)
+                {
+                    sb.append(" ").append(x);
+
+                    if(talkgroups[x] == 0)
+                    {
+                        if(radios[x] < 0)
+                        {
+                            sb.append(":(R)A"); //Radio active on channel but identifier is in a continuation message
+                        }
+                        else if(radios[x] > 0)
+                        {
+                            sb.append(":(R)").append(radios[x]); //Active radio ID for channel
+                        }
+                        else
+                        {
+                            sb.append(":"); //No radio or talkgroup active on channel
+                        }
+                    }
+                    else if(talkgroups[x] < 0)
+                    {
+                        sb.append(":(T)A"); //Talkgroup active on channel but identifier is in a continuation message
+                    }
+                    else
+                    {
+                        sb.append(":(T)").append(talkgroups[x]); //Active talkgroup ID for channel.
+                    }
+                }
             }
         }
 

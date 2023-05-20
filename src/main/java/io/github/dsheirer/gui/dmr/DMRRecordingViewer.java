@@ -165,6 +165,8 @@ public class DMRRecordingViewer extends VBox
             {
                 ioe.printStackTrace();
             }
+
+            getMessageTableView().scrollTo(0);
         }
     }
 
@@ -364,7 +366,6 @@ public class DMRRecordingViewer extends VBox
 
                 if(selected != null)
                 {
-                    mLog.info("Last Selected Directory updated to [" + selected.getParent() +"]");
                     mPreferences.put(LAST_SELECTED_DIRECTORY, selected.getParent());
                     load(selected);
                 }

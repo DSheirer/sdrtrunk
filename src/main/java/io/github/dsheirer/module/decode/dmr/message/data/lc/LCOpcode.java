@@ -46,6 +46,8 @@ public enum LCOpcode
 
     FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 0, "GROUP VOICE CHANNEL USER"),
     FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 4, "WAN GROUP VOICE CHANNEL USER"),
+    //Observed on Cap+ Multi-Site System during an encrypted voice call
+    FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER(Vendor.MOTOROLA_CAPACITY_PLUS, true, 32, "ENCRYPTED VOICE CHANNEL USER"),
     //Cap+ opcodes from https://forums.radioreference.com/threads/understanding-capacity-plus-trunking-some-more.452566/
     //FLCO 0: Group Call Maintenance
     //FLCO 3: Private Call Maintenance (TermLC)

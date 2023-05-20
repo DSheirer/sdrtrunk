@@ -72,7 +72,7 @@ public abstract class DataMessageWithLinkControl extends DataMessage
         StringBuilder sb = new StringBuilder();
         if(hasRAS())
         {
-            sb.append(" RAS:").append(getBPTCReservedBits());
+            sb.append("RAS:").append(getBPTCReservedBits()).append(" ");
         }
         sb.append(getSlotType());
         sb.append(" ").append(getLCMessage());

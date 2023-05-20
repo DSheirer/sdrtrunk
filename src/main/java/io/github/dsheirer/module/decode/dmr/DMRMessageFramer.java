@@ -396,7 +396,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //        String file = path + "20200710_053632_9600BPS_DMR_Niles_Radio_Coconino_Control.bits";
 
         //Cap+ Multi-Site 1 - Data Revert LSN1/2 with CSBKO 62 Site status
-//        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_210133_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
+        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_210133_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
 //        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_210845_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
 //        String file = path + "Texas_Dallas_Aerowave_Capacity_Plus_Multi_Site/20200716_212309_9600BPS_DMR_Aerowave_Technologies_Dallas_LCN_2.bits";
 
@@ -404,7 +404,7 @@ public class DMRMessageFramer implements Listener<Dibit>, IDMRBurstDetectListene
 //        String file = path + "Texas_Hunt_Farmers_Electric_Capacity_Plus_Multi_Site/20200714_224018_9600BPS_DMR_Farmers_Electric_Cooperative_Hunt_LCN_3.bits"; //This may have PLL mis-align issues
 
         //Cap+ Multi-Site - Dallas Unknown
-        String file = path + "Texas_Dallas_Unknown_1_Capacity_Plus_Multi_Site/20200716_211233_9600BPS_DMR_Dallas_Unk_Dallas_Unk.bits";
+//        String file = path + "Texas_Dallas_Unknown_1_Capacity_Plus_Multi_Site/20200716_211233_9600BPS_DMR_Dallas_Unk_Dallas_Unk.bits";
 
         //Hytera Short Data = Proprietary (encrypted)
 //        String file = path + "20200716_222839_9600BPS_DMR_SystemUnk_SiteUnk_Unk.bits"; //Hytera short data packets

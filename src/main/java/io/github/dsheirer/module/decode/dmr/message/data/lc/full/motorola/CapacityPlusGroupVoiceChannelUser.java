@@ -39,8 +39,8 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
     private static final int[] CAPACITY_PLUS_GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
     private static final int[] CONVENTIONAL_GROUP_ADDRESS = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
             36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47};
-    private static final int[] VOICE_CHANNEL_REPEATER = new int[]{51, 52, 53, 54};
-    private static final int[] VOICE_CHANNEL_TIMESLOT = new int[]{55};
+    private static final int[] REST_CHANNEL = new int[]{51, 52, 53, 54};
+    private static final int[] REST_CHANNEL_TIMESLOT = new int[]{55};
     private static final int[] CAPACITY_PLUS_SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
     private static final int[] CONVENTIONAL_SOURCE_ADDRESS = new int[]{48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
             60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
@@ -48,7 +48,7 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
 
     private RadioIdentifier mRadio;
     private TalkgroupIdentifier mTalkgroup;
-    private DMRLogicalChannel mVoiceChannel;
+    private DMRLogicalChannel mRestChannel;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -92,10 +92,10 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
         sb.append(" FM:").append(getRadio());
         sb.append(" TO:").append(getTalkgroup());
 
-        if(hasVoiceChannel())
+        if(hasRestChannel())
         {
-            sb.append(" ON CHANNEL:");
-            sb.append(getVoiceChannel());
+            sb.append(" REST:");
+            sb.append(getRestChannel());
         }
 
         sb.append(" ").append(getServiceOptions());
@@ -114,22 +114,22 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
     /**
      * Logical channel number (ie repeater number).
      */
-    public DMRLogicalChannel getVoiceChannel()
+    public DMRLogicalChannel getRestChannel()
     {
-        if(mVoiceChannel == null)
+        if(mRestChannel == null)
         {
-            mVoiceChannel = new DMRLogicalChannel(getVoiceChannelRepeater(), getVoiceChannelTimeslot());
+            mRestChannel = new DMRLogicalChannel(getRestChannelRepeater(), getRestChannelTimeslot());
         }
 
-        return mVoiceChannel;
+        return mRestChannel;
     }
 
     /**
      * Rest repeater number
      */
-    public int getVoiceChannelRepeater()
+    public int getRestChannelRepeater()
     {
-        return getMessage().getInt(VOICE_CHANNEL_REPEATER) + 1;
+        return getMessage().getInt(REST_CHANNEL) + 1;
     }
 
     /**
@@ -137,17 +137,17 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
      *
      * @return
      */
-    public int getVoiceChannelTimeslot()
+    public int getRestChannelTimeslot()
     {
-        return getMessage().getInt(VOICE_CHANNEL_TIMESLOT) + 1;
+        return getMessage().getInt(REST_CHANNEL_TIMESLOT) + 1;
     }
 
     /**
-     * Indicates if this message has a voice channel indicated for the call
+     * Indicates if this message has a rest channel indicated for the call
      */
-    public boolean hasVoiceChannel()
+    public boolean hasRestChannel()
     {
-        return getServiceOptions().isCapacityPlus() && getVoiceChannelRepeater() != 0;
+        return getServiceOptions().isCapacityPlus() && getRestChannelRepeater() != 0;
     }
 
     /**
@@ -199,9 +199,9 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
             mIdentifiers.add(getTalkgroup());
             mIdentifiers.add(getRadio());
 
-            if(hasVoiceChannel())
+            if(hasRestChannel())
             {
-                mIdentifiers.add(getVoiceChannel());
+                mIdentifiers.add(getRestChannel());
             }
         }
 
@@ -214,7 +214,7 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
     @Override
     public int[] getLogicalTimeslotNumbers()
     {
-        return getVoiceChannel().getLSNArray();
+        return getRestChannel().getLSNArray();
     }
 
     /**
@@ -227,9 +227,9 @@ public class CapacityPlusGroupVoiceChannelUser extends CapacityPlusVoiceChannelU
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(getVoiceChannel().getLogicalSlotNumber() == timeslotFrequency.getNumber())
+            if(getRestChannel().getLogicalSlotNumber() == timeslotFrequency.getNumber())
             {
-                getVoiceChannel().setTimeslotFrequency(timeslotFrequency);
+                getRestChannel().setTimeslotFrequency(timeslotFrequency);
             }
         }
     }
