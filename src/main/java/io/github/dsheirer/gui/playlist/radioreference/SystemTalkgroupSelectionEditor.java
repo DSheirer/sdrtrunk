@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,12 @@ import io.github.dsheirer.protocol.Protocol;
 import io.github.dsheirer.rrapi.type.System;
 import io.github.dsheirer.rrapi.type.Talkgroup;
 import io.github.dsheirer.rrapi.type.TalkgroupCategory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.animation.RotateTransition;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -70,12 +76,6 @@ import javafx.util.StringConverter;
 import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
 
 public class SystemTalkgroupSelectionEditor extends GridPane
 {
@@ -323,12 +323,19 @@ public class SystemTalkgroupSelectionEditor extends GridPane
                 }
                 else
                 {
+                    List<Talkgroup> aliasesToCreate = new ArrayList<>();
+
                     for(AliasedTalkgroup aliasedTalkgroup : mTalkgroupFilteredList)
                     {
                         if(!aliasedTalkgroup.hasAlias())
                         {
-                            createAlias(aliasedTalkgroup.getTalkgroup());
+                            aliasesToCreate.add(aliasedTalkgroup.getTalkgroup());
                         }
+                    }
+
+                    if(!aliasesToCreate.isEmpty())
+                    {
+                        createAliases(aliasesToCreate);
                     }
                 }
             });
@@ -338,24 +345,31 @@ public class SystemTalkgroupSelectionEditor extends GridPane
     }
 
     /**
-     * Creates an alias for the specified talkgroup and adds it to the currently selected alias list
-     * @param talkgroup to alias
+     * Creates an alias for each of the specified talkgroups and adds it to the currently selected alias list
+     * @param talkgroups to alias
      */
-    public void createAlias(Talkgroup talkgroup)
+    public void createAliases(List<Talkgroup> talkgroups)
     {
-        TalkgroupCategory talkgroupCategory = getTalkgroupCategory(talkgroup);
-        String group = (talkgroupCategory != null ? talkgroupCategory.getName() : null);
-        Alias alias = getRadioReferenceDecoder().createAlias(talkgroup, getCurrentSystem(),
-            getAliasListNameComboBox().getSelectionModel().getSelectedItem(), group);
+        List<Alias> createdAliases = new ArrayList<>();
 
-        if(getEncryptedAsDoNotMonitorCheckBox().selectedProperty().get() &&
-            TalkgroupEncryption.lookup(talkgroup.getEncryptionState()) == TalkgroupEncryption.FULL)
+        for(Talkgroup talkgroup: talkgroups)
         {
-            int priority = io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR;
-            alias.addAliasID(new io.github.dsheirer.alias.id.priority.Priority(priority));
+            TalkgroupCategory talkgroupCategory = getTalkgroupCategory(talkgroup);
+            String group = (talkgroupCategory != null ? talkgroupCategory.getName() : null);
+            Alias alias = getRadioReferenceDecoder().createAlias(talkgroup, getCurrentSystem(),
+                    getAliasListNameComboBox().getSelectionModel().getSelectedItem(), group);
+
+            if(getEncryptedAsDoNotMonitorCheckBox().selectedProperty().get() &&
+                    TalkgroupEncryption.lookup(talkgroup.getEncryptionState()) == TalkgroupEncryption.FULL)
+            {
+                int priority = io.github.dsheirer.alias.id.priority.Priority.DO_NOT_MONITOR;
+                alias.addAliasID(new io.github.dsheirer.alias.id.priority.Priority(priority));
+            }
+
+            createdAliases.add(alias);
         }
 
-        mPlaylistManager.getAliasModel().addAlias(alias);
+        mPlaylistManager.getAliasModel().addAliases(createdAliases);
     }
 
     /**
