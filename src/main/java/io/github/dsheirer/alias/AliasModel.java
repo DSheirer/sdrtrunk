@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,17 +23,16 @@ import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
-import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Alias Model contains all aliases and is responsible for creation and management of alias lists.  Alias lists are a
@@ -184,10 +183,8 @@ public class AliasModel
      */
     public void addAliases(List<Alias> aliases)
     {
-        for(Alias alias : aliases)
-        {
-            addAlias(alias);
-        }
+        removeAliases(aliases);
+        mAliases.addAll(aliases);
     }
 
     /**
@@ -237,6 +234,26 @@ public class AliasModel
             if(hasAliasList(alias.getAliasListName()))
             {
                 getAliasList(alias.getAliasListName()).removeAlias(alias);
+            }
+        }
+    }
+
+    /**
+     * Removes the list of aliases from this model and any alias lists that might contain each alias.
+     * @param aliases
+     */
+    public void removeAliases(List<Alias> aliases)
+    {
+        if(aliases != null && !aliases.isEmpty())
+        {
+            mAliases.removeAll(aliases);
+
+            for(Alias alias: aliases)
+            {
+                if(hasAliasList(alias.getAliasListName()))
+                {
+                    getAliasList(alias.getAliasListName()).removeAlias(alias);
+                }
             }
         }
     }

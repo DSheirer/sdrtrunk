@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,15 +19,6 @@
 
 package io.github.dsheirer.gui.playlist.alias;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Predicate;
-
-import org.controlsfx.control.textfield.TextFields;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasList;
@@ -37,6 +28,10 @@ import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.icon.Icon;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Predicate;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.value.ObservableValue;
@@ -74,6 +69,9 @@ import javafx.util.Callback;
 import jiconfont.IconCode;
 import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconNode;
+import org.controlsfx.control.textfield.TextFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Editor for aliases
@@ -532,11 +530,10 @@ public class AliasConfigurationEditor extends SplitPane
             mDeleteAliasButton.setMaxWidth(Double.MAX_VALUE);
             mDeleteAliasButton.setOnAction(event ->
             {
-
-                boolean multiple = getAliasTableView().getSelectionModel().getSelectedItems().size() > 1;
+                int count = getAliasTableView().getSelectionModel().getSelectedItems().size();
 
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
-                        "Do you want to delete the selected alias" + (multiple ? "es?" : "?"),
+                        "Do you want to delete [" + count + "] selected alias" + ((count > 1) ? "es?" : "?"),
                         ButtonType.NO, ButtonType.YES);
                 alert.setTitle("Delete Alias");
                 alert.setHeaderText("Are you sure?");
@@ -547,11 +544,7 @@ public class AliasConfigurationEditor extends SplitPane
                 if(result.get() == ButtonType.YES)
                 {
                     List<Alias> selectedAliases = new ArrayList<>(getAliasTableView().getSelectionModel().getSelectedItems());
-
-                    for(Alias selected : selectedAliases)
-                    {
-                        mPlaylistManager.getAliasModel().removeAlias(selected);
-                    }
+                    mPlaylistManager.getAliasModel().removeAliases(selectedAliases);
                 }
             });
         }
