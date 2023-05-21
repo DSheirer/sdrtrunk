@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -123,17 +123,11 @@ public class CenterFrequencyCalculator
     /**
      * Indicates if channel along with all of the other currently sourced
      * channels can fit within the tunable bandwidth.
-     *
-     */
-    /**
-     *
-     * Indicates if channel along with all of the other currently sourced
-     * channels can fit within the tunable bandwidth.
 
      * @param channel to test
      * @param tunerController that will provide the channel
      * @param channels is a current set of channels being sourced by the tuner controller
-     * @return
+     * @return true if it can tune all of the channels.
      */
     public static boolean canTune(TunerChannel channel, TunerController tunerController, SortedSet<TunerChannel> channels)
     {
@@ -149,7 +143,7 @@ public class CenterFrequencyCalculator
             {
                 SortedSet<TunerChannel> allChannels = new TreeSet<>();
 
-                for(TunerChannel tunerChannel: allChannels)
+                for(TunerChannel tunerChannel: channels)
                 {
                     if(tunerChannel != null)
                     {
