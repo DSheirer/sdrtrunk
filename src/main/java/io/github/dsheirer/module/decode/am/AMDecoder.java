@@ -29,7 +29,7 @@ import io.github.dsheirer.module.decode.analog.SquelchingAnalogDecoder;
  */
 public class AMDecoder extends SquelchingAnalogDecoder
 {
-    private static final float DEMODULATOR_GAIN = 250.0f;
+    private static final float DEMODULATOR_GAIN = 150.0f;
     private static final float SQUELCH_ALPHA_DECAY = 0.0004f;
     private static final float MINIMUM_GAIN = 0.5f;
     private static final float MAXIMUM_GAIN = 16.0f;
