@@ -428,7 +428,10 @@ public class StreamingEditor extends SplitPane
             TableColumn stateColumn = new TableColumn("Stream Status");
             stateColumn.setCellValueFactory(new PropertyValueFactory<>("broadcastState"));
 
-            mConfiguredBroadcastTableView.getColumns().addAll(enabledColumn, nameColumn, typeColumn, stateColumn);
+            TableColumn errorColumn = new TableColumn("Last Error");
+            errorColumn.setCellValueFactory(new PropertyValueFactory<>("lastBadBroadcastState"));
+
+            mConfiguredBroadcastTableView.getColumns().addAll(enabledColumn, nameColumn, typeColumn, stateColumn, errorColumn);
 
             mConfiguredBroadcastTableView.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) -> setBroadcastConfiguration(newValue));
