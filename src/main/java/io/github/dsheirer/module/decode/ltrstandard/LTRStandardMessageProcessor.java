@@ -69,7 +69,7 @@ public class LTRStandardMessageProcessor implements Listener<CorrectedBinaryMess
                 int free = binaryMessage.getInt(LTRMessage.FREE);
                 int group = binaryMessage.getInt(LTRMessage.GROUP);
 
-                if(isValidChannel(channel) && isValidChannel(home) && isValidChannel(free))
+                if(isValidChannel(channel) && isValidChannel(home) && isValidFreeChannel(free))
                 {
                     if(channel == free && group == 255)
                     {
@@ -80,7 +80,7 @@ public class LTRStandardMessageProcessor implements Listener<CorrectedBinaryMess
                         message = new Call(binaryMessage, mDirection, crc);
                     }
                 }
-                else if(channel == 31 && isValidChannel(home) && isValidChannel(free))
+                else if(channel == 31 && isValidChannel(home) && isValidFreeChannel(free))
                 {
                     message = new CallEnd(binaryMessage, mDirection, crc);
                 }
@@ -100,6 +100,14 @@ public class LTRStandardMessageProcessor implements Listener<CorrectedBinaryMess
     private boolean isValidChannel(int channel)
     {
         return (1 <= channel && channel <= 20);
+    }
+
+    /**
+     * Checks the channel (LCN) number to ensure it is in the range 1 -20
+     */
+    private boolean isValidFreeChannel(int channel)
+    {
+        return (0 <= channel && channel <= 20);
     }
 
     public void setMessageListener(Listener<IMessage> listener)

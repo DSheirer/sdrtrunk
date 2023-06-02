@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,14 @@
 package io.github.dsheirer.module.demodulate.fm;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.decimate.DecimationFilterFactory;
+import io.github.dsheirer.dsp.filter.decimate.IRealDecimationFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.real.IRealFilter;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
-import io.github.dsheirer.dsp.fm.ScalarFMDemodulator;
+import io.github.dsheirer.dsp.fm.FmDemodulatorFactory;
+import io.github.dsheirer.dsp.fm.IDemodulator;
 import io.github.dsheirer.dsp.squelch.PowerMonitor;
 import io.github.dsheirer.dsp.window.WindowType;
 import io.github.dsheirer.module.Module;
@@ -46,16 +49,17 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
         IComplexSamplesListener, Listener<ComplexSamples>, IRealBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatorModule.class);
-
+    private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
     private IRealFilter mIBasebandFilter;
     private IRealFilter mQBasebandFilter;
-    private ScalarFMDemodulator mDemodulator = new ScalarFMDemodulator();
+    private IRealDecimationFilter mIDecimationFilter;
+    private IRealDecimationFilter mQDecimationFilter;
+    private IDemodulator mDemodulator = FmDemodulatorFactory.getFmDemodulator();
     private PowerMonitor mPowerMonitor = new PowerMonitor();
     private RealResampler mResampler;
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
     private Listener<float[]> mResampledBufferListener;
     private double mChannelBandwidth;
-    private double mOutputSampleRate;
 
     /**
      * Creates an FM demodulator for the specified channel bandwidth and output sample rate.
@@ -64,10 +68,21 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
      * channel bandwidth and the demodulated output will be resampled to the desired output sample rate.  The input
      * low pass filter is constructed at runtime based on receiving a sample rate notification source event.
      */
-    public FMDemodulatorModule(double channelBandwidth, double outputSampleRate)
+    public FMDemodulatorModule(double channelBandwidth)
     {
         mChannelBandwidth = channelBandwidth;
-        mOutputSampleRate = outputSampleRate;
+    }
+
+    /**
+     * Broadcasts the demodulated audio samples to the registered listener.
+     * @param demodulatedSamples to broadcast
+     */
+    protected void broadcast(float[] demodulatedSamples)
+    {
+        if(mResampledBufferListener != null)
+        {
+            mResampledBufferListener.receive(demodulatedSamples);
+        }
     }
 
     @Override
@@ -85,25 +100,15 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     @Override
     public void dispose()
     {
-        mDemodulator.dispose();
         mDemodulator = null;
     }
 
     @Override
-    public void reset()
-    {
-        mDemodulator.reset();
-    }
-
+    public void reset() {}
     @Override
-    public void start()
-    {
-    }
-
+    public void start() {}
     @Override
-    public void stop()
-    {
-    }
+    public void stop() {}
 
     @Override
     public void setBufferListener(Listener<float[]> listener)
@@ -120,17 +125,18 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     @Override
     public void receive(ComplexSamples samples)
     {
-        if(mIBasebandFilter == null || mQBasebandFilter == null)
+        if(mIBasebandFilter == null || mIDecimationFilter == null)
         {
             throw new IllegalStateException("FM demodulator module must receive a sample rate change source " +
                     "event before it can process complex sample buffers");
         }
 
-        float[] i = mIBasebandFilter.filter(samples.i());
-        float[] q = mQBasebandFilter.filter(samples.q());
-
-        mPowerMonitor.process(i, q);
-        float[] demodulated = mDemodulator.demodulate(i, q);
+        float[] decimatedI = mIDecimationFilter.decimateReal(samples.i());
+        float[] decimatedQ = mQDecimationFilter.decimateReal(samples.q());
+        float[] filteredI = mIBasebandFilter.filter(decimatedI);
+        float[] filteredQ = mQBasebandFilter.filter(decimatedQ);
+        float[] demodulated = mDemodulator.demodulate(filteredI, filteredQ);
+        mPowerMonitor.process(filteredI, filteredQ);
 
         if(mResampler != null)
         {
@@ -162,23 +168,41 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
             {
                 double sampleRate = sourceEvent.getValue().doubleValue();
 
-                if((sampleRate < (2.0 * mChannelBandwidth)))
+                int decimationRate = 0;
+                double decimatedSampleRate = sampleRate;
+
+                if(sampleRate / 2 >= (mChannelBandwidth * 2))
                 {
-                    throw new IllegalStateException("FM Demodulator with channel bandwidth [" + mChannelBandwidth +
-                            "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth + "] - sample rate of [" +
-                            sampleRate + "] is not supported"));
+                    decimationRate = 2;
+
+                    while(sampleRate / decimationRate / 2 >= (mChannelBandwidth * 2))
+                    {
+                        decimationRate *= 2;
+                    }
                 }
 
-                mPowerMonitor.setSampleRate((int)sampleRate);
+                if(decimationRate > 0)
+                {
+                    decimatedSampleRate /= decimationRate;
+                }
 
-                double cutoff = sampleRate / 4.0;
-                int passBandStop = (int)cutoff - 500;
-                int stopBandStart = (int)cutoff + 500;
+                mIDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
+                mQDecimationFilter = DecimationFilterFactory.getRealDecimationFilter(decimationRate);
+
+                if((decimatedSampleRate < (2.0 * mChannelBandwidth)))
+                {
+                    throw new IllegalStateException("FM demodulator with channel bandwidth [" +
+                            mChannelBandwidth + "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth +
+                            "] - sample rate of [" + decimatedSampleRate + "] is not supported"));
+                }
+
+                int passBandStop = (int) (mChannelBandwidth * .8);
+                int stopBandStart = (int) mChannelBandwidth;
 
                 float[] coefficients = null;
 
                 FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                        .sampleRate(sampleRate)
+                        .sampleRate(decimatedSampleRate * 2)
                         .gridDensity(16)
                         .oddLength(true)
                         .passBandCutoff(passBandStop)
@@ -186,7 +210,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                         .passBandRipple(0.01)
                         .stopBandStart(stopBandStart)
                         .stopBandAmplitude(0.0)
-                        .stopBandRipple(0.028) //Approximately 60 dB attenuation
+                        .stopBandRipple(0.005) //Approximately 90 dB attenuation
                         .build();
 
                 try
@@ -195,27 +219,25 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                 }
                 catch(FilterDesignException fde)
                 {
-                    mLog.error("Couldn't design FM demodulator remez filter for sample rate [" + sampleRate +
+                    mLog.error("Couldn't design demodulator remez filter for sample rate [" + sampleRate +
                             "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
-                            "] - using sinc filter");
+                            "] - will proceed using sinc (low-pass) filter");
                 }
 
                 if(coefficients == null)
                 {
-                    coefficients = FilterFactory.getLowPass(sampleRate, passBandStop, stopBandStart, 60,
+                    mLog.info("Unable to use remez filter designer for sample rate [" + decimatedSampleRate +
+                            "] pass band stop [" + passBandStop +
+                            "] and stop band start [" + stopBandStart + "] - will proceed using simple low pass filter design");
+                    coefficients = FilterFactory.getLowPass(decimatedSampleRate, passBandStop, stopBandStart, 60,
                             WindowType.HAMMING, true);
                 }
 
                 mIBasebandFilter = FilterFactory.getRealFilter(coefficients);
                 mQBasebandFilter = FilterFactory.getRealFilter(coefficients);
-                mResampler = new RealResampler(sampleRate, mOutputSampleRate, 8192, 512);
 
-                mResampler.setListener(resampledBuffer -> {
-                    if(mResampledBufferListener != null)
-                    {
-                        mResampledBufferListener.receive(resampledBuffer);
-                    }
-                });
+                mResampler = new RealResampler(decimatedSampleRate, DEMODULATED_AUDIO_SAMPLE_RATE, 4192, 512);
+                mResampler.setListener(resampled -> broadcast(resampled));
             }
         }
     }

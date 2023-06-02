@@ -276,8 +276,7 @@ public class BinaryMessage extends BitSet
         }
         else
         {
-            throw new BitSetFullException("bitset is full -- contains " +
-                (mPointer + 1) + "bits");
+            throw new BitSetFullException("bitset is full -- contains [" + mPointer + "/" + size() + "] bits");
         }
     }
 

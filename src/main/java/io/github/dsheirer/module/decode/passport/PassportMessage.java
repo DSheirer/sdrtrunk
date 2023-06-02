@@ -352,6 +352,8 @@ public class PassportMessage extends Message
                 break;
         }
 
+        sb.append(" MSG:").append(getMessage().toString());
+
         return sb.toString();
     }
 

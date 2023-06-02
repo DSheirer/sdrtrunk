@@ -98,12 +98,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Factory for creating decoder modules to use in a processing chain for any supported protocols.
+ */
 public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
-
     private static final double FM_CHANNEL_BANDWIDTH = 12500.0;
-    private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
 
     /**
      * Returns a list of one primary decoder and any auxiliary decoders, as
@@ -179,6 +180,13 @@ public class DecoderFactory
         return modules;
     }
 
+    /**
+     * Creates decoder modules for APCO-25 Phase 2 decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processP25Phase2(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList) {
         modules.add(new P25P2DecoderHDQPSK((DecodeConfigP25Phase2)channel.getDecodeConfiguration()));
 
@@ -188,6 +196,13 @@ public class DecoderFactory
         modules.add(new P25P2AudioModule(userPreferences, 1, aliasList));
     }
 
+    /**
+     * Creates decoder modules for APCO-25 Phase 1 decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processP25Phase1(Channel channel, UserPreferences userPreferences, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigP25Phase1 decodeConfig) {
         DecodeConfigP25Phase1 p25Config = decodeConfig;
 
@@ -228,16 +243,30 @@ public class DecoderFactory
         }
     }
 
+    /**
+     * Creates decoder modules for Passport decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processPassport(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
         modules.add(new PassportDecoder(decodeConfig));
         modules.add(new PassportDecoderState());
         modules.add(new AudioModule(aliasList));
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
-            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
         }
     }
 
+    /**
+     * Creates decoder modules for MPT-1327 decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
         DecodeConfigMPT1327 mptConfig = decodeConfig;
         ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
@@ -255,7 +284,7 @@ public class DecoderFactory
         SourceType sourceType = channel.getSourceConfiguration().getSourceType();
         if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
         {
-            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
         }
 
         if(channelType == ChannelType.STANDARD)
@@ -280,27 +309,48 @@ public class DecoderFactory
         }
     }
 
+    /**
+     * Creates decoder modules for LTR-Net decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processLTRNet(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigLTRNet decodeConfig) {
         modules.add(new LTRNetDecoder(decodeConfig));
         modules.add(new LTRNetDecoderState());
         modules.add(new AudioModule(aliasList));
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
-            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
         }
     }
 
+    /**
+     * Creates decoder modules for LTR decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processLTRStandard(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigLTRStandard decodeConfig) {
         MessageDirection direction = decodeConfig.getMessageDirection();
-        modules.add(new LTRStandardDecoder(null, direction));
+        modules.add(new LTRStandardDecoder(direction));
         modules.add(new LTRStandardDecoderState());
         modules.add(new AudioModule(aliasList));
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
-            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+            modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
         }
     }
 
+    /**
+     * Creates decoder modules for Narrow Band FM decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processNBFM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
     {
         if(!(decodeConfig instanceof DecodeConfigNBFM))
@@ -312,9 +362,16 @@ public class DecoderFactory
         DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
         modules.add(new NBFMDecoder(decodeConfigNBFM));
         modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
-        modules.add(new AudioModule(aliasList));
+        modules.add(new AudioModule(aliasList, 0, 60000));
     }
 
+    /**
+     * Creates decoder modules for AM decoder
+     * @param channel configuration
+     * @param userPreferences reference
+     * @param modules collection to add to
+     * @param aliasList for the channel
+     */
     private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
 
         if(!(decodeConfig instanceof DecodeConfigAM))
@@ -326,7 +383,7 @@ public class DecoderFactory
         DecodeConfigAM decodeConfigAM = (DecodeConfigAM) decodeConfig;
         modules.add(new AMDecoder(decodeConfigAM));
         modules.add(new AMDecoderState(channel.getName(), decodeConfigAM));
-        modules.add(new AudioModule(aliasList));
+        modules.add(new AudioModule(aliasList, 0, 60000));
     }
 
     /**
@@ -381,7 +438,7 @@ public class DecoderFactory
     }
 
     /**
-     * Constructs a list of auxiliary decoders, as specified in the configuration
+     * Constructs a list of auxiliary decoders, as specified in the channel configuration
      *
      * @param config - auxiliary configuration
      * @return - list of auxiliary decoders

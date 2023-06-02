@@ -132,12 +132,10 @@ public enum SyncPattern
 		true, true, false, false   //1100 0xC
 	}),
 
-	/* Sync (0x158) = 1101011000 */
+	/* Sync (0x158) = 101011000 */
 	PASSPORT( new boolean[] 
 	{
-		true, 						//0001 0x1
-		false, true, false, true, 	//0101 0x5
-		true, false, false, false	//1000 0x8
+		true,false,true,false,true,true,false,false,false
 	} ),
 	
 	LTR_STANDARD_OSW( new boolean[] 

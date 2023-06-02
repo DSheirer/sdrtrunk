@@ -118,6 +118,8 @@ public class LTRStandardDecoderState extends DecoderState
                     {
                         CallEnd end = (CallEnd)message;
 
+                        mCurrentTalkgroup = null;
+
                         //Home channel is 31 for call end -- use the free channel as the call end channel
                         int repeater = end.getFree();
                         setChannelNumber(repeater);
@@ -128,13 +130,14 @@ public class LTRStandardDecoderState extends DecoderState
                                 mCurrentCallEvent.end(end.getTimestamp());
                             }
 
-                            broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
+                            broadcast(new DecoderStateEvent(this, Event.END, State.IDLE));
                         }
                     }
                     break;
                 case IDLE:
                     if(message instanceof Idle)
                     {
+                        mCurrentTalkgroup = null;
                         mLCNTracker.processCallChannel(((Idle)message).getChannel());
                     }
                     break;

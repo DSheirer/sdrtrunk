@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.module.decode.ltrnet.LTRNetDecoderInstrumented;
@@ -58,7 +61,7 @@ public class LTRNetSampleBufferChart extends LineChart
 
         mLTRNetDecoderInstrumented = decoder;
         decoder.bufferCount.addListener(new BufferChangeListener());
-        decoder.getLTRDecoder().getErrorDetector().timingError.addListener(new ErrorChangeListener());
+//        decoder.getLTRDecoder().getErrorDetector().timingError.addListener(new ErrorChangeListener());
     }
 
     public void setBuffer(boolean[] buffer)
@@ -89,7 +92,7 @@ public class LTRNetSampleBufferChart extends LineChart
         @Override
         public void changed(ObservableValue observable, Object oldValue, Object newValue)
         {
-            setBuffer(mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLine());
+//            setBuffer(mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLine());
 
             while(mSymbol.size() < 2)
             {
@@ -115,29 +118,29 @@ public class LTRNetSampleBufferChart extends LineChart
                 mSymbolSamples.add(sample);
             }
 
-            int pointer1 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLinePointer();
-            int pointer2 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLineSecondPointer();
+//            int pointer1 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLinePointer();
+//            int pointer2 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLineSecondPointer();
 
-            mSamplePoints.get(0).setXValue(pointer1);
-            mSamplePoints.get(1).setXValue(pointer2);
+//            mSamplePoints.get(0).setXValue(pointer1);
+//            mSamplePoints.get(1).setXValue(pointer2);
 
-            float samplesRemaining = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getMidSymbolSamplingPoint();
-            float samplesPerSymbol = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getSamplesPerSymbol();
+//            float samplesRemaining = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getMidSymbolSamplingPoint();
+//            float samplesPerSymbol = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getSamplesPerSymbol();
 
-            float start = pointer1 + samplesRemaining;
-            float end = start + samplesPerSymbol;
+//            float start = pointer1 + samplesRemaining;
+//            float end = start + samplesPerSymbol;
 
-            mSymbolSamples.get(0).setXValue(start);
-            mSymbolSamples.get(1).setXValue(end);
+//            mSymbolSamples.get(0).setXValue(start);
+//            mSymbolSamples.get(1).setXValue(end);
 
-            boolean symbol = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getLastSymbol();
-            int symbolStart = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getSymbolStart();
-            int symbolEnd = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getSymbolEnd();
+//            boolean symbol = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getLastSymbol();
+//            int symbolStart = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getSymbolStart();
+//            int symbolEnd = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getSymbolEnd();
 
-            mSymbol.get(0).setXValue(symbolStart);
-            mSymbol.get(0).setYValue(symbol ? 0.55f : -0.55f);
-            mSymbol.get(1).setXValue(symbolEnd);
-            mSymbol.get(1).setYValue(symbol ? 0.55f : -0.55f);
+//            mSymbol.get(0).setXValue(symbolStart);
+//            mSymbol.get(0).setYValue(symbol ? 0.55f : -0.55f);
+//            mSymbol.get(1).setXValue(symbolEnd);
+//            mSymbol.get(1).setYValue(symbol ? 0.55f : -0.55f);
         }
     }
 
@@ -152,20 +155,20 @@ public class LTRNetSampleBufferChart extends LineChart
                 mZeroCrossing.add(sample);
             }
 
-            int pointer1 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLinePointer();
-            int pointer2 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLineSecondPointer();
+//            int pointer1 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLinePointer();
+//            int pointer2 = mLTRNetDecoderInstrumented.getLTRDecoder().getSampleBuffer().getDelayLineSecondPointer();
 
-            float zeroCrossingIdeal = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getZeroCrossingIdeal();
-            float detectedZeroCrossing = zeroCrossingIdeal - ((Number)newValue).floatValue();
-
-            int reference = (zeroCrossingIdeal < pointer1 || detectedZeroCrossing < pointer1 ? pointer2 : pointer1);
-            reference--;
-
-            float start = reference - zeroCrossingIdeal;
-            float end = reference - detectedZeroCrossing;
-
-            mZeroCrossing.get(0).setXValue(start);
-            mZeroCrossing.get(1).setXValue(end);
+//            float zeroCrossingIdeal = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getZeroCrossingIdeal();
+//            float detectedZeroCrossing = zeroCrossingIdeal - ((Number)newValue).floatValue();
+//
+//            int reference = (zeroCrossingIdeal < pointer1 || detectedZeroCrossing < pointer1 ? pointer2 : pointer1);
+//            reference--;
+//
+//            float start = reference - zeroCrossingIdeal;
+//            float end = reference - detectedZeroCrossing;
+//
+//            mZeroCrossing.get(0).setXValue(start);
+//            mZeroCrossing.get(1).setXValue(end);
         }
     }
 }

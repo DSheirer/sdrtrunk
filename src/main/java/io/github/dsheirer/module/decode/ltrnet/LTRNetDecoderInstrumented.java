@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ public class LTRNetDecoderInstrumented extends LTRNetDecoder
 
     public LTRNetDecoderInstrumented(DecodeConfigLTRNet config)
     {
-        super(config, new LTRDecoderInstrumented(LTR_NET_MESSAGE_LENGTH));
+        super(config, new LTRDecoderInstrumented());
     }
 
     public LTRDecoderInstrumented getLTRDecoder()
@@ -36,9 +36,9 @@ public class LTRNetDecoderInstrumented extends LTRNetDecoder
     }
 
     @Override
-    public void receive(float[] realBuffer)
+    public void receive(float[] demodulatedSamples)
     {
-        super.receive(realBuffer);
+        super.receive(demodulatedSamples);
 
         bufferCount.setValue(bufferCount.intValue() + 1);
     }

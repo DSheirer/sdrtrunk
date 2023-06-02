@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,15 +20,21 @@ package io.github.dsheirer.module.decode.ltrnet;
 
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
-import io.github.dsheirer.dsp.fsk.LTRDecoder;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.dsp.fsk.LTRDecoder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IRealBufferListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * LTR-Net decoder
+ */
 public class LTRNetDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
+    private static final Logger mLog = LoggerFactory.getLogger(LTRNetDecoder.class);
     public static final int LTR_NET_MESSAGE_LENGTH = 40;
     protected LTRDecoder mLTRDecoder;
     private MessageFramer mLTRMessageFramer;
@@ -51,8 +57,12 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Liste
             mLTRMessageFramer = new MessageFramer(SyncPattern.LTR_STANDARD_ISW.getPattern(), LTR_NET_MESSAGE_LENGTH);
         }
 
-        mLTRDecoder.setMessageFramer(mLTRMessageFramer);
-        mLTRMessageFramer.setSyncDetectListener(mLTRDecoder);
+        mLTRDecoder.setListener(bits -> {
+            for(boolean bit: bits)
+            {
+                mLTRMessageFramer.process(bit);
+            }
+        });
         mLTRMessageProcessor = new LTRNetMessageProcessor(config.getMessageDirection());
         mLTRMessageFramer.addMessageListener(mLTRMessageProcessor);
         mLTRMessageProcessor.setMessageListener(getMessageListener());
@@ -64,7 +74,7 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Liste
      */
     public LTRNetDecoder(DecodeConfigLTRNet config)
     {
-        this(config, new LTRDecoder(LTR_NET_MESSAGE_LENGTH));
+        this(config, new LTRDecoder());
     }
 
     @Override
@@ -80,9 +90,9 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Liste
     }
 
     @Override
-    public void receive(float[] reusableFloatBuffer)
+    public void receive(float[] demodulatedSamples)
     {
-        mLTRDecoder.receive(reusableFloatBuffer);
+        mLTRDecoder.receive(demodulatedSamples);
     }
 
     @Override
