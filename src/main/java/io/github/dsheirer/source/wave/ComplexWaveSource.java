@@ -142,10 +142,11 @@ public class ComplexWaveSource extends Source implements IControllableFileSource
         if(mAutoReplay)
         {
             double sampleRate = getSampleRate();
+
             double buffersPerSecond = (sampleRate / mBufferSampleCount);
             long intervalMilliseconds = (long)(1000.0 / buffersPerSecond);
-            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(new ReplayController(mBufferSampleCount),
-                    0, intervalMilliseconds, TimeUnit.MILLISECONDS);
+            Runnable r = new ReplayController(mBufferSampleCount);
+            mReplayController = ThreadPool.SCHEDULED.scheduleAtFixedRate(r, 0, intervalMilliseconds, TimeUnit.MILLISECONDS);
         }
     }
 

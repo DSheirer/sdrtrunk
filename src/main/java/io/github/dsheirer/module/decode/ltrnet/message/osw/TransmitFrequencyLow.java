@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.ltrnet.message.osw;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.edac.CRCLTR;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.ltrnet.LtrNetMessageType;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -47,8 +46,13 @@ public class TransmitFrequencyLow extends FrequencyLow
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
+        if(!isValid())
+        {
+            sb.append("[CRC FAIL: ").append(CRCLTR.getCRCReason(mMessage, getMessageDirection())).append("] ");
+        }
         sb.append("LCN:").append(getChannel());
         sb.append(" TRANSMIT FREQUENCY:").append(getFrequency()).append(" - LOW");
+        sb.append(" MSG:").append(getMessage().toString());
         return sb.toString();
     }
 

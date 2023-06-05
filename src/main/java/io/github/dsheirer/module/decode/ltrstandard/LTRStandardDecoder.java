@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@
  */
 package io.github.dsheirer.module.decode.ltrstandard;
 
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
 import io.github.dsheirer.dsp.fsk.LTRDecoder;
@@ -27,11 +26,16 @@ import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IRealBufferListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * LTR Decoder
+ */
 public class LTRStandardDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
     public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
-
+    private static final Logger mLog = LoggerFactory.getLogger(LTRStandardDecoder.class);
     private LTRDecoder mLTRDecoder;
     private MessageFramer mLTRMessageFramer;
     private LTRStandardMessageProcessor mLTRMessageProcessor;
@@ -40,9 +44,9 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener, 
      * LTR Decoder.  Decodes unfiltered (e.g. demodulated but with no DC or
      * audio filtering) samples and produces LTR Standard messages.
      */
-    public LTRStandardDecoder(AliasList aliasList, MessageDirection direction)
+    public LTRStandardDecoder(MessageDirection direction)
     {
-        mLTRDecoder = new LTRDecoder(LTR_STANDARD_MESSAGE_LENGTH);
+        mLTRDecoder = new LTRDecoder();
 
         if(direction == MessageDirection.OSW)
         {
@@ -53,11 +57,17 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener, 
             mLTRMessageFramer = new MessageFramer(SyncPattern.LTR_STANDARD_ISW.getPattern(), LTR_STANDARD_MESSAGE_LENGTH);
         }
 
-        mLTRDecoder.setMessageFramer(mLTRMessageFramer);
-        mLTRMessageFramer.setSyncDetectListener(mLTRDecoder);
+        mLTRDecoder.setListener(symbols -> {
+            for(boolean symbol: symbols)
+            {
+                mLTRMessageFramer.process(symbol);
+            }
+        });
         mLTRMessageProcessor = new LTRStandardMessageProcessor(direction);
         mLTRMessageFramer.addMessageListener(mLTRMessageProcessor);
-        mLTRMessageProcessor.setMessageListener(getMessageListener());
+        mLTRMessageProcessor.setMessageListener(message -> {
+            getMessageListener().receive(message);
+        });
     }
 
     @Override

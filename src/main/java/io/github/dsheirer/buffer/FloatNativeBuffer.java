@@ -22,6 +22,8 @@ package io.github.dsheirer.buffer;
 import io.github.dsheirer.sample.SampleUtils;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
+
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -30,6 +32,7 @@ import java.util.Iterator;
 public class FloatNativeBuffer extends AbstractNativeBuffer
 {
     private float[] mInterleavedComplexSamples;
+    private static final int BUFFER_SIZE = 2048;
 
     /**
      * Constructs an instance
@@ -81,48 +84,51 @@ public class FloatNativeBuffer extends AbstractNativeBuffer
 
     private class ComplexSamplesIterator implements  Iterator<ComplexSamples>
     {
-        private boolean mEmpty;
+        private int mBufferPointer = 0;
 
         @Override
         public boolean hasNext()
         {
-            return !mEmpty;
+            return mBufferPointer < mInterleavedComplexSamples.length;
         }
 
         @Override
         public ComplexSamples next()
         {
-            if(mEmpty)
+            if(!hasNext())
             {
                 throw new IllegalStateException("No more samples");
             }
 
-            mEmpty = true;
-            return SampleUtils.deinterleave(mInterleavedComplexSamples, getTimestamp());
+            float[] chunk = Arrays.copyOfRange(mInterleavedComplexSamples, mBufferPointer, mBufferPointer + BUFFER_SIZE * 2);
+            mBufferPointer += BUFFER_SIZE * 2;
+
+            return SampleUtils.deinterleave(chunk, getTimestamp());
         }
     }
 
     private class InterleavedComplexSamplesIterator implements Iterator<InterleavedComplexSamples>
     {
-        private boolean mEmpty;
-
+        private int mBufferPointer = 0;
 
         @Override
         public boolean hasNext()
         {
-            return !mEmpty;
+            return mBufferPointer < mInterleavedComplexSamples.length;
         }
 
         @Override
         public InterleavedComplexSamples next()
         {
-            if(mEmpty)
+            if(!hasNext())
             {
                 throw new IllegalStateException("No more samples");
             }
 
-            mEmpty = true;
-            return new InterleavedComplexSamples(mInterleavedComplexSamples, getTimestamp());
+            float[] chunk = Arrays.copyOfRange(mInterleavedComplexSamples, mBufferPointer, mBufferPointer + BUFFER_SIZE * 2);
+            mBufferPointer += BUFFER_SIZE * 2;
+
+            return new InterleavedComplexSamples(chunk, getTimestamp());
         }
     }
 }

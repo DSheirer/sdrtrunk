@@ -1,18 +1,21 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
 package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.module.decode.ltrnet.LTRNetDecoderInstrumented;
@@ -53,7 +56,7 @@ public class ZeroCrossingErrorDetectorChart extends LineChart
         setData(observableList);
 
         mLTRNetDecoderInstrumented = decoder;
-        decoder.getLTRDecoder().getErrorDetector().timingError.addListener(new ErrorChangeListener());
+//        decoder.getLTRDecoder().getErrorDetector().timingError.addListener(new ErrorChangeListener());
         decoder.bufferCount.addListener(new ChangeListener()
         {
             @Override
@@ -84,13 +87,13 @@ public class ZeroCrossingErrorDetectorChart extends LineChart
 
     private void updateBuffer()
     {
-        boolean[] samples = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getBuffer();
-
-        for(int x = 0; x < samples.length; x++)
-        {
-            Data<Number,Number> sample = mCurrentSamples.get(x);
-            sample.setYValue(samples[x] ? 0.7f : 0.3f);
-        }
+//        boolean[] samples = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getBuffer();
+//
+//        for(int x = 0; x < samples.length; x++)
+//        {
+//            Data<Number,Number> sample = mCurrentSamples.get(x);
+//            sample.setYValue(samples[x] ? 0.7f : 0.3f);
+//        }
     }
 
     public class ErrorChangeListener implements ChangeListener
@@ -98,35 +101,35 @@ public class ZeroCrossingErrorDetectorChart extends LineChart
         @Override
         public void changed(ObservableValue observable, Object oldValue, Object newValue)
         {
-            float error = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getError();
-
-            boolean[] samples = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getBuffer();
-
-            for(int x = 0; x < samples.length; x++)
-            {
-                Data<Number,Number> sample = mPreviousSamples.get(x);
-                sample.setYValue(samples[x] ? -0.4f : -0.6f);
-            }
-
-            Data<Number,Number> ideal1 = mIdeal.get(0);
-            ideal1.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getZeroCrossingIdeal());
-            Data<Number,Number> ideal2 = mIdeal.get(1);
-            ideal2.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getZeroCrossingIdeal());
-
-            if(error == 0.0f)
-            {
-                Data<Number,Number> detected1 = mDetected.get(0);
-                detected1.setXValue(0.0f);
-                Data<Number,Number> detected2 = mDetected.get(1);
-                detected2.setXValue(0.0f);
-            }
-            else
-            {
-                Data<Number,Number> detected1 = mDetected.get(0);
-                detected1.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getDetectedZeroCrossing());
-                Data<Number,Number> detected2 = mDetected.get(1);
-                detected2.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getDetectedZeroCrossing());
-            }
+//            float error = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getError();
+//
+//            boolean[] samples = mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getBuffer();
+//
+//            for(int x = 0; x < samples.length; x++)
+//            {
+//                Data<Number,Number> sample = mPreviousSamples.get(x);
+//                sample.setYValue(samples[x] ? -0.4f : -0.6f);
+//            }
+//
+//            Data<Number,Number> ideal1 = mIdeal.get(0);
+//            ideal1.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getZeroCrossingIdeal());
+//            Data<Number,Number> ideal2 = mIdeal.get(1);
+//            ideal2.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getZeroCrossingIdeal());
+//
+//            if(error == 0.0f)
+//            {
+//                Data<Number,Number> detected1 = mDetected.get(0);
+//                detected1.setXValue(0.0f);
+//                Data<Number,Number> detected2 = mDetected.get(1);
+//                detected2.setXValue(0.0f);
+//            }
+//            else
+//            {
+//                Data<Number,Number> detected1 = mDetected.get(0);
+//                detected1.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getDetectedZeroCrossing());
+//                Data<Number,Number> detected2 = mDetected.get(1);
+//                detected2.setXValue(mLTRNetDecoderInstrumented.getLTRDecoder().getErrorDetector().getDetectedZeroCrossing());
+//            }
         }
     }
 }

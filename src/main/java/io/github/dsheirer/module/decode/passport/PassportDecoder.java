@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,17 +20,19 @@ package io.github.dsheirer.module.decode.passport;
 
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
-import io.github.dsheirer.dsp.fsk.LTRDecoder;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.dsp.fsk.LTRDecoder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IRealBufferListener;
 
+/**
+ * LTR Passport decoder
+ */
 public class PassportDecoder extends Decoder implements IRealBufferListener, Listener<float[]>
 {
     public static final int PASSPORT_MESSAGE_LENGTH = 68;
-
     private LTRDecoder mLTRDecoder;
     private MessageFramer mPassportMessageFramer;
     private PassportMessageProcessor mPassportMessageProcessor;
@@ -41,12 +43,16 @@ public class PassportDecoder extends Decoder implements IRealBufferListener, Lis
      */
     public PassportDecoder(DecodeConfiguration config)
     {
-        mLTRDecoder = new LTRDecoder(PASSPORT_MESSAGE_LENGTH);
+        mLTRDecoder = new LTRDecoder();
 
         mPassportMessageFramer = new MessageFramer(SyncPattern.PASSPORT.getPattern(), PASSPORT_MESSAGE_LENGTH);
 
-        mLTRDecoder.setMessageFramer(mPassportMessageFramer);
-        mPassportMessageFramer.setSyncDetectListener(mLTRDecoder);
+        mLTRDecoder.setListener(bits -> {
+            for(boolean bit: bits)
+            {
+                mPassportMessageFramer.process(bit);
+            }
+        });
         mPassportMessageProcessor = new PassportMessageProcessor();
         mPassportMessageFramer.addMessageListener(mPassportMessageProcessor);
         mPassportMessageProcessor.setMessageListener(getMessageListener());
