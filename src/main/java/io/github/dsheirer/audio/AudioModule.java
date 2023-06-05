@@ -43,6 +43,7 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
     private static float[] sHighPassFilterCoefficients;
+    private final boolean mAudioFilterEnable;
 
     static
     {
@@ -70,27 +71,33 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
         }
     }
 
-    private IRealFilter mHighPassFilter = FilterFactory.getRealFilter(sHighPassFilterCoefficients);
-    private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
+    private final IRealFilter mHighPassFilter = FilterFactory.getRealFilter(sHighPassFilterCoefficients);
+    private final SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private SquelchState mSquelchState = SquelchState.SQUELCH;
 
     /**
      * Creates an Audio Module.
      *
      * @param aliasList for aliasing identifiers
+     * @param timeslot for this audio module
      * @param maxAudioSegmentLength in milliseconds
+     * @param audioFilterEnable to enable or disable high-pass audio filter
      */
-    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength)
+    public AudioModule(AliasList aliasList, int timeslot, long maxAudioSegmentLength, boolean audioFilterEnable)
     {
         super(aliasList, timeslot, maxAudioSegmentLength);
+        mAudioFilterEnable = audioFilterEnable;
     }
 
     /**
      * Creates an Audio Module.
+     * @param aliasList for aliasing identifiers
+     * @param audioFilterEnable to enable or disable high-pass audio filter
      */
-    public AudioModule(AliasList aliasList)
+    public AudioModule(AliasList aliasList, boolean audioFilterEnable)
     {
         super(aliasList);
+        mAudioFilterEnable = audioFilterEnable;
     }
 
     @Override
@@ -121,7 +128,11 @@ public class AudioModule extends AbstractAudioModule implements ISquelchStateLis
     {
         if(mSquelchState == SquelchState.UNSQUELCH)
         {
-            audioBuffer = mHighPassFilter.filter(audioBuffer);
+            if(mAudioFilterEnable)
+            {
+                audioBuffer = mHighPassFilter.filter(audioBuffer);
+            }
+
             addAudio(audioBuffer);
         }
     }

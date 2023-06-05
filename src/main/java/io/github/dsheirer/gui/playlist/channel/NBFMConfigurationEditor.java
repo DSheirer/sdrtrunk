@@ -27,6 +27,7 @@ import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.source.FrequencyEditor;
 import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.analog.DecodeConfigAnalog;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
@@ -40,8 +41,6 @@ import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.manager.TunerManager;
-import java.util.ArrayList;
-import java.util.List;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
@@ -58,15 +57,15 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.text.TextAlignment;
 import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.ToggleSwitch;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Narrow-Band FM channel configuration editor
  */
 public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(NBFMConfigurationEditor.class);
     private TitledPane mAuxDecoderPane;
     private TitledPane mDecoderPane;
     private TitledPane mEventLogPane;
@@ -75,8 +74,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private TextField mTalkgroupField;
     private TextField mSquelchThresholdField;
     private ToggleSwitch mSquelchAutoTrackSwitch;
+    private ToggleSwitch mAudioFilterEnable;
     private TextFormatter<Integer> mTalkgroupTextFormatter;
-    private IntegerFormatter mSquelchTextFormatter = new IntegerFormatter((int)DbPowerMeter.DEFAULT_MINIMUM_POWER,
+    private final IntegerFormatter mSquelchTextFormatter = new IntegerFormatter((int)DbPowerMeter.DEFAULT_MINIMUM_POWER,
             (int)DbPowerMeter.DEFAULT_MAXIMUM_POWER);
     private ToggleSwitch mBasebandRecordSwitch;
     private SegmentedButton mBandwidthButton;
@@ -84,9 +84,9 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private AuxDecoderConfigurationEditor mAuxDecoderConfigurationEditor;
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
-    private TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
-    private IntegerFormatter mDecimalFormatter = new IntegerFormatter(1, 65535);
-    private HexFormatter mHexFormatter = new HexFormatter(1, 65535);
+    private final TalkgroupValueChangeListener mTalkgroupValueChangeListener = new TalkgroupValueChangeListener();
+    private final IntegerFormatter mDecimalFormatter = new IntegerFormatter(1, 65535);
+    private final HexFormatter mHexFormatter = new HexFormatter(1, 65535);
 
     /**
      * Constructs an instance
@@ -162,11 +162,14 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
             Label talkgroupLabel = new Label("Talkgroup To Assign");
             GridPane.setHalignment(talkgroupLabel, HPos.RIGHT);
-            GridPane.setConstraints(talkgroupLabel, 6, 0);
+            GridPane.setConstraints(talkgroupLabel, 0, 1);
             gridPane.getChildren().add(talkgroupLabel);
 
-            GridPane.setConstraints(getTalkgroupField(), 7, 0);
+            GridPane.setConstraints(getTalkgroupField(), 1, 1);
             gridPane.getChildren().add(getTalkgroupField());
+
+            GridPane.setConstraints(getAudioFilterEnable(), 2, 1);
+            gridPane.getChildren().add(getAudioFilterEnable());
 
             mDecoderPane.setContent(gridPane);
 
@@ -275,6 +278,22 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         return mAuxDecoderConfigurationEditor;
     }
 
+    /**
+     * Toggle switch for enable/disable the audio filtering in the audio module.
+     * @return toggle switch.
+     */
+    private ToggleSwitch getAudioFilterEnable()
+    {
+        if(mAudioFilterEnable == null)
+        {
+            mAudioFilterEnable = new ToggleSwitch("High-Pass Audio Filter");
+            mAudioFilterEnable.setTooltip(new Tooltip("High-pass filter to remove DC offset and sub-audible signalling"));
+            mAudioFilterEnable.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mAudioFilterEnable;
+    }
+
     private SegmentedButton getBandwidthButton()
     {
         if(mBandwidthButton == null)
@@ -298,31 +317,27 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             //decode configuration and we're unable to correctly set the bandwidth setting.  As a work
             //around, we'll listen for the toggles to be added and update them here.  This normally only
             //happens when we first instantiate the editor and load an item for editing the first time.
-            mBandwidthButton.getToggleGroup().getToggles().addListener(new ListChangeListener<Toggle>()
+            mBandwidthButton.getToggleGroup().getToggles().addListener((ListChangeListener<Toggle>)c ->
             {
-                @Override
-                public void onChanged(Change<? extends Toggle> c)
+                //This change event happens when the toggles are added -- we don't need to inspect the change event
+                if(getItem() != null && getItem().getDecodeConfiguration() instanceof DecodeConfigNBFM)
                 {
-                    //This change event happens when the toggles are added -- we don't need to inspect the change event
-                    if(getItem() != null && getItem().getDecodeConfiguration() instanceof DecodeConfigNBFM)
+                    //Capture current modified state so that we can reapply after adjusting control states
+                    boolean modified = modifiedProperty().get();
+
+                    DecodeConfigNBFM config = (DecodeConfigNBFM)getItem().getDecodeConfiguration();
+                    DecodeConfigNBFM.Bandwidth bandwidth = config.getBandwidth();
+                    if(bandwidth == null)
                     {
-                        //Capture current modified state so that we can reapply after adjusting control states
-                        boolean modified = modifiedProperty().get();
-
-                        DecodeConfigNBFM config = (DecodeConfigNBFM)getItem().getDecodeConfiguration();
-                        DecodeConfigNBFM.Bandwidth bandwidth = config.getBandwidth();
-                        if(bandwidth == null)
-                        {
-                            bandwidth = DecodeConfigNBFM.Bandwidth.BW_12_5;
-                        }
-
-                        for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
-                        {
-                            toggle.setSelected(toggle.getUserData() == bandwidth);
-                        }
-
-                        modifiedProperty().set(modified);
+                        bandwidth = DecodeConfigNBFM.Bandwidth.BW_12_5;
                     }
+
+                    for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
+                    {
+                        toggle.setSelected(toggle.getUserData() == bandwidth);
+                    }
+
+                    modifiedProperty().set(modified);
                 }
             });
         }
@@ -449,6 +464,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             mSquelchTextFormatter.setValue(decodeConfigNBFM.getSquelchThreshold());
             getSquelchAutoTrackSwitch().setDisable(false);
             getSquelchAutoTrackSwitch().setSelected(decodeConfigNBFM.isSquelchAutoTrack());
+            getAudioFilterEnable().setDisable(false);
+            getAudioFilterEnable().setSelected(decodeConfigNBFM.isAudioFilter());
         }
         else
         {
@@ -464,6 +481,8 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
             getSquelchThresholdField().setDisable(true);
             getSquelchAutoTrackSwitch().setDisable(true);
             getSquelchAutoTrackSwitch().setSelected(false);
+            getAudioFilterEnable().setDisable(true);
+            getAudioFilterEnable().setSelected(false);
         }
     }
 
@@ -500,6 +519,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         config.setTalkgroup(talkgroup);
         config.setSquelchThreshold(mSquelchTextFormatter.getValue());
         config.setSquelchAutoTrack(getSquelchAutoTrackSwitch().isSelected());
+        config.setAudioFilter(getAudioFilterEnable().isSelected());
         getItem().setDecodeConfiguration(config);
     }
 

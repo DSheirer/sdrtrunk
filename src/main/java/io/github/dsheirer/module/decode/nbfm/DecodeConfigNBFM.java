@@ -29,6 +29,11 @@ import io.github.dsheirer.source.tuner.channel.ChannelSpecification;
  */
 public class DecodeConfigNBFM extends DecodeConfigAnalog
 {
+    private boolean mAudioFilter = true;
+
+    /**
+     * Constructs an instance
+     */
     public DecodeConfigNBFM()
     {
     }
@@ -61,5 +66,24 @@ public class DecodeConfigNBFM extends DecodeConfigAnalog
             default:
                 throw new IllegalArgumentException("Unrecognized FM bandwidth value: " + getBandwidth());
         }
+    }
+
+    /**
+     * Indicates if the user wants the demodulated audio to be high-pass filtered.
+     * @return enable status, defaults to true.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "audioFilter")
+    public boolean isAudioFilter()
+    {
+        return mAudioFilter;
+    }
+
+    /**
+     * Sets the enabled state of high-pass filtering of the demodulated audio.
+     * @param audioFilter to true to enable high-pass filtering.
+     */
+    public void setAudioFilter(boolean audioFilter)
+    {
+        mAudioFilter = audioFilter;
     }
 }
