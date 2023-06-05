@@ -105,6 +105,7 @@ public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
     private static final double FM_CHANNEL_BANDWIDTH = 12500.0;
+    private static final boolean AUDIO_FILTER_ENABLE = true;
 
     /**
      * Returns a list of one primary decoder and any auxiliary decoders, as
@@ -246,14 +247,14 @@ public class DecoderFactory
     /**
      * Creates decoder modules for Passport decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param decodeConfig for the channel
      */
     private static void processPassport(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
         modules.add(new PassportDecoder(decodeConfig));
         modules.add(new PassportDecoderState());
-        modules.add(new AudioModule(aliasList));
+        modules.add(new AudioModule(aliasList, AUDIO_FILTER_ENABLE));
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
             modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
@@ -262,10 +263,12 @@ public class DecoderFactory
 
     /**
      * Creates decoder modules for MPT-1327 decoder
+     * @param channelMapModel to use in calculating traffic channel frequencies
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param channelType for control or traffic
+     * @param decodeConfig configuration
      */
     private static void processMPT1327(ChannelMapModel channelMapModel, Channel channel, List<Module> modules, AliasList aliasList, ChannelType channelType, DecodeConfigMPT1327 decodeConfig) {
         DecodeConfigMPT1327 mptConfig = decodeConfig;
@@ -279,7 +282,7 @@ public class DecoderFactory
         // not create a new segment if the processing chain finishes a bit after
         // actual call timeout.
         long maxAudioSegmentLengthMillis = (callTimeoutMilliseconds + 5000);
-        modules.add(new AudioModule(aliasList, AbstractAudioModule.DEFAULT_TIMESLOT, maxAudioSegmentLengthMillis));
+        modules.add(new AudioModule(aliasList, AbstractAudioModule.DEFAULT_TIMESLOT, maxAudioSegmentLengthMillis, AUDIO_FILTER_ENABLE));
 
         SourceType sourceType = channel.getSourceConfiguration().getSourceType();
         if(sourceType == SourceType.TUNER || sourceType == SourceType.TUNER_MULTIPLE_FREQUENCIES)
@@ -312,14 +315,14 @@ public class DecoderFactory
     /**
      * Creates decoder modules for LTR-Net decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param decodeConfig for the channel
      */
     private static void processLTRNet(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigLTRNet decodeConfig) {
         modules.add(new LTRNetDecoder(decodeConfig));
         modules.add(new LTRNetDecoderState());
-        modules.add(new AudioModule(aliasList));
+        modules.add(new AudioModule(aliasList, AUDIO_FILTER_ENABLE));
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
             modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
@@ -329,15 +332,15 @@ public class DecoderFactory
     /**
      * Creates decoder modules for LTR decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param decodeConfig for the channel
      */
     private static void processLTRStandard(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfigLTRStandard decodeConfig) {
         MessageDirection direction = decodeConfig.getMessageDirection();
         modules.add(new LTRStandardDecoder(direction));
         modules.add(new LTRStandardDecoderState());
-        modules.add(new AudioModule(aliasList));
+        modules.add(new AudioModule(aliasList, AUDIO_FILTER_ENABLE));
         if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
         {
             modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH));
@@ -347,9 +350,9 @@ public class DecoderFactory
     /**
      * Creates decoder modules for Narrow Band FM decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param decodeConfig for the channel
      */
     private static void processNBFM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig)
     {
@@ -362,15 +365,15 @@ public class DecoderFactory
         DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)decodeConfig;
         modules.add(new NBFMDecoder(decodeConfigNBFM));
         modules.add(new NBFMDecoderState(channel.getName(), decodeConfigNBFM));
-        modules.add(new AudioModule(aliasList, 0, 60000));
+        modules.add(new AudioModule(aliasList, 0, 60000, decodeConfigNBFM.isAudioFilter()));
     }
 
     /**
      * Creates decoder modules for AM decoder
      * @param channel configuration
-     * @param userPreferences reference
      * @param modules collection to add to
      * @param aliasList for the channel
+     * @param decodeConfig for the channel
      */
     private static void processAM(Channel channel, List<Module> modules, AliasList aliasList, DecodeConfiguration decodeConfig) {
 
@@ -383,7 +386,7 @@ public class DecoderFactory
         DecodeConfigAM decodeConfigAM = (DecodeConfigAM) decodeConfig;
         modules.add(new AMDecoder(decodeConfigAM));
         modules.add(new AMDecoderState(channel.getName(), decodeConfigAM));
-        modules.add(new AudioModule(aliasList, 0, 60000));
+        modules.add(new AudioModule(aliasList, 0, 60000, AUDIO_FILTER_ENABLE));
     }
 
     /**
@@ -575,7 +578,7 @@ public class DecoderFactory
             case P25_PHASE2:
                 return new DecodeConfigP25Phase2();
             default:
-                throw new IllegalArgumentException("DecodeConfigFactory - unknown decoder type [" + decoder.toString() + "]");
+                throw new IllegalArgumentException("DecodeConfigFactory - unknown decoder type [" + decoder + "]");
         }
     }
 
