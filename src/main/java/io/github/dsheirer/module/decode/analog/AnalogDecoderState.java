@@ -121,6 +121,7 @@ public abstract class AnalogDecoderState extends DecoderState implements ISource
             startCallEvent();
         }
 
+        getIdentifierCollection().update(getTalkgroupIdentifier());
         mDecodeEvent.update(System.currentTimeMillis());
         broadcast(mDecodeEvent);
     }

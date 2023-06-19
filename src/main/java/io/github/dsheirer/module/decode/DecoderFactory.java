@@ -39,6 +39,9 @@ import io.github.dsheirer.module.decode.am.AMDecoderState;
 import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
+import io.github.dsheirer.module.decode.dcs.DCSDecoder;
+import io.github.dsheirer.module.decode.dcs.DCSDecoderState;
+import io.github.dsheirer.module.decode.dcs.DCSMessageFilter;
 import io.github.dsheirer.module.decode.dmr.DMRDecoder;
 import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
@@ -456,6 +459,10 @@ public class DecoderFactory
             {
                 switch(auxDecoder)
                 {
+                    case DCS:
+                        modules.add(new DCSDecoder());
+                        modules.add(new DCSDecoderState());
+                        break;
                     case FLEETSYNC2:
                         modules.add(new Fleetsync2Decoder());
                         modules.add(new Fleetsync2DecoderState());
@@ -516,6 +523,9 @@ public class DecoderFactory
 
         switch(decoder)
         {
+            case DCS:
+                filters.add(new DCSMessageFilter());
+                break;
             case FLEETSYNC2:
                 filters.add(new FleetsyncMessageFilter());
                 break;

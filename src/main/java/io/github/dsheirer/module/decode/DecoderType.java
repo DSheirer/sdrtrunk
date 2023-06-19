@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.protocol.Protocol;
-
 import java.util.EnumSet;
 
 /**
@@ -39,6 +38,7 @@ public enum DecoderType
     P25_PHASE2("P25 Phase 2", "P25-2", Protocol.APCO25_PHASE2),
 
     //Auxiliary Decoders
+    DCS("Digital Coded Squelch (DCS)", "DCS", Protocol.DCS),
     FLEETSYNC2("Fleetsync II", "Fleetsync2", Protocol.FLEETSYNC),
     LJ_1200("LJ1200 173.075", "LJ1200", Protocol.LOJACK),
     MDC1200("MDC1200", "MDC1200", Protocol.MDC1200),
@@ -73,7 +73,8 @@ public enum DecoderType
      * Auxiliary decoders that operate on in-band signalling in the decoded audio channel
      */
     public static final EnumSet<DecoderType> AUX_DECODERS =
-        EnumSet.of(DecoderType.FLEETSYNC2,
+        EnumSet.of(DecoderType.DCS,
+        DecoderType.FLEETSYNC2,
         DecoderType.LJ_1200,
         DecoderType.MDC1200,
         DecoderType.TAIT_1200);
