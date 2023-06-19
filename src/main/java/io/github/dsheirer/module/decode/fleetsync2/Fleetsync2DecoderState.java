@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.fleetsync2;
 
@@ -33,13 +30,16 @@ import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.fleetsync2.identifier.FleetsyncIdentifier;
 import io.github.dsheirer.module.decode.fleetsync2.message.Fleetsync2Message;
 import io.github.dsheirer.protocol.Protocol;
-
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Fleetsync2DecoderState extends DecoderState
 {
-    private Set<FleetsyncIdentifier> mIdents = new TreeSet<>();
+    private Map<FleetsyncIdentifier,Integer> mFromIdentCountsMap = new HashMap<>();
+    private Map<FleetsyncIdentifier,Integer> mToIdentCountsMap = new HashMap<>();
 
     public Fleetsync2DecoderState()
     {
@@ -50,16 +50,6 @@ public class Fleetsync2DecoderState extends DecoderState
     public DecoderType getDecoderType()
     {
         return DecoderType.FLEETSYNC2;
-    }
-
-    /**
-     * Resets the overall decoder state and clears any accumulated event details
-     */
-    @Override
-    public void reset()
-    {
-        super.reset();
-        mIdents.clear();
     }
 
     @Override
@@ -87,8 +77,30 @@ public class Fleetsync2DecoderState extends DecoderState
 
             getIdentifierCollection().update(fleetsync.getIdentifiers());
 
-            mIdents.add(fleetsync.getFromIdentifier());
-            mIdents.add(fleetsync.getToIdentifier());
+            FleetsyncIdentifier from = fleetsync.getFromIdentifier();
+
+            if(mFromIdentCountsMap.containsKey(from))
+            {
+                mFromIdentCountsMap.put(from, mFromIdentCountsMap.get(from) + 1);
+            }
+            else
+            {
+                mFromIdentCountsMap.put(from, 1);
+            }
+
+            FleetsyncIdentifier to = fleetsync.getToIdentifier();
+
+            if(to != null)
+            {
+                if(mToIdentCountsMap.containsKey(to))
+                {
+                    mToIdentCountsMap.put(to, mToIdentCountsMap.get(to) + 1);
+                }
+                else
+                {
+                    mToIdentCountsMap.put(to, 1);
+                }
+            }
 
             switch(fleetsync.getMessageType())
             {
@@ -158,17 +170,30 @@ public class Fleetsync2DecoderState extends DecoderState
 
         sb.append("=============================\n");
         sb.append("Decoder:\tFleetsync II\n\n");
-        sb.append("Fleetsync Idents\n");
 
-        if(mIdents.isEmpty())
+        if(mFromIdentCountsMap.isEmpty() && mToIdentCountsMap.isEmpty())
         {
+            sb.append("Fleetsync Idents\n");
             sb.append("  None\n");
         }
         else
         {
+            sb.append("Fleetsync From Idents\n");
 
-            for (FleetsyncIdentifier mIdent : mIdents) {
-                sb.append("  ").append(mIdent.formatted()).append("\n");
+            List<FleetsyncIdentifier> fromIdents = new ArrayList<>(mFromIdentCountsMap.keySet());
+            Collections.sort(fromIdents);
+            for(FleetsyncIdentifier from: fromIdents)
+            {
+                sb.append("  ").append(from.formatted()).append(" - Count:").append(mFromIdentCountsMap.get(from)).append("\n");
+            }
+
+            sb.append("\nFleetsync To Idents\n");
+
+            List<FleetsyncIdentifier> toIdents = new ArrayList<>(mToIdentCountsMap.keySet());
+            Collections.sort(toIdents);
+            for(FleetsyncIdentifier to: toIdents)
+            {
+                sb.append("  ").append(to.formatted()).append(" - Count:").append(mToIdentCountsMap.get(to)).append("\n");
             }
         }
 

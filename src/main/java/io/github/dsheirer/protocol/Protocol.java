@@ -30,6 +30,7 @@ public enum Protocol
     APCO25_PHASE2("APCO-25 P2", "APCO25PHASE2", 12000),
     ARS("ARS", "ARS", 0),
     CELLOCATOR("CELLOCATOR", "CELLOCATOR", 0),
+    DCS("DCS", "DCS", 134),
     DMR("DMR", "DMR", 9600),
     FLEETSYNC("Fleetsync", "FLEETSYNC", 1200),
     IPV4("IPV4", "IPV4", 0),
