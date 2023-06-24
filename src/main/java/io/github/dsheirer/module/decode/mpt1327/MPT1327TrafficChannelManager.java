@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.mpt1327;
@@ -37,9 +36,6 @@ import io.github.dsheirer.module.decode.mpt1327.channel.MPT1327Channel;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -48,6 +44,8 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MPT1327TrafficChannelManager extends TrafficChannelManager implements IDecodeEventProvider,
     IChannelEventListener, IChannelEventProvider
@@ -160,7 +158,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
 
             for(int x = 0; x < maxTrafficChannels; x++)
             {
-                Channel trafficChannel = new Channel("TRAFFIC", Channel.ChannelType.TRAFFIC);
+                Channel trafficChannel = new Channel("T-" + parentChannel.getName(), Channel.ChannelType.TRAFFIC);
                 trafficChannel.setAliasListName(parentChannel.getAliasListName());
                 trafficChannel.setSystem(parentChannel.getSystem());
                 trafficChannel.setSite(parentChannel.getSite());
