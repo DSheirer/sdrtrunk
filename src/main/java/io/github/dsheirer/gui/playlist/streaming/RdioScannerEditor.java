@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,21 +20,16 @@
 package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
-import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerBroadcaster;
 import io.github.dsheirer.audio.broadcast.rdioscanner.RdioScannerConfiguration;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.controlsfx.control.ToggleSwitch;
 
 /**
  * RdioScanner calls API configuration editor
@@ -42,6 +37,7 @@ import org.controlsfx.control.ToggleSwitch;
 public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfiguration>
 {
     private final static Logger mLog = LoggerFactory.getLogger(RdioScannerEditor.class);
+    private static final String API_PATH = "/api/call-upload";
     private IntegerTextField mSystemIdTextField;
     private IntegerTextField mMaxAgeTextField;
     private TextField mApiKeyTextField;
@@ -71,7 +67,14 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         {
             getSystemIdTextField().set(item.getSystemID());
             getApiKeyTextField().setText(item.getApiKey());
-            getHostTextField().setText(item.getHost());
+            String url = item.getHost();
+
+            if(url != null)
+            {
+                url = url.replace(API_PATH, "");
+            }
+
+            getHostTextField().setText(url);
             getMaxAgeTextField().set((int)(item.getMaximumRecordingAge() / 1000));
         }
         else
@@ -97,7 +100,13 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
         {
             int systemID = getSystemIdTextField().get() != null ? getSystemIdTextField().get() : 0;
             getItem().setSystemID(systemID);
-            getItem().setHost(getHostTextField().getText());
+            String host = getHostTextField().getText();
+            if(host != null)
+            {
+                host = host.replace(API_PATH, "");
+                host += API_PATH;
+                getItem().setHost(host);
+            }
             getItem().setApiKey(getApiKeyTextField().getText());
             getItem().setMaximumRecordingAge(getMaxAgeTextField().get() * 1000);
         }
@@ -168,6 +177,11 @@ public class RdioScannerEditor extends AbstractBroadcastEditor<RdioScannerConfig
 
             GridPane.setConstraints(getHostTextField(), 1, row);
             mEditorPane.getChildren().add(getHostTextField());
+
+            Label apiPath = new Label("/api/call-upload");
+            GridPane.setHalignment(apiPath, HPos.LEFT);
+            GridPane.setConstraints(apiPath, 2, row);
+            mEditorPane.getChildren().add(apiPath);
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
