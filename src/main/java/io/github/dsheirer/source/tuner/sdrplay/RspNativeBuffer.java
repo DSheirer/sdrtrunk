@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@ import io.github.dsheirer.buffer.AbstractNativeBuffer;
 import io.github.dsheirer.sample.complex.ComplexSamples;
 import io.github.dsheirer.sample.complex.InterleavedComplexSamples;
 import java.util.Iterator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Native buffer implementation for RSP tuner I/Q sample buffers.
@@ -33,7 +31,6 @@ import org.slf4j.LoggerFactory;
  */
 public class RspNativeBuffer extends AbstractNativeBuffer
 {
-    private static final Logger mLog = LoggerFactory.getLogger(RspNativeBuffer.class);
     private static final float SAMPLE_TO_FLOAT = 1.0f / 32768.0f;
     private short[] mISamples;
     private short[] mQSamples;

@@ -34,6 +34,7 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.EventType;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.GainCallbackParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.PowerOverloadCallbackParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.RspDuoModeCallbackParameters;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +49,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     protected static final long MAXIMUM_FREQUENCY = 2_000_000_000;
     protected static final int MIDDLE_UNUSABLE_BANDWIDTH = 0;
     private I mControlRsp;
+    private RspNativeBufferFactory mNativeBufferFactory = new RspNativeBufferFactory(RspSampleRate.RATE_8_000);
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -116,9 +118,15 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
     public void processStream(short[] inphase, short[] quadrature,
                               StreamCallbackParameters parameters, boolean reset)
     {
-        //RSP I/Q sample buffers are small and don't currently get fragmented by the RspNativeBuffer, so we don't
-        //calculate the sub-buffer samples per millisecond value -- just use a constant value of 0.
-        mNativeBufferBroadcaster.broadcast(new RspNativeBuffer(inphase, quadrature, System.currentTimeMillis(), 0.0f));
+        //The native buffer factory repackages the samples into buffers with the largest power-of-2 length that is
+        //smaller than the incoming buffer length and no smaller than 128 to ensure that down-stream vector optimized
+        //functions can process the data.
+        List<RspNativeBuffer> buffers = mNativeBufferFactory.get(inphase, quadrature, System.currentTimeMillis());
+
+        for(RspNativeBuffer buffer: buffers)
+        {
+            mNativeBufferBroadcaster.broadcast(buffer);
+        }
 
         if(reset)
         {
@@ -272,6 +280,7 @@ public abstract class RspTunerController<I extends IControlRsp> extends TunerCon
 
         //Update the usable bandwidth based on the sample rate and filtered bandwidth
         setUsableBandwidthPercentage(rspSampleRate.getUsableBandwidth());
+        mNativeBufferFactory.setSampleRate(rspSampleRate);
     }
 
     @Override
