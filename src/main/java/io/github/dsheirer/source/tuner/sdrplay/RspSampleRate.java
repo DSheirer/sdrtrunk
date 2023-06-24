@@ -157,6 +157,15 @@ public enum RspSampleRate
     }
 
     /**
+     * Number of samples per millisecond.
+     * @return samples per millisecond.
+     */
+    public float getSamplesPerMillisecond()
+    {
+        return getEffectiveSampleRate() / 1000.0f;
+    }
+
+    /**
      * Bandwidth entry
      */
     public Bandwidth getBandwidth()
