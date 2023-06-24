@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,9 +55,6 @@ import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfigTunerMultipleFrequency;
 import io.github.dsheirer.source.tuner.channel.rotation.DisableChannelRotationMonitorRequest;
 import io.github.dsheirer.source.tuner.channel.rotation.FrequencyLockChangeRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,6 +63,8 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Monitors channel grant and channel grant update messages to allocate traffic channels to capture
@@ -165,7 +164,7 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 {
                     for(int x = 0; x < maxTrafficChannels; x++)
                     {
-                        Channel trafficChannel = new Channel("TRAFFIC", ChannelType.TRAFFIC);
+                        Channel trafficChannel = new Channel("T-" + mParentChannel.getName(), ChannelType.TRAFFIC);
                         trafficChannel.setAliasListName(mParentChannel.getAliasListName());
                         trafficChannel.setSystem(mParentChannel.getSystem());
                         trafficChannel.setSite(mParentChannel.getSite());
