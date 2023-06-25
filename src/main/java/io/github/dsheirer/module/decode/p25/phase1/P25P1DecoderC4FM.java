@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -60,6 +60,20 @@ public class P25P1DecoderC4FM extends P25P1Decoder
     {
         super(4800.0);
         setSampleRate(25000.0);
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+        mQPSKDemodulator.start();
+    }
+
+    @Override
+    public void stop()
+    {
+        super.stop();
+        mQPSKDemodulator.stop();
     }
 
     public void setSampleRate(double sampleRate)

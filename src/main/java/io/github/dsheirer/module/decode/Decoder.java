@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,11 +23,14 @@ import io.github.dsheirer.message.IMessageProvider;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 
+/**
+ * Base decoder class.
+ */
 public abstract class Decoder extends Module implements IMessageProvider
 {
-    /* This has to be a broadcaster in order for references to persist */
     private Listener<IMessage> mMessageDistributor = new MessageDistributor();
     protected Listener<IMessage> mMessageListener;
+    private boolean mRunning;
 
     /**
      * Decoder - parent class for all decoders, demodulators and components.
@@ -36,14 +39,29 @@ public abstract class Decoder extends Module implements IMessageProvider
     {
     }
 
+    /**
+     * Starts this decoder and sets the running flag to true.
+     */
     public void start()
     {
-        //no-op
+        mRunning = true;
     }
 
+    /**
+     * Stops this decoder and sets the running flag to false.
+     */
     public void stop()
     {
-        //no-op
+        mRunning = false;
+    }
+
+    /**
+     * Indicates if this decoder is currently started and in a running state.
+     * @return true if running or false if not.
+     */
+    public boolean isRunning()
+    {
+        return mRunning;
     }
 
     public void reset()
