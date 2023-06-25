@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -65,6 +65,27 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
         super(6000.0);
         setSampleRate(25000.0);
         mDecodeConfigP25Phase2 = decodeConfigP25Phase2;
+    }
+
+    @Override
+    public void start()
+    {
+        super.start();
+        mQPSKDemodulator.start();
+
+        //Refresh the scramble parameters each time we start in case they change
+        if(mDecodeConfigP25Phase2 != null && mDecodeConfigP25Phase2.getScrambleParameters() != null &&
+                !mDecodeConfigP25Phase2.isAutoDetectScrambleParameters())
+        {
+            mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
+        }
+    }
+
+    @Override
+    public void stop()
+    {
+        super.stop();
+        mQPSKDemodulator.stop();
     }
 
     public void setSampleRate(double sampleRate)
@@ -186,19 +207,6 @@ public class P25P2DecoderHDQPSK extends P25P2Decoder implements IdentifierUpdate
     public void reset()
     {
         mCostasLoop.reset();
-    }
-
-    @Override
-    public void start()
-    {
-        super.start();
-
-        //Refresh the scramble parameters each time we start in case they change
-        if(mDecodeConfigP25Phase2 != null && mDecodeConfigP25Phase2.getScrambleParameters() != null &&
-            !mDecodeConfigP25Phase2.isAutoDetectScrambleParameters())
-        {
-            mMessageFramer.setScrambleParameters(mDecodeConfigP25Phase2.getScrambleParameters());
-        }
     }
 
     @Override

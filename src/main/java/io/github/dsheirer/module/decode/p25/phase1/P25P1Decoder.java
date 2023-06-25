@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@ import io.github.dsheirer.sample.complex.IComplexSamplesListener;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
-
 import java.nio.ByteBuffer;
 
 public abstract class P25P1Decoder extends FeedbackDecoder implements ISourceEventListener, ISourceEventProvider,
@@ -164,24 +163,6 @@ public abstract class P25P1Decoder extends FeedbackDecoder implements ISourceEve
     public Listener<ComplexSamples> getComplexSamplesListener()
     {
         return P25P1Decoder.this;
-    }
-
-    /**
-     * Starts the decoder
-     */
-    @Override
-    public void start()
-    {
-        //No-op
-    }
-
-    /**
-     * Stops the decoder
-     */
-    @Override
-    public void stop()
-    {
-        //No-op
     }
 
     @Override

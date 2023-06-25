@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ public abstract class PSKDemodulator<T> implements ComplexSampleListener
     private IPhaseLockedLoop mPLL;
     private Complex mReceivedSample = new Complex(0, 0);
     private Listener<T> mSymbolListener;
+    private boolean mRunning;
 
     /**
      * Abstract Phase Shift Keyed (PSK) demodulator
@@ -40,6 +41,31 @@ public abstract class PSKDemodulator<T> implements ComplexSampleListener
     {
         mInterpolatingSampleBuffer = interpolatingSampleBuffer;
         mPLL = phaseLockedLoop;
+    }
+
+    /**
+     * Starts this decoder and sets the running flag to true
+     */
+    public void start()
+    {
+        mRunning = true;
+    }
+
+    /**
+     * Stops this decoder and sets the running flag to false.
+     */
+    public void stop()
+    {
+        mRunning = false;
+    }
+
+    /**
+     * Indicates if this demodulator is running and capable of processing samples
+     * @return true if running
+     */
+    public boolean isRunning()
+    {
+        return mRunning;
     }
 
     /**
@@ -90,7 +116,10 @@ public abstract class PSKDemodulator<T> implements ComplexSampleListener
 
         for(int x = 0; x < i.length; x++)
         {
-            receive(i[x], q[x]);
+            if(isRunning())
+            {
+                receive(i[x], q[x]);
+            }
         }
     }
 
