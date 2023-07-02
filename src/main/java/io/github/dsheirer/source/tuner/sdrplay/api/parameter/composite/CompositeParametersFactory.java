@@ -20,8 +20,8 @@
 package io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite;
 
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 
 /**
  * Creates a composite parameters instance for a device type
@@ -32,27 +32,27 @@ public class CompositeParametersFactory
      * Creates a composite parameters instance for the specified device type
      * @param deviceType to create
      * @param memorySegment of foreign memory structure for the composite parameters
-     * @param memorySession to allocate additional memory structures
+     * @param arena to allocate additional memory structures
      * @return instance
      */
-    public static CompositeParameters create(DeviceType deviceType, MemorySegment memorySegment, MemorySession memorySession)
+    public static CompositeParameters create(DeviceType deviceType, MemorySegment memorySegment, Arena arena)
     {
         switch(deviceType)
         {
             case RSP1 -> {
-                return new Rsp1CompositeParameters(memorySegment, memorySession);
+                return new Rsp1CompositeParameters(memorySegment, arena);
             }
             case RSP1A -> {
-                return new Rsp1aCompositeParameters(memorySegment, memorySession);
+                return new Rsp1aCompositeParameters(memorySegment, arena);
             }
             case RSP2 -> {
-                return new Rsp2CompositeParameters(memorySegment, memorySession);
+                return new Rsp2CompositeParameters(memorySegment, arena);
             }
             case RSPduo -> {
-                return new RspDuoCompositeParameters(memorySegment, memorySession);
+                return new RspDuoCompositeParameters(memorySegment, arena);
             }
             case RSPdx -> {
-                return new RspDxCompositeParameters(memorySegment, memorySession);
+                return new RspDxCompositeParameters(memorySegment, arena);
             }
         }
 

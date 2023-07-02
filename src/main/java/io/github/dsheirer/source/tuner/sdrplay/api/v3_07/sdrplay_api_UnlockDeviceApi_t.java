@@ -21,21 +21,24 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.*;
+
+/**
+ * {@snippet :
+ * enum  (*sdrplay_api_UnlockDeviceApi_t)();
+ * }
+ */
 public interface sdrplay_api_UnlockDeviceApi_t {
 
     int apply();
-    static MemorySegment allocate(sdrplay_api_UnlockDeviceApi_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_UnlockDeviceApi_t.class, fi, constants$2.sdrplay_api_UnlockDeviceApi_t$FUNC, session);
+    static MemorySegment allocate(sdrplay_api_UnlockDeviceApi_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$2.sdrplay_api_UnlockDeviceApi_t_UP$MH, fi, constants$2.sdrplay_api_UnlockDeviceApi_t$FUNC, scope);
     }
-    static sdrplay_api_UnlockDeviceApi_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
+    static sdrplay_api_UnlockDeviceApi_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
         return () -> {
             try {
-                return (int)constants$2.sdrplay_api_UnlockDeviceApi_t$MH.invokeExact((Addressable)symbol);
+                return (int)constants$2.sdrplay_api_UnlockDeviceApi_t_DOWN$MH.invokeExact(symbol);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

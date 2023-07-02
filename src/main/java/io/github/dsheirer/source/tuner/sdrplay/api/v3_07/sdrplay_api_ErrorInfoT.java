@@ -21,19 +21,29 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     char file[256];
+ *     char function[256];
+ *     int line;
+ *     char message[1024];
+ * };
+ * }
+ */
 public class sdrplay_api_ErrorInfoT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         MemoryLayout.sequenceLayout(256, Constants$root.C_CHAR$LAYOUT).withName("file"),
         MemoryLayout.sequenceLayout(256, Constants$root.C_CHAR$LAYOUT).withName("function"),
-        Constants$root.C_LONG$LAYOUT.withName("line"),
+        Constants$root.C_INT$LAYOUT.withName("line"),
         MemoryLayout.sequenceLayout(1024, Constants$root.C_CHAR$LAYOUT).withName("message")
     );
     public static MemoryLayout $LAYOUT() {
@@ -49,10 +59,22 @@ public class sdrplay_api_ErrorInfoT {
     public static VarHandle line$VH() {
         return sdrplay_api_ErrorInfoT.line$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int line;
+     * }
+     */
     public static int line$get(MemorySegment seg) {
         return (int)sdrplay_api_ErrorInfoT.line$VH.get(seg);
     }
-    public static void line$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int line;
+     * }
+     */
+    public static void line$set(MemorySegment seg, int x) {
         sdrplay_api_ErrorInfoT.line$VH.set(seg, x);
     }
     public static int line$get(MemorySegment seg, long index) {
@@ -66,10 +88,10 @@ public class sdrplay_api_ErrorInfoT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

@@ -22,9 +22,8 @@ package io.github.dsheirer.source.tuner.sdrplay.api.callback;
 import io.github.dsheirer.source.tuner.sdrplay.api.util.Flag;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_StreamCallback_t;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_StreamCbParamsT;
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.ValueLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,25 +35,24 @@ import org.slf4j.LoggerFactory;
 public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
 {
     private static final Logger mLog = LoggerFactory.getLogger(StreamCallbackAdapter.class);
-    private MemorySession mMemorySession;
+    private Arena mArena;
     private IStreamListener mStreamListener;
     private IStreamCallbackListener mStreamCallbackListener;
 
     /**
      * Constructs an instance of the callback implementation
-     * @param memorySession for defining new foreign memory segments
+     * @param arena for defining new foreign memory segments
      * @param streamListener to receive transferred I/Q samples and event details
      * @param listener to receive callback parameters
      */
-    public StreamCallbackAdapter(MemorySession memorySession, IStreamListener streamListener,
-                                 IStreamCallbackListener listener)
+    public StreamCallbackAdapter(Arena arena, IStreamListener streamListener, IStreamCallbackListener listener)
     {
-        if(memorySession == null)
+        if(arena == null)
         {
-            throw new IllegalArgumentException("Resource scope must be non-null");
+            throw new IllegalArgumentException("Arena must be non-null");
         }
 
-        mMemorySession = memorySession;
+        mArena = arena;
         mStreamCallbackListener = listener;
         setListener(streamListener);
     }
@@ -78,14 +76,14 @@ public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
      * @param deviceContext of the device that sourced the samples
      */
     @Override
-    public void apply(MemoryAddress iSamplesPointer, MemoryAddress qSamplesPointer, MemoryAddress parametersPointer,
-                      int sampleCount, int reset, MemoryAddress deviceContext)
+    public void apply(MemorySegment iSamplesPointer, MemorySegment qSamplesPointer, MemorySegment parametersPointer,
+                      int sampleCount, int reset, MemorySegment deviceContext)
     {
         if(mStreamListener != null || mStreamCallbackListener != null)
         {
             //Translate the callback parameters pointer to a memory segment and re-construct the parameters as a Java object
             StreamCallbackParameters parameters = new StreamCallbackParameters(sdrplay_api_StreamCbParamsT
-                    .ofAddress(parametersPointer, mMemorySession));
+                    .ofAddress(parametersPointer, mArena.scope()));
 
             if(mStreamCallbackListener != null)
             {
@@ -96,8 +94,8 @@ public class StreamCallbackAdapter implements sdrplay_api_StreamCallback_t
             {
                 //Allocate memory segments from I/Q pointers, transfer from native to JVM array, and send to listener
                 long arrayByteSize = ValueLayout.JAVA_SHORT.byteSize() * sampleCount;
-                MemorySegment iSamples = MemorySegment.ofAddress(iSamplesPointer, arrayByteSize, mMemorySession);
-                MemorySegment qSamples = MemorySegment.ofAddress(qSamplesPointer, arrayByteSize, mMemorySession);
+                MemorySegment iSamples = MemorySegment.ofAddress(iSamplesPointer.address(), arrayByteSize, mArena.scope());
+                MemorySegment qSamples = MemorySegment.ofAddress(qSamplesPointer.address(), arrayByteSize, mArena.scope());
                 short[] i = iSamples.toArray(ValueLayout.JAVA_SHORT);
                 short[] q = qSamples.toArray(ValueLayout.JAVA_SHORT);
                 mStreamListener.processStream(i, q, parameters, Flag.evaluate(reset));

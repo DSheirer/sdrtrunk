@@ -21,21 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.SegmentScope;
+
+/**
+ * {@snippet :
+ * enum  (*sdrplay_api_ReleaseDevice_t)(struct * device);
+ * }
+ */
 public interface sdrplay_api_ReleaseDevice_t {
 
-    int apply(java.lang.foreign.MemoryAddress device);
-    static MemorySegment allocate(sdrplay_api_ReleaseDevice_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_ReleaseDevice_t.class, fi, constants$3.sdrplay_api_ReleaseDevice_t$FUNC, session);
+    int apply(java.lang.foreign.MemorySegment dev);
+    static MemorySegment allocate(sdrplay_api_ReleaseDevice_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$3.sdrplay_api_ReleaseDevice_t_UP$MH, fi, constants$3.sdrplay_api_ReleaseDevice_t$FUNC, scope);
     }
-    static sdrplay_api_ReleaseDevice_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
-        return (java.lang.foreign.MemoryAddress _device) -> {
+    static sdrplay_api_ReleaseDevice_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
+        return (java.lang.foreign.MemorySegment _dev) -> {
             try {
-                return (int)constants$3.sdrplay_api_ReleaseDevice_t$MH.invokeExact((Addressable)symbol, (java.lang.foreign.Addressable)_device);
+                return (int)constants$3.sdrplay_api_ReleaseDevice_t_DOWN$MH.invokeExact(symbol, _dev);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

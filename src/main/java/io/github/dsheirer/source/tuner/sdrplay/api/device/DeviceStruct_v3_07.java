@@ -20,7 +20,6 @@
 package io.github.dsheirer.source.tuner.sdrplay.api.device;
 
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceT;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
 
 /**
@@ -92,7 +91,7 @@ public class DeviceStruct_v3_07 implements IDeviceStruct
         sdrplay_api_DeviceT.rspDuoSampleFreq$set(getDeviceMemorySegment(), frequency);
     }
 
-    @Override public MemoryAddress getDeviceHandle()
+    @Override public MemorySegment getDeviceHandle()
     {
         return sdrplay_api_DeviceT.dev$get(getDeviceMemorySegment());
     }

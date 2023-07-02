@@ -24,9 +24,8 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.EventParamete
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.event.EventType;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_EventCallback_t;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_EventParamsT;
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,22 +37,22 @@ public class DeviceEventAdapter implements sdrplay_api_EventCallback_t
 {
     private static final Logger mLog = LoggerFactory.getLogger(DeviceEventAdapter.class);
 
-    private MemorySession mMemorySession;
+    private Arena mArena;
     private IDeviceEventListener mDeviceEventListener;
 
     /**
      * Constructs an instance.
-     * @param memorySession to use in creating foreign memory segments to access foreign structures.
+     * @param arena to use in creating foreign memory segments to access foreign structures.
      * @param listener to receive translated device events.
      */
-    public DeviceEventAdapter(MemorySession memorySession, IDeviceEventListener listener)
+    public DeviceEventAdapter(Arena arena, IDeviceEventListener listener)
     {
-        if(memorySession == null)
+        if(arena == null)
         {
             throw new IllegalArgumentException("Resource scope must be non-null");
         }
 
-        mMemorySession = memorySession;
+        mArena = arena;
 
         setListener(listener);
     }
@@ -73,10 +72,10 @@ public class DeviceEventAdapter implements sdrplay_api_EventCallback_t
     }
 
     @Override
-    public void apply(int eventTypeId, int tunerSelectId, MemoryAddress eventParametersPointer,
-                      MemoryAddress callbackContext)
+    public void apply(int eventTypeId, int tunerSelectId, MemorySegment eventParametersPointer,
+                      MemorySegment callbackContext)
     {
-        MemorySegment memorySegment = sdrplay_api_EventParamsT.ofAddress(eventParametersPointer, mMemorySession);
+        MemorySegment memorySegment = sdrplay_api_EventParamsT.ofAddress(eventParametersPointer, mArena.scope());
         EventType eventType = EventType.fromValue(eventTypeId);
         TunerSelect tunerSelect = TunerSelect.fromValue(tunerSelectId);
 

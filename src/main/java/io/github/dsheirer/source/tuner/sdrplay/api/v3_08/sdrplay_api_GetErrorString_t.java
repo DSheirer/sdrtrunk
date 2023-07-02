@@ -21,21 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.SegmentScope;
+
+/**
+ * {@snippet :
+ * char* (*sdrplay_api_GetErrorString_t)(enum  err);
+ * }
+ */
 public interface sdrplay_api_GetErrorString_t {
 
-    java.lang.foreign.Addressable apply(int err);
-    static MemorySegment allocate(sdrplay_api_GetErrorString_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_GetErrorString_t.class, fi, constants$3.sdrplay_api_GetErrorString_t$FUNC, session);
+    java.lang.foreign.MemorySegment apply(int err);
+    static MemorySegment allocate(sdrplay_api_GetErrorString_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$3.sdrplay_api_GetErrorString_t_UP$MH, fi, constants$3.sdrplay_api_GetErrorString_t$FUNC, scope);
     }
-    static sdrplay_api_GetErrorString_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
+    static sdrplay_api_GetErrorString_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
         return (int _err) -> {
             try {
-                return (java.lang.foreign.Addressable)(java.lang.foreign.MemoryAddress)constants$3.sdrplay_api_GetErrorString_t$MH.invokeExact((Addressable)symbol, _err);
+                return (java.lang.foreign.MemorySegment)constants$3.sdrplay_api_GetErrorString_t_DOWN$MH.invokeExact(symbol, _err);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

@@ -21,17 +21,24 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     sdrplay_api_RspDuoModeCbEventIdT modeChangeType;
+ * };
+ * }
+ */
 public class sdrplay_api_RspDuoModeCbParamT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("modeChangeType")
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("modeChangeType")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_RspDuoModeCbParamT.$struct$LAYOUT;
@@ -40,10 +47,22 @@ public class sdrplay_api_RspDuoModeCbParamT {
     public static VarHandle modeChangeType$VH() {
         return sdrplay_api_RspDuoModeCbParamT.modeChangeType$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_RspDuoModeCbEventIdT modeChangeType;
+     * }
+     */
     public static int modeChangeType$get(MemorySegment seg) {
         return (int)sdrplay_api_RspDuoModeCbParamT.modeChangeType$VH.get(seg);
     }
-    public static void modeChangeType$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_RspDuoModeCbEventIdT modeChangeType;
+     * }
+     */
+    public static void modeChangeType$set(MemorySegment seg, int x) {
         sdrplay_api_RspDuoModeCbParamT.modeChangeType$VH.set(seg, x);
     }
     public static int modeChangeType$get(MemorySegment seg, long index) {
@@ -54,10 +73,10 @@ public class sdrplay_api_RspDuoModeCbParamT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

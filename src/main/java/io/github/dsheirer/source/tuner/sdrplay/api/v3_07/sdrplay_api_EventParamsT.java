@@ -21,25 +21,34 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.UnionLayout;
+
+/**
+ * {@snippet :
+ * union {
+ *     sdrplay_api_GainCbParamT gainParams;
+ *     sdrplay_api_PowerOverloadCbParamT powerOverloadParams;
+ *     sdrplay_api_RspDuoModeCbParamT rspDuoModeParams;
+ * };
+ * }
+ */
 public class sdrplay_api_EventParamsT {
 
-    static final  GroupLayout $union$LAYOUT = MemoryLayout.unionLayout(
+    static final UnionLayout $union$LAYOUT = MemoryLayout.unionLayout(
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("gRdB"),
-            Constants$root.C_LONG$LAYOUT.withName("lnaGRdB"),
+            Constants$root.C_INT$LAYOUT.withName("gRdB"),
+            Constants$root.C_INT$LAYOUT.withName("lnaGRdB"),
             Constants$root.C_DOUBLE$LAYOUT.withName("currGain")
         ).withName("gainParams"),
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("powerOverloadChangeType")
+            Constants$root.C_INT$LAYOUT.withName("powerOverloadChangeType")
         ).withName("powerOverloadParams"),
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("modeChangeType")
+            Constants$root.C_INT$LAYOUT.withName("modeChangeType")
         ).withName("rspDuoModeParams")
     );
     public static MemoryLayout $LAYOUT() {
@@ -56,10 +65,10 @@ public class sdrplay_api_EventParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

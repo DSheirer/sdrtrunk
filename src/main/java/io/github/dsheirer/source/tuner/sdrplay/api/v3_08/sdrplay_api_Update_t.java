@@ -21,21 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.SegmentScope;
+
+/**
+ * {@snippet :
+ * enum  (*sdrplay_api_Update_t)(void* dev,enum  tuner,enum  reasonForUpdate,enum  reasonForUpdateExt1);
+ * }
+ */
 public interface sdrplay_api_Update_t {
 
-    int apply(java.lang.foreign.MemoryAddress dev, int tuner, int reasonForUpdate, int reasonForUpdateExt1);
-    static MemorySegment allocate(sdrplay_api_Update_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_Update_t.class, fi, constants$5.sdrplay_api_Update_t$FUNC, session);
+    int apply(java.lang.foreign.MemorySegment dev, int tuner, int reasonForUpdate, int reasonForUpdateExt1);
+    static MemorySegment allocate(sdrplay_api_Update_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$5.sdrplay_api_Update_t_UP$MH, fi, constants$5.sdrplay_api_Update_t$FUNC, scope);
     }
-    static sdrplay_api_Update_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
-        return (java.lang.foreign.MemoryAddress _dev, int _tuner, int _reasonForUpdate, int _reasonForUpdateExt1) -> {
+    static sdrplay_api_Update_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
+        return (java.lang.foreign.MemorySegment _dev, int _tuner, int _reasonForUpdate, int _reasonForUpdateExt1) -> {
             try {
-                return (int)constants$5.sdrplay_api_Update_t$MH.invokeExact((Addressable)symbol, (java.lang.foreign.Addressable)_dev, _tuner, _reasonForUpdate, _reasonForUpdateExt1);
+                return (int)constants$5.sdrplay_api_Update_t_DOWN$MH.invokeExact(symbol, _dev, _tuner, _reasonForUpdate, _reasonForUpdateExt1);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

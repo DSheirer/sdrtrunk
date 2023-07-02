@@ -21,17 +21,24 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     int extRefOutputEn;
+ * };
+ * }
+ */
 public class sdrplay_api_RspDuoParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("extRefOutputEn")
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("extRefOutputEn")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_RspDuoParamsT.$struct$LAYOUT;
@@ -40,10 +47,22 @@ public class sdrplay_api_RspDuoParamsT {
     public static VarHandle extRefOutputEn$VH() {
         return sdrplay_api_RspDuoParamsT.extRefOutputEn$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int extRefOutputEn;
+     * }
+     */
     public static int extRefOutputEn$get(MemorySegment seg) {
         return (int)sdrplay_api_RspDuoParamsT.extRefOutputEn$VH.get(seg);
     }
-    public static void extRefOutputEn$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int extRefOutputEn;
+     * }
+     */
+    public static void extRefOutputEn$set(MemorySegment seg, int x) {
         sdrplay_api_RspDuoParamsT.extRefOutputEn$VH.set(seg, x);
     }
     public static int extRefOutputEn$get(MemorySegment seg, long index) {
@@ -54,10 +73,10 @@ public class sdrplay_api_RspDuoParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

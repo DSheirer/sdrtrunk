@@ -21,20 +21,31 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned char hdrEnable;
+ *     unsigned char biasTEnable;
+ *     sdrplay_api_RspDx_AntennaSelectT antennaSel;
+ *     unsigned char rfNotchEnable;
+ *     unsigned char rfDabNotchEnable;
+ * };
+ * }
+ */
 public class sdrplay_api_RspDxParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         Constants$root.C_CHAR$LAYOUT.withName("hdrEnable"),
         Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
         MemoryLayout.paddingLayout(16),
-        Constants$root.C_LONG$LAYOUT.withName("antennaSel"),
+        Constants$root.C_INT$LAYOUT.withName("antennaSel"),
         Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
         Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
         MemoryLayout.paddingLayout(16)
@@ -46,10 +57,22 @@ public class sdrplay_api_RspDxParamsT {
     public static VarHandle hdrEnable$VH() {
         return sdrplay_api_RspDxParamsT.hdrEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char hdrEnable;
+     * }
+     */
     public static byte hdrEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDxParamsT.hdrEnable$VH.get(seg);
     }
-    public static void hdrEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char hdrEnable;
+     * }
+     */
+    public static void hdrEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDxParamsT.hdrEnable$VH.set(seg, x);
     }
     public static byte hdrEnable$get(MemorySegment seg, long index) {
@@ -62,10 +85,22 @@ public class sdrplay_api_RspDxParamsT {
     public static VarHandle biasTEnable$VH() {
         return sdrplay_api_RspDxParamsT.biasTEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char biasTEnable;
+     * }
+     */
     public static byte biasTEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDxParamsT.biasTEnable$VH.get(seg);
     }
-    public static void biasTEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char biasTEnable;
+     * }
+     */
+    public static void biasTEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDxParamsT.biasTEnable$VH.set(seg, x);
     }
     public static byte biasTEnable$get(MemorySegment seg, long index) {
@@ -78,10 +113,22 @@ public class sdrplay_api_RspDxParamsT {
     public static VarHandle antennaSel$VH() {
         return sdrplay_api_RspDxParamsT.antennaSel$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_RspDx_AntennaSelectT antennaSel;
+     * }
+     */
     public static int antennaSel$get(MemorySegment seg) {
         return (int)sdrplay_api_RspDxParamsT.antennaSel$VH.get(seg);
     }
-    public static void antennaSel$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_RspDx_AntennaSelectT antennaSel;
+     * }
+     */
+    public static void antennaSel$set(MemorySegment seg, int x) {
         sdrplay_api_RspDxParamsT.antennaSel$VH.set(seg, x);
     }
     public static int antennaSel$get(MemorySegment seg, long index) {
@@ -94,10 +141,22 @@ public class sdrplay_api_RspDxParamsT {
     public static VarHandle rfNotchEnable$VH() {
         return sdrplay_api_RspDxParamsT.rfNotchEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char rfNotchEnable;
+     * }
+     */
     public static byte rfNotchEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDxParamsT.rfNotchEnable$VH.get(seg);
     }
-    public static void rfNotchEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char rfNotchEnable;
+     * }
+     */
+    public static void rfNotchEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDxParamsT.rfNotchEnable$VH.set(seg, x);
     }
     public static byte rfNotchEnable$get(MemorySegment seg, long index) {
@@ -110,10 +169,22 @@ public class sdrplay_api_RspDxParamsT {
     public static VarHandle rfDabNotchEnable$VH() {
         return sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char rfDabNotchEnable;
+     * }
+     */
     public static byte rfDabNotchEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH.get(seg);
     }
-    public static void rfDabNotchEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char rfDabNotchEnable;
+     * }
+     */
+    public static void rfDabNotchEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDxParamsT.rfDabNotchEnable$VH.set(seg, x);
     }
     public static byte rfDabNotchEnable$get(MemorySegment seg, long index) {
@@ -124,10 +195,10 @@ public class sdrplay_api_RspDxParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

@@ -21,16 +21,26 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     sdrplay_api_DcOffsetT dcOffset;
+ *     sdrplay_api_DecimationT decimation;
+ *     sdrplay_api_AgcT agc;
+ *     sdrplay_api_AdsbModeT adsbMode;
+ * };
+ * }
+ */
 public class sdrplay_api_ControlParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("DCenable"),
             Constants$root.C_CHAR$LAYOUT.withName("IQenable")
@@ -42,15 +52,15 @@ public class sdrplay_api_ControlParamsT {
         ).withName("decimation"),
         MemoryLayout.paddingLayout(24),
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("enable"),
-            Constants$root.C_LONG$LAYOUT.withName("setPoint_dBfs"),
+            Constants$root.C_INT$LAYOUT.withName("enable"),
+            Constants$root.C_INT$LAYOUT.withName("setPoint_dBfs"),
             Constants$root.C_SHORT$LAYOUT.withName("attack_ms"),
             Constants$root.C_SHORT$LAYOUT.withName("decay_ms"),
             Constants$root.C_SHORT$LAYOUT.withName("decay_delay_ms"),
             Constants$root.C_SHORT$LAYOUT.withName("decay_threshold_dB"),
-            Constants$root.C_LONG$LAYOUT.withName("syncUpdate")
+            Constants$root.C_INT$LAYOUT.withName("syncUpdate")
         ).withName("agc"),
-        Constants$root.C_LONG$LAYOUT.withName("adsbMode")
+        Constants$root.C_INT$LAYOUT.withName("adsbMode")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_ControlParamsT.$struct$LAYOUT;
@@ -68,10 +78,22 @@ public class sdrplay_api_ControlParamsT {
     public static VarHandle adsbMode$VH() {
         return sdrplay_api_ControlParamsT.adsbMode$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_AdsbModeT adsbMode;
+     * }
+     */
     public static int adsbMode$get(MemorySegment seg) {
         return (int)sdrplay_api_ControlParamsT.adsbMode$VH.get(seg);
     }
-    public static void adsbMode$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_AdsbModeT adsbMode;
+     * }
+     */
+    public static void adsbMode$set(MemorySegment seg, int x) {
         sdrplay_api_ControlParamsT.adsbMode$VH.set(seg, x);
     }
     public static int adsbMode$get(MemorySegment seg, long index) {
@@ -82,10 +104,10 @@ public class sdrplay_api_ControlParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

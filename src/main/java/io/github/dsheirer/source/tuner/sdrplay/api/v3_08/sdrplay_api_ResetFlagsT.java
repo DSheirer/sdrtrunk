@@ -21,16 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned char resetGainUpdate;
+ *     unsigned char resetRfUpdate;
+ *     unsigned char resetFsUpdate;
+ * };
+ * }
+ */
 public class sdrplay_api_ResetFlagsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         Constants$root.C_CHAR$LAYOUT.withName("resetGainUpdate"),
         Constants$root.C_CHAR$LAYOUT.withName("resetRfUpdate"),
         Constants$root.C_CHAR$LAYOUT.withName("resetFsUpdate")
@@ -42,10 +51,22 @@ public class sdrplay_api_ResetFlagsT {
     public static VarHandle resetGainUpdate$VH() {
         return sdrplay_api_ResetFlagsT.resetGainUpdate$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char resetGainUpdate;
+     * }
+     */
     public static byte resetGainUpdate$get(MemorySegment seg) {
         return (byte)sdrplay_api_ResetFlagsT.resetGainUpdate$VH.get(seg);
     }
-    public static void resetGainUpdate$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char resetGainUpdate;
+     * }
+     */
+    public static void resetGainUpdate$set(MemorySegment seg, byte x) {
         sdrplay_api_ResetFlagsT.resetGainUpdate$VH.set(seg, x);
     }
     public static byte resetGainUpdate$get(MemorySegment seg, long index) {
@@ -58,10 +79,22 @@ public class sdrplay_api_ResetFlagsT {
     public static VarHandle resetRfUpdate$VH() {
         return sdrplay_api_ResetFlagsT.resetRfUpdate$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char resetRfUpdate;
+     * }
+     */
     public static byte resetRfUpdate$get(MemorySegment seg) {
         return (byte)sdrplay_api_ResetFlagsT.resetRfUpdate$VH.get(seg);
     }
-    public static void resetRfUpdate$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char resetRfUpdate;
+     * }
+     */
+    public static void resetRfUpdate$set(MemorySegment seg, byte x) {
         sdrplay_api_ResetFlagsT.resetRfUpdate$VH.set(seg, x);
     }
     public static byte resetRfUpdate$get(MemorySegment seg, long index) {
@@ -74,10 +107,22 @@ public class sdrplay_api_ResetFlagsT {
     public static VarHandle resetFsUpdate$VH() {
         return sdrplay_api_ResetFlagsT.resetFsUpdate$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char resetFsUpdate;
+     * }
+     */
     public static byte resetFsUpdate$get(MemorySegment seg) {
         return (byte)sdrplay_api_ResetFlagsT.resetFsUpdate$VH.get(seg);
     }
-    public static void resetFsUpdate$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char resetFsUpdate;
+     * }
+     */
+    public static void resetFsUpdate$set(MemorySegment seg, byte x) {
         sdrplay_api_ResetFlagsT.resetFsUpdate$VH.set(seg, x);
     }
     public static byte resetFsUpdate$get(MemorySegment seg, long index) {
@@ -88,10 +133,10 @@ public class sdrplay_api_ResetFlagsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

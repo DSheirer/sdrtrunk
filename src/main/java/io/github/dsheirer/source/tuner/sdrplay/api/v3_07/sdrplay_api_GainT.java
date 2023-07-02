@@ -21,21 +21,32 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     int gRdB;
+ *     unsigned char LNAstate;
+ *     unsigned char syncUpdate;
+ *     sdrplay_api_MinGainReductionT minGr;
+ *     sdrplay_api_GainValuesT gainVals;
+ * };
+ * }
+ */
 public class sdrplay_api_GainT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("gRdB"),
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("gRdB"),
         Constants$root.C_CHAR$LAYOUT.withName("LNAstate"),
         Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
         MemoryLayout.paddingLayout(16),
-        Constants$root.C_LONG$LAYOUT.withName("minGr"),
+        Constants$root.C_INT$LAYOUT.withName("minGr"),
         MemoryLayout.structLayout(
             Constants$root.C_FLOAT$LAYOUT.withName("curr"),
             Constants$root.C_FLOAT$LAYOUT.withName("max"),
@@ -49,10 +60,22 @@ public class sdrplay_api_GainT {
     public static VarHandle gRdB$VH() {
         return sdrplay_api_GainT.gRdB$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int gRdB;
+     * }
+     */
     public static int gRdB$get(MemorySegment seg) {
         return (int)sdrplay_api_GainT.gRdB$VH.get(seg);
     }
-    public static void gRdB$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int gRdB;
+     * }
+     */
+    public static void gRdB$set(MemorySegment seg, int x) {
         sdrplay_api_GainT.gRdB$VH.set(seg, x);
     }
     public static int gRdB$get(MemorySegment seg, long index) {
@@ -65,10 +88,22 @@ public class sdrplay_api_GainT {
     public static VarHandle LNAstate$VH() {
         return sdrplay_api_GainT.LNAstate$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char LNAstate;
+     * }
+     */
     public static byte LNAstate$get(MemorySegment seg) {
         return (byte)sdrplay_api_GainT.LNAstate$VH.get(seg);
     }
-    public static void LNAstate$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char LNAstate;
+     * }
+     */
+    public static void LNAstate$set(MemorySegment seg, byte x) {
         sdrplay_api_GainT.LNAstate$VH.set(seg, x);
     }
     public static byte LNAstate$get(MemorySegment seg, long index) {
@@ -81,10 +116,22 @@ public class sdrplay_api_GainT {
     public static VarHandle syncUpdate$VH() {
         return sdrplay_api_GainT.syncUpdate$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char syncUpdate;
+     * }
+     */
     public static byte syncUpdate$get(MemorySegment seg) {
         return (byte)sdrplay_api_GainT.syncUpdate$VH.get(seg);
     }
-    public static void syncUpdate$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char syncUpdate;
+     * }
+     */
+    public static void syncUpdate$set(MemorySegment seg, byte x) {
         sdrplay_api_GainT.syncUpdate$VH.set(seg, x);
     }
     public static byte syncUpdate$get(MemorySegment seg, long index) {
@@ -97,10 +144,22 @@ public class sdrplay_api_GainT {
     public static VarHandle minGr$VH() {
         return sdrplay_api_GainT.minGr$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_MinGainReductionT minGr;
+     * }
+     */
     public static int minGr$get(MemorySegment seg) {
         return (int)sdrplay_api_GainT.minGr$VH.get(seg);
     }
-    public static void minGr$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_MinGainReductionT minGr;
+     * }
+     */
+    public static void minGr$set(MemorySegment seg, int x) {
         sdrplay_api_GainT.minGr$VH.set(seg, x);
     }
     public static int minGr$get(MemorySegment seg, long index) {
@@ -114,10 +173,10 @@ public class sdrplay_api_GainT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

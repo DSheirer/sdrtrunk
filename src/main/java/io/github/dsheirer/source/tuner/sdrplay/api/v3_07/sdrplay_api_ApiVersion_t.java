@@ -21,21 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.SegmentScope;
+
+/**
+ * {@snippet :
+ * enum  (*sdrplay_api_ApiVersion_t)(float* apiVer);
+ * }
+ */
 public interface sdrplay_api_ApiVersion_t {
 
-    int apply(java.lang.foreign.MemoryAddress apiVer);
-    static MemorySegment allocate(sdrplay_api_ApiVersion_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_ApiVersion_t.class, fi, constants$1.sdrplay_api_ApiVersion_t$FUNC, session);
+    int apply(java.lang.foreign.MemorySegment currentSampleRate);
+    static MemorySegment allocate(sdrplay_api_ApiVersion_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$1.sdrplay_api_ApiVersion_t_UP$MH, fi, constants$1.sdrplay_api_ApiVersion_t$FUNC, scope);
     }
-    static sdrplay_api_ApiVersion_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
-        return (java.lang.foreign.MemoryAddress _apiVer) -> {
+    static sdrplay_api_ApiVersion_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
+        return (java.lang.foreign.MemorySegment _currentSampleRate) -> {
             try {
-                return (int)constants$1.sdrplay_api_ApiVersion_t$MH.invokeExact((Addressable)symbol, (java.lang.foreign.Addressable)_apiVer);
+                return (int)constants$1.sdrplay_api_ApiVersion_t_DOWN$MH.invokeExact(symbol, _currentSampleRate);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

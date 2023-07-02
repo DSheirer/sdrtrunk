@@ -21,21 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.SegmentScope;
+
+/**
+ * {@snippet :
+ * void (*sdrplay_api_EventCallback_t)(enum  eventId,enum  tuner,union * params,void* cbContext);
+ * }
+ */
 public interface sdrplay_api_EventCallback_t {
 
-    void apply(int eventId, int tuner, java.lang.foreign.MemoryAddress params, java.lang.foreign.MemoryAddress cbContext);
-    static MemorySegment allocate(sdrplay_api_EventCallback_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_EventCallback_t.class, fi, constants$0.sdrplay_api_EventCallback_t$FUNC, session);
+    void apply(int eventId, int tuner, java.lang.foreign.MemorySegment params, java.lang.foreign.MemorySegment cbContext);
+    static MemorySegment allocate(sdrplay_api_EventCallback_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$0.sdrplay_api_EventCallback_t_UP$MH, fi, constants$0.sdrplay_api_EventCallback_t$FUNC, scope);
     }
-    static sdrplay_api_EventCallback_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
-        return (int _eventId, int _tuner, java.lang.foreign.MemoryAddress _params, java.lang.foreign.MemoryAddress _cbContext) -> {
+    static sdrplay_api_EventCallback_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
+        return (int _eventId, int _tuner, java.lang.foreign.MemorySegment _params, java.lang.foreign.MemorySegment _cbContext) -> {
             try {
-                constants$0.sdrplay_api_EventCallback_t$MH.invokeExact((Addressable)symbol, _eventId, _tuner, (java.lang.foreign.Addressable)_params, (java.lang.foreign.Addressable)_cbContext);
+                constants$0.sdrplay_api_EventCallback_t_DOWN$MH.invokeExact(symbol, _eventId, _tuner, _params, _cbContext);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

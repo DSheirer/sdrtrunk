@@ -23,17 +23,20 @@ package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.invoke.MethodHandle;
-class constants$10 {
 
-    static final FunctionDescriptor sdrplay_api_SwapRspDuoMode$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+final class constants$10 {
+
+    // Suppresses default constructor, ensuring non-instantiability.
+    private constants$10() {}
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoMode$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
         Constants$root.C_DOUBLE$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT
     );
     static final MethodHandle sdrplay_api_SwapRspDuoMode$MH = RuntimeHelper.downcallHandle(
         "sdrplay_api_SwapRspDuoMode",
