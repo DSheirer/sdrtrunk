@@ -122,7 +122,7 @@ public class RspNativeBufferFactory
         {
             int optimal = 128;
 
-            while((optimal * 2) < length)
+            while((optimal) < length)
             {
                 optimal *= 2;
             }
