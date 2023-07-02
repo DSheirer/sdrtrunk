@@ -33,7 +33,6 @@ import io.github.dsheirer.source.tuner.sdrplay.api.error.DebugLevel;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite.CompositeParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.IfMode;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.LoMode;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -377,7 +376,7 @@ public abstract class Device<T extends CompositeParameters<?,?>, R extends RspTu
      *
      * @throws SDRPlayException if this method is accessed before the device has been successfully selected
      */
-    MemoryAddress getDeviceHandle() throws SDRPlayException
+    MemorySegment getDeviceHandle() throws SDRPlayException
     {
         if(!selected())
         {

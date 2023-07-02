@@ -21,21 +21,31 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned char dcCal;
+ *     unsigned char speedUp;
+ *     int trackTime;
+ *     int refreshRateTime;
+ * };
+ * }
+ */
 public class sdrplay_api_DcOffsetTunerT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         Constants$root.C_CHAR$LAYOUT.withName("dcCal"),
         Constants$root.C_CHAR$LAYOUT.withName("speedUp"),
         MemoryLayout.paddingLayout(16),
-        Constants$root.C_LONG$LAYOUT.withName("trackTime"),
-        Constants$root.C_LONG$LAYOUT.withName("refreshRateTime")
+        Constants$root.C_INT$LAYOUT.withName("trackTime"),
+        Constants$root.C_INT$LAYOUT.withName("refreshRateTime")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_DcOffsetTunerT.$struct$LAYOUT;
@@ -44,10 +54,22 @@ public class sdrplay_api_DcOffsetTunerT {
     public static VarHandle dcCal$VH() {
         return sdrplay_api_DcOffsetTunerT.dcCal$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char dcCal;
+     * }
+     */
     public static byte dcCal$get(MemorySegment seg) {
         return (byte)sdrplay_api_DcOffsetTunerT.dcCal$VH.get(seg);
     }
-    public static void dcCal$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char dcCal;
+     * }
+     */
+    public static void dcCal$set(MemorySegment seg, byte x) {
         sdrplay_api_DcOffsetTunerT.dcCal$VH.set(seg, x);
     }
     public static byte dcCal$get(MemorySegment seg, long index) {
@@ -60,10 +82,22 @@ public class sdrplay_api_DcOffsetTunerT {
     public static VarHandle speedUp$VH() {
         return sdrplay_api_DcOffsetTunerT.speedUp$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char speedUp;
+     * }
+     */
     public static byte speedUp$get(MemorySegment seg) {
         return (byte)sdrplay_api_DcOffsetTunerT.speedUp$VH.get(seg);
     }
-    public static void speedUp$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char speedUp;
+     * }
+     */
+    public static void speedUp$set(MemorySegment seg, byte x) {
         sdrplay_api_DcOffsetTunerT.speedUp$VH.set(seg, x);
     }
     public static byte speedUp$get(MemorySegment seg, long index) {
@@ -76,10 +110,22 @@ public class sdrplay_api_DcOffsetTunerT {
     public static VarHandle trackTime$VH() {
         return sdrplay_api_DcOffsetTunerT.trackTime$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int trackTime;
+     * }
+     */
     public static int trackTime$get(MemorySegment seg) {
         return (int)sdrplay_api_DcOffsetTunerT.trackTime$VH.get(seg);
     }
-    public static void trackTime$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int trackTime;
+     * }
+     */
+    public static void trackTime$set(MemorySegment seg, int x) {
         sdrplay_api_DcOffsetTunerT.trackTime$VH.set(seg, x);
     }
     public static int trackTime$get(MemorySegment seg, long index) {
@@ -92,10 +138,22 @@ public class sdrplay_api_DcOffsetTunerT {
     public static VarHandle refreshRateTime$VH() {
         return sdrplay_api_DcOffsetTunerT.refreshRateTime$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int refreshRateTime;
+     * }
+     */
     public static int refreshRateTime$get(MemorySegment seg) {
         return (int)sdrplay_api_DcOffsetTunerT.refreshRateTime$VH.get(seg);
     }
-    public static void refreshRateTime$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int refreshRateTime;
+     * }
+     */
+    public static void refreshRateTime$set(MemorySegment seg, int x) {
         sdrplay_api_DcOffsetTunerT.refreshRateTime$VH.set(seg, x);
     }
     public static int refreshRateTime$get(MemorySegment seg, long index) {
@@ -106,10 +164,10 @@ public class sdrplay_api_DcOffsetTunerT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

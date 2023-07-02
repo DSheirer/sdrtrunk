@@ -19,7 +19,6 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.device;
 
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
 
 /**
@@ -77,5 +76,5 @@ public interface IDeviceStruct
     /**
      * Device handle.  Note this is only available if the device has been selected.
      */
-    MemoryAddress getDeviceHandle();
+    MemorySegment getDeviceHandle();
 }

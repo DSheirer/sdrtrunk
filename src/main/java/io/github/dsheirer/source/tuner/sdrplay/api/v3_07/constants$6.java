@@ -23,34 +23,76 @@ package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.invoke.MethodHandle;
-class constants$6 {
 
-    static final FunctionDescriptor sdrplay_api_SwapRspDuoActiveTuner_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+final class constants$6 {
+
+    // Suppresses default constructor, ensuring non-instantiability.
+    private constants$6() {}
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoActiveTuner_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT
     );
-    static final MethodHandle sdrplay_api_SwapRspDuoActiveTuner_t$MH = RuntimeHelper.downcallHandle(
-        constants$6.sdrplay_api_SwapRspDuoActiveTuner_t$FUNC
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoActiveTuner_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT
     );
-    static final FunctionDescriptor sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final MethodHandle sdrplay_api_SwapRspDuoActiveTuner_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_SwapRspDuoActiveTuner_t.class, "apply", constants$6.sdrplay_api_SwapRspDuoActiveTuner_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoActiveTuner_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_SwapRspDuoActiveTuner_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$6.sdrplay_api_SwapRspDuoActiveTuner_t_DOWN$FUNC
+    );
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
-    static final MethodHandle sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t$MH = RuntimeHelper.downcallHandle(
-        constants$6.sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t$FUNC
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
     );
-    static final FunctionDescriptor sdrplay_api_SwapRspDuoMode_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final MethodHandle sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t.class, "apply", constants$6.sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$6.sdrplay_api_SwapRspDuoDualTunerModeSampleRate_t_DOWN$FUNC
+    );
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoMode_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
         Constants$root.C_DOUBLE$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
-        Constants$root.C_LONG$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT
     );
-    static final MethodHandle sdrplay_api_SwapRspDuoMode_t$MH = RuntimeHelper.downcallHandle(
-        constants$6.sdrplay_api_SwapRspDuoMode_t$FUNC
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoMode_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_DOUBLE$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_SwapRspDuoMode_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_SwapRspDuoMode_t.class, "apply", constants$6.sdrplay_api_SwapRspDuoMode_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_SwapRspDuoMode_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_DOUBLE$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT,
+        Constants$root.C_INT$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_SwapRspDuoMode_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$6.sdrplay_api_SwapRspDuoMode_t_DOWN$FUNC
     );
 }
 

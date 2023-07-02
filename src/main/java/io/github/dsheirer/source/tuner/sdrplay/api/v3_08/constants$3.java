@@ -23,25 +23,49 @@ package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.invoke.MethodHandle;
-class constants$3 {
 
-    static final FunctionDescriptor sdrplay_api_ReleaseDevice_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+final class constants$3 {
+
+    // Suppresses default constructor, ensuring non-instantiability.
+    private constants$3() {}
+    static final FunctionDescriptor sdrplay_api_ReleaseDevice_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
-    static final MethodHandle sdrplay_api_ReleaseDevice_t$MH = RuntimeHelper.downcallHandle(
-        constants$3.sdrplay_api_ReleaseDevice_t$FUNC
+    static final FunctionDescriptor sdrplay_api_ReleaseDevice_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_ReleaseDevice_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_ReleaseDevice_t.class, "apply", constants$3.sdrplay_api_ReleaseDevice_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_ReleaseDevice_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_ReleaseDevice_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$3.sdrplay_api_ReleaseDevice_t_DOWN$FUNC
     );
     static final FunctionDescriptor sdrplay_api_GetErrorString_t$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT
     );
-    static final MethodHandle sdrplay_api_GetErrorString_t$MH = RuntimeHelper.downcallHandle(
-        constants$3.sdrplay_api_GetErrorString_t$FUNC
+    static final FunctionDescriptor sdrplay_api_GetErrorString_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_GetErrorString_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_GetErrorString_t.class, "apply", constants$3.sdrplay_api_GetErrorString_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_GetErrorString_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_GetErrorString_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$3.sdrplay_api_GetErrorString_t_DOWN$FUNC
     );
     static final FunctionDescriptor sdrplay_api_GetLastError_t$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
-    static final MethodHandle sdrplay_api_GetLastError_t$MH = RuntimeHelper.downcallHandle(
-        constants$3.sdrplay_api_GetLastError_t$FUNC
+    static final FunctionDescriptor sdrplay_api_GetLastError_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_GetLastError_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_GetLastError_t.class, "apply", constants$3.sdrplay_api_GetLastError_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_GetLastError_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_GetLastError_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$3.sdrplay_api_GetLastError_t_DOWN$FUNC
     );
 }
 

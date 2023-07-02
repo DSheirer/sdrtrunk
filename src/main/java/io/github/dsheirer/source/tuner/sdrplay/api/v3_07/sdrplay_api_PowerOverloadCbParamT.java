@@ -21,17 +21,24 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     sdrplay_api_PowerOverloadCbEventIdT powerOverloadChangeType;
+ * };
+ * }
+ */
 public class sdrplay_api_PowerOverloadCbParamT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("powerOverloadChangeType")
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("powerOverloadChangeType")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_PowerOverloadCbParamT.$struct$LAYOUT;
@@ -40,10 +47,22 @@ public class sdrplay_api_PowerOverloadCbParamT {
     public static VarHandle powerOverloadChangeType$VH() {
         return sdrplay_api_PowerOverloadCbParamT.powerOverloadChangeType$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_PowerOverloadCbEventIdT powerOverloadChangeType;
+     * }
+     */
     public static int powerOverloadChangeType$get(MemorySegment seg) {
         return (int)sdrplay_api_PowerOverloadCbParamT.powerOverloadChangeType$VH.get(seg);
     }
-    public static void powerOverloadChangeType$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_PowerOverloadCbEventIdT powerOverloadChangeType;
+     * }
+     */
+    public static void powerOverloadChangeType$set(MemorySegment seg, int x) {
         sdrplay_api_PowerOverloadCbParamT.powerOverloadChangeType$VH.set(seg, x);
     }
     public static int powerOverloadChangeType$get(MemorySegment seg, long index) {
@@ -54,10 +73,10 @@ public class sdrplay_api_PowerOverloadCbParamT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

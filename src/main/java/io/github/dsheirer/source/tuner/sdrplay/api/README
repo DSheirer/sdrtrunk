@@ -1,10 +1,37 @@
-SDRplay API 3.07
-Auto-created from sdrplay api header files using JDK 17 jextract tool:
+SDRplay API
 
+All source class files are auto-created from sdrplay api header files using JDK 20 jextract tool:
+
+Version 3.07 is the oldest supported version.  Versions 3.08 through 3.11 are all functionally equivalent.
+
+We use the JDK 20 jextract tool to generate java source files from the API include files that are
+located in the /arctifacts directory.
+
+With each new JDK release where they change something about the Foreign Function api, we have to regenerate
+the java source files.  My approach is to generate the java files into the source code directories alongside
+the existing source files and then delete the existing files and rename the parent version package to the
+same as was used by the existing classes so that we don't cause problems in any of the derivative classes.
+
+If you need to find the SDRPlay API header/include files:
 1. Install the sdrplay api
 2. On Linux, headers are located here: /usr/local/include/*.h
-3. cd into the (project)/jSDRplay/sdrplay-api/src/main/java/ directory
-4. Run: jextract -t io.github.dsheirer.sdrplay.api /usr/local/include/sdrplay_api.h -l libsdrplay_api --source
+3. On Windows, headers are located here: c:\Program Files\SDRPlay\api
+
+Generate Source Files from SDRPlay API Headers
+- Download latest jextract tool and alias the jextract command.
+- cd into the (project)/jSDRplay/sdrplay-api/src/main/java/ directory
+
+Version 3.07
+- cd into the same folder where the v3.07 header files are lcoated.
+- jextract --source -t io.github.dsheirer.source.tuner.sdrplay.api.v3_08_1 -l libsdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_08_1/ sdrplay_api.h
+- In the generated RuntimeHelper class, comment out this line: System.loadLibrary("libsdrplay_api");
+
+Version 3.08
+Note: API include files are from a windows 10 installer, with the windows DLL aspects commented out.
+- cd into the same folder where the v3.08 header files are located.
+- jextract --source -t io.github.dsheirer.source.tuner.sdrplay.api.v3_08_1 -l libsdrplay_api --output ~/IdeaProjects/sdrtrunk/src/main/java/io/github/dsheirer/source/tuner/sdrplay/api/v3_08_1/ sdrplay_api.h
+- In the generated RuntimeHelper class, comment out this line: System.loadLibrary("libsdrplay_api");
+
 
 IntelliJ setup
 1. Run configuration

@@ -23,16 +23,19 @@ package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.invoke.MethodHandle;
-class constants$8 {
 
-    static final FunctionDescriptor sdrplay_api_SelectDevice$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+final class constants$8 {
+
+    // Suppresses default constructor, ensuring non-instantiability.
+    private constants$8() {}
+    static final FunctionDescriptor sdrplay_api_SelectDevice$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
     static final MethodHandle sdrplay_api_SelectDevice$MH = RuntimeHelper.downcallHandle(
         "sdrplay_api_SelectDevice",
         constants$8.sdrplay_api_SelectDevice$FUNC
     );
-    static final FunctionDescriptor sdrplay_api_ReleaseDevice$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final FunctionDescriptor sdrplay_api_ReleaseDevice$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
     static final MethodHandle sdrplay_api_ReleaseDevice$MH = RuntimeHelper.downcallHandle(
@@ -40,7 +43,7 @@ class constants$8 {
         constants$8.sdrplay_api_ReleaseDevice$FUNC
     );
     static final FunctionDescriptor sdrplay_api_GetErrorString$FUNC = FunctionDescriptor.of(Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT
     );
     static final MethodHandle sdrplay_api_GetErrorString$MH = RuntimeHelper.downcallHandle(
         "sdrplay_api_GetErrorString",
@@ -53,14 +56,14 @@ class constants$8 {
         "sdrplay_api_GetLastError",
         constants$8.sdrplay_api_GetLastError$FUNC
     );
-    static final FunctionDescriptor sdrplay_api_DisableHeartbeat$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT);
+    static final FunctionDescriptor sdrplay_api_DisableHeartbeat$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
     static final MethodHandle sdrplay_api_DisableHeartbeat$MH = RuntimeHelper.downcallHandle(
         "sdrplay_api_DisableHeartbeat",
         constants$8.sdrplay_api_DisableHeartbeat$FUNC
     );
-    static final FunctionDescriptor sdrplay_api_DebugEnable$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final FunctionDescriptor sdrplay_api_DebugEnable$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT
     );
     static final MethodHandle sdrplay_api_DebugEnable$MH = RuntimeHelper.downcallHandle(
         "sdrplay_api_DebugEnable",

@@ -21,25 +21,33 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
-import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.*;
+
+/**
+ * {@snippet :
+ * struct {
+ *     sdrplay_api_TunerParamsT tunerParams;
+ *     sdrplay_api_ControlParamsT ctrlParams;
+ *     sdrplay_api_Rsp1aTunerParamsT rsp1aTunerParams;
+ *     sdrplay_api_Rsp2TunerParamsT rsp2TunerParams;
+ *     sdrplay_api_RspDuoTunerParamsT rspDuoTunerParams;
+ *     sdrplay_api_RspDxTunerParamsT rspDxTunerParams;
+ * };
+ * }
+ */
 public class sdrplay_api_RxChannelParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("bwType"),
-            Constants$root.C_LONG$LAYOUT.withName("ifType"),
-            Constants$root.C_LONG$LAYOUT.withName("loMode"),
+            Constants$root.C_INT$LAYOUT.withName("bwType"),
+            Constants$root.C_INT$LAYOUT.withName("ifType"),
+            Constants$root.C_INT$LAYOUT.withName("loMode"),
             MemoryLayout.structLayout(
-                Constants$root.C_LONG$LAYOUT.withName("gRdB"),
+                Constants$root.C_INT$LAYOUT.withName("gRdB"),
                 Constants$root.C_CHAR$LAYOUT.withName("LNAstate"),
                 Constants$root.C_CHAR$LAYOUT.withName("syncUpdate"),
                 MemoryLayout.paddingLayout(16),
-                Constants$root.C_LONG$LAYOUT.withName("minGr"),
+                Constants$root.C_INT$LAYOUT.withName("minGr"),
                 MemoryLayout.structLayout(
                     Constants$root.C_FLOAT$LAYOUT.withName("curr"),
                     Constants$root.C_FLOAT$LAYOUT.withName("max"),
@@ -56,8 +64,8 @@ public class sdrplay_api_RxChannelParamsT {
                 Constants$root.C_CHAR$LAYOUT.withName("dcCal"),
                 Constants$root.C_CHAR$LAYOUT.withName("speedUp"),
                 MemoryLayout.paddingLayout(16),
-                Constants$root.C_LONG$LAYOUT.withName("trackTime"),
-                Constants$root.C_LONG$LAYOUT.withName("refreshRateTime")
+                Constants$root.C_INT$LAYOUT.withName("trackTime"),
+                Constants$root.C_INT$LAYOUT.withName("refreshRateTime")
             ).withName("dcOffsetTuner"),
             MemoryLayout.paddingLayout(32)
         ).withName("tunerParams"),
@@ -73,15 +81,15 @@ public class sdrplay_api_RxChannelParamsT {
             ).withName("decimation"),
             MemoryLayout.paddingLayout(24),
             MemoryLayout.structLayout(
-                Constants$root.C_LONG$LAYOUT.withName("enable"),
-                Constants$root.C_LONG$LAYOUT.withName("setPoint_dBfs"),
+                Constants$root.C_INT$LAYOUT.withName("enable"),
+                Constants$root.C_INT$LAYOUT.withName("setPoint_dBfs"),
                 Constants$root.C_SHORT$LAYOUT.withName("attack_ms"),
                 Constants$root.C_SHORT$LAYOUT.withName("decay_ms"),
                 Constants$root.C_SHORT$LAYOUT.withName("decay_delay_ms"),
                 Constants$root.C_SHORT$LAYOUT.withName("decay_threshold_dB"),
-                Constants$root.C_LONG$LAYOUT.withName("syncUpdate")
+                Constants$root.C_INT$LAYOUT.withName("syncUpdate")
             ).withName("agc"),
-            Constants$root.C_LONG$LAYOUT.withName("adsbMode")
+            Constants$root.C_INT$LAYOUT.withName("adsbMode")
         ).withName("ctrlParams"),
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("biasTEnable")
@@ -90,22 +98,22 @@ public class sdrplay_api_RxChannelParamsT {
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
             MemoryLayout.paddingLayout(24),
-            Constants$root.C_LONG$LAYOUT.withName("amPortSel"),
-            Constants$root.C_LONG$LAYOUT.withName("antennaSel"),
+            Constants$root.C_INT$LAYOUT.withName("amPortSel"),
+            Constants$root.C_INT$LAYOUT.withName("antennaSel"),
             Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
             MemoryLayout.paddingLayout(24)
         ).withName("rsp2TunerParams"),
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
             MemoryLayout.paddingLayout(24),
-            Constants$root.C_LONG$LAYOUT.withName("tuner1AmPortSel"),
+            Constants$root.C_INT$LAYOUT.withName("tuner1AmPortSel"),
             Constants$root.C_CHAR$LAYOUT.withName("tuner1AmNotchEnable"),
             Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
             Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
             MemoryLayout.paddingLayout(8)
         ).withName("rspDuoTunerParams"),
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("hdrBw")
+            Constants$root.C_INT$LAYOUT.withName("hdrBw")
         ).withName("rspDxTunerParams"),
         MemoryLayout.paddingLayout(32)
     );
@@ -132,10 +140,10 @@ public class sdrplay_api_RxChannelParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

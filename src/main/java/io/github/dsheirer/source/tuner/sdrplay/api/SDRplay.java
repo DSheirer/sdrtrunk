@@ -36,9 +36,8 @@ import io.github.dsheirer.source.tuner.sdrplay.api.util.Flag;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_ErrorInfoT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_h;
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.ValueLayout;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,9 +70,9 @@ public class SDRplay
     private static final Logger mLog = LoggerFactory.getLogger(SDRplay.class);
 
     /**
-     * Foreign memory allocation resource scope
+     * Foreign memory arenaallocation resource scope
      */
-    private final MemorySession mGlobalMemorySession = MemorySession.global();
+    private final Arena mArena = Arena.openShared();
 
     /**
      * Indicates if libsdrplay_api.xx library was found and loaded.
@@ -89,7 +88,7 @@ public class SDRplay
     /**
      * Map of (reusable) callback functions for each device.  Key value is the device handle memory address
      */
-    private final Map<MemoryAddress, CallbackFunctions> mDeviceCallbackFunctionsMap = new HashMap<>();
+    private final Map<MemorySegment, CallbackFunctions> mDeviceCallbackFunctionsMap = new HashMap<>();
 
     /**
      * Detected version of the API installed on the local system.
@@ -150,11 +149,11 @@ public class SDRplay
     }
 
     /**
-     * Global Memory Session for this API instance
+     * Open Shared Memory Arena for this API instance
      */
-    private MemorySession getGlobalMemorySession()
+    private Arena getArena()
     {
-        return mGlobalMemorySession;
+        return mArena;
     }
 
     /**
@@ -220,9 +219,9 @@ public class SDRplay
         List<IDeviceStruct> deviceStructs = new ArrayList<>();
 
         //Get a version-correct array of DeviceT structures
-        MemorySegment devicesArray = DeviceFactory.createDeviceArray(getVersion(), getGlobalMemorySession());
+        MemorySegment devicesArray = DeviceFactory.createDeviceArray(getVersion(), getArena());
 
-        MemorySegment deviceCount = getGlobalMemorySession().allocate(ValueLayout.JAVA_INT, 0);
+        MemorySegment deviceCount = getArena().allocate(ValueLayout.JAVA_INT, 0);
 
         Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_GetDevices(devicesArray, deviceCount,
                 sdrplay_api_h.SDRPLAY_MAX_DEVICES()));
@@ -355,20 +354,20 @@ public class SDRplay
      * @param deviceHandle to device
      * @return constructed device composite paramaters
      */
-    public CompositeParameters getCompositeParameters(DeviceType deviceType, MemoryAddress deviceHandle) throws SDRPlayException
+    public CompositeParameters getCompositeParameters(DeviceType deviceType, MemorySegment deviceHandle) throws SDRPlayException
     {
         //Allocate a pointer that the api will fill with the memory address of the device parameters in memory.
-        MemorySegment pointer = getGlobalMemorySession().allocate(ValueLayout.ADDRESS);
+        MemorySegment pointer = getArena().allocate(ValueLayout.ADDRESS);
         Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_GetDeviceParams(deviceHandle, pointer));
 
         if(status.success())
         {
             //Get the memory address from the pointer's memory segment to where the structure is located
-            MemoryAddress memoryAddress = pointer.get(ValueLayout.ADDRESS, 0);
+            MemorySegment memoryAddress = pointer.get(ValueLayout.ADDRESS, 0);
 
             //The structure's memory is already allocated ... wrap a memory segment around it
-            MemorySegment memorySegment = sdrplay_api_DeviceT.ofAddress(memoryAddress, mGlobalMemorySession);
-            return CompositeParametersFactory.create(deviceType, memorySegment, mGlobalMemorySession);
+            MemorySegment memorySegment = sdrplay_api_DeviceT.ofAddress(memoryAddress, getArena().scope());
+            return CompositeParametersFactory.create(deviceType, memorySegment, getArena());
         }
         else
         {
@@ -383,10 +382,10 @@ public class SDRplay
      * @param callbackFunctions to receive stream data from A and (optionally) B channels and events.
      * @throws SDRPlayException if the device is not selected of if unable to init the device
      */
-    private void init(MemoryAddress deviceHandle, MemorySegment callbackFunctions) throws SDRPlayException
+    private void init(MemorySegment deviceHandle, MemorySegment callbackFunctions) throws SDRPlayException
     {
         //Since we don't need/use the callback context ... setup as a pointer to the callback functions
-        MemorySegment contextPointer = getGlobalMemorySession().allocate(ValueLayout.ADDRESS, callbackFunctions);
+        MemorySegment contextPointer = getArena().allocate(ValueLayout.ADDRESS, callbackFunctions);
         Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_Init(deviceHandle, callbackFunctions, contextPointer));
 
         if(!status.success())
@@ -404,14 +403,14 @@ public class SDRplay
      * @param streamListener to receive samples for stream A
      * @throws SDRPlayException if the device is not selected of if unable to init the device
      */
-    public void initA(Device device, MemoryAddress deviceHandle, IDeviceEventListener eventListener,
+    public void initA(Device device, MemorySegment deviceHandle, IDeviceEventListener eventListener,
                       IStreamListener streamListener) throws SDRPlayException
     {
         CallbackFunctions callbackFunctions = mDeviceCallbackFunctionsMap.get(deviceHandle);
 
         if(callbackFunctions == null)
         {
-            callbackFunctions = new CallbackFunctions(getGlobalMemorySession(), eventListener, streamListener,
+            callbackFunctions = new CallbackFunctions(getArena(), eventListener, streamListener,
                     device.getStreamCallbackListener());
             mDeviceCallbackFunctionsMap.put(deviceHandle, callbackFunctions);
         }
@@ -433,14 +432,14 @@ public class SDRplay
      * @param streamListener to receive samples for stream B
      * @throws SDRPlayException if the device is not selected of if unable to init the device
      */
-    public void initB(Device device, MemoryAddress deviceHandle, IDeviceEventListener eventListener,
+    public void initB(Device device, MemorySegment deviceHandle, IDeviceEventListener eventListener,
                       IStreamListener streamListener) throws SDRPlayException
     {
         CallbackFunctions callbackFunctions = mDeviceCallbackFunctionsMap.get(deviceHandle);
 
         if(callbackFunctions == null)
         {
-            callbackFunctions = new CallbackFunctions(getGlobalMemorySession(), eventListener, streamListener, streamListener,
+            callbackFunctions = new CallbackFunctions(getArena(), eventListener, streamListener, streamListener,
                     device.getStreamCallbackListener());
             mDeviceCallbackFunctionsMap.put(deviceHandle, callbackFunctions);
         }
@@ -459,7 +458,7 @@ public class SDRplay
      * @param deviceHandle to the device
      * @throws SDRPlayException if error during uninit or if device is not selected
      */
-    public void uninit(MemoryAddress deviceHandle) throws SDRPlayException
+    public void uninit(MemorySegment deviceHandle) throws SDRPlayException
     {
         Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_Uninit(deviceHandle));
 
@@ -482,7 +481,7 @@ public class SDRplay
      * @param updateReasons identifying what was updated
      * @throws SDRPlayException if the device is not selected, or if unable to update the device parameters
      */
-    public synchronized void update(Device device, MemoryAddress deviceHandle, TunerSelect tunerSelect,
+    public synchronized void update(Device device, MemorySegment deviceHandle, TunerSelect tunerSelect,
                                     UpdateReason... updateReasons) throws SDRPlayException
     {
         int reasons = UpdateReason.getReasons(updateReasons);
@@ -505,8 +504,8 @@ public class SDRplay
      */
     private ErrorInformation getLastError(MemorySegment deviceSegment)
     {
-        MemoryAddress errorAddress = sdrplay_api_h.sdrplay_api_GetLastError(deviceSegment);
-        MemorySegment errorSegment = sdrplay_api_ErrorInfoT.ofAddress(errorAddress, mGlobalMemorySession);
+        MemorySegment errorAddress = sdrplay_api_h.sdrplay_api_GetLastError(deviceSegment);
+        MemorySegment errorSegment = sdrplay_api_ErrorInfoT.ofAddress(errorAddress, getArena().scope());
         return new ErrorInformation(errorSegment);
     }
 
@@ -517,7 +516,7 @@ public class SDRplay
      * @param debugLevel to set
      * @throws SDRPlayException if the device is not selected or if unable to set/change the debug level.
      */
-    public void setDebugLevel(MemoryAddress deviceHandle, DebugLevel debugLevel) throws SDRPlayException
+    public void setDebugLevel(MemorySegment deviceHandle, DebugLevel debugLevel) throws SDRPlayException
     {
         Status status = Status.UNKNOWN;
 
@@ -603,7 +602,7 @@ public class SDRplay
         {
             if(mSdrplayLibraryLoaded)
             {
-                MemorySegment apiVersion = getGlobalMemorySession().allocate(ValueLayout.JAVA_FLOAT, 0);
+                MemorySegment apiVersion = getArena().allocate(ValueLayout.JAVA_FLOAT, 0);
                 Status status = Status.fromValue(sdrplay_api_h.sdrplay_api_ApiVersion(apiVersion));
                 if(status.success())
                 {

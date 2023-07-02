@@ -21,16 +21,32 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     double ppm;
+ *     sdrplay_api_FsFreqT fsFreq;
+ *     sdrplay_api_SyncUpdateT syncUpdate;
+ *     sdrplay_api_ResetFlagsT resetFlags;
+ *     sdrplay_api_TransferModeT mode;
+ *     unsigned int samplesPerPkt;
+ *     sdrplay_api_Rsp1aParamsT rsp1aParams;
+ *     sdrplay_api_Rsp2ParamsT rsp2Params;
+ *     sdrplay_api_RspDuoParamsT rspDuoParams;
+ *     sdrplay_api_RspDxParamsT rspDxParams;
+ * };
+ * }
+ */
 public class sdrplay_api_DevParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         Constants$root.C_DOUBLE$LAYOUT.withName("ppm"),
         MemoryLayout.structLayout(
             Constants$root.C_DOUBLE$LAYOUT.withName("fsHz"),
@@ -39,8 +55,8 @@ public class sdrplay_api_DevParamsT {
             MemoryLayout.paddingLayout(48)
         ).withName("fsFreq"),
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("sampleNum"),
-            Constants$root.C_LONG$LAYOUT.withName("period")
+            Constants$root.C_INT$LAYOUT.withName("sampleNum"),
+            Constants$root.C_INT$LAYOUT.withName("period")
         ).withName("syncUpdate"),
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("resetGainUpdate"),
@@ -48,8 +64,8 @@ public class sdrplay_api_DevParamsT {
             Constants$root.C_CHAR$LAYOUT.withName("resetFsUpdate")
         ).withName("resetFlags"),
         MemoryLayout.paddingLayout(8),
-        Constants$root.C_LONG$LAYOUT.withName("mode"),
-        Constants$root.C_LONG$LAYOUT.withName("samplesPerPkt"),
+        Constants$root.C_INT$LAYOUT.withName("mode"),
+        Constants$root.C_INT$LAYOUT.withName("samplesPerPkt"),
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
             Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable")
@@ -59,13 +75,13 @@ public class sdrplay_api_DevParamsT {
         ).withName("rsp2Params"),
         MemoryLayout.paddingLayout(8),
         MemoryLayout.structLayout(
-            Constants$root.C_LONG$LAYOUT.withName("extRefOutputEn")
+            Constants$root.C_INT$LAYOUT.withName("extRefOutputEn")
         ).withName("rspDuoParams"),
         MemoryLayout.structLayout(
             Constants$root.C_CHAR$LAYOUT.withName("hdrEnable"),
             Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
             MemoryLayout.paddingLayout(16),
-            Constants$root.C_LONG$LAYOUT.withName("antennaSel"),
+            Constants$root.C_INT$LAYOUT.withName("antennaSel"),
             Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
             Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
             MemoryLayout.paddingLayout(16)
@@ -78,10 +94,22 @@ public class sdrplay_api_DevParamsT {
     public static VarHandle ppm$VH() {
         return sdrplay_api_DevParamsT.ppm$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * double ppm;
+     * }
+     */
     public static double ppm$get(MemorySegment seg) {
         return (double)sdrplay_api_DevParamsT.ppm$VH.get(seg);
     }
-    public static void ppm$set( MemorySegment seg, double x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * double ppm;
+     * }
+     */
+    public static void ppm$set(MemorySegment seg, double x) {
         sdrplay_api_DevParamsT.ppm$VH.set(seg, x);
     }
     public static double ppm$get(MemorySegment seg, long index) {
@@ -103,10 +131,22 @@ public class sdrplay_api_DevParamsT {
     public static VarHandle mode$VH() {
         return sdrplay_api_DevParamsT.mode$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_TransferModeT mode;
+     * }
+     */
     public static int mode$get(MemorySegment seg) {
         return (int)sdrplay_api_DevParamsT.mode$VH.get(seg);
     }
-    public static void mode$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_TransferModeT mode;
+     * }
+     */
+    public static void mode$set(MemorySegment seg, int x) {
         sdrplay_api_DevParamsT.mode$VH.set(seg, x);
     }
     public static int mode$get(MemorySegment seg, long index) {
@@ -119,10 +159,22 @@ public class sdrplay_api_DevParamsT {
     public static VarHandle samplesPerPkt$VH() {
         return sdrplay_api_DevParamsT.samplesPerPkt$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int samplesPerPkt;
+     * }
+     */
     public static int samplesPerPkt$get(MemorySegment seg) {
         return (int)sdrplay_api_DevParamsT.samplesPerPkt$VH.get(seg);
     }
-    public static void samplesPerPkt$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int samplesPerPkt;
+     * }
+     */
+    public static void samplesPerPkt$set(MemorySegment seg, int x) {
         sdrplay_api_DevParamsT.samplesPerPkt$VH.set(seg, x);
     }
     public static int samplesPerPkt$get(MemorySegment seg, long index) {
@@ -145,10 +197,10 @@ public class sdrplay_api_DevParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

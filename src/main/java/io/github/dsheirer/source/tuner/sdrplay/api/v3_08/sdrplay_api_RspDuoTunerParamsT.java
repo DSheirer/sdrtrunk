@@ -21,19 +21,30 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned char biasTEnable;
+ *     sdrplay_api_RspDuo_AmPortSelectT tuner1AmPortSel;
+ *     unsigned char tuner1AmNotchEnable;
+ *     unsigned char rfNotchEnable;
+ *     unsigned char rfDabNotchEnable;
+ * };
+ * }
+ */
 public class sdrplay_api_RspDuoTunerParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         Constants$root.C_CHAR$LAYOUT.withName("biasTEnable"),
         MemoryLayout.paddingLayout(24),
-        Constants$root.C_LONG$LAYOUT.withName("tuner1AmPortSel"),
+        Constants$root.C_INT$LAYOUT.withName("tuner1AmPortSel"),
         Constants$root.C_CHAR$LAYOUT.withName("tuner1AmNotchEnable"),
         Constants$root.C_CHAR$LAYOUT.withName("rfNotchEnable"),
         Constants$root.C_CHAR$LAYOUT.withName("rfDabNotchEnable"),
@@ -46,10 +57,22 @@ public class sdrplay_api_RspDuoTunerParamsT {
     public static VarHandle biasTEnable$VH() {
         return sdrplay_api_RspDuoTunerParamsT.biasTEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char biasTEnable;
+     * }
+     */
     public static byte biasTEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDuoTunerParamsT.biasTEnable$VH.get(seg);
     }
-    public static void biasTEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char biasTEnable;
+     * }
+     */
+    public static void biasTEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDuoTunerParamsT.biasTEnable$VH.set(seg, x);
     }
     public static byte biasTEnable$get(MemorySegment seg, long index) {
@@ -62,10 +85,22 @@ public class sdrplay_api_RspDuoTunerParamsT {
     public static VarHandle tuner1AmPortSel$VH() {
         return sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * sdrplay_api_RspDuo_AmPortSelectT tuner1AmPortSel;
+     * }
+     */
     public static int tuner1AmPortSel$get(MemorySegment seg) {
         return (int)sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$VH.get(seg);
     }
-    public static void tuner1AmPortSel$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * sdrplay_api_RspDuo_AmPortSelectT tuner1AmPortSel;
+     * }
+     */
+    public static void tuner1AmPortSel$set(MemorySegment seg, int x) {
         sdrplay_api_RspDuoTunerParamsT.tuner1AmPortSel$VH.set(seg, x);
     }
     public static int tuner1AmPortSel$get(MemorySegment seg, long index) {
@@ -78,10 +113,22 @@ public class sdrplay_api_RspDuoTunerParamsT {
     public static VarHandle tuner1AmNotchEnable$VH() {
         return sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char tuner1AmNotchEnable;
+     * }
+     */
     public static byte tuner1AmNotchEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$VH.get(seg);
     }
-    public static void tuner1AmNotchEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char tuner1AmNotchEnable;
+     * }
+     */
+    public static void tuner1AmNotchEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDuoTunerParamsT.tuner1AmNotchEnable$VH.set(seg, x);
     }
     public static byte tuner1AmNotchEnable$get(MemorySegment seg, long index) {
@@ -94,10 +141,22 @@ public class sdrplay_api_RspDuoTunerParamsT {
     public static VarHandle rfNotchEnable$VH() {
         return sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char rfNotchEnable;
+     * }
+     */
     public static byte rfNotchEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$VH.get(seg);
     }
-    public static void rfNotchEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char rfNotchEnable;
+     * }
+     */
+    public static void rfNotchEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDuoTunerParamsT.rfNotchEnable$VH.set(seg, x);
     }
     public static byte rfNotchEnable$get(MemorySegment seg, long index) {
@@ -110,10 +169,22 @@ public class sdrplay_api_RspDuoTunerParamsT {
     public static VarHandle rfDabNotchEnable$VH() {
         return sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned char rfDabNotchEnable;
+     * }
+     */
     public static byte rfDabNotchEnable$get(MemorySegment seg) {
         return (byte)sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$VH.get(seg);
     }
-    public static void rfDabNotchEnable$set( MemorySegment seg, byte x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned char rfDabNotchEnable;
+     * }
+     */
+    public static void rfDabNotchEnable$set(MemorySegment seg, byte x) {
         sdrplay_api_RspDuoTunerParamsT.rfDabNotchEnable$VH.set(seg, x);
     }
     public static byte rfDabNotchEnable$get(MemorySegment seg, long index) {
@@ -124,10 +195,10 @@ public class sdrplay_api_RspDuoTunerParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

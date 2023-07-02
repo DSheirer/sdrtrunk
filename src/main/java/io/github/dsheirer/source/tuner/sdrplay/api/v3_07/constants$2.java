@@ -23,25 +23,49 @@ package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.invoke.MethodHandle;
-class constants$2 {
 
-    static final FunctionDescriptor sdrplay_api_UnlockDeviceApi_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT);
-    static final MethodHandle sdrplay_api_UnlockDeviceApi_t$MH = RuntimeHelper.downcallHandle(
-        constants$2.sdrplay_api_UnlockDeviceApi_t$FUNC
+final class constants$2 {
+
+    // Suppresses default constructor, ensuring non-instantiability.
+    private constants$2() {}
+    static final FunctionDescriptor sdrplay_api_UnlockDeviceApi_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final FunctionDescriptor sdrplay_api_UnlockDeviceApi_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final MethodHandle sdrplay_api_UnlockDeviceApi_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_UnlockDeviceApi_t.class, "apply", constants$2.sdrplay_api_UnlockDeviceApi_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_UnlockDeviceApi_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final MethodHandle sdrplay_api_UnlockDeviceApi_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$2.sdrplay_api_UnlockDeviceApi_t_DOWN$FUNC
     );
-    static final FunctionDescriptor sdrplay_api_GetDevices_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final FunctionDescriptor sdrplay_api_GetDevices_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
         Constants$root.C_POINTER$LAYOUT,
-        Constants$root.C_LONG$LAYOUT
+        Constants$root.C_INT$LAYOUT
     );
-    static final MethodHandle sdrplay_api_GetDevices_t$MH = RuntimeHelper.downcallHandle(
-        constants$2.sdrplay_api_GetDevices_t$FUNC
+    static final FunctionDescriptor sdrplay_api_GetDevices_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT
     );
-    static final FunctionDescriptor sdrplay_api_SelectDevice_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final MethodHandle sdrplay_api_GetDevices_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_GetDevices_t.class, "apply", constants$2.sdrplay_api_GetDevices_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_GetDevices_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT,
+        Constants$root.C_INT$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_GetDevices_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$2.sdrplay_api_GetDevices_t_DOWN$FUNC
+    );
+    static final FunctionDescriptor sdrplay_api_SelectDevice_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
-    static final MethodHandle sdrplay_api_SelectDevice_t$MH = RuntimeHelper.downcallHandle(
-        constants$2.sdrplay_api_SelectDevice_t$FUNC
+    static final FunctionDescriptor sdrplay_api_SelectDevice_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_SelectDevice_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_SelectDevice_t.class, "apply", constants$2.sdrplay_api_SelectDevice_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_SelectDevice_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_SelectDevice_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$2.sdrplay_api_SelectDevice_t_DOWN$FUNC
     );
 }
 

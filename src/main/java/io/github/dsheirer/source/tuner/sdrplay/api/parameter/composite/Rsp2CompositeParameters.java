@@ -22,8 +22,8 @@ package io.github.dsheirer.source.tuner.sdrplay.api.parameter.composite;
 import io.github.dsheirer.source.tuner.sdrplay.api.device.DeviceType;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.device.Rsp2DeviceParameters;
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.Rsp2TunerParameters;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 
 /**
  * RSP2 Composite parameters (device and tuner)
@@ -34,10 +34,10 @@ public class Rsp2CompositeParameters extends CompositeParameters<Rsp2DeviceParam
      * Constructs an instance from the foreign memory segment
      *
      * @param memorySegment for the composite structure in foreign memory
-     * @param memorySession for allocating additional memory segments for the sub-structures.
+     * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public Rsp2CompositeParameters(MemorySegment memorySegment, MemorySession memorySession)
+    public Rsp2CompositeParameters(MemorySegment memorySegment, Arena arena)
     {
-        super(DeviceType.RSP2, memorySegment, memorySession);
+        super(DeviceType.RSP2, memorySegment, arena);
     }
 }

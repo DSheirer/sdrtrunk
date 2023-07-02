@@ -26,9 +26,8 @@ import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.RspDuoTunerPa
 import io.github.dsheirer.source.tuner.sdrplay.api.parameter.tuner.TunerParametersFactory;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_DeviceParamsT;
 import io.github.dsheirer.source.tuner.sdrplay.api.v3_07.sdrplay_api_RxChannelParamsT;
-import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 
 /**
  * RSPduo Composite parameters (device and two tuners)
@@ -42,14 +41,14 @@ public class RspDuoCompositeParameters extends CompositeParameters<RspDuoDeviceP
      * Constructs an instance from the foreign memory segment
      *
      * @param memorySegment for the composite structure in foreign memory
-     * @param memorySession for allocating additional memory segments for the sub-structures.
+     * @param arena for allocating additional memory segments for the sub-structures.
      */
-    public RspDuoCompositeParameters(MemorySegment memorySegment, MemorySession memorySession)
+    public RspDuoCompositeParameters(MemorySegment memorySegment, Arena arena)
     {
-        super(DeviceType.RSPduo, memorySegment, memorySession);
+        super(DeviceType.RSPduo, memorySegment, arena);
 
-        MemoryAddress memoryAddressRxB = sdrplay_api_DeviceParamsT.rxChannelB$get(memorySegment);
-        MemorySegment memorySegmentRxB = sdrplay_api_RxChannelParamsT.ofAddress(memoryAddressRxB, memorySession);
+        MemorySegment memoryAddressRxB = sdrplay_api_DeviceParamsT.rxChannelB$get(memorySegment);
+        MemorySegment memorySegmentRxB = sdrplay_api_RxChannelParamsT.ofAddress(memoryAddressRxB, arena.scope());
         mTunerBParameters = (RspDuoTunerParameters) TunerParametersFactory.create(DeviceType.RSPduo, memorySegmentRxB);
 
         MemorySegment tunerBControlParametersMemorySegment = sdrplay_api_RxChannelParamsT.ctrlParams$slice(memorySegmentRxB);

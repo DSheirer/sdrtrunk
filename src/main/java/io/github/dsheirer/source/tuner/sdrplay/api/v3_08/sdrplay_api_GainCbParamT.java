@@ -21,18 +21,27 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned int gRdB;
+ *     unsigned int lnaGRdB;
+ *     double currGain;
+ * };
+ * }
+ */
 public class sdrplay_api_GainCbParamT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("gRdB"),
-        Constants$root.C_LONG$LAYOUT.withName("lnaGRdB"),
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("gRdB"),
+        Constants$root.C_INT$LAYOUT.withName("lnaGRdB"),
         Constants$root.C_DOUBLE$LAYOUT.withName("currGain")
     );
     public static MemoryLayout $LAYOUT() {
@@ -42,10 +51,22 @@ public class sdrplay_api_GainCbParamT {
     public static VarHandle gRdB$VH() {
         return sdrplay_api_GainCbParamT.gRdB$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int gRdB;
+     * }
+     */
     public static int gRdB$get(MemorySegment seg) {
         return (int)sdrplay_api_GainCbParamT.gRdB$VH.get(seg);
     }
-    public static void gRdB$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int gRdB;
+     * }
+     */
+    public static void gRdB$set(MemorySegment seg, int x) {
         sdrplay_api_GainCbParamT.gRdB$VH.set(seg, x);
     }
     public static int gRdB$get(MemorySegment seg, long index) {
@@ -58,10 +79,22 @@ public class sdrplay_api_GainCbParamT {
     public static VarHandle lnaGRdB$VH() {
         return sdrplay_api_GainCbParamT.lnaGRdB$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int lnaGRdB;
+     * }
+     */
     public static int lnaGRdB$get(MemorySegment seg) {
         return (int)sdrplay_api_GainCbParamT.lnaGRdB$VH.get(seg);
     }
-    public static void lnaGRdB$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int lnaGRdB;
+     * }
+     */
+    public static void lnaGRdB$set(MemorySegment seg, int x) {
         sdrplay_api_GainCbParamT.lnaGRdB$VH.set(seg, x);
     }
     public static int lnaGRdB$get(MemorySegment seg, long index) {
@@ -74,10 +107,22 @@ public class sdrplay_api_GainCbParamT {
     public static VarHandle currGain$VH() {
         return sdrplay_api_GainCbParamT.currGain$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * double currGain;
+     * }
+     */
     public static double currGain$get(MemorySegment seg) {
         return (double)sdrplay_api_GainCbParamT.currGain$VH.get(seg);
     }
-    public static void currGain$set( MemorySegment seg, double x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * double currGain;
+     * }
+     */
+    public static void currGain$set(MemorySegment seg, double x) {
         sdrplay_api_GainCbParamT.currGain$VH.set(seg, x);
     }
     public static double currGain$get(MemorySegment seg, long index) {
@@ -88,10 +133,10 @@ public class sdrplay_api_GainCbParamT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

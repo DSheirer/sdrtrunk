@@ -257,7 +257,7 @@ public class TunerFactory
                         }
                     }
                     break;
-                case default:
+                default:
                     mLog.warn("Unrecognized SDRplay RSP Device Type: " + device.getDeviceType() + " SER#: " + device.getSerialNumber());
                     break;
             }

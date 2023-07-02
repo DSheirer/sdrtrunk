@@ -21,21 +21,28 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
-import java.lang.foreign.SegmentAllocator;
 import java.lang.invoke.VarHandle;
+import java.lang.foreign.*;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned int firstSampleNum;
+ *     int grChanged;
+ *     int rfChanged;
+ *     int fsChanged;
+ *     unsigned int numSamples;
+ * };
+ * }
+ */
 public class sdrplay_api_StreamCbParamsT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("firstSampleNum"),
-        Constants$root.C_LONG$LAYOUT.withName("grChanged"),
-        Constants$root.C_LONG$LAYOUT.withName("rfChanged"),
-        Constants$root.C_LONG$LAYOUT.withName("fsChanged"),
-        Constants$root.C_LONG$LAYOUT.withName("numSamples")
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("firstSampleNum"),
+        Constants$root.C_INT$LAYOUT.withName("grChanged"),
+        Constants$root.C_INT$LAYOUT.withName("rfChanged"),
+        Constants$root.C_INT$LAYOUT.withName("fsChanged"),
+        Constants$root.C_INT$LAYOUT.withName("numSamples")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_StreamCbParamsT.$struct$LAYOUT;
@@ -44,10 +51,22 @@ public class sdrplay_api_StreamCbParamsT {
     public static VarHandle firstSampleNum$VH() {
         return sdrplay_api_StreamCbParamsT.firstSampleNum$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int firstSampleNum;
+     * }
+     */
     public static int firstSampleNum$get(MemorySegment seg) {
         return (int)sdrplay_api_StreamCbParamsT.firstSampleNum$VH.get(seg);
     }
-    public static void firstSampleNum$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int firstSampleNum;
+     * }
+     */
+    public static void firstSampleNum$set(MemorySegment seg, int x) {
         sdrplay_api_StreamCbParamsT.firstSampleNum$VH.set(seg, x);
     }
     public static int firstSampleNum$get(MemorySegment seg, long index) {
@@ -60,10 +79,22 @@ public class sdrplay_api_StreamCbParamsT {
     public static VarHandle grChanged$VH() {
         return sdrplay_api_StreamCbParamsT.grChanged$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int grChanged;
+     * }
+     */
     public static int grChanged$get(MemorySegment seg) {
         return (int)sdrplay_api_StreamCbParamsT.grChanged$VH.get(seg);
     }
-    public static void grChanged$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int grChanged;
+     * }
+     */
+    public static void grChanged$set(MemorySegment seg, int x) {
         sdrplay_api_StreamCbParamsT.grChanged$VH.set(seg, x);
     }
     public static int grChanged$get(MemorySegment seg, long index) {
@@ -76,10 +107,22 @@ public class sdrplay_api_StreamCbParamsT {
     public static VarHandle rfChanged$VH() {
         return sdrplay_api_StreamCbParamsT.rfChanged$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int rfChanged;
+     * }
+     */
     public static int rfChanged$get(MemorySegment seg) {
         return (int)sdrplay_api_StreamCbParamsT.rfChanged$VH.get(seg);
     }
-    public static void rfChanged$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int rfChanged;
+     * }
+     */
+    public static void rfChanged$set(MemorySegment seg, int x) {
         sdrplay_api_StreamCbParamsT.rfChanged$VH.set(seg, x);
     }
     public static int rfChanged$get(MemorySegment seg, long index) {
@@ -92,10 +135,22 @@ public class sdrplay_api_StreamCbParamsT {
     public static VarHandle fsChanged$VH() {
         return sdrplay_api_StreamCbParamsT.fsChanged$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * int fsChanged;
+     * }
+     */
     public static int fsChanged$get(MemorySegment seg) {
         return (int)sdrplay_api_StreamCbParamsT.fsChanged$VH.get(seg);
     }
-    public static void fsChanged$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * int fsChanged;
+     * }
+     */
+    public static void fsChanged$set(MemorySegment seg, int x) {
         sdrplay_api_StreamCbParamsT.fsChanged$VH.set(seg, x);
     }
     public static int fsChanged$get(MemorySegment seg, long index) {
@@ -108,10 +163,22 @@ public class sdrplay_api_StreamCbParamsT {
     public static VarHandle numSamples$VH() {
         return sdrplay_api_StreamCbParamsT.numSamples$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int numSamples;
+     * }
+     */
     public static int numSamples$get(MemorySegment seg) {
         return (int)sdrplay_api_StreamCbParamsT.numSamples$VH.get(seg);
     }
-    public static void numSamples$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int numSamples;
+     * }
+     */
+    public static void numSamples$set(MemorySegment seg, int x) {
         sdrplay_api_StreamCbParamsT.numSamples$VH.set(seg, x);
     }
     public static int numSamples$get(MemorySegment seg, long index) {
@@ -122,10 +189,10 @@ public class sdrplay_api_StreamCbParamsT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

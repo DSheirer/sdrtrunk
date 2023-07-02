@@ -53,12 +53,12 @@ repositories {
     maven { url "https://jitpack.io" }
 }
 
-version = '0.6.0-alpha6'
+version = '0.6.0-alpha7'
 
-//Java 19 is required for this version of the Project Panama preview/incubator feature
+//Java 20 is required for this version of the Project Panama preview/incubator feature
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(19)
+        languageVersion = JavaLanguageVersion.of(20)
     }
 }
 
@@ -197,16 +197,16 @@ String targetWindowsX86_64 = 'windows-x86_64-v' + version
  * author's development environment, but can be changed to your environment if you want to use this build pattern.
  */
 String jdk_base = '/home/denny/java_jdks/'
-String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-19.0.1-full'
-String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-19.0.1-full'
-String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-19.0.1-full.jdk'
-String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-19.0.1-full.jdk'
-String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-19.0.1-full'
+String jdk_linux_aarch64 = jdk_base + 'linux-arm64/jdk-20.0.1-full'
+String jdk_linux_x86_64 = jdk_base + 'linux-x64/jdk-20.0.1-full'
+String jdk_osx_x86_64 = jdk_base + 'osx-x64/jdk-20.0.1-full.jdk'
+String jdk_osx_aarch64 = jdk_base + 'osx-arm64/jdk-20.0.1-full.jdk'
+String jdk_windows_x86_64 = jdk_base + 'windows-x64/jdk-20.0.1-full'
 
 /**
  * Download URLs to download the JDK as part of the gradle build packaging process
  */
-def jdk_download_base = "https://download.bell-sw.com/java/19.0.1+11/bellsoft-jdk19.0.1+11-"
+def jdk_download_base = "https://download.bell-sw.com/java/20.0.1+10/bellsoft-jdk20.0.1+10-"
 def jdk_download_suffix = "-full.tar.gz"
 def jdk_download_linux_aarch64 = jdk_download_base + "linux-aarch64" + jdk_download_suffix
 def jdk_download_linux_x86_64 = jdk_download_base + "linux-amd64" + jdk_download_suffix

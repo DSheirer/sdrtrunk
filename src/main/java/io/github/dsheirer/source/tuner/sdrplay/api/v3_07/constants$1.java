@@ -23,21 +23,37 @@ package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.invoke.MethodHandle;
-class constants$1 {
 
-    static final FunctionDescriptor sdrplay_api_Close_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT);
-    static final MethodHandle sdrplay_api_Close_t$MH = RuntimeHelper.downcallHandle(
-        constants$1.sdrplay_api_Close_t$FUNC
+final class constants$1 {
+
+    // Suppresses default constructor, ensuring non-instantiability.
+    private constants$1() {}
+    static final FunctionDescriptor sdrplay_api_Close_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final FunctionDescriptor sdrplay_api_Close_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final MethodHandle sdrplay_api_Close_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_Close_t.class, "apply", constants$1.sdrplay_api_Close_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_Close_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final MethodHandle sdrplay_api_Close_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$1.sdrplay_api_Close_t_DOWN$FUNC
     );
-    static final FunctionDescriptor sdrplay_api_ApiVersion_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT,
+    static final FunctionDescriptor sdrplay_api_ApiVersion_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
         Constants$root.C_POINTER$LAYOUT
     );
-    static final MethodHandle sdrplay_api_ApiVersion_t$MH = RuntimeHelper.downcallHandle(
-        constants$1.sdrplay_api_ApiVersion_t$FUNC
+    static final FunctionDescriptor sdrplay_api_ApiVersion_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
     );
-    static final FunctionDescriptor sdrplay_api_LockDeviceApi_t$FUNC = FunctionDescriptor.of(Constants$root.C_LONG$LAYOUT);
-    static final MethodHandle sdrplay_api_LockDeviceApi_t$MH = RuntimeHelper.downcallHandle(
-        constants$1.sdrplay_api_LockDeviceApi_t$FUNC
+    static final MethodHandle sdrplay_api_ApiVersion_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_ApiVersion_t.class, "apply", constants$1.sdrplay_api_ApiVersion_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_ApiVersion_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT,
+        Constants$root.C_POINTER$LAYOUT
+    );
+    static final MethodHandle sdrplay_api_ApiVersion_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$1.sdrplay_api_ApiVersion_t_DOWN$FUNC
+    );
+    static final FunctionDescriptor sdrplay_api_LockDeviceApi_t$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final FunctionDescriptor sdrplay_api_LockDeviceApi_t_UP$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final MethodHandle sdrplay_api_LockDeviceApi_t_UP$MH = RuntimeHelper.upcallHandle(sdrplay_api_LockDeviceApi_t.class, "apply", constants$1.sdrplay_api_LockDeviceApi_t_UP$FUNC);
+    static final FunctionDescriptor sdrplay_api_LockDeviceApi_t_DOWN$FUNC = FunctionDescriptor.of(Constants$root.C_INT$LAYOUT);
+    static final MethodHandle sdrplay_api_LockDeviceApi_t_DOWN$MH = RuntimeHelper.downcallHandle(
+        constants$1.sdrplay_api_LockDeviceApi_t_DOWN$FUNC
     );
 }
 

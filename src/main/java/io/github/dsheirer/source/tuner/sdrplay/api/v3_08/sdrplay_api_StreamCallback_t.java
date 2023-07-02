@@ -21,21 +21,24 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.Addressable;
-import java.lang.foreign.MemoryAddress;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
+import java.lang.foreign.*;
+
+/**
+ * {@snippet :
+ * void (*sdrplay_api_StreamCallback_t)(short* xi,short* xq,struct * params,unsigned int numSamples,unsigned int reset,void* cbContext);
+ * }
+ */
 public interface sdrplay_api_StreamCallback_t {
 
-    void apply(java.lang.foreign.MemoryAddress xi, java.lang.foreign.MemoryAddress xq, java.lang.foreign.MemoryAddress params, int numSamples, int reset, java.lang.foreign.MemoryAddress cbContext);
-    static MemorySegment allocate(sdrplay_api_StreamCallback_t fi, MemorySession session) {
-        return RuntimeHelper.upcallStub(sdrplay_api_StreamCallback_t.class, fi, constants$0.sdrplay_api_StreamCallback_t$FUNC, session);
+    void apply(java.lang.foreign.MemorySegment xi, java.lang.foreign.MemorySegment xq, java.lang.foreign.MemorySegment params, int numSamples, int reset, java.lang.foreign.MemorySegment cbContext);
+    static MemorySegment allocate(sdrplay_api_StreamCallback_t fi, SegmentScope scope) {
+        return RuntimeHelper.upcallStub(constants$0.sdrplay_api_StreamCallback_t_UP$MH, fi, constants$0.sdrplay_api_StreamCallback_t$FUNC, scope);
     }
-    static sdrplay_api_StreamCallback_t ofAddress(MemoryAddress addr, MemorySession session) {
-        MemorySegment symbol = MemorySegment.ofAddress(addr, 0, session);
-        return (java.lang.foreign.MemoryAddress _xi, java.lang.foreign.MemoryAddress _xq, java.lang.foreign.MemoryAddress _params, int _numSamples, int _reset, java.lang.foreign.MemoryAddress _cbContext) -> {
+    static sdrplay_api_StreamCallback_t ofAddress(MemorySegment addr, SegmentScope scope) {
+        MemorySegment symbol = MemorySegment.ofAddress(addr.address(), 0, scope);
+        return (java.lang.foreign.MemorySegment _xi, java.lang.foreign.MemorySegment _xq, java.lang.foreign.MemorySegment _params, int _numSamples, int _reset, java.lang.foreign.MemorySegment _cbContext) -> {
             try {
-                constants$0.sdrplay_api_StreamCallback_t$MH.invokeExact((Addressable)symbol, (java.lang.foreign.Addressable)_xi, (java.lang.foreign.Addressable)_xq, (java.lang.foreign.Addressable)_params, _numSamples, _reset, (java.lang.foreign.Addressable)_cbContext);
+                constants$0.sdrplay_api_StreamCallback_t_DOWN$MH.invokeExact(symbol, _xi, _xq, _params, _numSamples, _reset, _cbContext);
             } catch (Throwable ex$) {
                 throw new AssertionError("should not reach here", ex$);
             }

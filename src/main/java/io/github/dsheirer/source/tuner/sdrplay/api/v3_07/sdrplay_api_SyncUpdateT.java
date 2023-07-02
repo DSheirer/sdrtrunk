@@ -21,18 +21,22 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_07;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
-import java.lang.foreign.MemoryLayout;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
-import java.lang.foreign.SegmentAllocator;
 import java.lang.invoke.VarHandle;
+import java.lang.foreign.*;
+
+/**
+ * {@snippet :
+ * struct {
+ *     unsigned int sampleNum;
+ *     unsigned int period;
+ * };
+ * }
+ */
 public class sdrplay_api_SyncUpdateT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
-        Constants$root.C_LONG$LAYOUT.withName("sampleNum"),
-        Constants$root.C_LONG$LAYOUT.withName("period")
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
+        Constants$root.C_INT$LAYOUT.withName("sampleNum"),
+        Constants$root.C_INT$LAYOUT.withName("period")
     );
     public static MemoryLayout $LAYOUT() {
         return sdrplay_api_SyncUpdateT.$struct$LAYOUT;
@@ -41,10 +45,22 @@ public class sdrplay_api_SyncUpdateT {
     public static VarHandle sampleNum$VH() {
         return sdrplay_api_SyncUpdateT.sampleNum$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int sampleNum;
+     * }
+     */
     public static int sampleNum$get(MemorySegment seg) {
         return (int)sdrplay_api_SyncUpdateT.sampleNum$VH.get(seg);
     }
-    public static void sampleNum$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int sampleNum;
+     * }
+     */
+    public static void sampleNum$set(MemorySegment seg, int x) {
         sdrplay_api_SyncUpdateT.sampleNum$VH.set(seg, x);
     }
     public static int sampleNum$get(MemorySegment seg, long index) {
@@ -57,10 +73,22 @@ public class sdrplay_api_SyncUpdateT {
     public static VarHandle period$VH() {
         return sdrplay_api_SyncUpdateT.period$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * unsigned int period;
+     * }
+     */
     public static int period$get(MemorySegment seg) {
         return (int)sdrplay_api_SyncUpdateT.period$VH.get(seg);
     }
-    public static void period$set( MemorySegment seg, int x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * unsigned int period;
+     * }
+     */
+    public static void period$set(MemorySegment seg, int x) {
         sdrplay_api_SyncUpdateT.period$VH.set(seg, x);
     }
     public static int period$get(MemorySegment seg, long index) {
@@ -71,10 +99,10 @@ public class sdrplay_api_SyncUpdateT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 

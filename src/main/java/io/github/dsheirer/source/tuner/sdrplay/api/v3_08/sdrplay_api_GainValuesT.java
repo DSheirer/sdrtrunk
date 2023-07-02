@@ -21,16 +21,25 @@
 
 package io.github.dsheirer.source.tuner.sdrplay.api.v3_08;
 
-import java.lang.foreign.GroupLayout;
-import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
-import java.lang.foreign.MemorySession;
 import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.SegmentScope;
+import java.lang.foreign.StructLayout;
 import java.lang.invoke.VarHandle;
+
+/**
+ * {@snippet :
+ * struct {
+ *     float curr;
+ *     float max;
+ *     float min;
+ * };
+ * }
+ */
 public class sdrplay_api_GainValuesT {
 
-    static final  GroupLayout $struct$LAYOUT = MemoryLayout.structLayout(
+    static final StructLayout $struct$LAYOUT = MemoryLayout.structLayout(
         Constants$root.C_FLOAT$LAYOUT.withName("curr"),
         Constants$root.C_FLOAT$LAYOUT.withName("max"),
         Constants$root.C_FLOAT$LAYOUT.withName("min")
@@ -42,10 +51,22 @@ public class sdrplay_api_GainValuesT {
     public static VarHandle curr$VH() {
         return sdrplay_api_GainValuesT.curr$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * float curr;
+     * }
+     */
     public static float curr$get(MemorySegment seg) {
         return (float)sdrplay_api_GainValuesT.curr$VH.get(seg);
     }
-    public static void curr$set( MemorySegment seg, float x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * float curr;
+     * }
+     */
+    public static void curr$set(MemorySegment seg, float x) {
         sdrplay_api_GainValuesT.curr$VH.set(seg, x);
     }
     public static float curr$get(MemorySegment seg, long index) {
@@ -58,10 +79,22 @@ public class sdrplay_api_GainValuesT {
     public static VarHandle max$VH() {
         return sdrplay_api_GainValuesT.max$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * float max;
+     * }
+     */
     public static float max$get(MemorySegment seg) {
         return (float)sdrplay_api_GainValuesT.max$VH.get(seg);
     }
-    public static void max$set( MemorySegment seg, float x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * float max;
+     * }
+     */
+    public static void max$set(MemorySegment seg, float x) {
         sdrplay_api_GainValuesT.max$VH.set(seg, x);
     }
     public static float max$get(MemorySegment seg, long index) {
@@ -74,10 +107,22 @@ public class sdrplay_api_GainValuesT {
     public static VarHandle min$VH() {
         return sdrplay_api_GainValuesT.min$VH;
     }
+    /**
+     * Getter for field:
+     * {@snippet :
+     * float min;
+     * }
+     */
     public static float min$get(MemorySegment seg) {
         return (float)sdrplay_api_GainValuesT.min$VH.get(seg);
     }
-    public static void min$set( MemorySegment seg, float x) {
+    /**
+     * Setter for field:
+     * {@snippet :
+     * float min;
+     * }
+     */
+    public static void min$set(MemorySegment seg, float x) {
         sdrplay_api_GainValuesT.min$VH.set(seg, x);
     }
     public static float min$get(MemorySegment seg, long index) {
@@ -88,10 +133,10 @@ public class sdrplay_api_GainValuesT {
     }
     public static long sizeof() { return $LAYOUT().byteSize(); }
     public static MemorySegment allocate(SegmentAllocator allocator) { return allocator.allocate($LAYOUT()); }
-    public static MemorySegment allocateArray(int len, SegmentAllocator allocator) {
+    public static MemorySegment allocateArray(long len, SegmentAllocator allocator) {
         return allocator.allocate(MemoryLayout.sequenceLayout(len, $LAYOUT()));
     }
-    public static MemorySegment ofAddress(MemoryAddress addr, MemorySession session) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, session); }
+    public static MemorySegment ofAddress(MemorySegment addr, SegmentScope scope) { return RuntimeHelper.asArray(addr, $LAYOUT(), 1, scope); }
 }
 
 
