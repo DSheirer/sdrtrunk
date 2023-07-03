@@ -322,17 +322,19 @@ public class P25P1MessageFramer implements Listener<Dibit>, IP25P1DataUnitDetect
                     TSBKMessage tsbkMessage = TSBKMessageFactory.create(mChannelStatusProcessor.getDirection(),
                         mDataUnitID, mBinaryMessage, mNAC, getTimestamp());
 
+                    int messageLength = mDataUnitID.getMessageLength();
+
                     mMessageListener.receive(tsbkMessage);
 
                     if(tsbkMessage.isLastBlock())
                     {
-                        reset(mDataUnitID.getMessageLength());
+                        reset(messageLength);
                         mTrailingDibitsToSuppress = 1;
                     }
                     else
                     {
-                        updateBitsProcessed(mDataUnitID.getMessageLength());
-                        mBinaryMessage = new CorrectedBinaryMessage(mDataUnitID.getMessageLength());
+                        updateBitsProcessed(messageLength);
+                        mBinaryMessage = new CorrectedBinaryMessage(messageLength);
                         if(mDataUnitID == P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_1)
                         {
                             mDataUnitID = P25P1DataUnitID.TRUNKING_SIGNALING_BLOCK_2;
