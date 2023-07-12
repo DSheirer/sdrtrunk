@@ -2,24 +2,19 @@
  * *****************************************************************************
  * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.fleetsync2;
 
@@ -125,10 +120,8 @@ public class Fleetsync2DecoderState extends DecoderState
                     broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.DATA));
                     break;
                 case GPS:
-                    PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(fleetsync.getTimestamp())
+                    PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, fleetsync.getTimestamp())
                         .channel(getCurrentChannel())
-                        .eventType(DecodeEventType.GPS)
-                        .eventDescription(DecodeEventType.GPS.toString())
                         .details(fleetsync.toString())
                         .identifiers(getIdentifierCollection().copyOf())
                         .protocol(Protocol.FLEETSYNC)
@@ -143,11 +136,9 @@ public class Fleetsync2DecoderState extends DecoderState
     }
 
     private DecodeEvent getDecodeEvent(Fleetsync2Message fleetsync, DecodeEventType eventType) {
-        return DecodeEvent.builder(fleetsync.getTimestamp())
+        return DecodeEvent.builder(eventType, fleetsync.getTimestamp())
                 .channel(getCurrentChannel())
-                .eventType(eventType)
-                .eventDescription(fleetsync.getMessageType().toString())
-                .details(fleetsync.toString())
+                .details(fleetsync.getMessageType() + " " + fleetsync)
                 .identifiers(getIdentifierCollection().copyOf())
                 .protocol(Protocol.FLEETSYNC)
                 .build();

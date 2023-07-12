@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.ltrstandard;
@@ -24,47 +23,53 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
+import java.util.function.Function;
 
-import java.util.*;
-
-public class LTRStandardMessageFilter extends Filter<IMessage>
+/**
+ * Filter for LTR standard messages.
+ */
+public class LTRStandardMessageFilter extends Filter<IMessage,LtrStandardMessageType>
 {
-    private Map<LtrStandardMessageType,FilterElement<LtrStandardMessageType>> mElements = new EnumMap<>(LtrStandardMessageType.class);
+    private final KeyExtractor mKeyExtractor = new KeyExtractor();
 
+    /**
+     * Constructor
+     */
     public LTRStandardMessageFilter()
     {
-        super("LTR Message Filter");
+        super("LTR Messages");
 
-        mElements.put(LtrStandardMessageType.CALL, new FilterElement<>(LtrStandardMessageType.CALL));
-        mElements.put(LtrStandardMessageType.CALL_END, new FilterElement<>(LtrStandardMessageType.CALL_END));
-        mElements.put(LtrStandardMessageType.IDLE, new FilterElement<>(LtrStandardMessageType.IDLE));
-        mElements.put(LtrStandardMessageType.UNKNOWN, new FilterElement<>(LtrStandardMessageType.UNKNOWN));
-    }
-
-    @Override
-    public boolean passes(IMessage message)
-    {
-        if(mEnabled && canProcess(message))
+        for(LtrStandardMessageType type: LtrStandardMessageType.values())
         {
-            LTRMessage ltr = (LTRMessage)message;
-
-            if(mElements.containsKey(ltr.getMessageType()))
-            {
-                return mElements.get(ltr.getMessageType()).isEnabled();
-            }
+            add(new FilterElement<>(type));
         }
-
-        return false;
     }
 
     public boolean canProcess(IMessage message)
     {
-        return message instanceof LTRMessage;
+        return message instanceof LTRMessage && super.canProcess(message);
     }
 
     @Override
-    public List<FilterElement<?>> getFilterElements()
+    public Function<IMessage, LtrStandardMessageType> getKeyExtractor()
     {
-        return new ArrayList<FilterElement<?>>(mElements.values());
+        return mKeyExtractor;
+    }
+
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage,LtrStandardMessageType>
+    {
+        @Override
+        public LtrStandardMessageType apply(IMessage message)
+        {
+            if(message instanceof LTRMessage ltr)
+            {
+                return ltr.getMessageType();
+            }
+
+            return null;
+        }
     }
 }

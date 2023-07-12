@@ -47,6 +47,7 @@ import io.github.dsheirer.module.decode.dmr.DMRDecoderState;
 import io.github.dsheirer.module.decode.dmr.DMRTrafficChannelManager;
 import io.github.dsheirer.module.decode.dmr.DecodeConfigDMR;
 import io.github.dsheirer.module.decode.dmr.audio.DMRAudioModule;
+import io.github.dsheirer.module.decode.dmr.message.filter.DmrMessageFilterSet;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2Decoder;
 import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderState;
 import io.github.dsheirer.module.decode.fleetsync2.FleetsyncMessageFilter;
@@ -80,16 +81,18 @@ import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderLSM;
 import io.github.dsheirer.module.decode.p25.phase1.P25P1DecoderState;
-import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25MessageFilterSet;
+import io.github.dsheirer.module.decode.p25.phase1.message.filter.P25P1MessageFilterSet;
 import io.github.dsheirer.module.decode.p25.phase2.DecodeConfigP25Phase2;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderHDQPSK;
 import io.github.dsheirer.module.decode.p25.phase2.P25P2DecoderState;
+import io.github.dsheirer.module.decode.p25.phase2.message.filter.P25P2MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
 import io.github.dsheirer.module.decode.passport.PassportDecoder;
 import io.github.dsheirer.module.decode.passport.PassportDecoderState;
 import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
 import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
 import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
+import io.github.dsheirer.module.decode.tait.Tait1200MessageFilter;
 import io.github.dsheirer.module.decode.traffic.TrafficChannelManager;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
 import io.github.dsheirer.preference.UserPreferences;
@@ -494,7 +497,7 @@ public class DecoderFactory
      */
     public static FilterSet<IMessage> getMessageFilters(List<Module> modules)
     {
-        FilterSet<IMessage> filterSet = new FilterSet<>();
+        FilterSet<IMessage> filterSet = new FilterSet<>("Message Filters");
 
         for(Module module : modules)
         {
@@ -504,27 +507,27 @@ public class DecoderFactory
             }
         }
 
-        /* If we don't have any filters, add an ALL-PASS filter */
-        if(filterSet.getFilters().isEmpty())
-        {
-            filterSet.addFilter(new AllPassFilter<>());
-        }
+        //Add an all-others filter as a catch-all for anything that isn't handled by the decoder filters.
+        filterSet.addFilter(new AllPassFilter<>("All Other Messages Filter"));
 
         return filterSet;
     }
 
     /**
      * Returns a set of IMessageFilter objects (FilterSets or Filters) that
-     * can process all of the messages produced by the specified decoder type.
+     * can process all messages produced by the specified decoder type.
      */
     public static List<IFilter<IMessage>> getMessageFilter(DecoderType decoder)
     {
-        ArrayList<IFilter<IMessage>> filters = new ArrayList<>();
+        List<IFilter<IMessage>> filters = new ArrayList<>();
 
         switch(decoder)
         {
             case DCS:
                 filters.add(new DCSMessageFilter());
+                break;
+            case DMR:
+                filters.add(new DmrMessageFilterSet());
                 break;
             case FLEETSYNC2:
                 filters.add(new FleetsyncMessageFilter());
@@ -545,13 +548,16 @@ public class DecoderFactory
                 filters.add(new MPT1327MessageFilter());
                 break;
             case P25_PHASE1:
-                filters.add(new P25MessageFilterSet());
+                filters.add(new P25P1MessageFilterSet());
+                break;
+            case P25_PHASE2:
+                filters.add(new P25P2MessageFilterSet());
                 break;
             case PASSPORT:
                 filters.add(new PassportMessageFilter());
                 break;
-            case DMR:
-                //filters.add(new DMR) //todo: not finished
+            case TAIT_1200:
+                filters.add(new Tait1200MessageFilter());
                 break;
             default:
                 break;

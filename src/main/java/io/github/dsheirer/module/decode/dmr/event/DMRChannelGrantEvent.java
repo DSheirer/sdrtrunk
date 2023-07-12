@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.dmr.event;
 
@@ -34,11 +33,12 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
 
     /**
      * Constructs an instance
+     * @param decodeEventType for the event
      * @param timestamp for the event
      */
-    public DMRChannelGrantEvent(long timestamp)
+    public DMRChannelGrantEvent(DecodeEventType decodeEventType, long timestamp)
     {
-        super(timestamp);
+        super(decodeEventType, timestamp);
     }
 
     /**
@@ -63,9 +63,9 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
      * @param timeStart for the event
      * @return builder
      */
-    public static DMRChannelGrantDecodeEventBuilder channelGrantBuilder(long timeStart)
+    public static DMRChannelGrantDecodeEventBuilder channelGrantBuilder(DecodeEventType decodeEventType, long timeStart)
     {
-        return new DMRChannelGrantDecodeEventBuilder(timeStart);
+        return new DMRChannelGrantDecodeEventBuilder(decodeEventType, timeStart);
     }
 
     /**
@@ -76,7 +76,6 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
         protected long mTimeStart;
         protected long mDuration;
         protected DecodeEventType mDecodeEventType;
-        protected String mEventDescription;
         protected IdentifierCollection mIdentifierCollection;
         protected DMRChannel mChannel;
         protected String mDetails;
@@ -87,8 +86,9 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
          *
          * @param timeStart
          */
-        public DMRChannelGrantDecodeEventBuilder(long timeStart)
+        public DMRChannelGrantDecodeEventBuilder(DecodeEventType decodeEventType, long timeStart)
         {
+            mDecodeEventType = decodeEventType;
             mTimeStart = timeStart;
         }
 
@@ -132,25 +132,6 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
         }
 
         /**
-         * Sets the Decode Event type for this event.
-         * @param eventType
-         */
-        public DMRChannelGrantDecodeEventBuilder eventType(DecodeEventType eventType) {
-            mDecodeEventType = eventType;
-            return this;
-        }
-
-        /**
-         * Sets the event description text
-         * @param description of the event
-         */
-        public DMRChannelGrantDecodeEventBuilder eventDescription(String description)
-        {
-            mEventDescription = description;
-            return this;
-        }
-
-        /**
          * Sets the identifier collection.
          * @param identifierCollection containing optional identifiers like TO, FROM, frequency and
          * alias list configuration name.
@@ -176,13 +157,11 @@ public class DMRChannelGrantEvent extends DMRDecodeEvent
          */
         public DMRChannelGrantEvent build()
         {
-            DMRChannelGrantEvent decodeEvent = new DMRChannelGrantEvent(mTimeStart);
+            DMRChannelGrantEvent decodeEvent = new DMRChannelGrantEvent(mDecodeEventType, mTimeStart);
             decodeEvent.setChannelDescriptor(mChannel);
             decodeEvent.setTimeslot(mChannel.getTimeslot());
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
-            decodeEvent.setEventType(mDecodeEventType);
-            decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             return decodeEvent;
         }

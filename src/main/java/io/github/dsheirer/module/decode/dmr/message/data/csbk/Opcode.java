@@ -39,7 +39,7 @@ public enum Opcode
     STANDARD_CHANNEL_TIMING(Vendor.STANDARD, 7, "CHANNEL TIMING"),
     STANDARD_ALOHA(Vendor.STANDARD, 25, "ALOHA"),
     STANDARD_UNIFIED_DATA_TRANSPORT_OUTBOUND_HEADER(Vendor.STANDARD, 26, "UNIFIED DATA TRANSPORT OUTBOUND HEADER"),
-    STANDARD_UNIFIED_DATA_TRANSPORT_INBOUND_HEADER(Vendor.STANDARD, 27, "UNIFIED DATA TRANSPORT OUTBOUND HEADER"),
+    STANDARD_UNIFIED_DATA_TRANSPORT_INBOUND_HEADER(Vendor.STANDARD, 27, "UNIFIED DATA TRANSPORT INBOUND HEADER"),
     STANDARD_AHOY(Vendor.STANDARD, 28, "AHOY"),
     STANDARD_ACTIVATION(Vendor.STANDARD, 30, "ACTIVATION"),
     STANDARD_RANDOM_ACCESS_SERVICE_REQUEST(Vendor.STANDARD, 31, "RANDOM ACCESS SERVICE REQUEST"),
@@ -102,13 +102,18 @@ public enum Opcode
     HYTERA_68_XPT_PREAMBLE(Vendor.HYTERA_68, 61, "HYTERA 68 XPT PREAMBLE"),
     HYTERA_68_CSBKO_62(Vendor.HYTERA_68, 62, "HYTERA 68 CSBKO 62"),
 
-
     UNKNOWN(Vendor.UNKNOWN, -1, "UNKNOWN");
 
     private Vendor mVendor;
     private int mValue;
     private String mLabel;
 
+    /**
+     * Constructor
+     * @param vendor for the opcode
+     * @param value for the opcode
+     * @param label to display for the opcode
+     */
     Opcode(Vendor vendor, int value, String label)
     {
         mVendor = vendor;
@@ -151,19 +156,86 @@ public enum Opcode
      */
     public boolean isDataChannelGrantOpcode()
     {
-        return DATA_CHANNEL_GRANT_OPCODES.contains(this);
+        return DATA_CHANNEL_GRANTS.contains(this);
     }
 
     /**
-     * Data Channel Grant opcodes
+     * Data channel grant opcodes
      */
-    public static final EnumSet<Opcode> DATA_CHANNEL_GRANT_OPCODES = EnumSet.of(
-        STANDARD_PRIVATE_DATA_CHANNEL_GRANT_MULTI_ITEM,
-        STANDARD_PRIVATE_DATA_CHANNEL_GRANT_SINGLE_ITEM,
-        STANDARD_DUPLEX_PRIVATE_DATA_CHANNEL_GRANT,
-        STANDARD_TALKGROUP_DATA_CHANNEL_GRANT_MULTI_ITEM,
-        STANDARD_TALKGROUP_DATA_CHANNEL_GRANT_SINGLE_ITEM);
+    public static final EnumSet<Opcode> DATA_CHANNEL_GRANTS = EnumSet.of(STANDARD_PRIVATE_DATA_CHANNEL_GRANT_MULTI_ITEM,
+        STANDARD_PRIVATE_DATA_CHANNEL_GRANT_SINGLE_ITEM, STANDARD_DUPLEX_PRIVATE_DATA_CHANNEL_GRANT,
+        STANDARD_TALKGROUP_DATA_CHANNEL_GRANT_MULTI_ITEM, STANDARD_TALKGROUP_DATA_CHANNEL_GRANT_SINGLE_ITEM);
 
+    /**
+     * Data opcodes
+     */
+    public static final EnumSet<Opcode> DATA_OPCODES = EnumSet.of(STANDARD_UNIFIED_DATA_TRANSPORT_OUTBOUND_HEADER,
+            STANDARD_UNIFIED_DATA_TRANSPORT_INBOUND_HEADER, STANDARD_UNIFIED_DATA_TRANSPORT_FOR_DGNA_OUTBOUND_HEADER,
+            STANDARD_UNIFIED_DATA_TRANSPORT_FOR_DGNA_INBOUND_HEADER, STANDARD_PREAMBLE);
+
+    /**
+     * Mobile request and response opcodes
+     */
+    public static final EnumSet<Opcode> MOBILE_REQUEST_RESPONSE = EnumSet.of(STANDARD_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST,
+            STANDARD_RANDOM_ACCESS_SERVICE_REQUEST);
+
+    /**
+     * Network request and response and announcement opcodes
+     */
+    public static final EnumSet<Opcode> NETWORK_REQUEST_RESPONSE = EnumSet.of(STANDARD_FEATURE_NOT_SUPPORTED,
+            STANDARD_UNIT_TO_UNIT_VOICE_SERVICE_RESPONSE, STANDARD_AHOY, STANDARD_ACKNOWLEDGE_RESPONSE_OUTBOUND_TSCC,
+            STANDARD_ACKNOWLEDGE_RESPONSE_INBOUND_TSCC, STANDARD_ACKNOWLEDGE_RESPONSE_OUTBOUND_PAYLOAD,
+            STANDARD_ACKNOWLEDGE_RESPONSE_INBOUND_PAYLOAD, STANDARD_NEGATIVE_ACKNOWLEDGE_RESPONSE, STANDARD_CLEAR,
+            STANDARD_MOVE_TSCC, STANDARD_CHANNEL_TIMING,
+            STANDARD_ALOHA, STANDARD_ACTIVATION, STANDARD_ANNOUNCEMENT, STANDARD_MAINTENANCE, STANDARD_PROTECT);
+
+    /**
+     * Voice channel grant opcodes
+     */
+    public static final EnumSet<Opcode> VOICE_CHANNEL_GRANTS = EnumSet.of(STANDARD_PRIVATE_VOICE_CHANNEL_GRANT,
+            STANDARD_TALKGROUP_VOICE_CHANNEL_GRANT, STANDARD_BROADCAST_TALKGROUP_VOICE_CHANNEL_GRANT,
+            STANDARD_DUPLEX_PRIVATE_VOICE_CHANNEL_GRANT);
+
+    /**
+     * Hytera opcodes
+     */
+    public static final EnumSet<Opcode> HYTERA = EnumSet.of(HYTERA_08_ACKNOWLEDGE, HYTERA_08_ANNOUNCEMENT,
+            HYTERA_08_CSBKO_44, HYTERA_08_CSBKO_47, HYTERA_68_XPT_SITE_STATE, HYTERA_68_ALOHA,
+            HYTERA_68_ACKNOWLEDGE, HYTERA_68_ANNOUNCEMENT, HYTERA_68_XPT_PREAMBLE, HYTERA_68_CSBKO_62);
+
+    /**
+     * Motorola Capacity Max opcodes
+     */
+    public static final EnumSet<Opcode> MOTOROLA_CAPACITY_MAX = EnumSet.of(MOTOROLA_CAPMAX_ALOHA);
+
+    /**
+     * Motorola Capacity Plus opcodes
+     */
+    public static final EnumSet<Opcode> MOTOROLA_CAPACITY_PLUS = EnumSet.of(MOTOROLA_CAPPLUS_CALL_ALERT,
+            MOTOROLA_CAPPLUS_CALL_ALERT_ACK, MOTOROLA_CAPPLUS_DATA_WINDOW_ANNOUNCEMENT,
+            MOTOROLA_CAPPLUS_DATA_WINDOW_GRANT, MOTOROLA_CAPPLUS_NEIGHBOR_REPORT, MOTOROLA_CAPPLUS_CSBKO_60,
+            MOTOROLA_CAPPLUS_PREAMBLE, MOTOROLA_CAPPLUS_SITE_STATUS);
+
+    /**
+     * Motorola Connect Plus opcodes
+     */
+    public static final EnumSet<Opcode> MOTOROLA_CONNECT_PLUS = EnumSet.of(MOTOROLA_CONPLUS_NEIGHBOR_REPORT,
+            MOTOROLA_CONPLUS_VOICE_CHANNEL_USER, MOTOROLA_CONPLUS_DATA_CHANNEL_GRANT, MOTOROLA_CONPLUS_CSBKO_10,
+            MOTOROLA_CONPLUS_TERMINATE_CHANNEL_GRANT, MOTOROLA_CONPLUS_CSBKO_16, MOTOROLA_CONPLUS_REGISTRATION_REQUEST,
+            MOTOROLA_CONPLUS_REGISTRATION_RESPONSE, MOTOROLA_CONPLUS_TALKGROUP_AFFILIATION,
+            MOTOROLA_CONPLUS_DATA_WINDOW_ANNOUNCEMENT, MOTOROLA_CONPLUS_DATA_WINDOW_GRANT);
+
+    /**
+     * Indicates if the opcode is included in one of the enumset groupings above
+     * @return
+     */
+    public boolean isGrouped()
+    {
+        return DATA_CHANNEL_GRANTS.contains(this) || DATA_OPCODES.contains(this) ||
+                MOBILE_REQUEST_RESPONSE.contains(this) || NETWORK_REQUEST_RESPONSE.contains(this) ||
+                VOICE_CHANNEL_GRANTS.contains(this) || HYTERA.contains(this) || MOTOROLA_CAPACITY_MAX.contains(this) ||
+                MOTOROLA_CAPACITY_PLUS.contains(this) || MOTOROLA_CONNECT_PLUS.contains(this);
+    }
 
     /**
      * Lookup map of vendors and opcode value to opcodes

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,14 +33,13 @@ import io.github.dsheirer.module.decode.event.DecodeEvent;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.mpt1327.channel.MPT1327Channel;
 import io.github.dsheirer.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MPT1327DecoderState extends DecoderState
 {
@@ -198,9 +197,7 @@ public class MPT1327DecoderState extends DecoderState
     private DecodeEvent getDecodeEvent(IMessage message, MPT1327Message mpt, DecodeEventType decodeEventType, String details)
     {
         MutableIdentifierCollection ic = getUpdatedMutableIdentifierCollection(mpt);
-        return MPT1327DecodeEvent.builder(message.getTimestamp())
-                .eventType(decodeEventType)
-                .eventDescription(decodeEventType.toString())
+        return MPT1327DecodeEvent.builder(decodeEventType, message.getTimestamp())
                 .details(details)
                 .identifiers(ic)
                 .build();

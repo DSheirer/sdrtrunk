@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.protocol.Protocol;
 
 public class P25DecodeEvent extends DecodeEvent
@@ -29,9 +29,9 @@ public class P25DecodeEvent extends DecodeEvent
      * Constructs a P25 decode event
      * @param start
      */
-    public P25DecodeEvent(long start)
+    public P25DecodeEvent(DecodeEventType decodeEventType, long start)
     {
-        super(start);
+        super(decodeEventType, start);
         setProtocol(Protocol.APCO25);
     }
 
@@ -40,9 +40,9 @@ public class P25DecodeEvent extends DecodeEvent
      * @param timeStart for the event
      * @return builder
      */
-    public static DecodeEventBuilder builder(long timeStart)
+    public static DecodeEventBuilder builder(DecodeEventType decodeEventType, long timeStart)
     {
-        DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(timeStart);
+        DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(decodeEventType, timeStart);
         decodeEventBuilder.protocol(Protocol.APCO25);
         return decodeEventBuilder;
     }

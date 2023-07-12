@@ -14,11 +14,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.event;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+
+/**
+ * Enumeration of event types for decoded events.
+ */
 public enum DecodeEventType
 {
     AFFILIATE("Affiliate"),
@@ -43,6 +49,7 @@ public enum DecodeEventType
     CALL_UNIT_TO_UNIT_ENCRYPTED("Encrypted Unit To Unit Call"),
     CALL_NO_TUNER("Call - No Tuner"),
     CALL_TIMEOUT("Call Timeout"),
+    CELLOCATOR("Cellocator"),
     COMMAND("Command"),
     DATA_CALL("Data Call"),
     DATA_CALL_ENCRYPTED("Encrypted Data Call"),
@@ -55,6 +62,7 @@ public enum DecodeEventType
     ID_ANI("ANI"),
     ID_UNIQUE("Unique ID"),
     IP_PACKET("IP Packet"),
+    LRRP("Motorola LRRP"),
     NOTIFICATION("Notification"),
     PAGE("Page"),
     QUERY("Query"),
@@ -74,16 +82,82 @@ public enum DecodeEventType
 
     private String mLabel;
 
+    /**
+     * Encrypted voice call event types for filtering
+     */
+    public static final EnumSet<DecodeEventType> VOICE_CALLS_ENCRYPTED = EnumSet.of(DecodeEventType.CALL_ENCRYPTED,
+        DecodeEventType.CALL_GROUP_ENCRYPTED, DecodeEventType.CALL_PATCH_GROUP_ENCRYPTED,
+        DecodeEventType.CALL_INTERCONNECT_ENCRYPTED, DecodeEventType.CALL_UNIT_TO_UNIT_ENCRYPTED);
+
+    /**
+     * Voice call event types for filtering
+     */
+    public static final EnumSet<DecodeEventType> VOICE_CALLS = EnumSet.of(DecodeEventType.CALL_GROUP,
+            DecodeEventType.CALL_PATCH_GROUP, DecodeEventType.CALL_ALERT, DecodeEventType.CALL_DETECT,
+            DecodeEventType.CALL_DO_NOT_MONITOR, DecodeEventType.CALL_END, DecodeEventType.CALL_INTERCONNECT,
+            DecodeEventType.CALL_UNIQUE_ID, DecodeEventType.CALL_UNIT_TO_UNIT, DecodeEventType.CALL_NO_TUNER,
+            DecodeEventType.CALL_TIMEOUT);
+
+    /**
+     * Command event types for filtering
+     */
+    public static final EnumSet<DecodeEventType> COMMANDS = EnumSet.of(DecodeEventType.ANNOUNCEMENT,
+            DecodeEventType.STATION_ID, DecodeEventType.ACKNOWLEDGE, DecodeEventType.PAGE, DecodeEventType.QUERY,
+            DecodeEventType.RADIO_CHECK, DecodeEventType.STATUS, DecodeEventType.COMMAND, DecodeEventType.EMERGENCY,
+            DecodeEventType.NOTIFICATION, DecodeEventType.FUNCTION);
+
+    /**
+     * Data call event types for filtering
+     */
+    public static final EnumSet<DecodeEventType> DATA_CALLS = EnumSet.of(DecodeEventType.DATA_CALL,
+            DecodeEventType.DATA_CALL_ENCRYPTED, DecodeEventType.DATA_PACKET, DecodeEventType.GPS,
+            DecodeEventType.IP_PACKET, DecodeEventType.UDP_PACKET, DecodeEventType.SDM, DecodeEventType.ID_ANI,
+            DecodeEventType.ID_UNIQUE);
+
+    /**
+     * Registration event types for filtering
+     */
+    public static final EnumSet<DecodeEventType> REGISTRATION = EnumSet.of(DecodeEventType.AFFILIATE,
+            DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE, DecodeEventType.REGISTER, DecodeEventType.REGISTER_ESN,
+            DecodeEventType.DEREGISTER, DecodeEventType.REQUEST, DecodeEventType.RESPONSE, DecodeEventType.RESPONSE_PACKET);
+
+    /**
+     * All other event types of this enumeration that are not included in the groupings above.
+     */
+    public static final EnumSet<DecodeEventType> OTHERS = EnumSet.copyOf(Arrays.stream(DecodeEventType.values())
+            .filter(decodeEventType -> !decodeEventType.isGrouped()).toList());
+
+    /**
+     * Constructor
+     * @param label for the element
+     */
     DecodeEventType(String label)
     {
         mLabel = label;
     }
 
+    /**
+     * Indicates if the enumeration element is contained in one of the enumset groupings above.
+     * @return true if the element is grouped.
+     */
+    public boolean isGrouped()
+    {
+        return VOICE_CALLS.contains(this) || VOICE_CALLS_ENCRYPTED.contains(this) || COMMANDS.contains(this) ||
+                DATA_CALLS.contains(this) || REGISTRATION.contains(this);
+    }
+
+    /**
+     * Label or pretty value for the element
+     * @return label
+     */
     public String getLabel()
     {
         return mLabel;
     }
 
+    /**
+     * Uses label as the default string value.
+     */
     public String toString()
     {
         return mLabel;

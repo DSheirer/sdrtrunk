@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.event;
@@ -31,19 +30,20 @@ public class PlottableDecodeEvent extends DecodeEvent
     private double mHeading;
     private double mSpeed;
 
-    public PlottableDecodeEvent(long start)
+    public PlottableDecodeEvent(DecodeEventType decodeEventType, long start)
     {
-        super(start);
+        super(decodeEventType, start);
     }
 
     /**
      * Creates a new decode event builder with the specified start timestamp.
+     * @param decodeEventType for the event
      * @param timeStart for the event
      * @return builder
      */
-    public static PlottableDecodeEventBuilder plottableBuilder(long timeStart)
+    public static PlottableDecodeEventBuilder plottableBuilder(DecodeEventType decodeEventType, long timeStart)
     {
-        return new PlottableDecodeEventBuilder(timeStart);
+        return new PlottableDecodeEventBuilder(decodeEventType, timeStart);
     }
 
     /**
@@ -102,7 +102,6 @@ public class PlottableDecodeEvent extends DecodeEvent
     {
         private long mTimeStart;
         private long mDuration;
-        private String mEventDescription;
         private DecodeEventType mDecodeEventType;
         private IdentifierCollection mIdentifierCollection;
         private IChannelDescriptor mChannelDescriptor;
@@ -115,8 +114,9 @@ public class PlottableDecodeEvent extends DecodeEvent
         /**
          * Constructs a builder instance with the specified start time in milliseconds
          */
-        public PlottableDecodeEventBuilder(long timeStart)
+        public PlottableDecodeEventBuilder(DecodeEventType decodeEventType, long timeStart)
         {
+            mDecodeEventType = decodeEventType;
             mTimeStart = timeStart;
         }
 
@@ -147,16 +147,6 @@ public class PlottableDecodeEvent extends DecodeEvent
         public PlottableDecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
-            return this;
-        }
-
-        /**
-         * Sets the event description text
-         * @param description of the event
-         */
-        public PlottableDecodeEventBuilder eventDescription(String description)
-        {
-            mEventDescription = description;
             return this;
         }
 
@@ -192,15 +182,6 @@ public class PlottableDecodeEvent extends DecodeEvent
         }
 
         /**
-         * Sets the Decode Event type for this event.
-         * @param eventType
-         */
-        public PlottableDecodeEventBuilder eventType(DecodeEventType eventType) {
-            mDecodeEventType = eventType;
-            return this;
-        }
-
-        /**
          * Sets the location for the plottable event
          */
         public PlottableDecodeEventBuilder location(GeoPosition geoPosition)
@@ -232,12 +213,10 @@ public class PlottableDecodeEvent extends DecodeEvent
          */
         public PlottableDecodeEvent build()
         {
-            PlottableDecodeEvent decodeEvent = new PlottableDecodeEvent(mTimeStart);
+            PlottableDecodeEvent decodeEvent = new PlottableDecodeEvent(mDecodeEventType, mTimeStart);
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
-            decodeEvent.setEventType(mDecodeEventType);
-            decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
             decodeEvent.setLocation(mGeoPosition);
@@ -246,5 +225,4 @@ public class PlottableDecodeEvent extends DecodeEvent
             return decodeEvent;
         }
     }
-
 }

@@ -329,10 +329,8 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
 
         if(isStale(event, timestamp, identifierCollection)) //Create new event
         {
-            event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
+            event = DMRChannelGrantEvent.channelGrantBuilder(decodeEventType, timestamp)
                 .channel(channel)
-                .eventType(decodeEventType)
-                .eventDescription(decodeEventType.toString())
                 .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -351,11 +349,9 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 {
                     event.end(timestamp);
 
-                    event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
+                    event = DMRChannelGrantEvent.channelGrantBuilder(decodeEventType, timestamp)
                         .channel(channel)
-                        .eventType(decodeEventType)
-                        .eventDescription(decodeEventType.toString() + " - Continue")
-                        .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
+                        .details("CONTINUE - CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                         .identifiers(identifierCollection)
                         .build();
 
@@ -392,15 +388,6 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         {
             if(mIgnoreDataCalls && opcode.isDataChannelGrantOpcode())
             {
-                if(event.getEventDescription() == null)
-                {
-                    event.setEventDescription(decodeEventType + IGNORED);
-                }
-                else if(!event.getEventDescription().endsWith(IGNORED))
-                {
-                    event.setEventDescription(event.getEventDescription() + IGNORED);
-                }
-
                 if(event.getDetails() == null)
                 {
                     event.setDetails(DATA_CALL_IGNORED);

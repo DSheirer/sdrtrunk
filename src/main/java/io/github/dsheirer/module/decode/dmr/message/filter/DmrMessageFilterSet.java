@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,29 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.event.filter.lastheard;
+package io.github.dsheirer.module.decode.dmr.message.filter;
 
-import io.github.dsheirer.module.ModuleEventBusMessage;
+import io.github.dsheirer.filter.FilterSet;
+import io.github.dsheirer.filter.SyncLossMessageFilter;
+import io.github.dsheirer.message.IMessage;
 
 /**
- * Request for decode event history from a processing chain for the specified channel.
+ * Filter set for DMR messages
  */
-public class LastHeardHistoryRequest extends ModuleEventBusMessage
+public class DmrMessageFilterSet extends FilterSet<IMessage>
 {
     /**
-     * Constructs an instance
+     * Constructor
      */
-    public LastHeardHistoryRequest()
+    public DmrMessageFilterSet()
     {
+        super("DMR Messages");
+        addFilter(new ControlMessageFilterSet());
+        addFilter(new VoiceMessageFilter());
+        addFilter(new DataMessageFilter());
+        addFilter(new DmrPacketSequenceFilter());
+        addFilter(new LinkControlMessageFilterSet());
+        addFilter(new SyncLossMessageFilter());
+        addFilter(new DmrOtherMessageFilter());
     }
 }

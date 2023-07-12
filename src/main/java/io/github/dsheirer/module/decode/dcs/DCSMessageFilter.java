@@ -22,45 +22,55 @@ package io.github.dsheirer.module.decode.dcs;
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Message filter for Digital Coded Squelch (DCS)
  */
-public class DCSMessageFilter extends Filter<IMessage>
+public class DCSMessageFilter extends Filter<IMessage,String>
 {
-    private Map<String,FilterElement<String>> mElements = new HashMap<>();
-    private static final String DCS_MESSAGE_FILTER_TAG = "DCS";
+    private static final String DCS_KEY = "DCS";
+    private final KeyExtractor mKeyExtractor = new KeyExtractor();
 
+    /**
+     * Constructor
+     */
     public DCSMessageFilter()
     {
-        super("DCS Message Filter");
-        mElements.put(DCS_MESSAGE_FILTER_TAG, new FilterElement<>("DCS Code", true));
+        super("DCS Messages");
+        add(new FilterElement(DCS_KEY));
     }
 
-    @Override
-    public boolean passes(IMessage message)
-    {
-        if(mEnabled && canProcess(message))
-        {
-            return mElements.get(DCS_MESSAGE_FILTER_TAG).isEnabled();
-        }
-
-        return false;
-    }
-
+    /**
+     * Indicates that this filter can process DCS messages.
+     * @param message to test
+     * @return true if the message can be processed
+     */
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof DCSMessage;
+        return message instanceof DCSMessage && super.canProcess(message);
     }
 
+    /**
+     * Key extractor that always returns the same key constant.
+     * @return extractor function.
+     */
     @Override
-    public List<FilterElement<?>> getFilterElements()
+    public Function<IMessage, String> getKeyExtractor()
     {
-        return new ArrayList<FilterElement<?>>(mElements.values());
+        return mKeyExtractor;
+    }
+
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage,String>
+    {
+        @Override
+        public String apply(IMessage message)
+        {
+            return DCS_KEY;
+        }
     }
 }

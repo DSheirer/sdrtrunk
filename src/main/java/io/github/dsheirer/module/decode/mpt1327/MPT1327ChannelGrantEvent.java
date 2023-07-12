@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,21 +14,23 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.mpt1327;
 
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.module.decode.event.DecodeEventType;
-import io.github.dsheirer.module.decode.p25.P25DecodeEvent;
 import io.github.dsheirer.protocol.Protocol;
 
-public class MPT1327ChannelGrantEvent extends P25DecodeEvent
+/**
+ * MPT1327 Channel Grant Event
+ */
+public class MPT1327ChannelGrantEvent extends MPT1327DecodeEvent
 {
-    public MPT1327ChannelGrantEvent(long timestamp)
+    public MPT1327ChannelGrantEvent(DecodeEventType decodeEventType, long timestamp)
     {
-        super(timestamp);
+        super(decodeEventType, timestamp);
     }
 
     /**
@@ -37,9 +38,9 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
      * @param timeStart for the event
      * @return builder
      */
-    public static MPT1327ChannelGrantDecodeEventBuilder mpt1327Builder(long timeStart)
+    public static MPT1327ChannelGrantDecodeEventBuilder mpt1327Builder(DecodeEventType decodeEventType, long timeStart)
     {
-        return new MPT1327ChannelGrantDecodeEventBuilder(timeStart);
+        return new MPT1327ChannelGrantDecodeEventBuilder(decodeEventType, timeStart);
     }
 
     /**
@@ -49,7 +50,6 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
     {
         protected long mTimeStart;
         protected long mDuration;
-        protected String mEventDescription;
         protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
         protected IChannelDescriptor mChannelDescriptor;
@@ -60,8 +60,9 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
          *
          * @param timeStart
          */
-        public MPT1327ChannelGrantDecodeEventBuilder(long timeStart)
+        public MPT1327ChannelGrantDecodeEventBuilder(DecodeEventType decodeEventType, long timeStart)
         {
+            mDecodeEventType = decodeEventType;
             mTimeStart = timeStart;
         }
 
@@ -96,25 +97,6 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
         }
 
         /**
-         * Sets the Decode Event type for this event.
-         * @param eventType
-         */
-        public MPT1327ChannelGrantDecodeEventBuilder eventType(DecodeEventType eventType) {
-            mDecodeEventType = eventType;
-            return this;
-        }
-
-        /**
-         * Sets the event description text
-         * @param description of the event
-         */
-        public MPT1327ChannelGrantDecodeEventBuilder eventDescription(String description)
-        {
-            mEventDescription = description;
-            return this;
-        }
-
-        /**
          * Sets the identifier collection.
          * @param identifierCollection containing optional identifiers like TO, FROM, frequency and
          * alias list configuration name.
@@ -140,13 +122,11 @@ public class MPT1327ChannelGrantEvent extends P25DecodeEvent
          */
         public MPT1327ChannelGrantEvent build()
         {
-            MPT1327ChannelGrantEvent decodeEvent = new MPT1327ChannelGrantEvent(mTimeStart);
+            MPT1327ChannelGrantEvent decodeEvent = new MPT1327ChannelGrantEvent(mDecodeEventType, mTimeStart);
             decodeEvent.setProtocol(Protocol.MPT1327);
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
-            decodeEvent.setEventType(mDecodeEventType);
-            decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             return decodeEvent;
         }

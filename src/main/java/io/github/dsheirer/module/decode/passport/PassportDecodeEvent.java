@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,23 +14,27 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.passport;
 
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.protocol.Protocol;
 
+/**
+ * Passport decode event
+ */
 public class PassportDecodeEvent extends DecodeEvent
 {
     /**
      * Constructs a Passport decode event
      * @param start
      */
-    public PassportDecodeEvent(long start)
+    public PassportDecodeEvent(DecodeEventType decodeEventType, long start)
     {
-        super(start);
+        super(decodeEventType, start);
         setProtocol(Protocol.PASSPORT);
     }
 
@@ -40,9 +43,9 @@ public class PassportDecodeEvent extends DecodeEvent
      * @param timeStart for the event
      * @return builder
      */
-    public static DecodeEventBuilder builder(long timeStart)
+    public static DecodeEventBuilder builder(DecodeEventType decodeEventType, long timeStart)
     {
-        DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(timeStart);
+        DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(decodeEventType, timeStart);
         decodeEventBuilder.protocol(Protocol.PASSPORT);
         return decodeEventBuilder;
     }

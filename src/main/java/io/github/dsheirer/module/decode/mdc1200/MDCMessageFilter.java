@@ -1,55 +1,75 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.mdc1200;
 
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.Message;
-import io.github.dsheirer.module.decode.mpt1327.MPT1327Message;
+import java.util.function.Function;
 
-import java.util.*;
-
-public class MDCMessageFilter extends Filter<IMessage>
+/**
+ * Message filter for MDC-1200 messages
+ */
+public class MDCMessageFilter extends Filter<IMessage,MDCMessageType>
 {
-    private Map<MDCMessageType, FilterElement<MDCMessageType>> mElements = new EnumMap<>(MDCMessageType.class);
+    private final KeyExtractor mKeyExtractor = new KeyExtractor();
 
+    /**
+     * Constructor
+     */
     public MDCMessageFilter()
     {
-        super("MDC-1200 Message Filter");
+        super("MDC-1200 Messages");
 
         for(MDCMessageType type : MDCMessageType.values())
         {
-            if(type != MDCMessageType.UNKNOWN)
-            {
-                mElements.put(type, new FilterElement<MDCMessageType>(type));
-            }
+            add(new FilterElement<>(type));
         }
-    }
-
-    @Override
-    public boolean passes(IMessage message)
-    {
-        if(mEnabled && canProcess(message))
-        {
-            MDCMessage mdc = (MDCMessage) message;
-
-            if(mElements.containsKey(mdc.getMessageType()))
-            {
-                return mElements.get(mdc.getMessageType()).isEnabled();
-            }
-        }
-
-        return false;
     }
 
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof MDCMessage;
+        return message instanceof MDCMessage && super.canProcess(message);
     }
 
     @Override
-    public List<FilterElement<?>> getFilterElements()
+    public Function<IMessage, MDCMessageType> getKeyExtractor()
     {
-        return new ArrayList<FilterElement<?>>(mElements.values());
+        return mKeyExtractor;
+    }
+
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage,MDCMessageType>
+    {
+        @Override
+        public MDCMessageType apply(IMessage message)
+        {
+            if(message instanceof MDCMessage mdc)
+            {
+                return mdc.getMessageType();
+            }
+
+            return null;
+        }
     }
 }

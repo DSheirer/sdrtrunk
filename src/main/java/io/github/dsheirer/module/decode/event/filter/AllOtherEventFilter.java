@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,31 +17,23 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.event.filter.lastseen;
+package io.github.dsheirer.module.decode.event.filter;
 
-import io.github.dsheirer.module.ModuleEventBusMessage;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 
 /**
- * Response to decode event history request from a processing chain for the specified channel.
+ * Event filter for decode event types that are not specified in other event filters.
+ *
+ * This is intended as a catch-all for any elements of the DecodeEventType enumeration that may get added in the
+ * future and are not deliberately added to the various event filter groupings listed in the enumeration.
  */
-public class LastSeenHistoryResponse extends ModuleEventBusMessage
+public class AllOtherEventFilter extends EventFilter
 {
-    private LastSeenHistory mLastSeenHistory;
-
     /**
-     * Constructs an instance
-     * @param history that has a decode event history
+     * Constructor
      */
-    public LastSeenHistoryResponse(LastSeenHistory history)
+    public AllOtherEventFilter()
     {
-        mLastSeenHistory = history;
-    }
-
-    /**
-     * Decode event history module
-     */
-    public LastSeenHistory getDecodeEventHistory()
-    {
-        return mLastSeenHistory;
+        super("Other", DecodeEventType.OTHERS);
     }
 }

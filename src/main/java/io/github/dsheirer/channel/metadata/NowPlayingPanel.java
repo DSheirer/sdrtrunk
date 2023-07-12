@@ -25,26 +25,21 @@ import io.github.dsheirer.gui.power.ChannelPowerPanel;
 import io.github.dsheirer.icon.IconModel;
 import io.github.dsheirer.module.decode.event.DecodeEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
-import io.github.dsheirer.module.decode.event.filter.lastheard.LastHeardPanel;
-import io.github.dsheirer.module.decode.event.filter.lastseen.LastSeenPanel;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.settings.SettingsManager;
 import java.awt.Color;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
 
 public class NowPlayingPanel extends JPanel
 {
-    private ChannelMetadataPanel mChannelMetadataPanel;
-    private ChannelDetailPanel mChannelDetailPanel;
-    private DecodeEventPanel mDecodeEventPanel;
-    private LastSeenPanel mLastSeenPanel;
-    private LastHeardPanel mLastHeardPanel;
-    private MessageActivityPanel mMessageActivityPanel;
-    private ChannelPowerPanel mChannelPowerPanel;
+    private final ChannelMetadataPanel mChannelMetadataPanel;
+    private final ChannelDetailPanel mChannelDetailPanel;
+    private final DecodeEventPanel mDecodeEventPanel;
+    private final MessageActivityPanel mMessageActivityPanel;
+    private final ChannelPowerPanel mChannelPowerPanel;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
@@ -55,8 +50,6 @@ public class NowPlayingPanel extends JPanel
     {
         mChannelDetailPanel = new ChannelDetailPanel(playlistManager.getChannelProcessingManager());
         mDecodeEventPanel = new DecodeEventPanel(iconModel, userPreferences, playlistManager.getAliasModel());
-        mLastSeenPanel = new LastSeenPanel(iconModel, userPreferences, playlistManager.getAliasModel());
-        mLastHeardPanel = new LastHeardPanel(iconModel, userPreferences, playlistManager.getAliasModel());
         mMessageActivityPanel = new MessageActivityPanel(userPreferences);
         mChannelMetadataPanel = new ChannelMetadataPanel(playlistManager, iconModel, userPreferences);
         mChannelPowerPanel = new ChannelPowerPanel(playlistManager, settingsManager);
@@ -71,12 +64,14 @@ public class NowPlayingPanel extends JPanel
         JideTabbedPane tabbedPane = new JideTabbedPane();
         tabbedPane.addTab("Details", mChannelDetailPanel);
         tabbedPane.addTab("Events", mDecodeEventPanel);
-        tabbedPane.addTab("Last Seen", mLastSeenPanel);
-        tabbedPane.addTab("Last Heard", mLastHeardPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
         tabbedPane.addTab("Channel", mChannelPowerPanel);
         tabbedPane.setFont(this.getFont());
         tabbedPane.setForeground(Color.BLACK);
+
+        //Register state change listener to toggle visibility state for channel tab to turn-on/off FFT processing
+        tabbedPane.addChangeListener(e -> mChannelPowerPanel.setPanelVisible(tabbedPane.getSelectedIndex() == tabbedPane
+                .indexOfComponent(mChannelPowerPanel)));
 
         JideSplitPane splitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
         splitPane.setShowGripper(true);
@@ -86,8 +81,6 @@ public class NowPlayingPanel extends JPanel
 
         mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mDecodeEventPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mLastSeenPanel);
-        mChannelMetadataPanel.addProcessingChainSelectionListener(mLastHeardPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelPowerPanel);
     }

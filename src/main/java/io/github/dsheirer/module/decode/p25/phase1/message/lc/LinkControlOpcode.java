@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +14,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.lc;
 
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
+import java.util.EnumSet;
 
+/**
+ * Opcodes used for Link Control Words.
+ */
 public enum LinkControlOpcode
 {
     GROUP_VOICE_CHANNEL_USER("GROUP VOICE CHANNEL USER", 0),
@@ -101,22 +104,82 @@ public enum LinkControlOpcode
     private String mLabel;
     private int mCode;
 
+    /**
+     * Constructor
+     * @param label to display for the opcode
+     * @param code value.
+     */
     LinkControlOpcode(String label, int code)
     {
         mLabel = label;
         mCode = code;
     }
 
+    /**
+     * Command, response and status opcodes
+     */
+    public static final EnumSet<LinkControlOpcode> COMMAND_STATUS_OPCODES = EnumSet.of(UNIT_TO_UNIT_ANSWER_REQUEST,
+            TELEPHONE_INTERCONNECT_ANSWER_REQUEST, CALL_TERMINATION_OR_CANCELLATION, GROUP_AFFILIATION_QUERY,
+            UNIT_AUTHENTICATION_COMMAND, UNIT_REGISTRATION_COMMAND, STATUS_QUERY, STATUS_UPDATE, MESSAGE_UPDATE,
+            EXTENDED_FUNCTION_COMMAND, CALL_ALERT);
+
+    /**
+     * Motorola Opcodes
+     */
+    public static final EnumSet<LinkControlOpcode> MOTOROLA_OPCODES =
+            EnumSet.range(MOTOROLA_PATCH_GROUP_VOICE_CHANNEL_USER, MOTOROLA_UNKNOWN);
+
+
+    /**
+     * Network/channel related opcodes
+     */
+    public static final EnumSet<LinkControlOpcode> NETWORK_OPCODES = EnumSet.of(CHANNEL_IDENTIFIER_UPDATE,
+            CHANNEL_IDENTIFIER_UPDATE_EXPLICIT, SYSTEM_SERVICE_BROADCAST, SECONDARY_CONTROL_CHANNEL_BROADCAST,
+            SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT, ADJACENT_SITE_STATUS_BROADCAST,
+            ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT, RFSS_STATUS_BROADCAST, RFSS_STATUS_BROADCAST_EXPLICIT,
+            NETWORK_STATUS_BROADCAST, NETWORK_STATUS_BROADCAST_EXPLICIT, PROTECTION_PARAMETER_BROADCAST);
+
+    /**
+     * Voice/call opcodes
+     */
+    public static final EnumSet<LinkControlOpcode> VOICE_OPCODES = EnumSet.of(GROUP_VOICE_CHANNEL_USER,
+            GROUP_VOICE_CHANNEL_UPDATE, GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT, UNIT_TO_UNIT_VOICE_CHANNEL_USER,
+            TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER);
+
+    /**
+     * Indicates if the enumeration element is contained in one of the enumset groupings above.
+     * @return true if the element is grouped.
+     */
+    public boolean isGrouped()
+    {
+        return COMMAND_STATUS_OPCODES.contains(this) || MOTOROLA_OPCODES.contains(this) ||
+                NETWORK_OPCODES.contains(this) || VOICE_OPCODES.contains(this);
+    }
+
+    /**
+     * Pretty label/string for the element
+     * @return label
+     */
     public String getLabel()
     {
         return mLabel;
     }
 
+    /**
+     * Numeric value of the opcode.
+     * @return code value.
+     */
     public int getCode()
     {
         return mCode;
     }
 
+    /**
+     * Lookup method for finding an opcode for a given vendor and value combination.
+     * @param value of the opcode
+     * @param vendor for the opcode
+     * @return matching element or UNKNOWN.
+     */
     public static LinkControlOpcode fromValue(int value, Vendor vendor)
     {
         switch(vendor)

@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.dmr.event;
 
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.protocol.Protocol;
 
 /**
@@ -32,9 +32,9 @@ public class DMRDecodeEvent extends DecodeEvent
      * Constucts a decode event
      * @param start
      */
-    public DMRDecodeEvent(long start)
+    public DMRDecodeEvent(DecodeEventType decodeEventType, long start)
     {
-        super(start);
+        super(decodeEventType, start);
         setProtocol(Protocol.DMR);
     }
 
@@ -43,9 +43,9 @@ public class DMRDecodeEvent extends DecodeEvent
      * @param timeStart for the event
      * @return builder
      */
-    public static DecodeEventBuilder builder(long timeStart)
+    public static DecodeEventBuilder builder(DecodeEventType decodeEventType, long timeStart)
     {
-        DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(timeStart);
+        DecodeEventBuilder decodeEventBuilder = new DecodeEventBuilder(decodeEventType, timeStart);
         decodeEventBuilder.protocol(Protocol.DMR);
         return decodeEventBuilder;
     }

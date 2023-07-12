@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,24 +20,17 @@
 package io.github.dsheirer.module.decode.event.filter;
 
 import io.github.dsheirer.module.decode.event.DecodeEventType;
-import java.util.Arrays;
 
+/**
+ * Event filter for network commands.
+ */
 public class DecodedCommandEventFilter extends EventFilter
 {
+    /**
+     * Constructs an instance
+     */
     public DecodedCommandEventFilter()
     {
-        super("Commands", Arrays.asList(
-                DecodeEventType.ANNOUNCEMENT,
-                DecodeEventType.STATION_ID,
-                DecodeEventType.ACKNOWLEDGE,
-                DecodeEventType.PAGE,
-                DecodeEventType.QUERY,
-                DecodeEventType.RADIO_CHECK,
-                DecodeEventType.STATUS,
-                DecodeEventType.COMMAND,
-                DecodeEventType.EMERGENCY,
-                DecodeEventType.NOTIFICATION,
-                DecodeEventType.FUNCTION
-        ));
+        super("Commands", DecodeEventType.COMMANDS);
     }
 }

@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,9 @@
  * ****************************************************************************
  */
 
-package io.github.dsheirer.module.decode.event.filter.lastseen;
+package io.github.dsheirer.filter;
 
-import io.github.dsheirer.module.ModuleEventBusMessage;
-
-/**
- * Request for decode event history from a processing chain for the specified channel.
- */
-public class LastSeenHistoryRequest extends ModuleEventBusMessage
+public interface IFilterChangeListener
 {
-    /**
-     * Constructs an instance
-     */
-    public LastSeenHistoryRequest()
-    {
-    }
+    void filterChanged();
 }

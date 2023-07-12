@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.filter;
@@ -24,32 +23,55 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.packet.sndcp.SNDCPMessage;
+import io.github.dsheirer.module.decode.p25.reference.PDUType;
+import java.util.function.Function;
 
-import java.util.Collections;
-import java.util.List;
-
-public class SNDCPMessageFilter extends Filter<IMessage>
+/**
+ * Filter for SNDCP messages
+ */
+public class SNDCPMessageFilter extends Filter<IMessage, PDUType>
 {
+    private KeyExtractor mKeyExtractor = new KeyExtractor();
+
+    /**
+     * Constructor
+     */
     public SNDCPMessageFilter()
     {
-        super("Sub-Network Dependent Convergence Protocol");
-    }
+        super("Sub-Network Dependent Convergence Protocol (SNDCP) Messages");
 
-    @Override
-    public boolean passes(IMessage message)
-    {
-        return mEnabled && canProcess(message);
+        for(PDUType pduType: PDUType.values())
+        {
+            add(new FilterElement<>(pduType));
+        }
     }
 
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof SNDCPMessage;
+        return message instanceof SNDCPMessage && super.canProcess(message);
     }
 
     @Override
-    public List<FilterElement<?>> getFilterElements()
+    public Function<IMessage, PDUType> getKeyExtractor()
     {
-        return Collections.EMPTY_LIST;
+        return mKeyExtractor;
+    }
+
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage,PDUType>
+    {
+        @Override
+        public PDUType apply(IMessage message)
+        {
+            if(message instanceof SNDCPMessage sndcp)
+            {
+                return sndcp.getPDUType();
+            }
+
+            return null;
+        }
     }
 }

@@ -1,14 +1,32 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.event.filter;
 
 import com.jidesoft.swing.JideSplitButton;
-
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSlider;
+import javax.swing.SwingUtilities;
 
 public class EventClearButton extends JideSplitButton
     {
@@ -21,37 +39,29 @@ public class EventClearButton extends JideSplitButton
 
             JPanel historyPanel = new JPanel();
 
-            historyPanel.add(new JLabel("History Entries:"));
-
+            historyPanel.add(new JLabel("History Size:"));
             final JSlider historySlider = initializeHistorySlider();
+            JLabel valueLabel = new JLabel(String.valueOf(maxHistoryCount));
 
             historySlider.setValue(maxHistoryCount);
-            historySlider.addChangeListener(new ChangeListener()
-            {
-                @Override
-                public void stateChanged(ChangeEvent arg0)
+            historySlider.addChangeListener(arg0 -> {
+                if (mEventClearHandler != null)
                 {
-                    if (mEventClearHandler != null)
-                    {
-                        mEventClearHandler.onHistoryLimitChanged(historySlider.getValue());
-                    }
+                    mEventClearHandler.onHistoryLimitChanged(historySlider.getValue());
                 }
+
+                valueLabel.setText(String.valueOf(historySlider.getValue()));
             });
 
             historyPanel.add(historySlider);
-
+            historyPanel.add(valueLabel);
             add(historyPanel);
 
             /* This handles the click action on the main button. Clear messages */
-            addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
+            addActionListener(e -> {
+                if (mEventClearHandler != null)
                 {
-                    if (mEventClearHandler != null)
-                    {
-                        mEventClearHandler.onClearHistoryClicked();
-                    }
+                    mEventClearHandler.onClearHistoryClicked();
                 }
             });
         }

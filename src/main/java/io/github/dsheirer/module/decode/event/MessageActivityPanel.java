@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,13 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.event;
 
-import com.jidesoft.swing.JideButton;
-import com.jidesoft.swing.JideSplitButton;
-import io.github.dsheirer.filter.FilterEditorPanel;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageHistory;
@@ -30,37 +26,35 @@ import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.swing.JTableColumnWidthMonitor;
 import io.github.dsheirer.sample.Listener;
+import java.util.ArrayList;
+import java.util.List;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSlider;
 import javax.swing.JTable;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import javax.swing.RowFilter;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 
+/**
+ * Panel to display decoded messages/activity.
+ */
 public class MessageActivityPanel extends JPanel implements Listener<ProcessingChain>
 {
     private static final long serialVersionUID = 1L;
-    private final static Logger mLog = LoggerFactory.getLogger(MessageActivityPanel.class);
-    private static final String TABLE_PREFERENCE_KEY = "message.activity.panel";
-    private static MessageActivityModel mMessageModel = new MessageActivityModel();
+    private static final Logger mLog = LoggerFactory.getLogger(MessageActivityPanel.class);
+    private final String TABLE_PREFERENCE_KEY = "message.activity.panel";
+    private MessageActivityModel mMessageModel = new MessageActivityModel();
     private MessageHistory mCurrentMessageHistory;
     private JTable mTable = new JTable(mMessageModel);
+    private TableRowSorter<TableModel> mTableRowSorter;
     private JTableColumnWidthMonitor mTableColumnWidthMonitor;
     private UserPreferences mUserPreferences;
-    private MessageManagementPanel mManagementPanel = new MessageManagementPanel();
+    private FilterSet<IMessage> mMessageFilterSet;
+    private HistoryManagementPanel<IMessage> mHistoryManagementPanel;
 
     /**
      * Constructs an instance
@@ -69,13 +63,14 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
     public MessageActivityPanel(UserPreferences userPreferences)
     {
         mUserPreferences = userPreferences;
-
-        setLayout(new MigLayout("insets 0 0 0 0", "[][grow,fill]", "[]0[grow,fill]"));
-
-        add(mManagementPanel, "span,growx");
-
-        add(new JScrollPane(mTable), "span,grow");
+        mTableRowSorter = new TableRowSorter<>(mMessageModel);
+        mTableRowSorter.setRowFilter(new MessageRowFilter());
+        mTable.setRowSorter(mTableRowSorter);
         mTableColumnWidthMonitor = new JTableColumnWidthMonitor(mUserPreferences, mTable, TABLE_PREFERENCE_KEY);
+        setLayout(new MigLayout("insets 0 0 0 0", "[][grow,fill]", "[]0[grow,fill]"));
+        mHistoryManagementPanel = new HistoryManagementPanel<>(mMessageModel, "Message Filter Editor");
+        add(mHistoryManagementPanel, "span,growx");
+        add(new JScrollPane(mTable), "span,grow");
     }
 
     /**
@@ -89,182 +84,62 @@ public class MessageActivityPanel extends JPanel implements Listener<ProcessingC
             mCurrentMessageHistory.removeListener(mMessageModel);
         }
 
+        //Unregister from changes made to the filter set
+        if(mMessageFilterSet != null)
+        {
+            mMessageFilterSet.register(null);
+        }
+
         if(processingChain != null)
         {
             mCurrentMessageHistory = processingChain.getMessageHistory();
-            mMessageModel.setFilters(DecoderFactory.getMessageFilters(processingChain.getModules()));
-            mMessageModel.clearAndSet(mCurrentMessageHistory.getItems());
+            mMessageFilterSet = DecoderFactory.getMessageFilters(processingChain.getModules());
+            //Register filter change listener to refresh the table any time the event filters are changed.
+            mMessageFilterSet.register(() -> mMessageModel.fireTableDataChanged());
+            if(mHistoryManagementPanel != null)
+            {
+                mHistoryManagementPanel.updateFilterSet(mMessageFilterSet);
+            }
+
+            List<MessageItem> currentHistory = new ArrayList<>();
+            for(IMessage message: mCurrentMessageHistory.getItems())
+            {
+                currentHistory.add(new MessageItem(message));
+            }
+
+            mMessageModel.clearAndSet(currentHistory);
             mCurrentMessageHistory.addListener(mMessageModel);
-            mManagementPanel.enableButtons();
+            mHistoryManagementPanel.setEnabled(true);
         }
         else
         {
             mCurrentMessageHistory = null;
-            mMessageModel.clearFilters();
+            mMessageFilterSet = null;
             mMessageModel.clear();
-            mManagementPanel.disableButtons();
+            mHistoryManagementPanel.setEnabled(false);
         }
     }
 
-    public class MessageManagementPanel extends JPanel
+    /**
+     * Row visibility filter for messages
+     */
+    public class MessageRowFilter extends RowFilter<TableModel, Integer>
     {
-        private static final long serialVersionUID = 1L;
-
-        private MessageHistoryButton mHistoryButton = new MessageHistoryButton();
-        private MessageFilterButton mFilterButton = new MessageFilterButton();
-
-        public MessageManagementPanel()
+        @Override
+        public boolean include(Entry<? extends TableModel, ? extends Integer> entry)
         {
-            setLayout(new MigLayout("insets 2 2 5 5", "[]5[left,grow]", ""));
-
-            disableButtons();
-
-            add(mFilterButton);
-            add(mHistoryButton);
-        }
-
-        public void enableButtons()
-        {
-            mHistoryButton.setEnabled(true);
-            mFilterButton.setEnabled(true);
-        }
-
-        public void disableButtons()
-        {
-            mHistoryButton.setEnabled(false);
-            mFilterButton.setEnabled(false);
-        }
-    }
-
-    public class MessageHistoryButton extends JideSplitButton
-    {
-        private static final long serialVersionUID = 1L;
-
-        public MessageHistoryButton()
-        {
-            super("Clear");
-
-            JPanel historyPanel = new JPanel();
-
-            historyPanel.add(new JLabel("Message History:"));
-
-            final JSlider slider = new JSlider();
-            slider.setMinimum(0);
-            slider.setMaximum(2000);
-            slider.setMajorTickSpacing(500);
-            slider.setPaintTicks(true);
-            slider.setPaintLabels(true);
-
-            slider.addMouseListener(new MouseListener()
+            if(entry.getModel() instanceof MessageActivityModel model)
             {
-                @Override
-                public void mouseClicked(MouseEvent arg0)
+                MessageItem item = model.getItem(entry.getIdentifier());
+
+                if(mMessageFilterSet != null && item != null && item.getMessage() != null)
                 {
-                    if(SwingUtilities.isLeftMouseButton(arg0) && arg0.getClickCount() == 2)
-                    {
-                        slider.setValue(500); //default
-                    }
+                    IMessage message = item.getMessage();
+                    return mMessageFilterSet.canProcess(message) && mMessageFilterSet.passes(message);
                 }
+            }
 
-                public void mouseEntered(MouseEvent arg0)
-                {
-                }
-
-                public void mouseExited(MouseEvent arg0)
-                {
-                }
-
-                public void mousePressed(MouseEvent arg0)
-                {
-                }
-
-                public void mouseReleased(MouseEvent arg0)
-                {
-                }
-            });
-
-            slider.setValue(((MessageActivityModel) mTable.getModel()).getMaxMessageCount());
-            slider.addChangeListener(new ChangeListener()
-            {
-                @Override
-                public void stateChanged(ChangeEvent arg0)
-                {
-                    ((MessageActivityModel) mTable.getModel()).setMaxMessageCount(slider.getValue());
-                }
-            });
-
-            historyPanel.add(slider);
-
-            add(historyPanel);
-
-            /* Clear messages */
-            addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    ((MessageActivityModel) mTable.getModel()).clear();
-                }
-            });
-        }
-    }
-
-    public class MessageFilterButton extends JideButton
-    {
-        private static final long serialVersionUID = 1L;
-
-        public MessageFilterButton()
-        {
-            super("Filter");
-
-            addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent arg0)
-                {
-                    final JFrame editor = new JFrame();
-
-                    editor.setTitle("Message Filter Editor");
-                    editor.setSize(600, 400);
-                    editor.setLocationRelativeTo(MessageFilterButton.this);
-                    editor.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                    editor.setLayout(new MigLayout("", "[grow,fill]",
-                            "[grow,fill][][]"));
-
-                    @SuppressWarnings("unchecked")
-                    FilterSet<IMessage> filter = (FilterSet<IMessage>) ((MessageActivityModel) mTable.getModel())
-                            .getMessageFilterSet();
-
-                    FilterEditorPanel<IMessage> panel = new FilterEditorPanel<>(filter);
-
-                    JScrollPane scroller = new JScrollPane(panel);
-                    scroller.setViewportView(panel);
-
-                    editor.add(scroller, "wrap");
-
-                    editor.add(new JLabel("Right-click to select/deselect all nodes"), "wrap");
-
-                    JButton close = new JButton("Close");
-                    close.addActionListener(new ActionListener()
-                    {
-                        @Override
-                        public void actionPerformed(ActionEvent e)
-                        {
-                            editor.dispose();
-                        }
-                    });
-
-                    editor.add(close);
-
-                    EventQueue.invokeLater(new Runnable()
-                    {
-                        public void run()
-                        {
-                            editor.setVisible(true);
-                        }
-                    });
-                }
-            });
+            return false;
         }
     }
 }

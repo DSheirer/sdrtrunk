@@ -286,9 +286,7 @@ public class DMRDecoderState extends TimeslotDecoderState
     {
         broadcast(new DecoderStateEvent(this, Event.START, State.DATA, getTimeslot()));
 
-        DecodeEvent smsEvent = DMRDecodeEvent.builder(sms.getTimestamp())
-                .eventType(DecodeEventType.SMS)
-                .eventDescription(DecodeEventType.SMS.toString())
+        DecodeEvent smsEvent = DMRDecodeEvent.builder(DecodeEventType.SMS, sms.getTimestamp())
                 .details("MESSAGE: " + sms.getSMS())
                 .identifiers(new IdentifierCollection(sms.getIdentifiers()))
                 .timeslot(sms.getTimeslot())
@@ -312,9 +310,7 @@ public class DMRDecoderState extends TimeslotDecoderState
             mic.update(hyteraSmsPacket.getSource());
             mic.update(hyteraSmsPacket.getDestination());
 
-            DecodeEvent smsEvent = DMRDecodeEvent.builder(packet.getTimestamp())
-                    .eventDescription(DecodeEventType.SMS.name())
-                    .eventType(DecodeEventType.DATA_PACKET)
+            DecodeEvent smsEvent = DMRDecodeEvent.builder(DecodeEventType.SMS, packet.getTimestamp())
                     .identifiers(mic)
                     .timeslot(packet.getTimeslot())
                     .details("SMS:" + hyteraSmsPacket.getSMS())
@@ -326,9 +322,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             MutableIdentifierCollection mic = new MutableIdentifierCollection(packet.getIdentifiers());
 
-            DecodeEvent unknownTokenEvent = DMRDecodeEvent.builder(packet.getTimestamp())
-                    .eventDescription(DecodeEventType.UNKNOWN_PACKET.name())
-                    .eventType(DecodeEventType.DATA_PACKET)
+            DecodeEvent unknownTokenEvent = DMRDecodeEvent.builder(DecodeEventType.UNKNOWN_PACKET, packet.getTimestamp())
                     .identifiers(mic)
                     .timeslot(packet.getTimeslot())
                     .details("HYTERA UNK TOKEN MSG:" + hyteraUnknownPacket.getHeader().toString())
@@ -337,9 +331,7 @@ public class DMRDecoderState extends TimeslotDecoderState
         }
         else
         {
-            DecodeEvent packetEvent = DMRDecodeEvent.builder(packet.getTimestamp())
-                    .eventDescription(DecodeEventType.DATA_PACKET.name())
-                    .eventType(DecodeEventType.DATA_PACKET)
+            DecodeEvent packetEvent = DMRDecodeEvent.builder(DecodeEventType.DATA_PACKET, packet.getTimestamp())
                     .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
                     .timeslot(packet.getTimeslot())
                     .details(packet.toString())
@@ -350,9 +342,8 @@ public class DMRDecoderState extends TimeslotDecoderState
             GeoPosition geoPosition = PacketUtil.extractGeoPosition(packet.getPacket());
 
             if (geoPosition != null) {
-                PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(packet.getTimestamp())
+                PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, packet.getTimestamp())
                         .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.GPS.toString())
                         .identifiers(getMergedIdentifierCollection(packet.getIdentifiers()))
                         .protocol(Protocol.LRRP)
                         .location(geoPosition)
@@ -784,9 +775,8 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_REGISTRATION_REQUEST:
-                DecodeEvent event = DMRDecodeEvent.builder(csbk.getTimestamp())
+                DecodeEvent event = DMRDecodeEvent.builder(DecodeEventType.REQUEST, csbk.getTimestamp())
                     .details("Registration Request")
-                    .eventDescription(DecodeEventType.REGISTER.toString())
                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                     .timeslot(csbk.getTimeslot())
                     .build();
@@ -794,9 +784,8 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_REGISTRATION_RESPONSE:
-                DecodeEvent regRespEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
+                DecodeEvent regRespEvent = DMRDecodeEvent.builder(DecodeEventType.RESPONSE, csbk.getTimestamp())
                     .details("Registration Response")
-                    .eventDescription(DecodeEventType.REGISTER.toString())
                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                     .timeslot(csbk.getTimeslot())
                     .build();
@@ -837,9 +826,8 @@ public class DMRDecoderState extends TimeslotDecoderState
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL, getTimeslot()));
                 break;
             case MOTOROLA_CONPLUS_TALKGROUP_AFFILIATION:
-                DecodeEvent affiliateEvent = DMRDecodeEvent.builder(csbk.getTimestamp())
+                DecodeEvent affiliateEvent = DMRDecodeEvent.builder(DecodeEventType.AFFILIATE, csbk.getTimestamp())
                     .details("TALKGROUP AFFILIATION")
-                    .eventDescription(DecodeEventType.AFFILIATE.toString())
                     .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                     .timeslot(csbk.getTimeslot())
                     .build();
@@ -853,20 +841,16 @@ public class DMRDecoderState extends TimeslotDecoderState
     }
 
     private DecodeEvent getDecodeEvent(CSBKMessage csbk, DecodeEventType decodeEventType, DMRChannel channel, IdentifierCollection mergedIdentifiers) {
-        return DMRDecodeEvent.builder(csbk.getTimestamp())
+        return DMRDecodeEvent.builder(decodeEventType, csbk.getTimestamp())
                 .channel(channel)
-                .eventType(decodeEventType)
                 .details(csbk.getOpcode().getLabel())
-                .eventDescription(decodeEventType.toString())
                 .identifiers(mergedIdentifiers)
                 .timeslot(channel.getTimeslot())
                 .build();
     }
 
     private DecodeEvent getDecodeEvent(CSBKMessage csbk, DecodeEventType decodeEventType, String details) {
-        return DMRDecodeEvent.builder(csbk.getTimestamp())
-                .eventType(decodeEventType)
-                .eventDescription(decodeEventType.toString())
+        return DMRDecodeEvent.builder(decodeEventType, csbk.getTimestamp())
                 .identifiers(getMergedIdentifierCollection(csbk.getIdentifiers()))
                 .timeslot(csbk.getTimeslot())
                 .details(details)
@@ -1119,8 +1103,7 @@ public class DMRDecoderState extends TimeslotDecoderState
                     MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                     ic.update(gpsInformation.getGPSLocation());
 
-                    DecodeEvent gpsEvent = DMRDecodeEvent.builder(message.getTimestamp())
-                        .eventDescription(DecodeEventType.GPS.toString())
+                    DecodeEvent gpsEvent = DMRDecodeEvent.builder(DecodeEventType.GPS, message.getTimestamp())
                         .identifiers(ic)
                         .timeslot(message.getTimeslot())
                         .details("LOCATION:" + gpsInformation.getGPSLocation())
@@ -1151,9 +1134,8 @@ public class DMRDecoderState extends TimeslotDecoderState
 
         if(mCurrentCallEvent == null)
         {
-            mCurrentCallEvent = DMRDecodeEvent.builder(timestamp)
+            mCurrentCallEvent = DMRDecodeEvent.builder(type, timestamp)
                 .channel(getCurrentChannel())
-                .eventDescription(type.toString())
                 .details(details)
                 .identifiers(getIdentifierCollection().copyOf())
                 .build();
@@ -1164,7 +1146,6 @@ public class DMRDecoderState extends TimeslotDecoderState
         {
             if(type != DecodeEventType.CALL)
             {
-                mCurrentCallEvent.setEventDescription(type.toString());
                 mCurrentCallEvent.setDetails(details);
             }
 
