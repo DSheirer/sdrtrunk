@@ -63,7 +63,6 @@ public class PacketSequenceMessageFactory
             if(packetSequence.hasPacketSequenceHeader())
             {
                 PacketSequenceHeader primaryHeader = packetSequence.getPacketSequenceHeader();
-                boolean confirmed = primaryHeader.isConfirmedData();
                 CorrectedBinaryMessage packet = getPacket(packetSequence, primaryHeader.isConfirmedData());
 
                 if(packet != null)

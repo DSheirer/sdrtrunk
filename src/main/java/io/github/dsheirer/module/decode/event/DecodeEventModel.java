@@ -21,25 +21,20 @@ package io.github.dsheirer.module.decode.event;
 import com.google.common.eventbus.Subscribe;
 import io.github.dsheirer.channel.IChannelDescriptor;
 import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.identifier.IdentifierCollection;
-import io.github.dsheirer.module.decode.event.filter.DecodeEventFilterSet;
-import io.github.dsheirer.module.decode.event.filter.EventFilterProvider;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.sample.Listener;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.awt.EventQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.table.AbstractTableModel;
-
-public class DecodeEventModel extends AbstractTableModel implements Listener<IDecodeEvent>, EventFilterProvider<IDecodeEvent>
+/**
+ * Decode event table model
+ */
+public class DecodeEventModel extends ClearableHistoryModel<IDecodeEvent> implements Listener<IDecodeEvent>
 {
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(DecodeEventModel.class);
-
     public static final int COLUMN_TIME = 0;
     public static final int COLUMN_DURATION = 1;
     public static final int COLUMN_EVENT = 2;
@@ -50,12 +45,6 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     public static final int COLUMN_CHANNEL = 7;
     public static final int COLUMN_FREQUENCY = 8;
     public static final int COLUMN_DETAILS = 9;
-
-    protected int mMaxMessages = 200;
-
-    protected List<IDecodeEvent> mEvents = new ArrayList<>();
-    protected FilterSet<IDecodeEvent> mEventFilterSet = new DecodeEventFilterSet();
-
     protected String[] mHeaders = new String[]{"Time", "Duration", "Event", "From", "Alias", "To", "Alias", "Channel", "Frequency", "Details"};
 
     public DecodeEventModel()
@@ -70,72 +59,10 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
-        if(preferenceType == PreferenceType.DECODE_EVENT)
+        if(preferenceType == PreferenceType.DECODE_EVENT || preferenceType == PreferenceType.TALKGROUP_FORMAT)
         {
-            for(int row = 0; row < mEvents.size(); row++)
-            {
-                fireTableCellUpdated(row, COLUMN_TIME);
-            }
+            fireTableDataChanged();
         }
-        else if(preferenceType == PreferenceType.TALKGROUP_FORMAT)
-        {
-            for(int row = 0; row < mEvents.size(); row++)
-            {
-                fireTableCellUpdated(row, COLUMN_FROM_ID);
-                fireTableCellUpdated(row, COLUMN_TO_ID);
-            }
-        }
-    }
-
-    /**
-     * Access the complete list of events managed by this model.
-     */
-    public List<IDecodeEvent> getEvents()
-    {
-        return new ArrayList<>(mEvents);
-    }
-
-    public void dispose()
-    {
-        MyEventBus.getGlobalEventBus().unregister(this);
-        Iterator<IDecodeEvent> it = mEvents.iterator();
-
-        while(it.hasNext())
-        {
-            it.remove();
-        }
-    }
-
-    public void clear()
-    {
-        mEvents.clear();
-        fireTableDataChanged();
-    }
-
-    /**
-     * Clears all events from this model and loads the events argument
-     */
-    public void clearAndSet(List<IDecodeEvent> events)
-    {
-        mEvents.clear();
-        mEvents.addAll(events);
-        fireTableDataChanged();
-    }
-
-    public void reset()
-    {
-        dispose();
-        fireTableDataChanged();
-    }
-
-    public int getMaxMessageCount()
-    {
-        return mMaxMessages;
-    }
-
-    public void setMaxMessageCount(int count)
-    {
-        mMaxMessages = count;
     }
 
     /**
@@ -146,49 +73,7 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
      */
     public void receive(final IDecodeEvent event)
     {
-        //Disabled until #1368 decode event is fully implemented
-//        if (!mEventFilterSet.passes(event))
-//        {
-//            return;
-//        }
-
-        if(!mEvents.contains(event))
-        {
-            mEvents.add(0, event);
-            fireTableRowsInserted(0, 0);
-            prune();
-        }
-        else
-        {
-            int row = mEvents.indexOf(event);
-            fireTableRowsUpdated(row, row);
-        }
-    }
-
-    private void prune()
-    {
-        while(mEvents.size() > mMaxMessages)
-        {
-            int index = mEvents.size() - 1;
-            mEvents.remove(index);
-            fireTableRowsDeleted(index, index);
-        }
-    }
-
-    @Override
-    public FilterSet<IDecodeEvent> getFilterSet() {
-        return mEventFilterSet;
-    }
-
-    @Override
-    public void setFilterSet(FilterSet<IDecodeEvent> filterSet) {
-        this.mEventFilterSet = filterSet;
-    }
-
-    @Override
-    public int getRowCount()
-    {
-        return mEvents.size();
+        EventQueue.invokeLater(() -> add(event));
     }
 
     @Override
@@ -205,58 +90,55 @@ public class DecodeEventModel extends AbstractTableModel implements Listener<IDe
     @Override
     public Object getValueAt(int rowIndex, int columnIndex)
     {
-        synchronized(mEvents)
+        IDecodeEvent event = getItem(rowIndex);
+
+        if(event != null)
         {
-            IDecodeEvent event = mEvents.get(rowIndex);
-
-            if(event != null)
+            switch(columnIndex)
             {
-                switch(columnIndex)
-                {
-                    case COLUMN_TIME:
-                        return event.getTimeStart();
-                    case COLUMN_DURATION:
-                        return event.getDuration();
-                    case COLUMN_EVENT:
-                        return event.getEventDescription();
-                    case COLUMN_FROM_ID:
-                        return event.getIdentifierCollection();
-                    case COLUMN_FROM_ALIAS:
-                        return event.getIdentifierCollection();
-                    case COLUMN_TO_ID:
-                        return event.getIdentifierCollection();
-                    case COLUMN_TO_ALIAS:
-                        return event.getIdentifierCollection();
-                    case COLUMN_CHANNEL:
-                        IChannelDescriptor channelDescriptor = event.getChannelDescriptor();
+                case COLUMN_TIME:
+                    return event.getTimeStart();
+                case COLUMN_DURATION:
+                    return event.getDuration();
+                case COLUMN_EVENT:
+                    return event.getEventType().getLabel();
+                case COLUMN_FROM_ID:
+                    return event.getIdentifierCollection();
+                case COLUMN_FROM_ALIAS:
+                    return event.getIdentifierCollection();
+                case COLUMN_TO_ID:
+                    return event.getIdentifierCollection();
+                case COLUMN_TO_ALIAS:
+                    return event.getIdentifierCollection();
+                case COLUMN_CHANNEL:
+                    IChannelDescriptor channelDescriptor = event.getChannelDescriptor();
 
-                        if(channelDescriptor != null)
+                    if(channelDescriptor != null)
+                    {
+                        if(event.hasTimeslot())
                         {
-                            if(event.hasTimeslot())
-                            {
-                                return channelDescriptor.toString() + " TS:" + event.getTimeslot();
-                            }
-                            else
-                            {
-                                return channelDescriptor.toString();
-                            }
+                            return channelDescriptor + " TS:" + event.getTimeslot();
                         }
                         else
                         {
-                            if(event.hasTimeslot())
-                            {
-                                return "TS:" + event.getTimeslot();
-                            }
-                            else
-                            {
-                                return null;
-                            }
+                            return channelDescriptor.toString();
                         }
-                    case COLUMN_FREQUENCY:
-                        return event.getChannelDescriptor();
-                    case COLUMN_DETAILS:
-                        return event.getDetails();
-                }
+                    }
+                    else
+                    {
+                        if(event.hasTimeslot())
+                        {
+                            return "TS:" + event.getTimeslot();
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                case COLUMN_FREQUENCY:
+                    return event.getChannelDescriptor();
+                case COLUMN_DETAILS:
+                    return event.getDetails();
             }
         }
 

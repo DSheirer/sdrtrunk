@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,11 +49,6 @@ public interface IDecodeEvent
     long getDuration();
 
     /**
-     * A description of the event or event type
-     */
-    String getEventDescription();
-
-    /**
      * Collection of identifiers associated with the event.  This collection should contain a
      * Role.FROM and a Role.TO identifier, a Decoder Type identifier, and (optionally) an Alias List
      * Configuration identifier.
@@ -86,7 +81,7 @@ public interface IDecodeEvent
      * Timeslot for the event.
      * @return timeslot or default of 0
      */
-    Integer getTimeslot();
+    int getTimeslot();
 
     /**
      * Indicates if the event has a timeslot specified

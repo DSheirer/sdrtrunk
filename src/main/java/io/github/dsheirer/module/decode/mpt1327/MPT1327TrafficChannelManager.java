@@ -30,6 +30,7 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.Role;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 import io.github.dsheirer.module.decode.event.IDecodeEventProvider;
 import io.github.dsheirer.module.decode.mpt1327.channel.MPT1327Channel;
@@ -103,9 +104,9 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
                 }
             }
 
-            MPT1327ChannelGrantEvent channelGrantEvent = MPT1327ChannelGrantEvent.mpt1327Builder(mpt1327Message.getTimestamp())
+            MPT1327ChannelGrantEvent channelGrantEvent = MPT1327ChannelGrantEvent
+                .mpt1327Builder(DecodeEventType.CALL, mpt1327Message.getTimestamp())
                 .channel(mpt1327Channel)
-                .eventDescription("Call")
                 .details("Traffic Channel Grant")
                 .identifiers(identifierCollection)
                 .build();
@@ -123,7 +124,7 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
                 if(trafficChannel == null)
                 {
                     channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
-                    channelGrantEvent.setEventDescription("Detect:" + channelGrantEvent.getEventDescription());
+                    channelGrantEvent.setDetails("Detect:" + channelGrantEvent.getDetails());
                     return;
                 }
 
@@ -150,10 +151,8 @@ public class MPT1327TrafficChannelManager extends TrafficChannelManager implemen
         DecodeConfiguration decodeConfiguration = parentChannel.getDecodeConfiguration();
         List<Channel> trafficChannelList = new ArrayList<>();
 
-        if(decodeConfiguration instanceof DecodeConfigMPT1327)
+        if(decodeConfiguration instanceof DecodeConfigMPT1327 decodeConfigMPT1327)
         {
-            DecodeConfigMPT1327 decodeConfigMPT1327 = (DecodeConfigMPT1327)decodeConfiguration;
-
             int maxTrafficChannels = decodeConfigMPT1327.getTrafficChannelPoolSize();
 
             for(int x = 0; x < maxTrafficChannels; x++)

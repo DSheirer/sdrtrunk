@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.passport;
 
@@ -34,12 +31,10 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.passport.identifier.PassportRadioId;
 import io.github.dsheirer.module.decode.passport.identifier.PassportTalkgroup;
 import io.github.dsheirer.protocol.Protocol;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +42,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PassportDecoderState extends DecoderState
 {
@@ -158,8 +155,10 @@ public class PassportDecoderState extends DecoderState
                                 }
                             }
 
-                            mCurrentDecodeEvent = DecodeEvent.builder(passport.getTimestamp())
-                                .eventDescription(passport.getMessageType() == MessageType.CA_STRT ? "Call" : "Data")
+                            DecodeEventType decodeEventType = passport.getMessageType() == MessageType.CA_STRT ?
+                                    DecodeEventType.CALL : DecodeEventType.DATA_CALL;
+
+                            mCurrentDecodeEvent = PassportDecodeEvent.builder(decodeEventType, passport.getTimestamp())
                                 .identifiers(getIdentifierCollection().copyOf())
                                 .details(passport.toString())
                                 .build();
@@ -177,8 +176,7 @@ public class PassportDecoderState extends DecoderState
                                 !isSameTalkgroup(to, getToIdentifier(callDetect.getIdentifierCollection())) ||
                                 callDetect.getTimeStart() < (passport.getTimestamp() - 45000))
                             {
-                                callDetect = DecodeEvent.builder(passport.getTimestamp())
-                                    .eventDescription("Call Detect")
+                                callDetect = PassportDecodeEvent.builder(DecodeEventType.CALL_DETECT, passport.getTimestamp())
                                     .identifiers(new IdentifierCollection(passport.getIdentifiers()))
 //                                    .channel(...)
                                     .build();
@@ -218,8 +216,7 @@ public class PassportDecoderState extends DecoderState
                         }
                         break;
                     case RA_REGI:
-                        broadcast(DecodeEvent.builder(passport.getTimestamp())
-                            .eventDescription("Register")
+                        broadcast(PassportDecodeEvent.builder(DecodeEventType.REGISTER, passport.getTimestamp())
                             .identifiers(new IdentifierCollection(passport.getIdentifiers()))
                             .build());
 

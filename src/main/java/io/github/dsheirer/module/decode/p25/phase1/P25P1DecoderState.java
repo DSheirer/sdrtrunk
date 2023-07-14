@@ -654,10 +654,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private void processBroadcast(List<Identifier> identifiers, long timestamp, DecodeEventType request, String s) {
         MutableIdentifierCollection requestCollection = getMutableIdentifierCollection(identifiers);
 
-        broadcast(P25DecodeEvent.builder(timestamp)
+        broadcast(P25DecodeEvent.builder(request, timestamp)
                 .channel(getCurrentChannel())
-                .eventType(request)
-                .eventDescription(request.toString())
                 .details(s)
                 .identifiers(requestCollection)
                 .build());
@@ -767,17 +765,16 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     /**
      * Updates or creates a current call event.
      *
-     * @param type of call that will be used as an event description
+     * @param decodeEventType of call that will be used as an event description
      * @param details of the call (optional)
      * @param timestamp of the message indicating a call or continuation
      */
-    private void updateCurrentCall(DecodeEventType type, String details, long timestamp)
+    private void updateCurrentCall(DecodeEventType decodeEventType, String details, long timestamp)
     {
         if(mCurrentCallEvent == null)
         {
-            mCurrentCallEvent = P25DecodeEvent.builder(timestamp)
+            mCurrentCallEvent = P25DecodeEvent.builder(DecodeEventType.CALL, timestamp)
                 .channel(getCurrentChannel())
-                .eventDescription(type.toString())
                 .details(details)
                 .identifiers(getIdentifierCollection().copyOf())
                 .build();
@@ -791,9 +788,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
             mCurrentCallEvent.end(timestamp);
             broadcast(mCurrentCallEvent);
 
-            if(type == DecodeEventType.CALL_ENCRYPTED)
+            if(decodeEventType == DecodeEventType.CALL_ENCRYPTED)
             {
-                mCurrentCallEvent.setEventDescription(type.toString());
                 mCurrentCallEvent.setDetails(details);
                 broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ENCRYPTED));
             }
@@ -838,12 +834,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processPDU(P25Message message)
     {
-        if(message.isValid() && message instanceof PDUMessage)
+        if(message.isValid() && message instanceof PDUMessage pdu)
         {
-            PDUMessage pdu = (PDUMessage)message;
-
             processBroadcast(pdu.getIdentifiers(), message.getTimestamp(), DecodeEventType.DATA_PACKET, pdu.toString());
-
         }
 
         broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
@@ -856,10 +849,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
      */
     private void processUMBTC(P25Message message)
     {
-        if(message.isValid() && message instanceof UMBTCTelephoneInterconnectRequestExplicitDialing)
+        if(message.isValid() && message instanceof UMBTCTelephoneInterconnectRequestExplicitDialing tired)
         {
-            UMBTCTelephoneInterconnectRequestExplicitDialing tired = (UMBTCTelephoneInterconnectRequestExplicitDialing)message;
-
             processBroadcast(tired.getIdentifiers(), tired.getTimestamp(), DecodeEventType.REQUEST, "TELEPHONE INTERCONNECT:" + tired.getTelephoneNumber());
         }
 
@@ -910,11 +901,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             ic.update(identifier);
                         }
 
-                        DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                        DecodeEvent packetEvent = P25DecodeEvent.builder(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE, message.getTimestamp())
                                 .channel(getCurrentChannel())
-                                .eventDescription(DecodeEventType.AUTOMATIC_REGISTRATION_SERVICE.toString())
                                 .identifiers(ic)
-                                .details(arsPacket.toString() + " " + ipv4.toString())
+                                .details(arsPacket + " " + ipv4)
                                 .build();
 
                         broadcast(packetEvent);
@@ -929,11 +919,10 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             ic.update(identifier);
                         }
 
-                        DecodeEvent cellocatorEvent = P25DecodeEvent.builder(message.getTimestamp())
+                        DecodeEvent cellocatorEvent = P25DecodeEvent.builder(DecodeEventType.CELLOCATOR, message.getTimestamp())
                                 .channel(getCurrentChannel())
-                                .eventDescription("Cellocator")
                                 .identifiers(ic)
-                                .details(mcgpPacket.toString() + " " + ipv4.toString())
+                                .details(mcgpPacket + " " + ipv4)
                                 .build();
 
                         broadcast(cellocatorEvent);
@@ -942,10 +931,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     {
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(packet.getIdentifiers());
 
-                        DecodeEvent lrrpEvent = P25DecodeEvent.builder(message.getTimestamp())
+                        DecodeEvent lrrpEvent = P25DecodeEvent.builder(DecodeEventType.LRRP, message.getTimestamp())
                                 .channel(getCurrentChannel())
                                 .details(lrrpPacket + " " + ipv4)
-                                .eventDescription("LRRP")
                                 .identifiers(ic)
                                 .protocol(Protocol.LRRP)
                                 .build();
@@ -956,9 +944,9 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
                         if(geoPosition != null)
                         {
-                            PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(message.getTimestamp())
+                            PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent
+                                    .plottableBuilder(DecodeEventType.GPS, message.getTimestamp())
                                     .channel(getCurrentChannel())
-                                    .eventDescription(DecodeEventType.GPS.toString())
                                     .identifiers(ic)
                                     .protocol(Protocol.LRRP)
                                     .location(geoPosition)
@@ -975,9 +963,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                             ic.update(identifier);
                         }
 
-                        DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                        DecodeEvent packetEvent = P25DecodeEvent.builder(DecodeEventType.UDP_PACKET, message.getTimestamp())
                                 .channel(getCurrentChannel())
-                                .eventDescription(DecodeEventType.UDP_PACKET.toString())
                                 .identifiers(ic)
                                 .details(ipv4.toString())
                                 .build();
@@ -993,9 +980,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         ic.update(identifier);
                     }
 
-                    DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                    DecodeEvent packetEvent = P25DecodeEvent.builder(DecodeEventType.ICMP_PACKET, message.getTimestamp())
                             .channel(getCurrentChannel())
-                            .eventDescription(DecodeEventType.ICMP_PACKET.toString())
                             .identifiers(ic)
                             .details(ipv4.toString())
                             .build();
@@ -1010,9 +996,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                         ic.update(identifier);
                     }
 
-                    DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                    DecodeEvent packetEvent = P25DecodeEvent.builder(DecodeEventType.IP_PACKET, message.getTimestamp())
                             .channel(getCurrentChannel())
-                            .eventDescription(DecodeEventType.IP_PACKET.toString())
                             .identifiers(ic)
                             .details(ipv4.toString())
                             .build();
@@ -1028,9 +1013,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
                     ic.update(identifier);
                 }
 
-                DecodeEvent packetEvent = P25DecodeEvent.builder(message.getTimestamp())
+                DecodeEvent packetEvent = P25DecodeEvent.builder(DecodeEventType.UNKNOWN_PACKET, message.getTimestamp())
                         .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.UNKNOWN_PACKET.toString())
                         .identifiers(ic)
                         .details(packet.toString())
                         .build();
@@ -1376,9 +1360,8 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
 
     private void processTSBKRoamingAddressRequest(TSBKMessage tsbk) {
         //TODO: not sure if this should be used or not.
-        broadcast(P25DecodeEvent.builder(tsbk.getTimestamp())
+        broadcast(P25DecodeEvent.builder(DecodeEventType.REQUEST, tsbk.getTimestamp())
             .channel(getCurrentChannel())
-            .eventDescription(DecodeEventType.REQUEST.toString())
             .details("ROAMING ADDRESS")
             // TODO: This identifierCollection is different from all the others.
             .identifiers(new IdentifierCollection(tsbk.getIdentifiers()))

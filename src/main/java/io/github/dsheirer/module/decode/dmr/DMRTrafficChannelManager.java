@@ -325,12 +325,12 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         int lsn = channel.getLogicalSlotNumber();
 
         DMRChannelGrantEvent event = mLSNGrantEventMap.get(lsn);
+        DecodeEventType decodeEventType = getEventType(opcode, identifierCollection, encrypted);
 
         if(isStale(event, timestamp, identifierCollection)) //Create new event
         {
-            event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
+            event = DMRChannelGrantEvent.channelGrantBuilder(decodeEventType, timestamp)
                 .channel(channel)
-                .eventDescription(getEventType(opcode, identifierCollection, encrypted).toString())
                 .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -349,10 +349,9 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
                 {
                     event.end(timestamp);
 
-                    event = DMRChannelGrantEvent.channelGrantBuilder(timestamp)
+                    event = DMRChannelGrantEvent.channelGrantBuilder(decodeEventType, timestamp)
                         .channel(channel)
-                        .eventDescription(getEventType(opcode, identifierCollection, encrypted).toString() + " - Continue")
-                        .details("CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
+                        .details("CONTINUE - CHANNEL GRANT" + (encrypted ? " ENCRYPTED" : ""))
                         .identifiers(identifierCollection)
                         .build();
 
@@ -389,15 +388,6 @@ public class DMRTrafficChannelManager extends TrafficChannelManager implements I
         {
             if(mIgnoreDataCalls && opcode.isDataChannelGrantOpcode())
             {
-                if(event.getEventDescription() == null)
-                {
-                    event.setEventDescription(getEventType(opcode, identifierCollection, encrypted) + IGNORED);
-                }
-                else if(!event.getEventDescription().endsWith(IGNORED))
-                {
-                    event.setEventDescription(event.getEventDescription() + IGNORED);
-                }
-
                 if(event.getDetails() == null)
                 {
                     event.setDetails(DATA_CALL_IGNORED);

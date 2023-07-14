@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.tait;
 
@@ -30,14 +27,16 @@ import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.event.PlottableDecodeEvent;
 import io.github.dsheirer.module.decode.tait.identifier.TaitIdentifier;
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
+import io.github.dsheirer.protocol.Protocol;
 import java.util.TreeSet;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 public class Tait1200DecoderState extends DecoderState
 {
+    public static final Protocol PROTOCOL_TAIT_1200 = Protocol.TAIT1200;
     private TreeSet<TaitIdentifier> mIdents = new TreeSet<>();
 
     public Tait1200DecoderState()
@@ -94,8 +93,8 @@ public class Tait1200DecoderState extends DecoderState
                 ic.remove(IdentifierClass.USER);
                 ic.update(message.getIdentifiers());
 
-                PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(gps.getTimestamp())
-                    .eventDescription("GPS")
+                PlottableDecodeEvent event = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, gps.getTimestamp())
+                    .protocol(PROTOCOL_TAIT_1200)
                     .identifiers(ic)
                     .location(position)
                     .speed(gps.getSpeed())
@@ -106,9 +105,8 @@ public class Tait1200DecoderState extends DecoderState
 
             broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
         }
-        else if(message instanceof Tait1200ANIMessage)
+        else if(message instanceof Tait1200ANIMessage ani)
         {
-            Tait1200ANIMessage ani = (Tait1200ANIMessage)message;
             mIdents.add(ani.getFromIdentifier());
             mIdents.add(ani.getToIdentifier());
 
@@ -116,8 +114,8 @@ public class Tait1200DecoderState extends DecoderState
             ic.remove(IdentifierClass.USER);
             ic.update(message.getIdentifiers());
 
-            broadcast(DecodeEvent.builder(ani.getTimestamp())
-                .eventDescription("ANI")
+            broadcast(DecodeEvent.builder(DecodeEventType.ID_ANI, ani.getTimestamp())
+                .protocol(PROTOCOL_TAIT_1200)
                 .identifiers(ic)
                 .details("Automatic Number Identification")
                 .build());

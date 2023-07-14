@@ -1,57 +1,79 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.passport;
 
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageType;
-import io.github.dsheirer.protocol.Protocol;
+import java.util.function.Function;
 
-import java.util.*;
-
-public class PassportMessageFilter extends Filter<IMessage>
+/**
+ * Filter for Passport messages
+ */
+public class PassportMessageFilter extends Filter<IMessage,MessageType>
 {
-    private Map<MessageType, FilterElement<MessageType>> mElements = new EnumMap<>(MessageType.class);
+    private KeyExtractor mKeyExtractor = new KeyExtractor();
 
+    /**
+     * Constructor
+     */
     public PassportMessageFilter()
     {
-        super("Passport Message Filter");
-
-        mElements.put(MessageType.CA_STRT, new FilterElement<MessageType>(MessageType.CA_STRT));
-        mElements.put(MessageType.CA_ENDD, new FilterElement<MessageType>(MessageType.CA_ENDD));
-        mElements.put(MessageType.SY_IDLE, new FilterElement<MessageType>(MessageType.SY_IDLE));
-        mElements.put(MessageType.ID_TGAS, new FilterElement<MessageType>(MessageType.ID_TGAS));
-        mElements.put(MessageType.ID_ESNH, new FilterElement<MessageType>(MessageType.ID_ESNH));
-        mElements.put(MessageType.CA_PAGE, new FilterElement<MessageType>(MessageType.CA_PAGE));
-        mElements.put(MessageType.ID_RDIO, new FilterElement<MessageType>(MessageType.ID_RDIO));
-        mElements.put(MessageType.DA_STRT, new FilterElement<MessageType>(MessageType.DA_STRT));
-        mElements.put(MessageType.RA_REGI, new FilterElement<MessageType>(MessageType.RA_REGI));
-    }
-
-    @Override
-    public boolean passes(IMessage message)
-    {
-        if(mEnabled && canProcess(message))
-        {
-            PassportMessage passport = (PassportMessage) message;
-
-            if(mElements.containsKey(passport.getMessageType()))
-            {
-                return mElements.get(passport.getMessageType()).isEnabled();
-            }
-        }
-
-        return false;
+        super("Passport Messages");
+        add(new FilterElement<>(MessageType.CA_STRT));
+        add(new FilterElement<>(MessageType.SY_IDLE));
+        add(new FilterElement<>(MessageType.ID_TGAS));
+        add(new FilterElement<>(MessageType.ID_ESNH));
+        add(new FilterElement<>(MessageType.CA_PAGE));
+        add(new FilterElement<>(MessageType.ID_RDIO));
+        add(new FilterElement<>(MessageType.DA_STRT));
+        add(new FilterElement<>(MessageType.RA_REGI));
     }
 
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof PassportMessage;
+        return message instanceof PassportMessage && super.canProcess(message);
     }
 
     @Override
-    public List<FilterElement<?>> getFilterElements()
+    public Function<IMessage, MessageType> getKeyExtractor()
     {
-        return new ArrayList<FilterElement<?>>(mElements.values());
+        return mKeyExtractor;
+    }
+
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage,MessageType>
+    {
+        @Override
+        public MessageType apply(IMessage message)
+        {
+            if(message instanceof PassportMessage passport)
+            {
+                return passport.getMessageType();
+            }
+
+            return null;
+        }
     }
 }

@@ -117,8 +117,8 @@ public class ProcessingChain implements Listener<ChannelEvent>
     private Broadcaster<IMessage> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchStateEvent> mSquelchStateEventBroadcaster = new Broadcaster<>();
     private AtomicBoolean mRunning = new AtomicBoolean();
-    private DecodeEventHistory mDecodeEventHistory = new DecodeEventHistory(500);
-    private MessageHistory mMessageHistory = new MessageHistory(500);
+    private DecodeEventHistory mDecodeEventHistory = new DecodeEventHistory(200);
+    private MessageHistory mMessageHistory = new MessageHistory(200);
     private AbstractChannelState mChannelState;
     private EventBus mEventBus;
     protected Source mSource;

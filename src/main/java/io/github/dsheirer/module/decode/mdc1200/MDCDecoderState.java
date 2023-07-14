@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.mdc1200;
 
@@ -29,9 +26,8 @@ import io.github.dsheirer.identifier.IdentifierClass;
 import io.github.dsheirer.identifier.MutableIdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.mdc1200.identifier.MDC1200Identifier;
-
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
@@ -114,8 +110,7 @@ public class MDCDecoderState extends DecoderState
             ic.remove(IdentifierClass.USER);
             ic.update(message.getIdentifiers());
 
-            broadcast(DecodeEvent.builder(mdc.getTimestamp())
-                .eventDescription(type.getLabel())
+            broadcast(MDCDecodeEvent.builder(getDecodeEventType(type), mdc.getTimestamp())
                 .details(mdc.toString())
                 .identifiers(ic)
                 .build());
@@ -193,6 +188,24 @@ public class MDCDecoderState extends DecoderState
                 break;
             default:
                 break;
+        }
+    }
+
+    private DecodeEventType getDecodeEventType(MDCMessageType messageType) {
+        switch(messageType)
+        {
+            case ANI:
+                return DecodeEventType.ID_ANI;
+            case ACKNOWLEDGE:
+                return DecodeEventType.RESPONSE;
+            case EMERGENCY:
+                return DecodeEventType.EMERGENCY;
+            case PAGING:
+                return DecodeEventType.PAGE;
+            case STATUS:
+                return DecodeEventType.STATUS;
+            default:
+                return DecodeEventType.UNKNOWN;
         }
     }
 }

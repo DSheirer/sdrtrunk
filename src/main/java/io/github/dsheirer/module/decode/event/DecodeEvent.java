@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,27 +32,33 @@ public class DecodeEvent implements IDecodeEvent
 {
     private long mTimeStart;
     private long mTimeEnd;
-    private String mEventDescription;
     private DecodeEventType mDecodeEventType;
     private IdentifierCollection mIdentifierCollection;
     private IChannelDescriptor mChannelDescriptor;
     private String mDetails;
     private Protocol mProtocol;
-    private Integer mTimeslot;
+    private int mTimeslot = -1;
 
-    public DecodeEvent(long start)
+    /**
+     * Constructs an instance
+     * @param decodeEventType is mandatory to support event filtering by event type.
+     * @param start time of the event.
+     */
+    public DecodeEvent(DecodeEventType decodeEventType, long start)
     {
+        mDecodeEventType = decodeEventType;
         mTimeStart = start;
     }
 
     /**
      * Creates a new decode event builder with the specified start timestamp.
+     * @param decodeEventType for the event
      * @param timeStart for the event
      * @return builder
      */
-    public static DecodeEventBuilder builder(long timeStart)
+    public static DecodeEventBuilder builder(DecodeEventType decodeEventType, long timeStart)
     {
-        return new DecodeEventBuilder(timeStart);
+        return new DecodeEventBuilder(decodeEventType, timeStart);
     }
 
     /**
@@ -116,35 +122,11 @@ public class DecodeEvent implements IDecodeEvent
     }
 
     /**
-     * Event description
-     */
-    @Override
-    public String getEventDescription()
-    {
-        return mEventDescription;
-    }
-
-    /**
-     * Sets the event description text
-     */
-    public void setEventDescription(String description)
-    {
-        mEventDescription = description;
-    }
-
-    /**
      * {@link DecodeEventType}
      */
     @Override
     public DecodeEventType getEventType() {
         return mDecodeEventType;
-    }
-
-    /**
-     * Sets the {@link DecodeEventType}
-     */
-    public void setEventType(DecodeEventType eventType) {
-        this.mDecodeEventType = eventType;
     }
 
     /**
@@ -222,24 +204,24 @@ public class DecodeEvent implements IDecodeEvent
      * @return timeslot or default value of 0
      */
     @Override
-    public Integer getTimeslot()
+    public int getTimeslot()
     {
         return mTimeslot;
     }
 
     /**
-     * Indicates if this event specifies a timeslot
+     * Indicates if this event specifies a timeslot that is not negative
      */
     public boolean hasTimeslot()
     {
-        return mTimeslot != null;
+        return mTimeslot >= 0;
     }
 
     /**
      * Sets the timeslot for this event
      * @param timeslot of the event
      */
-    public void setTimeslot(Integer timeslot)
+    public void setTimeslot(int timeslot)
     {
         mTimeslot = timeslot;
     }
@@ -249,7 +231,7 @@ public class DecodeEvent implements IDecodeEvent
     {
         StringBuilder sb = new StringBuilder();
         sb.append(mProtocol);
-        sb.append(" DECODE EVENT: ").append(getEventDescription());
+        sb.append(" DECODE EVENT: ").append(getEventType());
         sb.append(" DETAILS:").append(getDetails());
         if(mIdentifierCollection != null)
         {
@@ -267,19 +249,19 @@ public class DecodeEvent implements IDecodeEvent
     {
         protected long mTimeStart;
         protected long mDuration;
-        protected String mEventDescription;
         protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
         protected IChannelDescriptor mChannelDescriptor;
         protected String mDetails;
         protected Protocol mProtocol = Protocol.UNKNOWN;
-        protected Integer mTimeslot;
+        protected int mTimeslot = -1;
 
         /**
          * Constructs a builder instance with the specified start time in milliseconds
          */
-        public DecodeEventBuilder(long timeStart)
+        public DecodeEventBuilder(DecodeEventType decodeEventType, long timeStart)
         {
+            mDecodeEventType = decodeEventType;
             mTimeStart = timeStart;
         }
 
@@ -310,21 +292,6 @@ public class DecodeEvent implements IDecodeEvent
         public DecodeEventBuilder channel(IChannelDescriptor channelDescriptor)
         {
             mChannelDescriptor = channelDescriptor;
-            return this;
-        }
-
-        public DecodeEventBuilder eventType(DecodeEventType eventType) {
-            mDecodeEventType = eventType;
-            return this;
-        }
-
-        /**
-         * Sets the event description text
-         * @param description of the event
-         */
-        public DecodeEventBuilder eventDescription(String description)
-        {
-            mEventDescription = description;
             return this;
         }
 
@@ -359,7 +326,12 @@ public class DecodeEvent implements IDecodeEvent
             return this;
         }
 
-        public DecodeEventBuilder timeslot(Integer timeslot)
+        /**
+         * Sets the timeslot for this event
+         * @param timeslot
+         * @return
+         */
+        public DecodeEventBuilder timeslot(int timeslot)
         {
             mTimeslot = timeslot;
             return this;
@@ -370,11 +342,10 @@ public class DecodeEvent implements IDecodeEvent
          */
         public DecodeEvent build()
         {
-            DecodeEvent decodeEvent = new DecodeEvent(mTimeStart);
+            DecodeEvent decodeEvent = new DecodeEvent(mDecodeEventType, mTimeStart);
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
-            decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setProtocol(mProtocol);
             decodeEvent.setTimeslot(mTimeslot);

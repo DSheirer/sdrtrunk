@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,18 +27,18 @@ public enum DataType
     VOICE_HEADER(1, 288, "VOICE HEADER"),
     TLC(2, 288,  "TERMINATOR"),
     CSBK(3, 288, "CSBK"),
-    MBC_HEADER(4, 288, "MBC HEADER"),
-    MBC_BLOCK(5, 276,  "MBC"),
+    MBC_HEADER(4, 288, "MULTI-BLOCK CONTROL HEADER"),
+    MBC_BLOCK(5, 276,  "MULTI-BLOCK CONTROL BLOCK"),
     DATA_HEADER(6, 288,  "DATA HEADER"),
     RATE_1_OF_2_DATA(7, 276, "RATE 1/2 PACKET"),
     RATE_3_OF_4_DATA(8, 276,  "RATE 3/4 PACKET"),
     SLOT_IDLE(9, 276, "IDLE"),
     RATE_1_DATA(10, 276,  "RATE 1/1 PACKET"),
     USB_DATA(11, 276,  "UNIFIED SINGLE BLOCK DATA"),
-    MBC_ENC_HEADER(12, 276,  "MBC ENCRYPTED HEADER"),
+    MBC_ENC_HEADER(12, 276,  "MULTI-BLOCK CONTROL ENCRYPTED HEADER"),
     DATA_ENC_HEADER(13, 276, "DATA ENCRYPTED HEADER"),
     CHANNEL_CONTROL_ENC_HEADER(14, 276,  "CONTROL CHANNEL ENCRYPTED HEADER"),
-    RESERVED_15(15, -1,  "RESERVED"),
+    RESERVED_15(15, -1,  "RESERVED 15"),
     UNKNOWN(-1, -1,  "UNKNOWN");
 
     private int mValue;

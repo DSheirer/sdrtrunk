@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase1.message.filter;
@@ -24,49 +23,52 @@ import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.p25.phase1.message.pdu.PDUMessage;
-import io.github.dsheirer.module.decode.p25.phase1.message.tsbk.Opcode;
-import io.github.dsheirer.protocol.Protocol;
+import io.github.dsheirer.module.decode.p25.phase1.message.tdu.TDUMessage;
+import java.util.function.Function;
 
-import java.util.*;
-
-public class PDUMessageFilter extends Filter<IMessage>
+/**
+ * Filter for PDU packet data unit messages
+ */
+public class PDUMessageFilter extends Filter<IMessage,String>
 {
-    private Map<Opcode, FilterElement<Opcode>> mOpcodeFilterElements = new EnumMap<>(Opcode.class);
+    private static final String PDU_KEY = "Packet Data Unit (PDU)";
+    private KeyExtractor mKeyExtractor = new KeyExtractor();
 
+    /**
+     * Constructor
+     */
     public PDUMessageFilter()
     {
-        super("PDU - Packet Data Unit");
-
-        for(Opcode opcode : Opcode.values())
-        {
-            mOpcodeFilterElements.put(opcode, new FilterElement<Opcode>(opcode));
-        }
+        super("Packet Data Unit messages");
+        add(new FilterElement<>(PDU_KEY));
     }
 
     @Override
-    public boolean passes(IMessage message)
+    public Function<IMessage, String> getKeyExtractor()
     {
-        if(mEnabled && message instanceof PDUMessage)
-        {
-            PDUMessage pdu = (PDUMessage) message;
-
-            Opcode opcode = pdu.getOpcode();
-
-            return mOpcodeFilterElements.get(opcode).isEnabled();
-        }
-
-        return false;
+        return mKeyExtractor;
     }
 
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof PDUMessage;
+        return message instanceof TDUMessage && super.canProcess(message);
     }
 
-    @Override
-    public List<FilterElement<?>> getFilterElements()
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage,String>
     {
-        return new ArrayList<FilterElement<?>>(mOpcodeFilterElements.values());
+        @Override
+        public String apply(IMessage message)
+        {
+            if(message instanceof PDUMessage)
+            {
+                return PDU_KEY;
+            }
+
+            return null;
+        }
     }
 }

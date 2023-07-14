@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2021 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,9 @@ package io.github.dsheirer.module.decode.p25.phase1.message.tsbk;
 
 import io.github.dsheirer.module.decode.p25.reference.Direction;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
-
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 
 public enum Opcode
 {
@@ -192,18 +193,146 @@ public enum Opcode
     private String mLabel;
     private String mDescription;
 
-    public static final EnumSet<Opcode> STANDARD_OUTBOUND_OPCODES = EnumSet.range(OSP_GROUP_VOICE_CHANNEL_GRANT,
-        OSP_PROTECTION_PARAMETER_UPDATE);
-    public static final EnumSet<Opcode> STANDARD_INBOUND_OPCODES = EnumSet.range(ISP_GROUP_VOICE_SERVICE_REQUEST,
-        ISP_RESERVED_3F);
-    public static final EnumSet<Opcode> DATA_CHANNEL_GRANT_OPCODES = EnumSet.of(OSP_SNDCP_DATA_CHANNEL_GRANT,
-        OSP_INDIVIDUAL_DATA_CHANNEL_GRANT, OSP_GROUP_DATA_CHANNEL_GRANT);
-
+    /**
+     * Constructor
+     * @param code value
+     * @param label or pretty value.
+     * @param description of the opcode
+     */
     Opcode(int code, String label, String description)
     {
         mCode = code;
         mLabel = label;
         mDescription = description;
+    }
+
+    /**
+     * OSP standard opcodes
+     */
+    public static final EnumSet<Opcode> STANDARD_OUTBOUND_OPCODES = EnumSet.range(OSP_GROUP_VOICE_CHANNEL_GRANT,
+        OSP_PROTECTION_PARAMETER_UPDATE);
+
+    /**
+     * ISP standard opcodes
+     */
+    public static final EnumSet<Opcode> STANDARD_INBOUND_OPCODES = EnumSet.range(ISP_GROUP_VOICE_SERVICE_REQUEST,
+        ISP_RESERVED_3F);
+
+    /**
+     * ISP mobile data requests
+     */
+    public static final EnumSet<Opcode> MOBILE_DATA_REQUESTS = EnumSet.of(ISP_INDIVIDUAL_DATA_SERVICE_REQUEST,
+            ISP_GROUP_DATA_SERVICE_REQUEST, ISP_SNDCP_DATA_CHANNEL_REQUEST, ISP_SNDCP_RECONNECT_REQUEST);
+
+    /**
+     * ISP mobile voice requests
+     */
+    public static final EnumSet<Opcode> MOBILE_VOICE_REQUESTS = EnumSet.of(ISP_GROUP_VOICE_SERVICE_REQUEST,
+            ISP_UNIT_TO_UNIT_VOICE_SERVICE_REQUEST, ISP_TELEPHONE_INTERCONNECT_EXPLICIT_DIAL_REQUEST,
+            ISP_TELEPHONE_INTERCONNECT_PSTN_REQUEST);
+
+    /**
+     * ISP mobile request, response and status.
+     */
+    public static final EnumSet<Opcode> MOBILE_REQUEST_RESPONSE = EnumSet.of(ISP_UNIT_TO_UNIT_ANSWER_RESPONSE,
+            ISP_TELEPHONE_INTERCONNECT_ANSWER_RESPONSE, ISP_SNDCP_DATA_PAGE_RESPONSE, ISP_STATUS_UPDATE_REQUEST,
+            ISP_STATUS_QUERY_REQUEST, ISP_STATUS_QUERY_RESPONSE, ISP_MESSAGE_UPDATE_REQUEST,
+            ISP_RADIO_UNIT_MONITOR_REQUEST, ISP_CALL_ALERT_REQUEST, ISP_UNIT_ACKNOWLEDGE_RESPONSE,
+            ISP_CANCEL_SERVICE_REQUEST, ISP_EXTENDED_FUNCTION_RESPONSE, ISP_EMERGENCY_ALARM_REQUEST,
+            ISP_GROUP_AFFILIATION_QUERY_RESPONSE, ISP_GROUP_AFFILIATION_REQUEST, ISP_UNIT_DE_REGISTRATION_REQUEST,
+            ISP_UNIT_REGISTRATION_REQUEST, ISP_LOCATION_REGISTRATION_REQUEST, ISP_AUTHENTICATION_QUERY_OBSOLETE,
+            ISP_AUTHENTICATION_RESPONSE_OBSOLETE, ISP_PROTECTION_PARAMETER_REQUEST, ISP_IDENTIFIER_UPDATE_REQUEST,
+            ISP_ROAMING_ADDRESS_REQUEST, ISP_ROAMING_ADDRESS_RESPONSE, ISP_AUTHENTICATION_RESPONSE,
+            ISP_AUTHENTICATION_RESPONSE_MUTUAL, ISP_AUTHENTICATION_FNE_RESULT, ISP_AUTHENTICATION_SU_DEMAND);
+
+    /**
+     * OSP network data channel grants.
+     */
+    public static final EnumSet<Opcode> NETWORK_DATA_GRANTS = EnumSet.of(OSP_SNDCP_DATA_CHANNEL_GRANT,
+            OSP_INDIVIDUAL_DATA_CHANNEL_GRANT, OSP_GROUP_DATA_CHANNEL_GRANT);
+
+    /**
+     * OSP network status
+     */
+    public static final EnumSet<Opcode> NETWORK_CHANNEL_STATUS = EnumSet.of(OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT,
+            OSP_GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT, OSP_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT,
+            OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT, OSP_TDMA_SYNC_BROADCAST, OSP_IDENTIFIER_UPDATE_TDMA,
+            OSP_IDENTIFIER_UPDATE_VHF_UHF_BANDS, OSP_TIME_DATE_ANNOUNCEMENT, OSP_SYSTEM_SERVICE_BROADCAST,
+            OSP_SECONDARY_CONTROL_CHANNEL_BROADCAST, OSP_RFSS_STATUS_BROADCAST, OSP_NETWORK_STATUS_BROADCAST,
+            OSP_ADJACENT_STATUS_BROADCAST, OSP_IDENTIFIER_UPDATE, OSP_PROTECTION_PARAMETER_BROADCAST,
+            OSP_PROTECTION_PARAMETER_UPDATE);
+
+    /**
+     * OSP network command, request and response
+     */
+    public static final EnumSet<Opcode> NETWORK_COMMAND_REQUEST_RESPONSE = EnumSet.of(OSP_UNIT_TO_UNIT_ANSWER_REQUEST,
+            OSP_TELEPHONE_INTERCONNECT_ANSWER_REQUEST, OSP_SNDCP_DATA_PAGE_REQUEST, OSP_STATUS_UPDATE,
+            OSP_STATUS_QUERY, OSP_MESSAGE_UPDATE, OSP_RADIO_UNIT_MONITOR_COMMAND, OSP_CALL_ALERT,
+            OSP_ACKNOWLEDGE_RESPONSE, OSP_QUEUED_RESPONSE, OSP_EXTENDED_FUNCTION_COMMAND, OSP_DENY_RESPONSE,
+            OSP_GROUP_AFFILIATION_QUERY, OSP_GROUP_AFFILIATION_RESPONSE, OSP_LOCATION_REGISTRATION_RESPONSE,
+            OSP_UNIT_REGISTRATION_COMMAND, OSP_UNIT_REGISTRATION_RESPONSE, OSP_AUTHENTICATION_COMMAND,
+            OSP_UNIT_DEREGISTRATION_ACKNOWLEDGE, OSP_AUTHENTICATION_DEMAND, OSP_AUTHENTICATION_FNE_RESPONSE,
+            OSP_ROAMING_ADDRESS_COMMAND, OSP_ROAMING_ADDRESS_UPDATE);
+
+    /**
+     * OSP network voice channel grants.
+     */
+    public static final EnumSet<Opcode> NETWORK_VOICE_GRANTS = EnumSet.of(OSP_GROUP_VOICE_CHANNEL_GRANT,
+            OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE, OSP_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT,
+            OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT, OSP_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE,
+            OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT, OSP_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE);
+
+    /**
+     * Motorola opcodes
+     */
+    public static final EnumSet<Opcode> MOTOROLA = EnumSet.of(MOTOROLA_ISP_UNKNOWN, MOTOROLA_OSP_PATCH_GROUP_ADD,
+            MOTOROLA_OSP_PATCH_GROUP_DELETE, MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT,
+            MOTOROLA_OSP_PATCH_GROUP_CHANNEL_GRANT_UPDATE, MOTOROLA_OSP_TRAFFIC_CHANNEL_ID,
+            MOTOROLA_OSP_DENY_RESPONSE, MOTOROLA_OSP_SYSTEM_LOADING, MOTOROLA_OSP_BASE_STATION_ID,
+            MOTOROLA_OSP_CONTROL_CHANNEL_PLANNED_SHUTDOWN, MOTOROLA_OSP_UNKNOWN);
+
+    /**
+     * Harris opcodes
+     */
+    public static final EnumSet<Opcode> HARRIS = EnumSet.of(HARRIS_ISP_UNKNOWN, HARRIS_OSP_TDMA_SYNC,
+            HARRIS_OSP_UNKNOWN);
+
+    /**
+     * Unknown vendor ISP/OSP opcodes
+     */
+    public static final EnumSet<Opcode> UNKNOWN = EnumSet.of(UNKNOWN_VENDOR_ISP, UNKNOWN_VENDOR_OSP);
+
+    /**
+     * Indicates if the enumeration element is contained in one of the enumset groupings above.
+     * @return true if the element is grouped.
+     */
+    public boolean isGrouped()
+    {
+        return MOBILE_DATA_REQUESTS.contains(this) || MOBILE_VOICE_REQUESTS.contains(this) ||
+                MOBILE_REQUEST_RESPONSE.contains(this) || NETWORK_DATA_GRANTS.contains(this) ||
+                NETWORK_CHANNEL_STATUS.contains(this) || NETWORK_COMMAND_REQUEST_RESPONSE.contains(this) ||
+                NETWORK_VOICE_GRANTS.contains(this) || MOTOROLA.contains(this) || HARRIS.contains(this) ||
+                UNKNOWN.contains(this);
+    }
+
+    /**
+     * List of opcodes that are not grouped.  This will catch any opcodes that are added to this enumeration where
+     * the opcode is not added to one of the existing groups.  This is used for message filtering to ensure that all
+     * opcodes and handled by the filter/filterset.
+     * @return list of ungrouped opcodes.
+     */
+    public static List<Opcode> getUngrouped()
+    {
+        List<Opcode> ungrouped = new ArrayList<>();
+        for(Opcode opcode: ungrouped)
+        {
+            if(!opcode.isGrouped())
+            {
+                ungrouped.add(opcode);
+            }
+        }
+
+        return ungrouped;
     }
 
     /**
@@ -235,7 +364,7 @@ public enum Opcode
      */
     public boolean isDataChannelGrant()
     {
-        return DATA_CHANNEL_GRANT_OPCODES.contains(this);
+        return NETWORK_DATA_GRANTS.contains(this);
     }
 
     @Override
@@ -244,17 +373,13 @@ public enum Opcode
         return mLabel;
     }
 
-    @Deprecated //use the ISP/OSP version of this method instead
-    public static Opcode fromValue(int value)
-    {
-        if(0 <= value && value <= 63)
-        {
-            return values()[value];
-        }
-
-        return OSP_UNKNOWN;
-    }
-
+    /**
+     * Lookup an opcode from a numeric value, vendor, and inbound/outbound direction.
+     * @param value for the opcode
+     * @param direction indicator - inbound (mobile) or outbound (tower)
+     * @param vendor identifier
+     * @return opcode or UNKNOWN
+     */
     public static Opcode fromValue(int value, Direction direction, Vendor vendor)
     {
         switch(vendor)

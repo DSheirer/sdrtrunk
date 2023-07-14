@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.p25;
 
@@ -29,9 +28,9 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
 {
     private ServiceOptions mServiceOptions;
 
-    public P25ChannelGrantEvent(long timestamp)
+    public P25ChannelGrantEvent(DecodeEventType decodeEventType, long timestamp)
     {
-        super(timestamp);
+        super(decodeEventType, timestamp);
     }
 
     /**
@@ -39,9 +38,9 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
      * @param timeStart for the event
      * @return builder
      */
-    public static P25ChannelGrantDecodeEventBuilder builder(long timeStart, ServiceOptions serviceOptions)
+    public static P25ChannelGrantDecodeEventBuilder builder(DecodeEventType decodeEventType, long timeStart, ServiceOptions serviceOptions)
     {
-        return new P25ChannelGrantDecodeEventBuilder(timeStart, serviceOptions);
+        return new P25ChannelGrantDecodeEventBuilder(decodeEventType, timeStart, serviceOptions);
     }
 
     /**
@@ -76,7 +75,6 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
     {
         protected long mTimeStart;
         protected long mDuration;
-        protected String mEventDescription;
         protected DecodeEventType mDecodeEventType;
         protected IdentifierCollection mIdentifierCollection;
         protected IChannelDescriptor mChannelDescriptor;
@@ -88,8 +86,9 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
          *
          * @param timeStart
          */
-        public P25ChannelGrantDecodeEventBuilder(long timeStart, ServiceOptions serviceOptions)
+        public P25ChannelGrantDecodeEventBuilder(DecodeEventType decodeEventType, long timeStart, ServiceOptions serviceOptions)
         {
+            mDecodeEventType = decodeEventType;
             mTimeStart = timeStart;
             mServiceOptions = serviceOptions;
         }
@@ -125,26 +124,6 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
         }
 
         /**
-         * Sets the event description text
-         * @param description of the event
-         */
-        public P25ChannelGrantDecodeEventBuilder eventDescription(String description)
-        {
-            mEventDescription = description;
-            return this;
-        }
-
-        /**
-         * Sets the {@link DecodeEventType}
-         * @param decodeEventType of the event
-         */
-        public P25ChannelGrantDecodeEventBuilder eventType(DecodeEventType decodeEventType)
-        {
-            mDecodeEventType = decodeEventType;
-            return this;
-        }
-
-        /**
          * Sets the identifier collection.
          * @param identifierCollection containing optional identifiers like TO, FROM, frequency and
          * alias list configuration name.
@@ -170,13 +149,11 @@ public class P25ChannelGrantEvent extends P25DecodeEvent
          */
         public P25ChannelGrantEvent build()
         {
-            P25ChannelGrantEvent decodeEvent = new P25ChannelGrantEvent(mTimeStart);
+            P25ChannelGrantEvent decodeEvent = new P25ChannelGrantEvent(mDecodeEventType, mTimeStart);
             decodeEvent.setProtocol(Protocol.APCO25);
             decodeEvent.setChannelDescriptor(mChannelDescriptor);
             decodeEvent.setDetails(mDetails);
             decodeEvent.setDuration(mDuration);
-            decodeEvent.setEventType(mDecodeEventType);
-            decodeEvent.setEventDescription(mEventDescription);
             decodeEvent.setIdentifierCollection(mIdentifierCollection);
             decodeEvent.setServiceOptions(mServiceOptions);
             return decodeEvent;

@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.timeslot;
@@ -29,10 +26,9 @@ import io.github.dsheirer.module.decode.p25.phase2.enumeration.DataUnitID;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessage;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.MacMessageFactory;
 import io.github.dsheirer.module.decode.p25.phase2.message.mac.UnknownMacMessage;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 /**
  * Fast Associated Control CHannel (FACCH) timeslot carrying a S-OEMI Message
@@ -256,34 +252,5 @@ public class FacchTimeslot extends AbstractSignalingTimeslot
         }
 
         return mMacMessages;
-    }
-
-    public static void main(String[] args)
-    {
-//        String raw = "575D57F7FFD8000000000000000030000000000000003FD55DDF5F500082919EB24B903F6A5B0BF9831985D29B";
-        String raw = "575D57F7FFD8010020000000000030000000000000003FD55DDF5F500082919EB24B903F6A5B0BF9831985D29B";
-        CorrectedBinaryMessage m = new CorrectedBinaryMessage(360);
-
-        int pointer = 0;
-
-        for(int x = 0; x < raw.length(); x += 2)
-        {
-            String braw = raw.substring(x, x + 2);
-            int parsed = Integer.parseInt(braw, 16);
-            m.load(pointer, 8, parsed);
-            pointer += 8;
-        }
-
-        mLog.debug(" IN:" + raw);
-        mLog.debug("OUT:" + m.toHexString());
-
-        FacchTimeslot facch = new FacchTimeslot(m, 0, System.currentTimeMillis());
-
-        List<MacMessage> macs = facch.getMacMessages();
-
-        for(MacMessage mac: macs)
-        {
-            mLog.debug(mac.toString());
-        }
     }
 }

@@ -26,6 +26,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.p25.identifier.channel.StandardChannel;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -100,9 +101,8 @@ public abstract class AnalogDecoderState extends DecoderState implements ISource
 
         if(mDecodeEvent == null)
         {
-            mDecodeEvent = DecodeEvent.builder(System.currentTimeMillis())
+            mDecodeEvent = DecodeEvent.builder(DecodeEventType.CALL, System.currentTimeMillis())
                     .channel(mChannelDescriptor)
-                    .eventDescription("CALL")
                     .details(getDecoderType().name())
                     .identifiers(new IdentifierCollection(getIdentifierCollection().getIdentifiers()))
                     .build();

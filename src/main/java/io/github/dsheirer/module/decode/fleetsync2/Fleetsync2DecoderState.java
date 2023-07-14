@@ -107,13 +107,7 @@ public class Fleetsync2DecoderState extends DecoderState
                 case ANI:
                 case EMERGENCY:
                 case LONE_WORKER_EMERGENCY:
-                    DecodeEvent aniEvent = DecodeEvent.builder(fleetsync.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(fleetsync.getMessageType().toString())
-                        .details(fleetsync.toString())
-                        .identifiers(getIdentifierCollection().copyOf())
-                        .build();
-
+                    DecodeEvent aniEvent = getDecodeEvent(fleetsync, getDecodeEventType(fleetsync.getMessageType()));
                     broadcast(aniEvent);
                     broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.CALL));
                     break;
@@ -121,19 +115,13 @@ public class Fleetsync2DecoderState extends DecoderState
                 case PAGING:
                 case STATUS:
                 case UNKNOWN:
-                    DecodeEvent statusEvent = DecodeEvent.builder(fleetsync.getTimestamp())
-                        .channel(getCurrentChannel())
-                        .eventDescription(fleetsync.getMessageType().toString())
-                        .details(fleetsync.toString())
-                        .identifiers(getIdentifierCollection().copyOf())
-                        .build();
+                    DecodeEvent statusEvent = getDecodeEvent(fleetsync, getDecodeEventType(fleetsync.getMessageType()));
                     broadcast(statusEvent);
                     broadcast(new DecoderStateEvent(this, DecoderStateEvent.Event.DECODE, State.DATA));
                     break;
                 case GPS:
-                    PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(fleetsync.getTimestamp())
+                    PlottableDecodeEvent plottableDecodeEvent = PlottableDecodeEvent.plottableBuilder(DecodeEventType.GPS, fleetsync.getTimestamp())
                         .channel(getCurrentChannel())
-                        .eventDescription(DecodeEventType.GPS.toString())
                         .details(fleetsync.toString())
                         .identifiers(getIdentifierCollection().copyOf())
                         .protocol(Protocol.FLEETSYNC)
@@ -144,6 +132,35 @@ public class Fleetsync2DecoderState extends DecoderState
             }
 
             getIdentifierCollection().remove(IdentifierClass.USER);
+        }
+    }
+
+    private DecodeEvent getDecodeEvent(Fleetsync2Message fleetsync, DecodeEventType eventType) {
+        return DecodeEvent.builder(eventType, fleetsync.getTimestamp())
+                .channel(getCurrentChannel())
+                .details(fleetsync.getMessageType() + " " + fleetsync)
+                .identifiers(getIdentifierCollection().copyOf())
+                .protocol(Protocol.FLEETSYNC)
+                .build();
+    }
+
+    private DecodeEventType getDecodeEventType(FleetsyncMessageType fleetsyncMessageType) {
+        switch (fleetsyncMessageType) {
+            case ANI:
+                return DecodeEventType.ID_ANI;
+            case EMERGENCY:
+            case LONE_WORKER_EMERGENCY:
+                return DecodeEventType.EMERGENCY;
+            case ACKNOWLEDGE:
+                return DecodeEventType.ACKNOWLEDGE;
+            case PAGING:
+                return DecodeEventType.PAGE;
+            case STATUS:
+                return DecodeEventType.STATUS;
+            case GPS:
+                return DecodeEventType.GPS;
+            default:
+                return DecodeEventType.UNKNOWN;
         }
     }
 

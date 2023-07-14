@@ -1,16 +1,40 @@
+/*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
+ */
+
 package io.github.dsheirer.module.decode.event.filter;
 
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.module.decode.event.IDecodeEvent;
 
-public class DecodeEventFilterSet extends FilterSet<IDecodeEvent> {
-    public DecodeEventFilterSet() {
-        super ("All Messages");
-
+/**
+ * Top-level decode event filter set.
+ */
+public class DecodeEventFilterSet extends FilterSet<IDecodeEvent>
+{
+    public DecodeEventFilterSet()
+    {
+        super ("All Events");
         addFilter(new DecodedCallEventFilter());
         addFilter(new DecodedCallEncryptedEventFilter());
         addFilter(new DecodedDataEventFilter());
         addFilter(new DecodedCommandEventFilter());
         addFilter(new DecodedRegistrationEventFilter());
+        addFilter(new AllOtherEventFilter());
     }
 }

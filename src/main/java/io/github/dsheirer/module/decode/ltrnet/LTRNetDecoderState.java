@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.ltrnet;
 
@@ -38,6 +35,7 @@ import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.ltrnet.channel.LtrNetChannel;
 import io.github.dsheirer.module.decode.ltrnet.identifier.LtrNetRadioIdentifier;
 import io.github.dsheirer.module.decode.ltrnet.message.LtrNetMessage;
@@ -60,9 +58,6 @@ import io.github.dsheirer.module.decode.ltrnet.message.osw.SystemIdle;
 import io.github.dsheirer.module.decode.ltrnet.message.osw.TransmitFrequencyHigh;
 import io.github.dsheirer.module.decode.ltrnet.message.osw.TransmitFrequencyLow;
 import io.github.dsheirer.protocol.Protocol;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -71,6 +66,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LTRNetDecoderState extends DecoderState
 {
@@ -166,10 +163,24 @@ public class LTRNetDecoderState extends DecoderState
 
             if(mCurrentCallTalkgroup == null || !mCurrentCallTalkgroup.equals(talkgroup))
             {
+                DecodeEventType decodeEventType = null;
+
+                if(talkgroup.getTalkgroup() == 253)
+                {
+                    decodeEventType = DecodeEventType.REGISTER;
+                }
+                else if(talkgroup.getTalkgroup() == 254)
+                {
+                    decodeEventType = DecodeEventType.STATION_ID;
+                }
+                else
+                {
+                    decodeEventType = DecodeEventType.CALL;
+                }
+
                 getIdentifierCollection().remove(IdentifierClass.USER);
                 getIdentifierCollection().update(talkgroup);
-                mCurrentCallEvent = DecodeEvent.builder(timestamp)
-                    .protocol(Protocol.LTR_NET)
+                mCurrentCallEvent = LTRNetDecodeEvent.builder(decodeEventType, timestamp)
                     .channel(getCurrentChannel())
                     .identifiers(getIdentifierCollection().copyOf())
                     .build();
@@ -181,17 +192,14 @@ public class LTRNetDecoderState extends DecoderState
 
             if(talkgroup.getTalkgroup() == 253)
             {
-                mCurrentCallEvent.setEventDescription("Register");
                 broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
             }
             else if(talkgroup.getTalkgroup() == 254)
             {
-                mCurrentCallEvent.setEventDescription("FCC CWID");
                 broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
             }
             else
             {
-                mCurrentCallEvent.setEventDescription("Call");
                 broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
             }
 
@@ -203,16 +211,7 @@ public class LTRNetDecoderState extends DecoderState
 
             if(decodeEvent == null)
             {
-                MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                ic.remove(IdentifierClass.USER);
-                ic.update(talkgroup);
-
-                decodeEvent = DecodeEvent.builder(timestamp)
-                    .eventDescription("Call Detect")
-                    .channel(mChannelMap.get(channel))
-                    .protocol(Protocol.LTR_NET)
-                    .identifiers(ic)
-                    .build();
+                decodeEvent = getDecodeEvent(talkgroup, channel, timestamp, DecodeEventType.CALL_DETECT);
                 mCallDetectMap.put(channel, decodeEvent);
             }
             else
@@ -223,16 +222,7 @@ public class LTRNetDecoderState extends DecoderState
                 if(eventTalkgroup == null || !eventTalkgroup.equals(talkgroup) ||
                     (timestamp - decodeEvent.getTimeStart() - decodeEvent.getDuration() > 2000))
                 {
-                    MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
-                    ic.remove(IdentifierClass.USER);
-                    ic.update(talkgroup);
-
-                    decodeEvent = DecodeEvent.builder(timestamp)
-                        .eventDescription("Call Detect")
-                        .channel(mChannelMap.get(channel))
-                        .protocol(Protocol.LTR_NET)
-                        .identifiers(ic)
-                        .build();
+                    decodeEvent = getDecodeEvent(talkgroup, channel, timestamp, DecodeEventType.CALL_DETECT);
                     mCallDetectMap.put(channel, decodeEvent);
                 }
             }
@@ -307,89 +297,59 @@ public class LTRNetDecoderState extends DecoderState
             switch(((LtrNetMessage)message).getLtrNetMessageType())
             {
                 case ISW_CALL_END:
-                    if(message instanceof IswCallEnd)
+                    if(message instanceof IswCallEnd callEnd)
                     {
-                        IswCallEnd callEnd = (IswCallEnd)message;
                         mTalkgroups.add(callEnd.getTalkgroup());
                         processCallEnd(callEnd.getChannel(), callEnd.getTalkgroup(), callEnd.getTimestamp());
                     }
                     break;
                 case ISW_CALL_START:
-                    if(message instanceof IswCallStart)
+                    if(message instanceof IswCallStart callStart)
                     {
-                        IswCallStart callStart = (IswCallStart)message;
                         mTalkgroups.add(callStart.getTalkgroup());
                         processCallStart(callStart.getChannel(), callStart.getTalkgroup(), callStart.getTimestamp(),
                             MessageDirection.ISW);
                     }
                     break;
                 case ISW_REGISTRATION_REQUEST_ESN_HIGH:
-                    if(message instanceof RegistrationRequestEsnHigh)
+                    if(message instanceof RegistrationRequestEsnHigh registrationRequestEsn)
                     {
-                        RegistrationRequestEsnHigh registrationRequestEsn = (RegistrationRequestEsnHigh)message;
-
                         if(registrationRequestEsn.isCompleteEsn())
                         {
                             getIdentifierCollection().update(registrationRequestEsn.getESN());
                             mESNIdentifiers.add(registrationRequestEsn.getESN());
                         }
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .eventDescription("Registration Request")
-                            .details(registrationRequestEsn.toString())
-                            .identifiers(getIdentifierCollection().copyOf())
-                            .channel(getCurrentChannel())
-                            .protocol(Protocol.LTR_NET)
-                            .build());
+                        broadcast(getDecodeEvent(message, DecodeEventType.REQUEST, "REGISTER: " + registrationRequestEsn));
 
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_REGISTRATION_REQUEST_ESN_LOW:
-                    if(message instanceof RegistrationRequestEsnLow)
+                    if(message instanceof RegistrationRequestEsnLow registrationRequestEsn)
                     {
-                        RegistrationRequestEsnLow registrationRequestEsn = (RegistrationRequestEsnLow)message;
-
                         if(registrationRequestEsn.isCompleteEsn())
                         {
                             getIdentifierCollection().update(registrationRequestEsn.getESN());
                             mESNIdentifiers.add(registrationRequestEsn.getESN());
                         }
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .eventDescription("Registration Request")
-                            .details(registrationRequestEsn.toString())
-                            .identifiers(getIdentifierCollection().copyOf())
-                            .channel(getCurrentChannel())
-                            .protocol(Protocol.LTR_NET)
-                            .build());
-
+                        broadcast(getDecodeEvent(message, DecodeEventType.REQUEST, "REGISTER: " + registrationRequestEsn));
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_REQUEST_ACCESS:
-                    if(message instanceof RequestAccess)
+                    if(message instanceof RequestAccess requestAccess)
                     {
-                        RequestAccess requestAccess = (RequestAccess)message;
-
                         getIdentifierCollection().update(requestAccess.getTalkgroup());
                         mTalkgroups.add(requestAccess.getTalkgroup());
-
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .eventDescription("Access Request")
-                            .details(requestAccess.toString())
-                            .identifiers(getIdentifierCollection().copyOf())
-                            .channel(getCurrentChannel())
-                            .protocol(Protocol.LTR_NET)
-                            .build());
-
+                        broadcast(getDecodeEvent(message, DecodeEventType.REQUEST, "ACCESS: " + requestAccess));
                         broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
                     }
                     break;
                 case ISW_UNIQUE_ID:
-                    if(message instanceof IswUniqueId)
+                    if(message instanceof IswUniqueId iswUniqueId)
                     {
-                        IswUniqueId iswUniqueId = (IswUniqueId)message;
                         getIdentifierCollection().update(iswUniqueId.getUniqueID());
                         mLtrNetRadioIdentifiers.add(iswUniqueId.getUniqueID());
                         updateCurrentCallIdentifiers();
@@ -400,104 +360,90 @@ public class LTRNetDecoderState extends DecoderState
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_CALL_END:
-                    if(message instanceof OswCallEnd)
+                    if(message instanceof OswCallEnd callEnd)
                     {
-                        OswCallEnd callEnd = (OswCallEnd)message;
                         mTalkgroups.add(callEnd.getTalkgroup());
                         processCallEnd(callEnd.getChannel(), callEnd.getTalkgroup(), callEnd.getTimestamp());
                     }
                     break;
                 case OSW_CALL_START:
-                    if(message instanceof OswCallStart)
+                    if(message instanceof OswCallStart callStart)
                     {
-                        OswCallStart callStart = (OswCallStart)message;
                         mTalkgroups.add(callStart.getTalkgroup());
                         processCallStart(callStart.getChannel(), callStart.getTalkgroup(), callStart.getTimestamp(),
                             MessageDirection.OSW);
                     }
                     break;
                 case OSW_CHANNEL_MAP_HIGH:
-                    if(message instanceof ChannelMapHigh)
+                    if(message instanceof ChannelMapHigh channelMapHigh)
                     {
-                        mChannelMapHigh = (ChannelMapHigh)message;
+                        mChannelMapHigh = channelMapHigh;
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_CHANNEL_MAP_LOW:
-                    if(message instanceof ChannelMapLow)
+                    if(message instanceof ChannelMapLow channelMapLow)
                     {
-                        mChannelMapLow = (ChannelMapLow)message;
+                        mChannelMapLow = channelMapLow;
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_SYSTEM_IDLE:
-                    if(message instanceof SystemIdle)
+                    if(message instanceof SystemIdle systemIdle)
                     {
-                        setCurrentChannelNumber(((SystemIdle)message).getChannel());
+                        setCurrentChannelNumber(systemIdle.getChannel());
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_NEIGHBOR_ID:
-                    if(message instanceof NeighborId)
+                    if(message instanceof NeighborId neighborId)
                     {
-                        NeighborId neighborId = (NeighborId)message;
                         mNeighborMap.put(neighborId.getNeighborRank(), neighborId);
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_RECEIVE_FREQUENCY_HIGH:
-                    if(message instanceof ReceiveFrequencyHigh)
+                    if(message instanceof ReceiveFrequencyHigh receiveFrequency)
                     {
-                        ReceiveFrequencyHigh receiveFrequency = (ReceiveFrequencyHigh)message;
                         updateReceiveFrequency(receiveFrequency.getChannel(), receiveFrequency.getFrequency());
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_RECEIVE_FREQUENCY_LOW:
-                    if(message instanceof ReceiveFrequencyLow)
+                    if(message instanceof ReceiveFrequencyLow receiveFrequency)
                     {
-                        ReceiveFrequencyLow receiveFrequency = (ReceiveFrequencyLow)message;
                         updateReceiveFrequency(receiveFrequency.getChannel(), receiveFrequency.getFrequency());
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_REGISTRATION_ACCEPT:
-                    if(message instanceof RegistrationAccept)
+                    if(message instanceof RegistrationAccept registrationAccept)
                     {
-                        RegistrationAccept registrationAccept = (RegistrationAccept)message;
                         mLtrNetRadioIdentifiers.add(registrationAccept.getUniqueID());
                         MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
                         ic.remove(IdentifierClass.USER);
                         ic.update(message.getIdentifiers());
 
-                        broadcast(DecodeEvent.builder(message.getTimestamp())
-                            .protocol(Protocol.LTR_NET)
-                            .channel(getCurrentChannel())
-                            .identifiers(ic)
-                            .eventDescription("Registration Accept")
-                            .details(registrationAccept.toString())
-                            .build());
+                        broadcast(getDecodeEvent(message, DecodeEventType.RESPONSE, "REGISTRATION ACCEPT: " + registrationAccept));
                     }
                     break;
                 case OSW_SITE_ID:
-                    if(message instanceof SiteId)
+                    if(message instanceof SiteId siteId)
                     {
-                        mCurrentSite = (SiteId)message;
+                        mCurrentSite = siteId;
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_TRANSMIT_FREQUENCY_HIGH:
-                    if(message instanceof TransmitFrequencyHigh)
+                    if(message instanceof TransmitFrequencyHigh transmitFrequency)
                     {
-                        TransmitFrequencyHigh transmitFrequency = (TransmitFrequencyHigh)message;
                         updateTransmitFrequency(transmitFrequency.getChannel(), transmitFrequency.getFrequency());
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
                     break;
                 case OSW_TRANSMIT_FREQUENCY_LOW:
-                    if(message instanceof TransmitFrequencyLow)
+                    if(message instanceof TransmitFrequencyLow transmitFrequency)
                     {
-                        TransmitFrequencyLow transmitFrequency = (TransmitFrequencyLow)message;
                         updateTransmitFrequency(transmitFrequency.getChannel(), transmitFrequency.getFrequency());
                     }
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.IDLE));
@@ -507,6 +453,27 @@ public class LTRNetDecoderState extends DecoderState
                     break;
             }
         }
+    }
+
+    private DecodeEvent getDecodeEvent(IMessage message, DecodeEventType decodeEventType, String details)
+    {
+        return LTRNetDecodeEvent.builder(decodeEventType, message.getTimestamp())
+                .details(details)
+                .identifiers(getIdentifierCollection().copyOf())
+                .channel(getCurrentChannel())
+                .build();
+    }
+
+    private DecodeEvent getDecodeEvent(LTRTalkgroup talkgroup, int channel, long timestamp, DecodeEventType decodeEventType)
+    {
+        MutableIdentifierCollection ic = new MutableIdentifierCollection(getIdentifierCollection().getIdentifiers());
+        ic.remove(IdentifierClass.USER);
+        ic.update(talkgroup);
+
+        return LTRNetDecodeEvent.builder(decodeEventType, timestamp)
+                .channel(mChannelMap.get(channel))
+                .identifiers(ic)
+                .build();
     }
 
     @Override

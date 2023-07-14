@@ -1,27 +1,25 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.p25.phase2.message.mac;
 
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -120,11 +118,86 @@ public enum MacOpcode
     private String mLabel;
     private int mLength;
 
+    /**
+     * Constructor
+     * @param value of the opcode
+     * @param label for display
+     * @param length of the message in bytes.
+     */
     MacOpcode(int value, String label, int length)
     {
         mValue = value;
         mLabel = label;
         mLength = length;
+    }
+
+    /**
+     * Call maintenance
+     */
+    public static EnumSet<MacOpcode> CALL_MAINTENANCE = EnumSet.of(PUSH_TO_TALK, END_PUSH_TO_TALK,
+            TDMA_1_GROUP_VOICE_CHANNEL_USER_ABBREVIATED, TDMA_2_UNIT_TO_UNIT_VOICE_CHANNEL_USER,
+            TDMA_3_TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER, TDMA_5_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE,
+            TDMA_33_GROUP_VOICE_CHANNEL_USER_EXTENDED, TDMA_34_UNIT_TO_UNIT_VOICE_CHANNEL_USER_EXTENDED,
+            TDMA_37_GROUP_VOICE_CHANNEL_GRANT_UPDATE_MULTIPLE_EXPLICIT);
+
+    /**
+     * Data channel grants
+     */
+    public static EnumSet<MacOpcode> DATA_GRANTS = EnumSet.of(PHASE1_84_SNDCP_DATA_CHANNEL_GRANT);
+
+    /**
+     * Mobile requests and responses
+     */
+    public static EnumSet<MacOpcode> MOBILE_REQUEST_RESPONSE = EnumSet.of(PHASE1_65_GROUP_VOICE_SERVICE_REQUEST,
+            PHASE1_88_STATUS_UPDATE_ABBREVIATED, PHASE1_92_MESSAGE_UPDATE_ABBREVIATED,
+            PHASE1_216_STATUS_UPDATE_EXTENDED, PHASE1_220_MESSAGE_UPDATE_EXTENDED);
+
+    /**
+     * Network requests and responses
+     */
+    public static EnumSet<MacOpcode> NETWORK_REQUEST_RESPONSE = EnumSet.of(TDMA_0_NULL_INFORMATION_MESSAGE,
+            TDMA_17_INDIRECT_GROUP_PAGING, TDMA_18_INDIVIDUAL_PAGING_MESSAGE_WITH_PRIORITY,
+            TDMA_48_POWER_CONTROL_SIGNAL_QUALITY, TDMA_49_MAC_RELEASE, PHASE1_69_UNIT_TO_UNIT_ANSWER_REQUEST_ABBREVIATED,
+            PHASE1_74_TELEPHONE_INTERCONNECT_ANSWER_REQUEST, PHASE1_76_RADIO_UNIT_MONITOR_COMMAND_ABBREVIATED,
+            PHASE1_85_SNDCP_DATA_PAGE_REQUEST, PHASE1_90_STATUS_QUERY_ABBREVIATED,
+            OBSOLETE_PHASE1_93_RADIO_UNIT_MONITOR_COMMAND, PHASE1_94_RADIO_UNIT_MONITOR_COMMAND_ENHANCED,
+            PHASE1_95_CALL_ALERT_ABBREVIATED, PHASE1_96_ACK_RESPONSE, PHASE1_97_QUEUED_RESPONSE,
+            PHASE1_100_EXTENDED_FUNCTION_COMMAND_ABBREVIATED, PHASE1_103_DENY_RESPONSE,
+            PHASE1_106_GROUP_AFFILIATION_QUERY_ABBREVIATED, PHASE1_109_UNIT_REGISTRATION_COMMAND_ABBREVIATED,
+            PHASE1_197_UNIT_TO_UNIT_ANSWER_REQUEST_EXTENDED, PHASE1_204_RADIO_UNIT_MONITOR_COMMAND_EXTENDED,
+            PHASE1_218_STATUS_QUERY_EXTENDED, PHASE1_223_CALL_ALERT_EXTENDED,
+            PHASE1_228_EXTENDED_FUNCTION_COMMAND_EXTENDED, PHASE1_234_GROUP_AFFILIATION_QUERY_EXTENDED);
+
+    /**
+     * Network and channel status and announcements
+     */
+    public static EnumSet<MacOpcode> NETWORK_STATUS = EnumSet.of(PHASE1_115_IDENTIFIER_UPDATE_TDMA,
+            PHASE1_116_IDENTIFIER_UPDATE_V_UHF, PHASE1_117_TIME_AND_DATE_ANNOUNCEMENT,
+            PHASE1_120_SYSTEM_SERVICE_BROADCAST, PHASE1_121_SECONDARY_CONTROL_CHANNEL_BROADCAST_ABBREVIATED,
+            PHASE1_122_RFSS_STATUS_BROADCAST_ABBREVIATED, PHASE1_123_NETWORK_STATUS_BROADCAST_ABBREVIATED,
+            PHASE1_124_ADJACENT_STATUS_BROADCAST_ABBREVIATED, PHASE1_125_IDENTIFIER_UPDATE,
+            PHASE1_214_SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT, PHASE1_233_SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT,
+            PHASE1_250_RFSS_STATUS_BROADCAST_EXTENDED, PHASE1_251_NETWORK_STATUS_BROADCAST_EXTENDED,
+            PHASE1_252_ADJACENT_STATUS_BROADCAST_EXTENDED);
+
+    /**
+     * Voice channel grants
+     */
+    public static EnumSet<MacOpcode> VOICE_GRANTS = EnumSet.of(PHASE1_64_GROUP_VOICE_CHANNEL_GRANT_ABBREVIATED,
+            PHASE1_66_GROUP_VOICE_CHANNEL_GRANT_UPDATE, PHASE1_68_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_ABBREVIATED,
+            PHASE1_70_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_ABBREVIATED, PHASE1_192_GROUP_VOICE_CHANNEL_GRANT_EXTENDED,
+            PHASE1_195_GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT, PHASE1_196_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_EXTENDED,
+            PHASE1_198_UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE_EXTENDED);
+
+    /**
+     * Indicates if the enumeration element is contained in one of the enumset groupings above.
+     * @return true if the element is grouped.
+     */
+    public boolean isGrouped()
+    {
+        return CALL_MAINTENANCE.contains(this) || DATA_GRANTS.contains(this) ||
+                MOBILE_REQUEST_RESPONSE.contains(this) || NETWORK_REQUEST_RESPONSE.contains(this) ||
+                NETWORK_STATUS.contains(this) || VOICE_GRANTS.contains(this);
     }
 
     @Override

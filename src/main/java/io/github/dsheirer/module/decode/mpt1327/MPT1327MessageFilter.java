@@ -1,7 +1,6 @@
 /*
- * ******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2018 Dennis Sheirer
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- * *****************************************************************************
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.module.decode.mpt1327;
@@ -23,56 +22,55 @@ package io.github.dsheirer.module.decode.mpt1327;
 import io.github.dsheirer.filter.Filter;
 import io.github.dsheirer.filter.FilterElement;
 import io.github.dsheirer.message.IMessage;
-import io.github.dsheirer.message.MessageType;
+import java.util.function.Function;
 
-import java.util.*;
-
-public class MPT1327MessageFilter extends Filter<IMessage>
+/**
+ * Filter for MPT1327 messages
+ */
+public class MPT1327MessageFilter extends Filter<IMessage, MPT1327Message.MPTMessageType>
 {
-    private Map<MPT1327Message.MPTMessageType, FilterElement<MPT1327Message.MPTMessageType>> mFilterElements = new EnumMap<>(MPT1327Message.MPTMessageType.class);
+    private final KeyExtractor mKeyExtractor = new KeyExtractor();
 
+    /**
+     * Constructor
+     */
     public MPT1327MessageFilter()
     {
-        super("MPT1327 Message Type Filter");
+        super("MPT1327 Messages");
 
         for(MPT1327Message.MPTMessageType type : MPT1327Message.MPTMessageType.values())
         {
-            if(type != MPT1327Message.MPTMessageType.UNKN)
-            {
-                mFilterElements.put(type, new FilterElement<MPT1327Message.MPTMessageType>(type));
-            }
+            add(new FilterElement<>(type));
         }
-    }
-
-    @Override
-    public boolean passes(IMessage message)
-    {
-        if(mEnabled && canProcess(message))
-        {
-            MPT1327Message mpt = (MPT1327Message) message;
-
-            FilterElement<MPT1327Message.MPTMessageType> element =
-                    mFilterElements.get(mpt.getMessageType());
-
-            if(element != null)
-            {
-                return element.isEnabled();
-            }
-        }
-
-        return false;
     }
 
     @Override
     public boolean canProcess(IMessage message)
     {
-        return message instanceof MPT1327Message;
+        return message instanceof MPT1327Message && super.canProcess(message);
     }
 
     @Override
-    public List<FilterElement<?>> getFilterElements()
+    public Function<IMessage, MPT1327Message.MPTMessageType> getKeyExtractor()
     {
-        return new ArrayList<FilterElement<?>>(mFilterElements.values());
+        return mKeyExtractor;
+    }
+
+    /**
+     * Key extractor
+     */
+    private class KeyExtractor implements Function<IMessage, MPT1327Message.MPTMessageType>
+    {
+        @Override
+        public MPT1327Message.MPTMessageType apply(IMessage message)
+        {
+            if(message instanceof MPT1327Message mpt)
+            {
+                return mpt.getMessageType();
+            }
+
+            return null;
+        }
     }
 }
 

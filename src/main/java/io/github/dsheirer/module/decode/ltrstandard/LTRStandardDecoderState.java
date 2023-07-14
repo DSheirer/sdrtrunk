@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 package io.github.dsheirer.module.decode.ltrstandard;
 
@@ -35,15 +32,13 @@ import io.github.dsheirer.identifier.talkgroup.LTRTalkgroup;
 import io.github.dsheirer.message.IMessage;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.DecodeEvent;
+import io.github.dsheirer.module.decode.event.DecodeEventType;
 import io.github.dsheirer.module.decode.ltrstandard.channel.LtrChannel;
 import io.github.dsheirer.module.decode.ltrstandard.message.Call;
 import io.github.dsheirer.module.decode.ltrstandard.message.CallEnd;
 import io.github.dsheirer.module.decode.ltrstandard.message.Idle;
 import io.github.dsheirer.module.decode.ltrstandard.message.LTRMessage;
 import io.github.dsheirer.protocol.Protocol;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LTRStandardDecoderState extends DecoderState
 {
@@ -81,10 +78,8 @@ public class LTRStandardDecoderState extends DecoderState
             switch(((LTRMessage)message).getMessageType())
             {
                 case CALL:
-                    if(message instanceof Call)
+                    if(message instanceof Call start)
                     {
-                        Call start = (Call)message;
-
                         int channel = start.getChannel();
                         setChannelNumber(channel);
                         mLCNTracker.processFreeChannel(start.getFree());
@@ -97,11 +92,9 @@ public class LTRStandardDecoderState extends DecoderState
                                 mCurrentTalkgroup = start.getTalkgroup();
                                 getIdentifierCollection().remove(IdentifierClass.USER);
                                 getIdentifierCollection().update(start.getTalkgroup());
-                                mCurrentCallEvent = DecodeEvent.builder(start.getTimestamp())
-                                    .protocol(Protocol.LTR)
+                                mCurrentCallEvent = LTRStandardDecodeEvent.builder(DecodeEventType.CALL, start.getTimestamp())
                                     .identifiers(getIdentifierCollection().copyOf())
                                     .channel(getCurrentChannel())
-                                    .eventDescription("Call")
                                     .build();
                             }
                             else
@@ -114,10 +107,8 @@ public class LTRStandardDecoderState extends DecoderState
                     }
                     break;
                 case CALL_END:
-                    if(message instanceof CallEnd)
+                    if(message instanceof CallEnd end)
                     {
-                        CallEnd end = (CallEnd)message;
-
                         mCurrentTalkgroup = null;
 
                         //Home channel is 31 for call end -- use the free channel as the call end channel
@@ -135,10 +126,10 @@ public class LTRStandardDecoderState extends DecoderState
                     }
                     break;
                 case IDLE:
-                    if(message instanceof Idle)
+                    if(message instanceof Idle idle)
                     {
                         mCurrentTalkgroup = null;
-                        mLCNTracker.processCallChannel(((Idle)message).getChannel());
+                        mLCNTracker.processCallChannel(idle.getChannel());
                     }
                     break;
                 default:

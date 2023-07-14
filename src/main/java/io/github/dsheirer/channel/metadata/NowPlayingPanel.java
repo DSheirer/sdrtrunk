@@ -35,11 +35,11 @@ import javax.swing.JPanel;
 
 public class NowPlayingPanel extends JPanel
 {
-    private ChannelMetadataPanel mChannelMetadataPanel;
-    private ChannelDetailPanel mChannelDetailPanel;
-    private DecodeEventPanel mDecodeEventPanel;
-    private MessageActivityPanel mMessageActivityPanel;
-    private ChannelPowerPanel mChannelPowerPanel;
+    private final ChannelMetadataPanel mChannelMetadataPanel;
+    private final ChannelDetailPanel mChannelDetailPanel;
+    private final DecodeEventPanel mDecodeEventPanel;
+    private final MessageActivityPanel mMessageActivityPanel;
+    private final ChannelPowerPanel mChannelPowerPanel;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,

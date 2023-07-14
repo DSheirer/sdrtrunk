@@ -281,11 +281,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 {
                     event.end(timestamp);
 
-                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
                         .channel(apco25Channel)
-                        .eventType(decodeEventType)
-                        .eventDescription(decodeEventType.toString() + " - Continue")
-                        .details("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
+                        .details("CONTINUE - PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(identifierCollection)
                         .build();
 
@@ -306,7 +304,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                 if(trafficChannel != null)
                 {
-                    event.setEventDescription(decodeEventType.toString());
                     event.setDetails("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""));
                     event.setChannelDescriptor(apco25Channel);
                     broadcast(event);
@@ -327,10 +324,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         if(mIgnoreDataCalls && opcode.isDataChannelGrant())
         {
-            P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+            P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
                 .channel(apco25Channel)
-                .eventType(decodeEventType)
-                .eventDescription(decodeEventType.toString() + " - Ignored")
                 .details("DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -340,10 +335,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             return;
         }
 
-        P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+        P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
             .channel(apco25Channel)
-            .eventType(decodeEventType)
-            .eventDescription(decodeEventType.toString())
             .details("PHASE 1 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
             .identifiers(identifierCollection)
             .build();
@@ -357,8 +350,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             if(trafficChannel == null)
             {
-                channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
-                channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
+                channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED + " - IGNORED");
                 return;
             }
 
@@ -427,11 +419,9 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
                 {
                     event.end(timestamp);
 
-                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+                    P25ChannelGrantEvent continuationGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
                         .channel(apco25Channel)
-                        .eventType(decodeEventType)
-                        .eventDescription(decodeEventType.toString() + " - Continue")
-                        .details("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
+                        .details("CONTINUE - PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
                         .identifiers(identifierCollection)
                         .build();
 
@@ -460,7 +450,6 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                 if(trafficChannel != null)
                 {
-                    event.setEventDescription(decodeEventType.toString());
                     event.setDetails("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""));
                     event.setChannelDescriptor(apco25Channel);
                     broadcast(event);
@@ -488,10 +477,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
         if(mIgnoreDataCalls && opcode.isDataChannelGrant())
         {
-            P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+            P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
                 .channel(apco25Channel)
-                .eventType(decodeEventType)
-                .eventDescription(decodeEventType.toString() + " - Ignored")
                 .details("PHASE 2 DATA CALL IGNORED: " + (serviceOptions != null ? serviceOptions : ""))
                 .identifiers(identifierCollection)
                 .build();
@@ -502,10 +489,8 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
             return;
         }
 
-        P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(timestamp, serviceOptions)
+        P25ChannelGrantEvent channelGrantEvent = P25ChannelGrantEvent.builder(decodeEventType, timestamp, serviceOptions)
             .channel(apco25Channel)
-            .eventType(decodeEventType)
-            .eventDescription(decodeEventType.toString())
             .details("PHASE 2 CHANNEL GRANT " + (serviceOptions != null ? serviceOptions : ""))
             .identifiers(identifierCollection)
             .build();
@@ -526,8 +511,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
             if(trafficChannel == null)
             {
-                channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED);
-                channelGrantEvent.setEventDescription(channelGrantEvent.getEventDescription() + " - Ignored");
+                channelGrantEvent.setDetails(MAX_TRAFFIC_CHANNELS_EXCEEDED + " - IGNORED");
                 return;
             }
 
@@ -836,17 +820,7 @@ public class P25TrafficChannelManager extends TrafficChannelManager implements I
 
                                         if (event != null)
                                         {
-                                            event.setEventDescription(event.getEventDescription() + " - Rejected");
-
-                                            if (channelEvent.getDescription() != null)
-                                            {
-                                                event.setDetails(channelEvent.getDescription() + " - " + event.getDetails());
-                                            }
-                                            else
-                                            {
-                                                event.setDetails(CHANNEL_START_REJECTED + " - " + event.getDetails());
-                                            }
-
+                                            event.setDetails(CHANNEL_START_REJECTED + " - " + event.getDetails());
                                             broadcast(event);
                                         }
                                     });
