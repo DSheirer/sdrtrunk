@@ -56,12 +56,21 @@ public abstract class ClearableHistoryModel<T> extends AbstractTableModel
      */
     public void add(T item)
     {
-        mItems.addFirst(item);
-        ClearableHistoryModel.this.fireTableRowsInserted(0, 0);
-        while(mItems.size() > mHistorySize)
+        if(mItems.contains(item))
         {
-            mItems.removeLast();
-            super.fireTableRowsDeleted(mItems.size() - 1, mItems.size() - 1);
+            int itemRow = mItems.indexOf(item);
+            fireTableRowsUpdated(itemRow, itemRow);
+        }
+        else
+        {
+            mItems.addFirst(item);
+            fireTableRowsInserted(0, 0);
+
+            while(mItems.size() > mHistorySize)
+            {
+                mItems.removeLast();
+                fireTableRowsDeleted(mItems.size() - 1, mItems.size() - 1);
+            }
         }
     }
 
@@ -98,14 +107,6 @@ public abstract class ClearableHistoryModel<T> extends AbstractTableModel
     public int getHistorySize()
     {
         return mHistorySize;
-    }
-
-    /**
-     * Resets the history size to the default value.
-     */
-    public void resetHistorySize()
-    {
-        setHistorySize(DEFAULT_HISTORY_SIZE);
     }
 
     /**
