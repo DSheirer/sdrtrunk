@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,22 +22,9 @@ import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import net.miginfocom.swing.MigLayout;
-import org.apache.commons.math3.util.FastMath;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextField;
 import java.awt.Color;
-import java.awt.Cursor;
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.Image;
-import java.awt.Point;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -49,27 +36,39 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import net.miginfocom.swing.MigLayout;
+import org.apache.commons.math3.util.FastMath;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+/**
+ * Custom frequency controller for displaying or editing frequency values in MHz.
+ */
 public class JFrequencyControl extends JPanel implements ISourceEventProcessor
 {
     private static final long serialVersionUID = 1L;
     private final static Logger mLog = LoggerFactory.getLogger(JFrequencyControl.class);
-
     private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
-
     private Color mHighlightColor = Color.YELLOW;
-
     private long mFrequency;
-
-    private Cursor mBlankCursor;
-
     private HashMap<Integer,Digit> mDigits = new HashMap<Integer,Digit>();
 
+    /**
+     * Constructor
+     */
     public JFrequencyControl()
     {
         init();
     }
 
+    /**
+     * Initializes the control/layout.
+     */
     private void init()
     {
         setLayout(new MigLayout("insets 0 0 0 0", "[]0[]", ""));
@@ -104,19 +103,13 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             }
         }
 
-        /**
-         * Create a blank cursor to use when the mouse is over the digits
-         */
-        //Create an empty byte array
-        byte[] imageByte = new byte[0];
-
-        //Create image for cursor using empty array
-        Image cursorImage = Toolkit.getDefaultToolkit().createImage(imageByte);
-
-        mBlankCursor = Toolkit.getDefaultToolkit().createCustomCursor(cursorImage, new Point(0, 0), "cursor");
         revalidate();
     }
 
+    /**
+     * Enables or disables the control.
+     * @param enabled true if this component should be enabled, false otherwise
+     */
     @Override
     public void setEnabled(boolean enabled)
     {
@@ -157,11 +150,18 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         }
     }
 
+    /**
+     * Current frequency value for the control.
+     * @return frequency
+     */
     public long getFrequency()
     {
         return mFrequency;
     }
 
+    /**
+     * Updates the frequency value according to the manually changed digit value.
+     */
     private void updateFrequency()
     {
         long frequency = 0;
@@ -174,14 +174,15 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         mFrequency = frequency;
     }
 
+    /**
+     * Fires a source changed event
+     * @throws SourceException of there's an error
+     */
     private void fireSourceChanged() throws SourceException
     {
         updateFrequency();
-
         Iterator<ISourceEventProcessor> it = mProcessors.iterator();
-
         SourceEvent event = SourceEvent.frequencyRequest(mFrequency);
-
         while(it.hasNext())
         {
             it.next().process(event);
@@ -217,12 +218,21 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         mProcessors.remove(processor);
     }
 
+    /**
+     * Custom single digit value editor.
+     */
     public class Digit extends JTextField
     {
         private static final long serialVersionUID = 1L;
         private int mPower = 0;
         private long mValue = 0;
 
+        /**
+         * Constructor
+         * @param position of the digit where a position of 1 is the ones unit of MHz and a position of -1 is the tenths
+         * unit of MHz.
+         * @throws ParseException if there is an error
+         */
         private Digit(int position) throws ParseException
         {
             super("0");
@@ -236,6 +246,11 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             this.addMouseWheelListener(listener);
         }
 
+        /**
+         * Generates a custom tooltip for the current hover-over digit.
+         * @param power of the digit in units of 10
+         * @return custom tooptip.
+         */
         private static String getTooltip(int power)
         {
             StringBuilder sb = new StringBuilder();
@@ -288,23 +303,32 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         {
             //Strip the digits higher than this one
             long lower = frequency % (long)(FastMath.pow(10, mPower + 1));
-
             //Set the value to int value of dividing by 10 to this power
             long value = (long)(lower / (long)(FastMath.pow(10, mPower)));
-
             set(value, fireChangeEvent);
         }
 
+        /**
+         * Frequency value.
+         * @return frequency value.
+         */
         public long getFrequency()
         {
             return mValue * (long)FastMath.pow(10, mPower);
         }
 
+        /**
+         * Increments the unit value and fires a change event
+         */
         public void increment()
         {
             increment(true);
         }
 
+        /**
+         * Increments the unit value and fires a change event
+         * @param fireChangeEvent true to fire an event
+         */
         public void increment(boolean fireChangeEvent)
         {
             if(isEnabled())
@@ -313,11 +337,18 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             }
         }
 
+        /**
+         * Decrements the unit value and fires a change event.
+         */
         public void decrement()
         {
             decrement(true);
         }
 
+        /**
+         * Decrements the unit value and optionally fires a change event.
+         * @param fireChangeEvent set to true to fire an event
+         */
         public void decrement(boolean fireChangeEvent)
         {
             if(isEnabled())
@@ -349,7 +380,6 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             while(mValue < 0)
             {
                 mValue += 10;
-
                 Digit nextHigherDigit = mDigits.get(mPower + 1);
 
                 if(nextHigherDigit != null)
@@ -363,7 +393,6 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             while(mValue > 9)
             {
                 mValue -= 10;
-
                 Digit nextHigherDigit = mDigits.get(mPower + 1);
 
                 if(nextHigherDigit != null)
@@ -403,10 +432,8 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
                         }
                     }
 
-                    if(se instanceof InvalidFrequencyException)
+                    if(se instanceof InvalidFrequencyException ife)
                     {
-                        InvalidFrequencyException ife = (InvalidFrequencyException)se;
-
                         JOptionPane.showMessageDialog(this, "Frequency [" + ife.getInvalidFrequency() +
                             "] exceeds the frequency limit [" + ife.getValidFrequency() + "] for this tuner.");
                     }
@@ -415,13 +442,13 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
 
 
             setText(String.valueOf(mValue));
-
             repaint();
         }
 
-        private class Listener implements KeyListener,
-            MouseListener,
-            MouseWheelListener
+        /**
+         * Multiple Listener interface implementation
+         */
+        private class Listener implements KeyListener, MouseListener, MouseWheelListener
         {
             @Override
             public void keyReleased(KeyEvent e)
@@ -503,14 +530,9 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             }
 
             @Override
-            public void keyPressed(KeyEvent e)
-            {
-            }
-
+            public void keyPressed(KeyEvent e) {}
             @Override
-            public void keyTyped(KeyEvent e)
-            {
-            }
+            public void keyTyped(KeyEvent e) {}
 
             @Override
             public void mouseClicked(MouseEvent e)
@@ -528,21 +550,13 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
                 }
             }
 
-            public void mousePressed(MouseEvent e)
-            {
-            }
-
-            public void mouseReleased(MouseEvent e)
-            {
-            }
+            public void mousePressed(MouseEvent e) {}
+            public void mouseReleased(MouseEvent e) {}
 
             @Override
             public void mouseEntered(MouseEvent e)
             {
                 Digit.this.setBackground(mHighlightColor);
-
-                setCursor(mBlankCursor);
-
                 repaint();
             }
 
@@ -550,9 +564,6 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
             public void mouseExited(MouseEvent e)
             {
                 Digit.this.setBackground(Color.WHITE);
-
-                setCursor(Cursor.getDefaultCursor());
-
                 repaint();
             }
 
