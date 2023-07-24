@@ -1,23 +1,20 @@
 /*
+ * *****************************************************************************
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
- *  * ******************************************************************************
- *  * Copyright (C) 2014-2020 Dennis Sheirer
- *  *
- *  * This program is free software: you can redistribute it and/or modify
- *  * it under the terms of the GNU General Public License as published by
- *  * the Free Software Foundation, either version 3 of the License, or
- *  * (at your option) any later version.
- *  *
- *  * This program is distributed in the hope that it will be useful,
- *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  * GNU General Public License for more details.
- *  *
- *  * You should have received a copy of the GNU General Public License
- *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *  * *****************************************************************************
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * ****************************************************************************
  */
 
 package io.github.dsheirer.gui.playlist.alias;
@@ -37,6 +34,7 @@ import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.radio.Radio;
@@ -63,6 +61,11 @@ import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.identifier.IntegerFormat;
 import io.github.dsheirer.protocol.Protocol;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
@@ -105,12 +108,6 @@ import jiconfont.javafx.IconNode;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 /**
  * Editor for configuring individual aliases
@@ -717,6 +714,7 @@ public class AliasItemEditor extends Editor<Alias>
             Menu nbfmMenu = new ProtocolMenu(Protocol.NBFM);
             nbfmMenu.getItems().add(new AddTalkgroupItem(Protocol.NBFM));
             nbfmMenu.getItems().add(new AddTalkgroupRangeItem(Protocol.NBFM));
+            nbfmMenu.getItems().add(new AddDcsItem());
 
             Menu passportMenu = new ProtocolMenu(Protocol.PASSPORT);
             passportMenu.getItems().add(new AddTalkgroupItem(Protocol.PASSPORT));
@@ -1276,6 +1274,24 @@ public class AliasItemEditor extends Editor<Alias>
                 getIdentifiersList().getItems().add(tonesId);
                 getIdentifiersList().getSelectionModel().select(tonesId);
                 getIdentifiersList().scrollTo(tonesId);
+                modifiedProperty().set(true);
+            });
+        }
+    }
+
+    /**
+     * Add Digital Coded Squelch (DCS) alias identifier menu item
+     */
+    public class AddDcsItem extends MenuItem
+    {
+        public AddDcsItem()
+        {
+            super("Digital Coded Squelch (DCS)");
+            setOnAction(event -> {
+                Dcs dcs = new Dcs();
+                getIdentifiersList().getItems().add(dcs);
+                getIdentifiersList().getSelectionModel().select(dcs);
+                getIdentifiersList().scrollTo(dcs);
                 modifiedProperty().set(true);
             });
         }

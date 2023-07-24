@@ -47,7 +47,7 @@ public class DCSMessage extends Message
     @Override
     public String toString()
     {
-        return "Digital Coded Squelch (DCS) Detected: " + mDCSCode.name();
+        return "Digital Coded Squelch (DCS) Detected: " + mDCSCode.toString();
     }
 
     /**

@@ -213,7 +213,12 @@ public enum DCSCode
     /**
      * Inverted DCS codes
      */
-    private static final EnumSet<DCSCode> INVERTED_CODES = EnumSet.range(I023, I754);
+    public static final EnumSet<DCSCode> INVERTED_CODES = EnumSet.range(I023, I754);
+
+    /**
+     * Standard DCS codes
+     */
+    public static final EnumSet<DCSCode> STANDARD_CODES = EnumSet.range(N023,N754);
 
     /**
      * Lookup map for quickly finding a DCS code from the transmitted value.

@@ -32,6 +32,7 @@ public enum Form
     CHANNEL_DESCRIPTOR,
     CHANNEL_NAME,
     CHANNEL_FREQUENCY,
+    DCS,
     DECODER_TYPE,
     DTMF,
     ENCRYPTION_KEY,
