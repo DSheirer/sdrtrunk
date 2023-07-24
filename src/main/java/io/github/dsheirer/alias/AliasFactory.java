@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,22 +19,15 @@
 package io.github.dsheirer.alias;
 
 import io.github.dsheirer.alias.action.AliasAction;
-import io.github.dsheirer.alias.action.AliasActionType;
 import io.github.dsheirer.alias.action.beep.BeepAction;
 import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.id.AliasID;
-import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
-import io.github.dsheirer.alias.id.legacy.fleetsync.FleetsyncID;
-import io.github.dsheirer.alias.id.legacy.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.legacy.mobileID.Min;
-import io.github.dsheirer.alias.id.legacy.mpt1327.MPT1327ID;
-import io.github.dsheirer.alias.id.legacy.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.legacy.siteID.SiteID;
-import io.github.dsheirer.alias.id.legacy.talkgroup.LegacyTalkgroupID;
-import io.github.dsheirer.alias.id.legacy.uniqueID.UniqueID;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.Radio;
@@ -45,11 +38,10 @@ import io.github.dsheirer.alias.id.status.UserStatusID;
 import io.github.dsheirer.alias.id.talkgroup.Talkgroup;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AliasFactory
 {
@@ -64,6 +56,11 @@ public class AliasFactory
                 BroadcastChannel copyBroadcast = new BroadcastChannel();
                 copyBroadcast.setChannelName(originalBroadcast.getChannelName());
                 return copyBroadcast;
+            case DCS:
+                Dcs originalDcs = (Dcs)id;
+                Dcs copyDcs = new Dcs();
+                copyDcs.setDCSCode(originalDcs.getDCSCode());
+                return copyDcs;
             case ESN:
                 Esn originalESN = (Esn)id;
                 Esn copyESN = new Esn();
@@ -234,65 +231,4 @@ public class AliasFactory
 
         return copy;
     }
-
-    public static AliasID getAliasID(AliasIDType type)
-    {
-        switch(type)
-        {
-            case BROADCAST_CHANNEL:
-                return new BroadcastChannel();
-            case ESN:
-                return new Esn();
-            case FLEETSYNC:
-                return new FleetsyncID();
-            case LTR_NET_UID:
-                return new UniqueID();
-            case LOJACK:
-                return new LoJackFunctionAndID();
-            case MDC1200:
-                return new MDC1200ID();
-            case MIN:
-                return new Min();
-            case MPT1327:
-                return new MPT1327ID();
-            case NON_RECORDABLE:
-                return new NonRecordable();
-            case PRIORITY:
-                return new Priority();
-            case RADIO_ID:
-                return new Radio();
-            case RADIO_ID_RANGE:
-                return new RadioRange();
-            case RECORD:
-                return new Record();
-            case TALKGROUP:
-                return new Talkgroup();
-            case TALKGROUP_RANGE:
-                return new TalkgroupRange();
-            case SITE:
-                return new SiteID();
-            case STATUS:
-                return new UserStatusID();
-            case LEGACY_TALKGROUP:
-                return new LegacyTalkgroupID();
-            default:
-                throw new IllegalArgumentException("Unrecognized Alias ID type: " + type);
-        }
-    }
-
-    public static AliasAction getAliasAction(AliasActionType type)
-    {
-        switch(type)
-        {
-            case BEEP:
-                return new BeepAction();
-            case CLIP:
-                return new ClipAction();
-            case SCRIPT:
-                return new ScriptAction();
-            default:
-                throw new IllegalArgumentException("Unrecognized Alias Action type: " + type);
-        }
-    }
-
 }

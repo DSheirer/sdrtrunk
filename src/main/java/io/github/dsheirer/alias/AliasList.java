@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package io.github.dsheirer.alias;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
+import io.github.dsheirer.alias.id.dcs.Dcs;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.radio.Radio;
@@ -32,6 +33,7 @@ import io.github.dsheirer.alias.id.talkgroup.TalkgroupRange;
 import io.github.dsheirer.alias.id.tone.TonesID;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.IdentifierCollection;
+import io.github.dsheirer.identifier.dcs.DCSIdentifier;
 import io.github.dsheirer.identifier.esn.ESNIdentifier;
 import io.github.dsheirer.identifier.patch.PatchGroup;
 import io.github.dsheirer.identifier.patch.PatchGroupIdentifier;
@@ -41,12 +43,8 @@ import io.github.dsheirer.identifier.status.UserStatusIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.identifier.tone.ToneIdentifier;
 import io.github.dsheirer.identifier.tone.ToneSequence;
+import io.github.dsheirer.module.decode.dcs.DCSCode;
 import io.github.dsheirer.protocol.Protocol;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,6 +55,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * List of aliases that share the same alias list name and provides convenient methods for looking up alias
@@ -67,6 +69,7 @@ public class AliasList
     private final static Logger mLog = LoggerFactory.getLogger(AliasList.class);
     private Map<Protocol,TalkgroupAliasList> mTalkgroupProtocolMap = new EnumMap<>(Protocol.class);
     private Map<Protocol,RadioAliasList> mRadioProtocolMap = new EnumMap<>(Protocol.class);
+    private Map<DCSCode,Alias> mDCSCodeAliasMap = new EnumMap<>(DCSCode.class);
     private Map<String,Alias> mESNMap = new HashMap<>();
     private Map<Integer,Alias> mUnitStatusMap = new HashMap<>();
     private Map<Integer,Alias> mUserStatusMap = new HashMap<>();
@@ -177,6 +180,12 @@ public class AliasList
                         }
 
                         radioRangeAliasList.add(radioRange, alias);
+                        break;
+                    case DCS:
+                        if(id instanceof Dcs dcs)
+                        {
+                            mDCSCodeAliasMap.put(dcs.getDCSCode(), alias);
+                        }
                         break;
                     case ESN:
                         String esn = ((Esn)id).getEsn();
@@ -418,7 +427,7 @@ public class AliasList
                         return toList(radioAliasList.getAlias(radio));
                     }
                     break;
-                case ESN:
+                case DCS:
                     if(identifier instanceof ESNIdentifier)
                     {
                         return toList(getESNAlias(((ESNIdentifier)identifier).getValue()));
@@ -439,9 +448,9 @@ public class AliasList
                     }
                     break;
                 case TONE:
-                    if(identifier instanceof ToneIdentifier)
+                    if(identifier instanceof ToneIdentifier toneIdentifier)
                     {
-                        ToneSequence toneSequence = ((ToneIdentifier)identifier).getValue();
+                        ToneSequence toneSequence = toneIdentifier.getValue();
 
                         if(toneSequence != null && toneSequence.hasTones())
                         {
@@ -452,6 +461,15 @@ public class AliasList
                                     return toList(entry.getValue());
                                 }
                             }
+                        }
+                    }
+                    else if(identifier instanceof DCSIdentifier dcsIdentifier)
+                    {
+                        DCSCode dcsCode = dcsIdentifier.getValue();
+
+                        if(dcsCode != null)
+                        {
+                            return toList(mDCSCodeAliasMap.get(dcsCode));
                         }
                     }
                     break;
