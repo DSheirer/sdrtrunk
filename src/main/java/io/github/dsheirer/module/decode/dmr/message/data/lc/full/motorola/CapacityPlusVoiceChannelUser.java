@@ -20,15 +20,17 @@
 package io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola;
 
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
+import io.github.dsheirer.module.decode.dmr.message.IServiceOptionsProvider;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.FullLCMessage;
 import io.github.dsheirer.module.decode.dmr.message.type.CapacityPlusServiceOptions;
 
 /**
  * Any Capacity Plus Voice Channel User link control message that contains vendor-specific service options.
  */
-public abstract class CapacityPlusVoiceChannelUser extends FullLCMessage
+public abstract class CapacityPlusVoiceChannelUser extends FullLCMessage implements IServiceOptionsProvider
 {
     private static final int[] SERVICE_OPTIONS = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
+    //Reed Solomon FEC: 72-95
 
     private CapacityPlusServiceOptions mServiceOptions;
 

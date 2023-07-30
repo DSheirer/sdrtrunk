@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
@@ -44,11 +44,10 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     private static final int[] MESSAGE_TYPE = new int[]{16, 17, 18, 19, 20, 21, 22, 23};
     private static final int[] VERSION = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] UNKNOWN = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56,
-        57, 58, 59, 60, 61, 62, 63};
-    private static final int[] DATA_REPEATER = new int[]{64, 65, 66, 67};
-    private static final int[] DATA_TIMESLOT = new int[]{68};
+        57, 58, 59, 60, 61, 62};
+    private static final int[] DATA_REPEATER = new int[]{63, 64, 65, 66, 67};
 
-    private DMRLogicalChannel mDataChannel;
+    private DMRLsn mDataChannel;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -108,31 +107,22 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     }
 
     /**
-     * Data Timeslot
-     * @return 1 or 2
-     */
-    public int getDataTimeslot()
-    {
-        return getMessage().getInt(DATA_TIMESLOT) + 1;
-    }
-
-    /**
      * DMR Channel where the data is available
      */
-    public DMRLogicalChannel getDataChannel()
+    public DMRLsn getDataChannel()
     {
         if(mDataChannel == null)
         {
-            mDataChannel = new DMRLogicalChannel(getDataRepeater(), getDataTimeslot());
+            mDataChannel = new DMRLsn(getDataRepeater());
         }
 
         return mDataChannel;
     }
 
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getDataChannel().getLSNArray();
+        return getDataChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -145,7 +135,7 @@ public class ConnectPlusOTAAnnouncement extends CSBKMessage implements ITimeslot
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(timeslotFrequency.getNumber() == getDataChannel().getLogicalSlotNumber())
+            if(timeslotFrequency.getNumber() == getDataChannel().getValue())
             {
                 getDataChannel().setTimeslotFrequency(timeslotFrequency);
             }

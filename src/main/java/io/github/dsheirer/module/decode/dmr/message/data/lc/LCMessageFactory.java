@@ -37,8 +37,9 @@ import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraGr
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraTerminator;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.hytera.HyteraUnitToUnitVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusEncryptedVoiceChannelUser;
-import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.CapacityPlusWideAreaVoiceChannelUser;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaEncryptionParameters;
+import io.github.dsheirer.module.decode.dmr.message.data.lc.full.motorola.MotorolaGroupVoiceChannelUser;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ActivityUpdateMessage;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.CapacityPlusRestChannel;
 import io.github.dsheirer.module.decode.dmr.message.data.lc.shorty.ConnectPlusControlChannel;
@@ -113,7 +114,7 @@ public class LCMessageFactory
                 flc = new TerminatorData(message, timestamp, timeslot);
                 break;
             case FULL_CAPACITY_PLUS_GROUP_VOICE_CHANNEL_USER:
-                flc = new CapacityPlusGroupVoiceChannelUser(message, timestamp, timeslot);
+                flc = new MotorolaGroupVoiceChannelUser(message, timestamp, timeslot);
                 break;
             case FULL_CAPACITY_PLUS_ENCRYPTED_VOICE_CHANNEL_USER:
                 flc = new CapacityPlusEncryptedVoiceChannelUser(message, timestamp, timeslot);
@@ -121,7 +122,9 @@ public class LCMessageFactory
             case FULL_CAPACITY_PLUS_WIDE_AREA_VOICE_CHANNEL_USER:
                 flc = new CapacityPlusWideAreaVoiceChannelUser(message, timestamp, timeslot);
                 break;
-
+            case FULL_CAPACITY_PLUS_ENCRYPTION_PARAMETERS:
+                flc = new MotorolaEncryptionParameters(message, timestamp, timeslot);
+                break;
             case FULL_HYTERA_GROUP_VOICE_CHANNEL_USER:
                 flc = new HyteraGroupVoiceChannelUser(message, timestamp, timeslot);
                 break;

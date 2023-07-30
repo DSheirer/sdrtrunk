@@ -279,7 +279,7 @@ public class DMRNetworkConfigurationMonitor
      */
     private void addDmrChannel(DMRChannel dmrChannel)
     {
-        mObservedChannelMap.put(dmrChannel.getLogicalSlotNumber(), dmrChannel);
+        mObservedChannelMap.put(dmrChannel.getValue(), dmrChannel);
     }
 
     public void reset()

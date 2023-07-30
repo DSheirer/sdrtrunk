@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- *  Copyright (C) 2014-2020 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,24 +23,20 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
 import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
-import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
-import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
 import io.github.dsheirer.module.decode.dmr.message.data.SlotType;
 import io.github.dsheirer.module.decode.dmr.message.data.mbc.MBCContinuationBlock;
 import io.github.dsheirer.module.decode.dmr.message.type.AbsoluteChannelParameters;
 import io.github.dsheirer.module.decode.dmr.message.type.DataType;
 import io.github.dsheirer.module.decode.dmr.message.type.SystemIdentityCode;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * DMR Tier III - Announcement Message - Adjacent/Neighbor Site Information
  */
-public class AdjacentSiteInformation extends Announcement implements ITimeslotFrequencyReceiver
+public class AdjacentSiteInformation extends Announcement
 {
     private static final int NEIGHBOR_SYSTEM_IDENTITY_CODE_OFFSET = 21;
     private static final int NETWORK_CONNECTION_STATUS_AVAILABLE_FLAG = 56;
@@ -234,40 +230,5 @@ public class AdjacentSiteInformation extends Announcement implements ITimeslotFr
         }
 
         return mIdentifiers;
-    }
-
-    /**
-     * Logical Slot Number(s) for channels contained in this message
-     */
-    @Override
-    public int[] getLogicalTimeslotNumbers()
-    {
-        if(getNeighborChannel() instanceof DMRLogicalChannel)
-        {
-            return ((DMRLogicalChannel)getNeighborChannel()).getLSNArray();
-        }
-
-        return new int[0];
-    }
-
-    /**
-     * Applies the timeslot frequency lookup information to channels contained in this message
-     * @param timeslotFrequencies that match the logical timeslots
-     */
-    @Override
-    public void apply(List<TimeslotFrequency> timeslotFrequencies)
-    {
-        if(getNeighborChannel() instanceof DMRLogicalChannel)
-        {
-            DMRLogicalChannel channel = (DMRLogicalChannel)getNeighborChannel();
-
-            for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
-            {
-                if(channel.getLogicalSlotNumber() == timeslotFrequency.getNumber())
-                {
-                    channel.setTimeslotFrequency(timeslotFrequency);
-                }
-            }
-        }
     }
 }

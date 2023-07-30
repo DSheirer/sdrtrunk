@@ -25,7 +25,7 @@ import io.github.dsheirer.identifier.integer.IntegerIdentifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.channel.DMRChannel;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.DMRTier3Channel;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
@@ -224,11 +224,11 @@ public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
      * Logical Slot Number(s) for channels contained in this message
      */
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        if(getMoveToChannel() instanceof DMRLogicalChannel)
+        if(getMoveToChannel() instanceof DMRLsn dmrLsn)
         {
-            return ((DMRLogicalChannel)getMoveToChannel()).getLSNArray();
+            return dmrLsn.getLogicalSlotNumbers();
         }
 
         return new int[0];
@@ -241,13 +241,13 @@ public class Clear extends CSBKMessage implements ITimeslotFrequencyReceiver
     @Override
     public void apply(List<TimeslotFrequency> timeslotFrequencies)
     {
-        if(getMoveToChannel() instanceof DMRLogicalChannel)
+        if(getMoveToChannel() instanceof DMRTier3Channel)
         {
-            DMRLogicalChannel channel = (DMRLogicalChannel)getMoveToChannel();
+            DMRTier3Channel channel = (DMRTier3Channel)getMoveToChannel();
 
             for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
             {
-                if(channel.getLogicalSlotNumber() == timeslotFrequency.getNumber())
+                if(channel.getValue() == timeslotFrequency.getNumber())
                 {
                     channel.setTimeslotFrequency(timeslotFrequency);
                 }

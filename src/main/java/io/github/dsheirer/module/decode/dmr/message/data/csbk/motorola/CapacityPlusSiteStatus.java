@@ -22,7 +22,7 @@ package io.github.dsheirer.module.decode.dmr.message.data.csbk.motorola;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DmrRestLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
@@ -39,13 +39,11 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
     private static final int[] BYTE = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
     private static final int[] TWO_BYTES = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int[] SEGMENT_INDICATOR = new int[]{16, 17};
-    private static final int TIMESLOT = 18;
-    private static final int RESERVED = 19;
-    private static final int[] REST_LSN = new int[]{20, 21, 22, 23};
+    private static final int[] REST_LSN = new int[]{19, 20, 21, 22, 23};
     private static final int[] LSN_VOICE_BITMAP = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
     private static final int LSN_1_8_BITMAP_START = 24;
 
-    private DMRLogicalChannel mRestChannel;
+    private DmrRestLsn mRestChannel;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -80,7 +78,7 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
             sb.append(" RAS:").append(getBPTCReservedBits());
         }
 
-        sb.append(" CSBK CAP+ SITE STATUS REST ").append(getRestChannel());
+        sb.append(" CSBK CAP+ SITE STATUS ").append(getRestChannel());
         sb.append(" ").append(getSegmentIndicator());
         sb.append(" ");
 
@@ -277,11 +275,11 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
     /**
      * Current rest channel for this site.
      */
-    public DMRLogicalChannel getRestChannel()
+    public DmrRestLsn getRestChannel()
     {
         if(mRestChannel == null)
         {
-            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
+            mRestChannel = new DmrRestLsn(getRestLSN());
         }
 
         return mRestChannel;
@@ -298,30 +296,12 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
     }
 
     /**
-     * Rest Channel Repeater
-     */
-    public int getRestRepeater()
-    {
-        return (int) Math.ceil(getRestLSN() / 2.0);
-    }
-
-    /**
-     * Rest Channel Timeslot
-     *
-     * @return 1 or 2
-     */
-    public int getRestTimeslot()
-    {
-        return (getRestLSN() % 2 == 0) ? 2 : 1;
-    }
-
-    /**
      * Logical slot numbers that require slot to frequency mappings.
      */
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getRestChannel().getLSNArray();
+        return getRestChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -334,7 +314,7 @@ public class CapacityPlusSiteStatus extends CSBKMessage implements ITimeslotFreq
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(getRestChannel().getLogicalSlotNumber() == timeslotFrequency.getNumber())
+            if(getRestChannel().getValue() == timeslotFrequency.getNumber())
             {
                 getRestChannel().setTimeslotFrequency(timeslotFrequency);
             }

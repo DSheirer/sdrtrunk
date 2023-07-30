@@ -83,7 +83,7 @@ public class CapacityPlusServiceOptions extends ServiceOptions
 
         if(isInterruptible())
         {
-            flags.add("TXI CALL");
+            flags.add("INTERRUPTIBLE CALL"); //Indicates another user can interrupt this call
         }
 
         if(getPriority() > 0)

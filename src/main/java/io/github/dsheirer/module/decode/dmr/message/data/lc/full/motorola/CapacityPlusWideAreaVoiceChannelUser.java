@@ -23,7 +23,7 @@ import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DmrRestLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
@@ -32,21 +32,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Motorola Capacity Plus - Wide Area (Multi-Site) Voice Channel User
+ * Motorola Capacity Plus - Wide Area (Linked or Multi-Site) Voice Channel User
+ *
+ * Note: in Linked Capacity Plus talkgroups range 1-255 and radio IDs range 1-65535
  */
 public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChannelUser implements ITimeslotFrequencyReceiver
 {
-    private static final int[] UNKNOWN_1 = new int[]{24, 25, 26, 27, 28, 29, 30, 31};
-    private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
-    //private static final int[] REST_REPEATER = new int[]{51, 52, 53, 54};
-    //private static final int[] REST_TIMESLOT = new int[]{55};
-    private static final int[] REST_LSN = new int[]{52, 53, 54, 55};
-    private static final int[] SOURCE_ADDRESS = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
-    private static final int[] UNKNOWN_3 = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
+    //Bits 16-23: Service Options
+    private static final int[] UNKNOWN_1 = new int[]{24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39};
+    private static final int[] GROUP_ID = new int[]{40, 41, 42, 43, 44, 45, 46, 47};
+    private static final int[] UNUSED = new int[]{48, 49, 50};
+    private static final int[] REST_LSN = new int[]{51, 52, 53, 54, 55};
+    private static final int[] RADIO_ID = new int[]{56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71};
+    //Reed Solomon FEC: 72-95
 
     private RadioIdentifier mRadio;
     private TalkgroupIdentifier mTalkgroup;
-    private DMRLogicalChannel mRestChannel;
+    private DmrRestLsn mRestChannel;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -82,18 +84,12 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
         sb.append("FLC MOTOROLA CAP+ WIDE-AREA VOICE CHANNEL USER FM:");
         sb.append(getRadio());
         sb.append(" TO:").append(getTalkgroup());
-        sb.append(" REST:");
         if(hasRestChannel())
         {
-            sb.append(getRestChannel());
+            sb.append(" ").append(getRestChannel());
         }
-        else
-        {
-            sb.append("--");
-        }
-        sb.append(" UNK1:").append(getUnknown1());
-        sb.append(" UNK2:").append(getUnknown2());
         sb.append(" ").append(getServiceOptions());
+        sb.append(" UNK1:").append(getUnknown1());
         sb.append(" MSG:").append(getMessage().toHexString());
         return sb.toString();
     }
@@ -101,27 +97,19 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     /**
      * Unknown1 8-bit field
      */
-    public int getUnknown1()
+    public String getUnknown1()
     {
-        return getMessage().getInt(UNKNOWN_1);
-    }
-
-    /**
-     * Unknown2 8-bit field
-     */
-    public int getUnknown2()
-    {
-        return getMessage().getInt(UNKNOWN_3);
+        return getMessage().getHex(UNKNOWN_1, 4);
     }
 
     /**
      * Logical channel number (ie repeater number).
      */
-    public DMRLogicalChannel getRestChannel()
+    public DmrRestLsn getRestChannel()
     {
         if(mRestChannel == null)
         {
-            mRestChannel = new DMRLogicalChannel(getRestRepeater(), getRestTimeslot());
+            mRestChannel = new DmrRestLsn(getRestLSN());
         }
 
         return mRestChannel;
@@ -137,24 +125,11 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     }
 
     /**
-     * Rest channel timeslot
-     */
-    public int getRestTimeslot()
-    {
-        return (getRestLSN() % 2 == 0) ? 2 : 1;
-    }
-
-    /**
-     * Rest channel repeater number
-     */
-    public int getRestRepeater() { return (int) Math.ceil(getRestLSN() / 2.0); }
-
-    /**
      * Indicates if this message has a reset channel defined.
      */
     public boolean hasRestChannel()
     {
-        return getRestRepeater() != 0;
+        return getRestLSN() != 0;
     }
 
     /**
@@ -164,7 +139,7 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     {
         if(mRadio == null)
         {
-            mRadio = DMRRadio.createFrom(getMessage().getInt(SOURCE_ADDRESS));
+            mRadio = DMRRadio.createFrom(getMessage().getInt(RADIO_ID));
         }
 
         return mRadio;
@@ -177,7 +152,7 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     {
         if(mTalkgroup == null)
         {
-            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(GROUP_ADDRESS));
+            mTalkgroup = DMRTalkgroup.create(getMessage().getInt(GROUP_ID));
         }
 
         return mTalkgroup;
@@ -201,9 +176,9 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
      * Exposes the rest channel logical slot number so that a LSN to frequency map can be applied to this message.
      */
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getRestChannel().getLSNArray();
+        return getRestChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -216,7 +191,7 @@ public class CapacityPlusWideAreaVoiceChannelUser extends CapacityPlusVoiceChann
     {
         for(TimeslotFrequency timeslotFrequency : timeslotFrequencies)
         {
-            if(getRestChannel().getLogicalSlotNumber() == timeslotFrequency.getNumber())
+            if(getRestChannel().getValue() == timeslotFrequency.getNumber())
             {
                 getRestChannel().setTimeslotFrequency(timeslotFrequency);
             }

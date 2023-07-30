@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,7 +66,8 @@ public class MNISProprietaryDataHeader extends ProprietaryDataHeader
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("MOTOROLA MNIS HEADER");
+        sb.append("CC:").append(getSlotType().getColorCode());
+        sb.append(" MOTOROLA MNIS HEADER");
         if(getApplicationType() == ApplicationType.UNKNOWN)
         {
             sb.append(" APPLICATION TYPE:0x").append(Integer.toHexString(getApplicationTypeNumber()).toUpperCase());

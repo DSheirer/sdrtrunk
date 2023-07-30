@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.bits.CorrectedBinaryMessage;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
 import io.github.dsheirer.module.decode.dmr.message.CACH;
+import io.github.dsheirer.module.decode.dmr.message.voice.embedded.EmbeddedParameters;
 
 /**
  * DMR Voice Frames B - F
@@ -35,6 +36,7 @@ public class VoiceEMBMessage extends VoiceMessage
     private static final int PAYLOAD_END = 172;
 
     private EMB mEMB;
+    private EmbeddedParameters mEmbeddedParameters;
 
     /**
      * DMR message frame.  This message is comprised of a 24-bit prefix and a 264-bit message frame.  Outbound base
@@ -61,7 +63,11 @@ public class VoiceEMBMessage extends VoiceMessage
 
         sb.append(getSyncPattern().toString());
 
-        if(getEMB().isValid() && getEMB().isEncrypted())
+        if(hasEmbeddedParameters())
+        {
+            sb.append(" ").append(getEmbeddedParameters());
+        }
+        else if(getEMB().isValid() && getEMB().isEncrypted())
         {
             sb.append(" ENCRYPTED");
         }
@@ -96,5 +102,35 @@ public class VoiceEMBMessage extends VoiceMessage
     public BinaryMessage getFLCFragment()
     {
         return getMessage().getSubMessage(PAYLOAD_START, PAYLOAD_END);
+    }
+
+    /**
+     * Optional embedded parameters for this voice super-frame.
+     * @return encryption parameters or null.
+     */
+    public EmbeddedParameters getEmbeddedParameters()
+    {
+        return mEmbeddedParameters;
+    }
+
+    /**
+     * Sets the embedded parameters for this voice message that apply to the entire voice super-frame.
+     *
+     * These parameters are normally extracted by an external process and applied to voice frame F and the parameters
+     * apply to the entire voice super-frame.
+     * @param embeddedParameters to set
+     */
+    public void setEmbeddedParameters(EmbeddedParameters embeddedParameters)
+    {
+        mEmbeddedParameters = embeddedParameters;
+    }
+
+    /**
+     * Indicates if this voice message contains embedded parameters.
+     * @return true if it contains.
+     */
+    public boolean hasEmbeddedParameters()
+    {
+        return mEmbeddedParameters != null;
     }
 }

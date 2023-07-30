@@ -459,6 +459,12 @@ public class DMRRecordingViewer extends VBox
         if(mFindText == null)
         {
             mFindText = new TextField();
+            mFindText.setOnKeyPressed(event -> {
+                if(event.getCode().equals(KeyCode.ENTER))
+                {
+                    getFindButton().fire();
+                }
+            });
             mFindText.textProperty().addListener((observable, oldValue, newValue) -> updateFilters());
         }
 

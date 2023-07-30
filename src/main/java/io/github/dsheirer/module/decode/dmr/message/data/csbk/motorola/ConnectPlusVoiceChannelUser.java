@@ -24,7 +24,7 @@ import io.github.dsheirer.identifier.Identifier;
 import io.github.dsheirer.identifier.radio.RadioIdentifier;
 import io.github.dsheirer.identifier.talkgroup.TalkgroupIdentifier;
 import io.github.dsheirer.module.decode.dmr.DMRSyncPattern;
-import io.github.dsheirer.module.decode.dmr.channel.DMRLogicalChannel;
+import io.github.dsheirer.module.decode.dmr.channel.DMRLsn;
 import io.github.dsheirer.module.decode.dmr.channel.ITimeslotFrequencyReceiver;
 import io.github.dsheirer.module.decode.dmr.channel.TimeslotFrequency;
 import io.github.dsheirer.module.decode.dmr.identifier.DMRRadio;
@@ -44,13 +44,12 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
         32, 33, 34, 35, 36, 37, 38, 39};
     private static final int[] GROUP_ADDRESS = new int[]{40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
         56, 57, 58, 59, 60, 61, 62, 63};
-    private static final int[] TRAFFIC_CHANNEL_REPEATER = new int[]{64, 65, 66, 67};
-    private static final int[] TRAFFIC_CHANNEL_TIMESLOT = new int[]{68};
+    private static final int[] TRAFFIC_CHANNEL_REPEATER = new int[]{64, 65, 66, 67, 68};
     private static final int[] UNKNOWN_FIELD = new int[]{72, 73, 74, 75, 76, 77, 78, 79};
 
     private RadioIdentifier mRadio;
     private TalkgroupIdentifier mTalkgroup;
-    private DMRLogicalChannel mDMRLogicalChannel;
+    private DMRLsn mDmrLsn;
     private List<Identifier> mIdentifiers;
 
     /**
@@ -133,31 +132,22 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     }
 
     /**
-     * Traffic channel timeslot
-     * @return 1 or 2
-     */
-    public int getTrafficChannelTimeslot()
-    {
-        return getMessage().getInt(TRAFFIC_CHANNEL_TIMESLOT) + 1;
-    }
-
-    /**
      * DMR Channel
      */
-    public DMRLogicalChannel getChannel()
+    public DMRLsn getChannel()
     {
-        if(mDMRLogicalChannel == null)
+        if(mDmrLsn == null)
         {
-            mDMRLogicalChannel = new DMRLogicalChannel(getTrafficChannelRepeater(), getTrafficChannelTimeslot());
+            mDmrLsn = new DMRLsn(getTrafficChannelRepeater());
         }
 
-        return mDMRLogicalChannel;
+        return mDmrLsn;
     }
 
     @Override
-    public int[] getLogicalTimeslotNumbers()
+    public int[] getLogicalSlotNumbers()
     {
-        return getChannel().getLSNArray();
+        return getChannel().getLogicalSlotNumbers();
     }
 
     /**
@@ -169,7 +159,7 @@ public class ConnectPlusVoiceChannelUser extends CSBKMessage implements ITimeslo
     {
         for(TimeslotFrequency timeslotFrequency: timeslotFrequencies)
         {
-            if(timeslotFrequency.getNumber() == getChannel().getLogicalSlotNumber())
+            if(timeslotFrequency.getNumber() == getChannel().getValue())
             {
                 getChannel().setTimeslotFrequency(timeslotFrequency);
             }

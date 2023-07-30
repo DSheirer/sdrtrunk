@@ -1,6 +1,6 @@
 /*
  * *****************************************************************************
- * Copyright (C) 2014-2022 Dennis Sheirer
+ * Copyright (C) 2014-2023 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -226,17 +226,19 @@ public class CRCUtil
     {
         mLog.debug("Starting");
 
-        //DMR message
-//        String raw = "100110010001000000001001000000001111011011010000011001010000000000000000000000001100001000001011";
-        String raw = "101010000000000000110110100000101101011011010000011001111100000000000011100101001001111010001110";
-        mLog.debug(raw);
-        raw = "101010000000000000110110100000101101011011010000011001111100000000000011100101000000000000000000";
-        BinaryMessage message = BinaryMessage.load(raw);
-        mLog.debug(message.toString());
+        long poly = 0x13l;
+        long[] checksums = generate(32, 4, poly, 0, true);
 
-        long polynomial = 0x11021l;
-        decode(message, 0, 80, polynomial, 16);
-        mLog.debug(message.toString());
-        mLog.debug("Finished");
+        StringBuilder sb = new StringBuilder();
+        sb.append("private static int[] CHECKSUMS = new int[]{");
+        for(long checksum: checksums)
+        {
+            sb.append("0x").append(Long.toHexString(checksum).toUpperCase());
+            sb.append(",");
+        }
+
+        sb.append("};");
+
+        System.out.println("Checksums:\n" + sb);
     }
 }
